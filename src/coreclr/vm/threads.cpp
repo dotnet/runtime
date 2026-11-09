@@ -1516,7 +1516,7 @@ Thread::Thread()
 
     exposedObjectHolder.SuppressRelease();
     strongHndToExposedObjectHolder.SuppressRelease();
-    contextHolder.SuppressRelease();
+    contextHolder.Detach();
 
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
@@ -3634,10 +3634,10 @@ void Thread::PrepareApartmentAndContext()
     // only if the internal config switch is on.
     if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
-        NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
+        NewHolder<ApartmentSpyImpl> pSpyImpl(new ApartmentSpyImpl());
 
         IfFailThrow(CoRegisterInitializeSpy(pSpyImpl, &m_uliInitializeSpyCookie));
-        pSpyImpl.SuppressRelease();
+        pSpyImpl.Detach();
 
         m_fInitializeSpyRegistered = true;
     }

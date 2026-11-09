@@ -87,14 +87,29 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //   ins      - instruction to emit
 //   attr     - emit attributes
 //   imm      - immediate value
+//   isLastUse - whether this local.get is the last use of the stored value
 //
-void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse)
 {
-    // Rewrite `local.set N; local.get N` as `local.tee N`.
+    assert(!isLastUse || (ins == INS_local_get));
+
+    // Keep the local assignment unless this get is known to be its last use.
     //
     if ((ins == INS_local_get) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
         (emitLastIns->idIns() == INS_local_set) && (emitGetInsSC(emitLastIns) == imm))
     {
+        if (isLastUse && (emitLastInsIG == emitCurIG))
+        {
+            JITDUMP("\n -- removing 'local.set %d; local.get %d' for a last use.\n", (int)imm, (int)imm);
+            unsigned size = emitLastIns->idCodeSize();
+            // Preserve instruction positions already captured for debug and GC information.
+            emitLastIns->idIns(INS_nop);
+            emitLastIns->idInsFmt(IF_NONE);
+            emitCurIGsize -= size;
+            emitCurIG->igFlags |= IGF_UPD_ISZ;
+            return;
+        }
+
         JITDUMP("\n -- rewriting 'local.set %d' as 'local.tee %d' since it is followed by a get of the same local.\n",
                 (int)imm, (int)imm);
         emitLastIns->idIns(INS_local_tee);
@@ -736,6 +751,11 @@ static const unsigned PADDED_RELOC_SIZE = 5;
 
 unsigned emitter::instrDesc::idCodeSize() const
 {
+    if (idInsFmt() == IF_NONE)
+    {
+        return 0;
+    }
+
     unsigned int opcode = GetInsOpcode(idIns());
 
     unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
@@ -1001,6 +1021,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (insFmt)
     {
+        case IF_NONE:
+            break;
+
         case IF_DEFERRED_CALL:
         {
             // #DeferredWasmCallRelocationProtocol
@@ -1377,6 +1400,10 @@ void emitter::emitDispIns(
     //
     switch (fmt)
     {
+        case IF_NONE:
+            printf(" (elided)");
+            break;
+
         case IF_OPCODE:
             break;
 

@@ -4021,8 +4021,8 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
         COMPlusThrowHR(COR_E_OVERFLOW);
     }
 
-    NewArrayHolder<BYTE> pbParamMarshalInfo(new BYTE[cbParamMarshalInfo]);
-    MarshalInfo *pParamMarshalInfo = reinterpret_cast<MarshalInfo *>(pbParamMarshalInfo.GetValue());
+    NewArrayHolder<BYTE> pbParamMarshalInfo{ new BYTE[cbParamMarshalInfo] };
+    MarshalInfo *pParamMarshalInfo = reinterpret_cast<MarshalInfo *>(static_cast<BYTE*>(pbParamMarshalInfo));
 
     MetaSig paramInfoMSig(msig);
     for (int i = 0; i < numArgs; ++i)
@@ -4317,11 +4317,11 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     CreateStructMarshalIL(pStructMT, &slIL, marshalFlags);
 
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> ilResolver{ new ILStubResolver() };
     ilResolver->SetStubMethodDesc(pMD);
 
     *methodILDecoder = ilResolver->FinalizeILStub(&slIL);
-    *resolver = ilResolver.Extract();
+    *resolver = ilResolver.Detach();
     return true;
 }
 
@@ -4459,13 +4459,13 @@ namespace
         {
             _ASSERTE(pTargetMD != NULL);
             const size_t blobSize = unsharedStubHashBlobSize;
-            NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
+            NewArrayHolder<BYTE> pBytes{ new BYTE[blobSize] };
             ZeroMemory(pBytes, blobSize);
             ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
             pBlob->m_cbSizeOfBlob = blobSize;
             memcpy(pBlob->m_rgbBlobData, &dwStubFlags, sizeof(dwStubFlags));
             memcpy(pBlob->m_rgbBlobData + sizeof(dwStubFlags), &pTargetMD, sizeof(pTargetMD));
-            pBytes.SuppressRelease();
+            pBytes.Detach();
             return pBlob;
         }
 
@@ -4529,7 +4529,7 @@ namespace
         static_assert(nlfMaxValue   <= 0xFF);
         static_assert(pmMaxValue    <= 0xFFFF);
 
-        NewArrayHolder<BYTE> pBytes = new BYTE[cbSizeOfBlob.Value()];
+        NewArrayHolder<BYTE> pBytes{ new BYTE[cbSizeOfBlob.Value()] };
         // zero out the hash bytes to ensure all bit fields are deterministically set
         ZeroMemory(pBytes, cbSizeOfBlob.Value());
         pBlob = (PInvokeStubHashBlob*)(BYTE*)pBytes;
@@ -4587,7 +4587,7 @@ namespace
         // Verify that we indeed have reached the end
         _ASSERTE(pBlobParams + cbSig == (BYTE *)pBlob + cbSizeOfBlob.Value());
 
-        pBytes.SuppressRelease();
+        pBytes.Detach();
         return (ILStubHashBlob*)pBlob;
     }
 
@@ -4923,12 +4923,12 @@ COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, Dyn
     CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
 
     PInvoke_ILStubState stubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, sigInfo.GetCallConv(), iLCIDArg, pMD);
-    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> pResolver{ new ILStubResolver() };
     pResolver->SetStubMethodDesc(pMD);
 
     COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), stubState.GetFlags(), pMD, pParamTokenArray, iLCIDArg);
 
-    *ppResolver = pResolver.Extract();
+    *ppResolver = pResolver.Detach();
     return pIL;
 }
 
@@ -5385,7 +5385,7 @@ namespace
     private:
         MethodDesc*                      m_pTargetMD;
         PInvokeStubParameters*           m_pParams;
-        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
+        NewArrayHolder<ILStubHashBlob> m_pHashParams;
         MethodDesc*                      m_pStubMD;
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
@@ -5788,7 +5788,7 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
 #endif // _DEBUG
 
     Signature signature(szMetaSig, cbMetaSigSize);
-    NewHolder<ILStubState> pStubState = new COMToCLRFieldAccess_ILStubState(pModule, signature, &sigDesc.m_typeContext, dwStubFlags, pFD);
+    NewHolder<ILStubState> pStubState{ new COMToCLRFieldAccess_ILStubState(pModule, signature, &sigDesc.m_typeContext, dwStubFlags, pFD) };
 
     MethodDesc* pStubMD;
     pStubMD = CreateInteropILStub(
@@ -5974,7 +5974,8 @@ namespace
             StackSString ssLibName(SString::Utf8, pMD->GetLibName());
 
             WCHAR wszEPName[50];
-            if (MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
+            LPCSTR szEPName = (LPCSTR)pMD->GetEntrypointName();
+            if (minipal_convert_utf8_to_utf16(szEPName, strlen(szEPName) + 1, (CHAR16_T*)wszEPName, ARRAY_SIZE(wszEPName), 0) == 0)
             {
                 wszEPName[0] = W('?');
                 wszEPName[1] = W('\0');
@@ -6956,7 +6957,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     MethodDesc* pDestructor = nullptr;
     FindDestructor(pMT->GetModule(), pMT, &pDestructor);
 
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> ilResolver{ new ILStubResolver() };
     ilResolver->SetStubMethodDesc(ftn);
 
     SigTypeContext genericContext;
@@ -6993,7 +6994,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
 
     // Generate all IL associated data for JIT
     *ppHeader = ilResolver->FinalizeILStub(&sl);
-    *ppResolver = ilResolver.Extract();
+    *ppResolver = ilResolver.Detach();
     return true;
 }
 
