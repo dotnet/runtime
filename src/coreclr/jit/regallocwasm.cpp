@@ -1018,6 +1018,10 @@ void WasmRegAlloc::ResolveReferences()
         unsigned Index;
     };
 
+    auto canReuseAbiReg = [](regNumber virtReg, regNumber abiReg) {
+        return genIsValidReg(virtReg) && (WasmRegToType(virtReg) == WasmRegToType(abiReg));
+    };
+
     // Resolve funclet by funclet, in reverse order, so that we process the main method region last.
     //
     for (FuncInfoDsc* const funcInfo : m_compiler->Funcs().Reverse())
@@ -1057,7 +1061,8 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (argLclNum == m_compiler->lvaWasmSpArg))
+                            if (canReuseAbiReg(argVarDsc->GetRegNum(), argReg) ||
+                                (argLclNum == m_compiler->lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
@@ -1066,7 +1071,7 @@ void WasmRegAlloc::ResolveReferences()
                             const ParameterRegisterLocalMapping* mapping =
                                 m_compiler->FindParameterRegisterLocalMappingByRegister(argReg);
                             if ((mapping != nullptr) &&
-                                (m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum() == argReg))
+                                canReuseAbiReg(m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum(), argReg))
                             {
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
                             }
@@ -1126,7 +1131,7 @@ void WasmRegAlloc::ResolveReferences()
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
                     regNumber abiReg = abiInfo.Segment(0).GetRegister();
-                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    if (canReuseAbiReg(virtReg, abiReg))
                     {
                         physReg = abiReg;
                     }
@@ -1138,7 +1143,7 @@ void WasmRegAlloc::ResolveReferences()
                         m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
                     assert(mapping != nullptr);
                     regNumber abiReg = mapping->RegisterSegment->GetRegister();
-                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    if (canReuseAbiReg(virtReg, abiReg))
                     {
                         physReg = abiReg;
                     }
@@ -1291,6 +1296,7 @@ void WasmRegAlloc::ResolveReferences()
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
             PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
+            assert(physRegs.Index <= physRegs.IndexBase + physRegs.DeclaredCount);
             if (physRegs.DeclaredCount != 0)
             {
                 decls->push_back({type, physRegs.DeclaredCount});

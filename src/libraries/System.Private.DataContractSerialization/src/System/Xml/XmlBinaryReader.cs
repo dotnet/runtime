@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -1011,19 +1012,10 @@ namespace System.Xml
 
         private void InsertNode(XmlBinaryNodeType nodeType, int length)
         {
-            byte[] buffer = new byte[5];
+            Span<byte> buffer = stackalloc byte[1 + sizeof(int)];
             buffer[0] = (byte)nodeType;
-            unchecked
-            {
-                buffer[1] = (byte)length;
-                length >>= 8;
-                buffer[2] = (byte)length;
-                length >>= 8;
-                buffer[3] = (byte)length;
-            }
-            length >>= 8;
-            buffer[4] = (byte)length;
-            BufferReader.InsertBytes(buffer, 0, buffer.Length);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(1), length);
+            BufferReader.InsertBytes(buffer);
         }
 
         private void ReadAttributeText(XmlAttributeTextNode textNode)

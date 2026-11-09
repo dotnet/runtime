@@ -465,14 +465,14 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
     ULONGLONG th = (ULONGLONG)typeHandle.AsTAddr();
     ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(m_typeLogger, th, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
 
-    // We should have at least 512 characters remaining in the buffer here.
+    // We should have room for an entry with the longest field name in the buffer here.
     int remaining = kMaxBytesValues - m_used;
-    _ASSERTE(kMaxBytesValues - m_used > 512);
+    _ASSERTE(remaining >= EventStaticEntry::MaxEntrySize());
 
     int len = EventStaticEntry::WriteEntry(m_buffer + m_used, remaining, (ULONGLONG)address,
                                            (ULONGLONG)obj, th, 0, fieldDesc);
 
-    // 512 bytes was not enough buffer?  This shouldn't happen, so we'll skip emitting the
+    // There was not enough buffer?  This shouldn't happen, so we'll skip emitting the
     // event on error.
     if (len > 0)
     {
@@ -481,7 +481,7 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
     }
 
     // When we are close to running out of buffer, emit the event.
-    if (kMaxBytesValues - m_used < 512)
+    if (kMaxBytesValues - m_used < EventStaticEntry::MaxEntrySize())
         FireBulkStaticsEvent();
 }
 

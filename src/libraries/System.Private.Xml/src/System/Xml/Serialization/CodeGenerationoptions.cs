@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
         None = 0,
 
         /// <summary>
-        /// Generate propertyes instead of fields
+        /// Generate properties instead of fields
         /// </summary>
         [XmlEnum("properties")]
         GenerateProperties = 0x1,

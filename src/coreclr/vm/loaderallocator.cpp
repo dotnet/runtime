@@ -1588,21 +1588,20 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         //
         if (m_pFatTokenSetLock == NULL)
         {
-            NewHolder<SimpleRWLock> pFatTokenSetLock = new SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT);
+            NewHolder<SimpleRWLock> pFatTokenSetLock{ new SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT) };
             SimpleWriteLockHolder lock(pFatTokenSetLock);
-            NewHolder<FatTokenSet> pFatTokenSet = new FatTokenSet;
+            NewHolder<FatTokenSet> pFatTokenSet{ new FatTokenSet };
 
             if (InterlockedCompareExchangeT(
-                    &m_pFatTokenSetLock, pFatTokenSetLock.GetValue(), NULL) != NULL)
+                    &m_pFatTokenSetLock, static_cast<SimpleRWLock*>(pFatTokenSetLock), NULL) != NULL)
             {   // Someone beat us to it
                 lock.Release();
-                // NewHolder will delete lock.
+                // The holder will delete the lock.
             }
             else
-            {   // Make sure second allocation succeeds before suppressing holder of first.
-                pFatTokenSetLock.SuppressRelease();
-                m_pFatTokenSet = pFatTokenSet;
-                pFatTokenSet.SuppressRelease();
+            {   // Make sure the second allocation succeeds before transferring ownership.
+                pFatTokenSetLock.Detach();
+                m_pFatTokenSet = pFatTokenSet.Detach();
             }
         }
 
@@ -1648,15 +1647,13 @@ void LoaderAllocator::InitVirtualCallStubManager()
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<VirtualCallStubManager> pMgr(new VirtualCallStubManager());
+    NewHolder<VirtualCallStubManager> pMgr{ new VirtualCallStubManager() };
 
     // Init the manager, including all heaps and such.
     pMgr->Init(this);
 
-    m_pVirtualCallStubManager = pMgr;
-
     // Successfully created the manager.
-    pMgr.SuppressRelease();
+    m_pVirtualCallStubManager = pMgr.Detach();
 }
 
 void LoaderAllocator::UninitVirtualCallStubManager()
@@ -1817,13 +1814,13 @@ void LoaderAllocator::LazyInitStringLiteralMap()
     }
     CONTRACTL_END;
 
-    NewHolder<StringLiteralMap> pStringLiteralMap(new StringLiteralMap());
+    NewHolder<StringLiteralMap> pStringLiteralMap{ new StringLiteralMap() };
 
     pStringLiteralMap->Init();
 
     if (InterlockedCompareExchangeT<StringLiteralMap *>(&m_pStringLiteralMap, pStringLiteralMap, NULL) == NULL)
     {
-        pStringLiteralMap.SuppressRelease();
+        pStringLiteralMap.Detach();
     }
 }
 

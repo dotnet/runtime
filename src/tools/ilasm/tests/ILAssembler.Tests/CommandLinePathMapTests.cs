@@ -8,7 +8,7 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 /// <summary>
 /// Runs the ilasm command line (<see cref="Program"/>) in process, end to end, with <c>--pathmap</c>: the paths the PDB

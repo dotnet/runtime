@@ -521,9 +521,9 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
                     qualifiedPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
                 }
 
-                NewHolder<SString> stringHolder(new SString(qualifiedPath));
-                IfFailThrow(m_NativeDllSearchDirectories.Append(stringHolder.GetValue()));
-                stringHolder.SuppressRelease();
+                NewHolder<SString> stringHolder{ new SString(qualifiedPath) };
+                IfFailThrow(m_NativeDllSearchDirectories.Append(stringHolder));
+                stringHolder.Detach();
             }
         }
     }
@@ -875,14 +875,14 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
     CONTRACTL_END;
 
     // Allocate the global string literal map.
-    NewHolder<GlobalStringLiteralMap> pGlobalStringLiteralMap(new GlobalStringLiteralMap());
+    NewHolder<GlobalStringLiteralMap> pGlobalStringLiteralMap{ new GlobalStringLiteralMap() };
 
     // Initialize the global string literal map.
     pGlobalStringLiteralMap->Init();
 
     if (InterlockedCompareExchangeT<GlobalStringLiteralMap *>(&m_pGlobalStringLiteralMap, pGlobalStringLiteralMap, NULL) == NULL)
     {
-        pGlobalStringLiteralMap.SuppressRelease();
+        pGlobalStringLiteralMap.Detach();
     }
 }
 
@@ -896,10 +896,10 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
     CONTRACTL_END;
 
-    NewHolder<FrozenObjectHeapManager> pFoh(new FrozenObjectHeapManager());
+    NewHolder<FrozenObjectHeapManager> pFoh{ new FrozenObjectHeapManager() };
     if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_FrozenObjectHeapManager, pFoh, nullptr) == nullptr)
     {
-        pFoh.SuppressRelease();
+        pFoh.Detach();
     }
 }
 
@@ -1416,11 +1416,11 @@ void AppDomain::Create()
 
     _ASSERTE(m_pTheAppDomain == NULL);
 
-    NewHolder<AppDomain> pDomain(new AppDomain());
+    NewHolder<AppDomain> pDomain{ new AppDomain() };
     pDomain->Init();
     pDomain->CreateDefaultBinder();
 
-    m_pTheAppDomain = pDomain.Extract();
+    m_pTheAppDomain = pDomain.Detach();
 
     LOG((LF_CLASSLOADER | LF_CORDB,
          LL_INFO10,
@@ -1781,11 +1781,11 @@ FileLoadLock* FileLoadLock::Create(PEFileListLock* pLock, PEAssembly* pPEAssembl
     }
     CONTRACTL_END;
 
-    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pPEAssembly));
+    NewHolder<FileLoadLock> result{ new FileLoadLock(pLock, pPEAssembly) };
 
     pLock->AddElement(result);
     result->AddRef(); // Add one ref on behalf of the ListLock's reference. The corresponding Release() happens in FileLoadLock::CompleteLoadLevel.
-    return result.Extract();
+    return result.Detach();
 }
 
 FileLoadLock::~FileLoadLock()
@@ -3405,10 +3405,10 @@ RCWRefCache *AppDomain::GetRCWRefCache()
     CONTRACTL_END;
 
     if (!m_pRCWRefCache) {
-        NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
+        NewHolder<RCWRefCache> pRCWRefCache{ new RCWRefCache(this) };
         if (InterlockedCompareExchangeT(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
         {
-            pRCWRefCache.SuppressRelease();
+            pRCWRefCache.Detach();
         }
     }
     return m_pRCWRefCache;
@@ -3441,10 +3441,10 @@ RCWCache *AppDomain::CreateRCWCache()
 
     if (!m_pRCWCache)
     {
-        NewHolder<RCWCache> pRCWCache = new RCWCache(this);
+        NewHolder<RCWCache> pRCWCache{ new RCWCache(this) };
         if (InterlockedCompareExchangeT(&m_pRCWCache, (RCWCache *)pRCWCache, NULL) == NULL)
         {
-            pRCWCache.SuppressRelease();
+            pRCWCache.Detach();
         }
     }
 
