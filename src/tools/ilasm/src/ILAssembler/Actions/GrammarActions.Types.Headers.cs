@@ -81,47 +81,20 @@ internal sealed partial class GrammarActions
 
     private (string Namespace, string Name) GetTypeDefinitionName(string fullName)
     {
-        int lastDot = fullName.LastIndexOf('.');
-        bool hasLeadingDot = lastDot == 0;
-        if (hasLeadingDot)
+        string? currentNamespace = _currentTypeDefinition.Count == 0 ? _currentNamespace.PeekOrDefault() : null;
+        if (string.IsNullOrEmpty(currentNamespace))
         {
-            lastDot = -1;
+            return NameHelpers.SplitDottedNameToNamespaceAndName(fullName);
         }
 
-        string typeNamespace;
-        string typeName = lastDot == -1 ? fullName : fullName.Substring(lastDot + 1);
-        if (_currentTypeDefinition.Count != 0)
+        if (!fullName.Contains('.') && !currentNamespace.EndsWith('.'))
         {
-            typeNamespace = lastDot == -1 ? string.Empty : fullName.Substring(0, lastDot);
-        }
-        else if (lastDot == -1)
-        {
-            string? currentNamespace = _currentNamespace.PeekOrDefault();
-            if (!hasLeadingDot &&
-                currentNamespace is not null &&
-                currentNamespace.EndsWith('.'))
-            {
-                // Preserve the final separator as a leading dot on the type name.
-                typeNamespace = currentNamespace.Substring(0, currentNamespace.Length - 1);
-                typeName = $".{fullName}";
-            }
-            else
-            {
-                typeNamespace = currentNamespace ?? string.Empty;
-            }
-        }
-        else
-        {
-            string containingNamespace = fullName.Substring(0, lastDot);
-            string? currentNamespace = _currentNamespace.PeekOrDefault();
-            typeNamespace = string.IsNullOrEmpty(currentNamespace)
-                ? containingNamespace
-                : $"{currentNamespace}.{containingNamespace}";
+            return (currentNamespace, fullName);
         }
 
-        return (
-            typeNamespace,
-            typeName);
+        // COMPAT: Native ilasm composes the full name before splitting it (ns::SplitPath),
+        // so atypical dots can change the namespace/name boundary specified in the source.
+        return NameHelpers.SplitDottedNameToNamespaceAndName(currentNamespace + "." + fullName);
     }
 
     private void InitializeTypeDefinition(
