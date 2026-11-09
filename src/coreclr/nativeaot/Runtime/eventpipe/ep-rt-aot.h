@@ -1126,10 +1126,12 @@ ep_rt_temp_path_get (
     char *tmp = NULL;
     char *temp = NULL;
     const ep_char8_t *path = tmpdir;
-    if (path == NULL) {
+    if (path == NULL)
+    {
         tmp = minipal_environ_getenv ("TMP");
         path = tmp;
-        if (path == NULL) {
+        if (path == NULL)
+        {
             temp = minipal_environ_getenv ("TEMP");
             path = temp;
             if (path == NULL)

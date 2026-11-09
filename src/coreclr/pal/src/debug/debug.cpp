@@ -263,21 +263,25 @@ run_debug_command (const char *command, char *pid_entry, char *exe_entry)
 
     char **environment = minipal_environ_get();
     size_t count = 0;
-    while (environment[count] != NULL) {
+    while (environment[count] != NULL)
+    {
         count++;
     }
 
     char **child_environment = (char **)malloc((count + 3) * sizeof(char *));
-    if (child_environment == NULL) {
+    if (child_environment == NULL)
+    {
         return -1;
     }
 
     size_t child_count = 0;
     child_environment[child_count++] = pid_entry;
     child_environment[child_count++] = exe_entry;
-    for (size_t i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++)
+    {
         if (strncmp(environment[i], PID_TEXT, strlen(PID_TEXT)) != 0 &&
-            strncmp(environment[i], EXE_TEXT, strlen(EXE_TEXT)) != 0) {
+            strncmp(environment[i], EXE_TEXT, strlen(EXE_TEXT)) != 0)
+        {
             child_environment[child_count++] = environment[i];
         }
     }
