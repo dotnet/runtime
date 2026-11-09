@@ -536,6 +536,15 @@ public:
         if (m_pNativeVarInfo != NULL)
             freeArrayInternal(m_pNativeVarInfo);
 
+        if (m_inlineTreeNodes != NULL)
+            freeArrayInternal(m_inlineTreeNodes);
+        if (m_richOffsetMappings != NULL)
+            freeArrayInternal(m_richOffsetMappings);
+        if (m_dbgAsyncSuspensionPoints != NULL)
+            freeArrayInternal(m_dbgAsyncSuspensionPoints);
+        if (m_dbgAsyncContinuationVars != NULL)
+            freeArrayInternal(m_dbgAsyncContinuationVars);
+
 #ifdef FEATURE_PGO
         if (m_foundPgoData != NULL)
         {
