@@ -906,25 +906,6 @@ struct MapViewTraits final
 using MapViewHolder = LifetimeHolder<MapViewTraits>;
 #endif // HOST_WINDOWS
 
-template<typename T>
-struct LocalAllocTraits final
-{
-    using Type = T;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type h) noexcept
-    {
-        STATIC_CONTRACT_WRAPPER;
-#ifdef HOST_WINDOWS
-        ::LocalFree((void*)h);
-#else
-        ::free((void*)h);
-#endif
-    }
-};
-
-template<typename T>
-using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
-
 // A holder for HMODULE.
 struct HModuleTraits final
 {
@@ -1090,48 +1071,5 @@ struct BSTRTraits final
 
 using BSTRHolder = LifetimeHolder<BSTRTraits>;
 #endif // FEATURE_COMINTEROP
-
-// Holder-specific clr::SafeAddRef and clr::SafeRelease helper functions.
-namespace clr
-{
-    // Copied from utilcode.h. We can't include the header directly because there
-    // is circular reference.
-    // Forward declare the overload which is used by 'SafeAddRef' below.
-    template <typename ItfT>
-    static inline
-    typename std::enable_if< std::is_pointer<ItfT>::value, ItfT >::type
-    SafeAddRef(ItfT pItf);
-
-    template < typename ItfT > __checkReturn
-    ItfT *
-    SafeAddRef(ReleaseHolder<ItfT> & pItf)
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        //@TODO: Would be good to add runtime validation that the return value is used.
-        return SafeAddRef(static_cast<ItfT*>(pItf));
-    }
-
-    namespace detail
-    {
-        template <typename T>
-        char IsHolderHelper(HolderBase<T>*);
-        int  IsHolderHelper(...);
-
-        template <typename T>
-        struct IsHolder : public std::conditional<
-            sizeof(IsHolderHelper(reinterpret_cast<T*>(NULL))) == sizeof(char),
-            std::true_type,
-            std::false_type>::type
-        {};
-    }
-
-    template < typename T >
-    typename std::enable_if<detail::IsHolder<T>::value, ULONG>::type
-    SafeRelease(T& arg)
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        return arg.Release();
-    }
-}
 
 #endif  // __HOLDER_H_
