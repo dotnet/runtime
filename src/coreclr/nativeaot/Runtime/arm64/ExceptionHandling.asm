@@ -42,33 +42,6 @@
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
     MEND
 
-;; -----------------------------------------------------------------------------
-;; Macro used to restore preserved general purpose and FP registers from REGDISPLAY
-;; $regdisplayReg - register pointing to the REGDISPLAY structure
-    MACRO
-        RESTORE_PRESERVED_REGISTERS $regdisplayReg
-
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 19, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 20, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 21, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 22, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 23, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 24, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 25, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 26, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 27, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 28, x12
-        LOAD_FUNCLET_REGISTER $regdisplayReg, 29, x12
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 8
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 9
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 10
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 11
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 12
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 13
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 14
-        LOAD_FUNCLET_FP_REGISTER $regdisplayReg, 15
-    MEND
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpThrowHwEx
@@ -305,7 +278,26 @@ ResumeAfterCatch_ClearRetry
         ;; may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
         INLINE_THREAD_UNHIJACK x3, x4, x12                      ;; Thread in x3, trashes x4 and x12
 
-        RESTORE_PRESERVED_REGISTERS x0
+        LOAD_FUNCLET_REGISTER x0, 19, x12
+        LOAD_FUNCLET_REGISTER x0, 20, x12
+        LOAD_FUNCLET_REGISTER x0, 21, x12
+        LOAD_FUNCLET_REGISTER x0, 22, x12
+        LOAD_FUNCLET_REGISTER x0, 23, x12
+        LOAD_FUNCLET_REGISTER x0, 24, x12
+        LOAD_FUNCLET_REGISTER x0, 25, x12
+        LOAD_FUNCLET_REGISTER x0, 26, x12
+        LOAD_FUNCLET_REGISTER x0, 27, x12
+        LOAD_FUNCLET_REGISTER x0, 28, x12
+        LOAD_FUNCLET_REGISTER x0, 29, x12
+
+        LOAD_FUNCLET_FP_REGISTER x0, 8
+        LOAD_FUNCLET_FP_REGISTER x0, 9
+        LOAD_FUNCLET_FP_REGISTER x0, 10
+        LOAD_FUNCLET_FP_REGISTER x0, 11
+        LOAD_FUNCLET_FP_REGISTER x0, 12
+        LOAD_FUNCLET_FP_REGISTER x0, 13
+        LOAD_FUNCLET_FP_REGISTER x0, 14
+        LOAD_FUNCLET_FP_REGISTER x0, 15
 
         ;; reset SP and jump to continuation address
         ldr         x2, [x0, #OFFSETOF__REGDISPLAY__SP]
