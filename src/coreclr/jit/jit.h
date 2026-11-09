@@ -264,6 +264,12 @@
 #error Cannot define both TARGET_WASM32 and TARGET_RISCV64
 #endif
 
+#elif defined(TARGET_INTERP)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) ||                    \
+    defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#error Cannot define TARGET_INTERP together with a native target architecture
+#endif
+
 #else
 #error Unsupported or unset target architecture
 #endif

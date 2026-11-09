@@ -465,14 +465,14 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
-#ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP) // TODO-WASM: enable genPoisonFrame
     // Emit poisoning into the init BB that comes right after prolog.
     // We cannot emit this code in the prolog as it might use a helper call that kills argument regs.
     if (m_compiler->compShouldPoisonFrame() && block->IsFirst())
     {
         genPoisonFrame(newLiveRegSet);
     }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
     // Traverse the block in linear order, generating code for each node as we
     // as we encounter it.
@@ -1025,7 +1025,7 @@ bool CodeGen::genIsCatchRetTargetWithoutCode(BasicBlock* block)
 // 2. Everything else stays here.
 // 3. codegenlinear.cpp gets renamed to codegennative.cpp.
 //
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 
 //------------------------------------------------------------------------
 // genEmitStartBlock: prepare for codegen in a block
@@ -1037,7 +1037,7 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
 }
 
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
@@ -1186,7 +1186,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
     varDsc->SetRegNum(tree->GetRegNum());
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //------------------------------------------------------------------------
 // genUnspillLocal: Reload a register candidate local into a register, if needed.
 //
@@ -1481,7 +1481,7 @@ void CodeGen::genConsumeRegAndCopy(GenTree* node, regNumber needReg)
     genConsumeReg(node);
     genCopyRegIfNeeded(node, needReg);
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 // Check that registers are consumed in the right order for the current node being generated.
 #ifdef DEBUG
@@ -1535,7 +1535,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
 }
 #endif // DEBUG
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //--------------------------------------------------------------------
 // genConsumeReg: Do liveness update for a single register of a multireg child node
 //                that is being consumed by codegen.
@@ -1604,7 +1604,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
     }
     return reg;
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //--------------------------------------------------------------------
 // genConsumeReg: Do liveness update for a subnode that is being
@@ -1889,7 +1889,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -2067,7 +2067,7 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
                                   regNum, varNum, 0);
     }
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //-------------------------------------------------------------------------
 // genProduceReg: do liveness update for register produced by the current
@@ -2241,7 +2241,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 #endif // EMIT_GENERATE_GCINFO
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 // transfer gc/byref status of src reg to dst reg
 void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 {
@@ -2319,12 +2319,12 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         // Casts int32/uint32/int64/uint64 --> float/double
         genIntToFloatCast(tree);
     }
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM) && !defined(TARGET_INTERP)
     else if (varTypeIsLong(tree->gtOp1))
     {
         genLongToIntCast(tree);
     }
-#endif // !TARGET_64BIT && !TARGET_WASM
+#endif // !TARGET_64BIT && !TARGET_WASM && !TARGET_INTERP
     else
     {
         // Casts int <--> int
@@ -2348,7 +2348,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     const bool      castIsLoad   = !src->isUsedFromReg();
 
     assert(castIsLoad == src->isUsedFromMemory());
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
     assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
     assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
 #else
@@ -2514,7 +2514,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     }
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 #if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------
 // genStoreLongLclVar: Generate code to store a non-enregistered long lclVar
@@ -2620,7 +2620,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genProduceReg(setcc);
 }
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 /*****************************************************************************
  * Unit testing of the emitter: If JitEmitUnitTests is set for this function, generate

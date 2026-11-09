@@ -66,6 +66,9 @@ function(create_standalone_jit)
   elseif(TARGETDETAILS_ARCH STREQUAL "wasm")
     set(JIT_ARCH_SOURCES ${JIT_WASM_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_WASM_HEADERS})
+  elseif(TARGETDETAILS_ARCH STREQUAL "interp")
+    set(JIT_ARCH_SOURCES ${JIT_INTERP_SOURCES})
+    set(JIT_ARCH_HEADERS ${JIT_INTERP_HEADERS})
   else()
     clr_unknown_arch()
   endif()
@@ -87,6 +90,10 @@ function(create_standalone_jit)
   if (TARGETDETAILS_ARCH STREQUAL "wasm")
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
+  endif ()
+
+  if (TARGETDETAILS_ARCH STREQUAL "interp")
+    target_include_directories(${TARGETDETAILS_TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../interpreter/inc)
   endif ()
 endfunction()
 
@@ -320,6 +327,17 @@ set( JIT_WASM_SOURCES
   unwindwasm.cpp
 )
 
+set( JIT_INTERP_SOURCES
+  codegeninterp.cpp
+  emitinterp.cpp
+  interpdump.cpp
+  lowerinterp.cpp
+  regallocinterp.cpp
+  registeropsinterp.cpp
+  targetinterp.cpp
+  unwindinterp.cpp
+)
+
 # We include the headers here for better experience in IDEs.
 set( JIT_HEADERS
   ../inc/corinfo.h
@@ -514,6 +532,18 @@ set( JIT_WASM_HEADERS
     hwintrinsiclistwasm.h
 )
 
+set( JIT_INTERP_HEADERS
+    codegeninterp.h
+    emitfmtsinterp.h
+    emitinterp.h
+    instrsinterp.h
+    interpdump.h
+    regallocinterp.h
+    registerinterp.h
+    registeropsinterp.h
+    targetinterp.h
+)
+
 set ( JITSHARED_SOURCES
     ../jitshared/histogram.cpp
 )
@@ -543,6 +573,8 @@ convert_to_absolute_path(JIT_RISCV64_SOURCES ${JIT_RISCV64_SOURCES})
 convert_to_absolute_path(JIT_RISCV64_HEADERS ${JIT_RISCV64_HEADERS})
 convert_to_absolute_path(JIT_WASM_SOURCES ${JIT_WASM_SOURCES})
 convert_to_absolute_path(JIT_WASM_HEADERS ${JIT_WASM_HEADERS})
+convert_to_absolute_path(JIT_INTERP_SOURCES ${JIT_INTERP_SOURCES})
+convert_to_absolute_path(JIT_INTERP_HEADERS ${JIT_INTERP_HEADERS})
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
   set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
@@ -699,6 +731,8 @@ function(add_jit jitName)
     if (${jitName} MATCHES "clrjit_universal_wasm")
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT wasmjit)
+    elseif (${jitName} MATCHES "clrjit_universal_interp")
+        install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT interpjit)
     else()
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
     endif()
@@ -744,6 +778,11 @@ endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 if (CLR_CMAKE_TARGET_ARCH_WASM)
   create_standalone_jit(TARGET clrjit_universal_wasm_${ARCH_HOST_NAME} OS universal ARCH wasm)
 endif (CLR_CMAKE_TARGET_ARCH_WASM)
+
+# Mirrors the architectures that enable FEATURE_INTERPRETER in clrfeatures.cmake.
+if (NOT CLR_CMAKE_TARGET_ANDROID AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_RISCV64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64))
+  create_standalone_jit(TARGET clrjit_universal_interp_${ARCH_HOST_NAME} OS universal ARCH interp)
+endif()
 
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64)

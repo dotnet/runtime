@@ -691,7 +691,7 @@ protected:
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert(INS_count <= 512);
         instruction _idIns : 9;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
         static_assert(INS_count <= 512);
         instruction _idIns : 9;
 #else
@@ -937,7 +937,7 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
 #define ID_EXTRA_BITFIELD_BITS (-4)
 #else
 #error Unsupported or unset target architecture
@@ -1284,7 +1284,7 @@ protected:
             assert(sz <= 32);
             _idCodeSize = sz;
         }
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
         unsigned idCodeSize() const;
 #endif
 
@@ -2221,7 +2221,7 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
 // Latencies for an "average" physical target.
 //
 // a read,write or modify from stack location, possible def to use latency from L0 cache

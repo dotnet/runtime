@@ -13,6 +13,8 @@
 #include "instrsriscv64.h"
 #elif defined(TARGET_WASM)
 #include "instrswasm.h"
+#elif defined(TARGET_INTERP)
+#include "instrsinterp.h"
 #else
 #error Unsupported or unset target architecture
 #endif // target type

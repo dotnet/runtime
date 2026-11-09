@@ -64,6 +64,10 @@ JMP_SMALL(ne    , eq    , bne    )  // NE
 JMP_SMALL(jmp   , br    , br     )
 JMP_SMALL(jmpif , br_if , br_if  )
 
+#elif defined(TARGET_INTERP)
+
+JMP_SMALL(jmp   , jmp   , br     )
+
 #else
   #error Unsupported or unset target architecture
 #endif // target type
