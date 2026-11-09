@@ -44,10 +44,12 @@ internal static partial class StringPolyfills
         public bool EndsWith(char value) =>
             text.Length > 0 && text[text.Length - 1] == value;
 
+#pragma warning disable CA2249 // These Contains polyfills must use IndexOf.
         public bool Contains(char value) =>
             text.IndexOf(value) >= 0;
 
         public bool Contains(string value, StringComparison comparisonType) =>
             text.IndexOf(value, comparisonType) >= 0;
+#pragma warning restore CA2249
     }
 }
