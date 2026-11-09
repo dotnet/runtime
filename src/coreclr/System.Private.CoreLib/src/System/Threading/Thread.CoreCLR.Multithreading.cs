@@ -12,10 +12,17 @@ namespace System.Threading
     {
         private const long EstimatedMemoryPressure = 20_000;
 
-        private Thread()
+        [UnmanagedCallersOnly]
+        private static unsafe void RegisterMemoryPressure(Exception* pException)
         {
-            Debug.Assert(_DONT_USE_InternalThread != IntPtr.Zero);
-            GC.AddMemoryPressure(EstimatedMemoryPressure);
+            try
+            {
+                GC.AddMemoryPressure(EstimatedMemoryPressure);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
 #if !TARGET_WINDOWS

@@ -8,10 +8,6 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-        private Thread()
-        {
-        }
-
         // Spinning cannot make progress with only one thread.
         internal static int GetOptimalMaxSpinWaitsPerSpinIteration() => 0;
 

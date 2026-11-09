@@ -3214,13 +3214,16 @@ OBJECTREF Thread::GetExposedObject()
             }
         }
 
+#ifdef FEATURE_MULTITHREADING
         if (attempt->GetInternal() != nullptr)
         {
-            // Only the attached wrapper adds memory pressure. The constructor
-            // can trigger a GC, so run it after releasing our ThreadStore lock.
+            // Registering memory pressure can trigger a GC, so do it after
+            // releasing our ThreadStore lock.
             _ASSERTE(!ThreadStore::HoldingThreadStore(pCurThread));
-            CallDefaultConstructor(attempt);
+            UnmanagedCallersOnlyCaller registerMemoryPressure(METHOD__THREAD__REGISTER_MEMORY_PRESSURE);
+            registerMemoryPressure.InvokeThrowing();
         }
+#endif // FEATURE_MULTITHREADING
 
         GCPROTECT_END();
     }
