@@ -12,6 +12,7 @@
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 WCHAR OutBuffer_FormatMessageW_test2[1024];
 
@@ -47,7 +48,7 @@ int test1(int num, ...)
     }
 
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal INSERT Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
+              u16_strlen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
         Fail("ERROR:  The formatted string should have been 'Pal INSERT "
              "Testing' but '%s' was returned.",

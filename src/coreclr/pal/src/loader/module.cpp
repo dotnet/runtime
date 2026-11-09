@@ -188,7 +188,7 @@ LoadLibraryExW(
         goto done;
     }
 
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
+    lpstr = pathstr.OpenStringBuffer((minipal_u16_strlen((const CHAR16_T*)lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
     if (nullptr == lpstr)
     {
         goto done;
@@ -406,7 +406,7 @@ GetModuleFileNameA(
 
     /* Convert module name to Ascii, place it in the supplied buffer */
 
-    converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)wide_name, PAL_wcslen(wide_name) + 1, lpFileName, nSize, 0);
+    converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)wide_name, minipal_u16_strlen((const CHAR16_T*)wide_name) + 1, lpFileName, nSize, 0);
     if (converted == 0)
     {
         TRACE("Buffer too small to copy module's file name.\n");
@@ -473,7 +473,7 @@ GetModuleFileNameW(
 
     /* Copy module name into supplied buffer */
 
-    name_length = PAL_wcslen(wide_name);
+    name_length = minipal_u16_strlen((const CHAR16_T*)wide_name);
     if (name_length >= (INT)nSize)
     {
         TRACE("Buffer too small (%u) to copy module's file name (%u).\n", nSize, name_length);
@@ -559,7 +559,7 @@ PAL_LoadLibraryDirect(
         goto done;
     }
 
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
+    lpstr = pathstr.OpenStringBuffer((minipal_u16_strlen((const CHAR16_T*)lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
     if (nullptr == lpstr)
     {
         goto done;
@@ -1294,8 +1294,8 @@ static bool LOADConvertLibraryPathWideStringToMultibyteString(
     _ASSERTE(multibyteLibraryPathLengthRef != nullptr);
     _ASSERTE(wideLibraryPath != nullptr);
 
-    size_t length = (PAL_wcslen(wideLibraryPath)+1) * MaxWCharToAcpLengthFactor;
-    size_t converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)wideLibraryPath, PAL_wcslen(wideLibraryPath) + 1, multibyteLibraryPath, length, 0);
+    size_t length = (minipal_u16_strlen((const CHAR16_T*)wideLibraryPath)+1) * MaxWCharToAcpLengthFactor;
+    size_t converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)wideLibraryPath, minipal_u16_strlen((const CHAR16_T*)wideLibraryPath) + 1, multibyteLibraryPath, length, 0);
     *multibyteLibraryPathLengthRef = (INT)converted;
 
     if (*multibyteLibraryPathLengthRef == 0)
