@@ -116,7 +116,7 @@ endif()
 if(CLR_CMAKE_HOST_APPLE)
     # The OS libunwind has no remote unwinding support, so link the remote-only build of the bundled one.
     target_sources(createdump_static PRIVATE $<TARGET_OBJECTS:libunwind_dac>)
-    target_compile_definitions(createdump_static PRIVATE UNW_REMOTE_ONLY FEATURE_USE_SYSTEM_LIBUNWIND)
+    target_compile_definitions(createdump_static PRIVATE UNW_REMOTE_ONLY)
 elseif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     find_unwind_libs(UNWIND_LIBS)
     target_compile_definitions(createdump_static PRIVATE FEATURE_USE_SYSTEM_LIBUNWIND)
