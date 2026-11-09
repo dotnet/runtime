@@ -8,6 +8,16 @@
 #define _DIV_INSTRUCTION_DECODER_H_
 
 #include <stdint.h>
+#include <string.h>
+
+// Instruction bytes and memory operands are not necessarily aligned.
+template <typename T>
+inline T ReadUnaligned(const void* address)
+{
+    T value;
+    memcpy(&value, address, sizeof(T));
+    return value;
+}
 
 // Get value of an instruction operand represented by the ModR/M field
 // Parameters:
@@ -95,16 +105,16 @@ uint64_t GetModRMOperandValue(uint8_t rex, uint8_t* ip, TGetRegister getRegister
             {
                 if (base == 5)
                 {
-                    result += *((int32_t*)ip);
+                    result += ReadUnaligned<int32_t>(ip);
                 }
             }
             else if (mod == 1)
             {
-                result += *((int8_t*)ip);
+                result += ReadUnaligned<int8_t>(ip);
             }
             else // mod == 2
             {
-                result += *((int32_t*)ip);
+                result += ReadUnaligned<int32_t>(ip);
             }
 
         }
@@ -117,7 +127,7 @@ uint64_t GetModRMOperandValue(uint8_t rex, uint8_t* ip, TGetRegister getRegister
             // Check for RIP-relative addressing mode.
             if ((mod == 0) && (rm == 5))
             {
-                result = (uint64_t)ip + sizeof(int32_t) + *(int32_t*)ip;
+                result = (uint64_t)ip + sizeof(int32_t) + ReadUnaligned<int32_t>(ip);
             }
             else
             {
@@ -125,11 +135,11 @@ uint64_t GetModRMOperandValue(uint8_t rex, uint8_t* ip, TGetRegister getRegister
 
                 if (mod == 1)
                 {
-                    result += *((int8_t*)ip);
+                    result += ReadUnaligned<int8_t>(ip);
                 }
                 else if (mod == 2)
                 {
-                    result += *((int32_t*)ip);
+                    result += ReadUnaligned<int32_t>(ip);
                 }
             }
         }
@@ -164,19 +174,19 @@ uint64_t GetModRMOperandValue(uint8_t rex, uint8_t* ip, TGetRegister getRegister
     //
     if (is8Bit)
     {
-        result = *((uint8_t*)result);
+        result = ReadUnaligned<uint8_t>((const void*)result);
     }
     else if (rex_w != 0)
     {
-        result = *((uint64_t*)result);
+        result = ReadUnaligned<uint64_t>((const void*)result);
     }
     else if (hasOpSizePrefix)
     {
-        result = *((uint16_t*)result);
+        result = ReadUnaligned<uint16_t>((const void*)result);
     }
     else
     {
-        result = *((uint32_t*)result);
+        result = ReadUnaligned<uint32_t>((const void*)result);
     }
 
     return result;
