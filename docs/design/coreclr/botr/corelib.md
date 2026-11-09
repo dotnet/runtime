@@ -166,9 +166,12 @@ by platform conditionals, must explicitly set `*qcallError = 0` before returning
 
 FCalls allow more flexibility in terms of passing object references around, but with higher code complexity and more opportunities to make mistakes. Additionally, for any FCall of non-trivial length, explicitly poll for whether a garbage collection must occur. Failing to do so will lead to starvation issues if managed code repeatedly calls the FCall method in a tight loop, because FCalls execute while the thread only allows the GC to run in a cooperative manner.
 
+The FCallMethodDesc represents two types of FCalls: fixed-address FCalls, which have a single known target method like QCalls. The other type of FCalls, dynamic FCalls, are used for some cases like string constructors and delegate constructors and are handled specially in [ecall.cpp][ecall] instead of using the entrypoint table.
+
 FCalls require a lot of boilerplate code, too much to describe here. Refer to [fcall.h][fcall] for details.
 
 [fcall]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/fcall.h
+[ecall]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/ecall.cpp
 
 ### <a name="gcholes"></a> GC holes, FCall, and QCall
 
@@ -210,7 +213,7 @@ public partial sealed class String
 
 ### FCall example – unmanaged
 
-Fixed-address FCalls use C-linkage implementations and share the static entrypoint table
+FCalls use C-linkage implementations and share the static entrypoint table
 in [vm\runtimehelpers.cpp][runtime-helpers] with QCalls. See
 ["Registering your QCall or FCall Method"](#register). The native declaration must give the
 function C linkage while retaining the appropriate `FCDECL`/`FCIMPL` calling convention.
@@ -233,7 +236,7 @@ FCIMPLEND
 
 ## <a name="register"></a> Registering your QCall or FCall method
 
-The CLR resolves QCalls and fixed-address FCalls through one static `Entry` table, `s_RuntimeHelpers`, in
+The CLR resolves QCalls and most FCalls through one static `Entry` table, `s_RuntimeHelpers`, in
 [runtimehelpers.cpp][runtime-helpers]. For an FCall, the lookup name is the managed type name,
 an underscore, and the managed method name, preserving case and method-name underscores.
 For example, `String.IsInterned()` resolves `String_IsInterned`. Namespaces are not part of
@@ -242,10 +245,10 @@ conflict with a QCall name. Register the native FCall address using `DllImportEn
 the direct native function address. If the lookup name differs from the native symbol, use an
 explicit `Entry` initializer.
 
-Keep the full native table sorted by entrypoint name in case-sensitive `strcmp` order;
+Keep the full native table sorted by entrypoint name in case-sensitive lexographical order;
 its resolver uses binary search to find entries by name.
 
-QCalls use their declared import entrypoint names and the `DllImportEntry` macro:
+Entries use their declared import entrypoint names and the `DllImportEntry` macro:
 
 ```C++
 DllImportEntry(MyQCall)
@@ -253,18 +256,11 @@ DllImportEntry(MyType_MyMethod)
 DllImportEntry(Math_Ceiling)
 ```
 
-Sharing the resolver does not change FCall calling conventions, GC contracts, or exception
-handling, and does not add a P/Invoke transition.
-
 On browser and WASI, portable call-helper generation builds the same table in
 `callhelpers-pinvoke.cpp` from the bundled CoreLib metadata. Relinking uses the actual post-trim IL,
 so unused static entries need not retain their native implementations. Managed and native sources
 and target configuration must match. Prebuilt runtimes use the configuration-specific full native
 table. Debug consistency checking diagnoses missing FCall registrations.
-
-String's nine signature-qualified constructors and `FastAllocateString` remain in a small,
-separate dynamic mechanism. Their dynamic IDs and managed-constructor binder roots are not
-trimmed. Delegate constructors retain their special runtime path.
 
 ## Naming convention
 

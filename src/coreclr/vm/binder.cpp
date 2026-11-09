@@ -1171,7 +1171,7 @@ void CoreLibBinder::CheckExtended()
             PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
             PInvoke::PopulatePInvokeMethodDesc(pNMD);
 
-            if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
+            if (pNMD->IsQCall() && ResolveRuntimeHelperEntrypoint(pNMD->GetEntrypointName()) == nullptr)
             {
                 LPCUTF8 pszClassName;
                 LPCUTF8 pszNameSpace;

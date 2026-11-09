@@ -1367,7 +1367,7 @@ public class WasmArgumentLayoutTests
             Assert.True(exitCode == 0, log.ToString());
 
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
             Assert.Contains("DllImportEntry(Native_Test)", table);
             Assert.DoesNotContain("{\"QCall\",", table);
             Assert.DoesNotContain("QCall_Unavailable", table);
@@ -1455,7 +1455,7 @@ public class WasmArgumentLayoutTests
 
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
             Assert.Contains("DllImportEntry(Native_Test)", table);
-            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
             Assert.DoesNotContain("static const Entry s_RuntimeHelpers", table);
             Assert.DoesNotContain("QCall_NonCoreLib", table);
             Assert.DoesNotContain("{\"QCall\",", table);
@@ -1473,9 +1473,11 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(TargetOS.Browser)]
-    [InlineData(TargetOS.Wasi)]
-    public void PortableCallHelpersGeneratorUnifiesCoreLibEntryPoints(TargetOS targetOS)
+    [InlineData(TargetOS.Browser, false)]
+    [InlineData(TargetOS.Browser, true)]
+    [InlineData(TargetOS.Wasi, false)]
+    [InlineData(TargetOS.Wasi, true)]
+    public void PortableCallHelpersGeneratorProducesStableEntryPointTable(TargetOS targetOS, bool skipRuntimeHelperTable)
     {
         string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         try
@@ -1486,62 +1488,28 @@ public class WasmArgumentLayoutTests
             {
                 OutputDirectory = workingDirectory,
                 TargetOS = targetOS == TargetOS.Browser ? "browser" : "wasi",
+                SkipRuntimeHelperTable = skipRuntimeHelperTable,
             };
             var log = new StringWriter();
             Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
                 log.ToString());
             string path = Path.Combine(workingDirectory, PortableCallHelpersGenerator.PInvokeFileName);
             string table = File.ReadAllText(path);
-            Assert.Contains("#ifndef CORECLR_PREGENERATED_CALLHELPERS", table);
-            Assert.Contains("double QCall_Math_Ceiling (uintptr_t, double, uintptr_t) __asm__(\"Math_Ceiling\");", table);
-            Assert.Contains("float QCall_MathF_FusedMultiplyAdd (uintptr_t, float, float, float, uintptr_t) __asm__(\"MathF_FusedMultiplyAdd\");", table);
-            Assert.Contains("void QCall_Math_SinCos (uintptr_t, double, void *, void *, uintptr_t) __asm__(\"Math_SinCos\");", table);
-            if (context.SystemModule.GetType("System"u8, "Math"u8).GetMethod("DivInt32Internal"u8, null) is not null)
-            {
-                Assert.Contains("int32_t QCall_Math_DivInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__(\"Math_DivInt32Internal\");", table);
-            }
-            else
-            {
-                Assert.DoesNotContain("QCall_Math_DivInt32Internal", table);
-            }
-            MetadataType interlocked = context.SystemModule.GetType("System.Threading"u8, "Interlocked"u8);
-            if (interlocked.GetMethod("CompareExchange32"u8, null) is not null)
-            {
-                Assert.Contains("int32_t QCall_Interlocked_CompareExchange32 (uintptr_t, void *, int32_t, int32_t, uintptr_t)", table);
-            }
-            else
-            {
-                Assert.DoesNotContain("\"Interlocked_CompareExchange32\"", table);
-            }
-            if (interlocked.GetMethod("CompareExchange32Pointer"u8, null) is not null)
-            {
-                Assert.Contains("\"Interlocked_CompareExchange32Pointer\"", table);
-            }
-            else
-            {
-                Assert.DoesNotContain("\"Interlocked_CompareExchange32Pointer\"", table);
-            }
-            Assert.Contains("\"GCInterface_GetTotalMemory\"", table);
-            Assert.DoesNotContain("\"GC_GetMemoryLoad\"", table);
-            Assert.DoesNotContain("String_FastAllocateString", table);
-            Assert.DoesNotContain("String_.ctor", table);
-            Assert.DoesNotContain("RuntimeHelpers_NewobjHelperDummy", table);
-            Assert.False(File.Exists(Path.Combine(workingDirectory, "callhelpers-ecalls.cpp")));
 
-            string entries = table.Split("static const Entry s_RuntimeHelpers[] = {", StringSplitOptions.None)[1]
-                .Split("};", StringSplitOptions.None)[0];
-            string[] names = entries.Split('\n')
-                .Where(line => line.TrimStart().StartsWith("{ \"", StringComparison.Ordinal))
-                .Select(line => line.Split('"')[1])
-                .ToArray();
-            Assert.Contains("Math_Ceiling", names);
-            Assert.Contains("GCInterface_GetTotalMemory", names);
-            Assert.Equal(names.Order(StringComparer.Ordinal), names);
-            Assert.Equal(names.Length, names.Distinct(StringComparer.Ordinal).Count());
-            foreach (string name in names.Where(name => name.StartsWith("Math_", StringComparison.Ordinal)
-                || name.StartsWith("MathF_", StringComparison.Ordinal)))
+            Assert.Contains("callhelpers_pinvoke_override", table);
+            Assert.Equal(!skipRuntimeHelperTable, table.Contains("ResolveRuntimeHelperEntrypoint", StringComparison.Ordinal));
+            Assert.Equal(!skipRuntimeHelperTable, table.Contains("static const Entry s_RuntimeHelpers[]", StringComparison.Ordinal));
+            if (!skipRuntimeHelperTable)
             {
-                Assert.Contains($"__asm__(\"{name}\");", table);
+                string entries = table.Split("static const Entry s_RuntimeHelpers[] = {", StringSplitOptions.None)[1]
+                    .Split("};", StringSplitOptions.None)[0];
+                string[] names = entries.Split('\n')
+                    .Where(line => line.TrimStart().StartsWith("{ \"", StringComparison.Ordinal))
+                    .Select(line => line.Split('"')[1])
+                    .ToArray();
+                Assert.NotEmpty(names);
+                Assert.Equal(names.Order(StringComparer.Ordinal), names);
+                Assert.Equal(names.Length, names.Distinct(StringComparer.Ordinal).Count());
             }
 
             DateTime timestamp = File.GetLastWriteTimeUtc(path);

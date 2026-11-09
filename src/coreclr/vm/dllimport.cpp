@@ -5922,7 +5922,7 @@ namespace
 
         if (pMD->IsQCall())
         {
-            void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
+            void* pvTarget = (void*)ResolveRuntimeHelperEntrypoint(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
                 ("%s::%s is not registered in the QCall entrypoint table",

@@ -223,6 +223,13 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
     *pHasManagedImpl = false;
 
     MethodTable * pMT = pMD->GetMethodTable();
+    FCallMethodDesc* pFCallMD = static_cast<FCallMethodDesc*>(pMD);
+    if (pMT != g_pStringClass)
+    {
+        PCODE cachedImpl = pFCallMD->GetCachedFCallImpl();
+        if (cachedImpl != (PCODE)NULL)
+            return cachedImpl;
+    }
 
     // Delegate constructors are FCalls whose entrypoint points to the delegate target.
     // Redirect them to the managed helper Delegate.DelegateConstruct.
@@ -258,7 +265,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
     }
 #endif // FEATURE_COMINTEROP
 
-    if (!pMD->GetModule()->IsSystem())
+    if (!pMT->GetModule()->IsSystem())
     {
         if (throwForInvalidFCall)
             COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);
@@ -279,7 +286,9 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
         StackSString entryPoint(SString::Utf8, typeName);
         entryPoint.AppendUTF8("_");
         entryPoint.AppendUTF8(pMD->GetName());
-        pImplementation = (PCODE)QCallResolveDllImport(entryPoint.GetUTF8());
+        pImplementation = (PCODE)ResolveRuntimeHelperEntrypoint(entryPoint.GetUTF8());
+        if (pMT != g_pStringClass)
+            pFCallMD->SetCachedFCallImpl(pImplementation);
     }
 
     if (pImplementation == (PCODE)NULL && throwForInvalidFCall)

@@ -36,33 +36,13 @@ Each run emits three files into the output directory:
 
 ## The shared QCall/FCall table
 
-`callhelpers-pinvoke.cpp` contains the QCall resolver and one static entrypoint table for both
-QCalls and fixed-address FCalls, alongside the ordinary P/Invoke module tables. Only the scanned
-`System.Private.CoreLib` contributes QCalls and FCalls. Static FCall names are derived from the
-managed type and method (`Type_Method`); their declarations preserve the FCall ABI, including
-the WASM caller-stack pointer, instance receiver where applicable, and portable-entrypoint context.
-The generator sorts entries ordinally, deduplicates compatible entries, and rejects conflicting
-lookup names.
-Math helpers use the same `Math_Method` or `MathF_Method` C symbols in CoreCLR and NativeAOT.
-Browser `memmove` and `memset` use the bulk-memory wrappers in `wasm/helpers.cpp`;
-WASI uses the libc entrypoints directly.
+`callhelpers-pinvoke.cpp` contains an entrypoint table for all P/Invokes in the application, as well as all [QCalls and FCalls in System.Private.CoreLib](../../../../docs/design/coreclr/botr/corelib.md#Calling-from-managed-to-native-code). A few specialized FCalls have separate internal runtime implementations that are not included in this table. The QCalls and FCalls are discovered by scanning the members of System.Private.CoreLib to find the corresponding methods.
 
-Prebuilt runtimes use the full native `s_RuntimeHelpers` table in `runtimehelpers.cpp`, including
-configuration-specific entries. The checked-in P/Invoke helpers define
-`CORECLR_PREGENERATED_CALLHELPERS` to exclude their metadata-derived table and resolver.
-The native table belongs to the replaceable `libcoreclr_gen_static.a`, so app relinking
-replaces it with the generated table rather than retaining both.
 
-String constructors and `String.FastAllocateString` use the runtime's separate non-trimmable
-dynamic mechanism. Delegate constructors and the signature-only
-`RuntimeHelpers.NewobjHelperDummy` are also excluded from static entrypoint generation, without
-excluding their interpreter signatures.
-
-No separate manifest, SDK header, fourth generated source, or build identity is needed. The
-managed closure and native runtime must come from matching sources and target configuration.
-App relinking scans the actual bundled post-trim IL; browser and WASI targets remap
-ReadyToRun/webcil outputs back to that IL before filtering and scanning assemblies. Do not
-replace a trimmed CoreLib with the runtime-pack copy when generating an app-specific table.
+The checked-in snapshots omit the QCall/FCall table and its resolver by passing
+`--skip-runtime-helper-table`. Prebuilt runtimes use the configuration-specific table in
+`runtimehelpers.cpp`. Application relinks generate their own table
+and resolver without this option.
 
 ## The P/Invoke module list
 

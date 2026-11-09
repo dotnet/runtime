@@ -20,6 +20,7 @@ namespace ILCompiler.PortableCallHelpers
         public string OutputDirectory { get; init; }
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
         public string TargetOS { get; init; }
+        public bool SkipRuntimeHelperTable { get; init; }
     }
 
     /// <summary>
@@ -123,7 +124,7 @@ namespace ILCompiler.PortableCallHelpers
                 pinvokes.Add(entry);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, PInvokeFileName), log,
-                w => generator.EmitPInvokeTable(w, context.Target, context.SystemModule, options.PInvokeModules, pinvokes));
+                w => generator.EmitPInvokeTable(w, context.Target, context.SystemModule, options.PInvokeModules, pinvokes, options.SkipRuntimeHelperTable));
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, ReversePInvokeFileName), log,
                 w => generator.EmitNativeToInterp(w, callbacks));

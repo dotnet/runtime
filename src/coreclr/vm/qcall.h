@@ -380,6 +380,6 @@ public:
 
 typedef void* EnregisteredTypeHandle;
 
-extern const void* QCallResolveDllImport(const char* name);
+extern const void* ResolveRuntimeHelperEntrypoint(const char* name);
 
 #endif //__QCall_h__

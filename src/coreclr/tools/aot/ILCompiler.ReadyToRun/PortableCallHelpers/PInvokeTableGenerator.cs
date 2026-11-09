@@ -21,7 +21,7 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeTableGenerator(InteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
+        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes, bool skipRuntimeHelperTable = false)
         {
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
@@ -210,9 +210,8 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
-            w.WriteLine("#ifndef CORECLR_PREGENERATED_CALLHELPERS");
-            EmitQCallTable(w, target, qcallImports);
-            w.WriteLine("#endif // !CORECLR_PREGENERATED_CALLHELPERS");
+            if (!skipRuntimeHelperTable)
+                EmitQCallTable(w, target, qcallImports);
 
             static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
@@ -259,7 +258,7 @@ namespace ILCompiler.PortableCallHelpers
             {
                 w.WriteLine(
                     """
-                    const void* QCallResolveDllImport(const char* name)
+                    const void* ResolveRuntimeHelperEntrypoint(const char* name)
                     {
                         return nullptr;
                     }
@@ -302,7 +301,7 @@ namespace ILCompiler.PortableCallHelpers
                 """
                 };
 
-                const void* QCallResolveDllImport(const char* name)
+                const void* ResolveRuntimeHelperEntrypoint(const char* name)
                 {
                     return minipal_resolve_dllimport(s_RuntimeHelpers, sizeof(s_RuntimeHelpers) / sizeof(s_RuntimeHelpers[0]), name);
                 }

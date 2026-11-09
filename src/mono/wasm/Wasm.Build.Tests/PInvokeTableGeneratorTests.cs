@@ -43,7 +43,7 @@ namespace Wasm.Build.Tests
             Assert.Equal(useQCall, symbols.Contains("GCInterface_GetTotalMemory", StringComparison.Ordinal));
 
             string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
             Assert.Equal(useQCall, table.Contains("{ \"GCInterface_GetTotalMemory\",", StringComparison.Ordinal));
             Assert.DoesNotContain("{\"QCall\",", table);
 
@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
             string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
             string symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
             string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
             Assert.DoesNotContain("{\"QCall\",", table);
             foreach (string entryPoint in new[] { "GCInterface_GetTotalMemory", "Math_Asinh" })
             {

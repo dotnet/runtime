@@ -870,7 +870,7 @@ public:
     }
 };
 
-const void* QCallResolveDllImport(const char* name)
+const void* ResolveRuntimeHelperEntrypoint(const char* name)
 {
     RuntimeHelperSearch search(s_RuntimeHelpers, ARRAY_SIZE(s_RuntimeHelpers));
     const Entry key = { name, nullptr };
