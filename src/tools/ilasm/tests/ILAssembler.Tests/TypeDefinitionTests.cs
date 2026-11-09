@@ -40,6 +40,92 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
 
+        [Theory]
+        [InlineData(".assembly netstandard { }")]
+        [InlineData(".mscorlib\n.assembly netstandard { }")]
+        [InlineData(".assembly mscorlib { }")]
+        [InlineData(".assembly System.Private.CoreLib { }")]
+        [InlineData(".assembly System.Runtime { }")]
+        [InlineData(".assembly NETSTANDARD { }")]
+        [InlineData(".assembly extern netstandard { }\n.assembly netstandard { }", 1)]
+        [InlineData(".mscorlib\n.assembly test { }")]
+        public void SystemObjectInCoreLibrary_HasNoBaseType(string assembly, int assemblyReferenceCount = 0)
+        {
+            string source = $$"""
+                {{assembly}}
+                .class public System.Object { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+
+            Assert.Equal("System", reader.GetString(type.Namespace));
+            Assert.Equal("Object", reader.GetString(type.Name));
+            Assert.Equal(TypeAttributes.Public, type.Attributes);
+            Assert.True(type.BaseType.IsNil, $"Unexpected base token: 0x{MetadataTokens.GetToken(type.BaseType):X8}");
+            Assert.Equal(assemblyReferenceCount, reader.AssemblyReferences.Count);
+        }
+
+        [Theory]
+        [InlineData("extends System.Object", "")]
+        [InlineData("extends Other", "")]
+        [InlineData("", ".class public System.Object extends Other { }")]
+        [InlineData("", ".class public System.Object { }")]
+        public void SystemObjectInCoreLibrary_ExplicitOrRepeatedBaseIsIgnored(string baseClause, string redeclaration)
+        {
+            string source = $$"""
+                .mscorlib
+                .assembly netstandard { }
+                .class public System.Object {{baseClause}} { }
+                {{redeclaration}}
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+
+            Assert.True(type.BaseType.IsNil);
+        }
+
+        [Theory]
+        [InlineData(".assembly test { }", ".class public System.Object { }", "", false)]
+        [InlineData(".assembly System.Runtime.Other { }", ".class public System.Object { }", "", false)]
+        [InlineData(".assembly netstandard { }", ".class public Other.Object { }", "", true)]
+        [InlineData(".assembly netstandard { }", ".class public System.Other { }", "", true)]
+        [InlineData(".assembly netstandard { }", ".class public System.object { }", "", true)]
+        [InlineData(".assembly netstandard { }", ".class public system.Object { }", "", true)]
+        [InlineData(".mscorlib\n.assembly test { }", ".class public Outer { .class nested public System.Object { }", "}", true)]
+        public void OtherClasses_KeepImplicitObjectBase(string assembly, string declaration, string closingDeclaration, bool localBase)
+        {
+            string source = $$"""
+                {{assembly}}
+                {{declaration}}
+                {{closingDeclaration}}
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(
+                declaration.Contains("nested") ? 4 : 2));
+            if (localBase)
+            {
+                Assert.Equal(HandleKind.TypeDefinition, type.BaseType.Kind);
+                TypeDefinition baseDefinition = reader.GetTypeDefinition((TypeDefinitionHandle)type.BaseType);
+                Assert.Equal("System", reader.GetString(baseDefinition.Namespace));
+                Assert.Equal("Object", reader.GetString(baseDefinition.Name));
+                Assert.True(baseDefinition.GetDeclaringType().IsNil);
+                Assert.Empty(reader.AssemblyReferences);
+                return;
+            }
+            Assert.Equal("Object", GetBaseTypeName(reader, type));
+            TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)type.BaseType);
+            Assert.Equal("System", reader.GetString(baseType.Namespace));
+            Assert.Equal(HandleKind.AssemblyReference, baseType.ResolutionScope.Kind);
+            AssemblyReference assemblyReference = reader.GetAssemblyReference((AssemblyReferenceHandle)baseType.ResolutionScope);
+            Assert.Equal("mscorlib", reader.GetString(assemblyReference.Name));
+        }
+
         [Fact]
         public void TypeNotFound_CreatesForwardReference()
         {
@@ -182,7 +268,18 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.Equal("System", reader.GetString(type.Namespace));
             Assert.Equal("Enum", reader.GetString(type.Name));
             Assert.Equal(TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit, type.Attributes);
-            Assert.Equal("ValueType", GetBaseTypeName(reader, type));
+            if (baseType.StartsWith("[", StringComparison.Ordinal))
+            {
+                Assert.Equal("ValueType", GetBaseTypeName(reader, type));
+            }
+            else
+            {
+                Assert.Equal(HandleKind.TypeDefinition, type.BaseType.Kind);
+                TypeDefinition baseDefinition = reader.GetTypeDefinition((TypeDefinitionHandle)type.BaseType);
+                Assert.Equal("System", reader.GetString(baseDefinition.Namespace));
+                Assert.Equal("ValueType", reader.GetString(baseDefinition.Name));
+                Assert.Empty(reader.AssemblyReferences);
+            }
         }
 
         [Theory]
@@ -694,22 +791,30 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
 
         [Theory]
-        [InlineData("valuetype [mscorlib]System.Boolean", SignatureTypeCode.Boolean)]
-        [InlineData("valuetype [mscorlib]System.Int32", SignatureTypeCode.Int32)]
-        [InlineData("valuetype [mscorlib]System.Int64", SignatureTypeCode.Int64)]
-        [InlineData("valuetype [mscorlib]System.Single", SignatureTypeCode.Single)]
-        [InlineData("valuetype [mscorlib]System.Double", SignatureTypeCode.Double)]
-        [InlineData("valuetype [mscorlib]System.Char", SignatureTypeCode.Char)]
-        [InlineData("valuetype [mscorlib]System.Byte", SignatureTypeCode.Byte)]
-        [InlineData("valuetype [mscorlib]System.IntPtr", SignatureTypeCode.IntPtr)]
-        public void WellKnownValueType_UsesPrimitiveTypeCode(string ilType, SignatureTypeCode expectedCode)
+        [InlineData("Boolean")]
+        [InlineData("Byte")]
+        [InlineData("Char")]
+        [InlineData("Double")]
+        [InlineData("Int16")]
+        [InlineData("Int32")]
+        [InlineData("Int64")]
+        [InlineData("IntPtr")]
+        [InlineData("SByte")]
+        [InlineData("Single")]
+        [InlineData("TypedReference")]
+        [InlineData("UInt16")]
+        [InlineData("UInt32")]
+        [InlineData("UInt64")]
+        [InlineData("UIntPtr")]
+        [InlineData("Void")]
+        public void WellKnownValueType_PreservesExplicitTypeReference(string typeName)
         {
             string source = $$"""
                 .assembly extern mscorlib { }
                 .assembly test { }
                 .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
                 {
-                    .field public static {{ilType}} myField
+                    .field public static valuetype [mscorlib]System.{{typeName}} myField
                 }
                 """;
 
@@ -718,9 +823,14 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
             var sigReader = reader.GetBlobReader(field.Signature);
-            sigReader.ReadByte(); // field signature header
-            byte typeCode = sigReader.ReadByte();
-            Assert.Equal((byte)expectedCode, typeCode);
+            Assert.Equal((byte)SignatureKind.Field, sigReader.ReadByte());
+            Assert.Equal((byte)SignatureTypeKind.ValueType, sigReader.ReadByte());
+            var typeHandle = (TypeReferenceHandle)sigReader.ReadTypeHandle();
+            TypeReference type = reader.GetTypeReference(typeHandle);
+            Assert.Equal("System", reader.GetString(type.Namespace));
+            Assert.Equal(typeName, reader.GetString(type.Name));
+            Assert.Equal("mscorlib", reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)type.ResolutionScope).Name));
+            Assert.Equal(0, sigReader.RemainingBytes);
         }
 
 

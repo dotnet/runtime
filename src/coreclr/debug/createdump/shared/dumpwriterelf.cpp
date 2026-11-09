@@ -107,17 +107,6 @@ DumpWriter::WriteThread(const ThreadSnapshot& thread)
         return false;
     }
 
-#if defined(__i386__)
-    nhdr.n_namesz = 6;
-    nhdr.n_descsz = sizeof(user_fpxregs_struct);
-    nhdr.n_type = NT_PRXFPREG;
-    if (!WriteData(&nhdr, sizeof(nhdr)) ||
-        !WriteData("LINUX\0\0\0", 8) ||
-        !WriteData(thread.FPXRegisters(), sizeof(user_fpxregs_struct))) {
-        return false;
-    }
-#endif
-
 #if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     nhdr.n_namesz = 6;
     nhdr.n_descsz = sizeof(user_vfpregs_struct);

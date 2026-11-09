@@ -364,7 +364,7 @@ MachOReader::EnumerateModules(mach_vm_address_t dyldInfoAddress)
     }
     void* imageInfosAddress = (void*)dyldInfo.infoArray;
     size_t imageInfosSize = dyldInfo.infoArrayCount * sizeof(dyld_image_info);
-    NewArrayHolder<dyld_image_info> imageInfos = new (std::nothrow) dyld_image_info[dyldInfo.infoArrayCount];
+    NewArrayHolder<dyld_image_info> imageInfos(new (std::nothrow) dyld_image_info[dyldInfo.infoArrayCount]);
     if (imageInfos == nullptr)
     {
         Trace("ERROR: Failed to allocate %zu byte image infos\n", imageInfosSize);

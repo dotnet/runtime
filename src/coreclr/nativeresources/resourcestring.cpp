@@ -22,7 +22,7 @@ static int CompareNativeStringResources(const void *a, const void *b)
 
 int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResourceTable, unsigned int iResourceID, WCHAR* szBuffer, int iMax, int *pcwchUsed)
 {
-    int len = 0;
+    size_t len = 0;
     if (szBuffer && iMax)
     {
         // Search the sorted set of resources for the ID we're interested in.
@@ -36,16 +36,15 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
 
         if (resourceEntry != NULL)
         {
-            len = MultiByteToWideChar(CP_UTF8, 0, resourceEntry->resourceString, -1, szBuffer, iMax);
+            const char* resourceString = resourceEntry->resourceString;
+            len = minipal_convert_utf8_to_utf16(resourceString, strlen(resourceString) + 1, (CHAR16_T*)szBuffer, iMax, 0);
             if (len == 0)
             {
-                int hr = HRESULT_FROM_GetLastError();
-
                 // Tell the caller if the buffer isn't big enough
-                if (hr == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) && pcwchUsed)
+                if (pcwchUsed)
                     *pcwchUsed = iMax;
 
-                return hr;
+                return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
             }
         }
         else
@@ -64,7 +63,7 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
 
             if (nxt != NULL)
             {
-                len = (int)(nxt - szBuffer);
+                len = (size_t)(nxt - szBuffer);
             }
             else
             {
@@ -79,7 +78,7 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
 
     if (pcwchUsed)
     {
-        *pcwchUsed = len;
+        *pcwchUsed = (int)len;
     }
 
     return S_OK;

@@ -41,6 +41,17 @@ provider_unset_config (
 void
 provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data);
 
+// _Requires_lock_held (ep)
+const EventPipeProviderCallbackData *
+provider_prepare_capture_state_callback (
+	EventPipeProvider *provider,
+	EventPipeProviderCallbackData *provider_callback_data,
+	EventPipeSessionID session_id);
+
+// _Requires_lock_not_held (ep)
+void
+provider_invoke_capture_state_callback (EventPipeProviderCallbackData *provider_callback_data);
+
 // Create and register provider.
 // _Requires_lock_held (ep)
 EventPipeProvider *

@@ -224,7 +224,7 @@ private :
 #define ACQUIRE_STACKING_ALLOCATOR(stackingAllocatorName)  \
   StackingAllocator *stackingAllocatorName = StackingAllocatorHolder::GetCurrentThreadStackingAllocator(); \
   bool allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = false; \
-  NewArrayHolder<char> heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR; \
+  AStringHolder heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR; \
 \
   if (stackingAllocatorName == NULL) \
   { \

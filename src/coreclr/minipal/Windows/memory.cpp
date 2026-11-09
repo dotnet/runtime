@@ -8,10 +8,10 @@
 #include <malloc.h>
 #include "minipal.h"
 
-VMToOSInterface::MemoryMapHandle VMToOSInterface::OpenFile(const char16_t* path)
+VMToOSInterface::MemoryMapHandle VMToOSInterface::OpenFile(const char16_t* path, bool executable)
 {
     return CreateFileW(reinterpret_cast<LPCWSTR>(path),
-        GENERIC_READ | GENERIC_EXECUTE,
+        executable ? (GENERIC_READ | GENERIC_EXECUTE) : GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_DELETE,
         nullptr,
         OPEN_EXISTING,

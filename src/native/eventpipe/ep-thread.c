@@ -37,6 +37,7 @@ ep_thread_alloc (void)
 
 	instance->session_use_in_progress = UINT32_MAX;
 	instance->unregistered = 0;
+	instance->capturing_provider_state = false;
 
 	instance->buffer_wait_enqueued = 0;
 	instance->buffer_wait_queue_next_thread = NULL;

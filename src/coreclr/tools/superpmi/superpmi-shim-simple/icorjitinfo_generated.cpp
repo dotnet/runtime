@@ -1276,6 +1276,12 @@ void interceptor_ICJI::recordWasmManagedCallSig(
     original_ICorJitInfo->recordWasmManagedCallSig(callSig);
 }
 
+void interceptor_ICJI::recordWasmVirtualFunctionPointerLookup(
+          CORINFO_METHOD_HANDLE method)
+{
+    original_ICorJitInfo->recordWasmVirtualFunctionPointerLookup(method);
+}
+
 void interceptor_ICJI::recordRelocation(
           void* location,
           void* locationRW,
