@@ -3942,7 +3942,9 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             PerBlockData& data = blockData[block->bbNum];
             data.requiredVip   = virtualIP;
             data.funcIndex     = vipFuncIdx;
-            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            // Throw helpers inherit the throwing site's Virtual IP.
+            data.isRequired =
+                !block->HasFlag(BBF_THROW_HELPER) && (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY));
             if (vipFirstInFunc)
             {
                 data.isFuncEntry = true;
