@@ -125,17 +125,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!result && (factory.TypeSystemContext.IsGenericArrayInterfaceType(owningType)
-                || factory.TypeSystemContext.IsGenericArrayEnumeratorInterfaceType(owningType)))
-            {
-                // We need to also do this for generic interfaces on arrays because they have a weird casting rule
-                // that doesn't require the implemented interface to be variant to consider it castable.
-                // For value types, we only need this when the array is castable by size (int[] and ICollection<uint>),
-                // or it's a reference type (Derived[] and ICollection<Base>).
-                TypeDesc elementType = owningType.Instantiation[0];
-                result =
-                    CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
-                    (elementType.IsDefType && !elementType.IsValueType);
             if (!result)
                 result = factory.TypeSystemContext.IsArrayVariantCastable(owningType);
 
