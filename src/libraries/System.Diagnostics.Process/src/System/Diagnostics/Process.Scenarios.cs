@@ -48,9 +48,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static int StartAndForget(ProcessStartInfo startInfo)
         {
-            ArgumentNullException.ThrowIfNull(startInfo);
-
-            ThrowIfUseShellExecute(startInfo, nameof(StartAndForget));
+            ValidateNonCapturingStartInfo(startInfo, nameof(StartAndForget));
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo, fallbackToNull: true);
             return processHandle.ProcessId;
@@ -103,9 +101,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static ProcessExitStatus Run(ProcessStartInfo startInfo, TimeSpan? timeout = default)
         {
-            ArgumentNullException.ThrowIfNull(startInfo);
-
-            ThrowIfUseShellExecute(startInfo, nameof(Run));
+            ValidateNonCapturingStartInfo(startInfo, nameof(Run));
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
 
@@ -124,6 +120,12 @@ namespace System.Diagnostics
         /// <see langword="true"/> to kill the process and its descendants on timeout; otherwise,
         /// <see langword="false"/> to kill only the process.
         /// </param>
+        /// <remarks>
+        /// On Windows, when tree termination may be required, the process is started in a new job.
+        /// Descendants that explicitly break away from the job are not terminated.
+        /// Job creation or assignment failures are reported as exceptions.
+        /// Successful completion does not terminate surviving descendants.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -134,18 +136,9 @@ namespace System.Diagnostics
                 return Run(startInfo, timeout);
             }
 
-            ArgumentNullException.ThrowIfNull(startInfo);
+            ValidateNonCapturingStartInfo(startInfo, nameof(Run));
 
-            ThrowIfUseShellExecute(startInfo, nameof(Run));
-            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
-            if (anyRedirection)
-            {
-                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
-            }
-
-            using Process process = Start(startInfo)!;
-
-            return process.WaitForExitOrKillOnTimeout(timeout, static process => process.TryKillEntireTree());
+            return RunWithEntireProcessTree(startInfo, timeout);
         }
 
         /// <summary>
@@ -202,9 +195,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static async Task<ProcessExitStatus> RunAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(startInfo);
-
-            ThrowIfUseShellExecute(startInfo, nameof(RunAsync));
+            ValidateNonCapturingStartInfo(startInfo, nameof(RunAsync));
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
 
@@ -218,6 +209,7 @@ namespace System.Diagnostics
         /// <see langword="false"/> to kill only the process.
         /// </param>
         /// <param name="cancellationToken"><inheritdoc cref="RunAsync(ProcessStartInfo, CancellationToken)" path="/param[@name='cancellationToken']/node()"/></param>
+        /// <remarks><inheritdoc cref="Run(ProcessStartInfo, TimeSpan, bool)" path="/remarks/node()"/></remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -228,17 +220,9 @@ namespace System.Diagnostics
                 return await RunAsync(startInfo, cancellationToken).ConfigureAwait(false);
             }
 
-            ArgumentNullException.ThrowIfNull(startInfo);
+            ValidateNonCapturingStartInfo(startInfo, nameof(RunAsync));
 
-            ThrowIfUseShellExecute(startInfo, nameof(RunAsync));
-            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
-            if (anyRedirection)
-            {
-                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
-            }
-
-            using Process process = Start(startInfo)!;
-            return await process.WaitForExitOrKillOnCancellationAsync(cancellationToken, static process => process.TryKillEntireTree()).ConfigureAwait(false);
+            return await RunWithEntireProcessTreeAsync(startInfo, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -297,7 +281,14 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static ProcessTextOutput RunAndCaptureText(ProcessStartInfo startInfo, TimeSpan? timeout = default)
-            => RunAndCaptureTextCore(startInfo, timeout, killOnFailure: null);
+        {
+            ValidateCaptureStartInfo(startInfo, nameof(RunAndCaptureText));
+
+            long startTimestamp = Stopwatch.GetTimestamp();
+            using Process process = Start(startInfo)!;
+
+            return RunAndCaptureTextCore(process, timeout, startTimestamp, killOnFailure: null);
+        }
 
         /// <inheritdoc cref="RunAndCaptureText(ProcessStartInfo, TimeSpan?)"/>
         /// <param name="startInfo"><inheritdoc cref="RunAndCaptureText(ProcessStartInfo, TimeSpan?)" path="/param[@name='startInfo']/node()"/></param>
@@ -309,28 +300,29 @@ namespace System.Diagnostics
         /// <see langword="true"/> to kill the process and its descendants on timeout or output-capture failure; otherwise,
         /// <see langword="false"/> to kill only the process.
         /// </param>
+        /// <remarks><inheritdoc cref="Run(ProcessStartInfo, TimeSpan, bool)" path="/remarks/node()"/></remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static ProcessTextOutput RunAndCaptureText(ProcessStartInfo startInfo, TimeSpan timeout, bool entireProcessTree)
-            => RunAndCaptureTextCore(startInfo, timeout == Timeout.InfiniteTimeSpan ? null : timeout,
-                entireProcessTree ? static process => process.TryKillEntireTree() : null);
+        {
+            TimeSpan? captureTimeout = timeout == Timeout.InfiniteTimeSpan ? null : timeout;
+            if (!entireProcessTree)
+            {
+                return RunAndCaptureText(startInfo, captureTimeout);
+            }
 
-        // A cleanup callback keeps tree termination out of the default overloads' dependency graph.
+            ValidateCaptureStartInfo(startInfo, nameof(RunAndCaptureText));
+
+            long startTimestamp = Stopwatch.GetTimestamp();
+            return RunAndCaptureTextWithEntireProcessTree(startInfo, captureTimeout, startTimestamp);
+        }
+
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        private static ProcessTextOutput RunAndCaptureTextCore(ProcessStartInfo startInfo, TimeSpan? timeout, Action<Process>? killOnFailure)
+        private static ProcessTextOutput RunAndCaptureTextCore(Process process, TimeSpan? timeout, long startTimestamp, Action? killOnFailure)
         {
-            ArgumentNullException.ThrowIfNull(startInfo);
-
-            ThrowIfUseShellExecute(startInfo, nameof(RunAndCaptureText));
-            ThrowIfNotRedirected(startInfo, nameof(RunAndCaptureText));
-
-            long startTimestamp = Stopwatch.GetTimestamp();
-
-            using Process process = Start(startInfo)!;
-
             string standardOutput, standardError;
             try
             {
@@ -343,7 +335,7 @@ namespace System.Diagnostics
                 {
                     if (killOnFailure is not null)
                     {
-                        killOnFailure(process);
+                        killOnFailure();
                     }
                     else
                     {
@@ -360,9 +352,7 @@ namespace System.Diagnostics
                 TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
                 TimeSpan remaining = timeout.Value - elapsed;
                 remaining = remaining >= TimeSpan.Zero ? remaining : TimeSpan.Zero;
-                exitStatus = killOnFailure is not null
-                    ? process.WaitForExitOrKillOnTimeout(remaining, killOnFailure)
-                    : process.SafeHandle.WaitForExitOrKillOnTimeout(remaining);
+                exitStatus = process.SafeHandle.WaitForExitOrKillOnTimeout(remaining, killOnFailure);
             }
             else
             {
@@ -414,8 +404,14 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
-            => RunAndCaptureTextAsyncCore(startInfo, cancellationToken, killOnFailure: null);
+        public static async Task<ProcessTextOutput> RunAndCaptureTextAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
+        {
+            ValidateCaptureStartInfo(startInfo, nameof(RunAndCaptureTextAsync));
+
+            using Process process = Start(startInfo)!;
+
+            return await RunAndCaptureTextAsyncCore(process, cancellationToken, killOnFailure: null).ConfigureAwait(false);
+        }
 
         /// <inheritdoc cref="RunAndCaptureTextAsync(ProcessStartInfo, CancellationToken)"/>
         /// <param name="startInfo"><inheritdoc cref="RunAndCaptureTextAsync(ProcessStartInfo, CancellationToken)" path="/param[@name='startInfo']/node()"/></param>
@@ -424,25 +420,27 @@ namespace System.Diagnostics
         /// <see langword="false"/> to kill only the process.
         /// </param>
         /// <param name="cancellationToken"><inheritdoc cref="RunAndCaptureTextAsync(ProcessStartInfo, CancellationToken)" path="/param[@name='cancellationToken']/node()"/></param>
+        /// <remarks><inheritdoc cref="Run(ProcessStartInfo, TimeSpan, bool)" path="/remarks/node()"/></remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(ProcessStartInfo startInfo, bool entireProcessTree, CancellationToken cancellationToken)
-            => RunAndCaptureTextAsyncCore(startInfo, cancellationToken,
-                entireProcessTree ? static process => process.TryKillEntireTree() : null);
-
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        private static async Task<ProcessTextOutput> RunAndCaptureTextAsyncCore(ProcessStartInfo startInfo, CancellationToken cancellationToken, Action<Process>? killOnFailure)
+        public static async Task<ProcessTextOutput> RunAndCaptureTextAsync(ProcessStartInfo startInfo, bool entireProcessTree, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(startInfo);
+            if (!entireProcessTree)
+            {
+                return await RunAndCaptureTextAsync(startInfo, cancellationToken).ConfigureAwait(false);
+            }
 
-            ThrowIfUseShellExecute(startInfo, nameof(RunAndCaptureTextAsync));
-            ThrowIfNotRedirected(startInfo, nameof(RunAndCaptureTextAsync));
+            ValidateCaptureStartInfo(startInfo, nameof(RunAndCaptureTextAsync));
 
-            using Process process = Start(startInfo)!;
+            return await RunAndCaptureTextWithEntireProcessTreeAsync(startInfo, cancellationToken).ConfigureAwait(false);
+        }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private static async Task<ProcessTextOutput> RunAndCaptureTextAsyncCore(Process process, CancellationToken cancellationToken, Action? killOnFailure)
+        {
             string standardOutput, standardError;
             try
             {
@@ -455,7 +453,7 @@ namespace System.Diagnostics
                 {
                     if (killOnFailure is not null)
                     {
-                        killOnFailure(process);
+                        killOnFailure();
                     }
                     else
                     {
@@ -466,9 +464,7 @@ namespace System.Diagnostics
                 throw;
             }
 
-            ProcessExitStatus exitStatus = await (killOnFailure is not null
-                ? process.WaitForExitOrKillOnCancellationAsync(cancellationToken, killOnFailure)
-                : process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken)).ConfigureAwait(false);
+            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken, killOnFailure).ConfigureAwait(false);
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
@@ -511,47 +507,26 @@ namespace System.Diagnostics
             return startInfo;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        private ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout, Action<Process> killOnTimeout)
+        private static void ValidateNonCapturingStartInfo(ProcessStartInfo startInfo, string methodName)
         {
-            SafeProcessHandle safeProcessHandle = _processHandle!;
-            if (safeProcessHandle.TryWaitForExit(timeout, out ProcessExitStatus? exitStatus))
+            ThrowIfUseShellExecute(startInfo, methodName);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
+            if (anyRedirection)
             {
-                return exitStatus;
+                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
             }
-
-            safeProcessHandle.Canceled = true;
-            killOnTimeout(this);
-
-            return safeProcessHandle.WaitForExit();
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        private Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken, Action<Process> killOnCancellation)
-            => _processHandle!.WaitForExitOrKillOnCancellationAsync(cancellationToken, cancellationToken.CanBeCanceled ? () => killOnCancellation(this) : null);
-
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        private void TryKillEntireTree()
+        private static void ValidateCaptureStartInfo(ProcessStartInfo startInfo, string methodName)
         {
-            try
-            {
-                Kill(entireProcessTree: true);
-            }
-            catch
-            {
-                // In case killing the process tree fails, attempt to Kill the root.
-                Kill();
-            }
+            ThrowIfUseShellExecute(startInfo, methodName);
+            ThrowIfNotRedirected(startInfo, methodName);
         }
 
         private static void ThrowIfUseShellExecute(ProcessStartInfo startInfo, string methodName)
         {
+            ArgumentNullException.ThrowIfNull(startInfo);
+
             if (startInfo.UseShellExecute)
             {
                 throw new InvalidOperationException(SR.Format(SR.UseShellExecuteNotSupportedForScenario, methodName));

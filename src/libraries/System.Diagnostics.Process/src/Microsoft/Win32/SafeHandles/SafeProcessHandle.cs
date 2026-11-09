@@ -164,7 +164,12 @@ namespace Microsoft.Win32.SafeHandles
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        internal static SafeProcessHandle Start(ProcessStartInfo startInfo, bool fallbackToNull)
+        internal static SafeProcessHandle Start(ProcessStartInfo startInfo, bool fallbackToNull
+#if TARGET_WINDOWS
+            , Interop.Kernel32.SafeJobHandle? processTreeJob = null
+#endif
+            )
+
         {
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
@@ -202,7 +207,11 @@ namespace Microsoft.Win32.SafeHandles
                 ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
             }
 
-            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles
+#if TARGET_WINDOWS
+                , processTreeJob
+#endif
+                );
         }
 
         /// <summary>
@@ -324,6 +333,12 @@ namespace Microsoft.Win32.SafeHandles
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout)
+            => WaitForExitOrKillOnTimeout(timeout, kill: null);
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout, Action? kill)
         {
             Validate();
 
@@ -332,7 +347,20 @@ namespace Microsoft.Win32.SafeHandles
                 throw new PlatformNotSupportedException();
             }
 
-            return WaitForExitOrKillOnTimeoutCore(ProcessUtils.ToTimeoutMilliseconds(timeout));
+            int milliseconds = ProcessUtils.ToTimeoutMilliseconds(timeout);
+            if (kill is null)
+            {
+                return WaitForExitOrKillOnTimeoutCore(milliseconds);
+            }
+
+            if (TryWaitForExitCore(milliseconds, out ProcessExitStatus? exitStatus))
+            {
+                return exitStatus;
+            }
+
+            Canceled = true;
+            kill();
+            return WaitForExitCore();
         }
 
         /// <summary>

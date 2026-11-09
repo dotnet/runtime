@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,6 +13,34 @@ internal static partial class Interop
         internal sealed class SafeJobHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             public SafeJobHandle() : base(true) { }
+
+            internal static unsafe SafeJobHandle Create(uint limitFlags)
+            {
+                JOBOBJECT_EXTENDED_LIMIT_INFORMATION limitInfo = default;
+                limitInfo.BasicLimitInformation.LimitFlags = limitFlags;
+
+                SafeJobHandle job = CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
+                if (job.IsInvalid || !SetInformationJobObject(
+                    job,
+                    JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation,
+                    ref limitInfo,
+                    (uint)sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION)))
+                {
+                    int error = Marshal.GetLastPInvokeError();
+                    job.Dispose();
+                    throw new Win32Exception(error);
+                }
+
+                return job;
+            }
+
+            internal void Terminate()
+            {
+                if (!TerminateJobObject(this, uint.MaxValue))
+                {
+                    throw new Win32Exception(Marshal.GetLastPInvokeError());
+                }
+            }
 
             protected override bool ReleaseHandle() => Interop.Kernel32.CloseHandle(handle);
         }
@@ -92,6 +121,11 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AssignProcessToJobObject(SafeJobHandle hJob, SafeProcessHandle hProcess);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool TerminateJobObject(SafeJobHandle hJob, uint uExitCode);
 
         internal const int PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D;
     }
