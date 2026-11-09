@@ -16,6 +16,7 @@
 #include <functional>
 #include <memory>
 #include <minipal/utils.h>
+#include <minipal/utf8.h>
 
 // Class used to perform specific actions.
 class platform_specific_actions;
@@ -211,12 +212,13 @@ namespace pal
 
     inline string_utf8_t convert_to_utf8(const char_t* str)
     {
-        int bytes_req = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+        size_t length = ::wcslen(str) + 1;
+        size_t bytes_req = minipal_get_length_utf16_to_utf8((const CHAR16_T*)str, length, 0);
 
         malloc_ptr<char> buffer{ (char*)::malloc(bytes_req) };
         assert(buffer != nullptr);
 
-        int written = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer.get(), bytes_req, nullptr, nullptr);
+        size_t written = minipal_convert_utf16_to_utf8((const CHAR16_T*)str, length, buffer.get(), bytes_req, 0);
         assert(bytes_req == written);
 
         return { buffer.get() };
@@ -224,12 +226,13 @@ namespace pal
 
     inline string_t convert_from_utf8(const char* str)
     {
-        int wchar_req = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+        size_t length = ::strlen(str) + 1;
+        size_t wchar_req = minipal_get_length_utf8_to_utf16(str, length, 0);
 
         malloc_ptr<wchar_t> buffer{ (wchar_t*)::malloc(wchar_req * sizeof(wchar_t)) };
         assert(buffer != nullptr);
 
-        int written = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, buffer.get(), wchar_req);
+        size_t written = minipal_convert_utf8_to_utf16(str, length, (CHAR16_T*)buffer.get(), wchar_req, 0);
         assert(wchar_req == written);
 
         return { buffer.get() };

@@ -3257,7 +3257,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
         m_cILMap = pSharedReJitInfo->m_cInstrumentedMapEntries;
         m_pILMap = new (nothrow)COR_IL_MAP[m_cILMap];
         TargetBuffer mapBuffer(pSharedReJitInfo->m_rgInstrumentedMapEntries, m_cILMap*sizeof(COR_IL_MAP));
-        IfFailRet(GetProcess()->SafeReadBuffer(mapBuffer, (BYTE*)m_pILMap.GetValue(), FALSE /* bThrowOnError */));
+        IfFailRet(GetProcess()->SafeReadBuffer(mapBuffer, reinterpret_cast<BYTE*>(static_cast<COR_IL_MAP*>(m_pILMap)), FALSE /* bThrowOnError */));
     }
 
     // Read the method's IL header
@@ -3336,10 +3336,11 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
 
         // Read in the clauses
         TargetBuffer buffer(ehClauseHeader + sizeof(IMAGE_COR_ILMETHOD_SECT_FAT), m_cClauses*sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT));
-        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT> pClauses = new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT[m_cClauses];
+        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT> pClauses(new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT[m_cClauses]);
         if (pClauses == NULL)
             return E_OUTOFMEMORY;
-        IfFailRet(GetProcess()->SafeReadBuffer(buffer, (BYTE*)pClauses.GetValue(), FALSE /*throwOnError*/));
+        IfFailRet(GetProcess()->SafeReadBuffer(buffer,
+            reinterpret_cast<BYTE*>(static_cast<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT*>(pClauses)), FALSE /*throwOnError*/));
 
         // convert clauses
         m_pClauses = new (nothrow)CorDebugEHClause[m_cClauses];
@@ -3373,10 +3374,11 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
 
         // Read in the clauses
         TargetBuffer buffer(ehClauseHeader + cbSmallSectionHeader, m_cClauses*sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL));
-        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL> pClauses = new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL[m_cClauses];
+        NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL> pClauses(new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL[m_cClauses]);
         if (pClauses == NULL)
             return E_OUTOFMEMORY;
-        IfFailRet(GetProcess()->SafeReadBuffer(buffer, (BYTE*)pClauses.GetValue(), FALSE /*throwOnError*/));
+        IfFailRet(GetProcess()->SafeReadBuffer(buffer,
+            reinterpret_cast<BYTE*>(static_cast<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL*>(pClauses)), FALSE /*throwOnError*/));
 
         // convert clauses
         m_pClauses = new (nothrow)CorDebugEHClause[m_cClauses];
@@ -3817,15 +3819,14 @@ HRESULT CordbVariableHome::GetRegister(CorDebugRegister *pRegister)
     switch (m_nativeVarInfo.loc.vlType)
     {
     case ICorDebugInfo::VLT_REG:
-        *pRegister = ConvertRegNumToCorDebugRegister(m_nativeVarInfo.loc.vlReg.vlrReg);
-        break;
+        return m_pCode->GetProcess()->ConvertJitRegNumToCorDebugRegister(
+            m_nativeVarInfo.loc.vlReg.vlrReg, pRegister);
     case ICorDebugInfo::VLT_STK:
-        *pRegister = ConvertRegNumToCorDebugRegister(m_nativeVarInfo.loc.vlStk.vlsBaseReg);
-        break;
+        return m_pCode->GetProcess()->ConvertJitRegNumToCorDebugRegister(
+            m_nativeVarInfo.loc.vlStk.vlsBaseReg, pRegister);
     default:
         return E_FAIL;
     }
-    return S_OK;
 }
 
 //-----------------------------------------------------------------------------

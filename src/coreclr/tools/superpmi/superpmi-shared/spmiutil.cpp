@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <minipal/debugger.h>
 #include <minipal/random.h>
+#include <minipal/utf8.h>
 
 static bool breakOnDebugBreakorAV = false;
 
@@ -585,11 +586,10 @@ std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
 
 std::string ConvertToUtf8(const WCHAR* str)
 {
-    unsigned len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
-    if (len == 0)
-        return{};
+    size_t length = u16_strlen(str) + 1;
+    size_t len    = minipal_get_length_utf16_to_utf8((const CHAR16_T*)str, length, 0);
 
     std::vector<char> buf(len + 1);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)str, length, buf.data(), len + 1, 0);
     return std::string{ buf.data() };
 }

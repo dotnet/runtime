@@ -16,9 +16,6 @@ GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
 #if defined(__x86_64__)
     *ip = pContext->Rip;
     *sp = pContext->Rsp;
-#elif defined(__i386__)
-    *ip = pContext->Eip;
-    *sp = pContext->Esp;
 #elif defined(__aarch64__)
     *ip = pContext->Pc;
     *sp = pContext->Sp;
@@ -194,7 +191,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
                     {
-                        WStringHolder typeName = new WCHAR[MAX_LONGPATH + 1];
+                        WStringHolder typeName(new WCHAR[MAX_LONGPATH + 1]);
                         if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName)))
                         {
                             m_exceptionType = ConvertString(typeName);

@@ -110,6 +110,20 @@ internal sealed partial class GrammarActions
             return;
         }
 
+        // ECMA-335 II.22.14 forbids duplicate top-level ExportedType full names.
+        if (implementation is not EntityRegistry.ExportedTypeEntity &&
+            _entityRegistry.FindExportedType(null, typeNamespace, name) is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateExportedType,
+                string.Format(DiagnosticMessageTemplates.DuplicateExportedType, header.Name),
+                location);
+            if (!_options.ErrorTolerant)
+            {
+                return;
+            }
+        }
+
         EntityRegistry.ExportedTypeEntity exportedType =
             _entityRegistry.GetOrCreateExportedType(
                 implementation,

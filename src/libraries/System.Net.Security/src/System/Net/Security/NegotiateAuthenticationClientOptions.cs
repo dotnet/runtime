@@ -18,7 +18,7 @@ namespace System.Net.Security
     /// name, password and domain combination then set the <see cref="Credential" />
     /// property appropriately.
     ///
-    /// Typical usage of the client-side authentication will also require specifying the
+    /// Typical usage of the client-side authentication will also require specifying
     /// the <see cref="TargetName" /> property. While it may be omitted in some scenarios
     /// it is usually required to be set to a valid value like <c>HOST/contoso.com</c> or
     /// <c>HTTP/www.contoso.com</c>.

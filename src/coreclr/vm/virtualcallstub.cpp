@@ -638,25 +638,25 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<counter_block> m_counters_holder(new counter_block);
 
     //
-    // On success of every allocation, assign the objects and suppress the release
+    // On success of every allocation, transfer ownership to the manager.
     //
 
-    indcell_heap     = indcell_heap_holder;     indcell_heap_holder.SuppressRelease();
+    indcell_heap     = indcell_heap_holder.Detach();
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    lookup_heap      = lookup_heap_holder;      lookup_heap_holder.SuppressRelease();
-    dispatch_heap    = dispatch_heap_holder;    dispatch_heap_holder.SuppressRelease();
-    resolve_heap     = resolve_heap_holder;     resolve_heap_holder.SuppressRelease();
-    vtable_heap      = vtable_heap_holder;      vtable_heap_holder.SuppressRelease();
-    cache_entry_heap = cache_entry_heap_holder; cache_entry_heap_holder.SuppressRelease();
+    lookup_heap      = lookup_heap_holder.Detach();
+    dispatch_heap    = dispatch_heap_holder.Detach();
+    resolve_heap     = resolve_heap_holder.Detach();
+    vtable_heap      = vtable_heap_holder.Detach();
+    cache_entry_heap = cache_entry_heap_holder.Detach();
 
-    resolvers        = resolvers_holder;        resolvers_holder.SuppressRelease();
-    dispatchers      = dispatchers_holder;      dispatchers_holder.SuppressRelease();
-    lookups          = lookups_holder;          lookups_holder.SuppressRelease();
-    vtableCallers    = vtableCallers_holder;    vtableCallers_holder.SuppressRelease();
-    cache_entries    = cache_entries_holder;    cache_entries_holder.SuppressRelease();
+    resolvers        = resolvers_holder.Detach();
+    dispatchers      = dispatchers_holder.Detach();
+    lookups          = lookups_holder.Detach();
+    vtableCallers    = vtableCallers_holder.Detach();
+    cache_entries    = cache_entries_holder.Detach();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-    m_counters       = m_counters_holder;       m_counters_holder.SuppressRelease();
+    m_counters       = m_counters_holder.Detach();
 
     // Create the initial failure counter block
     m_counters->next = NULL;
@@ -2068,14 +2068,14 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                             MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
                             size_t stackArgumentsSize;
                             {
                                 ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
                                 stackArgumentsSize = pMD->SizeOfArgStack();
                             }
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
                             bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
                             {
@@ -2083,7 +2083,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                 pResolveHolder = GenerateResolveStub(pResolverFcn,
                                                                 pBackPatchFcn,
                                                                 token.To_SIZE_T()
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                                                  , stackArgumentsSize
 #endif
                                                              );
@@ -2985,7 +2985,7 @@ addrOfPatcher is who to call if the fail piece is being called too often by disp
 ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addrOfResolver,
                                                            PCODE            addrOfPatcher,
                                                            size_t           dispatchToken
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                                            , size_t         stackArgumentsSize
 #endif
                                                            )
@@ -3053,7 +3053,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                        addrOfResolver, addrOfPatcher,
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
                        g_resolveCache->GetCacheBaseAddr(), counterAddr
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                        , stackArgumentsSize
 #endif
                        );

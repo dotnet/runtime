@@ -17,7 +17,6 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     [Field] public partial TargetPointer? DelayLoadMethodCallThunks { get; }
     [Field] public partial TargetPointer DebugInfoSection { get; }
     [Field] public partial TargetPointer ExceptionInfoSection { get; }
-    [Field] public partial TargetPointer LoadedImageBase { get; }
     [Field] public partial TargetPointer Composite { get; }
     [Field] public partial uint NumImportSections { get; }
 
@@ -27,6 +26,7 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     [CustomInit(nameof(InitHotColdMap))] public partial TargetPointer HotColdMap { get; }
     [CustomInit(nameof(InitImportSections))] public partial TargetPointer ImportSections { get; }
     [CustomInit(nameof(InitEntryPointToMethodDescMap))] public partial TargetPointer EntryPointToMethodDescMap { get; }
+    [CustomInit(nameof(InitLoadedImageBase))] public partial TargetPointer LoadedImageBase { get; }
 
     [DataDescriptorDependency(nameof(NumRuntimeFunctions), "uint32")]
     [DataDescriptorDependency(nameof(RuntimeFunctions), "pointer")]
@@ -67,5 +67,15 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
         // Map is from the composite info pointer (set to itself for non-multi-assembly composite images)
         return CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
+    }
+
+    [DataDescriptorDependency(nameof(CompositeInfo), "pointer")]
+    [DataDescriptorDependency(nameof(LoadedImageBase), "pointer")]
+    private partial TargetPointer InitLoadedImageBase(Target target, TargetPointer address)
+    {
+        // Component assemblies of a multi-assembly composite image do not record the image base;
+        // read it from the composite info (set to itself for non-component images).
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
+        return target.ReadPointerField(CompositeInfo, type, nameof(LoadedImageBase));
     }
 }

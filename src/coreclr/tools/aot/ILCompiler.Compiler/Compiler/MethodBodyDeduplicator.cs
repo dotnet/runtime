@@ -66,6 +66,11 @@ namespace ILCompiler
             _previousHashCount = methodHash.Count;
         }
 
+        private static bool IsSelfFrameIdentityRelocation(Relocation reloc, ISymbolNode owner)
+            => owner is not null
+                && reloc.RelocType == RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB
+                && reloc.Target == owner;
+
         private sealed class MethodInternKey
         {
             public IMethodBodyNode Method { get; }
@@ -88,6 +93,10 @@ namespace ILCompiler
                 {
                     hashCode.Add((int)reloc.RelocType);
                     hashCode.Add(reloc.Offset);
+
+                    // The folded body will use the canonical method's frame identity.
+                    if (IsSelfFrameIdentityRelocation(reloc, node))
+                        continue;
 
                     ISymbolNode target = reloc.Target;
                     if (target is MethodReadOnlyDataNode rodata)
@@ -137,7 +146,7 @@ namespace ILCompiler
 
             private static bool AreSame(ReadOnlySpan<byte> o1, ReadOnlySpan<byte> o2) => o1.SequenceEqual(o2);
 
-            private bool AreSame(ObjectNode.ObjectData o1, ObjectNode.ObjectData o2)
+            private bool AreSame(ObjectNode.ObjectData o1, ObjectNode.ObjectData o2, ISymbolNode owner1 = null, ISymbolNode owner2 = null)
             {
                 if (AreSame(o1.Data, o2.Data) && o1.Relocs.Length == o2.Relocs.Length)
                 {
@@ -149,6 +158,16 @@ namespace ILCompiler
                             || r1.Offset != r2.Offset)
                         {
                             return false;
+                        }
+
+                        bool selfFrameIdentity1 = IsSelfFrameIdentityRelocation(r1, owner1);
+                        bool selfFrameIdentity2 = IsSelfFrameIdentityRelocation(r2, owner2);
+                        if (selfFrameIdentity1 || selfFrameIdentity2)
+                        {
+                            if (selfFrameIdentity1 != selfFrameIdentity2)
+                                return false;
+
+                            continue;
                         }
 
                         if (r1.Target != r2.Target)
@@ -195,7 +214,7 @@ namespace ILCompiler
                 ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);
                 ObjectNode.ObjectData o2data = ((ObjectNode)b.Method).GetData(_factory, relocsOnly: false);
 
-                if (!AreSame(o1data, o2data))
+                if (!AreSame(o1data, o2data, a.Method, b.Method))
                     return false;
 
                 var o1codeinfo = (INodeWithCodeInfo)a.Method;

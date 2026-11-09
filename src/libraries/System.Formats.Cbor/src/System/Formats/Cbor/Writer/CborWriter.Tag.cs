@@ -106,7 +106,7 @@ namespace System.Formats.Cbor
             WriteByteString(unsignedBigEndianEncoding);
         }
 
-        /// <summary>Writes the provided value value as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3</summary>
+        /// <summary>Writes the provided value as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3</summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
         /// <para>-or-</para>

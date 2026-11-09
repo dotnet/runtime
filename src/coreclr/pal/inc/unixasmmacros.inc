@@ -15,9 +15,7 @@
 // GetThreadEEAllocContext.
 #define OFFSETOF__ee_alloc_context            0
 
-#if defined(HOST_X86)
-#include "unixasmmacrosx86.inc"
-#elif defined(HOST_AMD64)
+#if defined(HOST_AMD64)
 #include "unixasmmacrosamd64.inc"
 #elif defined(HOST_ARM)
 #include "unixasmmacrosarm.inc"

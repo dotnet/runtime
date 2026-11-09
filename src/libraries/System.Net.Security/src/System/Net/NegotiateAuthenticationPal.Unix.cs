@@ -334,7 +334,7 @@ namespace System.Net
                     string.IsNullOrWhiteSpace(serverOptions.Credential.Password))
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "using DefaultCredentials");
-                    _credentialsHandle = SafeGssCredHandle.CreateAcceptor();
+                    _credentialsHandle = SafeGssCredHandle.CreateAcceptor(_packageType);
                 }
                 else
                 {
@@ -823,6 +823,16 @@ namespace System.Net
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, gex);
                         resultBlobLength = 0;
                         return GetErrorCode(gex);
+                    }
+
+                    if (status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE &&
+                        ((_packageType == Interop.NetSecurityNative.PackageType.Kerberos && isNtlmUsed) ||
+                         (_packageType == Interop.NetSecurityNative.PackageType.NTLM && !isNtlmUsed)))
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"The negotiated authentication protocol does not match the requested package {_package}.");
+                        resultBlobLength = 0;
+                        contextFlags = 0;
+                        return NegotiateAuthenticationStatusCode.Unsupported;
                     }
 
                     resultBlob = token.ToByteArray();
