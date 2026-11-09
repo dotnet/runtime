@@ -184,33 +184,6 @@ namespace System.Diagnostics
             return Run(startInfo, timeout);
         }
 
-        /// <inheritdoc cref="Run(string, IEnumerable{string}, bool, TimeSpan?)"/>
-        /// <param name="fileName"><inheritdoc cref="Run(string, IEnumerable{string}, bool, TimeSpan?)" path="/param[@name='fileName']/node()"/></param>
-        /// <param name="arguments"><inheritdoc cref="Run(string, IEnumerable{string}, bool, TimeSpan?)" path="/param[@name='arguments']/node()"/></param>
-        /// <param name="silent"><inheritdoc cref="Run(string, IEnumerable{string}, bool, TimeSpan?)" path="/param[@name='silent']/node()"/></param>
-        /// <param name="timeout">
-        /// The maximum amount of time to wait for the process to exit, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
-        /// </param>
-        /// <param name="entireProcessTree">
-        /// <see langword="true"/> to kill the process and its descendants on timeout; otherwise,
-        /// <see langword="false"/> to kill only the process.
-        /// </param>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static ProcessExitStatus Run(string fileName, IEnumerable<string>? arguments, bool silent, TimeSpan timeout, bool entireProcessTree)
-        {
-            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
-
-            using SafeFileHandle? nullHandle = silent ? File.OpenNullHandle() : null;
-            startInfo.StandardInputHandle = nullHandle;
-            startInfo.StandardOutputHandle = nullHandle;
-            startInfo.StandardErrorHandle = nullHandle;
-
-            return Run(startInfo, timeout, entireProcessTree);
-        }
-
         /// <summary>
         /// Asynchronously starts the process described by <paramref name="startInfo"/>, waits for it to exit, and returns its exit status.
         /// </summary>
@@ -301,30 +274,6 @@ namespace System.Diagnostics
             startInfo.StandardErrorHandle = nullHandle;
 
             return await RunAsync(startInfo, cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <inheritdoc cref="RunAsync(string, IEnumerable{string}, bool, CancellationToken)"/>
-        /// <param name="fileName"><inheritdoc cref="RunAsync(string, IEnumerable{string}, bool, CancellationToken)" path="/param[@name='fileName']/node()"/></param>
-        /// <param name="arguments"><inheritdoc cref="RunAsync(string, IEnumerable{string}, bool, CancellationToken)" path="/param[@name='arguments']/node()"/></param>
-        /// <param name="silent"><inheritdoc cref="RunAsync(string, IEnumerable{string}, bool, CancellationToken)" path="/param[@name='silent']/node()"/></param>
-        /// <param name="entireProcessTree">
-        /// <see langword="true"/> to kill the process and its descendants on cancellation; otherwise,
-        /// <see langword="false"/> to kill only the process.
-        /// </param>
-        /// <param name="cancellationToken"><inheritdoc cref="RunAsync(string, IEnumerable{string}, bool, CancellationToken)" path="/param[@name='cancellationToken']/node()"/></param>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static async Task<ProcessExitStatus> RunAsync(string fileName, IEnumerable<string>? arguments, bool silent, bool entireProcessTree, CancellationToken cancellationToken)
-        {
-            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
-
-            using SafeFileHandle? nullHandle = silent ? File.OpenNullHandle() : null;
-            startInfo.StandardInputHandle = nullHandle;
-            startInfo.StandardOutputHandle = nullHandle;
-            startInfo.StandardErrorHandle = nullHandle;
-
-            return await RunAsync(startInfo, entireProcessTree, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -446,23 +395,6 @@ namespace System.Diagnostics
         public static ProcessTextOutput RunAndCaptureText(string fileName, IEnumerable<string>? arguments = null, TimeSpan? timeout = default)
             => RunAndCaptureText(CreateStartInfoForCapture(fileName, arguments), timeout);
 
-        /// <inheritdoc cref="RunAndCaptureText(string, IEnumerable{string}, TimeSpan?)"/>
-        /// <param name="fileName"><inheritdoc cref="RunAndCaptureText(string, IEnumerable{string}, TimeSpan?)" path="/param[@name='fileName']/node()"/></param>
-        /// <param name="arguments"><inheritdoc cref="RunAndCaptureText(string, IEnumerable{string}, TimeSpan?)" path="/param[@name='arguments']/node()"/></param>
-        /// <param name="timeout">
-        /// The maximum amount of time to wait for the process to exit, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
-        /// </param>
-        /// <param name="entireProcessTree">
-        /// <see langword="true"/> to kill the process and its descendants on timeout or output-capture failure; otherwise,
-        /// <see langword="false"/> to kill only the process.
-        /// </param>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static ProcessTextOutput RunAndCaptureText(string fileName, IEnumerable<string>? arguments, TimeSpan timeout, bool entireProcessTree)
-            => RunAndCaptureText(CreateStartInfoForCapture(fileName, arguments), timeout, entireProcessTree);
-
         /// <summary>
         /// Asynchronously starts the process described by <paramref name="startInfo"/>, captures its standard output and error,
         /// waits for it to exit, and returns the captured text and exit status.
@@ -562,20 +494,6 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IEnumerable<string>? arguments = null, CancellationToken cancellationToken = default)
             => RunAndCaptureTextAsync(CreateStartInfoForCapture(fileName, arguments), cancellationToken);
-
-        /// <inheritdoc cref="RunAndCaptureTextAsync(string, IEnumerable{string}, CancellationToken)"/>
-        /// <param name="fileName"><inheritdoc cref="RunAndCaptureTextAsync(string, IEnumerable{string}, CancellationToken)" path="/param[@name='fileName']/node()"/></param>
-        /// <param name="arguments"><inheritdoc cref="RunAndCaptureTextAsync(string, IEnumerable{string}, CancellationToken)" path="/param[@name='arguments']/node()"/></param>
-        /// <param name="entireProcessTree">
-        /// <see langword="true"/> to kill the process and its descendants on cancellation or output-capture failure; otherwise,
-        /// <see langword="false"/> to kill only the process.
-        /// </param>
-        /// <param name="cancellationToken"><inheritdoc cref="RunAndCaptureTextAsync(string, IEnumerable{string}, CancellationToken)" path="/param[@name='cancellationToken']/node()"/></param>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IEnumerable<string>? arguments, bool entireProcessTree, CancellationToken cancellationToken)
-            => RunAndCaptureTextAsync(CreateStartInfoForCapture(fileName, arguments), entireProcessTree, cancellationToken);
 
         private static ProcessStartInfo CreateStartInfo(string fileName, IEnumerable<string>? arguments)
         {

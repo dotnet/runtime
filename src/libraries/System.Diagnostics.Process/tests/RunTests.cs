@@ -41,30 +41,18 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false, false, false)]
-        [InlineData(false, false, true)]
-        [InlineData(false, true, false)]
-        [InlineData(false, true, true)]
-        [InlineData(true, false, false)]
-        [InlineData(true, false, true)]
-        [InlineData(true, true, false)]
-        [InlineData(true, true, true)]
-        [InlineData(false, false, null)]
-        [InlineData(false, true, null)]
-        [InlineData(true, false, null)]
-        [InlineData(true, true, null)]
-        public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync, bool silent, bool? entireProcessTree)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync, bool silent)
         {
             using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
-            ProcessExitStatus exitStatus = entireProcessTree.HasValue
-                ? useAsync
-                    ? await Process.RunAsync(template.StartInfo.FileName, arguments, silent, entireProcessTree.Value, CancellationToken.None)
-                    : Process.Run(template.StartInfo.FileName, arguments, silent, Timeout.InfiniteTimeSpan, entireProcessTree.Value)
-                : useAsync
-                    ? await Process.RunAsync(template.StartInfo.FileName, arguments, silent, default)
-                    : Process.Run(template.StartInfo.FileName, arguments, silent, default);
+            ProcessExitStatus exitStatus = useAsync
+                ? await Process.RunAsync(template.StartInfo.FileName, arguments, silent, default)
+                : Process.Run(template.StartInfo.FileName, arguments, silent, default);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
@@ -302,13 +290,9 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        [InlineData(false, null)]
-        [InlineData(true, null)]
-        public async Task RunAndCaptureText_WithFileName_CapturesOutput(bool useAsync, bool? entireProcessTree)
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RunAndCaptureText_WithFileName_CapturesOutput(bool useAsync)
         {
             using Process template = CreateProcess(static () =>
             {
@@ -319,13 +303,9 @@ namespace System.Diagnostics.Tests
 
             List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
-            ProcessTextOutput result = entireProcessTree.HasValue
-                ? useAsync
-                    ? await Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments, entireProcessTree.Value, CancellationToken.None)
-                    : Process.RunAndCaptureText(template.StartInfo.FileName, arguments, Timeout.InfiniteTimeSpan, entireProcessTree.Value)
-                : useAsync
-                    ? await Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments, default)
-                    : Process.RunAndCaptureText(template.StartInfo.FileName, arguments, default);
+            ProcessTextOutput result = useAsync
+                ? await Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments, default)
+                : Process.RunAndCaptureText(template.StartInfo.FileName, arguments, default);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
             Assert.Equal("output", result.StandardOutput);
