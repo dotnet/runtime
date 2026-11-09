@@ -37,6 +37,7 @@ public class OpenDelegate
     }
 
     [Fact]
+    [SkipOnMono("Mono crashes when invoking an open virtual delegate with a null receiver.")]
     public static void NullReceiverAfterWarmingUnrelatedVirtualDelegates()
     {
         Func<ClassA, int> first = typeof(ClassA).GetMethod(nameof(ClassA.PublicInstanceMethod))
