@@ -332,35 +332,6 @@ Inside an attribute element in the xml you can further define argument, field an
 </attribute>
 ```
 
-### Conditional dependencies using injected attributes
-
-Link-attributes XML can introduce `DynamicDependencyAttribute` annotations without
-emitting attributes into the output assembly. Annotations on a method or field activate
-when that member is retained. ILLink also supports injecting the annotation on a type:
-retaining the type through a signature or field activates its dependencies without a
-constructor call. This does not change the public attribute's allowed source-code targets.
-
-```xml
-<linker>
-  <assembly fullname="Assembly" feature="EnableHelpers" featurevalue="true" featuredefault="true">
-    <type fullname="Assembly.Trigger">
-      <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
-        <argument>Callback</argument>
-        <argument>Assembly.Helpers</argument>
-        <argument>Assembly</argument>
-      </attribute>
-    </type>
-  </assembly>
-</linker>
-```
-
-Ordinary feature conditions govern whether the annotation is introduced. Annotations do
-not root their providers, so dead cycles remain removable. Multiple dependencies combine
-with OR semantics and can cascade through ordinary marking. Member names match overloads.
-For a type-only dependency, the `DynamicallyAccessedMemberTypes` constructor with `None`
-retains the target type without retaining any otherwise unused members.
-Type-provider annotations are ILLink-specific; NativeAOT does not support them.
-
 ### Custom attribute on assembly
 
 ```xml
