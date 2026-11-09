@@ -24,7 +24,7 @@ namespace System.Composition.Hosting.Core
         /// <param name="site">A tag describing the dependency site.</param>
         /// <param name="contract">The contract required by the site.</param>
         /// <param name="isPrerequisite">True if the dependency must be satisfied before corresponding exports can be retrieved; otherwise, false.</param>
-        /// <returns>Dependencies for all implementations of the contact.</returns>
+        /// <returns>Dependencies for all implementations of the contract.</returns>
         public IEnumerable<CompositionDependency> ResolveDependencies(object site, CompositionContract contract, bool isPrerequisite)
         {
             var all = GetPromises(contract).ToArray();

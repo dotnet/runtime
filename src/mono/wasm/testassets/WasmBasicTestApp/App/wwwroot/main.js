@@ -75,6 +75,15 @@ if (logLevel !== null && logMask !== null) {
 
 // Modify runtime start based on test case
 switch (testCase) {
+    case "ConfigLoadedCallbacks":
+        dotnet.withConfigLoaded(async () => {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            testOutput("ConfigLoaded: first");
+        });
+        dotnet.withConfigLoaded(() => {
+            testOutput("ConfigLoaded: second");
+        });
+        break;
     case "SatelliteAssembliesTest":
         if (params.get("loadAllSatelliteResources") === "true") {
             dotnet.withConfig({ loadAllSatelliteResources: true });
@@ -341,6 +350,10 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 // Run the test case
 try {
     switch (testCase) {
+        case "ConfigLoadedCallbacks":
+            testOutput("ConfigLoaded: ready");
+            exit(0);
+            break;
         case "SatelliteAssembliesTest":
             await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);
@@ -488,6 +501,10 @@ try {
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
             exit(42);
+            break;
+        case "StackTraceTest":
+            exports.StackTraceTest.Run();
+            exit(0);
             break;
         case "InterpPgoTest":
             setModuleImports('main.js', {

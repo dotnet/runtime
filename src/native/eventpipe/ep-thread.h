@@ -75,6 +75,8 @@ struct _EventPipeThread_Internal {
 	// This is a convenience marker to prevent us from having to search the global list.
 	// defaults to false.
 	volatile uint32_t unregistered;
+	// Owner-thread scope: stop-time capture-state callbacks must not park while emitting buffered events.
+	bool capturing_provider_state;
 	// Block mode only: state for parking on a buffer manager's strict-FIFO wait queue when buffer budget is
 	// exhausted. A thread parks on at most one buffer manager at a time, so a single enqueued flag, a single
 	// per-thread auto-reset event, and a single intrusive queue link suffice. The queue is an intrusive
@@ -111,6 +113,8 @@ ep_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_ha
 
 EP_DEFINE_GETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session);
 EP_DEFINE_SETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session);
+EP_DEFINE_GETTER(EventPipeThread *, thread, bool, capturing_provider_state);
+EP_DEFINE_SETTER(EventPipeThread *, thread, bool, capturing_provider_state);
 EP_DEFINE_GETTER(EventPipeThread *, thread, uint64_t, os_thread_id);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, int32_t *, ref_count);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, volatile uint32_t *, unregistered);
@@ -211,6 +215,15 @@ ep_thread_is_rundown_thread (const EventPipeThread *thread)
 {
 	EP_ASSERT (thread != NULL);
 	return (ep_thread_get_rundown_session (thread) != NULL);
+}
+
+static
+inline
+bool
+ep_thread_can_block (const EventPipeThread *thread)
+{
+	EP_ASSERT (thread == ep_thread_get ());
+	return !ep_thread_is_rundown_thread (thread) && !ep_thread_get_capturing_provider_state (thread);
 }
 
 void

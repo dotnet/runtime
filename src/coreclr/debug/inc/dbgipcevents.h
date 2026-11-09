@@ -100,10 +100,10 @@ typedef enum
 //
 // Defines for current version numbers for the left and right sides
 //
-#define CorDB_LeftSideProtocolCurrent           2
-#define CorDB_LeftSideProtocolMinSupported      2
-#define CorDB_RightSideProtocolCurrent          2
-#define CorDB_RightSideProtocolMinSupported     2
+#define CorDB_LeftSideProtocolCurrent           3
+#define CorDB_LeftSideProtocolMinSupported      3
+#define CorDB_RightSideProtocolCurrent          3
+#define CorDB_RightSideProtocolMinSupported     3
 
 //
 // The remaining data structures in this file can be shared between two processes and for network transport

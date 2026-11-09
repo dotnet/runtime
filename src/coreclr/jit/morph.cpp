@@ -6009,8 +6009,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Transform recursive tail call into a loop.
 
-    Statement*       earlyArgInsertionPoint = lastStmt;
-    const DebugInfo& callDI                 = lastStmt->GetDebugInfo();
+    const DebugInfo& callDI = lastStmt->GetDebugInfo();
 
     // All arguments whose trees may involve caller parameter local variables need to be assigned to temps first;
     // then the temps need to be assigned to the method parameters. This is done so that the caller
@@ -6060,9 +6059,9 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         GenTree* earlyArg = arg.GetEarlyNode();
         if (arg.GetLateNode() != nullptr)
         {
-            // This is a setup node so we need to hoist it.
+            // Hoist setup nodes before any parameter assignments.
             Statement* earlyArgStmt = gtNewStmt(earlyArg, callDI);
-            fgInsertStmtBefore(block, earlyArgInsertionPoint, earlyArgStmt);
+            fgInsertStmtBefore(block, tmpAssignmentInsertionPoint, earlyArgStmt);
         }
         else
         {

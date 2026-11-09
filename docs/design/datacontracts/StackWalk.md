@@ -56,8 +56,8 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     byte[] contextBuffer,
     bool isFirst = true);
 
-// Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+// Gets a read-only view of the context snapshot retained by the given stack dataframe.
+ReadOnlySpan<byte> GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
@@ -207,8 +207,9 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
 | `PortableEntryPoint` | `ActualCode` | `pointer` | Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled) |
+| `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
-| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image; unset for component assemblies of a composite image, so it is read from the `CompositeInfo` |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
@@ -598,14 +599,15 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 
 The rest of the APIs convey state about the stack walk at a given point which fall out of the stack walking algorithm relatively simply.
 
-`GetRawContext` Retrieves the raw Windows style thread context of the current frame as a byte array. The size and shape of the context is platform dependent.
+`GetRawContext` retrieves the raw Windows style thread context of the current frame as a read-only span.
+The size and shape of the context is platform dependent.
 
 * On Windows the context is defined directly in Windows header `winnt.h`. See [CONTEXT structure](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-context) for more info.
 * On non-Windows platform the context's are defined in `src/coreclr/pal/inc/pal.h` and should mimic the Windows structure.
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+ReadOnlySpan<byte> GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
@@ -873,7 +875,7 @@ GCRefMap resolution from a frame's `Indirection` pointer proceeds as follows:
 
 1. Call `FindReadyToRunModule(indirection)` (see [ExecutionManager contract](./ExecutionManager.md)) to find the ReadyToRun module containing the import slot.
 2. Load the module's `ReadyToRunInfo` to access the import section array.
-3. Compute the RVA of the indirection address: `rva = indirection - imageBase`.
+3. Compute the RVA of the indirection address: `rva = indirection - imageBase`, where `imageBase` is the `LoadedImageBase` of the `ReadyToRunInfo`'s `CompositeInfo`.
 4. Search through `READYTORUN_IMPORT_SECTION` entries to find the section containing the RVA.
 5. Compute the slot index within the section: `index = (rva - sectionVA) / entrySize`.
 6. If the section has the `GCRefMap` flag (`0x0008`), read the DWORD at `imageBase + Signatures + index * 4`. This RVA points directly to the GCRefMap prefix of the import signature.

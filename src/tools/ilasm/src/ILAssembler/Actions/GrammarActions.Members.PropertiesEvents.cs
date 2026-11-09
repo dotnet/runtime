@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using Antlr4.Runtime;
@@ -64,7 +65,7 @@ internal sealed partial class GrammarActions
             BlobBuilder signature = new();
             signature.WriteByte(
                 (byte)(value.CallingConvention | (byte)SignatureKind.Property));
-            signature.WriteCompressedInteger(value.Arguments.Length);
+            signature.WriteCompressedInteger(value.Arguments.Count(argument => !argument.IsSentinel));
             MaterializeType(value.PropertyType).WriteContentTo(signature);
             foreach (SignatureArgumentValue argument in value.Arguments)
             {
