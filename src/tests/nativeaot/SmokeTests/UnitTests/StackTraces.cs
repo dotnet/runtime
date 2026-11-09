@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 class StackTraces
@@ -13,7 +14,10 @@ class StackTraces
     internal static int Run()
     {
         TestStackTraceHidden.Run();
-        TestLineNumbers.Run();
+
+        // ActiveIssue https://github.com/dotnet/runtime/issues/136676
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+            TestLineNumbers.Run();
 
         return 100;
     }
