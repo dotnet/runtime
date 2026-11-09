@@ -100,11 +100,11 @@ public sealed unsafe partial class MethodContext
         info->locals = Restore_CORINFO_SIG_INFO(value.locals, buffers, SigInstHandleMap, cr.MemoryTracker);
     }
 
-    private static void Restore_CORINFO_GENERICHANDLE_RESULT(CORINFO_GENERICHANDLE_RESULT* pResult, in Agnostic_CORINFO_GENERICHANDLE_RESULT value)
+    private static void Restore_CORINFO_GENERICHANDLE_RESULT(ref CORINFO_GENERICHANDLE_RESULT pResult, in Agnostic_CORINFO_GENERICHANDLE_RESULT value)
     {
-        pResult->lookup = RestoreCORINFO_LOOKUP(value.lookup);
-        pResult->compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)value.compileTimeHandle;
-        pResult->handleType = (CorInfoGenericHandleType)value.handleType;
+        pResult.lookup = RestoreCORINFO_LOOKUP(value.lookup);
+        pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)value.compileTimeHandle;
+        pResult.handleType = (CorInfoGenericHandleType)value.handleType;
     }
 
     private static CORINFO_RESOLVED_TOKEN TokenWithInValues(in Agnostic_CORINFO_RESOLVED_TOKENin inValue) => new()
@@ -153,27 +153,27 @@ public sealed unsafe partial class MethodContext
 
     public byte* repGetClassAssemblyName(CORINFO_CLASS_STRUCT_* cls) => GetClassAssemblyName.GetBufferPointer(LookupByHandle(GetClassAssemblyName, cls));
 
-    public void repGetVars(CORINFO_METHOD_STRUCT_* ftn, uint* cVars, ILVarInfo** vars_in, bool* extendOthers)
+    public void repGetVars(CORINFO_METHOD_STRUCT_* ftn, ref uint cVars, ILVarInfo** vars_in, ref bool extendOthers)
     {
         if (GetVars == null)
         {
-            *cVars = 0;
+            cVars = 0;
             return;
         }
 
         Agnostic_GetVars value = GetVars.Get(CastHandle(ftn));
-        *cVars = value.cVars;
-        if (*cVars > 0)
+        cVars = value.cVars;
+        if (cVars > 0)
             *vars_in = (ILVarInfo*)GetVars.GetBufferPointer(value.vars_offset);
-        *extendOthers = value.extendOthers != 0;
+        extendOthers = value.extendOthers != 0;
     }
 
-    public void repGetBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint* cILOffsets, uint** pILOffsets, BoundaryTypes* implicitBoundaries)
+    public void repGetBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
     {
         Agnostic_GetBoundaries value = LookupByHandle(GetBoundaries, ftn);
-        *cILOffsets = value.cILOffsets;
-        if (*cILOffsets > 0)
-            *pILOffsets = (uint*)GetBoundaries.GetBufferPointer(value.pILOffset_offset);
+        cILOffsets = value.cILOffsets;
+        if (cILOffsets > 0)
+            pILOffsets = (uint*)GetBoundaries.GetBufferPointer(value.pILOffset_offset);
         *implicitBoundaries = (BoundaryTypes)value.implicitBoundaries;
     }
 
@@ -210,11 +210,12 @@ public sealed unsafe partial class MethodContext
         return result;
     }
 
-    public uint repGetJitFlags(CORJIT_FLAGS* jitFlags, uint sizeInBytes)
+    public uint repGetJitFlags(ref CORJIT_FLAGS jitFlags, uint sizeInBytes)
     {
         DD value = LookupByKeyOrMiss(GetJitFlags, 0u);
         ErrorHandling.AssertCode(sizeInBytes >= value.B, ExceptionCodes.ASSERT, "sizeInBytes >= value.B");
-        Buffer.MemoryCopy(GetJitFlags.GetBufferPointer(value.A), jitFlags, sizeInBytes, value.B);
+        GetJitFlags.GetBuffer(value.A).Slice(0, (int)value.B).CopyTo(
+            MemoryMarshal.CreateSpan(ref Unsafe.As<CORJIT_FLAGS, byte>(ref jitFlags), (int)sizeInBytes));
         return value.B;
     }
 
@@ -232,27 +233,27 @@ public sealed unsafe partial class MethodContext
         return (CorInfoInline)value.result;
     }
 
-    public void repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, out uint exceptionCode)
+    public void repResolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, out uint exceptionCode)
     {
-        Agnostic_CORINFO_RESOLVED_TOKENin key = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
-        ResolveTokenValue value = LookupByKeyOrMiss(ResolveToken, key, ": token {0:x}", (uint)pResolvedToken->token);
-        Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
+        Agnostic_CORINFO_RESOLVED_TOKENin key = CreateAgnostic_CORINFO_RESOLVED_TOKENin(ref pResolvedToken);
+        ResolveTokenValue value = LookupByKeyOrMiss(ResolveToken, key, ": token {0:x}", (uint)pResolvedToken.token);
+        Restore_CORINFO_RESOLVED_TOKENout(ref pResolvedToken, value.tokenOut, ResolveToken);
         exceptionCode = value.exceptionCode;
     }
 
-    public void repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle,
+    public void repGetCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle,
         CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult, out uint exceptionCode)
     {
         AssertMapExists(GetCallInfo);
 
         var key = new Agnostic_GetCallInfo
         {
-            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetCallInfo),
+            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetCallInfo),
             callerHandle = CastHandle(callerHandle),
             flags = (uint)flags,
         };
         if (pConstrainedResolvedToken != null)
-            key.ConstrainedResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pConstrainedResolvedToken, GetCallInfo);
+            key.ConstrainedResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref *pConstrainedResolvedToken, GetCallInfo);
 
         Agnostic_CORINFO_CALL_INFO value = LookupByKeyOrMiss(GetCallInfo, key, ": key {0:x8}, {1:x16}", key.ResolvedToken.inValue.token, key.ResolvedToken.outValue.hClass);
 
@@ -305,7 +306,7 @@ public sealed unsafe partial class MethodContext
                     continue;
 
                 CORINFO_RESOLVED_TOKEN resolvedToken = TokenWithInValues(key.ResolvedToken.inValue);
-                repResolveToken(&resolvedToken, out _);
+                repResolveToken(ref resolvedToken, out _);
 
                 // If the original call passed a null constrainedResolvedToken, it can only be replayed with
                 // a null one too, not with the address of a local (but meaningless) token.
@@ -315,10 +316,10 @@ public sealed unsafe partial class MethodContext
                 {
                     constrainedResolvedToken = TokenWithInValues(key.ConstrainedResolvedToken.inValue);
                     pConstrainedResolvedToken = &constrainedResolvedToken;
-                    repResolveToken(pConstrainedResolvedToken, out _);
+                    repResolveToken(ref *pConstrainedResolvedToken, out _);
                 }
 
-                repGetCallInfo(&resolvedToken, pConstrainedResolvedToken, (CORINFO_METHOD_STRUCT_*)key.callerHandle,
+                repGetCallInfo(ref resolvedToken, pConstrainedResolvedToken, (CORINFO_METHOD_STRUCT_*)key.callerHandle,
                     (CORINFO_CALLINFO_FLAGS)key.flags, pResult, out _);
                 return;
             }
@@ -327,15 +328,15 @@ public sealed unsafe partial class MethodContext
         ErrorHandling.LogException(ExceptionCodes.MC, $"Didn't find key {CastHandle(methodHandle):X16}.");
     }
 
-    public void repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
+    public void repExpandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
     {
         var key = new Agnostic_ExpandRawHandleIntrinsic
         {
-            ResolvedToken = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken),
+            ResolvedToken = CreateAgnostic_CORINFO_RESOLVED_TOKENin(ref pResolvedToken),
             hCallerHandle = CastHandle(callerHandle),
         };
-        Agnostic_CORINFO_GENERICHANDLE_RESULT value = LookupByKeyOrMiss(ExpandRawHandleIntrinsic, key, ": key {0:x}", (uint)pResolvedToken->token);
-        Restore_CORINFO_GENERICHANDLE_RESULT(pResult, value);
+        Agnostic_CORINFO_GENERICHANDLE_RESULT value = LookupByKeyOrMiss(ExpandRawHandleIntrinsic, key, ": key {0:x}", (uint)pResolvedToken.token);
+        Restore_CORINFO_GENERICHANDLE_RESULT(ref pResult, value);
     }
 
     public bool repIsIntrinsicType(CORINFO_CLASS_STRUCT_* cls) => LookupByHandle(IsIntrinsicType, cls) != 0;
@@ -398,34 +399,34 @@ public sealed unsafe partial class MethodContext
 
     public CORINFO_CLASS_STRUCT_* repGetObjectType(CORINFO_OBJECT_STRUCT_* objPtr) => (CORINFO_CLASS_STRUCT_*)LookupByHandle(GetObjectType, objPtr);
 
-    public bool repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONST_LOOKUP* pLookup)
+    public bool repGetReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
     {
         AssertMapExists(GetReadyToRunHelper);
 
         var key = new GetReadyToRunHelper_TOKENin
         {
-            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetReadyToRunHelper),
+            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetReadyToRunHelper),
             id = (uint)id,
             callerHandle = CastHandle(callerHandle),
         };
         GetReadyToRunHelper_TOKENout value = LookupByKeyOrMiss(GetReadyToRunHelper, key);
-        *pLookup = RestoreCORINFO_CONST_LOOKUP(value.Lookup);
+        pLookup = RestoreCORINFO_CONST_LOOKUP(value.Lookup);
         return value.result != 0;
     }
 
-    public void repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType,
-        CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_LOOKUP* pLookup)
+    public void repGetReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType,
+        CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP pLookup)
     {
         AssertMapExists(GetReadyToRunDelegateCtorHelper);
 
         var key = new GetReadyToRunDelegateCtorHelper_TOKENIn
         {
-            TargetMethod = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper),
+            TargetMethod = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pTargetMethod, GetReadyToRunDelegateCtorHelper),
             targetConstraint = (uint)targetConstraint,
             delegateType = CastHandle(delegateType),
             callerHandle = CastHandle(callerHandle),
         };
-        *pLookup = RestoreCORINFO_LOOKUP(LookupByKeyOrMiss(GetReadyToRunDelegateCtorHelper, key));
+        pLookup = RestoreCORINFO_LOOKUP(LookupByKeyOrMiss(GetReadyToRunDelegateCtorHelper, key));
     }
 
     public void repGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethodHandle)
@@ -459,14 +460,14 @@ public sealed unsafe partial class MethodContext
         return false;
     }
 
-    public CORINFO_JUST_MY_CODE_HANDLE_* repGetJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, CORINFO_JUST_MY_CODE_HANDLE_** ppIndirection)
+    public CORINFO_JUST_MY_CODE_HANDLE_* repGetJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
     {
         DLDL value = LookupByHandle(GetJustMyCodeHandle, method);
-        *ppIndirection = (CORINFO_JUST_MY_CODE_HANDLE_*)value.A;
+        ppIndirection = (CORINFO_JUST_MY_CODE_HANDLE_*)value.A;
         return (CORINFO_JUST_MY_CODE_HANDLE_*)value.B;
     }
 
-    public void repGetFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags)
+    public void repGetFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
     {
         var key = new DLD { A = CastHandle(ftn), B = (uint)accessFlags };
 
@@ -480,15 +481,15 @@ public sealed unsafe partial class MethodContext
             else
             {
                 Logger.LogDebug("Sparse - repGetFunctionEntryPoint fabricated result for request.");
-                pResult->accessType = InfoAccessType.IAT_PVALUE;
-                pResult->addr = (void*)(CastHandle(ftn) + 0x1c);
+                pResult.accessType = InfoAccessType.IAT_PVALUE;
+                pResult.addr = (void*)(CastHandle(ftn) + 0x1c);
                 return;
             }
         }
 
         DLD value = GetFunctionEntryPoint.Get(key);
-        pResult->accessType = (InfoAccessType)value.B;
-        pResult->addr = (void*)value.A;
+        pResult.accessType = (InfoAccessType)value.B;
+        pResult.addr = (void*)value.A;
     }
 
     public bool fndGetFunctionEntryPoint(DLD value, out CORINFO_METHOD_STRUCT_* result)
@@ -511,30 +512,30 @@ public sealed unsafe partial class MethodContext
         return false;
     }
 
-    public InfoAccessType repConstructStringLiteral(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken metaTok, void** ppValue)
+    public InfoAccessType repConstructStringLiteral(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken metaTok, ref void* ppValue)
     {
         var key = new DLD { A = CastHandle(moduleHandle), B = (uint)metaTok };
         DLD value = LookupByKeyOrMiss(ConstructStringLiteral, key, ": key {0:X16}", CastHandle(moduleHandle));
-        *ppValue = (void*)value.A;
+        ppValue = (void*)value.A;
         return (InfoAccessType)value.B;
     }
 
-    public bool repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
+    public bool repConvertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fMustConvert)
     {
         AssertMapExists(ConvertPInvokeCalliToCall);
 
-        var key = new DLD { A = CastHandle(pResolvedToken->tokenScope), B = (uint)pResolvedToken->token };
+        var key = new DLD { A = CastHandle(pResolvedToken.tokenScope), B = (uint)pResolvedToken.token };
         DLDL value = LookupByKeyOrMiss(ConvertPInvokeCalliToCall, key);
-        pResolvedToken->hClass = (CORINFO_CLASS_STRUCT_*)value.A;
-        pResolvedToken->hMethod = (CORINFO_METHOD_STRUCT_*)value.B;
+        pResolvedToken.hClass = (CORINFO_CLASS_STRUCT_*)value.A;
+        pResolvedToken.hMethod = (CORINFO_METHOD_STRUCT_*)value.B;
         return value.B != 0;
     }
 
-    public InfoAccessType repEmptyStringLiteral(void** ppValue)
+    public InfoAccessType repEmptyStringLiteral(ref void* ppValue)
     {
         // TODO-Cleanup: sketchy if someone calls this twice
         DLD temp2 = LookupByKeyOrMiss(EmptyStringLiteral, 0u);
-        *ppValue = (void*)temp2.A;
+        ppValue = (void*)temp2.A;
         return (InfoAccessType)temp2.B;
     }
 
@@ -620,48 +621,48 @@ public sealed unsafe partial class MethodContext
 
     public CORINFO_CLASS_STRUCT_* repGetTypeDefinition(CORINFO_CLASS_STRUCT_* cls) => (CORINFO_CLASS_STRUCT_*)LookupByHandle(GetTypeDefinition, cls);
 
-    public CorInfoHelpFunc repGetNewHelper(CORINFO_CLASS_STRUCT_* classHandle, bool* pHasSideEffects, out uint exceptionCode)
+    public CorInfoHelpFunc repGetNewHelper(CORINFO_CLASS_STRUCT_* classHandle, ref bool pHasSideEffects, out uint exceptionCode)
     {
         DDD value = LookupByHandle(GetNewHelper, classHandle);
-        if (pHasSideEffects != null)
-            *pHasSideEffects = value.A != 0;
+        if (!Unsafe.IsNullRef(ref pHasSideEffects))
+            pHasSideEffects = value.A != 0;
         exceptionCode = value.C;
         return (CorInfoHelpFunc)value.B;
     }
 
-    public void repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
+    public void repEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
     {
         AssertMapExists(EmbedGenericHandle);
 
         var key = new Agnostic_EmbedGenericHandle
         {
-            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, EmbedGenericHandle),
+            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, EmbedGenericHandle),
             fEmbedParent = fEmbedParent ? 1u : 0u,
             hCallerHandle = CastHandle(callerHandle),
         };
-        Restore_CORINFO_GENERICHANDLE_RESULT(pResult, LookupByKeyOrMiss(EmbedGenericHandle, key));
+        Restore_CORINFO_GENERICHANDLE_RESULT(ref pResult, LookupByKeyOrMiss(EmbedGenericHandle, key));
     }
 
-    public void repGetEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, CORINFO_EH_CLAUSE* clause)
+    public void repGetEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
     {
         AssertMapExists(GetEHinfo, ": key {0:X16}", CastHandle(ftn));
 
         var key = new DLD { A = CastHandle(ftn), B = EHnumber };
         Agnostic_CORINFO_EH_CLAUSE value = LookupByKeyOrMiss(GetEHinfo, key, ": key {0:X16}", CastHandle(ftn));
-        clause->Flags = (CORINFO_EH_CLAUSE_FLAGS)value.Flags;
-        clause->TryOffset = value.TryOffset;
-        clause->TryLength = value.TryLength;
-        clause->HandlerOffset = value.HandlerOffset;
-        clause->HandlerLength = value.HandlerLength;
-        clause->ClassTokenOrOffset = value.ClassToken;
+        clause.Flags = (CORINFO_EH_CLAUSE_FLAGS)value.Flags;
+        clause.TryOffset = value.TryOffset;
+        clause.TryLength = value.TryLength;
+        clause.HandlerOffset = value.HandlerOffset;
+        clause.HandlerLength = value.HandlerLength;
+        clause.ClassTokenOrOffset = value.ClassToken;
     }
 
-    public void repGetMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, uint* offsetOfIndirection, uint* offsetAfterIndirection, bool* isRelative)
+    public void repGetMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
     {
         DDD value = LookupByHandle(GetMethodVTableOffset, method);
-        *offsetOfIndirection = value.A;
-        *offsetAfterIndirection = value.B;
-        *isRelative = value.C != 0;
+        offsetOfIndirection = value.A;
+        offsetAfterIndirection = value.B;
+        isRelative = value.C != 0;
     }
 
     public bool repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
@@ -674,7 +675,7 @@ public sealed unsafe partial class MethodContext
             pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != null ? 1u : 0u,
         };
         if (key.pResolvedTokenVirtualMethodNonNull != 0)
-            key.pResolvedTokenVirtualMethod = StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+            key.pResolvedTokenVirtualMethod = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref *info->pResolvedTokenVirtualMethod, ResolveToken);
 
         Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": {0:X16}-{1:X16}-{2:X16}-{3:X8}",
             key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
@@ -691,10 +692,10 @@ public sealed unsafe partial class MethodContext
         return result.returnValue != 0;
     }
 
-    public CORINFO_METHOD_STRUCT_* repGetAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, bool* variantIsThunk)
+    public CORINFO_METHOD_STRUCT_* repGetAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
     {
         DLD value = LookupByHandle(GetAsyncOtherVariant, ftn);
-        *variantIsThunk = value.B != 0;
+        variantIsThunk = value.B != 0;
         return (CORINFO_METHOD_STRUCT_*)value.A;
     }
 
@@ -704,19 +705,19 @@ public sealed unsafe partial class MethodContext
 
     public CORINFO_CLASS_STRUCT_* repGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* cls) => (CORINFO_CLASS_STRUCT_*)LookupByHandle(GetSZArrayHelperEnumeratorClass, cls);
 
-    public CORINFO_CLASS_STRUCT_* repGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken)
+    public CORINFO_CLASS_STRUCT_* repGetTokenTypeAsHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
     {
-        var key = new GetTokenTypeAsHandleValue { hMethod = CastHandle(pResolvedToken->hMethod), hField = CastHandle(pResolvedToken->hField) };
+        var key = new GetTokenTypeAsHandleValue { hMethod = CastHandle(pResolvedToken.hMethod), hField = CastHandle(pResolvedToken.hField) };
         return (CORINFO_CLASS_STRUCT_*)LookupByKeyOrMiss(GetTokenTypeAsHandle, key);
     }
 
-    public void repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
+    public void repGetFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     {
-        AssertMapExists(GetFieldInfo, ": key {0:x}", (uint)pResolvedToken->token);
+        AssertMapExists(GetFieldInfo, ": key {0:x}", (uint)pResolvedToken.token);
 
         var key = new Agnostic_GetFieldInfo
         {
-            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetFieldInfo),
+            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetFieldInfo),
             callerHandle = CastHandle(callerHandle),
             flags = (uint)flags,
         };
@@ -738,7 +739,7 @@ public sealed unsafe partial class MethodContext
                 if (keyIndex != -1)
                     Logger.LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_INLINECHECK");
                 else
-                    ErrorHandling.LogException(ExceptionCodes.MC, $"repGetFieldInfo: didn't find {(uint)pResolvedToken->token:x}");
+                    ErrorHandling.LogException(ExceptionCodes.MC, $"repGetFieldInfo: didn't find {(uint)pResolvedToken.token:x}");
             }
         }
 
@@ -785,11 +786,11 @@ public sealed unsafe partial class MethodContext
         pInfo->tlsGetAddrFtnPtr = RestoreCORINFO_CONST_LOOKUP(value.tlsGetAddrFtnPtr);
     }
 
-    public CORINFO_METHOD_STRUCT_* repEmbedMethodHandle(CORINFO_METHOD_STRUCT_* handle, void** ppIndirection)
+    public CORINFO_METHOD_STRUCT_* repEmbedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
     {
         DLDL value = LookupByHandle(EmbedMethodHandle, handle);
-        if (ppIndirection != null)
-            *ppIndirection = (void*)value.A;
+        if (!IsNullRef(ref ppIndirection))
+            ppIndirection = (void*)value.A;
         return (CORINFO_METHOD_STRUCT_*)value.B;
     }
 
@@ -840,35 +841,35 @@ public sealed unsafe partial class MethodContext
         return LookupByKeyOrMiss(GetClassAlignmentRequirement, key, ": key {0:X16}", key.A);
     }
 
-    public CorInfoIsAccessAllowedResult repCanAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_HELPER_DESC* pAccessHelper)
+    public CorInfoIsAccessAllowedResult repCanAccessClass(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_HELPER_DESC pAccessHelper)
     {
-        AssertMapExists(CanAccessClass, ": key {0:X16}", CastHandle(pResolvedToken->hClass));
+        AssertMapExists(CanAccessClass, ": key {0:X16}", CastHandle(pResolvedToken.hClass));
 
         var key = new Agnostic_CanAccessClassIn
         {
-            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, CanAccessClass),
+            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, CanAccessClass),
             callerHandle = CastHandle(callerHandle),
         };
-        Agnostic_CanAccessClassOut value = LookupByKeyOrMiss(CanAccessClass, key, ": key {0:X16}", CastHandle(pResolvedToken->hClass));
-        *pAccessHelper = RestoreCORINFO_HELPER_DESC(value.AccessHelper);
+        Agnostic_CanAccessClassOut value = LookupByKeyOrMiss(CanAccessClass, key, ": key {0:X16}", CastHandle(pResolvedToken.hClass));
+        pAccessHelper = RestoreCORINFO_HELPER_DESC(value.AccessHelper);
         return (CorInfoIsAccessAllowedResult)value.result;
     }
 
-    public CorInfoHelpFunc repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
+    public CorInfoHelpFunc repGetCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
     {
-        var key = new Agnostic_GetCastingHelper { hClass = CastHandle(pResolvedToken->hClass), fThrowing = fThrowing ? 1u : 0u };
+        var key = new Agnostic_GetCastingHelper { hClass = CastHandle(pResolvedToken.hClass), fThrowing = fThrowing ? 1u : 0u };
         return (CorInfoHelpFunc)LookupByKeyOrMiss(GetCastingHelper, key, ": key {0:X16}", key.hClass);
     }
 
-    public CORINFO_MODULE_STRUCT_* repEmbedModuleHandle(CORINFO_MODULE_STRUCT_* handle, void** ppIndirection)
+    public CORINFO_MODULE_STRUCT_* repEmbedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
     {
         DLDL value = LookupByHandle(EmbedModuleHandle, handle);
-        if (ppIndirection != null)
-            *ppIndirection = (void*)value.A;
+        if (!IsNullRef(ref ppIndirection))
+            ppIndirection = (void*)value.A;
         return (CORINFO_MODULE_STRUCT_*)value.B;
     }
 
-    public CORINFO_CLASS_STRUCT_* repEmbedClassHandle(CORINFO_CLASS_STRUCT_* handle, void** ppIndirection)
+    public CORINFO_CLASS_STRUCT_* repEmbedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
     {
         ulong key = CastHandle(handle);
         if (key == CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE)
@@ -877,16 +878,16 @@ public sealed unsafe partial class MethodContext
             {
                 // Some other embedded handle required an indirection, so do the same for the pseudo handle
                 // (avoids spurious improvements in R2R scenarios).
-                *ppIndirection = (void*)CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE;
+                ppIndirection = (void*)CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE;
                 return null;
             }
 
-            *ppIndirection = null;
+            ppIndirection = null;
             return handle;
         }
 
         DLDL value = LookupByKeyOrMiss(EmbedClassHandle, key, ": key {0:X16}", key);
-        *ppIndirection = (void*)value.A;
+        ppIndirection = (void*)value.A;
         return (CORINFO_CLASS_STRUCT_*)value.B;
     }
 
@@ -905,7 +906,7 @@ public sealed unsafe partial class MethodContext
         return LookupByKeyOrMiss(PInvokeMarshalingRequired, key) != 0;
     }
 
-    public CorInfoCallConvExtension repGetUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition)
+    public CorInfoCallConvExtension repGetUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig, ref bool pSuppressGCTransition)
     {
         if (GetUnmanagedCallConv == null)
         {
@@ -922,7 +923,7 @@ public sealed unsafe partial class MethodContext
         }
 
         DD value = LookupByKeyOrMiss(GetUnmanagedCallConv, key);
-        *pSuppressGCTransition = value.B != 0;
+        pSuppressGCTransition = value.B != 0;
         return (CorInfoCallConvExtension)value.A;
     }
 
@@ -933,79 +934,79 @@ public sealed unsafe partial class MethodContext
         *sig = Restore_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap, cr.MemoryTracker);
     }
 
-    public void repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
+    public void repGetEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
     {
         Agnostic_CORINFO_EE_INFO value = LookupByKeyOrMiss(GetEEInfo, 0u);
-        pEEInfoOut->inlinedCallFrameInfo.size = value.inlinedCallFrameInfo.size;
-        pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg = value.inlinedCallFrameInfo.sizeWithSecretStubArg;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink = value.inlinedCallFrameInfo.offsetOfFrameLink;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP = value.inlinedCallFrameInfo.offsetOfCallSiteSP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP = value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget = value.inlinedCallFrameInfo.offsetOfCallTarget;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress = value.inlinedCallFrameInfo.offsetOfReturnAddress;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg = value.inlinedCallFrameInfo.offsetOfSecretStubArg;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog = value.inlinedCallFrameInfo.offsetOfSPAfterProlog;
-        pEEInfoOut->offsetOfThreadFrame = value.offsetOfThreadFrame;
-        pEEInfoOut->offsetOfGCState = value.offsetOfGCState;
-        pEEInfoOut->offsetOfDelegateInstance = value.offsetOfDelegateInstance;
-        pEEInfoOut->offsetOfDelegateFirstTarget = value.offsetOfDelegateFirstTarget;
-        pEEInfoOut->sizeOfReversePInvokeFrame = value.sizeOfReversePInvokeFrame;
-        pEEInfoOut->osPageSize = value.osPageSize;
-        pEEInfoOut->maxUncheckedOffsetForNullObject = value.maxUncheckedOffsetForNullObject;
-        pEEInfoOut->targetAbi = (CORINFO_RUNTIME_ABI)value.targetAbi;
-        pEEInfoOut->osType = (CORINFO_OS)value.osType;
+        pEEInfoOut.inlinedCallFrameInfo.size = value.inlinedCallFrameInfo.size;
+        pEEInfoOut.inlinedCallFrameInfo.sizeWithSecretStubArg = value.inlinedCallFrameInfo.sizeWithSecretStubArg;
+        pEEInfoOut.inlinedCallFrameInfo.offsetOfFrameLink = value.inlinedCallFrameInfo.offsetOfFrameLink;
+        pEEInfoOut.inlinedCallFrameInfo.offsetOfCallSiteSP = value.inlinedCallFrameInfo.offsetOfCallSiteSP;
+        pEEInfoOut.inlinedCallFrameInfo.offsetOfCalleeSavedFP = value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
+        pEEInfoOut.inlinedCallFrameInfo.offsetOfCallTarget = value.inlinedCallFrameInfo.offsetOfCallTarget;
+        pEEInfoOut.inlinedCallFrameInfo.offsetOfReturnAddress = value.inlinedCallFrameInfo.offsetOfReturnAddress;
+        pEEInfoOut.inlinedCallFrameInfo.offsetOfSecretStubArg = value.inlinedCallFrameInfo.offsetOfSecretStubArg;
+        pEEInfoOut.inlinedCallFrameInfo.offsetOfSPAfterProlog = value.inlinedCallFrameInfo.offsetOfSPAfterProlog;
+        pEEInfoOut.offsetOfThreadFrame = value.offsetOfThreadFrame;
+        pEEInfoOut.offsetOfGCState = value.offsetOfGCState;
+        pEEInfoOut.offsetOfDelegateInstance = value.offsetOfDelegateInstance;
+        pEEInfoOut.offsetOfDelegateFirstTarget = value.offsetOfDelegateFirstTarget;
+        pEEInfoOut.sizeOfReversePInvokeFrame = value.sizeOfReversePInvokeFrame;
+        pEEInfoOut.osPageSize = value.osPageSize;
+        pEEInfoOut.maxUncheckedOffsetForNullObject = value.maxUncheckedOffsetForNullObject;
+        pEEInfoOut.targetAbi = (CORINFO_RUNTIME_ABI)value.targetAbi;
+        pEEInfoOut.osType = (CORINFO_OS)value.osType;
     }
 
-    public void repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
+    public void repGetAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
     {
         Agnostic_CORINFO_ASYNC_INFO value = LookupByKeyOrMiss(GetAsyncInfo, 0u);
-        pAsyncInfoOut->continuationClsHnd = (CORINFO_CLASS_STRUCT_*)value.continuationClsHnd;
-        pAsyncInfoOut->continuationNextFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationNextFldHnd;
-        pAsyncInfoOut->continuationResumeInfoFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationResumeInfoFldHnd;
-        pAsyncInfoOut->continuationStateFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationStateFldHnd;
-        pAsyncInfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationFlagsFldHnd;
-        pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureExecutionContextMethHnd;
-        pAsyncInfoOut->captureContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureContinuationContextMethHnd;
-        pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureContextsMethHnd;
-        pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_STRUCT_*)value.restoreContextsMethHnd;
-        pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_STRUCT_*)value.restoreContextsOnSuspensionMethHnd;
-        pAsyncInfoOut->restoreInlinedFrameContextsMethHnd = (CORINFO_METHOD_STRUCT_*)value.restoreInlinedFrameContextsMethHnd;
-        pAsyncInfoOut->captureInlinedFrameTransitionWithContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureInlinedFrameTransitionWithContinuationContextMethHnd;
-        pAsyncInfoOut->captureInlinedFrameTransitionNoContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureInlinedFrameTransitionNoContinuationContextMethHnd;
-        pAsyncInfoOut->captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
-        pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.finishSuspensionNoContinuationContextMethHnd;
-        pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.finishSuspensionWithContinuationContextMethHnd;
+        pAsyncInfoOut.continuationClsHnd = (CORINFO_CLASS_STRUCT_*)value.continuationClsHnd;
+        pAsyncInfoOut.continuationNextFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationNextFldHnd;
+        pAsyncInfoOut.continuationResumeInfoFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationResumeInfoFldHnd;
+        pAsyncInfoOut.continuationStateFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationStateFldHnd;
+        pAsyncInfoOut.continuationFlagsFldHnd = (CORINFO_FIELD_STRUCT_*)value.continuationFlagsFldHnd;
+        pAsyncInfoOut.captureExecutionContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureExecutionContextMethHnd;
+        pAsyncInfoOut.captureContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureContinuationContextMethHnd;
+        pAsyncInfoOut.captureContextsMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureContextsMethHnd;
+        pAsyncInfoOut.restoreContextsMethHnd = (CORINFO_METHOD_STRUCT_*)value.restoreContextsMethHnd;
+        pAsyncInfoOut.restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_STRUCT_*)value.restoreContextsOnSuspensionMethHnd;
+        pAsyncInfoOut.restoreInlinedFrameContextsMethHnd = (CORINFO_METHOD_STRUCT_*)value.restoreInlinedFrameContextsMethHnd;
+        pAsyncInfoOut.captureInlinedFrameTransitionWithContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureInlinedFrameTransitionWithContinuationContextMethHnd;
+        pAsyncInfoOut.captureInlinedFrameTransitionNoContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureInlinedFrameTransitionNoContinuationContextMethHnd;
+        pAsyncInfoOut.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = (CORINFO_METHOD_STRUCT_*)value.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
+        pAsyncInfoOut.finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.finishSuspensionNoContinuationContextMethHnd;
+        pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_STRUCT_*)value.finishSuspensionWithContinuationContextMethHnd;
     }
 
-    public void repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+    public void repGetWasmWellKnownGlobals(ref CORINFO_WASM_WELLKNOWN_GLOBALS pWellKnownGlobalsOut)
     {
         Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS value = LookupByKeyOrMiss(GetWasmWellKnownGlobals, 0u);
-        pWellKnownGlobalsOut->stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.stackPointer;
-        pWellKnownGlobalsOut->imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.imageBase;
-        pWellKnownGlobalsOut->tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.tableBase;
-        pWellKnownGlobalsOut->asyncContinuation = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.asyncContinuation;
+        pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.stackPointer;
+        pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.imageBase;
+        pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.tableBase;
+        pWellKnownGlobalsOut.asyncContinuation = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)value.asyncContinuation;
     }
 
-    public CORINFO_METHOD_STRUCT_* repGetAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg)
+    public CORINFO_METHOD_STRUCT_* repGetAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
     {
         Agnostic_GetAwaitReturnCallResult result = LookupByKeyOrMiss(GetAwaitReturnCall, CastHandle(callerHnd));
         *contextHandle = (CORINFO_CONTEXT_STRUCT*)result.contextHandle;
-        *instArg = RestoreCORINFO_LOOKUP(result.instArg);
+        instArg = RestoreCORINFO_LOOKUP(result.instArg);
         return (CORINFO_METHOD_STRUCT_*)result.methodHnd;
     }
 
-    public CORINFO_METHOD_STRUCT_* repGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe,
-        CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg)
+    public CORINFO_METHOD_STRUCT_* repGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_STRUCT_* callerHnd, ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool isUnsafe,
+        CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
     {
         var key = new Agnostic_GetAwaitAwaiterInContinuationCall
         {
             callerHnd = CastHandle(callerHnd),
-            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetAwaitAwaiterInContinuationCall),
+            ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetAwaitAwaiterInContinuationCall),
             isUnsafe = isUnsafe ? 1u : 0u,
         };
         Agnostic_GetAwaitReturnCallResult value = LookupByKeyOrMiss(GetAwaitAwaiterInContinuationCall, key);
         *contextHandle = (CORINFO_CONTEXT_STRUCT*)value.contextHandle;
-        *instArg = RestoreCORINFO_LOOKUP(value.instArg);
+        instArg = RestoreCORINFO_LOOKUP(value.instArg);
         return (CORINFO_METHOD_STRUCT_*)value.methodHnd;
     }
 
@@ -1028,53 +1029,53 @@ public sealed unsafe partial class MethodContext
             *ppCookieVal = (nint*)value.B;
     }
 
-    public PatchpointInfo* repGetOSRInfo(uint* ilOffset)
+    public PatchpointInfo* repGetOSRInfo(ref uint ilOffset)
     {
         uint key = 0;
         Agnostic_GetOSRInfo value = LookupByKeyOrMiss(GetOSRInfo, key);
-        *ilOffset = value.ilOffset;
+        ilOffset = value.ilOffset;
         return (PatchpointInfo*)GetOSRInfo.GetBufferPointer(value.index);
     }
 
-    public bool repGetIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, CORINFO_CONST_LOOKUP* addr, int* offset)
+    public bool repGetIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
     {
         Agnostic_GetIsClassInitedFlagAddress value = LookupByHandle(GetIsClassInitedFlagAddress, cls);
-        *offset = (int)value.offset;
-        addr->accessType = (InfoAccessType)value.addr.accessType;
-        addr->addr = (void*)value.addr.handle;
+        offset = (int)value.offset;
+        addr.accessType = (InfoAccessType)value.addr.accessType;
+        addr.addr = (void*)value.addr.handle;
         return value.result != 0;
     }
 
-    public bool repGetStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
+    public bool repGetStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
     {
         var key = new DLD { A = CastHandle(cls), B = isGc ? 1u : 0u };
         Agnostic_GetStaticBaseAddress value = LookupByKeyOrMiss(GetStaticBaseAddress, key, ": key {0:X16}", key.A);
-        addr->accessType = (InfoAccessType)value.addr.accessType;
-        addr->addr = (void*)value.addr.handle;
+        addr.accessType = (InfoAccessType)value.addr.accessType;
+        addr.addr = (void*)value.addr.handle;
         return value.result != 0;
     }
 
-    public uint repGetThreadTLSIndex(void** ppIndirection)
+    public uint repGetThreadTLSIndex(ref void* ppIndirection)
     {
         DLD value = LookupByKeyOrMiss(GetThreadTLSIndex, 0u);
-        if (ppIndirection != null)
-            *ppIndirection = (void*)value.A;
+        if (!IsNullRef(ref ppIndirection))
+            ppIndirection = (void*)value.A;
         return value.B;
     }
 
-    public int* repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
+    public int* repGetAddrOfCaptureThreadGlobal(ref void* ppIndirection)
     {
         if (GetAddrOfCaptureThreadGlobal == null || GetAddrOfCaptureThreadGlobal.GetIndex(0) == -1)
         {
             Logger.LogDebug("Sparse - repGetAddrOfCaptureThreadGlobal returning nullptr and 0xCAFE0001");
-            if (ppIndirection != null)
-                *ppIndirection = null;
+            if (!IsNullRef(ref ppIndirection))
+                ppIndirection = null;
             return (int*)0xCAFE0001;
         }
 
         DLDL value = GetAddrOfCaptureThreadGlobal.Get(0);
-        if (ppIndirection != null)
-            *ppIndirection = (void*)value.A;
+        if (!IsNullRef(ref ppIndirection))
+            ppIndirection = (void*)value.A;
         return (int*)value.B;
     }
 
@@ -1082,24 +1083,24 @@ public sealed unsafe partial class MethodContext
 
     public void* repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls) => (void*)LookupByHandle(GetClassThreadStaticDynamicInfo, cls).A;
 
-    public void repGetLocationOfThisType(CORINFO_METHOD_STRUCT_* context, CORINFO_LOOKUP_KIND* pLookupKind)
-        => *pLookupKind = RestoreCORINFO_LOOKUP_KIND(LookupByHandle(GetLocationOfThisType, context));
+    public void repGetLocationOfThisType(CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND pLookupKind)
+        => pLookupKind = RestoreCORINFO_LOOKUP_KIND(LookupByHandle(GetLocationOfThisType, context));
 
     public CORINFO_METHOD_STRUCT_* repGetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd,
-        DelegateCtorArgs* pCtorData)
+        ref DelegateCtorArgs pCtorData)
     {
         var key = new Agnostic_GetDelegateCtorIn { methHnd = CastHandle(methHnd), clsHnd = CastHandle(clsHnd), targetMethodHnd = CastHandle(targetMethodHnd) };
         Agnostic_GetDelegateCtorOut value = LookupByKeyOrMiss(GetDelegateCtor, key, ": key {0:X16}", key.methHnd);
-        pCtorData->pMethod = (void*)value.CtorData.pMethod;
-        pCtorData->pArg3 = (void*)value.CtorData.pArg3;
-        pCtorData->pArg4 = (void*)value.CtorData.pArg4;
-        pCtorData->pArg5 = (void*)value.CtorData.pArg5;
+        pCtorData.pMethod = (void*)value.CtorData.pMethod;
+        pCtorData.pArg3 = (void*)value.CtorData.pArg3;
+        pCtorData.pArg4 = (void*)value.CtorData.pArg4;
+        pCtorData.pArg5 = (void*)value.CtorData.pArg5;
         return (CORINFO_METHOD_STRUCT_*)value.result;
     }
 
     // The isUnsafeFunctionPointer has no impact on the resulting value; it only produces side effects in the runtime.
-    public void repGetFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
-        => *pResult = RestoreCORINFO_CONST_LOOKUP(LookupByHandle(GetFunctionFixedEntryPoint, ftn));
+    public void repGetFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        => pResult = RestoreCORINFO_CONST_LOOKUP(LookupByHandle(GetFunctionFixedEntryPoint, ftn));
 
     public CORINFO_FIELD_STRUCT_* repGetFieldInClass(CORINFO_CLASS_STRUCT_* clsHnd, int num)
     {
@@ -1175,11 +1176,11 @@ public sealed unsafe partial class MethodContext
         return (void*)LookupByKeyOrMiss(GetArrayInitializationData, key);
     }
 
-    public void repGetAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, CORINFO_CONST_LOOKUP* pLookup)
+    public void repGetAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
     {
         DLD value = LookupByHandle(GetAddressOfPInvokeTarget, method);
-        pLookup->addr = (void*)value.A;
-        pLookup->accessType = (InfoAccessType)value.B;
+        pLookup.addr = (void*)value.A;
+        pLookup.accessType = (InfoAccessType)value.B;
     }
 
     public uint repGetMethodHash(CORINFO_METHOD_STRUCT_* ftn)
@@ -1207,7 +1208,7 @@ public sealed unsafe partial class MethodContext
         *sig = Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap, cr.MemoryTracker);
     }
 
-    public nint repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, void** ppIndirection)
+    public nint repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, ref void* ppIndirection)
     {
         var key = new GetVarArgsHandleValue
         {
@@ -1218,16 +1219,16 @@ public sealed unsafe partial class MethodContext
             methHnd = CastHandle(methHnd),
         };
         DLDL value = LookupByKeyOrMiss(GetVarArgsHandle, key);
-        if (ppIndirection != null)
-            *ppIndirection = (void*)value.A;
+        if (!IsNullRef(ref ppIndirection))
+            ppIndirection = (void*)value.A;
         return (nint)value.B;
     }
 
-    public uint repGetFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, void** ppIndirection)
+    public uint repGetFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
     {
         DLD value = LookupByHandle(GetFieldThreadLocalStoreID, field);
-        if (ppIndirection != null)
-            *ppIndirection = (void*)value.A;
+        if (!IsNullRef(ref ppIndirection))
+            ppIndirection = (void*)value.A;
         return value.B;
     }
 
@@ -1310,15 +1311,15 @@ public sealed unsafe partial class MethodContext
         return true;
     }
 
-    public HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema** pSchema, uint* pCountSchemaItems,
-        byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo)
+    public HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint pCountSchemaItems,
+        byte** pInstrumentationData, ref PgoSource pPgoSource, ref bool pDynamicPgo)
     {
         Agnostic_GetPgoInstrumentationResults tempValue = LookupByHandle(GetPgoInstrumentationResults, ftnHnd);
 
-        *pCountSchemaItems = tempValue.countSchemaItems;
+        pCountSchemaItems = tempValue.countSchemaItems;
         *pInstrumentationData = GetPgoInstrumentationResults.GetBufferPointer(tempValue.data_index);
-        *pPgoSource = (PgoSource)tempValue.pgoSource;
-        *pDynamicPgo = tempValue.dynamicPgo != 0;
+        pPgoSource = (PgoSource)tempValue.pgoSource;
+        pDynamicPgo = tempValue.dynamicPgo != 0;
 
         var pOutSchema = (PgoInstrumentationSchema*)AllocJitTempBuffer(tempValue.countSchemaItems * (nuint)sizeof(PgoInstrumentationSchema));
         byte* pAgnosticSchema = GetPgoInstrumentationResults.GetBufferPointer(tempValue.schema_index);
@@ -1335,7 +1336,7 @@ public sealed unsafe partial class MethodContext
             };
         }
 
-        *pSchema = pOutSchema;
+        pSchema = pOutSchema;
         return (HRESULT)tempValue.result;
     }
 
@@ -1373,19 +1374,19 @@ public sealed unsafe partial class MethodContext
         return (void*)LookupByKeyOrMiss(GetCookieForInterpreterCalliSig, key).A;
     }
 
-    public void repGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles)
+    public void repGetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
     {
         Agnostic_GetProfilingHandle value = LookupByKeyOrMiss(GetProfilingHandle, 0u);
-        *pbHookFunction = value.bHookFunction != 0;
-        *pProfilerHandle = (void*)value.ProfilerHandle;
-        *pbIndirectedHandles = value.bIndirectedHandles != 0;
+        pbHookFunction = value.bHookFunction != 0;
+        pProfilerHandle = (void*)value.ProfilerHandle;
+        pbIndirectedHandles = value.bIndirectedHandles != 0;
     }
 
-    public CORINFO_FIELD_STRUCT_* repEmbedFieldHandle(CORINFO_FIELD_STRUCT_* handle, void** ppIndirection)
+    public CORINFO_FIELD_STRUCT_* repEmbedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
     {
         DLDL value = LookupByHandle(EmbedFieldHandle, handle);
-        if (ppIndirection != null)
-            *ppIndirection = (void*)value.A;
+        if (!IsNullRef(ref ppIndirection))
+            ppIndirection = (void*)value.A;
         return (CORINFO_FIELD_STRUCT_*)value.B;
     }
 
@@ -1415,27 +1416,27 @@ public sealed unsafe partial class MethodContext
         return value.result != 0;
     }
 
-    public void repGetSwiftLowering(CORINFO_CLASS_STRUCT_* structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+    public void repGetSwiftLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_SWIFT_LOWERING pLowering)
     {
         Agnostic_GetSwiftLowering value = LookupByHandle(GetSwiftLowering, structHnd);
-        pLowering->byReference = value.byReference != 0;
-        pLowering->numLoweredElements = (nint)value.numLoweredElements;
-        for (int i = 0; i < pLowering->numLoweredElements; i++)
+        pLowering.byReference = value.byReference != 0;
+        pLowering.numLoweredElements = (nint)value.numLoweredElements;
+        for (int i = 0; i < pLowering.numLoweredElements; i++)
         {
-            pLowering->LoweredElements[i] = (CorInfoType)value.loweredElements[i];
-            pLowering->Offsets[i] = value.offsets[i];
+            pLowering.LoweredElements[i] = (CorInfoType)value.loweredElements[i];
+            pLowering.Offsets[i] = value.offsets[i];
         }
     }
 
-    public void repGetFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
+    public void repGetFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING pLowering)
     {
         Agnostic_GetFpStructLowering value = LookupByHandle(GetFpStructLowering, structHnd);
-        pLowering->byIntegerCallConv = value.byIntegerCallConv != 0;
-        pLowering->numLoweredElements = (nint)value.numLoweredElements;
-        for (int i = 0; i < pLowering->numLoweredElements; i++)
+        pLowering.byIntegerCallConv = value.byIntegerCallConv != 0;
+        pLowering.numLoweredElements = (nint)value.numLoweredElements;
+        for (int i = 0; i < pLowering.numLoweredElements; i++)
         {
-            pLowering->LoweredElements[i] = (CorInfoType)value.loweredElements[i];
-            pLowering->Offsets[i] = value.offsets[i];
+            pLowering.LoweredElements[i] = (CorInfoType)value.loweredElements[i];
+            pLowering.Offsets[i] = value.offsets[i];
         }
     }
 
@@ -1544,13 +1545,13 @@ public sealed unsafe partial class MethodContext
     public nuint repPrintMethodName(CORINFO_METHOD_STRUCT_* meth, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         => repPrint("PrintMethodName", PrintMethodName, CastHandle(meth), buffer, bufferSize, pRequiredBufferSize);
 
-    public bool repGetTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult)
+    public bool repGetTailCallHelpers(ref CORINFO_RESOLVED_TOKEN callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, ref CORINFO_TAILCALL_HELPERS pResult)
     {
         AssertMapExists(GetTailCallHelpers);
 
         var key = new Agnostic_GetTailCallHelpers
         {
-            callToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(callToken, GetTailCallHelpers),
+            callToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref callToken, GetTailCallHelpers),
             sig = RestoreAgnostic_CORINFO_SIG_INFO(*sig, GetTailCallHelpers, SigInstHandleMap),
             flags = (uint)flags,
         };
@@ -1558,28 +1559,28 @@ public sealed unsafe partial class MethodContext
         if (value.result == 0)
             return false;
 
-        pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)value.flags;
-        pResult->hStoreArgs = (CORINFO_METHOD_STRUCT_*)value.hStoreArgs;
-        pResult->hCallTarget = (CORINFO_METHOD_STRUCT_*)value.hCallTarget;
-        pResult->hDispatcher = (CORINFO_METHOD_STRUCT_*)value.hDispatcher;
+        pResult.flags = (CORINFO_TAILCALL_HELPERS_FLAGS)value.flags;
+        pResult.hStoreArgs = (CORINFO_METHOD_STRUCT_*)value.hStoreArgs;
+        pResult.hCallTarget = (CORINFO_METHOD_STRUCT_*)value.hCallTarget;
+        pResult.hDispatcher = (CORINFO_METHOD_STRUCT_*)value.hDispatcher;
         return true;
     }
 
-    public CORINFO_METHOD_STRUCT_* repGetAsyncResumptionStub(void** entryPoint)
+    public CORINFO_METHOD_STRUCT_* repGetAsyncResumptionStub(ref void* entryPoint)
     {
         DLDL value = LookupByKeyOrMiss(GetAsyncResumptionStub, 0u);
-        *entryPoint = (void*)value.B;
+        entryPoint = (void*)value.B;
         return (CORINFO_METHOD_STRUCT_*)value.A;
     }
 
-    public CORINFO_CLASS_STRUCT_* repGetContinuationType(nuint dataSize, bool* objRefs, nuint objRefsSize)
+    public CORINFO_CLASS_STRUCT_* repGetContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
     {
         AssertMapExists(GetContinuationType);
 
         var key = new Agnostic_GetContinuationTypeIn
         {
             dataSize = dataSize,
-            objRefs = (uint)GetContinuationType.Contains(Bytes(objRefs, objRefsSize)),
+            objRefs = (uint)GetContinuationType.Contains(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref objRefs, (int)objRefsSize))),
             objRefsSize = (uint)objRefsSize,
         };
 
@@ -1589,12 +1590,12 @@ public sealed unsafe partial class MethodContext
         return (CORINFO_CLASS_STRUCT_*)(index == -1 ? CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE : GetContinuationType.GetItem(index));
     }
 
-    public void repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+    public void repUpdateEntryPointForTailCall(ref CORINFO_CONST_LOOKUP entryPoint)
     {
         AssertMapExists(UpdateEntryPointForTailCall);
 
-        Agnostic_CORINFO_CONST_LOOKUP key = StoreAgnostic_CORINFO_CONST_LOOKUP(entryPoint);
-        *entryPoint = RestoreCORINFO_CONST_LOOKUP(LookupByKeyOrMiss(UpdateEntryPointForTailCall, key));
+        Agnostic_CORINFO_CONST_LOOKUP key = StoreAgnostic_CORINFO_CONST_LOOKUP(ref entryPoint);
+        entryPoint = RestoreCORINFO_CONST_LOOKUP(LookupByKeyOrMiss(UpdateEntryPointForTailCall, key));
     }
 
     public mdToken repGetMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -1756,12 +1757,12 @@ public sealed unsafe partial class MethodContext
         if (GetPgoInstrumentationResults == null || GetPgoInstrumentationResults.GetIndex(CastHandle(info.ftn)) == -1)
             return false;
 
-        PgoInstrumentationSchema* schema;
-        uint schemaCount;
+        PgoInstrumentationSchema* schema = null;
+        uint schemaCount = 0;
         byte* schemaData;
-        PgoSource source;
-        bool dynamicPgo;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData, &source, &dynamicPgo);
+        PgoSource source = default;
+        bool dynamicPgo = false;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, ref schema, ref schemaCount, &schemaData, ref source, ref dynamicPgo);
         pgoSource = source;
         if (pgoHR < 0)
             return false;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.JitInterface;
 using Internal.Pgo;
@@ -148,29 +149,29 @@ public sealed unsafe partial class MethodContext
         GetClassAssemblyName.Add(key, value);
     }
 
-    public void recGetVars(CORINFO_METHOD_STRUCT_* ftn, uint* cVars, ILVarInfo** vars_in, bool* extendOthers)
+    public void recGetVars(CORINFO_METHOD_STRUCT_* ftn, ref uint cVars, ILVarInfo** vars_in, ref bool extendOthers)
     {
         GetVars ??= new();
     
         Agnostic_GetVars value = default;
-        value.cVars = (uint)*cVars;
+        value.cVars = (uint)cVars;
         value.vars_offset =
-            (uint)GetVars.AddBuffer(Bytes(*vars_in, (nuint)(sizeof(ILVarInfo) * (*cVars))));
-        value.extendOthers = (*extendOthers ? 1u : 0u);
+            (uint)GetVars.AddBuffer(Bytes(*vars_in, (nuint)(sizeof(ILVarInfo) * (cVars))));
+        value.extendOthers = (extendOthers ? 1u : 0u);
     
         ulong key = CastHandle(ftn);
         GetVars.Add(key, value);
     }
 
-    public void recGetBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint* cILOffsets, uint** pILOffsets, BoundaryTypes* implicitBoundaries)
+    public void recGetBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
     {
         GetBoundaries ??= new();
     
         Agnostic_GetBoundaries value = default;
     
-        value.cILOffsets = (uint)*cILOffsets;
+        value.cILOffsets = (uint)cILOffsets;
         value.pILOffset_offset =
-            (uint)GetBoundaries.AddBuffer(Bytes(*pILOffsets, sizeof(uint) * (*cILOffsets)));
+            (uint)GetBoundaries.AddBuffer(Bytes(pILOffsets, sizeof(uint) * (cILOffsets)));
         value.implicitBoundaries = (uint)*implicitBoundaries;
     
         ulong key = CastHandle(ftn);
@@ -234,12 +235,12 @@ public sealed unsafe partial class MethodContext
         GetMethodNameFromMetadata.Add(key, value);
     }
 
-    public void recGetJitFlags(CORJIT_FLAGS* jitFlags, uint sizeInBytes, uint result)
+    public void recGetJitFlags(ref CORJIT_FLAGS jitFlags, uint sizeInBytes, uint result)
     {
         GetJitFlags ??= new();
     
         DD value = default;
-        value.A = (uint)GetJitFlags.AddBuffer(Bytes(jitFlags, sizeInBytes));
+        value.A = (uint)GetJitFlags.AddBuffer(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<CORJIT_FLAGS, byte>(ref jitFlags), (int)sizeInBytes));
         value.B = result;
     
         // NOTE: getJitFlags() is expected to be idempotent per method, so the mapping key is always
@@ -262,12 +263,12 @@ public sealed unsafe partial class MethodContext
         CanInline.Add(key, value);
     }
 
-    public void recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, uint exceptionCode)
+    public void recResolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, uint exceptionCode)
     {
         ResolveToken ??= new();
     
         Agnostic_CORINFO_RESOLVED_TOKENin key = default;
-        key = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
+        key = CreateAgnostic_CORINFO_RESOLVED_TOKENin(ref pResolvedToken);
     
         ResolveTokenValue value = default;
         if (exceptionCode != 0)
@@ -280,24 +281,24 @@ public sealed unsafe partial class MethodContext
         }
         else
         {
-            value.tokenOut = StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, ResolveToken);
+            value.tokenOut = StoreAgnostic_CORINFO_RESOLVED_TOKENout(ref pResolvedToken, ResolveToken);
         }
         value.exceptionCode = exceptionCode;
     
         ResolveToken.Add(key, value);
     }
 
-    public void recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult, uint exceptionCode)
+    public void recGetCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult, uint exceptionCode)
     {
         GetCallInfo ??= new();
     
         Agnostic_GetCallInfo key = default;
-        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetCallInfo);
+        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetCallInfo);
     
         if (pConstrainedResolvedToken != null)
         {
             key.ConstrainedResolvedToken =
-                StoreAgnostic_CORINFO_RESOLVED_TOKEN(pConstrainedResolvedToken, GetCallInfo);
+                StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref *pConstrainedResolvedToken, GetCallInfo);
         }
     
         key.callerHandle = CastHandle(callerHandle);
@@ -321,7 +322,7 @@ public sealed unsafe partial class MethodContext
             value.contextHandle                  = CastHandle(pResult->contextHandle);
             value.exactContextNeedsRuntimeLookup = (pResult->exactContextNeedsRuntimeLookup ? 1u : 0u);
     
-            value.stubLookup = StoreAgnostic_CORINFO_LOOKUP(&pResult->codePointerOrStubLookup);
+            value.stubLookup = StoreAgnostic_CORINFO_LOOKUP(ref pResult->codePointerOrStubLookup);
     
             value.instParamLookup.accessType = (uint)pResult->instParamLookup.accessType;
             value.instParamLookup.handle     = CastHandle(pResult->instParamLookup.handle);
@@ -332,18 +333,18 @@ public sealed unsafe partial class MethodContext
         GetCallInfo.Add(key, value);
     }
 
-    public void recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
+    public void recExpandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
     {
         ExpandRawHandleIntrinsic ??= new();
     
         Agnostic_ExpandRawHandleIntrinsic key = default;
-        key.ResolvedToken = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
+        key.ResolvedToken = CreateAgnostic_CORINFO_RESOLVED_TOKENin(ref pResolvedToken);
         key.hCallerHandle = CastHandle(callerHandle);
     
         Agnostic_CORINFO_GENERICHANDLE_RESULT value = default;
-        value.lookup            = StoreAgnostic_CORINFO_LOOKUP(&pResult->lookup);
-        value.compileTimeHandle = CastHandle(pResult->compileTimeHandle);
-        value.handleType        = (uint)pResult->handleType;
+        value.lookup            = StoreAgnostic_CORINFO_LOOKUP(ref pResult.lookup);
+        value.compileTimeHandle = CastHandle(pResult.compileTimeHandle);
+        value.handleType        = (uint)pResult.handleType;
     
         ExpandRawHandleIntrinsic.Add(key, value);
     }
@@ -579,32 +580,32 @@ public sealed unsafe partial class MethodContext
         GetObjectType.Add(key, value);
     }
 
-    public void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONST_LOOKUP* pLookup, bool result)
+    public void recGetReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup, bool result)
     {
         GetReadyToRunHelper ??= new();
     
         GetReadyToRunHelper_TOKENin key = default;
-        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetReadyToRunHelper);
+        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetReadyToRunHelper);
         key.id                = (uint)id;
         key.callerHandle      = CastHandle(callerHandle);
         GetReadyToRunHelper_TOKENout value = default;
-        value.Lookup = StoreAgnostic_CORINFO_CONST_LOOKUP(pLookup);
+        value.Lookup = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pLookup);
         value.result = result ? (byte)1 : (byte)0;
     
         GetReadyToRunHelper.Add(key, value);
     }
 
-    public void recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, uint targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_LOOKUP* pLookup)
+    public void recGetReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, uint targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP pLookup)
     {
         GetReadyToRunDelegateCtorHelper ??= new();
     
         GetReadyToRunDelegateCtorHelper_TOKENIn key = default;
         key.TargetMethod =
-            StoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper);
+            StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pTargetMethod, GetReadyToRunDelegateCtorHelper);
         key.targetConstraint          = targetConstraint;
         key.delegateType              = CastHandle(delegateType);
         key.callerHandle              = CastHandle(callerHandle);
-        Agnostic_CORINFO_LOOKUP value = StoreAgnostic_CORINFO_LOOKUP(pLookup);
+        Agnostic_CORINFO_LOOKUP value = StoreAgnostic_CORINFO_LOOKUP(ref pLookup);
         GetReadyToRunDelegateCtorHelper.Add(key, value);
     }
 
@@ -615,25 +616,25 @@ public sealed unsafe partial class MethodContext
         uint key = (uint)ftnNum;
     
         Agnostic_GetHelperFtn value = default;
-        value.helperLookup = StoreAgnostic_CORINFO_CONST_LOOKUP(&pNativeEntrypoint);
+        value.helperLookup = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pNativeEntrypoint);
         value.helperMethod = CastHandle(methodHandle);
     
         GetHelperFtn.Add(key, value);
     }
 
-    public void recGetJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, CORINFO_JUST_MY_CODE_HANDLE_** ppIndirection, CORINFO_JUST_MY_CODE_HANDLE_* result)
+    public void recGetJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection, CORINFO_JUST_MY_CODE_HANDLE_* result)
     {
         GetJustMyCodeHandle ??= new();
     
         DLDL value = default;
-        value.A = CastPointer(*ppIndirection);
+        value.A = CastPointer(ppIndirection);
         value.B = CastHandle(result);
     
         ulong key = CastHandle(method);
         GetJustMyCodeHandle.Add(key, value);
     }
 
-    public void recGetFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags)
+    public void recGetFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
     {
         GetFunctionEntryPoint ??= new();
     
@@ -642,8 +643,8 @@ public sealed unsafe partial class MethodContext
         key.B   = (uint)accessFlags;
     
         DLD value = default;
-        value.A = CastPointer(pResult->addr); // First union member
-        value.B = (uint)pResult->accessType;
+        value.A = CastPointer(pResult.addr); // First union member
+        value.B = (uint)pResult.accessType;
     
         GetFunctionEntryPoint.Add(key, value);
     }
@@ -663,26 +664,26 @@ public sealed unsafe partial class MethodContext
         ConstructStringLiteral.Add(key, value);
     }
 
-    public void recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result)
+    public void recConvertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fMustConvert, bool result)
     {
         ConvertPInvokeCalliToCall ??= new();
     
         DLD key = default;
-        key.A = CastHandle(pResolvedToken->tokenScope);
-        key.B = (uint)pResolvedToken->token;
+        key.A = CastHandle(pResolvedToken.tokenScope);
+        key.B = (uint)pResolvedToken.token;
     
         DLDL value = default;
-        value.A = result ? CastHandle(pResolvedToken->hClass) : 0;
-        value.B = result ? CastHandle(pResolvedToken->hMethod) : 0;
+        value.A = result ? CastHandle(pResolvedToken.hClass) : 0;
+        value.B = result ? CastHandle(pResolvedToken.hMethod) : 0;
     
         ConvertPInvokeCalliToCall.Add(key, value);
     }
 
-    public void recEmptyStringLiteral(void** pValue, InfoAccessType result)
+    public void recEmptyStringLiteral(ref void* pValue, InfoAccessType result)
     {
         EmptyStringLiteral ??= new();
         DLD temp2 = default;
-        temp2.A = CastPointer(*pValue);
+        temp2.A = CastPointer(pValue);
         temp2.B = (uint)result;
     
         EmptyStringLiteral.Append(temp2);
@@ -856,24 +857,24 @@ public sealed unsafe partial class MethodContext
         GetNewHelper.Add(key, value);
     }
 
-    public void recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
+    public void recEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
     {
         EmbedGenericHandle ??= new();
     
         Agnostic_EmbedGenericHandle key = default;
-        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, EmbedGenericHandle);
+        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, EmbedGenericHandle);
         key.fEmbedParent  = (fEmbedParent ? 1u : 0u);
         key.hCallerHandle = CastHandle(callerHandle);
     
         Agnostic_CORINFO_GENERICHANDLE_RESULT value = default;
-        value.lookup            = StoreAgnostic_CORINFO_LOOKUP(&pResult->lookup);
-        value.compileTimeHandle = CastHandle(pResult->compileTimeHandle);
-        value.handleType        = (uint)pResult->handleType;
+        value.lookup            = StoreAgnostic_CORINFO_LOOKUP(ref pResult.lookup);
+        value.compileTimeHandle = CastHandle(pResult.compileTimeHandle);
+        value.handleType        = (uint)pResult.handleType;
     
         EmbedGenericHandle.Add(key, value);
     }
 
-    public void recGetEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, CORINFO_EH_CLAUSE* clause)
+    public void recGetEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
     {
         GetEHinfo ??= new();
     
@@ -882,24 +883,24 @@ public sealed unsafe partial class MethodContext
         key.B = (uint)EHnumber;
     
         Agnostic_CORINFO_EH_CLAUSE value = default;
-        value.Flags         = (uint)clause->Flags;
-        value.TryOffset     = (uint)clause->TryOffset;
-        value.TryLength     = (uint)clause->TryLength;
-        value.HandlerOffset = (uint)clause->HandlerOffset;
-        value.HandlerLength = (uint)clause->HandlerLength;
-        value.ClassToken    = (uint)clause->ClassTokenOrOffset;
+        value.Flags         = (uint)clause.Flags;
+        value.TryOffset     = (uint)clause.TryOffset;
+        value.TryLength     = (uint)clause.TryLength;
+        value.HandlerOffset = (uint)clause.HandlerOffset;
+        value.HandlerLength = (uint)clause.HandlerLength;
+        value.ClassToken    = (uint)clause.ClassTokenOrOffset;
     
         GetEHinfo.Add(key, value);
     }
 
-    public void recGetMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, uint* offsetOfIndirection, uint* offsetAfterIndirection, bool* isRelative)
+    public void recGetMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
     {
         GetMethodVTableOffset ??= new();
     
         DDD value = default;
-        value.A = (uint)*offsetOfIndirection;
-        value.B = (uint)*offsetAfterIndirection;
-        value.C = *isRelative ? 1u : 0u;
+        value.A = (uint)offsetOfIndirection;
+        value.B = (uint)offsetAfterIndirection;
+        value.C = isRelative ? 1u : 0u;
     
         ulong key = CastHandle(method);
         GetMethodVTableOffset.Add(key, value);
@@ -919,19 +920,19 @@ public sealed unsafe partial class MethodContext
     
         key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != null ? 1u : 0u;
         if (key.pResolvedTokenVirtualMethodNonNull != 0)
-            key.pResolvedTokenVirtualMethod = StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+            key.pResolvedTokenVirtualMethod = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref *info->pResolvedTokenVirtualMethod, ResolveToken);
     
         Agnostic_ResolveVirtualMethodResult result = default;
         result.returnValue         = returnValue ? (byte)1 : (byte)0;
         result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
         result.tokenLookupContext  = CastHandle(info->tokenLookupContext);
         result.detail              = (uint)info->detail;
-        result.instParamLookup     = StoreAgnostic_CORINFO_LOOKUP(&info->instParamLookup);
+        result.instParamLookup     = StoreAgnostic_CORINFO_LOOKUP(ref info->instParamLookup);
     
         if (returnValue)
         {
-            result.resolvedTokenDevirtualizedMethod        = StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedMethod, ResolveToken);
-            result.resolvedTokenDevirtualizedUnboxedMethod = StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
+            result.resolvedTokenDevirtualizedMethod        = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref info->resolvedTokenDevirtualizedMethod, ResolveToken);
+            result.resolvedTokenDevirtualizedUnboxedMethod = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref info->resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
         }
         else
         {
@@ -983,24 +984,24 @@ public sealed unsafe partial class MethodContext
         GetSZArrayHelperEnumeratorClass.Add(key, value);
     }
 
-    public void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_STRUCT_* result)
+    public void recGetTokenTypeAsHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_CLASS_STRUCT_* result)
     {
         GetTokenTypeAsHandle ??= new();
     
         GetTokenTypeAsHandleValue key = default;
-        key.hMethod = CastHandle(pResolvedToken->hMethod);
-        key.hField  = CastHandle(pResolvedToken->hField);
+        key.hMethod = CastHandle(pResolvedToken.hMethod);
+        key.hField  = CastHandle(pResolvedToken.hField);
     
         ulong value = CastHandle(result);
         GetTokenTypeAsHandle.Add(key, value);
     }
 
-    public void recGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
+    public void recGetFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     {
         GetFieldInfo ??= new();
     
         Agnostic_GetFieldInfo key = default;
-        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetFieldInfo);
+        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetFieldInfo);
         key.callerHandle  = CastHandle(callerHandle);
         key.flags         = (uint)flags;
     
@@ -1013,7 +1014,7 @@ public sealed unsafe partial class MethodContext
         value.structType                    = CastHandle(pResult->structType);
         value.accessAllowed                 = (uint)pResult->accessAllowed;
         value.accessCalloutHelper           = StoreAgnostic_CORINFO_HELPER_DESC(pResult->accessCalloutHelper);
-        value.fieldLookup                   = StoreAgnostic_CORINFO_CONST_LOOKUP(&pResult->fieldLookup);
+        value.fieldLookup                   = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pResult->fieldLookup);
         GetFieldInfo.Add(key, value);
     }
 
@@ -1033,7 +1034,7 @@ public sealed unsafe partial class MethodContext
     
         Agnostic_GetThreadLocalStaticBlocksInfo value = default;
     
-        value.tlsIndex                              = StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndex);
+        value.tlsIndex                              = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pInfo->tlsIndex);
         value.tlsGetAddrFtnPtr                      = CastPointer(pInfo->tlsGetAddrFtnPtr);
         value.tlsIndexObject                        = CastPointer(pInfo->tlsIndexObject);
         value.threadVarsSection                     = CastPointer(pInfo->threadVarsSection);
@@ -1052,26 +1053,26 @@ public sealed unsafe partial class MethodContext
         GetThreadLocalStaticInfo_NativeAOT ??= new();
     
         Agnostic_GetThreadStaticInfo_NativeAOT value = default;
-        value.tlsRootObject       = StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsRootObject);
-        value.tlsIndexObject      = StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndexObject);
+        value.tlsRootObject       = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pInfo->tlsRootObject);
+        value.tlsIndexObject      = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pInfo->tlsIndexObject);
         value.offsetOfThreadLocalStoragePointer       = pInfo->offsetOfThreadLocalStoragePointer;
-        value.threadStaticBaseSlow       = StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->threadStaticBaseSlow);
-        value.tlsGetAddrFtnPtr           = StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsGetAddrFtnPtr);
+        value.threadStaticBaseSlow       = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pInfo->threadStaticBaseSlow);
+        value.tlsGetAddrFtnPtr           = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pInfo->tlsGetAddrFtnPtr);
     
         ulong key = 1;
     
         GetThreadLocalStaticInfo_NativeAOT.Add(key, value);
     }
 
-    public void recEmbedMethodHandle(CORINFO_METHOD_STRUCT_* handle, void** ppIndirection, CORINFO_METHOD_STRUCT_* result)
+    public void recEmbedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection, CORINFO_METHOD_STRUCT_* result)
     {
         EmbedMethodHandle ??= new();
     
         DLDL value = default;
-        if (ppIndirection == null)
+        if (IsNullRef(ref ppIndirection))
             value.A = 0;
         else
-            value.A = CastPointer(*ppIndirection);
+            value.A = CastPointer(ppIndirection);
         value.B     = CastHandle(result);
     
         ulong key = CastHandle(handle);
@@ -1160,40 +1161,40 @@ public sealed unsafe partial class MethodContext
         GetClassAlignmentRequirement.Add(key, value);
     }
 
-    public void recCanAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_HELPER_DESC* pAccessHelper, CorInfoIsAccessAllowedResult result)
+    public void recCanAccessClass(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_HELPER_DESC pAccessHelper, CorInfoIsAccessAllowedResult result)
     {
         CanAccessClass ??= new();
     
         Agnostic_CanAccessClassIn key = default;
-        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, CanAccessClass);
+        key.ResolvedToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, CanAccessClass);
         key.callerHandle  = CastHandle(callerHandle);
     
         Agnostic_CanAccessClassOut value = default;
-        value.AccessHelper = StoreAgnostic_CORINFO_HELPER_DESC(*pAccessHelper);
+        value.AccessHelper = StoreAgnostic_CORINFO_HELPER_DESC(pAccessHelper);
         value.result = (uint)result;
     
         CanAccessClass.Add(key, value);
     }
 
-    public void recGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing, CorInfoHelpFunc result)
+    public void recGetCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing, CorInfoHelpFunc result)
     {
         GetCastingHelper ??= new();
     
         Agnostic_GetCastingHelper key = default;
-        key.hClass    = CastHandle(pResolvedToken->hClass);
+        key.hClass    = CastHandle(pResolvedToken.hClass);
         key.fThrowing = (fThrowing ? 1u : 0u);
     
         uint value = (uint)result;
         GetCastingHelper.Add(key, value);
     }
 
-    public void recEmbedModuleHandle(CORINFO_MODULE_STRUCT_* handle, void** ppIndirection, CORINFO_MODULE_STRUCT_* result)
+    public void recEmbedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection, CORINFO_MODULE_STRUCT_* result)
     {
         EmbedModuleHandle ??= new();
     
         DLDL value = default;
-        if (ppIndirection != null)
-            value.A = CastPointer(*ppIndirection);
+        if (!IsNullRef(ref ppIndirection))
+            value.A = CastPointer(ppIndirection);
         else
             value.A = 0;
         value.B     = CastHandle(result);
@@ -1202,13 +1203,13 @@ public sealed unsafe partial class MethodContext
         EmbedModuleHandle.Add(key, value);
     }
 
-    public void recEmbedClassHandle(CORINFO_CLASS_STRUCT_* handle, void** ppIndirection, CORINFO_CLASS_STRUCT_* result)
+    public void recEmbedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection, CORINFO_CLASS_STRUCT_* result)
     {
         EmbedClassHandle ??= new();
     
         DLDL value = default;
-        if (ppIndirection != null)
-            value.A = CastPointer(*ppIndirection);
+        if (!IsNullRef(ref ppIndirection))
+            value.A = CastPointer(ppIndirection);
         else
             value.A = 0;
         value.B     = CastHandle(result);
@@ -1271,87 +1272,87 @@ public sealed unsafe partial class MethodContext
         FindSig.Add(key, value);
     }
 
-    public void recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
+    public void recGetEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
     {
         GetEEInfo ??= new();
     
         Agnostic_CORINFO_EE_INFO value = default;
     
-        value.inlinedCallFrameInfo.size                  = (uint)pEEInfoOut->inlinedCallFrameInfo.size;
-        value.inlinedCallFrameInfo.sizeWithSecretStubArg = (uint)pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg;
-        value.inlinedCallFrameInfo.offsetOfFrameLink     = (uint)pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink;
-        value.inlinedCallFrameInfo.offsetOfCallSiteSP    = (uint)pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP;
-        value.inlinedCallFrameInfo.offsetOfCalleeSavedFP = (uint)pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP;
-        value.inlinedCallFrameInfo.offsetOfCallTarget    = (uint)pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget;
-        value.inlinedCallFrameInfo.offsetOfReturnAddress = (uint)pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress;
-        value.inlinedCallFrameInfo.offsetOfSecretStubArg = (uint)pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg;
-        value.inlinedCallFrameInfo.offsetOfSPAfterProlog = (uint)pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog;
-        value.offsetOfThreadFrame                        = (uint)pEEInfoOut->offsetOfThreadFrame;
-        value.offsetOfGCState                            = (uint)pEEInfoOut->offsetOfGCState;
-        value.offsetOfDelegateInstance                   = (uint)pEEInfoOut->offsetOfDelegateInstance;
-        value.offsetOfDelegateFirstTarget                = (uint)pEEInfoOut->offsetOfDelegateFirstTarget;
-        value.sizeOfReversePInvokeFrame                  = (uint)pEEInfoOut->sizeOfReversePInvokeFrame;
-        value.osPageSize                                 = (uint)pEEInfoOut->osPageSize;
-        value.maxUncheckedOffsetForNullObject            = (uint)pEEInfoOut->maxUncheckedOffsetForNullObject;
-        value.targetAbi                                  = (uint)pEEInfoOut->targetAbi;
-        value.osType                                     = (uint)pEEInfoOut->osType;
+        value.inlinedCallFrameInfo.size                  = (uint)pEEInfoOut.inlinedCallFrameInfo.size;
+        value.inlinedCallFrameInfo.sizeWithSecretStubArg = (uint)pEEInfoOut.inlinedCallFrameInfo.sizeWithSecretStubArg;
+        value.inlinedCallFrameInfo.offsetOfFrameLink     = (uint)pEEInfoOut.inlinedCallFrameInfo.offsetOfFrameLink;
+        value.inlinedCallFrameInfo.offsetOfCallSiteSP    = (uint)pEEInfoOut.inlinedCallFrameInfo.offsetOfCallSiteSP;
+        value.inlinedCallFrameInfo.offsetOfCalleeSavedFP = (uint)pEEInfoOut.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
+        value.inlinedCallFrameInfo.offsetOfCallTarget    = (uint)pEEInfoOut.inlinedCallFrameInfo.offsetOfCallTarget;
+        value.inlinedCallFrameInfo.offsetOfReturnAddress = (uint)pEEInfoOut.inlinedCallFrameInfo.offsetOfReturnAddress;
+        value.inlinedCallFrameInfo.offsetOfSecretStubArg = (uint)pEEInfoOut.inlinedCallFrameInfo.offsetOfSecretStubArg;
+        value.inlinedCallFrameInfo.offsetOfSPAfterProlog = (uint)pEEInfoOut.inlinedCallFrameInfo.offsetOfSPAfterProlog;
+        value.offsetOfThreadFrame                        = (uint)pEEInfoOut.offsetOfThreadFrame;
+        value.offsetOfGCState                            = (uint)pEEInfoOut.offsetOfGCState;
+        value.offsetOfDelegateInstance                   = (uint)pEEInfoOut.offsetOfDelegateInstance;
+        value.offsetOfDelegateFirstTarget                = (uint)pEEInfoOut.offsetOfDelegateFirstTarget;
+        value.sizeOfReversePInvokeFrame                  = (uint)pEEInfoOut.sizeOfReversePInvokeFrame;
+        value.osPageSize                                 = (uint)pEEInfoOut.osPageSize;
+        value.maxUncheckedOffsetForNullObject            = (uint)pEEInfoOut.maxUncheckedOffsetForNullObject;
+        value.targetAbi                                  = (uint)pEEInfoOut.targetAbi;
+        value.osType                                     = (uint)pEEInfoOut.osType;
     
         GetEEInfo.Add(0, value);
     }
 
-    public void recGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
+    public void recGetAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfo)
     {
         GetAsyncInfo ??= new();
     
         Agnostic_CORINFO_ASYNC_INFO value = default;
     
-        value.continuationClsHnd = CastHandle(pAsyncInfo->continuationClsHnd);
-        value.continuationNextFldHnd = CastHandle(pAsyncInfo->continuationNextFldHnd);
-        value.continuationResumeInfoFldHnd = CastHandle(pAsyncInfo->continuationResumeInfoFldHnd);
-        value.continuationStateFldHnd = CastHandle(pAsyncInfo->continuationStateFldHnd);
-        value.continuationFlagsFldHnd = CastHandle(pAsyncInfo->continuationFlagsFldHnd);
-        value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
-        value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo->captureContinuationContextMethHnd);
-        value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
-        value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
-        value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo->restoreContextsOnSuspensionMethHnd);
-        value.restoreInlinedFrameContextsMethHnd = CastHandle(pAsyncInfo->restoreInlinedFrameContextsMethHnd);
-        value.captureInlinedFrameTransitionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionWithContinuationContextMethHnd);
-        value.captureInlinedFrameTransitionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionNoContinuationContextMethHnd);
-        value.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionContinueOnThreadPoolMethHnd);
-        value.finishSuspensionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionNoContinuationContextMethHnd);
-        value.finishSuspensionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionWithContinuationContextMethHnd);
+        value.continuationClsHnd = CastHandle(pAsyncInfo.continuationClsHnd);
+        value.continuationNextFldHnd = CastHandle(pAsyncInfo.continuationNextFldHnd);
+        value.continuationResumeInfoFldHnd = CastHandle(pAsyncInfo.continuationResumeInfoFldHnd);
+        value.continuationStateFldHnd = CastHandle(pAsyncInfo.continuationStateFldHnd);
+        value.continuationFlagsFldHnd = CastHandle(pAsyncInfo.continuationFlagsFldHnd);
+        value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo.captureExecutionContextMethHnd);
+        value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo.captureContinuationContextMethHnd);
+        value.captureContextsMethHnd = CastHandle(pAsyncInfo.captureContextsMethHnd);
+        value.restoreContextsMethHnd = CastHandle(pAsyncInfo.restoreContextsMethHnd);
+        value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo.restoreContextsOnSuspensionMethHnd);
+        value.restoreInlinedFrameContextsMethHnd = CastHandle(pAsyncInfo.restoreInlinedFrameContextsMethHnd);
+        value.captureInlinedFrameTransitionWithContinuationContextMethHnd = CastHandle(pAsyncInfo.captureInlinedFrameTransitionWithContinuationContextMethHnd);
+        value.captureInlinedFrameTransitionNoContinuationContextMethHnd = CastHandle(pAsyncInfo.captureInlinedFrameTransitionNoContinuationContextMethHnd);
+        value.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = CastHandle(pAsyncInfo.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd);
+        value.finishSuspensionNoContinuationContextMethHnd = CastHandle(pAsyncInfo.finishSuspensionNoContinuationContextMethHnd);
+        value.finishSuspensionWithContinuationContextMethHnd = CastHandle(pAsyncInfo.finishSuspensionWithContinuationContextMethHnd);
     
         GetAsyncInfo.Add(0, value);
     }
 
-    public void recGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals)
+    public void recGetWasmWellKnownGlobals(ref CORINFO_WASM_WELLKNOWN_GLOBALS pBaseGlobals)
     {
         GetWasmWellKnownGlobals ??= new();
     
         Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS value = default;
     
-        value.stackPointer = CastHandle(pBaseGlobals->stackPointer);
-        value.imageBase    = CastHandle(pBaseGlobals->imageBase);
-        value.tableBase    = CastHandle(pBaseGlobals->tableBase);
-        value.asyncContinuation = CastHandle(pBaseGlobals->asyncContinuation);
+        value.stackPointer = CastHandle(pBaseGlobals.stackPointer);
+        value.imageBase    = CastHandle(pBaseGlobals.imageBase);
+        value.tableBase    = CastHandle(pBaseGlobals.tableBase);
+        value.asyncContinuation = CastHandle(pBaseGlobals.asyncContinuation);
     
         GetWasmWellKnownGlobals.Add(0, value);
     }
 
-    public void recGetAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg, CORINFO_METHOD_STRUCT_* methHnd)
+    public void recGetAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg, CORINFO_METHOD_STRUCT_* methHnd)
     {
         GetAwaitReturnCall ??= new();
     
         Agnostic_GetAwaitReturnCallResult value = default;
         value.methodHnd = CastHandle(methHnd);
         value.contextHandle = CastHandle(*contextHandle);
-        value.instArg = StoreAgnostic_CORINFO_LOOKUP(instArg);
+        value.instArg = StoreAgnostic_CORINFO_LOOKUP(ref instArg);
     
         GetAwaitReturnCall.Add(CastHandle(callerHnd), value);
     }
 
-    public void recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg, CORINFO_METHOD_STRUCT_* methHnd)
+    public void recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_STRUCT_* callerHnd, ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg, CORINFO_METHOD_STRUCT_* methHnd)
     {
         if (GetAwaitAwaiterInContinuationCall == null)
         {
@@ -1362,13 +1363,13 @@ public sealed unsafe partial class MethodContext
         Agnostic_GetAwaitAwaiterInContinuationCall key = default;
         key.callerHnd = CastHandle(callerHnd);
         key.ResolvedToken =
-            StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetAwaitAwaiterInContinuationCall);
+            StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref pResolvedToken, GetAwaitAwaiterInContinuationCall);
         key.isUnsafe = isUnsafe ? 1u : 0u;
     
         Agnostic_GetAwaitReturnCallResult value = default;
         value.methodHnd = CastHandle(methHnd);
         value.contextHandle = CastHandle(*contextHandle);
-        value.instArg = StoreAgnostic_CORINFO_LOOKUP(instArg);
+        value.instArg = StoreAgnostic_CORINFO_LOOKUP(ref instArg);
     
         GetAwaitAwaiterInContinuationCall.Add(key, value);
     }
@@ -1392,14 +1393,14 @@ public sealed unsafe partial class MethodContext
         GetGSCookie.Add(0, value);
     }
 
-    public void recGetOSRInfo(PatchpointInfo* patchpointInfo, uint* ilOffset)
+    public void recGetOSRInfo(PatchpointInfo* patchpointInfo, ref uint ilOffset)
     {
         GetOSRInfo ??= new();
 
         Agnostic_GetOSRInfo value = default;
 
         value.index = GetOSRInfo.AddBuffer(Bytes(patchpointInfo, PatchpointInfoSize(patchpointInfo)));
-        value.ilOffset = *ilOffset;
+        value.ilOffset = ilOffset;
 
         // use 0 for key
         uint key = 0;
@@ -1426,27 +1427,27 @@ public sealed unsafe partial class MethodContext
         GetClassModuleIdForStatics.Add(key, value);
     }
 
-    public void recGetIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result)
+    public void recGetIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset, bool result)
     {
         GetIsClassInitedFlagAddress ??= new();
     
         Agnostic_GetIsClassInitedFlagAddress value = default;
-        value.addr.handle = CastHandle(addr->addr);
-        value.addr.accessType = (uint)addr->accessType;
-        value.offset = (uint)*offset;
+        value.addr.handle = CastHandle(addr.addr);
+        value.addr.accessType = (uint)addr.accessType;
+        value.offset = (uint)offset;
         value.result = (result ? 1u : 0u);
     
         ulong key = CastHandle(cls);
         GetIsClassInitedFlagAddress.Add(key, value);
     }
 
-    public void recGetStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result)
+    public void recGetStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr, bool result)
     {
         GetStaticBaseAddress ??= new();
     
         Agnostic_GetStaticBaseAddress value = default;
-        value.addr.handle = CastHandle(addr->addr);
-        value.addr.accessType = (uint)addr->accessType;
+        value.addr.handle = CastHandle(addr.addr);
+        value.addr.accessType = (uint)addr.accessType;
         value.result = result ? 1u : 0u;
     
         DLD key = default;
@@ -1456,14 +1457,14 @@ public sealed unsafe partial class MethodContext
         GetStaticBaseAddress.Add(key, value);
     }
 
-    public void recGetThreadTLSIndex(void** ppIndirection, uint result)
+    public void recGetThreadTLSIndex(ref void* ppIndirection, uint result)
     {
         GetThreadTLSIndex ??= new();
     
         DLD value = default;
     
-        if (ppIndirection != null)
-            value.A = CastPointer(*ppIndirection);
+        if (!IsNullRef(ref ppIndirection))
+            value.A = CastPointer(ppIndirection);
         else
             value.A = 0;
         value.B     = (uint)result;
@@ -1471,14 +1472,14 @@ public sealed unsafe partial class MethodContext
         GetThreadTLSIndex.Add(0, value);
     }
 
-    public void recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int* result)
+    public void recGetAddrOfCaptureThreadGlobal(ref void* ppIndirection, int* result)
     {
         GetAddrOfCaptureThreadGlobal ??= new();
     
         DLDL value = default;
     
-        if (ppIndirection != null)
-            value.A = CastPointer(*ppIndirection);
+        if (!IsNullRef(ref ppIndirection))
+            value.A = CastPointer(ppIndirection);
         else
             value.A = 0;
         value.B     = CastPointer(result);
@@ -1512,17 +1513,17 @@ public sealed unsafe partial class MethodContext
         GetClassThreadStaticDynamicInfo.Add(key, value);
     }
 
-    public void recGetLocationOfThisType(CORINFO_METHOD_STRUCT_* context, CORINFO_LOOKUP_KIND* result)
+    public void recGetLocationOfThisType(CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND result)
     {
         GetLocationOfThisType ??= new();
     
-        Agnostic_CORINFO_LOOKUP_KIND value = CreateAgnostic_CORINFO_LOOKUP_KIND(result);
+        Agnostic_CORINFO_LOOKUP_KIND value = CreateAgnostic_CORINFO_LOOKUP_KIND(ref result);
     
         ulong key = CastHandle(context);
         GetLocationOfThisType.Add(key, value);
     }
 
-    public void recGetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, DelegateCtorArgs* pCtorData, CORINFO_METHOD_STRUCT_* result)
+    public void recGetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData, CORINFO_METHOD_STRUCT_* result)
     {
         GetDelegateCtor ??= new();
     
@@ -1532,20 +1533,20 @@ public sealed unsafe partial class MethodContext
         key.targetMethodHnd = CastHandle(targetMethodHnd);
     
         Agnostic_GetDelegateCtorOut value = default;
-        value.CtorData.pMethod = CastPointer(pCtorData->pMethod);
-        value.CtorData.pArg3   = CastPointer(pCtorData->pArg3);
-        value.CtorData.pArg4   = CastPointer(pCtorData->pArg4);
-        value.CtorData.pArg5   = CastPointer(pCtorData->pArg5);
+        value.CtorData.pMethod = CastPointer(pCtorData.pMethod);
+        value.CtorData.pArg3   = CastPointer(pCtorData.pArg3);
+        value.CtorData.pArg4   = CastPointer(pCtorData.pArg4);
+        value.CtorData.pArg5   = CastPointer(pCtorData.pArg5);
         value.result           = CastHandle(result);
     
         GetDelegateCtor.Add(key, value);
     }
 
-    public void recGetFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, CORINFO_CONST_LOOKUP* pResult)
+    public void recGetFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
     {
         GetFunctionFixedEntryPoint ??= new();
     
-        Agnostic_CORINFO_CONST_LOOKUP value = StoreAgnostic_CORINFO_CONST_LOOKUP(pResult);
+        Agnostic_CORINFO_CONST_LOOKUP value = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pResult);
     
         ulong key = CastHandle(ftn);
         GetFunctionFixedEntryPoint.Add(key, value);
@@ -1715,13 +1716,13 @@ public sealed unsafe partial class MethodContext
         GetArrayInitializationData.Add(key, value);
     }
 
-    public void recGetAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, CORINFO_CONST_LOOKUP* pLookup)
+    public void recGetAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
     {
         GetAddressOfPInvokeTarget ??= new();
     
         DLD value = default;
-        value.A = CastPointer(pLookup->addr);
-        value.B = (uint)pLookup->accessType;
+        value.A = CastPointer(pLookup.addr);
+        value.B = (uint)pLookup.accessType;
     
         ulong key = CastHandle(method);
         GetAddressOfPInvokeTarget.Add(key, value);
@@ -1776,7 +1777,7 @@ public sealed unsafe partial class MethodContext
         FindCallSiteSig.Add(key, value);
     }
 
-    public void recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, void** ppIndirection, void* result)
+    public void recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, ref void* ppIndirection, void* result)
     {
         GetVarArgsHandle ??= new();
     
@@ -1788,8 +1789,8 @@ public sealed unsafe partial class MethodContext
         key.methHnd    = CastHandle(methHnd);
     
         DLDL value = default;
-        if (ppIndirection != null)
-            value.A = CastPointer(*ppIndirection);
+        if (!IsNullRef(ref ppIndirection))
+            value.A = CastPointer(ppIndirection);
         else
             value.A = 0;
         value.B     = CastHandle(result);
@@ -1797,14 +1798,14 @@ public sealed unsafe partial class MethodContext
         GetVarArgsHandle.Add(key, value);
     }
 
-    public void recGetFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, void** ppIndirection, uint result)
+    public void recGetFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection, uint result)
     {
         GetFieldThreadLocalStoreID ??= new();
     
         DLD value = default;
     
-        if (ppIndirection != null)
-            value.A = CastPointer(*ppIndirection);
+        if (!IsNullRef(ref ppIndirection))
+            value.A = CastPointer(ppIndirection);
         else
             value.A = 0;
         value.B     = (uint)result;
@@ -1863,18 +1864,18 @@ public sealed unsafe partial class MethodContext
         AllocPgoInstrumentationBySchema.Add(key, value);
     }
 
-    public void recGetPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema** pSchema, uint* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo, int result)
+    public void recGetPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint pCountSchemaItems, byte** pInstrumentationData, ref PgoSource pPgoSource, ref bool pDynamicPgo, int result)
     {
         GetPgoInstrumentationResults ??= new();
     
         Agnostic_GetPgoInstrumentationResults value = default;
     
-        value.countSchemaItems = *pCountSchemaItems;
+        value.countSchemaItems = pCountSchemaItems;
     
-        PgoInstrumentationSchema* pInSchema = *pSchema;
-        var agnosticSchema = new Agnostic_PgoInstrumentationSchema[*pCountSchemaItems];
+        PgoInstrumentationSchema* pInSchema = pSchema;
+        var agnosticSchema = new Agnostic_PgoInstrumentationSchema[pCountSchemaItems];
         nuint maxOffset = 0;
-        for (uint i = 0; i < (*pCountSchemaItems); i++)
+        for (uint i = 0; i < (pCountSchemaItems); i++)
         {
             agnosticSchema[i].Offset              = (ulong)pInSchema[i].Offset;
             agnosticSchema[i].InstrumentationKind = (uint)pInSchema[i].InstrumentationKind;
@@ -1890,8 +1891,8 @@ public sealed unsafe partial class MethodContext
         value.data_index    = GetPgoInstrumentationResults.AddBuffer(Bytes(*pInstrumentationData, (uint)maxOffset));
         value.dataByteCount = (uint)maxOffset;
         value.result        = (uint)result;
-        value.pgoSource     = (uint)*pPgoSource;
-        value.dynamicPgo    = (*pDynamicPgo ? 1u : 0u);
+        value.pgoSource     = (uint)pPgoSource;
+        value.dynamicPgo    = (pDynamicPgo ? 1u : 0u);
     
         ulong key = CastHandle(ftnHnd);
         GetPgoInstrumentationResults.Add(key, value);
@@ -1977,24 +1978,24 @@ public sealed unsafe partial class MethodContext
         ErrorList.Append(temp);
     }
 
-    public void recGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles)
+    public void recGetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
     {
         GetProfilingHandle ??= new();
     
         Agnostic_GetProfilingHandle value = default;
-        value.bHookFunction      = (*pbHookFunction ? 1u : 0u);
-        value.ProfilerHandle     = CastPointer(*pProfilerHandle);
-        value.bIndirectedHandles = (*pbIndirectedHandles ? 1u : 0u);
+        value.bHookFunction      = (pbHookFunction ? 1u : 0u);
+        value.ProfilerHandle     = CastPointer(pProfilerHandle);
+        value.bIndirectedHandles = (pbIndirectedHandles ? 1u : 0u);
         GetProfilingHandle.Add(0, value);
     }
 
-    public void recEmbedFieldHandle(CORINFO_FIELD_STRUCT_* handle, void** ppIndirection, CORINFO_FIELD_STRUCT_* result)
+    public void recEmbedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection, CORINFO_FIELD_STRUCT_* result)
     {
         EmbedFieldHandle ??= new();
     
         DLDL value = default;
-        if (ppIndirection != null)
-            value.A = CastPointer(*ppIndirection);
+        if (!IsNullRef(ref ppIndirection))
+            value.A = CastPointer(ppIndirection);
         else
             value.A = 0;
         value.B     = CastHandle(result);
@@ -2047,42 +2048,42 @@ public sealed unsafe partial class MethodContext
         GetSystemVAmd64PassStructInRegisterDescriptor.Add(key, value);
     }
 
-    public void recGetSwiftLowering(CORINFO_CLASS_STRUCT_* structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+    public void recGetSwiftLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_SWIFT_LOWERING pLowering)
     {
         GetSwiftLowering ??= new();
 
         ulong key = CastHandle(structHnd);
 
         Agnostic_GetSwiftLowering value = default;
-        value.byReference = pLowering->byReference ? 1u : 0u;
-        if (!pLowering->byReference)
+        value.byReference = pLowering.byReference ? 1u : 0u;
+        if (!pLowering.byReference)
         {
-            value.numLoweredElements = (uint)pLowering->numLoweredElements;
-            for (int i = 0; i < pLowering->numLoweredElements; i++)
+            value.numLoweredElements = (uint)pLowering.numLoweredElements;
+            for (int i = 0; i < pLowering.numLoweredElements; i++)
             {
-                value.loweredElements[i] = (uint)pLowering->LoweredElements[i];
-                value.offsets[i] = pLowering->Offsets[i];
+                value.loweredElements[i] = (uint)pLowering.LoweredElements[i];
+                value.offsets[i] = pLowering.Offsets[i];
             }
         }
 
         GetSwiftLowering.Add(key, value);
     }
 
-    public void recGetFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
+    public void recGetFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING pLowering)
     {
         GetFpStructLowering ??= new();
 
         ulong key = CastHandle(structHnd);
 
         Agnostic_GetFpStructLowering value = default;
-        value.byIntegerCallConv = pLowering->byIntegerCallConv ? 1u : 0u;
-        if (!pLowering->byIntegerCallConv)
+        value.byIntegerCallConv = pLowering.byIntegerCallConv ? 1u : 0u;
+        if (!pLowering.byIntegerCallConv)
         {
-            value.numLoweredElements = (uint)pLowering->numLoweredElements;
-            for (int i = 0; i < pLowering->numLoweredElements; i++)
+            value.numLoweredElements = (uint)pLowering.numLoweredElements;
+            for (int i = 0; i < pLowering.numLoweredElements; i++)
             {
-                value.loweredElements[i] = (uint)pLowering->LoweredElements[i];
-                value.offsets[i] = pLowering->Offsets[i];
+                value.loweredElements[i] = (uint)pLowering.LoweredElements[i];
+                value.offsets[i] = pLowering.Offsets[i];
             }
         }
 
@@ -2252,23 +2253,24 @@ public sealed unsafe partial class MethodContext
         recPrint(PrintMethodName ??= new(), CastHandle(meth), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
     }
 
-    public void recGetTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult)
+    public void recGetTailCallHelpers(ref CORINFO_RESOLVED_TOKEN callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, bool result,
+        ref CORINFO_TAILCALL_HELPERS pResult)
     {
         GetTailCallHelpers ??= new();
     
         Agnostic_GetTailCallHelpers key = default;
-        key.callToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(callToken, GetTailCallHelpers);
+        key.callToken = StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref callToken, GetTailCallHelpers);
         key.sig       = StoreSig(*sig, GetTailCallHelpers);
         key.flags     = (uint)flags;
     
         Agnostic_CORINFO_TAILCALL_HELPERS value = default;
-        value.result = pResult != null ? (byte)1 : (byte)0;
-        if (pResult != null)
+        value.result = result ? (byte)1 : (byte)0;
+        if (result)
         {
-            value.flags       = (uint)pResult->flags;
-            value.hStoreArgs  = CastHandle(pResult->hStoreArgs);
-            value.hCallTarget = CastHandle(pResult->hCallTarget);
-            value.hDispatcher = CastHandle(pResult->hDispatcher);
+            value.flags       = (uint)pResult.flags;
+            value.hStoreArgs  = CastHandle(pResult.hStoreArgs);
+            value.hCallTarget = CastHandle(pResult.hCallTarget);
+            value.hDispatcher = CastHandle(pResult.hDispatcher);
         }
     
         GetTailCallHelpers.Add(key, value);
@@ -2284,7 +2286,7 @@ public sealed unsafe partial class MethodContext
         GetAsyncResumptionStub.Add(0, result);
     }
 
-    public void recGetContinuationType(nuint dataSize, bool* objRefs, nuint objRefsSize, CORINFO_CLASS_STRUCT_* result)
+    public void recGetContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize, CORINFO_CLASS_STRUCT_* result)
     {
         if (GetContinuationType == null)
         {
@@ -2293,7 +2295,7 @@ public sealed unsafe partial class MethodContext
     
         Agnostic_GetContinuationTypeIn key = default;
         key.dataSize = (ulong)dataSize;
-        key.objRefs = GetContinuationType.AddBuffer(Bytes(objRefs, (uint)objRefsSize));
+        key.objRefs = GetContinuationType.AddBuffer(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref objRefs, (int)objRefsSize)));
         key.objRefsSize = (uint)objRefsSize;
     
         ulong value = CastHandle(result);
@@ -2305,8 +2307,8 @@ public sealed unsafe partial class MethodContext
     {
         UpdateEntryPointForTailCall ??= new();
     
-        Agnostic_CORINFO_CONST_LOOKUP key = StoreAgnostic_CORINFO_CONST_LOOKUP(&origEntryPoint);
-        Agnostic_CORINFO_CONST_LOOKUP value = StoreAgnostic_CORINFO_CONST_LOOKUP(&newEntryPoint);
+        Agnostic_CORINFO_CONST_LOOKUP key = StoreAgnostic_CORINFO_CONST_LOOKUP(ref origEntryPoint);
+        Agnostic_CORINFO_CONST_LOOKUP value = StoreAgnostic_CORINFO_CONST_LOOKUP(ref newEntryPoint);
         UpdateEntryPointForTailCall.Add(key, value);
     }
 

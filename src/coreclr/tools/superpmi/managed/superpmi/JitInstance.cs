@@ -187,7 +187,7 @@ internal sealed unsafe class JitInstance
             mc.repCompileMethod(&info, &flags, &os);
 
             CORJIT_FLAGS jitFlags = default;
-            getJitFlags(&jitFlags, (uint)sizeof(CORJIT_FLAGS));
+            getJitFlags(ref jitFlags, (uint)sizeof(CORJIT_FLAGS));
             results.IsMinOpts = jitFlags.IsSet(CorJitFlag.CORJIT_FLAG_DEBUG_CODE) || jitFlags.IsSet(CorJitFlag.CORJIT_FLAG_MIN_OPT) ||
                 jitFlags.IsSet(CorJitFlag.CORJIT_FLAG_TIER0);
 
@@ -335,13 +335,13 @@ internal sealed unsafe class JitInstance
     }
 
     // The JIT flags of the compilation, adjusted for altjit. This doesn't record the call in the compile result.
-    public uint getJitFlags(CORJIT_FLAGS* jitFlags, uint sizeInBytes)
+    public uint getJitFlags(ref CORJIT_FLAGS jitFlags, uint sizeInBytes)
     {
-        uint ret = mc.repGetJitFlags(jitFlags, sizeInBytes);
+        uint ret = mc.repGetJitFlags(ref jitFlags, sizeInBytes);
         if (forceClearAltJitFlag)
-            jitFlags->Clear(CorJitFlag.CORJIT_FLAG_ALT_JIT);
+            jitFlags.Clear(CorJitFlag.CORJIT_FLAG_ALT_JIT);
         else if (forceSetAltJitFlag)
-            jitFlags->Set(CorJitFlag.CORJIT_FLAG_ALT_JIT);
+            jitFlags.Set(CorJitFlag.CORJIT_FLAG_ALT_JIT);
         return ret;
     }
 

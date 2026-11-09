@@ -282,17 +282,17 @@ public sealed unsafe partial class CompileResult
         return index < 0 ? 0 : SetEHcount.GetItem(index);
     }
 
-    public void recSetEHinfo(uint EHnumber, CORINFO_EH_CLAUSE* clause)
+    public void recSetEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
     {
         SetEHinfo ??= new LightWeightMap<uint, Agnostic_CORINFO_EH_CLAUSE>();
         SetEHinfo.Add(EHnumber, new Agnostic_CORINFO_EH_CLAUSE
         {
-            Flags = (uint)clause->Flags,
-            TryOffset = clause->TryOffset,
-            TryLength = clause->TryLength,
-            HandlerOffset = clause->HandlerOffset,
-            HandlerLength = clause->HandlerLength,
-            ClassToken = clause->ClassTokenOrOffset,
+            Flags = (uint)clause.Flags,
+            TryOffset = clause.TryOffset,
+            TryLength = clause.TryLength,
+            HandlerOffset = clause.HandlerOffset,
+            HandlerLength = clause.HandlerLength,
+            ClassToken = clause.ClassTokenOrOffset,
         });
     }
 

@@ -37,7 +37,7 @@ public sealed unsafe partial class MethodContext
     {
         ulong* raw = stackalloc ulong[1 + InstructionFlagsFieldCount];
         new Span<ulong>(raw, 1 + InstructionFlagsFieldCount).Clear();
-        repGetJitFlags((CORJIT_FLAGS*)raw, (uint)(sizeof(ulong) * (1 + InstructionFlagsFieldCount)));
+        repGetJitFlags(ref *((CORJIT_FLAGS*)raw), (uint)(sizeof(ulong) * (1 + InstructionFlagsFieldCount)));
         return (raw[0], new ReadOnlySpan<ulong>(raw + 1, InstructionFlagsFieldCount).ToArray());
     }
 
@@ -69,12 +69,12 @@ public sealed unsafe partial class MethodContext
 
     private void AppendPgoCountersHash(ByteBuilder buff, CORINFO_METHOD_STRUCT_* ftn)
     {
-        PgoInstrumentationSchema* schema;
-        uint schemaCount;
+        PgoInstrumentationSchema* schema = null;
+        uint schemaCount = 0;
         byte* schemaData;
-        PgoSource pgoSource;
-        bool dynamicPgo;
-        if (repGetPgoInstrumentationResults(ftn, &schema, &schemaCount, &schemaData, &pgoSource, &dynamicPgo) < 0)
+        PgoSource pgoSource = default;
+        bool dynamicPgo = false;
+        if (repGetPgoInstrumentationResults(ftn, ref schema, ref schemaCount, &schemaData, ref pgoSource, ref dynamicPgo) < 0)
             return;
 
         ulong minOffset = ulong.MaxValue;

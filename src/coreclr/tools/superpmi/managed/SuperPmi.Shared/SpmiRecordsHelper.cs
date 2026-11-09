@@ -12,67 +12,75 @@ namespace SuperPmi;
 // JIT-EE types.
 public static unsafe class SpmiRecordsHelper
 {
+    // Unsafe.IsNullRef for a byref to a pointer, which can't be a type argument. The JIT passes no location for
+    // some of these.
+    public static bool IsNullRef(ref void* value)
+    {
+        fixed (void** p = &value)
+            return p == null;
+    }
+
     private const int CORINFO_MAXINDIRECTIONS = 4;
     private const int CORINFO_ACCESS_ALLOWED_MAX_ARGS = 4;
 
     public static ulong CastHandle(void* h) => (ulong)h;
 
-    public static Agnostic_CORINFO_RESOLVED_TOKENin CreateAgnostic_CORINFO_RESOLVED_TOKENin(CORINFO_RESOLVED_TOKEN* pResolvedToken)
+    public static Agnostic_CORINFO_RESOLVED_TOKENin CreateAgnostic_CORINFO_RESOLVED_TOKENin(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
     {
         var tokenIn = new Agnostic_CORINFO_RESOLVED_TOKENin();
-        if (pResolvedToken != null)
+        if (!Unsafe.IsNullRef(ref pResolvedToken))
         {
-            tokenIn.tokenContext = CastHandle(pResolvedToken->tokenContext);
-            tokenIn.tokenScope = CastHandle(pResolvedToken->tokenScope);
-            tokenIn.token = (uint)pResolvedToken->token;
-            tokenIn.tokenType = (uint)pResolvedToken->tokenType;
+            tokenIn.tokenContext = CastHandle(pResolvedToken.tokenContext);
+            tokenIn.tokenScope = CastHandle(pResolvedToken.tokenScope);
+            tokenIn.token = (uint)pResolvedToken.token;
+            tokenIn.tokenType = (uint)pResolvedToken.tokenType;
         }
         return tokenIn;
     }
 
-    public static Agnostic_CORINFO_RESOLVED_TOKENout CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(CORINFO_RESOLVED_TOKEN* pResolvedToken)
+    public static Agnostic_CORINFO_RESOLVED_TOKENout CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
     {
         var tokenOut = new Agnostic_CORINFO_RESOLVED_TOKENout();
-        if (pResolvedToken != null)
+        if (!Unsafe.IsNullRef(ref pResolvedToken))
         {
-            tokenOut.hClass = CastHandle(pResolvedToken->hClass);
-            tokenOut.hMethod = CastHandle(pResolvedToken->hMethod);
-            tokenOut.hField = CastHandle(pResolvedToken->hField);
-            tokenOut.cbTypeSpec = pResolvedToken->cbTypeSpec;
-            tokenOut.cbMethodSpec = pResolvedToken->cbMethodSpec;
+            tokenOut.hClass = CastHandle(pResolvedToken.hClass);
+            tokenOut.hMethod = CastHandle(pResolvedToken.hMethod);
+            tokenOut.hField = CastHandle(pResolvedToken.hField);
+            tokenOut.cbTypeSpec = pResolvedToken.cbTypeSpec;
+            tokenOut.cbMethodSpec = pResolvedToken.cbMethodSpec;
         }
         tokenOut.pTypeSpec_Index = uint.MaxValue;
         tokenOut.pMethodSpec_Index = uint.MaxValue;
         return tokenOut;
     }
 
-    public static Agnostic_CORINFO_RESOLVED_TOKENout StoreAgnostic_CORINFO_RESOLVED_TOKENout(CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMapBuffer buffers)
+    public static Agnostic_CORINFO_RESOLVED_TOKENout StoreAgnostic_CORINFO_RESOLVED_TOKENout(ref CORINFO_RESOLVED_TOKEN pResolvedToken, LightWeightMapBuffer buffers)
     {
-        Agnostic_CORINFO_RESOLVED_TOKENout tokenOut = CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(pResolvedToken);
-        if (pResolvedToken != null)
+        Agnostic_CORINFO_RESOLVED_TOKENout tokenOut = CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(ref pResolvedToken);
+        if (!Unsafe.IsNullRef(ref pResolvedToken))
         {
-            tokenOut.pTypeSpec_Index = buffers.AddBuffer(Bytes(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec));
-            tokenOut.pMethodSpec_Index = buffers.AddBuffer(Bytes(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec));
+            tokenOut.pTypeSpec_Index = buffers.AddBuffer(Bytes(pResolvedToken.pTypeSpec, pResolvedToken.cbTypeSpec));
+            tokenOut.pMethodSpec_Index = buffers.AddBuffer(Bytes(pResolvedToken.pMethodSpec, pResolvedToken.cbMethodSpec));
         }
         return tokenOut;
     }
 
-    public static Agnostic_CORINFO_RESOLVED_TOKENout RestoreAgnostic_CORINFO_RESOLVED_TOKENout(CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMapBuffer buffers)
+    public static Agnostic_CORINFO_RESOLVED_TOKENout RestoreAgnostic_CORINFO_RESOLVED_TOKENout(ref CORINFO_RESOLVED_TOKEN pResolvedToken, LightWeightMapBuffer buffers)
     {
-        Agnostic_CORINFO_RESOLVED_TOKENout tokenOut = CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(pResolvedToken);
-        if (pResolvedToken != null)
+        Agnostic_CORINFO_RESOLVED_TOKENout tokenOut = CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(ref pResolvedToken);
+        if (!Unsafe.IsNullRef(ref pResolvedToken))
         {
-            tokenOut.pTypeSpec_Index = (uint)buffers.Contains(Bytes(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec));
-            tokenOut.pMethodSpec_Index = (uint)buffers.Contains(Bytes(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec));
+            tokenOut.pTypeSpec_Index = (uint)buffers.Contains(Bytes(pResolvedToken.pTypeSpec, pResolvedToken.cbTypeSpec));
+            tokenOut.pMethodSpec_Index = (uint)buffers.Contains(Bytes(pResolvedToken.pMethodSpec, pResolvedToken.cbMethodSpec));
         }
         return tokenOut;
     }
 
-    public static Agnostic_CORINFO_RESOLVED_TOKEN StoreAgnostic_CORINFO_RESOLVED_TOKEN(CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMapBuffer buffers)
-        => new() { inValue = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken), outValue = StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, buffers) };
+    public static Agnostic_CORINFO_RESOLVED_TOKEN StoreAgnostic_CORINFO_RESOLVED_TOKEN(ref CORINFO_RESOLVED_TOKEN pResolvedToken, LightWeightMapBuffer buffers)
+        => new() { inValue = CreateAgnostic_CORINFO_RESOLVED_TOKENin(ref pResolvedToken), outValue = StoreAgnostic_CORINFO_RESOLVED_TOKENout(ref pResolvedToken, buffers) };
 
-    public static Agnostic_CORINFO_RESOLVED_TOKEN RestoreAgnostic_CORINFO_RESOLVED_TOKEN(CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMapBuffer buffers)
-        => new() { inValue = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken), outValue = RestoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, buffers) };
+    public static Agnostic_CORINFO_RESOLVED_TOKEN RestoreAgnostic_CORINFO_RESOLVED_TOKEN(ref CORINFO_RESOLVED_TOKEN pResolvedToken, LightWeightMapBuffer buffers)
+        => new() { inValue = CreateAgnostic_CORINFO_RESOLVED_TOKENin(ref pResolvedToken), outValue = RestoreAgnostic_CORINFO_RESOLVED_TOKENout(ref pResolvedToken, buffers) };
 
     public static CORINFO_RESOLVED_TOKEN Restore_CORINFO_RESOLVED_TOKEN(in Agnostic_CORINFO_RESOLVED_TOKEN pResolvedTokenAgnostic, LightWeightMapBuffer buffers)
     {
@@ -83,23 +91,23 @@ public static unsafe class SpmiRecordsHelper
             token = (mdToken)pResolvedTokenAgnostic.inValue.token,
             tokenType = (CorInfoTokenKind)pResolvedTokenAgnostic.inValue.tokenType,
         };
-        Restore_CORINFO_RESOLVED_TOKENout(&token, pResolvedTokenAgnostic.outValue, buffers);
+        Restore_CORINFO_RESOLVED_TOKENout(ref token, pResolvedTokenAgnostic.outValue, buffers);
         return token;
     }
 
     // Restores the out values of the token; the in values are left as they are.
-    public static void Restore_CORINFO_RESOLVED_TOKENout(CORINFO_RESOLVED_TOKEN* pResolvedToken, in Agnostic_CORINFO_RESOLVED_TOKENout tokenOut, LightWeightMapBuffer buffers)
+    public static void Restore_CORINFO_RESOLVED_TOKENout(ref CORINFO_RESOLVED_TOKEN pResolvedToken, in Agnostic_CORINFO_RESOLVED_TOKENout tokenOut, LightWeightMapBuffer buffers)
     {
-        if (pResolvedToken == null)
+        if (Unsafe.IsNullRef(ref pResolvedToken))
             return;
 
-        pResolvedToken->hClass = (CORINFO_CLASS_STRUCT_*)tokenOut.hClass;
-        pResolvedToken->hMethod = (CORINFO_METHOD_STRUCT_*)tokenOut.hMethod;
-        pResolvedToken->hField = (CORINFO_FIELD_STRUCT_*)tokenOut.hField;
-        pResolvedToken->pTypeSpec = buffers.GetBufferPointer(tokenOut.pTypeSpec_Index);
-        pResolvedToken->cbTypeSpec = tokenOut.cbTypeSpec;
-        pResolvedToken->pMethodSpec = buffers.GetBufferPointer(tokenOut.pMethodSpec_Index);
-        pResolvedToken->cbMethodSpec = tokenOut.cbMethodSpec;
+        pResolvedToken.hClass = (CORINFO_CLASS_STRUCT_*)tokenOut.hClass;
+        pResolvedToken.hMethod = (CORINFO_METHOD_STRUCT_*)tokenOut.hMethod;
+        pResolvedToken.hField = (CORINFO_FIELD_STRUCT_*)tokenOut.hField;
+        pResolvedToken.pTypeSpec = buffers.GetBufferPointer(tokenOut.pTypeSpec_Index);
+        pResolvedToken.cbTypeSpec = tokenOut.cbTypeSpec;
+        pResolvedToken.pMethodSpec = buffers.GetBufferPointer(tokenOut.pMethodSpec_Index);
+        pResolvedToken.cbMethodSpec = tokenOut.cbMethodSpec;
     }
 
     public static Agnostic_CORINFO_SIG_INFO CreateAgnostic_CORINFO_SIG_INFO_without_buffers(in CORINFO_SIG_INFO sigInfo) => new()
@@ -239,11 +247,11 @@ public static unsafe class SpmiRecordsHelper
         },
     };
 
-    public static Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(CORINFO_LOOKUP_KIND* pGenericLookupKind)
-        => pGenericLookupKind == null ? default : new()
+    public static Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(ref CORINFO_LOOKUP_KIND pGenericLookupKind)
+        => Unsafe.IsNullRef(ref pGenericLookupKind) ? default : new()
         {
-            needsRuntimeLookup = pGenericLookupKind->needsRuntimeLookup ? 1u : 0u,
-            runtimeLookupKind = (uint)pGenericLookupKind->runtimeLookupKind,
+            needsRuntimeLookup = pGenericLookupKind.needsRuntimeLookup ? 1u : 0u,
+            runtimeLookupKind = (uint)pGenericLookupKind.runtimeLookupKind,
         };
 
     public static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(in Agnostic_CORINFO_LOOKUP_KIND lookupKind) => new()
@@ -252,27 +260,27 @@ public static unsafe class SpmiRecordsHelper
         runtimeLookupKind = (CORINFO_RUNTIME_LOOKUP_KIND)lookupKind.runtimeLookupKind,
     };
 
-    public static Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(CORINFO_CONST_LOOKUP* pLookup)
-        => new() { accessType = (uint)pLookup->accessType, handle = CastHandle(pLookup->handle) };
+    public static Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(ref CORINFO_CONST_LOOKUP pLookup)
+        => new() { accessType = (uint)pLookup.accessType, handle = CastHandle(pLookup.handle) };
 
     public static CORINFO_CONST_LOOKUP RestoreCORINFO_CONST_LOOKUP(in Agnostic_CORINFO_CONST_LOOKUP lookup)
         => new() { accessType = (InfoAccessType)lookup.accessType, handle = (CORINFO_GENERIC_STRUCT_*)lookup.handle };
 
-    public static Agnostic_CORINFO_RUNTIME_LOOKUP StoreAgnostic_CORINFO_RUNTIME_LOOKUP(CORINFO_RUNTIME_LOOKUP* pLookup)
+    public static Agnostic_CORINFO_RUNTIME_LOOKUP StoreAgnostic_CORINFO_RUNTIME_LOOKUP(ref CORINFO_RUNTIME_LOOKUP pLookup)
     {
         var runtimeLookup = new Agnostic_CORINFO_RUNTIME_LOOKUP
         {
-            signature = CastHandle(pLookup->signature),
-            helper = (uint)pLookup->helper,
-            indirections = pLookup->indirections,
-            testForNull = pLookup->_testForNull,
-            sizeOffset = pLookup->sizeOffset,
-            indirectFirstOffset = pLookup->_indirectFirstOffset,
-            indirectSecondOffset = pLookup->_indirectSecondOffset,
-            helperEntryPoint = StoreAgnostic_CORINFO_CONST_LOOKUP(&pLookup->helperEntryPoint),
+            signature = CastHandle(pLookup.signature),
+            helper = (uint)pLookup.helper,
+            indirections = pLookup.indirections,
+            testForNull = pLookup._testForNull,
+            sizeOffset = pLookup.sizeOffset,
+            indirectFirstOffset = pLookup._indirectFirstOffset,
+            indirectSecondOffset = pLookup._indirectSecondOffset,
+            helperEntryPoint = StoreAgnostic_CORINFO_CONST_LOOKUP(ref pLookup.helperEntryPoint),
         };
         for (int i = 0; i < CORINFO_MAXINDIRECTIONS; i++)
-            runtimeLookup.offsets[i] = (nuint)Unsafe.Add(ref pLookup->offset0, i);
+            runtimeLookup.offsets[i] = (nuint)Unsafe.Add(ref pLookup.offset0, i);
         return runtimeLookup;
     }
 
@@ -294,13 +302,13 @@ public static unsafe class SpmiRecordsHelper
         return runtimeLookup;
     }
 
-    public static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup)
+    public static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(ref CORINFO_LOOKUP pLookup)
     {
-        var lookup = new Agnostic_CORINFO_LOOKUP { lookupKind = CreateAgnostic_CORINFO_LOOKUP_KIND(&pLookup->lookupKind) };
-        if (pLookup->lookupKind.needsRuntimeLookup)
-            lookup.runtimeLookup = StoreAgnostic_CORINFO_RUNTIME_LOOKUP(&pLookup->runtimeLookup);
+        var lookup = new Agnostic_CORINFO_LOOKUP { lookupKind = CreateAgnostic_CORINFO_LOOKUP_KIND(ref pLookup.lookupKind) };
+        if (pLookup.lookupKind.needsRuntimeLookup)
+            lookup.runtimeLookup = StoreAgnostic_CORINFO_RUNTIME_LOOKUP(ref pLookup.runtimeLookup);
         else
-            lookup.constLookup = StoreAgnostic_CORINFO_CONST_LOOKUP((CORINFO_CONST_LOOKUP*)&pLookup->runtimeLookup);
+            lookup.constLookup = StoreAgnostic_CORINFO_CONST_LOOKUP(ref Unsafe.As<CORINFO_RUNTIME_LOOKUP, CORINFO_CONST_LOOKUP>(ref pLookup.runtimeLookup));
         return lookup;
     }
 
