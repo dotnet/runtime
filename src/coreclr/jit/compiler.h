@@ -2616,6 +2616,18 @@ public:
         return m_dfsTree;
     }
 
+    unsigned GetPreorderNum(BasicBlock* block) const
+    {
+        assert(m_dfsTree->Contains(block));
+        return m_preorderNum[block->bbPostorderNum];
+    }
+
+    unsigned GetPostorderNum(BasicBlock* block) const
+    {
+        assert(m_dfsTree->Contains(block));
+        return m_postorderNum[block->bbPostorderNum];
+    }
+
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
 
@@ -6706,6 +6718,37 @@ public:
 
     // Create VNP for NullPtrExc for something that null checks a base address
     ValueNumPair fgValueNumberIndirNullCheckExceptions(GenTree* baseAddr);
+
+    // The value numbers a null check of an address is keyed on, constant offsets peeled
+    void fgVNNullCheckBases(GenTree* baseAddr, ValueNum* baseLVN, ValueNum* baseCVN);
+
+    // During value numbering, for each exception item the blocks that survived it, none dominating
+    // another. Reaching a point one of them dominates means the item was not raised there, so it cannot
+    // be raised here either: the same null check, division or cast has been survived.
+    // The first surviving block is held inline, most items never see a second one.
+    struct SurvivedBlocks
+    {
+        typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, BasicBlock*> DominanceIndex;
+        struct Additional
+        {
+            ArrayStack<BasicBlock*> blocks;
+            DominanceIndex* index = nullptr;
+
+            Additional(CompAllocator allocator) : blocks(allocator, 2)
+            {
+            }
+        };
+
+        BasicBlock* first = nullptr;
+        Additional* more = nullptr;
+
+        BasicBlock* FindDominating(FlowGraphDominatorTree* domTree, BasicBlock* block);
+        void IndexBlock(FlowGraphDominatorTree* domTree, BasicBlock* block);
+    };
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, SurvivedBlocks> SurvivedExceptionsMap;
+    SurvivedExceptionsMap* vnSurvivedExceptions = nullptr;
+    BasicBlock* fgVNSurvivedException(ValueNum excItemVN);
+    void fgVNDropSurvivedCastException(GenTreeCall* call);
 
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
