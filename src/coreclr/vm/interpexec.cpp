@@ -3541,8 +3541,13 @@ SWITCH_OPCODE:
                         {
                             targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
                         }
-
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
                         PTR_InterpByteCodeStart targetIp;
+                        if (targetIP->AuxiliaryModuleState.CanBeActivated())
+                        {
+                            // Activate
+                        }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
                         if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
                         {
                             targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);

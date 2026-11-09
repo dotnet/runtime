@@ -80,6 +80,7 @@
 // R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
 // R2R Version 31 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
 // method's ReadyToRun entry point and fixups.
+// R2R Version 31.1 adds AuxiliaryModuleMetadata sections
 
 struct READYTORUN_CORE_HEADER
 {
@@ -153,6 +154,7 @@ enum class ReadyToRunSectionType : uint32_t
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
+    AuxiliaryModuleMetadata     = 128, // Added in V31.1
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

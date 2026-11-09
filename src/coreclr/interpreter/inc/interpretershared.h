@@ -87,12 +87,44 @@ struct InterpMethod
     }
 };
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+enum class AuxiliaryModuleStateDiscriminator
+{
+    AlwaysInterpret
+    WaitingForEntryPointsModule,
+    WaitingForAuxiliaryModule,
+}
+struct AuxiliaryModuleState
+{
+private:
+    uint32_t* AuxModuleActivationFlag;
+    AuxiliaryModuleStateDiscriminator Discriminator;
+
+public:
+    AuxiliaryModuleState(AuxiliaryModuleStateDiscriminator discriminator, uint32_t auxModuleActivationFlag)
+    {
+        _ASSERTE(Discriminator == AlwaysInterpret || AxuModuleActivationFlag != NULL);
+        AuxModuleActivationFlag = auxModuleActivationFlag;
+        Discriminator = discriminator;
+    }
+
+    bool CanBeActivated() const
+    {
+        Discriminator != AlwaysInterpret && *AuxModuleActivationFlag;
+    }
+}
+#endif
+
+
 struct InterpByteCodeStart
 {
 #ifndef DPTR
     InterpMethod* const Method; // Pointer to the InterpMethod structure
 #else
     DPTR(InterpMethod) const Method; // Pointer to the InterpMethod structure
+#endif
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    AuxiliaryModuleState AuxModuleState;
 #endif
     const int32_t* GetByteCodes() const
     {

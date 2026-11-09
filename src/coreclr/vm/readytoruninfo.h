@@ -116,6 +116,36 @@ public:
     bool IsGeneric(mdMethodDef input, bool *foundResult) const;
 };
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+class ReadyToRun_AuxiliaryModuleMetadata
+{
+    uint32_t EntryPointsFilenameRVA;
+    uint32_t InstanceMethodEntryPointsRVA;
+    uint32_t MethodDefEntryPointsInfoRVA;
+    uint32_t EntryPointsModuleActivationStatus;
+    uint32_t PrimaryModuleMethodCount;
+    uint32_t AuxiliaryModuleCount;
+public:
+    ReadyToRun_AuxiliaryModuleMetadataEntry* GetAuxiliaryModuleMetadataEntries()
+    {
+        return (ReadyToRun_AuxiliaryModuleMetadataEntry*)((byte*)this) + sizeof(ReadyToRun_AuxiliaryModuleMetadata);
+    }
+
+    uint32_t GetAuxiliaryModuleMetadataEntriesCount()
+    {
+        return AuxiliaryModuleCount;
+    }
+}
+
+struct ReadyToRun_AuxiliaryModuleMetadataEntry
+{
+    uint32_t FileNameRVA;
+    uint32_t RelativeTableBase;
+    uint32_t MethodCount;
+    uint32_t ActivationStatus;
+}
+#endif FEATURE_READYTORUN_AUXILIARY_MODULES
+
 struct StringWithLength
 {
     LPCUTF8 str;
@@ -202,6 +232,10 @@ class ReadyToRunInfo
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
     TADDR                           m_pLoadedImageBase;
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    ReadyToRun_AuxiliaryModuleMetadata m_pAuxiliaryModuleMetadata;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
@@ -349,6 +383,13 @@ public:
     }
 
     PTR_BYTE GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction);
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    AuziliaryModuleMetadata* GetAuxiliaryModuleMetadata() const
+    {
+        return m_pAuxiliaryModuleMetadata;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     class MethodIterator
     {

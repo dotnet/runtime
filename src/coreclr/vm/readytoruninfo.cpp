@@ -1056,6 +1056,29 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         pModule->m_pMethodIsGenericMap = (ReadyToRun_MethodIsGenericMap*)m_pComposite->GetImage()->GetDirectoryData(methodIsGenericMap);
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
+    if (auxiliaryModuleMetadata != NULL)
+    {
+        // We should only be here in composite mode assemblies
+        // m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata)
+
+        // Fake an AuxiliaryModuleMetadata for now.
+        m_pAuxiliaryModuleMetadata = pamTracker->Track(pLoaderAllocator->GetStataicsHeap()->AllocMem(sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizeof(ReadytoRun_AuxiliaryModuleMetadataEntry) + 2 /* '.\0' */))
+        m_pAuxiliaryModuleMetadata->EntryPointsFilenameRVA = auxiliaryModuleMetadata.VirtualAddress + sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizoef(ReadyToRun_AuxiliaryModuleMetadataEntry);
+        m_pAuxiliaryModuleMetadata->InstanceMethodEntryPointsRVA = 0;
+        m_pAuxiliaryModuleMetadata->MethodDefEntryPointsInfoRVA = 0;
+        m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus = 0;
+        m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount = 0;
+        m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount = 1;
+        ReadyToRun_AuxiliaryModuleMetadataEntry* entries = m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries()
+        entries->FileNameRVA = m_pAuxiliaryModuleMetadata->EntryPointsFilenameRVA;
+        entries->RelativeTableBase = 0;
+        entries->MethodCount = m_nRuntimeFunctions
+        entrries->ActivationStatue = 0;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 }
 
 static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
@@ -1397,6 +1420,38 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    uint32_t primaryMethodCount = m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount;
+    if (id >= primaryMethodCount)
+    {
+        uint32_t auxModuleCount = m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount;
+        _ASSERTE(auxModuleCount != 0);
+        ReadyToRun_AuxiliaryModuleMetadataEntry* entries = m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries();
+        uint32_t entryBase = primaryModuleCount;
+        for(int i = 0; i < auxModuleCount; i++)
+        {
+            _ASSERTE(entryBase == entry->RelativeTableBase);
+            if (id >= entryBase && id < entryBase + entry->MethodCount)
+            {
+                if (entry->ActivationStatus | 1 != 0)
+                {
+                    break;
+                }
+                else
+                {
+                    pConfig->SetAwaitingModuleActivation(&entry->ActivationStatus);
+                    goto done;
+                }
+            }
+            entryBase += entry->MethodCount;
+        }
+        // AuxModuleMetadata says it's not anywhere to be found
+        pConfig->SetReadyToRunRejectedPrecompiledCode();
+        goto done;
+    }
+
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
 #ifdef TARGET_ARM
