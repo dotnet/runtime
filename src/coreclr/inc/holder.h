@@ -90,12 +90,9 @@ struct AutoExpVisibleValue
 // base class.)
 //
 // There are several ways to use this class:
-//  1. Derive from HolderBase, and instantiate a Holder or Wrapper around your base.  This is necessary
-//      if you need to add more state to your holder.
+//  1. Derive from HolderBase if you need to add more state to your holder.
 //  2. Instantiate the Holder template with your type and functions.
-//  3. Instantiate the Wrapper template with your type and functions.  The Wrapper adds some additional
-//      operator overloads to provide "smart pointer" like behavior
-//  4. Use a prebaked Holder.  This is ALWAYS the preferable strategy.  It is expected that
+//  3. Use a prebaked Holder.  This is ALWAYS the preferable strategy.  It is expected that
 //      the general design patter is that Holders will be provided as part of a typical data abstraction.
 //      (See Crst for an example of this.)
 //-----------------------------------------------------------------------------
@@ -552,8 +549,7 @@ FORCEINLINE void DoNothing()
 }
 
 //-----------------------------------------------------------------------------
-// Holder/Wrapper are the simplest way to define holders - they synthesize a base class from
-// function pointers
+// Holder synthesizes an acquire/release base class from function pointers.
 //-----------------------------------------------------------------------------
 
 template <typename TYPE, void (*ACQUIREF)(TYPE), void (*RELEASEF)(TYPE)>
@@ -624,55 +620,6 @@ class Holder : public BaseHolder<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
 
     HIDE_GENERATED_METHODS(Holder)
 };
-
-//---------------------------------------------------------------------------------------
-//
-template
-    <
-        typename TYPE,
-        void (*ACQUIREF)(TYPE),
-        void (*RELEASEF)(TYPE),
-        UINT_PTR DEFAULTVALUE = 0,
-        BOOL IS_NULL(TYPE, TYPE) = CompareDefault<TYPE>,
-        // For legacy compat (see EEJitManager::WriterLockHolder), where default ctor
-        // causes ACQUIREF(DEFAULTVALUE), but ACQUIREF ignores the argument and
-        // operates on static or global value instead.
-        bool DEFAULT_CTOR_ACQUIRE = true
-    >
-class Wrapper : public BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
-                                   DEFAULTVALUE, IS_NULL>
-{
-    typedef BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
-                                   DEFAULTVALUE, IS_NULL> BaseT;
-
-  public:
-    FORCEINLINE Wrapper()
-        : BaseT(TYPE(DEFAULTVALUE), DEFAULT_CTOR_ACQUIRE)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    FORCEINLINE Wrapper(TYPE value)
-        : BaseT(value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    FORCEINLINE Wrapper(TYPE value, BOOL takeOwnership)
-        : BaseT(value, takeOwnership)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    FORCEINLINE Wrapper& operator=(TYPE const & value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        BaseT::operator=(value);
-        return *this;
-    }
-
-    HIDE_GENERATED_METHODS(Wrapper)
-};  // Wrapper<>
 
 //-----------------------------------------------------------------------------
 // Holders

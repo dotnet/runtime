@@ -5508,15 +5508,14 @@ namespace
                     // take the MethodDesc level locker
                     ListLockEntryHolder pEntry(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
 
-                    ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
-
                     // We have the entry lock we need to use, so we can release the global lock.
                     pILStubLock.Free();
 
+                    ListLockEntryLockHolder pEntryLock;
                     {
                         ilStubCreatorHelper.GetStubMethodDesc();
 
-                        if (!pEntryLock.DeadlockAwareAcquire())
+                        if (!pEntryLock.DeadlockAwareAcquire(pEntry))
                         {
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                         }
@@ -5535,12 +5534,12 @@ namespace
                                 pStubMD = ilStubCreatorHelper.GetStubMD();
 
                                 pEntry = ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock");
-                                pEntryLock.Assign(pEntry, FALSE);
+                                pEntryLock.Free();
 
                                 // We have the entry lock we need to use, so we can release the global lock.
                                 pILStubLock.Free();
 
-                                if (!pEntryLock.DeadlockAwareAcquire())
+                                if (!pEntryLock.DeadlockAwareAcquire(pEntry))
                                 {
                                     UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                                 }
@@ -5556,7 +5555,7 @@ namespace
                             // We have the entry lock now, we can release the global lock
                             pILStubLock.Free();
 
-                            _ASSERTE(pEntryLock.GetValue()->HasLock());
+                            _ASSERTE(pEntry->HasLock());
 
                             if (pEntry->m_hrResultCode != S_FALSE)
                             {

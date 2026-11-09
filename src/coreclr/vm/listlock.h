@@ -181,20 +181,7 @@ public:
     }
 #endif
 
-    // LockHolder holds the lock of the element, not the element itself
-
-    DEBUG_NOINLINE static void LockHolderEnter(Entry_t *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-        pThis->Enter();
-    }
-
-    DEBUG_NOINLINE static void LockHolderLeave(Entry_t *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-        pThis->Leave();
-    }
-
+private:
     DEBUG_NOINLINE void FinishDeadlockAwareEnter()
     {
         DeadlockAwareLock::BlockingLockHolder dlLock;
@@ -202,32 +189,51 @@ public:
         m_deadlock.EndEnterLock();
     }
 
-    typedef Wrapper<Entry_t *, LockHolderEnter, LockHolderLeave> LockHolderBase;
-
-    class LockHolder : public LockHolderBase
+public:
+    // LockHolder releases an acquired entry lock but does not own the entry.
+    class LockHolder final
     {
-    public:
-
-        LockHolder()
-          : LockHolderBase(NULL, FALSE)
+        struct LockHolderTraits final
         {
-        }
-
-        LockHolder(Entry_t *value, BOOL take = TRUE)
-          : LockHolderBase(value, take)
-        {
-        }
-
-        BOOL DeadlockAwareAcquire()
-        {
-            if (!this->m_acquired && this->m_value != NULL)
+            using Type = Entry_t*;
+            static constexpr Type Default() { return NULL; }
+            static void Free(Type value) noexcept
             {
-                if (!this->m_value->m_deadlock.TryBeginEnterLock())
-                    return FALSE;
-                this->m_value->FinishDeadlockAwareEnter();
-                this->m_acquired = TRUE;
+                WRAPPER_NO_CONTRACT;
+                if (value != NULL)
+                    value->Leave();
             }
-            return TRUE;
+        };
+
+        LifetimeHolder<LockHolderTraits> m_lock;
+
+    public:
+        LockHolder() = default;
+
+        LockHolder(const LockHolder&) = delete;
+        LockHolder& operator=(const LockHolder&) = delete;
+
+        void Free()
+        {
+            WRAPPER_NO_CONTRACT;
+
+            m_lock.Free();
+        }
+
+        bool DeadlockAwareAcquire(Entry_t* value)
+        {
+            WRAPPER_NO_CONTRACT;
+
+            _ASSERTE(m_lock == NULL || m_lock == value);
+
+            if (m_lock == NULL && value != NULL)
+            {
+                if (!value->m_deadlock.TryBeginEnterLock())
+                    return false;
+                value->FinishDeadlockAwareEnter();
+                m_lock = value;
+            }
+            return true;
         }
     };
 };

@@ -636,9 +636,9 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
 
         // Take the entry lock
         {
-            JitListLockEntry::LockHolder pEntryLock(pEntry, FALSE);
+            JitListLockEntry::LockHolder pEntryLock;
 
-            if (pEntryLock.DeadlockAwareAcquire())
+            if (pEntryLock.DeadlockAwareAcquire(pEntry))
             {
                 if (pEntry->m_hrResultCode == S_FALSE)
                 {
@@ -713,7 +713,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 }
             }
 
-            return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock);
+            return JitCompileCodeLockedEventWrapper(pConfig, pEntry);
         }
     }
 }

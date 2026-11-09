@@ -3743,12 +3743,11 @@ void MethodTable::DoRunClassInitThrowing()
         //nontrivial holder, might take a lock in destructor
         ListLockEntryHolder pEntry(ListLockEntry::Find(pInitLock, this, description));
 
-        ListLockEntryLockHolder pLock(pEntry, FALSE);
-
         // We have a list entry, we can release the global lock now
         pInitLock.Free();
 
-        if (pLock.DeadlockAwareAcquire())
+        ListLockEntryLockHolder pLock;
+        if (pLock.DeadlockAwareAcquire(pEntry))
         {
             if (pEntry->m_hrResultCode == S_FALSE)
             {
