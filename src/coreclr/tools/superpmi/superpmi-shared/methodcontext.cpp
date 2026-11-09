@@ -144,13 +144,13 @@ unsigned int MethodContext::calculateRawFileSize()
            2 /* end canary '4', '2' */;
 }
 
-unsigned int MethodContext::saveToFile(HANDLE hFile)
+unsigned int MethodContext::saveToFile(FILE* hFile)
 {
     unsigned int totalLen = calculateFileSize();
     unsigned int totalFileSize =
         2 /* leading magic cookie 'm', 'c' */ + 4 /* 4-byte data length */ + totalLen + 2 /* end canary '4', '2' */;
 
-    DWORD          bytesWritten = 0;
+    unsigned int   bytesWritten = 0;
     unsigned int   buffIndex    = 0;
     unsigned char* buff2        = new unsigned char[totalFileSize];
     buff2[buffIndex++]          = 'm';
@@ -171,7 +171,7 @@ unsigned int MethodContext::saveToFile(HANDLE hFile)
 
     Assert(buffIndex == totalFileSize);
 
-    WriteFile(hFile, buff2, totalFileSize, &bytesWritten, NULL);
+    bytesWritten = (unsigned int)fwrite(buff2, 1, totalFileSize, hFile);
     delete[] buff2;
     return bytesWritten;
 }
@@ -189,7 +189,7 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, boo
 }
 
 // static
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, FILE* hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
@@ -226,13 +226,13 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, boo
     return result;
 }
 
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResults)
+bool MethodContext::Initialize(int mcIndex, FILE* hFile, bool readCompileResults)
 {
     bool result = true;
 
     struct Param
     {
-        HANDLE         hFile;
+        FILE*          hFile;
         MethodContext* pThis;
         bool           readCompileResults;
     } param;
@@ -254,18 +254,17 @@ bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResult
     return result;
 }
 
-void MethodContext::MethodInitHelperFile(HANDLE hFile, bool readCompileResults)
+void MethodContext::MethodInitHelperFile(FILE* hFile, bool readCompileResults)
 {
-    DWORD        bytesRead;
     char         buff[512];
     unsigned int totalLen = 0;
 
-    AssertCode(ReadFile(hFile, buff, 2 + sizeof(unsigned int), &bytesRead, NULL) == TRUE,
+    AssertCode(fread(buff, 1, 2 + sizeof(unsigned int), hFile) == 2 + sizeof(unsigned int),
                EXCEPTIONCODE_MC); // Read Magic number and totalLen
     AssertCodeMsg((buff[0] == 'm') && (buff[1] == 'c'), EXCEPTIONCODE_MC, "Didn't find magic number");
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
-    AssertCode(ReadFile(hFile, buff2, totalLen + 2, &bytesRead, NULL) == TRUE, EXCEPTIONCODE_MC);
+    AssertCode(fread(buff2, 1, totalLen + 2, hFile) == totalLen + 2, EXCEPTIONCODE_MC);
     AssertCodeMsg((buff2[totalLen] == '4') && (buff2[totalLen + 1] == '2'), EXCEPTIONCODE_MC, "Didn't find end canary");
     MethodInitHelper(buff2, totalLen, readCompileResults);
 }
@@ -5988,7 +5987,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::ValueHistogram:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
                     {
-                        printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
+                        printf("[%u] %08X ", j, *(uint32_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uint32_t)));
                     }
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:

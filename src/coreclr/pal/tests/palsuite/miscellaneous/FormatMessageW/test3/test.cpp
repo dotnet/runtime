@@ -12,6 +12,7 @@
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 
 PALTEST(miscellaneous_FormatMessageW_test3_paltest_formatmessagew_test3, "miscellaneous/FormatMessageW/test3/paltest_formatmessagew_test3")
@@ -65,7 +66,7 @@ PALTEST(miscellaneous_FormatMessageW_test3_paltest_formatmessagew_test3, "miscel
     */
     if(memcmp(OutBuffer,
               (CorrectString = convert("Pal %1!u! %2!i! %3 Testing")),
-              wcslen(OutBuffer)*2+2) != 0) 
+              u16_strlen(OutBuffer)*2+2) != 0) 
     {   
         free(TheString);
         free(CorrectString);

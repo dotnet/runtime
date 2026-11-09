@@ -419,10 +419,10 @@ class SyncBlock
 
         if (!m_pInteropInfo)
         {
-            NewHolder<InteropSyncBlockInfo> pInteropInfo = new InteropSyncBlockInfo();
+            NewHolder<InteropSyncBlockInfo> pInteropInfo(new InteropSyncBlockInfo());
 
             if (SetInteropInfo(pInteropInfo))
-                pInteropInfo.SuppressRelease();
+                pInteropInfo.Detach();
         }
 
         _ASSERTE(m_pInteropInfo != NULL);

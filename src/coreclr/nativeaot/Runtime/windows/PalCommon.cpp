@@ -17,6 +17,7 @@
 #include <winternl.h>
 #include "CommonMacros.h"
 #include "rhassert.h"
+#include <minipal/utf8.h>
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)
@@ -160,15 +161,9 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
         memcpy(pGuidSignature, &pdbInfoLast.m_pPdb70->signature, sizeof(GUID));
         *pdwAge = pdbInfoLast.m_pPdb70->age;
 
-        // Convert build path from ANSI (UTF-8) to UNICODE (UTF-16)
-        int result = MultiByteToWideChar(
-            CP_UTF8,                // Code page for UTF-8
-            0,                      // No special flags
-            pdbInfoLast.m_pPdb70->path, // Source UTF-8 string
-            -1,                     // Source string length (-1 for null-terminated)
-            wszPath,                // Destination buffer for UTF-16 string
-            cchPath                 // Size of destination buffer
-        );
+        // Convert build path from UTF-8 to UTF-16
+        const char* path = pdbInfoLast.m_pPdb70->path;
+        size_t result = minipal_convert_utf8_to_utf16(path, strlen(path) + 1, (CHAR16_T*)wszPath, cchPath, 0);
 
         if (result == 0)
         {

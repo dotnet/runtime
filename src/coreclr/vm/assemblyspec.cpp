@@ -427,12 +427,12 @@ HRESULT AssemblySpec::EmitToken(
         AMD.usRevisionNumber = m_context.usRevisionNumber;
 
         if (m_context.szLocale) {
-            AMD.cbLocale = MultiByteToWideChar(CP_UTF8, 0, m_context.szLocale, -1, NULL, 0);
-            if(AMD.cbLocale==0)
-                IfFailGo(HRESULT_FROM_GetLastError());
-            AMD.szLocale = (LPWSTR) alloca(AMD.cbLocale * sizeof(WCHAR) );
-            if(MultiByteToWideChar(CP_UTF8, 0, m_context.szLocale, -1, AMD.szLocale, AMD.cbLocale)==0)
-                IfFailGo(HRESULT_FROM_GetLastError());
+            size_t cchLocale = strlen(m_context.szLocale) + 1;
+            size_t cchWideLocale = minipal_get_length_utf8_to_utf16(m_context.szLocale, cchLocale, 0);
+            AMD.cbLocale = (ULONG)cchWideLocale;
+            AMD.szLocale = (LPWSTR) alloca(cchWideLocale * sizeof(WCHAR) );
+            if(minipal_convert_utf8_to_utf16(m_context.szLocale, cchLocale, (CHAR16_T*)AMD.szLocale, cchWideLocale, 0)==0)
+                IfFailGo(HRESULT_FROM_WIN32(errno));
         }
         else {
             AMD.cbLocale = 0;

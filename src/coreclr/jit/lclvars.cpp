@@ -1281,7 +1281,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
 #if defined(TARGET_WASM)
-    if (varNum == lvaWasmSpArg)
+    if ((varNum == lvaWasmSpArg) || (varNum == lvaWasmPortableEntryPointArg))
     {
         return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
     }
@@ -1316,6 +1316,11 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 
 #if defined(TARGET_WASM)
     if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
+    {
+        varNum--;
+    }
+
+    if ((lvaWasmPortableEntryPointArg != BAD_VAR_NUM) && (originalVarNum > lvaWasmPortableEntryPointArg))
     {
         varNum--;
     }
@@ -6120,15 +6125,6 @@ void Compiler::lvaAlignFrame()
 
         // Align the stack with STACK_ALIGN value.
         int adjustFrameSize = compLclFrameSize;
-#if defined(UNIX_X86_ABI)
-        bool isEbpPushed = codeGen->isFramePointerUsed();
-#if DOUBLE_ALIGN
-        isEbpPushed |= genDoubleAlign();
-#endif
-        // we need to consider spilled register(s) plus return address and/or EBP
-        int adjustCount = compCalleeRegsPushed + 1 + (isEbpPushed ? 1 : 0);
-        adjustFrameSize += (adjustCount * REGSIZE_BYTES) % STACK_ALIGN;
-#endif
         if ((adjustFrameSize % STACK_ALIGN) != 0)
         {
             lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));

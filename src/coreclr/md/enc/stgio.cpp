@@ -38,7 +38,14 @@
 #include "corerror.h"
 #include "posterror.h"
 #include "pedecoder.h"
+
+#ifndef HOST_WINDOWS
+#include <dn-stdio.h>
+#include <errno.h>
+#include <unistd.h>
+#endif
 #include "pedecoder.inl"
+#include <minipal.h>
 
 //********** Types. ***********************************************************
 #define SMALL_ALLOC_MAP_SIZE (64 * 1024) // 64 kb is the minimum size of virtual
@@ -57,6 +64,128 @@ inline HRESULT MapFileError(DWORD error)
 {
     return (PostError(HRESULT_FROM_WIN32(error)));
 }
+
+#ifdef HOST_WINDOWS
+static STGIO_FILE StgIOCreateFile(LPCWSTR szName, bool fFailIfThere)
+{
+    return WszCreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0,
+        fFailIfThere ? CREATE_NEW : CREATE_ALWAYS, 0, 0);
+}
+
+static STGIO_FILE StgIOOpenFileForRead(LPCWSTR szName, DWORD dwFileSharingFlags)
+{
+    return WszCreateFile(szName, GENERIC_READ, dwFileSharingFlags, 0, OPEN_EXISTING, 0, 0);
+}
+
+static ULONG StgIOGetFileSize(STGIO_FILE hFile)
+{
+    return ::SetFilePointer(hFile, 0, 0, FILE_END);
+}
+
+static ULONG StgIOSeek(STGIO_FILE hFile, int lVal, ULONG fMoveType)
+{
+    return ::SetFilePointer(hFile, lVal, 0, fMoveType);
+}
+
+static BOOL StgIORead(STGIO_FILE hFile, void *pbBuff, ULONG cbBuff, ULONG *pcbRead)
+{
+    return ::ReadFile(hFile, pbBuff, cbBuff, pcbRead, 0);
+}
+
+static BOOL StgIOWrite(STGIO_FILE hFile, const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten)
+{
+    return ::WriteFile(hFile, pbBuff, cbWrite, pcbWritten, 0);
+}
+
+static BOOL StgIOFlush(STGIO_FILE hFile)
+{
+    return ::FlushFileBuffers(hFile);
+}
+
+static void StgIOCloseFile(STGIO_FILE hFile)
+{
+    CloseHandle(hFile);
+}
+
+static VMToOSInterface::MemoryMapHandle StgIOGetMappableFile(STGIO_FILE hFile)
+{
+    return hFile;
+}
+
+static HRESULT StgIOLastFileError()
+{
+    return MapFileError(GetLastError());
+}
+#else // HOST_WINDOWS
+static STGIO_FILE StgIOOpenFile(LPCWSTR szName, const WCHAR *szMode)
+{
+    FILE *stream;
+    int error = u16_fopen_s(&stream, szName, szMode);
+    if (error != 0)
+    {
+        errno = error;
+        return STGIO_INVALID_FILE;
+    }
+    return stream;
+}
+
+static STGIO_FILE StgIOCreateFile(LPCWSTR szName, bool fFailIfThere)
+{
+    return StgIOOpenFile(szName, fFailIfThere ? W("w+xb") : W("w+b"));
+}
+
+static STGIO_FILE StgIOOpenFileForRead(LPCWSTR szName, DWORD)
+{
+    return StgIOOpenFile(szName, W("rb"));
+}
+
+static ULONG StgIOGetFileSize(STGIO_FILE hFile)
+{
+    return (ULONG)fgetsize(hFile);
+}
+
+static ULONG StgIOSeek(STGIO_FILE hFile, int lVal, ULONG fMoveType)
+{
+    static_assert(FILE_BEGIN == SEEK_SET && FILE_CURRENT == SEEK_CUR && FILE_END == SEEK_END, "");
+    if (fseek(hFile, lVal, (int)fMoveType) != 0)
+        return 0xffffffff;
+    return (ULONG)ftell(hFile);
+}
+
+static BOOL StgIORead(STGIO_FILE hFile, void *pbBuff, ULONG cbBuff, ULONG *pcbRead)
+{
+    *pcbRead = (ULONG)fread(pbBuff, 1, cbBuff, hFile);
+    return !ferror(hFile);
+}
+
+static BOOL StgIOWrite(STGIO_FILE hFile, const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten)
+{
+    *pcbWritten = (ULONG)fwrite(pbBuff, 1, cbWrite, hFile);
+    return *pcbWritten == cbWrite;
+}
+
+static BOOL StgIOFlush(STGIO_FILE hFile)
+{
+    return fflush(hFile) == 0 && fsync(fileno(hFile)) == 0;
+}
+
+static void StgIOCloseFile(STGIO_FILE hFile)
+{
+    fclose(hFile);
+}
+
+#ifndef TARGET_WASM
+static VMToOSInterface::MemoryMapHandle StgIOGetMappableFile(STGIO_FILE hFile)
+{
+    return fileno(hFile);
+}
+#endif // !TARGET_WASM
+
+static HRESULT StgIOLastFileError()
+{
+    return PostError(HRESULTFromErr(errno));
+}
+#endif // HOST_WINDOWS
 
 // Static to class.
 int StgIO::m_iPageSize=0;               // Size of an OS page.
@@ -90,9 +219,10 @@ void StgIO::CtorInit()
     m_bRewrite = false;
     m_bFreeMem = false;
     m_pIStream = 0;
-    m_hFile = INVALID_HANDLE_VALUE;
+    m_hFile = STGIO_INVALID_FILE;
     m_hModule = NULL;
-    m_hMapping = 0;
+    m_hMapping = VMToOSInterface::InvalidMemoryMapHandle;
+    m_cbMapping = 0;
     m_pBaseData = 0;
     m_pData = 0;
     m_cbData = 0;
@@ -198,11 +328,9 @@ HRESULT StgIO::Open(                    // Return code.
         // but would be much slower.</REVISIT_TODO>
 
         // Create the new file, overwriting only if caller allows it.
-        if ((m_hFile = WszCreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0,
-                (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? CREATE_NEW : CREATE_ALWAYS,
-                0, 0)) == INVALID_HANDLE_VALUE)
+        if ((m_hFile = StgIOCreateFile(szName, (fFlags & DBPROP_TMODEF_FAILIFTHERE) != 0)) == STGIO_INVALID_FILE)
         {
-            return (MapFileError(GetLastError()));
+            return (StgIOLastFileError());
         }
 
         // Data will come from the file.
@@ -213,7 +341,7 @@ HRESULT StgIO::Open(                    // Return code.
     else if ((fFlags & DBPROP_TMODEF_WRITE) == 0)
     {
         // We have not opened the file nor loaded it as module
-        _ASSERTE(m_hFile == INVALID_HANDLE_VALUE);
+        _ASSERTE(m_hFile == STGIO_INVALID_FILE);
         _ASSERTE(m_hModule == NULL);
 
         // Open the file for read.  Sharing is determined by caller, it can
@@ -268,26 +396,23 @@ HRESULT StgIO::Open(                    // Return code.
 
         if (m_hModule == NULL)
         {   // We didn't get the loaded module (we either didn't want to or it failed)
-            HandleHolder hFile(WszCreateFile(szName,
-                                             GENERIC_READ,
-                                             dwFileSharingFlags,
-                                             0,
-                                             OPEN_EXISTING,
-                                             0,
-                                             0));
+            STGIO_FILE hFile = StgIOOpenFileForRead(szName, dwFileSharingFlags);
 
-            if (hFile == INVALID_HANDLE_VALUE)
-                return (MapFileError(GetLastError()));
+            if (hFile == STGIO_INVALID_FILE)
+                return (StgIOLastFileError());
 
             // Get size of file.
-            m_cbData = ::SetFilePointer(hFile, 0, 0, FILE_END);
+            m_cbData = StgIOGetFileSize(hFile);
 
             // Can't read anything from an empty file.
             if (m_cbData == 0)
+            {
+                StgIOCloseFile(hFile);
                 return (PostError(CLDB_E_NO_DATA));
+            }
 
             // Data will come from the file.
-            m_hFile = hFile.Detach();
+            m_hFile = hFile;
 
             m_iType = STGIO_HFILE;
         }
@@ -359,8 +484,8 @@ void StgIO::Close()
         case STGIO_HFILE:
         {
             // Free the file handle.
-            if (m_hFile != INVALID_HANDLE_VALUE)
-                CloseHandle(m_hFile);
+            if (m_hFile != STGIO_INVALID_FILE)
+                StgIOCloseFile(m_hFile);
 
             // If we allocated space for in memory paging, then free it.
         }
@@ -471,7 +596,7 @@ HRESULT StgIO::Read(                    // Return code.
         case STGIO_HFILE:
         case STGIO_HMODULE:
         {
-            _ASSERTE((m_hFile != INVALID_HANDLE_VALUE) || (m_hModule != NULL));
+            _ASSERTE((m_hFile != STGIO_INVALID_FILE) || (m_hModule != NULL));
 
             // Backing store does its own paging.
             if (IsBackingStore() || IsMemoryMapped())
@@ -488,7 +613,7 @@ HRESULT StgIO::Read(                    // Return code.
             // If there is no backing store, this is just a read operation.
             else
             {
-                _ASSERTE((m_iType == STGIO_HFILE) && (m_hFile != INVALID_HANDLE_VALUE));
+                _ASSERTE((m_iType == STGIO_HFILE) && (m_hFile != STGIO_INVALID_FILE));
                 _ASSERTE(m_hModule == NULL);
 
                 ULONG   cbTemp = 0;
@@ -623,8 +748,8 @@ HRESULT StgIO::Seek(                    // New offset.
         case STGIO_HFILE:
         {
             // Use the file system's move.
-            _ASSERTE(m_hFile != INVALID_HANDLE_VALUE);
-            cbRtn = ::SetFilePointer(m_hFile, lVal, 0, fMoveType);
+            _ASSERTE(m_hFile != STGIO_INVALID_FILE);
+            cbRtn = StgIOSeek(m_hFile, lVal, fMoveType);
 
             // Save the location redundantly.
             if (cbRtn != 0xffffffff)
@@ -735,7 +860,6 @@ HRESULT StgIO::MapFileToMem(            // Return code.
     ULONG       *pcbSize,               // Return size of data.
     LPSECURITY_ATTRIBUTES pAttributes)  // Security token.
 {
-    char        rcShared[MAXSHMEM];     // ANSI version of shared name.
     HRESULT     hr = S_OK;
 
     // Don't penalize for multiple calls.  Also, allow calls for mem type so
@@ -784,14 +908,14 @@ HRESULT StgIO::MapFileToMem(            // Return code.
         // If it is for exclusive, then we need to keep the handle open so the
         // file is locked, preventing other readers.  Also leave it open if
         // in read/write mode so we can truncate and rewrite.
-        if (m_hFile == INVALID_HANDLE_VALUE ||
+        if (m_hFile == STGIO_INVALID_FILE ||
             ((m_fFlags & DBPROP_TMODEF_EXCLUSIVE) == 0 && (m_fFlags & DBPROP_TMODEF_WRITE) == 0))
         {
             // If there was a handle open, then free it.
-            if (m_hFile != INVALID_HANDLE_VALUE)
+            if (m_hFile != STGIO_INVALID_FILE)
             {
-                VERIFY(CloseHandle(m_hFile));
-                m_hFile = INVALID_HANDLE_VALUE;
+                StgIOCloseFile(m_hFile);
+                m_hFile = STGIO_INVALID_FILE;
             }
             // Free the stream pointer.
             else
@@ -814,40 +938,30 @@ HRESULT StgIO::MapFileToMem(            // Return code.
     else
     {
         // Now we will map, so better have it right.
-        _ASSERTE(m_hFile != INVALID_HANDLE_VALUE || m_iType == STGIO_STREAM);
+        _ASSERTE(m_hFile != STGIO_INVALID_FILE || m_iType == STGIO_STREAM);
         _ASSERTE(m_rgPageMap == 0);
 
+#ifndef TARGET_WASM
         // For read mode, use a memory mapped file since the size will never
         // change for the life of the handle.
         if ((m_fFlags & DBPROP_TMODEF_WRITE) == 0 && m_iType != STGIO_STREAM)
         {
             // Create a mapping object for the file.
-            _ASSERTE(m_hMapping == 0);
+            _ASSERTE(m_hMapping == VMToOSInterface::InvalidMemoryMapHandle);
 
-            DWORD dwProtectionFlags = PAGE_READONLY;
-
-            if ((m_hMapping = CreateFileMapping(m_hFile, pAttributes, dwProtectionFlags,
-                0, 0, nullptr)) == 0)
+            if ((m_hMapping = VMToOSInterface::CreateMemoryMapping(StgIOGetMappableFile(m_hFile), 0,
+                    VMToOSInterface::MemoryProtection::ReadOnly)) == VMToOSInterface::InvalidMemoryMapHandle)
             {
-                return (MapFileError(GetLastError()));
+                return (PostError(VMToOSInterface::GetLastMemoryMappingError()));
             }
             m_mtMappedType = MTYPE_FLAT;
-            // Check to see if the memory already exists, in which case we have
-            // no guarantees it is the right piece of data.
-            if (GetLastError() == ERROR_ALREADY_EXISTS)
-            {
-                hr = PostError(CLDB_E_SMDUPLICATE, rcShared);
-                goto ErrExit;
-            }
 
             // Now map the file into memory so we can read from pointer access.
-            // <REVISIT_TODO>Note: Added a check for IsBadReadPtr per the Services team which
-            // indicates that under some conditions this API can give you back
-            // a totally bogus pointer.</REVISIT_TODO>
-            if ((m_pBaseData = m_pData = MapViewOfFile(m_hMapping, FILE_MAP_READ,
-                        0, 0, 0)) == 0)
+            m_cbMapping = m_cbData;
+            if ((m_pBaseData = m_pData = VMToOSInterface::MapMemory(m_hMapping, 0, nullptr, m_cbMapping,
+                        VMToOSInterface::MemoryProtection::ReadOnly, true)) == 0)
             {
-                hr = MapFileError(GetLastError());
+                hr = PostError(VMToOSInterface::GetLastMemoryMappingError());
                 if (SUCCEEDED(hr))
                 {
                     _ASSERTE_MSG(FALSE, "Error code doesn't indicate error.");
@@ -864,6 +978,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
         // throw away our cached copy.  Memory mapped files are not good for this
         // case due to poor write characteristics.
         else
+#endif // !TARGET_WASM
         {
             ULONG iMaxSize;         // How much memory required for file.
 
@@ -882,7 +997,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             memset(m_rgPageMap, 0, sizeof(BYTE) * (iMaxSize / m_iPageSize));
 
             // Allocate space for the file contents.
-            if ((m_pBaseData = m_pData = ::ClrVirtualAlloc(0, iMaxSize, MEM_RESERVE, PAGE_NOACCESS)) == 0)
+            if ((m_pBaseData = m_pData = VMToOSInterface::ReserveMemory(iMaxSize)) == 0)
             {
                 hr = PostError(OutOfMemory());
                 goto ErrExit;
@@ -898,9 +1013,11 @@ ErrExit:
     // Check for errors and clean up.
     if (FAILED(hr))
     {
-        if (m_hMapping)
-            CloseHandle(m_hMapping);
-        m_hMapping = 0;
+#ifndef TARGET_WASM
+        if (m_hMapping != VMToOSInterface::InvalidMemoryMapHandle)
+            VMToOSInterface::CloseMemoryMapping(m_hMapping);
+#endif // !TARGET_WASM
+        m_hMapping = VMToOSInterface::InvalidMemoryMapHandle;
         m_pBaseData = m_pData = 0;
         m_cbData = 0;
     }
@@ -1009,8 +1126,8 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
             }
 
             // First commit the memory for this part of the file.
-            if (::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READWRITE) == 0)
+            if (VMToOSInterface::CommitReservedMemory((void *) ((DWORD_PTR) m_pData + iOffset),
+                    iSize, VMToOSInterface::MemoryProtection::ReadWrite) == 0)
                 return (PostError(OutOfMemory()));
 
             // Now load that portion of the file from disk.
@@ -1020,11 +1137,13 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
                 return (hr);
             }
 
+#ifndef TARGET_WASM
             // Change the memory to read only to avoid any modifications.  Any faults
             // that occur indicate a bug whereby the engine is trying to write to
             // protected memory.
-            _ASSERTE(::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READONLY) != 0);
+            _ASSERTE(VMToOSInterface::ProtectMemory((void *) ((DWORD_PTR) m_pData + iOffset),
+                    iSize, VMToOSInterface::MemoryProtection::ReadOnly));
+#endif // !TARGET_WASM
 
             // Record each new loaded page.
             for (;  j<i;  j++)
@@ -1082,12 +1201,12 @@ HRESULT StgIO::FlushFileBuffers()
 {
     _ASSERTE(!IsReadOnly());
 
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_hFile != STGIO_INVALID_FILE)
     {
-        if (::FlushFileBuffers(m_hFile))
+        if (StgIOFlush(m_hFile))
             return (S_OK);
         else
-            return (MapFileError(GetLastError()));
+            return (StgIOLastFileError());
     }
     return (S_OK);
 }
@@ -1144,11 +1263,11 @@ HRESULT StgIO::WriteToDisk(             // Return code.
         case STGIO_HFILEMEM:
         {
             // Use the file system's move.
-            _ASSERTE(m_hFile != INVALID_HANDLE_VALUE);
+            _ASSERTE(m_hFile != STGIO_INVALID_FILE);
 
             // Do the write to disk.
-            if (!::WriteFile(m_hFile, pbBuff, cbWrite, pcbWritten, 0))
-                hr = MapFileError(GetLastError());
+            if (!StgIOWrite(m_hFile, pbBuff, cbWrite, pcbWritten))
+                hr = StgIOLastFileError();
         }
         break;
 
@@ -1197,9 +1316,9 @@ HRESULT StgIO::ReadFromDisk(            // Return code.
     // Read only from file to avoid recursive logic.
     if (m_iType == STGIO_HFILE || m_iType == STGIO_HFILEMEM)
     {
-        if (::ReadFile(m_hFile, pbBuff, cbBuff, pcbRead, 0))
+        if (StgIORead(m_hFile, pbBuff, cbBuff, pcbRead))
             return (S_OK);
-        return (MapFileError(GetLastError()));
+        return (StgIOLastFileError());
     }
     // Read directly from stream.
     else
@@ -1217,25 +1336,29 @@ void StgIO::FreePageMap()
     // If a small file was allocated, then free that memory.
     if (m_bFreeMem && m_pBaseData)
         FreeMemory(m_pBaseData);
+#ifndef TARGET_WASM
     // For mmf, close handles and free resources.
-    else if (m_hMapping && m_pBaseData)
+    else if (m_hMapping != VMToOSInterface::InvalidMemoryMapHandle && m_pBaseData)
     {
-        VERIFY(UnmapViewOfFile(m_pBaseData));
-        VERIFY(CloseHandle(m_hMapping));
+        VERIFY(VMToOSInterface::UnmapMemory(m_pBaseData, m_cbMapping) == 0);
+        VERIFY(VMToOSInterface::CloseMemoryMapping(m_hMapping));
     }
+#endif // !TARGET_WASM
     // For our own system, free memory.
     else if (m_rgPageMap && m_pBaseData)
     {
         delete [] m_rgPageMap;
         m_rgPageMap = 0;
-        VERIFY(::ClrVirtualFree(m_pBaseData, (((m_cbData - 1) & ~(m_iPageSize - 1)) + m_iPageSize), MEM_DECOMMIT));
-        VERIFY(::ClrVirtualFree(m_pBaseData, 0, MEM_RELEASE));
+        ULONG iMaxSize = (((m_cbData - 1) & ~(m_iPageSize - 1)) + m_iPageSize);
+        VERIFY(VMToOSInterface::DecommitMemory(m_pBaseData, iMaxSize));
+        VERIFY(VMToOSInterface::ReleaseMemoryReservation(m_pBaseData, iMaxSize));
         m_pBaseData = 0;
         m_cbData = 0;
     }
 
     m_pBaseData = 0;
-    m_hMapping = 0;
+    m_hMapping = VMToOSInterface::InvalidMemoryMapHandle;
+    m_cbMapping = 0;
     m_cbData = 0;
 }
 

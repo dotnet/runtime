@@ -312,7 +312,7 @@ namespace System.Collections.Concurrent
         /// to wait, or a <see cref="System.TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
         /// </param>
         /// <returns>true if the <paramref name="item"/> could be added to the collection within
-        /// the alloted time; otherwise, false.</returns>
+        /// the allotted time; otherwise, false.</returns>
         /// <exception cref="System.InvalidOperationException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been marked
         /// as complete with regards to additions.</exception>
@@ -335,7 +335,7 @@ namespace System.Collections.Concurrent
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see
         /// cref="System.Threading.Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <returns>true if the <paramref name="item"/> could be added to the collection within
-        /// the alloted time; otherwise, false.</returns>
+        /// the allotted time; otherwise, false.</returns>
         /// <exception cref="System.InvalidOperationException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been marked
         /// as complete with regards to additions.</exception>
@@ -360,7 +360,7 @@ namespace System.Collections.Concurrent
         /// cref="System.Threading.Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <param name="cancellationToken">A cancellation token to observe.</param>
         /// <returns>true if the <paramref name="item"/> could be added to the collection within
-        /// the alloted time; otherwise, false.</returns>
+        /// the allotted time; otherwise, false.</returns>
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         /// <exception cref="System.InvalidOperationException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been marked
@@ -565,7 +565,7 @@ namespace System.Collections.Concurrent
         /// to wait, or a <see cref="System.TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
         /// </param>
         /// <returns>true if an item could be removed from the collection within
-        /// the alloted time; otherwise, false.</returns>
+        /// the allotted time; otherwise, false.</returns>
         /// <exception cref="System.ObjectDisposedException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative number
@@ -587,7 +587,7 @@ namespace System.Collections.Concurrent
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see
         /// cref="System.Threading.Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <returns>true if an item could be removed from the collection within
-        /// the alloted time; otherwise, false.</returns>
+        /// the allotted time; otherwise, false.</returns>
         /// <exception cref="System.ObjectDisposedException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
@@ -611,7 +611,7 @@ namespace System.Collections.Concurrent
         /// cref="System.Threading.Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <param name="cancellationToken">A cancellation token to observe.</param>
         /// <returns>true if an item could be removed from the collection within
-        /// the alloted time; otherwise, false.</returns>
+        /// the allotted time; otherwise, false.</returns>
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>

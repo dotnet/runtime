@@ -310,9 +310,9 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     {
         // Store the entry assembly path for diagnostic purposes (for example, dumps)
         size_t len = u16_strlen(pwzAssemblyPath) + 1;
-        NewArrayHolder<WCHAR> path { new WCHAR[len] };
+        WStringHolder path { new WCHAR[len] };
         wcscpy_s(path, len, pwzAssemblyPath);
-        g_EntryAssemblyPath = path.Extract();
+        g_EntryAssemblyPath = path.Detach();
     }
 
     Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
@@ -355,7 +355,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
     ExecutableAllocator::DumpHolderUsage();
     ExecutionManager::DumpExecutionManagerUsage();
 #endif

@@ -1830,7 +1830,7 @@ HRESULT ClrDataAccess::EnumMemWriteDataSegment()
 {
     SUPPORTS_DAC;
 
-    NewHolder<PEDecoder> pedecoder(NULL);
+    NewHolder<PEDecoder> pedecoder;
 
     EX_TRY
     {

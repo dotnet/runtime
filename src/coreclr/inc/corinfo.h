@@ -595,6 +595,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+    CORINFO_HELP_WASM_PROF_SAMPLEPOINT,     // WASM only: cooperative EventPipe CPU-sampling samplepoint
+
     CORINFO_HELP_COUNT,
 };
 
@@ -695,11 +697,7 @@ enum class CorInfoCallConvExtension
 #ifdef TARGET_X86
 inline bool IsCallerPop(CorInfoCallConvExtension callConv)
 {
-#ifdef UNIX_X86_ABI
-    return callConv == CorInfoCallConvExtension::Managed || callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
-#else
     return callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
-#endif // UNIX_X86_ABI
 }
 #endif
 

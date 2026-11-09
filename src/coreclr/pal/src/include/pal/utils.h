@@ -90,7 +90,7 @@ Parameters :
 
 Return Value :
     newly allocated buffer containing the converted string. Conversion is
-    performed using CP_ACP. Buffer is allocated with malloc(), release it
+    performed using UTF-8. Buffer is allocated with malloc(), release it
     with free().
     In case if failure, LastError will be set.
 --*/
@@ -109,7 +109,7 @@ Parameters :
 
 Return Value :
     newly allocated buffer containing the converted string. Conversion is
-    performed using CP_ACP. Buffer is allocated with malloc(), release it
+    performed using UTF-8. Buffer is allocated with malloc(), release it
     with free().
     In case if failure, LastError will be set.
 --*/
@@ -138,34 +138,7 @@ void UTIL_SetLastErrorFromMach(kern_return_t MachReturn);
 
 #endif //HAVE_VM_ALLOCATE
 
-BOOL IsRunningOnMojaveHardenedRuntime();
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-class StringHolder
-   {
-       private:
-           LPSTR data;
-       public:
-        StringHolder() : data(NULL) { }
-        ~StringHolder()
-        {
-            free( data);
-        }
-
-        operator LPSTR () { return data;}
-
-        StringHolder& operator= (LPSTR value)
-        {
-            data = value;
-            return *this;
-        }
-
-        BOOL IsNull()
-        {
-          return data == NULL;
-        }
-
-   };
 #endif /* _PAL_UTILS_H_ */

@@ -150,8 +150,8 @@ namespace System.Linq.Expressions
         /// <param name="document">The <see cref="SymbolDocumentInfo"/> that represents the source file.</param>
         /// <param name="startLine">The start line of this <see cref="DebugInfoExpression"/>. Must be greater than 0.</param>
         /// <param name="startColumn">The start column of this <see cref="DebugInfoExpression"/>. Must be greater than 0.</param>
-        /// <param name="endLine">The end line of this <see cref="DebugInfoExpression"/>. Must be greater or equal than the start line.</param>
-        /// <param name="endColumn">The end column of this <see cref="DebugInfoExpression"/>. If the end line is the same as the start line, it must be greater or equal than the start column. In any case, must be greater than 0.</param>
+        /// <param name="endLine">The end line of this <see cref="DebugInfoExpression"/>. Must be greater than or equal to the start line.</param>
+        /// <param name="endColumn">The end column of this <see cref="DebugInfoExpression"/>. If the end line is the same as the start line, it must be greater than or equal to the start column. In any case, must be greater than 0.</param>
         /// <returns>An instance of <see cref="DebugInfoExpression"/>.</returns>
         public static DebugInfoExpression DebugInfo(SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn)
         {

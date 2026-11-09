@@ -7,10 +7,6 @@
 #define THUMB_CODE 1
 #endif
 
-#ifndef __GLIBC__
-typedef int __ptrace_request;
-#endif
-
 extern CrashInfo* g_crashInfo;
 
 // Helper for UnwindNativeFrames
@@ -20,9 +16,6 @@ GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
 #if defined(__x86_64__)
     *ip = pContext->Rip;
     *sp = pContext->Rsp;
-#elif defined(__i386__)
-    *ip = pContext->Eip;
-    *sp = pContext->Esp;
 #elif defined(__aarch64__)
     *ip = pContext->Pc;
     *sp = pContext->Sp;
@@ -198,7 +191,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
                     {
-                        WStringHolder typeName = new WCHAR[MAX_LONGPATH + 1];
+                        WStringHolder typeName(new WCHAR[MAX_LONGPATH + 1]);
                         if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName)))
                         {
                             m_exceptionType = ConvertString(typeName);
@@ -273,7 +266,7 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
                 {
                     TRACE("Unwind: GetTokenAndScope sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
                 }
-                if (FAILED(pMethod->GetILOffsetsByAddress(ip, 1, NULL, &ilOffset)))
+                if (FAILED(pMethod->GetILOffsetsByAddress(ip, 1, nullptr, &ilOffset)))
                 {
                     TRACE("Unwind: GetILOffsetsByAddress sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
                 }
@@ -395,7 +388,7 @@ ThreadInfo::GetThreadStack()
 
             if (g_diagnostics)
             {
-                TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, size);
+                TRACE("Thread %04x stack found in other mapping (size %08zx): ", Tid(), size);
                 region->Trace();
             }
         }
@@ -403,12 +396,12 @@ ThreadInfo::GetThreadStack()
     }
     else
     {
-        TRACE("Thread %04x null stack pointer\n", m_tid);
+        TRACE("Thread %04x null stack pointer\n", Tid());
     }
 }
 
 bool
 ThreadInfo::IsCrashThread() const
 {
-    return m_tid == m_crashInfo.CrashThread();
+    return Tid() == m_crashInfo.CrashThread();
 }
