@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <crtdbg.h>
 #include "mdinfo.h"
+#include "minipal.h"
 
 #ifndef STRING_BUFFER_LEN
 #define STRING_BUFFER_LEN 4096
@@ -59,38 +60,33 @@ static HRESULT FindObjMetaData(PVOID pImage, PVOID *ppMetaData, long *pcbMetaDat
 // This function returns the address to the MapView of file and file size.
 void GetMapViewOfFile(_In_ WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
 {
-    HANDLE      hMapFile;
-    DWORD       dwHighSize;
+    VMToOSInterface::MemoryMapHandle hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(szFile), /* executable */ false);
+    if (hFile == VMToOSInterface::InvalidFileHandle)
+        MDInfo::Error("OpenFile failed!");
 
-    HANDLE hFile = WszCreateFile(szFile,
-                               GENERIC_READ,
-                               FILE_SHARE_READ,
-                               NULL,
-                               OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                               NULL);
-    if (hFile == INVALID_HANDLE_VALUE)
-        MDInfo::Error("CreateFileA failed!");
-
-    *pdwFileSize = GetFileSize(hFile, &dwHighSize);
-
-    if ((*pdwFileSize == 0xFFFFFFFF) && (GetLastError() != NO_ERROR))
+    uint64_t fileSize;
+    if (!VMToOSInterface::GetFileSize(hFile, &fileSize) || fileSize > UINT32_MAX)
     {
-        CloseHandle(hFile);
+        VMToOSInterface::CloseFile(hFile);
         MDInfo::Error("GetFileSize failed!");
     }
-    _ASSERTE(dwHighSize == 0);
+    *pdwFileSize = (DWORD)fileSize;
 
-    hMapFile = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    CloseHandle(hFile);
-    if (!hMapFile)
-        MDInfo::Error("CreateFileMappingW failed!");
+    VMToOSInterface::MemoryMapHandle hMapFile =
+        VMToOSInterface::CreateMemoryMapping(hFile, 0, VMToOSInterface::MemoryProtection::ReadOnly);
+    if (hMapFile == VMToOSInterface::InvalidMemoryMapHandle)
+    {
+        VMToOSInterface::CloseFile(hFile);
+        MDInfo::Error("CreateMemoryMapping failed!");
+    }
 
-    *ppbMap = (PBYTE) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
-    CloseHandle(hMapFile);
+    *ppbMap = (PBYTE) VMToOSInterface::MapMemory(hMapFile, 0, nullptr, *pdwFileSize,
+        VMToOSInterface::MemoryProtection::ReadOnly, true);
+    VMToOSInterface::CloseMemoryMapping(hMapFile);
+    VMToOSInterface::CloseFile(hFile);
 
     if (!*ppbMap)
-        MDInfo::Error("MapViewOfFile failed!");
+        MDInfo::Error("MapMemory failed!");
 } // void GetMapViewOfFile()
 
 // This function skips a member given the pointer to the member header
@@ -208,13 +204,12 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
     {
         if((szName = GetNameOfObj(pbLongNameAddress, (PIMAGE_ARCHIVE_MEMBER_HEADER)pbMapAddress, szBuf))!=NULL)
         {
-            if (MultiByteToWideChar(CP_ACP, 0, szName, -1, wzName, 1024) == -1)
-                MDInfo::Error("Conversion from Multi-Byte to Wide-Char failed.");
+            minipal_convert_utf8_to_utf16(szName, strlen(szName) + 1, (CHAR16_T*)wzName, 1024, 0);
 
             // Display metadata only for object files.
             // If szObjName is specified, display metadata only for that one object file.
             if (!_stricmp(&szName[strlen(szName) - OBJ_EXT_LEN], OBJ_EXT) &&
-                (!szObjName || !_wcsicmp(szObjName, wzName)))
+                (!szObjName || !u16_stricmp(szObjName, wzName)))
             {
                 // Try to find the MetaData section in the current object file.
                 hr = FindObjMetaData(pbMapAddress+IMAGE_SIZEOF_ARCHIVE_MEMBER_HDR, &pvMetaData, &cbMetaData);
@@ -241,7 +236,7 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
         pbMapAddress = SkipMember(pbMapAddress);
     }
 
-    UnmapViewOfFile(pbStartAddress);
+    VMToOSInterface::UnmapMemory(pbStartAddress, dwFileSize);
 } // void DisplayArchive()
 
 // DisplayFile() function
@@ -286,13 +281,13 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
 
     if (DumpFilter & MDInfo::dumpValidate)
     {
-        if (pExt && (!_wcsicmp(pExt, OBJ_EXT_W) || !_wcsicmp(pExt, LIB_EXT_W)))
+        if (pExt && (!u16_stricmp(pExt, OBJ_EXT_W) || !u16_stricmp(pExt, LIB_EXT_W)))
             g_ValModuleType = ValidatorModuleTypeObj;
         else
             g_ValModuleType = ValidatorModuleTypePE;
     }
 
-    if (pExt && !_wcsicmp(pExt, LIB_EXT_W))
+    if (pExt && !u16_stricmp(pExt, LIB_EXT_W))
         DisplayArchive(szFile, DumpFilter, szObjName, pDisplayString);
     else
     {

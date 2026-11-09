@@ -58,6 +58,10 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
+            // WASM function pointers are table indices, not linear-memory addresses.
+            RelocType fixupReloc = factory.Target.Architecture == TargetArchitecture.Wasm32
+                ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_RELPTR32;
+
             // Count the number of occurences of reloc targets. We'll sort the reloc targets by the number of
             // references to them so that we can assign the most efficient instruction encoding (1 byte) for
             // the most popular targets.
@@ -77,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             if (firstSymbol != null)
-                builder.EmitReloc(firstSymbol, RelocType.IMAGE_REL_BASED_RELPTR32, -firstSymbol.Offset);
+                builder.EmitReloc(firstSymbol, fixupReloc, -firstSymbol.Offset);
             else
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
@@ -247,7 +251,7 @@ namespace ILCompiler.DependencyAnalysis
                             bool hasNextReloc;
                             do
                             {
-                                builder.EmitReloc(target, RelocType.IMAGE_REL_BASED_RELPTR32, checked((int)delta));
+                                builder.EmitReloc(target, fixupReloc, checked((int)delta));
                                 numRelocs++;
                                 hasNextReloc = false;
 
@@ -273,9 +277,9 @@ namespace ILCompiler.DependencyAnalysis
 
                                     unsafe
                                     {
-                                        fixed (byte* pData = &o.Data[reloc.Offset])
+                                        fixed (byte* pData = &o.Data[nextReloc.Offset])
                                         {
-                                            delta = Relocation.ReadValue(reloc.RelocType, pData);
+                                            delta = Relocation.ReadValue(nextReloc.RelocType, pData);
                                         }
                                     }
 
@@ -312,7 +316,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)
-                builder.EmitReloc(relocSort[i].Key, RelocType.IMAGE_REL_BASED_RELPTR32);
+                builder.EmitReloc(relocSort[i].Key, fixupReloc);
 
             return builder.ToObjectData();
         }

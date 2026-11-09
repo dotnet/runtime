@@ -198,7 +198,7 @@ const char *g_szNativeType[] =
 
 static const char* ConvertToUtf8(LPCWSTR name, _Out_writes_(bufLen) char* buffer, ULONG bufLen)
 {
-    int res = WideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
+    size_t res = minipal_convert_utf16_to_utf8((const CHAR16_T*)name, u16_strlen(name) + 1, buffer, bufLen, 0);
     if (res == 0)
         buffer[0] = '\0';
     return buffer;
@@ -1955,7 +1955,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
         LPWSTR pwzName = (LPWSTR)(new WCHAR[iLen]);
         if(pwzName)
         {
-            MultiByteToWideChar(CP_UTF8,0, pMethName,-1, pwzName,iLen);
+            minipal_convert_utf8_to_utf16(pMethName, strlen(pMethName) + 1, (CHAR16_T*)pwzName, iLen, 0);
             PrettyPrintSigLegacy(pSig, cbSig, pwzName, &qSigName, m_pImport);
             delete [] pwzName;
         }

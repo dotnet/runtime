@@ -15,13 +15,11 @@ The above testcases were disabled in the palsuite, because they depend heavily o
 WaitForDebugEvent,DebugActiveProcess and ContinueDebugEvent, where these api's
 have been removed from the PAL.
 
-locale_info/getcpinfo/test2:
 =======================================
 This test will be useful in future versions for testing various
 languages (code pages).  Currently only U.S. English (tested by -
 test1) is supported.
 
-locale_info/getcpinfo/test3:
 =======================================
 This test will be useful in future versions for testing various
 languages (code pages).  Currently only U.S. English (tested by -
@@ -31,6 +29,5 @@ pal_specific/pal_get_stdin/test1 :
 =======================================
 This test case should be run manually.  Requires user input.
 
-filemapping_memmgt\MapViewOfFile\test1
 =======================================
 Refer this github issue https://github.com/dotnet/runtime/issues/5924

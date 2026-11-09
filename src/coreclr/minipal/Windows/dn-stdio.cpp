@@ -33,7 +33,6 @@ int fsetpos_64(FILE* stream, int64_t pos)
 HRESULT HRESULTFromErr(int err)
 {
     // maps the common I/O errors
-    // based on FILEGetLastErrorFromErrno
 
     // stdio functions aren't guaranteed to preserve GetLastError.
     // errno/ferror should be used as source of truth.

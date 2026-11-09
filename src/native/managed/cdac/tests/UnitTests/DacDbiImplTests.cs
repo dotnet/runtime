@@ -1059,8 +1059,8 @@ public unsafe class DacDbiImplTests
         TargetNUInt expectedValue = new(0x1234);
         Assert.True(sourceContext.TrySetRegister(sourceOnlyRegister, expectedValue));
 
-        byte[] destinationBytes = destinationContext.GetBytes();
-        byte[] sourceBytes = sourceContext.GetBytes();
+        byte[] destinationBytes = destinationContext.GetBytes().ToArray();
+        byte[] sourceBytes = sourceContext.GetBytes().ToArray();
         fixed (byte* pDestination = destinationBytes)
         fixed (byte* pSource = sourceBytes)
         {
@@ -1092,7 +1092,7 @@ public unsafe class DacDbiImplTests
         TargetNUInt destinationValue = new(0x5678);
         destinationContext.RawContextFlags = destinationContext.FullContextFlags;
         Assert.True(destinationContext.TrySetRegister(sourceOnlyRegister, destinationValue));
-        destinationBytes = destinationContext.GetBytes();
+        destinationBytes = destinationContext.GetBytes().ToArray();
 
         fixed (byte* pDestination = destinationBytes)
         fixed (byte* pSource = sourceBytes)

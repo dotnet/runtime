@@ -87,13 +87,13 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Gets the atomicComposition, if any, that this change applies to.
         /// </summary>
         /// <value>
-        ///     A <see cref="AtomicComposition"/> that this set of changes applies too.
+        ///     A <see cref="AtomicComposition"/> that this set of changes applies to.
         ///     It can be <see langword="null"/> if the changes are being applied outside a
         ///     <see cref="AtomicComposition"/> or during a
         ///     <see cref="INotifyComposablePartCatalogChanged.Changed"/> event.
         ///
         ///     When the value is non-null it should be used to record temporary changed state
-        ///     and actions that will be executed when the atomicComposition is completeed.
+        ///     and actions that will be executed when the atomicComposition is completed.
         /// </value>
         public AtomicComposition? AtomicComposition { get; }
     }

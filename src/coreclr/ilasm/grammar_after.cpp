@@ -120,7 +120,7 @@ char* NewStrFromTokenW(_In_reads_(tokLen) void* curTok, size_t tokLen)
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
     {
-        tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
+        tokLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)wcurTok,tokLen >> 1,nb,(tokLen<<1) + 2,0);
         nb[tokLen] = 0;
     }
     return nb;
@@ -143,7 +143,7 @@ char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Ou
     // CodeQL [SM02986] Cast to WCHAR is safe because we bail if curTok is not properly aligned
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
-    tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
+    tokLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)wcurTok,tokLen >> 1,staticBuf,bufSize,0);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
@@ -990,7 +990,7 @@ Its_An_Id:
                             {
                                 if((wzFile = new WCHAR[tokLen+1]) != NULL)
                                 {
-                                    tokLen = MultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
+                                    tokLen = minipal_convert_utf8_to_utf16(curTok,tokLen,(CHAR16_T*)wzFile,tokLen+1,0);
                                     wzFile[tokLen] = 0;
                                 }
                             }
@@ -1003,6 +1003,30 @@ Its_An_Id:
 #endif
                                 )
                                 {
+#ifdef TARGET_UNIX
+                                    for(const WCHAR* wzDir = parser->wzIncludePath; (wzDir != NULL) && (*wzDir != 0); )
+                                    {
+                                        const WCHAR* wzEnd = u16_strchr(wzDir, W(':'));
+                                        COUNT_T dirLen = (wzEnd != NULL) ? (COUNT_T)(wzEnd - wzDir) : (COUNT_T)u16_strlen(wzDir);
+                                        if(dirLen != 0)
+                                        {
+                                            PathString wzCandidate;
+                                            wzCandidate.Set(wzDir, dirLen);
+                                            wzCandidate.Append(W("/"));
+                                            wzCandidate.Append(wzFile);
+                                            MAKE_UTF8PTR_FROMWIDE(candidateUtf8, wzCandidate.GetUnicode());
+                                            FILE* pCandidate = fopen(candidateUtf8, "rb");
+                                            if(pCandidate != NULL)
+                                            {
+                                                fclose(pCandidate);
+                                                delete [] wzFile;
+                                                wzFile = wzCandidate.GetCopyOfUnicodeString();
+                                                break;
+                                            }
+                                        }
+                                        wzDir = (wzEnd != NULL) ? wzEnd + 1 : NULL;
+                                    }
+#else
                                     PathString wzFullName;
 
                                     WCHAR* pwz;
@@ -1014,7 +1038,7 @@ Its_An_Id:
 
                                         wzFile = wzFullName.GetCopyOfUnicodeString();
                                     }
-
+#endif
                                 }
                                 if(PASM->m_fReportProgress)
                                 {
@@ -1607,9 +1631,6 @@ AsmParse::AsmParse(ReadStream* aIn, Assembler *aAssem)
     wzIncludePath = NULL;
     penv = NULL;
 
-    hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
-    hstderr = GetStdHandle(STD_ERROR_HANDLE);
-
     success = true;
     _ASSERTE(parser == 0);          // Should only be one parser instance at a time
 
@@ -1793,15 +1814,6 @@ BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
 /**************************************************************************/
 void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
 {
-        WCHAR *wz = &wzUniBuf[0];
-        if(g_uCodePage != CP_ACP)
-        {
-                memset(wz,0,dwUniBuf); // dwUniBuf/2 WCHARs = dwUniBuf bytes
-                MultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
-
-                memset(sz,0,dwUniBuf);
-                WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
-        }
         fprintf(pF,"%s",sz);
 }
 /**************************************************************************/

@@ -26,7 +26,7 @@ namespace System.IO.Pipes
         /// -or-
         /// <paramref name="inBufferSize" /> is a negative number.
         /// -or
-        /// <paramref name="maxNumberOfServerInstances" /> is not a valid number: it should be greater or equal than 1 and less or equal than 254, or should be set to the value of <see cref="NamedPipeServerStream.MaxAllowedServerInstances" />.
+        /// <paramref name="maxNumberOfServerInstances" /> is not a valid number: it should be greater than or equal to 1 and less than or equal to 254, or should be set to the value of <see cref="NamedPipeServerStream.MaxAllowedServerInstances" />.
         /// -or-
         /// <paramref name="inheritability" /> contains an invalid enum value.
         /// -or
