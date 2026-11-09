@@ -594,7 +594,6 @@ namespace System.Collections.Generic
             if (_nodes.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _nodes.Length;
@@ -614,7 +613,6 @@ namespace System.Collections.Generic
             if (_size < threshold)
             {
                 Array.Resize(ref _nodes, _size);
-                _version++;
             }
         }
 

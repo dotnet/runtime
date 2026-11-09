@@ -314,15 +314,21 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
+        public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
             var dictionary = (Dictionary<TKey, TValue>)(GenericIDictionaryFactory(count));
             var capacity = dictionary.EnsureCapacity(0);
+            var expected = new List<KeyValuePair<TKey, TValue>>(dictionary);
             var enumerator = dictionary.GetEnumerator();
 
-            dictionary.EnsureCapacity(capacity + 1); // Verify EnsureCapacity does invalidate enumeration
+            dictionary.EnsureCapacity(capacity + 1); // Growing keeps the entries at the same indices
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            foreach (KeyValuePair<TKey, TValue> pair in expected)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(pair, enumerator.Current);
+            }
+            Assert.False(enumerator.MoveNext());
         }
 
         [Fact]

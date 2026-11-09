@@ -312,6 +312,34 @@ namespace System.Collections.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void Queue_Generic_TrimExcess_DoesNotInvalidateEnumeration(int count)
+        {
+            // Move the head to the end of the array so the items wrap around.
+            Queue<T> queue = new Queue<T>(count * 2);
+            for (int i = 0; i < count * 2 - 1; i++)
+            {
+                queue.Enqueue(CreateT(i));
+                queue.Dequeue();
+            }
+            AddToCollection(queue, count);
+            List<T> expected = queue.ToList();
+
+            using IEnumerator<T> enumerator = queue.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            List<T> actual = new List<T> { enumerator.Current };
+
+            queue.TrimExcess(count);
+            Assert.Equal(count, queue.Capacity);
+
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+            Assert.Equal(expected, actual);
+        }
+
         #endregion
 
         [Theory]
@@ -410,7 +438,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
+        public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
             IEnumerator<T> copiedEnumerator = new List<T>(queue).GetEnumerator();
@@ -418,7 +446,12 @@ namespace System.Collections.Tests
 
             queue.EnsureCapacity(count + 1);
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            while (copiedEnumerator.MoveNext())
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(copiedEnumerator.Current, enumerator.Current);
+            }
+            Assert.False(enumerator.MoveNext());
         }
 
         [Fact]

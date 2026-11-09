@@ -1656,8 +1656,6 @@ namespace System.Collections.Generic
                 return currentCapacity;
             }
 
-            _version++;
-
             if (_buckets == null)
             {
                 return Initialize(capacity);

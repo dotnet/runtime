@@ -880,8 +880,6 @@ namespace System.Collections.Generic
                 {
                     Resize(HashHelpers.GetPrime(capacity));
                 }
-
-                _version++;
             }
 
             return Capacity;
