@@ -249,7 +249,7 @@ int32_t ep_rt_test_wait(ep_rt_wait_event_handle_t *event, uint32_t timeout)
             uint64_t elapsed = (uint64_t)(minipal_lowres_ticks() - start);
             if (elapsed >= timeout)
             {
-                result = 258; // WAIT_TIMEOUT
+                result = EP_RT_TEST_WAIT_TIMEOUT;
                 break;
             }
             remaining -= (uint32_t)elapsed;
