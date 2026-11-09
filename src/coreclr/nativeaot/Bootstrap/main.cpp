@@ -6,17 +6,6 @@
 #include <stdlib.h>
 #include <minipal/descriptorlimit.h>
 
-#ifdef TARGET_LINUX
-#include "../Runtime/createdump/createdump_sentinel.h"
-
-// Native libraries and custom native entry points cannot dispatch a self-restarted helper.
-#ifdef NATIVEAOT_DLL
-bool g_createdumpDispatchSupported = false;
-#else
-bool g_createdumpDispatchSupported = true;
-#endif
-#endif // TARGET_LINUX
-
 #if defined(DEBUG) && defined(_WIN32)
 #include <process.h>
 #include <windows.h>
@@ -124,6 +113,10 @@ static char& __unbox_z = __stop___unbox;
 #endif // _MSC_VER
 
 #endif // TARGET_WASM
+
+#ifdef TARGET_LINUX
+extern bool nativeaot_createdump(int argc, char* argv[], int* exitCode);
+#endif // TARGET_LINUX
 
 extern "C" bool RhInitialize(bool isLibrary);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());

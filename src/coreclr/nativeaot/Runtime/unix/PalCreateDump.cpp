@@ -701,7 +701,6 @@ PalCreateDumpInitialize()
 #ifdef TARGET_LINUX
     g_selfRestartCreatedump =
         g_createdumpLinked &&
-        g_createdumpDispatchSupported &&
         !customDumpToolPath &&
         getauxval(AT_SECURE) == 0 &&
         access(SelfCreateDumpPath, X_OK) == 0;

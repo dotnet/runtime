@@ -8,7 +8,6 @@
 #define CREATEDUMP_SENTINEL "--{E89B44A7-9C62-4AB5-B292-FC7E1A25E949}"
 
 extern bool g_createdumpLinked;
-extern bool g_createdumpDispatchSupported;
 
 // Returns true when the invocation was handled, with its success or failure result in exitCode.
 bool nativeaot_createdump(int argc, char* argv[], int* exitCode);
