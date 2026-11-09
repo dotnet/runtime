@@ -24,21 +24,29 @@ internal readonly struct DeferredWasmMethodFinalizationInfo(int level, bool isEa
 
 // #DeferredWasmCallFinalization
 //
-// Own the post-codegen processing of deferred calls. The JIT generates each
-// method before dependency analysis quiesces; the finalization plan orders
-// rewriting and activation-fixup minimization, not another compilation pass.
+// Own post-codegen processing of deferred calls in Wasm compilations containing
+// CoreLib. The JIT generates each method before dependency analysis quiesces;
+// the finalization plan orders rewriting and activation-fixup minimization,
+// not another compilation pass.
 //
-// Finalize the startup/helper eager closure first, then relevel and finalize
-// the remaining methods. Publish direct-call eligibility only after an entire
-// level is finalized: callees at lower levels have complete activation
-// guarantees, while calls within a recursive component remain indirect.
+// Finalize the closure of native-facing startup entrypoints and already-rooted
+// managed JIT helpers first, then relevel and finalize the remaining methods.
+// Publish direct-call eligibility only after an entire level is finalized:
+// callees at lower levels have complete activation guarantees, while calls
+// within a recursive component remain indirect.
+//
+// Eager preparation follows both direct calls and MethodEntry_ReadyToRun
+// fixups. Promote its actual import cells to eager sections, preserving string
+// classification, and remove those same cells from every method's precode.
+// Merely compiling a method does not make it eager. Validation and data fixups
+// must run before eager method activation can permanently publish R2R code.
 //
 // _pendingMethods retains raw debug data and import-time activation tokens
 // until rewriting. _finalizedMethods records the level and eager status used
 // by call selection. _targets interns deferred call nodes across JIT workers,
 // which also populate distinct MethodData entries. Registration and
-// finalization are serialized around those workers. After finalization,
-// promote eager requirements, commit import placement, and
+// finalization are serialized around those workers. After calls and eager
+// promotion are finalized, commit deferred import placement and
 // revisit method dependencies to publish the chosen calls and imports.
 // See #DeferredWasmCallRewriting and #PrecodeFixupMinimization.
 internal sealed class DeferredWasmCallProcessor
@@ -368,6 +376,9 @@ internal sealed class DeferredWasmCallProcessor
         {
             if (!fixup.Table.IsEager)
             {
+                // Eagerness changes initialization timing, not the cell's value
+                // kind: keep strings classified as StringHandle rather than
+                // merging them into the untyped eager data section.
                 ImportSectionNode table = fixup.Signature switch
                 {
                     MethodFixupSignature { RequiresEagerActivation: true } or

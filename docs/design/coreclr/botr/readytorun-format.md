@@ -252,23 +252,6 @@ fixups must not trigger type loading; the required types must already be loaded.
 stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
 initial state.
 
-#### Compiler promotion of method fixups
-
-For deferred Wasm compilations containing CoreLib, crossgen2 records explicit and relocation-derived
-precode requirements, then finalizes deferred calls in callee-first levels. Before emitting the image,
-it collects the preparation closure of startup entry points and already-rooted managed JIT helpers,
-including targets of `MethodEntry_ReadyToRun` fixups.
-
-The compiler promotes the actual required import cells into eager sections, preserving the
-`StringHandle` classification for string cells. Validation and data fixups precede eager method
-activation. Covered cells are removed from per-method fixup lists, including those of eagerly
-prepared methods. Deferred-call processing does not make every compiled method eager.
-
-Concrete type-handle imports are interned by resolved type, not by the original IL token. For example,
-`typeof(T)` in a specialization with `T = int` uses the same cell as `typeof(int)` and encodes
-`ELEMENT_TYPE_I4`; a context-dependent generic-parameter token is not used as a type-definition
-reference. Runtime dictionary lookups in shared generic code remain runtime lookups.
-
 When `Vector<T>` support is non-optimistic, its SIMD width is fixed at compile time and does
 not require a type-layout check. This includes Wasm, where `Vector<T>` has a fixed 16-byte
 layout. Types containing vectors also have fixed layout when their remaining layout is fixed

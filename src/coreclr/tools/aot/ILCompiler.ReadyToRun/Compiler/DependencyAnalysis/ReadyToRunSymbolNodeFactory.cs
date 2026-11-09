@@ -67,6 +67,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new StringImport(_codegenNodeFactory.StringImports, key);
             });
 
+            // TypeHandle keys use the resolved TypeDesc, not the original IL token.
+            // Thus typeof(T) specialized with T = int shares the typeof(int) import
+            // and encodes ELEMENT_TYPE_I4, not a context-dependent parameter token.
+            // Shared-generic dictionary lookups use GenericLookupHelper and retain
+            // their runtime lookup.
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, Import>(CreateReadyToRunHelper);
 
             _eagerReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
