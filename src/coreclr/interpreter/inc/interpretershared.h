@@ -90,27 +90,41 @@ struct InterpMethod
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
 enum class AuxiliaryModuleStateDiscriminator
 {
-    AlwaysInterpret
+    AlwaysInterpret,
     WaitingForEntryPointsModule,
     WaitingForAuxiliaryModule,
-}
+    Activated
+};
+
 struct AuxiliaryModuleState
 {
 private:
-    uint32_t* AuxModuleActivationFlag;
+    union{
+        uint32_t* AuxModuleActivationFlag;
+        PCODE ActivatedCode;
+    }
     AuxiliaryModuleStateDiscriminator Discriminator;
 
 public:
     AuxiliaryModuleState(AuxiliaryModuleStateDiscriminator discriminator, uint32_t auxModuleActivationFlag)
     {
-        _ASSERTE(Discriminator == AlwaysInterpret || AxuModuleActivationFlag != NULL);
+        _ASSERTE(discriminator == AuxiliaryModuleStateDiscriminator::AlwaysInterpret ? true :
+             discriminator == AuxiliaryModuleStateDiscriminator::WaitingForEntryPointsModule ? auxModuleActivationFlag != NULL :
+             discriminator == AuxiliaryModuleStateDiscriminator::WaitingForAuxiliaryModule ? auxModuleActivationFlag != NULL :
+             discriminator == AuxiliaryModuleStateDiscriminator::Activated ? ActivatedCode != NULL :
+             false);
         AuxModuleActivationFlag = auxModuleActivationFlag;
         Discriminator = discriminator;
     }
 
     bool CanBeActivated() const
     {
-        Discriminator != AlwaysInterpret && *AuxModuleActivationFlag;
+        return Discriminator != AlwaysInterpret && *AuxModuleActivationFlag;
+    }
+
+    bool IsActivated() const
+    {
+        return Discriminator == Activated && ActivatedCode != NULL;
     }
 }
 #endif

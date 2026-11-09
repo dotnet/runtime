@@ -2350,6 +2350,11 @@ public:
     bool TryPublishR2RCodeForUnmanagedCallersOnly();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    void TryActivateDelayedR2RCode(InterpByteCodeStart* interpreterMethod, CallerGCMode callerGCMode);
+    AuxiliaryMethodState GetAuxiliaryMethodState();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);

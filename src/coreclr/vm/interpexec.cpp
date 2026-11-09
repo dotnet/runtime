@@ -3541,17 +3541,29 @@ SWITCH_OPCODE:
                         {
                             targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
                         }
-#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
                         PTR_InterpByteCodeStart targetIp;
-                        if (targetIP->AuxiliaryModuleState.CanBeActivated())
-                        {
-                            // Activate
-                        }
-#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
                         if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
                         {
                             targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                         }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+                        if (targetIp != NULL && targetIp->AuxiliaryModuleState.CanBeActivated())
+                        {
+                            pFrame->ip = ip;
+                            pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                            {
+                                GCX_PREEMP_REGION_BEGIN();
+                                CallWithSEHWrapper(
+                                    [pActualMethod, targetIp]() {
+                                        pActualMethod->TryActivateDelayedR2RCode(targetIp->Method, CallerGCMode::Coop);
+                                        return 0;
+                                    });
+                                GCX_PREEMP_REGION_END();
+                            }
+                            targetIp = targetMethod->GetInterpreterCode();
+                        }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
                         if (targetIp != NULL)
                         {
                             pFrame->ip = ip;
@@ -3649,6 +3661,23 @@ CALL_INTERP_METHOD:
                     {
                         targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                     }
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+                    if (targetIp != NULL && targetIp->AuxiliaryModuleState.CanBeActivated())
+                    {
+                        pFrame->ip = ip;
+                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                        {
+                            GCX_PREEMP_REGION_BEGIN();
+                            CallWithSEHWrapper(
+                                [pActualMethod, targetIp]() {
+                                    pActualMethod->TryActivateDelayedR2RCode(targetIp->Method, CallerGCMode::Coop);
+                                    return 0;
+                                });
+                            GCX_PREEMP_REGION_END();
+                        }
+                        targetIp = targetMethod->GetInterpreterCode();
+                    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
                     if (targetIp == NULL)
                     {
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.

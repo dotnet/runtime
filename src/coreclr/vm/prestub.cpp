@@ -552,6 +552,47 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+// Retry R2R lookup when the known code module is available or the lookup era has changed.
+void MethodDesc::TryActivateDelayedR2RCode(InterpByteCodeStart* interpreterMethod, CallerGCMode callerGCMode)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+    _ASSERTE(interpreterMethod->AuxModuleState.CanBeActivated())
+
+    // Set state to avoid reentering activation in a cycle
+    interpreterMethod->AuxModuleState = AuxiliaryModuleState(AuxiliaryModuleStateDiscriminator::AlwaysInterpret, NULL);
+    EX_TRY
+    {
+        PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+        config.SetCallerGCMode(callerGCMode);
+        PCODE code = GetPrecompiledCode(&config, false);
+        if (code != (PCODE)NULL)
+        {
+            interpreterMethod->AuxModuleState = AuxiliaryModuleState(AuxiliaryModuleStateDiscriminator::Activated, code);
+            PoisonInterpreterCode();
+            PerfMap::LogPreCompiledMethod(this, code);
+            DACNotifyCompilationFinished(this, code);
+        }
+        else
+        {
+            // Module state is already set to AlwaysInterpret, no further action needed
+        }
+    }
+    EX_CATCH
+    {
+        // Nonterminal lookup or fixup failures leave the method interpreted without retry.
+        RethrowTerminalExceptions();
+        // Module state is already set to AlwaysInterpret, no further action needed
+    }
+    EX_END_CATCH
+}
+
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;
