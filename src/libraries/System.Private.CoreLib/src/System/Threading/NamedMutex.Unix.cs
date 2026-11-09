@@ -221,7 +221,18 @@ namespace System.Threading
                 {
                     if (created)
                     {
-                        InitializeSharedData(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader));
+                        try
+                        {
+                            InitializeSharedData(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader));
+                        }
+                        catch
+                        {
+                            // The header is already published in the process-local cache. Drop its initial reference so the
+                            // uninitialized shared data is unpublished, unmapped and deleted instead of being handed
+                            // to later callers as if it were a valid mutex.
+                            processDataHeader.DecrementRefCount();
+                            throw;
+                        }
                     }
 
                     if (processDataHeader._processData is null)
