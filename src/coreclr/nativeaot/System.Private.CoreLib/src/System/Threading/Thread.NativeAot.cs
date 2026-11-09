@@ -58,6 +58,10 @@ namespace System.Threading
 
         static unsafe partial void RegisterThreadExitCallback();
 
+        static partial void IncrementRunningForeground();
+
+        static partial void DecrementRunningForeground();
+
         // Slow path executed once per thread
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
@@ -77,7 +81,7 @@ namespace System.Threading
             }
             else
             {
-                Interlocked.Increment(ref s_foregroundRunningCount);
+                IncrementRunningForeground();
             }
 #endif
 
@@ -130,16 +134,12 @@ namespace System.Threading
                 // on thread start we count its state in `StartThread`
                 if (value)
                 {
-#if FEATURE_MULTITHREADING
                     int threadState = SetThreadStateBit(ThreadState.Background);
                     // was foreground and has started
                     if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == 0)
                     {
                         DecrementRunningForeground();
                     }
-#else
-                    SetThreadStateBit(ThreadState.Background);
-#endif
                 }
                 else
                 {
@@ -147,9 +147,7 @@ namespace System.Threading
                     // was background and has started
                     if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == (int)ThreadState.Background)
                     {
-#if FEATURE_MULTITHREADING
                         IncrementRunningForeground();
-#endif
                         _mayNeedResetForThreadPool = true;
                     }
                 }

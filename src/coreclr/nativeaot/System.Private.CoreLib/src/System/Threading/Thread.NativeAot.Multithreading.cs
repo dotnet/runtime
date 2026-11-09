@@ -141,12 +141,12 @@ namespace System.Threading
             }
         }
 
-        internal static void IncrementRunningForeground()
+        static partial void IncrementRunningForeground()
         {
             Interlocked.Increment(ref s_foregroundRunningCount);
         }
 
-        internal static void DecrementRunningForeground()
+        static partial void DecrementRunningForeground()
         {
             if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0)
             {
