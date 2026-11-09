@@ -9008,11 +9008,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
                 continue;
 
             // Align instance fields if we aren't already
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            DWORD dwDataAlignment = min(1 << i, DATA_ALIGNMENT);
-#else
             DWORD dwDataAlignment = 1 << i;
-#endif
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwDataAlignment);
 
             // Fields of this size start at the next available location
@@ -11204,25 +11200,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         if (type != ELEMENT_TYPE_END && CorTypeInfo::IsPrimitiveType(type))
         {
             pMT->SetInternalCorElementType(type, true);
-
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            switch (type)
-            {
-                // The System V ABI for i386 defines different packing for these types.
-
-                case ELEMENT_TYPE_I8:
-                case ELEMENT_TYPE_U8:
-                case ELEMENT_TYPE_R8:
-                {
-                    EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
-                    pLayout->SetAlignmentRequirement(4);
-                    break;
-                }
-
-                default:
-                    break;
-            }
-#endif // TARGET_X86 && UNIX_X86_ABI
 
 #ifdef _DEBUG
             if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))

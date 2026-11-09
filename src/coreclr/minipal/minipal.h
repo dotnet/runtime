@@ -37,7 +37,7 @@ public:
         ExecuteReadWrite
     };
 
-    static MemoryMapHandle OpenFile(const char16_t* path);
+    static MemoryMapHandle OpenFile(const char16_t* path, bool executable = true);
     static bool CloseFile(MemoryMapHandle fileHandle);
     static bool GetFileSize(MemoryMapHandle fileHandle, uint64_t* size);
     static int32_t GetLastMemoryMappingError();

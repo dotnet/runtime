@@ -19,7 +19,7 @@ public:
 bool isValidVectorIndex(uint8_t elemsize, uint8_t index);
 void emitIns(instruction ins);
 void emitIns_BlockTy(instruction ins, WasmValueType valType = WasmValueType::Invalid);
-void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
+void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse = false);
 void emitIns_Ty_I(instruction ins, WasmValueType ty, unsigned int imm);
 void emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs);
 void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);

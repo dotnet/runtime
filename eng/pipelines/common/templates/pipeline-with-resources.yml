@@ -58,11 +58,6 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
-      linux_x86:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-x86@sha256:85b85a82f4a7b5459351bb854630c927b0f73e4a0e39f96b60cabb2f1b77d508
-        env:
-          ROOTFS_DIR: /crossrootfs/x86
-
       linux_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-amd64@sha256:93358ec962adf3c8115257e3d58ff5d168a764575161348aa5eb8d1eeeda9cbf
 

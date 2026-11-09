@@ -135,7 +135,6 @@ TrapThreadsFlags_TrapThreads     equ 1
 ;;
 
 EXTERN RhpGcAlloc                               : PROC
-EXTERN RhpValidateExInfoPop                     : PROC
 EXTERN RhDebugBreak                             : PROC
 EXTERN RhpWaitForGC2                            : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC

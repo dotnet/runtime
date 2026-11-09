@@ -14,11 +14,26 @@ void print_trace_timestamp()
 
 bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
 {
+#ifdef HOST_WINDOWS
     if (bufferSize > MAXDWORD || GetTempPathWrapper(static_cast<DWORD>(bufferSize), buffer) == 0)
     {
         printf_error("GetTempPath failed\n");
         return false;
     }
+#else
+    const char* tmpDir = getenv("TMPDIR");
+    if (tmpDir == nullptr || tmpDir[0] == '\0')
+    {
+        tmpDir = "/tmp/";
+    }
+    const char* slash = (tmpDir[strlen(tmpDir) - 1] == '/') ? "" : "/";
+    int len = snprintf(buffer, bufferSize, "%s%s", tmpDir, slash);
+    if (len < 0 || static_cast<size_t>(len) >= bufferSize)
+    {
+        printf_error("TMPDIR is too long\n");
+        return false;
+    }
+#endif
     int exitCode = strcat_s(buffer, bufferSize, DEFAULT_DUMP_TEMPLATE);
     if (exitCode != 0)
     {

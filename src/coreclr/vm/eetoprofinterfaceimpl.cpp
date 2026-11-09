@@ -554,11 +554,9 @@ HRESULT EEToProfInterfaceImpl::Init(
 
     m_csGCRefDataFreeList = csGCRefDataFreeList.Detach();
 
-    m_pFunctionIDHashTable = pFunctionIDHashTable.Extract();
-    pFunctionIDHashTable = NULL;
+    m_pFunctionIDHashTable = pFunctionIDHashTable.Detach();
 
-    m_pFunctionIDHashTableRWLock = pFunctionIDHashTableRWLock.Extract();
-    pFunctionIDHashTableRWLock = NULL;
+    m_pFunctionIDHashTableRWLock = pFunctionIDHashTableRWLock.Detach();
 
     return S_OK;
 }

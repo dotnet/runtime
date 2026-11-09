@@ -392,11 +392,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
     m_stkArgVarNum = BAD_VAR_NUM;
 #endif
 
-#if defined(UNIX_X86_ABI)
-    curNestedAlignment = 0;
-    maxNestedAlignment = 0;
-#endif
-
     gcInfo.regSet        = &regSet;
     m_cgEmitter          = new (m_compiler->getAllocator()) emitter();
     m_cgEmitter->codeGen = this;
@@ -1211,11 +1206,7 @@ BasicBlock* CodeGen::genCreateTempLabel()
     block->CopyFlags(m_compiler->compCurBB, BBF_COLD);
 
 #ifdef DEBUG
-#ifdef UNIX_X86_ABI
-    block->bbTgtStkDepth = (genStackLevel - curNestedAlignment) / sizeof(int);
-#else
     block->bbTgtStkDepth = genStackLevel / sizeof(int);
-#endif
 #endif
     return block;
 }
@@ -1287,17 +1278,6 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 {
 #if !FEATURE_FIXED_OUT_ARGS && !defined(TARGET_WASM)
     // Check for inserted throw blocks and adjust genStackLevel.
-
-#if defined(UNIX_X86_ABI)
-    if (isFramePointerUsed() && m_compiler->fgIsThrowHlpBlk(block))
-    {
-        // x86/Linux requires stack frames to be 16-byte aligned, but SP may be unaligned
-        // at this point if a jump to this block is made in the middle of pushing arguments.
-        //
-        // Here we restore SP to prevent potential stack alignment issues.
-        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -genSPtoFPdelta());
-    }
-#endif
 
     if (!isFramePointerUsed() && m_compiler->fgIsThrowHlpBlk(block))
     {
@@ -2000,11 +1980,6 @@ void CodeGen::genExitCode(BasicBlock* block)
 void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk)
 {
     bool useThrowHlpBlk = m_compiler->fgUseThrowHelperBlocks();
-#if defined(UNIX_X86_ABI)
-    // TODO: Is this really UNIX_X86_ABI specific?
-    // Inline exception-throwing code in funclet to make it possible to unwind funclet frames.
-    useThrowHlpBlk = useThrowHlpBlk && (m_compiler->funCurrentFunc()->funKind == FUNC_ROOT);
-#endif // UNIX_X86_ABI
 
     if (useThrowHlpBlk)
     {

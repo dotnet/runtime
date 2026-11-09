@@ -807,8 +807,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVar
         request.InitFromStartingAddr(pMD, CORDB_ADDRESS_TO_TADDR(startAddress));
 
         // Retrieve sequence points and native variable info in a single request
-        NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
-        NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+        NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy;
+        NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars;
         ULONG32 seqEntryCount = 0;
         ULONG32 varEntryCount = 0;
 
@@ -3936,7 +3936,7 @@ namespace
         NewArrayHolder<BYTE> Data;
         ULONG32 Size;
 
-        PoolData() : Data(NULL), Size(0) {}
+        PoolData() : Data{}, Size(0) {}
     };
 
     void ReadStoragePool(TADDR poolAddress, PoolData & result)
@@ -4132,7 +4132,7 @@ void DacDbiInterfaceImpl::SerializeReadWriteMetadata(Module * pModule, BYTE ** p
     ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_GuidHeap), guidHeap);
 
     // Coalesce the record data for each table.
-    NewArrayHolder<PoolData> tables = new PoolData[tableCount == 0 ? 1 : tableCount];
+    NewArrayHolder<PoolData> tables(new PoolData[tableCount == 0 ? 1 : tableCount]);
     TADDR tablesBase = PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_Tables);
     ULONG32 tableStride = (ULONG32)sizeof(MetaData::TableRW);
     for (ULONG32 i = 0; i < tableCount; i++)
@@ -7757,7 +7757,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateHeapSegments(
     HRESULT hr = DacHeapWalker::InitHeapDataWks(heaps, heapCount);
 #endif
 
-    NewArrayHolder<HeapData> _heapHolder = heaps;
+    NewArrayHolder<HeapData> _heapHolder(heaps);
 
     if (FAILED(hr))
         return hr;
@@ -8465,8 +8465,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAsyncLocals(VMPTR_Method
         request.InitFromStartingAddr(pMethodDesc, nativeCodeStartAddr);
 
         ICorDebugInfo::AsyncInfo asyncInfo = {};
-        NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
-        NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
+        NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints;
+        NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars;
         ULONG32 cAsyncVars = 0;
 
         BOOL success = DebugInfoManager::GetAsyncDebugInfo(
