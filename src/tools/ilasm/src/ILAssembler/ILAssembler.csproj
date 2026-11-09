@@ -19,21 +19,21 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)' and '$(TargetFramework)' != ''">
+  <PropertyGroup>
     <!-- Match libraries/Directory.Build.targets: Framework references lack nullable flow annotations. -->
-    <NoWarn>$(NoWarn);nullable</NoWarn>
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <!-- Extended layout metadata values were introduced after .NET 10. -->
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MetadataPolyfills.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
@@ -41,6 +41,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\BitConverterPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CharPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CollectionsPolyfills.cs" />
@@ -51,14 +52,13 @@
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\IncrementalHashPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MathPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MemoryExtensionsPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MetadataPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\StringPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt32Polyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt64Polyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UnreachableException.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Buffers\SpanAction.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\StringPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Common\UnreachableException.cs" />
-    <Compile Include="$(RepoTasksDir)Common\IsExternalInit.cs" />
     <Using Include="System.Collections.Generic" />
     <Using Include="Microsoft.Interop.UnreachableException" Alias="UnreachableException" />
   </ItemGroup>

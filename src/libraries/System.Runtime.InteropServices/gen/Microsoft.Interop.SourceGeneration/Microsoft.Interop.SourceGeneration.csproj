@@ -30,7 +30,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
     <Compile Include="../../tests/Common/MarshalDirection.cs" />
-    <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
+    <Compile Include="$(CommonPath)Polyfills\UnreachableException.cs" Link="Common\Polyfills\UnreachableException.cs" />
   </ItemGroup>
 
   <ItemGroup>

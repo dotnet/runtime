@@ -28,7 +28,7 @@
     <Compile Include="..\Common\OperationExtensions.cs" Link="Common\OperationExtensions.cs" />
     <Compile Include="../Common/LibraryImportData.cs" Link="Common/LibraryImportData.cs" />
     <Compile Include="../Common/MemorySafetyRules.cs" Link="Common/MemorySafetyRules.cs" />
-    <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
+    <Compile Include="$(CommonPath)Polyfills\UnreachableException.cs" Link="Common\Polyfills\UnreachableException.cs" />
   </ItemGroup>
 
 </Project>
