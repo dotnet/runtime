@@ -2332,14 +2332,19 @@ private:
         c->DoNotCallDirectlyPrivateUnlock();
     }
 #else // DACCESS_COMPILE
-    static void AcquireDebuggerLock(Debugger *c);
-    static void ReleaseDebuggerLock(Debugger *c);
+    static void AcquireDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
+    static void ReleaseDebuggerLock(Debugger *c) { SUPPORTS_DAC; }
 #endif // DACCESS_COMPILE
 
 
 public:
     // define type for DebuggerLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerLock, Debugger::ReleaseDebuggerLock> DebuggerLockHolder;
+#ifndef DACCESS_COMPILE
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerLock, Debugger::ReleaseDebuggerLock> DebuggerLockHolder;
+#else // DACCESS_COMPILE
+    // DAC acquisition may validate target state, but cleanup must not touch the target.
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerLock, DoNothing<Debugger *>> DebuggerLockHolder;
+#endif // !DACCESS_COMPILE
 
     void LockForEventSending(DebuggerLockHolder *dbgLockHolder);
     void UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder);
@@ -2587,7 +2592,12 @@ public:
 #endif // DACCESS_COMPILE
 
     // define type for DebuggerDataLockHolder
-    typedef DacHolder<Debugger *, Debugger::AcquireDebuggerDataLock, Debugger::ReleaseDebuggerDataLock> DebuggerDataLockHolder;
+#ifndef DACCESS_COMPILE
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerDataLock, Debugger::ReleaseDebuggerDataLock> DebuggerDataLockHolder;
+#else // DACCESS_COMPILE
+    // DAC acquisition may validate target state, but cleanup must not touch the target.
+    typedef Holder<Debugger *, Debugger::AcquireDebuggerDataLock, DoNothing<Debugger *>> DebuggerDataLockHolder;
+#endif // !DACCESS_COMPILE
 
 #ifdef _DEBUG
     // Use for asserts

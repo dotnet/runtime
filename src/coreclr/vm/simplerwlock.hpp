@@ -201,8 +201,14 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    typedef DacHolder<SimpleRWLock *, SimpleRWLock::AcquireReadLock, SimpleRWLock::ReleaseReadLock> SimpleReadLockHolder;
-    typedef DacHolder<SimpleRWLock *, SimpleRWLock::AcquireWriteLock, SimpleRWLock::ReleaseWriteLock> SimpleWriteLockHolder;
+#ifndef DACCESS_COMPILE
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireReadLock, SimpleRWLock::ReleaseReadLock> SimpleReadLockHolder;
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireWriteLock, SimpleRWLock::ReleaseWriteLock> SimpleWriteLockHolder;
+#else // DACCESS_COMPILE
+    // DAC acquisition may validate target state, but cleanup must not touch the target.
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireReadLock, DoNothing<SimpleRWLock *>> SimpleReadLockHolder;
+    typedef Holder<SimpleRWLock *, SimpleRWLock::AcquireWriteLock, DoNothing<SimpleRWLock *>> SimpleWriteLockHolder;
+#endif // !DACCESS_COMPILE
 
 #ifdef _DEBUG
     BOOL LockTaken ()
