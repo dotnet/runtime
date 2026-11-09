@@ -258,6 +258,8 @@
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
     <Compile Include="Compiler\CompositeImageSettings.cs" />
     <Compile Include="Compiler\CryptographicHashProvider.cs" />
+    <Compile Include="Compiler\DeferredWasmCallFinalizationPlan.cs" />
+    <Compile Include="Compiler\DeferredWasmCallProcessor.cs" />
     <Compile Include="Compiler\DeferredWasmCallRewriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayInterfaceMethodsNode.cs" />
@@ -374,7 +376,6 @@
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
-    <Compile Include="Compiler\ReadyToRunCompilationPlan.cs" />
     <Compile Include="Compiler\FileLayoutOptimizer.cs" />
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />

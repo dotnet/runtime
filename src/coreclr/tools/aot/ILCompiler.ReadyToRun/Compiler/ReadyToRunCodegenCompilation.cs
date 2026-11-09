@@ -298,8 +298,6 @@ namespace ILCompiler
 
         private readonly int _parallelism;
 
-        private const int DefaultMaxDirectCallActivationDepth = 4;
-
         private readonly bool _generateMapFile;
         private readonly bool _generateMapCsvFile;
         private readonly bool _generatePdbFile;
@@ -318,32 +316,7 @@ namespace ILCompiler
         private HashSet<MethodDesc> _directManagedHelpers;
         private HashSet<MethodDesc> _deniedManagedHelpers;
         private bool _directManagedHelpersInitialized;
-        private readonly DeferredWasmCallRewriter _deferredWasmCallRewriter;
-        private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _finalizedWasmCompilationInfo;
-        private readonly HashSet<MethodDesc> _startupEagerMethods;
-        private bool _compilingEagerMethods;
-        internal bool DeferredWasmCalls { get; }
-        private readonly ConcurrentDictionary<(MethodWithToken Method, WasmTypeNode Signature), DeferredWasmCallNode> _deferredWasmTargets;
-        private readonly Dictionary<MethodWithGCInfo, DeferredWasmCompilationData> _deferredWasmMethods;
-        private readonly HashSet<Import> _deferredWasmFixupScratch;
-        private bool _deferredWasmPolicyFrozen;
-
-        private sealed class DeferredWasmCompilationData
-        {
-            internal OffsetMapping[] Locations;
-            internal NativeVarInfo[] Variables;
-            internal Dictionary<MethodWithGCInfo, DelayLoadMethodImport> ActivationImports;
-        }
-
-        internal void InitializeDeferredWasmCompilationData(
-            MethodWithGCInfo method, OffsetMapping[] locations, NativeVarInfo[] variables,
-            Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
-        {
-            DeferredWasmCompilationData data = _deferredWasmMethods[method];
-            data.Locations = locations;
-            data.Variables = variables;
-            data.ActivationImports = activationImports;
-        }
+        internal DeferredWasmCallProcessor DeferredWasmCalls { get; }
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -426,11 +399,6 @@ namespace ILCompiler
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
             _wasmDebugInfo = wasmDebugInfo;
-            DeferredWasmCalls = deferredWasmCalls;
-            if (deferredWasmCalls)
-            {
-                _finalizedWasmCompilationInfo = new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>();
-            }
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
@@ -445,16 +413,7 @@ namespace ILCompiler
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
             if (deferredWasmCalls)
             {
-                _startupEagerMethods = GetStartupEagerMethods();
-                _deferredWasmTargets = new();
-                _deferredWasmMethods = new();
-                _deferredWasmFixupScratch = new();
-                _deferredWasmCallRewriter = new DeferredWasmCallRewriter(this);
-                _dependencyGraph.DependencyAnalysisQuiesced += FinalizeDeferredWasmCalls;
-                foreach (MethodDesc method in _startupEagerMethods)
-                {
-                    _dependencyGraph.AddRoot(NodeFactory.CompiledMethodNode(method), "Native-facing startup method");
-                }
+                DeferredWasmCalls = new DeferredWasmCallProcessor(this, _dependencyGraph);
             }
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
@@ -548,310 +507,6 @@ namespace ILCompiler
                 }
 
             }
-        }
-
-        private void FinalizeCompilationPlan(ReadyToRunCompilationPlan compilationPlan)
-        {
-            var methodNodes = new List<MethodWithGCInfo>();
-            var managedHelpers = new List<MethodWithGCInfo>();
-            var compiledMethods = new HashSet<MethodDesc>();
-            var eagerRoots = new HashSet<MethodDesc>(_startupEagerMethods);
-
-            for (int level = 0; level < compilationPlan.LevelCount; level++)
-            {
-                IReadOnlyList<MethodDesc> methodsAtLevel = compilationPlan.GetMethodsAtLevel(level);
-                foreach (MethodDesc method in methodsAtLevel)
-                {
-                    MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-                    methodNodes.Add(methodNode);
-                    if (methodNode.IsJitHelper)
-                    {
-                        managedHelpers.Add(methodNode);
-                        eagerRoots.Add(method);
-                    }
-                }
-            }
-
-            if (managedHelpers.Count > 0 && !_directManagedHelpersInitialized)
-            {
-                InitializeDirectManagedHelpers(managedHelpers);
-                _directManagedHelpersInitialized = true;
-            }
-
-            ReadyToRunCompilationPlan eagerPlan = compilationPlan.CreateEagerPlan(eagerRoots);
-            _compilingEagerMethods = true;
-            FinalizeMethods(eagerPlan, isEager: true);
-            _compilingEagerMethods = false;
-
-            // Only successful eager compilations are available before non-eager level zero.
-            var compiledEagerMethods = new HashSet<MethodDesc>(compiledMethods);
-            ReadyToRunCompilationPlan nonEagerPlan = compilationPlan.CreateNonEagerPlan(compiledEagerMethods);
-            FinalizeMethods(nonEagerPlan, isEager: false);
-
-            ValidateManagedHelpers(managedHelpers);
-            PromoteModuleEagerFixups(methodNodes, compiledMethods, compiledEagerMethods);
-
-            void FinalizeMethods(ReadyToRunCompilationPlan plan, bool isEager)
-            {
-                for (int level = 0; level < plan.LevelCount; level++)
-                {
-                    IReadOnlyList<MethodDesc> methodsAtLevel = plan.GetMethodsAtLevel(level);
-                    if (methodsAtLevel.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    var methodsToFinalize = new List<MethodWithGCInfo>(methodsAtLevel.Count);
-                    foreach (MethodDesc method in methodsAtLevel)
-                    {
-                        MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-                        if (_deferredWasmMethods[methodNode] is not null)
-                        {
-                            methodsToFinalize.Add(methodNode);
-                        }
-                    }
-
-                    string phase = isEager ? "eager" : "non-eager";
-                    if (Logger.IsVerbose)
-                    {
-                        Logger.Writer.WriteLine($"Finalizing deferred Wasm calls {phase} level {level} with {methodsAtLevel.Count} methods");
-                    }
-
-                    foreach (MethodWithGCInfo method in methodsToFinalize)
-                    {
-                        FinalizeDeferredWasmMethod(method);
-                    }
-
-                    int compiledCount = 0;
-                    foreach (MethodWithGCInfo method in methodsToFinalize)
-                    {
-                        if (!method.IsEmpty)
-                        {
-                            compiledMethods.Add(method.Method);
-                            _finalizedWasmCompilationInfo.Add(
-                                method.Method,
-                                new ReadyToRunMethodCompilationInfo(method.Size, level, isEager));
-                            compiledCount++;
-                        }
-                    }
-
-                    if (Logger.IsVerbose)
-                    {
-                        Logger.Writer.WriteLine($"Finalized deferred Wasm calls {phase} level {level}: {compiledCount} compiled methods");
-                    }
-                }
-            }
-        }
-
-        private HashSet<MethodDesc> GetStartupEagerMethods()
-        {
-            var methods = new HashSet<MethodDesc>();
-            AddMethod("System"u8, "AppContext"u8, "Setup");
-            AddMethod("System.Diagnostics.Tracing"u8, "EventSource"u8, "InitializeDefaultEventSources");
-            AddMethod("System"u8, "Environment"u8, "InitializeCommandLineArgs");
-            AddMethod("System"u8, "Environment"u8, "CallEntryPoint");
-            AddMethod("System"u8, "StartupHookProvider"u8, "ManagedStartup");
-            return methods;
-
-            void AddMethod(ReadOnlySpan<byte> namespaceName, ReadOnlySpan<byte> typeName, string methodName)
-            {
-                MetadataType type = TypeSystemContext.SystemModule.GetKnownType(namespaceName, typeName);
-                MethodDesc foundMethod = null;
-                foreach (MethodDesc method in type.GetMethods())
-                {
-                    if (method.GetName() == methodName && method.IsUnmanagedCallersOnly)
-                    {
-                        Debug.Assert(foundMethod is null);
-                        foundMethod = method;
-                    }
-                }
-
-                Debug.Assert(foundMethod is not null);
-                if (CompilationModuleGroup.ContainsMethodBody(foundMethod, unboxingStub: false))
-                {
-                    methods.Add(foundMethod);
-                }
-            }
-        }
-
-        private void PromoteModuleEagerFixups(
-            List<MethodWithGCInfo> methods,
-            HashSet<MethodDesc> compiledMethods,
-            HashSet<MethodDesc> compiledEagerMethods)
-        {
-            if (_startupEagerMethods is null)
-            {
-                return;
-            }
-
-            var eagerMethodClosure = new HashSet<MethodWithGCInfo>();
-            var methodsToVisit = new Stack<MethodWithGCInfo>();
-            var eagerFixups = new HashSet<Import>();
-            HashSet<Import> fixupScratch = _deferredWasmFixupScratch ?? new HashSet<Import>();
-
-            // Every method compiled in the eager phase is available before non-eager callers.
-            foreach (MethodDesc method in compiledEagerMethods)
-            {
-                MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-                Debug.Assert(!methodNode.IsEmpty);
-
-                MethodWithToken methodWithToken = new MethodWithToken(
-                    method,
-                    NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true),
-                    constrainedType: null,
-                    unboxing: false,
-                    genericContextObject: null);
-                _dependencyGraph.AddRoot(
-                    SymbolNodeFactory.EagerReadyToRunMethodEntry(methodWithToken),
-                    "Eager-phase method is already activated");
-
-                methodsToVisit.Push(methodNode);
-            }
-
-            while (methodsToVisit.TryPop(out MethodWithGCInfo method))
-            {
-                if (!eagerMethodClosure.Add(method))
-                {
-                    continue;
-                }
-
-                foreach (Import fixup in method.GetGuaranteedPrecodeFixups(fixupScratch))
-                {
-                    eagerFixups.Add(fixup);
-                    // Eager helper entries also prepare their bodies, even when the
-                    // generated call does not contribute a direct-call edge.
-                    if (fixup.Signature is MethodFixupSignature { IsReadyToRunEntry: true } signature)
-                    {
-                        MethodDesc target = signature.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                        if (compiledMethods.Contains(target))
-                        {
-                            methodsToVisit.Push(NodeFactory.CompiledMethodNode(target));
-                        }
-                    }
-                }
-
-                for (int i = 0; i < method.CodeRelocations.Length; i++)
-                {
-                    if (method.GetDirectCallTarget(i) is MethodWithGCInfo target)
-                    {
-                        methodsToVisit.Push(target);
-                    }
-                }
-            }
-
-            foreach (Import fixup in eagerFixups)
-            {
-                if (!fixup.Table.IsEager)
-                {
-                    ImportSectionNode table = fixup.Signature switch
-                    {
-                        MethodFixupSignature { RequiresEagerActivation: true } or
-                            ResumptionStubEntryPointSignature or StoreMultiCallableAddrOfCodeSignature => NodeFactory.EagerMethodImports,
-                        _ when fixup.Table == NodeFactory.StringImports => NodeFactory.EagerStringImports,
-                        _ => NodeFactory.EagerImports,
-                    };
-                    fixup.PromoteToEager(table);
-                }
-
-                _dependencyGraph.AddRoot(fixup, "Eager method precode fixup is module-eager");
-            }
-
-            foreach (MethodWithGCInfo method in methods)
-            {
-                if (!method.IsEmpty)
-                {
-                    method.ApplyModuleEagerFixups(eagerFixups);
-                    Debug.Assert(!eagerMethodClosure.Contains(method) || method.Fixups.Count == 0);
-                }
-            }
-        }
-
-        internal bool CanUseDirectCall(MethodDesc method, out ReadyToRunMethodCompilationInfo compilationInfo)
-        {
-            compilationInfo = default;
-            return NodeFactory.Target.Architecture == TargetArchitecture.Wasm32 &&
-                _finalizedWasmCompilationInfo is not null &&
-                _finalizedWasmCompilationInfo.TryGetValue(method, out compilationInfo) &&
-                (compilationInfo.IsEager || _compilingEagerMethods ||
-                    (!method.IsNoInlining && !method.IsNoOptimization &&
-                        // Include the caller and the level-zero leaf in the activation depth.
-                        (compilationInfo.Level < DefaultMaxDirectCallActivationDepth - 1 ||
-                            IsDirectCallDepthExempt(method.OwningType))));
-        }
-
-        internal ISymbolNode GetDeferredWasmCall(MethodWithToken method, ISymbolNode fallback, WasmTypeNode signature = null)
-        {
-            if (fallback is not DelayLoadMethodImport { MethodCodeNode: not null } import ||
-                import.MethodCodeNode.Method != method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific))
-            {
-                return fallback;
-            }
-
-            return _deferredWasmTargets.GetOrAdd(
-                (method, signature), static (key, fallback) => new DeferredWasmCallNode(fallback, key.Signature), import);
-        }
-
-        private void FinalizeDeferredWasmCalls()
-        {
-            if (!_deferredWasmPolicyFrozen)
-            {
-                var methods = new List<MethodWithGCInfo>();
-                foreach (MethodWithGCInfo method in _deferredWasmMethods.Keys)
-                {
-                    if (!method.IsEmpty)
-                    {
-                        methods.Add(method);
-                    }
-                }
-
-                ReadyToRunCompilationPlan compilationPlan = ReadyToRunCompilationPlan.Create(methods, NodeFactory);
-                FinalizeCompilationPlan(compilationPlan);
-                _deferredWasmPolicyFrozen = true;
-                NodeFactory.CompleteDeferredImportPlacement();
-            }
-            foreach (MethodWithGCInfo method in _deferredWasmMethods.Keys)
-            {
-                if (_deferredWasmMethods[method] is not null)
-                {
-                    FinalizeDeferredWasmMethod(method);
-                }
-                _dependencyGraph.RevisitStaticDependencies(method);
-            }
-            _deferredWasmMethods.Clear();
-        }
-
-        private void FinalizeDeferredWasmMethod(MethodWithGCInfo method)
-        {
-            if (!method.IsEmpty)
-            {
-                DeferredWasmCompilationData data = _deferredWasmMethods[method];
-                _deferredWasmCallRewriter.Rewrite(method, data.Locations, data.Variables, data.ActivationImports);
-                method.FinalizePrecodeFixups(scratch: _deferredWasmFixupScratch);
-            }
-            // Keep the method queued for dependency publication, but release its raw debug data.
-            _deferredWasmMethods[method] = null;
-        }
-
-        internal static bool IsDirectCallDepthExempt(TypeDesc type)
-        {
-            if (type.IsPrimitive || type.IsObject || type.IsString)
-            {
-                return true;
-            }
-
-            // Generic collection and enumeration interfaces inherit these non-generic interfaces.
-            foreach (DefType interfaceType in type.GetTypeDefinition().RuntimeInterfaces)
-            {
-                if (interfaceType is MetadataType metadataType &&
-                    metadataType.Module == type.Context.SystemModule &&
-                    metadataType.Namespace == "System.Collections"u8 &&
-                    (metadataType.Name == "IEnumerable"u8 || metadataType.Name == "IEnumerator"u8))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
@@ -1150,19 +805,7 @@ namespace ILCompiler
                 ProcessMutableMethodBodiesList();
                 ResetILCache();
 
-                if (DeferredWasmCalls)
-                {
-                    foreach (DependencyNodeCore<NodeFactory> dependency in obj)
-                    {
-                        if (dependency is MethodWithGCInfo method)
-                        {
-                            // Late compilation is safe, but indicates that dependency analysis missed part of the method closure.
-                            Debug.Assert(!_deferredWasmPolicyFrozen,
-                                $"Method {method.Method} requires compilation after the deferred Wasm call policy was frozen.");
-                            _deferredWasmMethods.TryAdd(method, new DeferredWasmCompilationData());
-                        }
-                    }
-                }
+                DeferredWasmCalls?.QueueMethods(obj);
 
                 IReadOnlyList<DependencyNodeCore<NodeFactory>> methodsToCompile = obj;
                 if (!_directManagedHelpersInitialized && _nodeFactory.CompilationCurrentPhase == 0)
@@ -1292,6 +935,15 @@ namespace ILCompiler
                 _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
         }
 
+        internal void EnsureDirectManagedHelpersInitialized(List<MethodWithGCInfo> managedHelpers)
+        {
+            if (managedHelpers.Count > 0 && !_directManagedHelpersInitialized)
+            {
+                InitializeDirectManagedHelpers(managedHelpers);
+                _directManagedHelpersInitialized = true;
+            }
+        }
+
         private void InitializeDirectManagedHelpers(List<MethodWithGCInfo> managedHelpers)
         {
             HashSet<MethodDesc> deniedHelpers = new HashSet<MethodDesc>();
@@ -1416,7 +1068,7 @@ namespace ILCompiler
             _singleThreadedWorkerState.CorInfoImpl?.ClearHelperCache();
         }
 
-        private void ValidateManagedHelpers(List<MethodWithGCInfo> managedHelpers)
+        internal void ValidateManagedHelpers(List<MethodWithGCInfo> managedHelpers)
         {
             foreach (MethodWithGCInfo managedHelper in managedHelpers)
             {
@@ -1671,7 +1323,6 @@ namespace ILCompiler
         public override void Dispose()
         {
             _singleThreadedWorkerState = default;
-            _nodeFactory.Resolver.ClearCompilationState();
 
             // Workaround for https://github.com/dotnet/runtime/issues/23103.
             // ManifestMetadataTable.Dispose() allows to break circular reference

@@ -12,27 +12,17 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    internal readonly struct ReadyToRunMethodCompilationInfo
-    {
-        public ReadyToRunMethodCompilationInfo(int codeSize, int level, bool isEager = false)
-        {
-            CodeSize = codeSize;
-            Level = level;
-            IsEager = isEager;
-        }
-
-        public int CodeSize { get; }
-        public int Level { get; }
-        public bool IsEager { get; }
-    }
-
-    public sealed class ReadyToRunCompilationPlan
+    // Order deferred-call finalization using the emitted call graph. Recursive
+    // components share a level; their callees occupy lower levels. The eager
+    // subset includes cold callees, while the non-eager remainder is releveled
+    // after eager methods become available. See #DeferredWasmCallFinalization.
+    internal sealed class DeferredWasmCallFinalizationPlan
     {
         private readonly MethodDesc[][] _methodsByLevel;
         private readonly MethodDesc[] _methods;
         private readonly int[][] _adjacency;
 
-        private ReadyToRunCompilationPlan(MethodDesc[] methods, int[][] adjacency, bool includeColdCalls)
+        private DeferredWasmCallFinalizationPlan(MethodDesc[] methods, int[][] adjacency, bool includeColdCalls)
         {
             _methods = methods;
             _adjacency = adjacency;
@@ -46,7 +36,7 @@ namespace ILCompiler
             return _methodsByLevel[level];
         }
 
-        internal ReadyToRunCompilationPlan CreateEagerPlan(HashSet<MethodDesc> roots)
+        internal DeferredWasmCallFinalizationPlan CreateEagerPlan(HashSet<MethodDesc> roots)
         {
             bool[] included = new bool[_methods.Length];
             var pending = new Stack<int>();
@@ -75,18 +65,18 @@ namespace ILCompiler
             return CreateSubset(included, includeColdCalls: true);
         }
 
-        internal ReadyToRunCompilationPlan CreateNonEagerPlan(HashSet<MethodDesc> compiledEagerMethods)
+        internal DeferredWasmCallFinalizationPlan CreateNonEagerPlan(HashSet<MethodDesc> finalizedEagerMethods)
         {
             bool[] included = new bool[_methods.Length];
             for (int i = 0; i < _methods.Length; i++)
             {
-                included[i] = !compiledEagerMethods.Contains(_methods[i]);
+                included[i] = !finalizedEagerMethods.Contains(_methods[i]);
             }
 
             return CreateSubset(included, includeColdCalls: false);
         }
 
-        private ReadyToRunCompilationPlan CreateSubset(bool[] included, bool includeColdCalls)
+        private DeferredWasmCallFinalizationPlan CreateSubset(bool[] included, bool includeColdCalls)
         {
             var methods = new List<MethodDesc>();
             int[] indices = new int[_methods.Length];
@@ -120,7 +110,7 @@ namespace ILCompiler
                 adjacency[indices[i]] = callees.ToArray();
             }
 
-            return new ReadyToRunCompilationPlan(methods.ToArray(), adjacency, includeColdCalls);
+            return new DeferredWasmCallFinalizationPlan(methods.ToArray(), adjacency, includeColdCalls);
         }
 
         internal static int[] ComputeLevelsForTest(int[][] adjacency)
@@ -135,7 +125,7 @@ namespace ILCompiler
             return levels;
         }
 
-        internal static ReadyToRunCompilationPlan Create(List<MethodWithGCInfo> methodNodes, NodeFactory factory)
+        internal static DeferredWasmCallFinalizationPlan Create(List<MethodWithGCInfo> methodNodes, NodeFactory factory)
         {
             methodNodes.Sort(static (left, right) => TypeSystemComparer.Instance.Compare(left.Method, right.Method));
 
@@ -177,7 +167,7 @@ namespace ILCompiler
                 adjacency[i] = callees;
             }
 
-            return new ReadyToRunCompilationPlan(methods, adjacency, includeColdCalls: false);
+            return new DeferredWasmCallFinalizationPlan(methods, adjacency, includeColdCalls: false);
         }
 
         private static MethodDesc[][] ComputeMethodsByLevel(MethodDesc[] methods, int[][] adjacency, bool includeColdCalls)

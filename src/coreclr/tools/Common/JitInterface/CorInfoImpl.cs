@@ -467,7 +467,7 @@ namespace Internal.JitInterface
             PublishWasmMethodVirtualIPFixups();
 
 #if READYTORUN
-            if (!_compilation.DeferredWasmCalls)
+            if (_compilation.DeferredWasmCalls is null)
             {
                 _methodCodeNode.FinalizePrecodeFixups(scratch: _precodeFixupScratch);
             }
@@ -569,9 +569,9 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
-            if (_compilation.DeferredWasmCalls)
+            if (_compilation.DeferredWasmCalls is not null)
             {
-                _compilation.InitializeDeferredWasmCompilationData(
+                _compilation.DeferredWasmCalls.InitializeMethodData(
                     _methodCodeNode, _debugLocInfos, _debugVarInfos, _deferredWasmActivationImports);
             }
             else
@@ -4854,7 +4854,7 @@ namespace Internal.JitInterface
             if (relocTarget is DeferredWasmCallNode call)
             {
                 Debug.Assert(fRelocType == CorInfoReloc.WASM_FUNCTION_INDEX_LEB && _deferredWasmCallSignature is not null);
-                relocTarget = _compilation.GetDeferredWasmCall(call.Fallback.MethodWithToken, call.Fallback, _deferredWasmCallSignature);
+                relocTarget = _compilation.DeferredWasmCalls.GetCall(call.Fallback.MethodWithToken, call.Fallback, _deferredWasmCallSignature);
                 _deferredWasmCallSignature = null;
             }
 #endif
@@ -4871,7 +4871,7 @@ namespace Internal.JitInterface
         private CorInfoReloc getRelocTypeHint(void* target)
         {
 #if READYTORUN
-            if (_compilation.DeferredWasmCalls && target != null && HandleToObject(target) is DeferredWasmCallNode)
+            if (_compilation.DeferredWasmCalls is not null && target != null && HandleToObject(target) is DeferredWasmCallNode)
             {
                 return CorInfoReloc.WASM_DEFERRED_CALL;
             }

@@ -2782,19 +2782,26 @@ namespace Internal.JitInterface
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
                         }
-                        else if (_compilation.DeferredWasmCalls &&
+                        else if (_compilation.DeferredWasmCalls is not null &&
                             !_isCompilationProbe &&
                             !isUnboxingStub &&
                             !isRawPInvoke &&
                             !useInstantiatingStub &&
                             (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
                         {
+                            // Represent eligible calls with a compiled target and the ordinary import
+                            // as a fallback. The JIT emits a rewritable call bundle; finalization
+                            // chooses direct calls once the call graph and callee activation guarantees
+                            // are known, expanding rejected calls into indirect calls.
+                            // Preserve each target's first import-time activation token separately:
+                            // surviving call sites may carry different tokens after JIT transformations.
+                            // See #DeferredWasmCallFinalization and #DeferredWasmCallRewriting.
                             MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
                                 nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: false);
                             ISymbolNode fallback = _compilation.NodeFactory.MethodEntrypoint(
                                 targetMethodWithToken, isInstantiatingStub: false,
                                 isPrecodeImportRequired: false, isJumpableImportRequired: false);
-                            ISymbolNode deferredTarget = _compilation.GetDeferredWasmCall(targetMethodWithToken, fallback);
+                            ISymbolNode deferredTarget = _compilation.DeferredWasmCalls.GetCall(targetMethodWithToken, fallback);
                             if (deferredTarget is DeferredWasmCallNode deferredCall)
                             {
                                 _deferredWasmActivationImports ??= new Dictionary<MethodWithGCInfo, DelayLoadMethodImport>();

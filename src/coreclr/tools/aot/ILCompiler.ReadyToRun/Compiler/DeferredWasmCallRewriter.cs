@@ -14,6 +14,36 @@ using Internal.Text;
 
 namespace ILCompiler;
 
+// #DeferredWasmCallRewriting
+//
+// Finalize speculative direct calls once callee compilation results and
+// direct-call policy are known, without asking the JIT to regenerate code.
+// Each candidate is a fixed-width frame-identity constant followed by a
+// call or return_call. Its DeferredWasmCallNode retains the compiled target,
+// fallback import, and signature needed if the call must become indirect.
+//
+// If every candidate can remain direct, only retarget the call relocations;
+// preserve the original bytes, frame ranges, and debug offsets. Otherwise,
+// replace each rejected call's entire bundle with a sequence that loads the
+// fallback PEP, passes it as the final argument, and calls its entrypoint
+// indirectly. Argument evaluation and receiver null checks remain outside
+// the replaced bundle.
+//
+// The rebuilding path records nonoverlapping Edits in original-code
+// coordinates. Sort them, compute their output positions, and copy unchanged
+// spans around the replacements. Replace relocations inside edited spans,
+// rebase surviving relocations, update frame ranges and body-size prefixes,
+// and map raw debug offsets before their final encoding.
+//
+// scratchLocals assigns one appended i32 PEP temporary per body, including
+// funclets. activationImports preserves the first import-time activation
+// token for each target, which need not match a surviving call site's token.
+// _fixups and _fixupsInitialized lazily seed and reuse a per-method set for
+// deduplicating added precode fixups; Rewrite resets them between methods.
+//
+// Call selection also records activation requirements independently of the
+// final code relocations. Rewriting precedes precode-fixup minimization and
+// final dependency publication; see #PrecodeFixupMinimization.
 internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation compilation)
 {
     private const int BodySizePrefixLength = 5;
@@ -22,6 +52,8 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
     private readonly HashSet<ISymbolNode> _fixups = new();
     private bool _fixupsInitialized;
 
+    // A replacement span in original-code coordinates, with relocations relative
+    // to Bytes. NewOffset is assigned after sorting and accumulating size changes.
     private sealed class Edit(int offset, int length, byte[] bytes, Relocation[] relocations)
     {
         internal readonly int Offset = offset;
@@ -31,6 +63,8 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         internal int NewOffset;
     }
 
+    // Finalize one method's deferred calls and metadata, clearing reusable fixup
+    // state even if rewriting fails.
     internal void Rewrite(
         MethodWithGCInfo method, OffsetMapping[] locations = null, NativeVarInfo[] variables = null,
         Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports = null)
@@ -47,6 +81,9 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         }
     }
 
+    // Record the chosen call's activation requirements: preserve its import-time
+    // token for direct activation, or retain the fallback import for an indirect
+    // call. Keep eager imports reachable and deduplicate added precode entries.
     private void SelectCall(
         MethodWithGCInfo caller, DeferredWasmCallNode call, bool useDirectCall, bool isEager,
         Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
@@ -78,6 +115,8 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         }
     }
 
+    // Take the relocation-only fast path only if every deferred call can remain
+    // direct. Otherwise rebuild the body before changing any call relocation.
     private void RewriteCore(
         MethodWithGCInfo method, OffsetMapping[] locations, NativeVarInfo[] variables,
         Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
@@ -86,7 +125,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         foreach (Relocation relocation in original.Relocs.AsSpan())
         {
             if (relocation.Target is DeferredWasmCallNode call &&
-                !compilation.CanUseDirectCall(call.Method, out _))
+                !compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out _))
             {
                 RewriteWithIndirectCalls(method, original, locations, variables, activationImports);
                 return;
@@ -99,7 +138,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
                 AssertDeferredCall(original.Data, relocation.Offset);
-                bool direct = compilation.CanUseDirectCall(call.Method, out ReadyToRunMethodCompilationInfo info);
+                bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out DeferredWasmMethodFinalizationInfo info);
                 Debug.Assert(direct);
                 SelectCall(method, call, useDirectCall: true, info.IsEager, activationImports);
                 relocation = new Relocation(relocation.RelocType, relocation.Offset, call.Target);
@@ -108,6 +147,9 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         method.FinalizeDeferredWasmCode(original, method.FrameInfos, locations, variables);
     }
 
+    // Plan call-bundle and local-declaration replacements against the original
+    // body, then apply them together so every relocation, frame boundary, and
+    // debug offset uses the same original-to-final coordinate mapping.
     private void RewriteWithIndirectCalls(
         MethodWithGCInfo method, ObjectNode.ObjectData original, OffsetMapping[] locations, NativeVarInfo[] variables,
         Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
@@ -124,7 +166,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
                 AssertDeferredCall(original.Data, relocation.Offset);
-                bool direct = compilation.CanUseDirectCall(call.Method, out ReadyToRunMethodCompilationInfo info);
+                bool direct = compilation.DeferredWasmCalls.CanUseDirectCall(call.Method, out DeferredWasmMethodFinalizationInfo info);
                 SelectCall(method, call, direct, info.IsEager, activationImports);
                 if (direct)
                 {
@@ -222,6 +264,9 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             new ObjectNode.ObjectData(code, relocations.ToArray(), original.Alignment, original.DefinedSymbols),
             newFrames, locations, variables, MapOffset);
 
+        // Translate an original offset using the last edit at or before it. Bound
+        // offsets inside replaced spans by the replacement's length; offsets after
+        // a replacement inherit its cumulative size change.
         int MapOffset(int offset)
         {
             int low = 0;
@@ -249,6 +294,9 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         }
     }
 
+    // Append a non-GC i32 local so fallback calls can reuse the loaded PEP without
+    // renumbering JIT locals. Return its index after accounting for the main
+    // method's or funclet's parameters.
     private static int AddScratchLocal(MethodWithGCInfo method, byte[] code, int frameIndex, List<Edit> edits)
     {
         int start = method.FrameInfos[frameIndex].StartOffset + BodySizePrefixLength;
@@ -280,13 +328,13 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         declarations[^1] = (byte)WasmValueType.I32;
         edits.Add(new Edit(start, position - start, declarations, []));
 
-        // Appending a non-GC local preserves every JIT-assigned index and avoids loading the PEP twice.
         int parameterCount = frameIndex == 0
             ? WasmLowering.GetSignature(method).FuncType.Params.Types.Length
             : method.GetFuncletKinds()[frameIndex - 1] is FuncletKind.CatchOrFilterHandler or FuncletKind.Filter ? 3 : 2;
         return checked(parameterCount + localCount);
     }
 
+    // Decode a count from the locals prefix, leaving the cursor at the next field.
     private static int ReadUnsigned(byte[] code, ref int position)
     {
         int value = checked((int)DwarfHelper.ReadULEB128(code.AsSpan(position), out int count));
@@ -294,6 +342,8 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         return value;
     }
 
+    // Check the instruction-boundary assumptions needed to replace the identity
+    // constant and call as one self-contained bundle.
     [Conditional("DEBUG")]
     private static void AssertDeferredCall(byte[] code, int callOffset)
     {
@@ -302,6 +352,8 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         Debug.Assert(code[callOffset - 1] is (byte)WasmExprKind.Call or (byte)WasmExprKind.ReturnCall);
     }
 
+    // Encode a replacement independently of its final position, keeping its
+    // relocations relative to the replacement for later rebasing.
     private static Edit EncodeEdit(int offset, int length, params ReadOnlySpan<WasmExpr> instructions)
     {
         int byteCount = 0;

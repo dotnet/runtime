@@ -8,13 +8,13 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
 
-using ReadyToRunCompilationPlan = crossgen2::ILCompiler.ReadyToRunCompilationPlan;
+using DeferredWasmCallFinalizationPlan = crossgen2::ILCompiler.DeferredWasmCallFinalizationPlan;
 
 using Xunit;
 
 namespace ILCompiler.ReadyToRun.Tests;
 
-public class ReadyToRunCompilationPlanTests
+public class DeferredWasmCallFinalizationPlanTests
 {
     public static IEnumerable<object[]> CallGraphs()
     {
@@ -63,7 +63,7 @@ public class ReadyToRunCompilationPlanTests
     [MemberData(nameof(CallGraphs))]
     public void ComputesCalleeFirstLevels(int[][] adjacency, int[] expectedLevels)
     {
-        Assert.Equal(expectedLevels, ReadyToRunCompilationPlan.ComputeLevelsForTest(adjacency));
+        Assert.Equal(expectedLevels, DeferredWasmCallFinalizationPlan.ComputeLevelsForTest(adjacency));
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public class ReadyToRunCompilationPlanTests
                 adjacency[caller] = callees.ToArray();
             }
 
-            Assert.Equal(ComputeReferenceLevels(adjacency), ReadyToRunCompilationPlan.ComputeLevelsForTest(adjacency));
+            Assert.Equal(ComputeReferenceLevels(adjacency), DeferredWasmCallFinalizationPlan.ComputeLevelsForTest(adjacency));
         }
     }
 
@@ -107,7 +107,7 @@ public class ReadyToRunCompilationPlanTests
         {
             adjacency[i] = i + 1 == MethodCount ? [] : [i + 1];
         }
-        int[] levels = ReadyToRunCompilationPlan.ComputeLevelsForTest(adjacency);
+        int[] levels = DeferredWasmCallFinalizationPlan.ComputeLevelsForTest(adjacency);
 
         for (int i = 0; i < MethodCount; i++)
         {

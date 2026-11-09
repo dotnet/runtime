@@ -100,6 +100,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool IsEager => (_flags & ReadyToRunImportSectionFlags.Eager) != 0;
 
+        public bool IsEmpty => _signatureList.Count == 0;
+
         public override bool StaticDependenciesAreComputed => true;
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

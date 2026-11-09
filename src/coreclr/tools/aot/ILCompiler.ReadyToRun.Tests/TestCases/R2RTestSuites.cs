@@ -404,6 +404,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
+            Assert.DoesNotContain(reader.ImportSections, section =>
+                (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0 && section.Entries.Count == 0);
+
             int mapCount = 0;
             int multiByteMapCount = 0;
             foreach (ReadyToRunImportSection section in reader.ImportSections)
@@ -807,7 +810,7 @@ public class R2RTestSuites
             References = [inlineableLib]
         };
 
-        var cgInlineableLib = new CrossgenAssembly(inlineableLib){ Kind = Crossgen2InputKind.Reference, Options = [Crossgen2AssemblyOption.CrossModuleOptimization] };
+        var cgInlineableLib = new CrossgenAssembly(inlineableLib) { Kind = Crossgen2InputKind.Reference, Options = [Crossgen2AssemblyOption.CrossModuleOptimization] };
         var cgBasicCrossModuleInlining = new CrossgenAssembly(basicCrossModuleInlining);
 
         new R2RTestRunner(_output).Run(new R2RTestCase(

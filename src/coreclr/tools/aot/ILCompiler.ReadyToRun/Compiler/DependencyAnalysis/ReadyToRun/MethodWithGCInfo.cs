@@ -16,6 +16,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
     {
+        // #PrecodeFixupMinimization
+        //
+        // Minimize per-method precode metadata while ensuring that every required
+        // import cell is resolved before the compiled method executes.
+        //
+        // Direct calls covered by this optimization, currently only supported on
+        // Wasm, bypass the callee's normal activation path. The caller must therefore
+        // arrange callee activation through a method-entry fixup or module-eager
+        // activation. Activating the callee also resolves its transitive requirements,
+        // so the caller can omit fixups already covered by its direct callees or by
+        // module activation.
+        //
+        // Keep two sets distinct: _fixups contains the remaining work for this
+        // method's precode; the cached activation guarantees include requirements
+        // satisfied by the module and direct callees as well. Callers need the full
+        // guarantee set even after redundant entries have been removed from _fixups.
+        // Coverage is by import-cell identity, not merely by matching signatures.
+        //
+        // Startup-eager promotion uses the same guarantees to move the requirements
+        // of eagerly activated methods and their direct-call closure to module startup.
+        // Those cells can then be removed from every method's precode without
+        // invalidating its cached guarantees.
+        //
+        // Deferred call choices and code/data publication must be complete before
+        // computing guarantees, and direct callees must be finalized before callers.
+
         public readonly MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
@@ -38,12 +64,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
 
+        // Preserve activation imports not represented by the final direct-call
+        // relocations. See #PrecodeFixupMinimization.
         internal void AddDeferredWasmDependency(ISymbolNode node)
         {
             _nonRelocationDependencies ??= new DependencyList();
             _nonRelocationDependencies.Add(node, "Selected deferred Wasm call");
         }
 
+        // Install finalized call relocations and frame ranges, remapping debug
+        // offsets before encoding. See #PrecodeFixupMinimization for ordering.
         internal void FinalizeDeferredWasmCode(
             ObjectData code, FrameInfo[] frames, OffsetMapping[] locations, NativeVarInfo[] variables,
             Func<int, int> mapOffset = null)
@@ -144,6 +174,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal ReadOnlySpan<Relocation> CodeRelocations => _methodCode?.Relocs;
 
+        // Identify activation-guaranteeing direct calls from paired frame-identity
+        // and call relocations. See #PrecodeFixupMinimization.
         internal MethodWithGCInfo GetDirectCallTarget(int relocationIndex)
         {
             ReadOnlySpan<Relocation> relocations = CodeRelocations;
@@ -151,8 +183,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB &&
                 relocation.Target is MethodWithGCInfo target && target != this && relocationIndex > 0)
             {
-                // Only bundled calls inherit the callee's activation guarantees.
-                // Helper calls and calls to this method's funclets do not.
                 Relocation identity = relocations[relocationIndex - 1];
                 if (identity.RelocType == RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB &&
                     identity.Offset + Relocation.WASM_PADDED_RELOC_SIZE_32 + 1 == relocation.Offset &&
@@ -168,6 +198,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal Import[] GuaranteedPrecodeFixups => Volatile.Read(ref _guaranteedPrecodeFixups);
 
+        // Remove requirements covered by module activation or direct callees.
+        // See #PrecodeFixupMinimization.
         internal void FinalizePrecodeFixups(HashSet<Import> scratch = null)
         {
 #if DEBUG
@@ -178,8 +210,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             HashSet<Import> coveredFixups = scratch ?? new HashSet<Import>();
             CollectCoveredPrecodeFixups(coveredFixups);
 
-            // Making a direct callee ReadyToRun applies its transitive fixup requirements first.
-            // Module-eager fixups are likewise guaranteed before any method precode executes.
             if (coveredFixups.Count != 0)
             {
                 _fixups.RemoveAll(fixup =>
@@ -189,6 +219,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             coveredFixups.Clear();
         }
 
+        // Compute and cache the full activation guarantees used by callers and
+        // startup-eager promotion. See #PrecodeFixupMinimization.
         internal Import[] GetGuaranteedPrecodeFixups(HashSet<Import> scratch)
         {
             Import[] guarantees = GuaranteedPrecodeFixups;
@@ -223,6 +255,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return Interlocked.CompareExchange(ref _guaranteedPrecodeFixups, guarantees, null) ?? guarantees;
         }
 
+        // Fill coveredFixups with module and direct-callee guarantees; return
+        // a reusable array seed, not the complete collected union.
+        // See #PrecodeFixupMinimization.
         private Import[] CollectCoveredPrecodeFixups(HashSet<Import> coveredFixups)
         {
             // Materialize callees before using the same scratch storage for this method.
@@ -276,6 +311,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return seed;
         }
 
+        // Recover module-eager imports from code and referenced read-only/read-write
+        // data. Do not follow those blobs' data references, which may be
+        // self-referential. See #PrecodeFixupMinimization.
         private static void CollectModuleEagerFixups(ObjectData data, HashSet<Import> fixups, bool includeDataReferences = true)
         {
             MethodReadOnlyDataNode readOnlyData = null;
@@ -299,6 +337,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        // Remove precode entries whose resolution has been promoted to module startup.
+        // See #PrecodeFixupMinimization.
         internal void ApplyModuleEagerFixups(HashSet<Import> fixups)
         {
 #if DEBUG

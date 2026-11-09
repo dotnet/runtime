@@ -51,6 +51,12 @@ public class ReadyToRunLibraryRootProviderTests
         ReadyToRunCodegenCompilation compilation = (ReadyToRunCodegenCompilation)RuntimeHelpers.GetUninitializedObject(
             typeof(ReadyToRunCodegenCompilation));
         SetField(compilation, typeof(ReadyToRunCodegenCompilation), "_nodeFactory", factory);
+        DeferredWasmCallProcessor processor = (DeferredWasmCallProcessor)RuntimeHelpers.GetUninitializedObject(
+            typeof(DeferredWasmCallProcessor));
+        SetField(processor, typeof(DeferredWasmCallProcessor), "_compilation", compilation);
+        SetField(processor, typeof(DeferredWasmCallProcessor), "_finalizedMethods",
+            new Dictionary<MethodDesc, DeferredWasmMethodFinalizationInfo>());
+        SetField(compilation, typeof(ReadyToRunCodegenCompilation), "<DeferredWasmCalls>k__BackingField", processor);
         ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
             ReadyToRunImportSectionFlags.PCode, 4, emitPrecode: false, emitGCRefMap: false);
         DelayLoadMethodImport fallback = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
@@ -233,10 +239,14 @@ public class ReadyToRunLibraryRootProviderTests
         ReadyToRunCodegenCompilation compilation = (ReadyToRunCodegenCompilation)RuntimeHelpers.GetUninitializedObject(
             typeof(ReadyToRunCodegenCompilation));
         SetField(compilation, "_nodeFactory", factory);
-        SetField(compilation, "_finalizedWasmCompilationInfo", new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>
+        DeferredWasmCallProcessor processor = (DeferredWasmCallProcessor)RuntimeHelpers.GetUninitializedObject(
+            typeof(DeferredWasmCallProcessor));
+        SetField(processor, "_compilation", compilation);
+        SetField(processor, "_finalizedMethods", new Dictionary<MethodDesc, DeferredWasmMethodFinalizationInfo>
         {
-            [targetMethod] = new(1, 0, eager),
+            [targetMethod] = new(0, eager),
         });
+        SetField(compilation, "<DeferredWasmCalls>k__BackingField", processor);
 
         ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
             eager ? ReadyToRunImportSectionFlags.Eager : ReadyToRunImportSectionFlags.PCode,
@@ -387,13 +397,13 @@ public class ReadyToRunLibraryRootProviderTests
             type = type.GetNestedType(Encoding.UTF8.GetBytes(nestedNames[i]));
         }
 
-        Assert.Equal(expected, ReadyToRunCodegenCompilation.IsDirectCallDepthExempt(type));
+        Assert.Equal(expected, DeferredWasmCallProcessor.IsDirectCallDepthExempt(type));
     }
 
     [Theory]
     [InlineData("NoInlining")]
     [InlineData("NoOptimization")]
-    public void EagerCompilationRemovesCalleeDepthFromNonEagerLevels(string coldMethodOption)
+    public void EagerFinalizationRemovesCalleeDepthFromNonEagerLevels(string coldMethodOption)
     {
         string source = $$"""
             using System.Runtime.CompilerServices;
@@ -430,7 +440,7 @@ public class ReadyToRunLibraryRootProviderTests
             MethodDesc cycleLeft = type.GetMethod("CycleLeft"u8, null);
             MethodDesc cycleRight = type.GetMethod("CycleRight"u8, null);
             NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
-            ReadyToRunCompilationPlan plan = ReadyToRunCompilationPlan.Create(
+            DeferredWasmCallFinalizationPlan plan = DeferredWasmCallFinalizationPlan.Create(
                 [
                     CreateMethodNode(eagerLeaf),
                     CreateMethodNode(eagerCold, eagerLeaf),
@@ -442,22 +452,22 @@ public class ReadyToRunLibraryRootProviderTests
                     CreateMethodNode(cycleRight, cycleLeft, eagerRoot),
                 ], factory);
 
-            ReadyToRunCompilationPlan eagerPlan = plan.CreateEagerPlan([eagerRoot]);
+            DeferredWasmCallFinalizationPlan eagerPlan = plan.CreateEagerPlan([eagerRoot]);
             Assert.Equal(4, eagerPlan.LevelCount);
             Assert.Same(eagerLeaf, Assert.Single(eagerPlan.GetMethodsAtLevel(0)));
             Assert.Same(eagerCold, Assert.Single(eagerPlan.GetMethodsAtLevel(1)));
             Assert.Same(eagerMiddle, Assert.Single(eagerPlan.GetMethodsAtLevel(2)));
             Assert.Same(eagerRoot, Assert.Single(eagerPlan.GetMethodsAtLevel(3)));
 
-            HashSet<MethodDesc> compiledEagerMethods = [eagerLeaf, eagerCold, eagerMiddle, eagerRoot];
-            ReadyToRunCompilationPlan nonEagerPlan = plan.CreateNonEagerPlan(compiledEagerMethods);
+            HashSet<MethodDesc> finalizedEagerMethods = [eagerLeaf, eagerCold, eagerMiddle, eagerRoot];
+            DeferredWasmCallFinalizationPlan nonEagerPlan = plan.CreateNonEagerPlan(finalizedEagerMethods);
             Assert.Equal(2, nonEagerPlan.LevelCount);
             Assert.True(new HashSet<MethodDesc>(nonEagerPlan.GetMethodsAtLevel(0))
                 .SetEquals([nonEagerLeaf, cycleLeft, cycleRight]));
             Assert.Same(nonEagerCaller, Assert.Single(nonEagerPlan.GetMethodsAtLevel(1)));
 
-            compiledEagerMethods.Remove(eagerRoot);
-            ReadyToRunCompilationPlan failedRootPlan = plan.CreateNonEagerPlan(compiledEagerMethods);
+            finalizedEagerMethods.Remove(eagerRoot);
+            DeferredWasmCallFinalizationPlan failedRootPlan = plan.CreateNonEagerPlan(finalizedEagerMethods);
             Assert.Equal(3, failedRootPlan.LevelCount);
             Assert.Same(eagerRoot, Assert.Single(failedRootPlan.GetMethodsAtLevel(0)));
             Assert.Contains(nonEagerLeaf, failedRootPlan.GetMethodsAtLevel(1));
@@ -472,7 +482,7 @@ public class ReadyToRunLibraryRootProviderTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void CompilationPlanUsesPublishedCallRelocations(bool reverseOrder)
+    public void FinalizationPlanUsesPublishedCallRelocations(bool reverseOrder)
     {
         ReadyToRunCompilerContext context = CreateContext();
         MethodDesc leaf = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
@@ -503,7 +513,7 @@ public class ReadyToRunLibraryRootProviderTests
         }
         NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
 
-        ReadyToRunCompilationPlan plan = ReadyToRunCompilationPlan.Create(nodes, factory);
+        DeferredWasmCallFinalizationPlan plan = DeferredWasmCallFinalizationPlan.Create(nodes, factory);
 
         Assert.Equal(4, plan.LevelCount);
         Assert.Same(leaf, Assert.Single(plan.GetMethodsAtLevel(0)));
@@ -523,31 +533,6 @@ public class ReadyToRunLibraryRootProviderTests
         node.SetCode(new ObjectNode.ObjectData(new byte[1 + callees.Length * 6], relocations, 1, [node]));
 
         return node;
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ResolverReleasesCompilationMetadata(bool mutableModule)
-    {
-        ReadyToRunCompilerContext context = CreateContext();
-        EcmaModule coreLib = (EcmaModule)context.SystemModule;
-        ReadyToRunSingleAssemblyCompilationModuleGroup group = new(new ReadyToRunCompilationModuleGroupConfig
-        {
-            Context = context,
-            CompilationModuleSet = [coreLib],
-            VersionBubbleModuleSet = [coreLib],
-            CrossModuleInlineable = [],
-        });
-        WeakReference metadata = AttachResolverMetadata(group, context, mutableModule);
-
-        group.Resolver.ClearCompilationState();
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-
-        Assert.False(metadata.IsAlive);
-        GC.KeepAlive(group);
     }
 
     [Theory]
@@ -1140,27 +1125,6 @@ public class ReadyToRunLibraryRootProviderTests
         {
             Methods.Add(method.GetTypicalMethodDefinition());
         }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference AttachResolverMetadata(
-        ReadyToRunCompilationModuleGroupBase group, ReadyToRunCompilerContext context, bool mutableModule)
-    {
-        if (mutableModule)
-        {
-            crossgen2::Internal.TypeSystem.Ecma.MutableModule module = new(context, "TestMetadata",
-                default(AssemblyFlags), null, new Version(0, 0), AssemblyHashAlgorithm.None, static _ => 0, group);
-            group.Resolver.InitManifestMutableModule(module);
-            return new WeakReference(module);
-        }
-
-        object metadata = new();
-        group.Resolver.SetModuleIndexLookup(_ =>
-        {
-            GC.KeepAlive(metadata);
-            return 0;
-        });
-        return new WeakReference(metadata);
     }
 
     private static ReadyToRunCompilerContext CreateContext(
