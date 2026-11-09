@@ -8,6 +8,7 @@ public class NativeMinipalTests
 {
     [Theory]
     [InlineData("utf8")]
+    [InlineData("u16")]
     public static void RunSuite(string group)
     {
         (int exitCode, string output, string error) = NativeTestProcess.Run("NativeMinipalTestsDriver", group);

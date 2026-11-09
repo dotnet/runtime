@@ -17,7 +17,6 @@ Abstract:
 #include "config.h"
 #include "pal/dbgmsg.h"
 #include <minipal/environ.h>
-#include "pal/cruntime.h"
 
 /* standard headers */
 

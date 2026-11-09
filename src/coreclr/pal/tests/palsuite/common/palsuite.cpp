@@ -12,6 +12,7 @@
 
 
 #include "palsuite.h"
+#include <dn-u16.h>
 #include "minipal/time.h"
 #include "minipal/utf8.h"
 
@@ -40,7 +41,7 @@ WCHAR* convert(const char * aString)
 
 char* convertC(const WCHAR * wString)
 {
-    size_t length = wcslen(wString) + 1;
+    size_t length = u16_strlen(wString) + 1;
     size_t size = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wString, length, 0);
     char * MultiBuffer = (char*) malloc(size);
     if (MultiBuffer == NULL)
@@ -116,45 +117,6 @@ BOOL Cleanup(HANDLE *hArray, DWORD dwIndex)
     }
 
     return (bCRet&&bCHRet);
-}
-
-/*
- * Take two wide strings representing file and directory names
- * (dirName, fileName), join the strings with the appropriate path
- * delimiter and populate a wide character buffer (absPathName) with
- * the resulting string.
- *
- * Returns: The number of wide characters in the resulting string.
- * 0 is returned on Error.
- */
-int
-mkAbsoluteFilenameW (
-    LPWSTR dirName,
-    DWORD dwDirLength,
-    LPCWSTR fileName,
-    DWORD dwFileLength,
-    LPWSTR absPathName )
-{
-    const WCHAR szPathDelimW[] = {'/','\0'};
-
-    DWORD sizeDN, sizeFN, sizeAPN;
-
-    sizeDN = wcslen( dirName );
-    sizeFN = wcslen( fileName );
-    sizeAPN = (sizeDN + 1 + sizeFN + 1);
-
-    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
-    if ( sizeAPN > MAX_PATH )
-    {
-	return ( 0 );
-    }
-
-    wcsncpy(absPathName, dirName, dwDirLength +1);
-    wcsncpy(absPathName, szPathDelimW, 2);
-    wcsncpy(absPathName, fileName, dwFileLength +1);
-
-    return (sizeAPN);
-
 }
 
 /*
