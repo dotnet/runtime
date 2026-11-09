@@ -39,8 +39,8 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection ArmUnwindIndexSection = new ObjectNodeSection(".ARM.exidx", SectionType.UnwindData);
         private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
 
-        // GNU ld and lld place arm64 range extension thunks between input sections, and the Unix runtime
-        // finds no method at a thunk address. 32-bit Arm and LoongArch64 are not split.
+        // GNU ld and lld place arm64 range extension thunks between input sections. Only arm64 opts in:
+        // the split has not been validated with the arm and loongarch64 linkers and runtime.
         private protected override bool LinkerPlacesRangeExtensionThunks => _nodeFactory.Target.Architecture == TargetArchitecture.ARM64;
 
         private protected override void CreateEhSections()
