@@ -1,6 +1,5 @@
 <Project>
-  <!-- Native component tests use the root test build configuration instead of the managed tracing test configuration. -->
-  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.targets" />
 
   <Target Name="WriteNativeTestExecutableList"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
