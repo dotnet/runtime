@@ -137,6 +137,37 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
+    // Double eqz normalizes an i32 to 0/1, which br_if does not need.
+    if ((ins == INS_br_if) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
+        (emitLastIns->idIns() == INS_i32_eqz))
+    {
+        insGroup*  prevIG = emitLastInsIG;
+        instrDesc* prev   = emitLastIns;
+        if (emitPrevID(prevIG, prev) && isInsIGSafeForPeepholeOptimization(prevIG, emitLastInsIG) &&
+            (prev->idIns() == INS_i32_eqz))
+        {
+            // Keep descriptors so captured instruction positions remain valid.
+            auto elide = [this](insGroup* ig, instrDesc* id) {
+                unsigned short size = static_cast<unsigned short>(id->idCodeSize());
+                if (ig == emitCurIG)
+                {
+                    emitCurIGsize -= size;
+                }
+                else
+                {
+                    ig->igSize -= size;
+                }
+                ig->igFlags |= IGF_UPD_ISZ;
+                id->idIns(INS_nop);
+                id->idInsFmt(IF_NONE);
+            };
+
+            JITDUMP("\n -- eliding 'i32.eqz; i32.eqz' before 'br_if'.\n");
+            elide(prevIG, prev);
+            elide(emitLastInsIG, emitLastIns);
+        }
+    }
+
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
