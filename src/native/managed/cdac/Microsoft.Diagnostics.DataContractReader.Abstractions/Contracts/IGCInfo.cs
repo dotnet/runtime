@@ -64,7 +64,15 @@ public readonly record struct X86GCInfoHeader(
 /// <summary>Decoded X86 transition kinds, independent of the encoded byte values.</summary>
 public enum X86GCTransitionKind : uint
 {
-    RegisterLive, RegisterDead, Push, Pop, Kill, StackDepth, ThisRegister, InteriorMask, Call,
+    RegisterLive,
+    RegisterDead,
+    Push,
+    Pop,
+    Kill,
+    StackDepth,
+    ThisRegister,
+    InteriorMask,
+    Call,
 }
 
 /// <summary>
