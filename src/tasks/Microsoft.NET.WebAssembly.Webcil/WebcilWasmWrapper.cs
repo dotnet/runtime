@@ -108,13 +108,14 @@ public class WebcilWasmWrapper
     {
         var producers = new[]
         {
-            new WasmCustomSectionWriter.ProducerValue(WasmCustomSectionWriter.ProducersFieldLanguage, "C#", string.Empty),
             new WasmCustomSectionWriter.ProducerValue(WasmCustomSectionWriter.ProducersFieldProcessedBy, "WebCIL", ProductVersion),
             new WasmCustomSectionWriter.ProducerValue(WasmCustomSectionWriter.ProducersFieldSdk, ".NET", ProductVersion),
         };
 
         byte[]? buildId = BuildId ?? ComputePayloadHash();
-        WasmCustomSectionWriter.AppendMetadataSections(outputStream, producers, buildId);
+        WasmCustomSectionWriter.WriteProducersSection(outputStream, producers);
+        if (buildId is not null)
+            WasmCustomSectionWriter.WriteBuildIdSection(outputStream, buildId);
     }
 
     // Content hash of the webcil payload, used as the build_id when none was supplied explicitly.

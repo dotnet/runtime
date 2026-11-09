@@ -44,7 +44,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: true);
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
-            AssertProducers(wasm, NativeRuntimeProducer);
+            AssertProducers(wasm, NativeRuntimeProducer, expectCSharpLanguage: true);
             Assert.Equal(PinnedBuildId, GetBuildIdHex(wasm));
             AssertBuildIdInBootConfig(config);
         }
@@ -76,7 +76,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
             if (emitProducers)
-                AssertProducers(wasm, NativeRuntimeProducer);
+                AssertProducers(wasm, NativeRuntimeProducer, expectCSharpLanguage: true);
             else
                 Assert.Null(ReadCustomSection(wasm, "producers"));
 
@@ -94,7 +94,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: false);
 
             string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
-            AssertProducers(webcil, "WebCIL");
+            AssertProducers(webcil, "WebCIL", expectCSharpLanguage: false);
 
             // Without an explicit id, each webcil gets a SHA-256 content hash (32 bytes).
             byte[]? buildId = ReadBuildId(webcil);
@@ -113,7 +113,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: false);
 
             string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
-            AssertProducers(webcil, "WebCIL");
+            AssertProducers(webcil, "WebCIL", expectCSharpLanguage: false);
             Assert.Equal(PinnedBuildId, GetBuildIdHex(webcil));
         }
 
@@ -216,17 +216,20 @@ namespace Wasm.Build.NativeRebuild.Tests
             Assert.Equal(PinnedBuildId, bootJson.buildId);
         }
 
-        private static void AssertProducers(string wasmPath, string expectedProcessedBy)
-            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy);
+        private static void AssertProducers(string wasmPath, string expectedProcessedBy, bool expectCSharpLanguage)
+            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy, expectCSharpLanguage);
 
-        private static void AssertProducers(byte[] wasm, string expectedProcessedBy)
+        private static void AssertProducers(byte[] wasm, string expectedProcessedBy, bool expectCSharpLanguage)
         {
             byte[]? producers = ReadCustomSection(wasm, "producers");
             Assert.NotNull(producers);
 
             // The section holds length-prefixed ASCII field/value strings; a substring scan is enough.
             string text = Encoding.Latin1.GetString(producers!);
-            Assert.Contains("C#", text);
+            if (expectCSharpLanguage)
+                Assert.Contains("C#", text);
+            else
+                Assert.DoesNotContain("C#", text);
             Assert.Contains(".NET", text);
             Assert.Contains(expectedProcessedBy, text);
         }

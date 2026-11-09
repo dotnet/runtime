@@ -572,11 +572,11 @@ namespace ILCompiler.ObjectWriter
             byte[] webcilBuildId = _wasmNativeBuildId ?? ComputeModuleHash(outputFileStream);
             WasmCustomSectionWriter.ProducerValue[] producers =
             [
-                new(WasmCustomSectionWriter.ProducersFieldLanguage, "C#", string.Empty),
                 new(WasmCustomSectionWriter.ProducersFieldProcessedBy, "WebCIL", string.Empty),
                 new(WasmCustomSectionWriter.ProducersFieldSdk, ".NET", string.Empty),
             ];
-            WasmCustomSectionWriter.AppendMetadataSections(outputFileStream, producers, webcilBuildId);
+            WasmCustomSectionWriter.WriteProducersSection(outputFileStream, producers);
+            WasmCustomSectionWriter.WriteBuildIdSection(outputFileStream, webcilBuildId);
 #endif
 
             if (_outputInfoBuilder is not null)

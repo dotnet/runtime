@@ -5,7 +5,6 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -26,8 +25,7 @@ public static class WasmCustomSectionWriter
     public const string ProducersSectionName = "producers";
     public const string BuildIdSectionName = "build_id";
 
-    // The three well-known producers field names.
-    public const string ProducersFieldLanguage = "language";
+    // The well-known producers field names emitted for Webcil modules.
     public const string ProducersFieldProcessedBy = "processed-by";
     public const string ProducersFieldSdk = "sdk";
 
@@ -46,36 +44,37 @@ public static class WasmCustomSectionWriter
             Version = version ?? string.Empty;
         }
 
-        /// <summary>One of <see cref="ProducersFieldLanguage"/>, <see cref="ProducersFieldProcessedBy"/> or <see cref="ProducersFieldSdk"/>.</summary>
+        /// <summary>One of <see cref="ProducersFieldProcessedBy"/> or <see cref="ProducersFieldSdk"/>.</summary>
         public string Field { get; }
         public string Name { get; }
         public string Version { get; }
     }
 
     /// <summary>
-    /// Appends fresh <c>producers</c> and/or <c>build_id</c> custom sections to <paramref name="output"/>
-    /// at the current position. The caller is responsible for ensuring these are written after the
-    /// module's <c>name</c> section (as the tool-conventions spec requires for <c>producers</c>). This is
-    /// the low-level primitive used by producers that build their own module bytes (e.g. the webcil
-    /// wasm wrapper and the ReadyToRun wasm object writer).
+    /// Appends a fresh <c>producers</c> custom section to <paramref name="output"/> at the current
+    /// position. Each supplied value represents one field with one name/version pair.
     /// </summary>
-    /// <param name="output">Stream positioned at the end of the module body.</param>
-    /// <param name="producers">Producers values to write. May be <see langword="null"/>/empty to skip.</param>
-    /// <param name="buildId">Raw build id bytes. May be <see langword="null"/>/empty to skip.</param>
-    public static void AppendMetadataSections(Stream output, IEnumerable<ProducerValue>? producers, byte[]? buildId)
+    public static void WriteProducersSection(Stream output, ProducerValue[] producers)
     {
         if (output is null)
             ThrowArgumentNull(nameof(output));
+        if (producers is null)
+            ThrowArgumentNull(nameof(producers));
+        if (producers.Length == 0)
+            throw new ArgumentException("At least one producer is required.", nameof(producers));
 
-        if (producers is not null)
+        using var payload = new MemoryStream();
+        WriteName(payload, ProducersSectionName);
+        WriteULEB128(payload, (uint)producers.Length);
+        foreach (ProducerValue producer in producers)
         {
-            var list = new List<ProducerValue>(producers);
-            if (list.Count > 0)
-                WriteProducersSection(output, list);
+            WriteName(payload, producer.Field);
+            WriteULEB128(payload, 1);
+            WriteName(payload, producer.Name);
+            WriteName(payload, producer.Version);
         }
 
-        if (buildId is not null && buildId.Length > 0)
-            WriteBuildIdSection(output, buildId);
+        WriteCustomSection(output, payload.ToArray());
     }
 
     /// <summary>
@@ -160,46 +159,15 @@ public static class WasmCustomSectionWriter
         return bytes;
     }
 
-    // ------------------------------------------------------------------
-    // Section writing helpers
-    // ------------------------------------------------------------------
-
-    private static void WriteProducersSection(Stream output, List<ProducerValue> producers)
+    public static void WriteBuildIdSection(Stream output, byte[] buildId)
     {
-        // Group values by field, preserving first-seen order.
-        var order = new List<string>();
-        var byField = new Dictionary<string, List<ProducerValue>>(StringComparer.Ordinal);
-        foreach (ProducerValue value in producers)
-        {
-            if (!byField.TryGetValue(value.Field, out List<ProducerValue>? list))
-            {
-                list = new List<ProducerValue>();
-                byField[value.Field] = list;
-                order.Add(value.Field);
-            }
-            list.Add(value);
-        }
+        if (output is null)
+            ThrowArgumentNull(nameof(output));
+        if (buildId is null)
+            ThrowArgumentNull(nameof(buildId));
+        if (buildId.Length == 0)
+            throw new ArgumentException("Build ID cannot be empty.", nameof(buildId));
 
-        using var payload = new MemoryStream();
-        WriteName(payload, ProducersSectionName);
-        WriteULEB128(payload, (uint)order.Count);
-        foreach (string field in order)
-        {
-            List<ProducerValue> values = byField[field];
-            WriteName(payload, field);
-            WriteULEB128(payload, (uint)values.Count);
-            foreach (ProducerValue value in values)
-            {
-                WriteName(payload, value.Name);
-                WriteName(payload, value.Version);
-            }
-        }
-
-        WriteCustomSection(output, payload.ToArray());
-    }
-
-    private static void WriteBuildIdSection(Stream output, byte[] buildId)
-    {
         using var payload = new MemoryStream();
         WriteName(payload, BuildIdSectionName);
         // build_id payload: length-prefixed sequence of raw bytes.
