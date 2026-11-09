@@ -42,7 +42,7 @@ extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(
     return result;
 }
 
-FCIMPL1(Object*, DependentHandle_InternalGetTarget, OBJECTHANDLE handle)
+FCIMPL1(Object*, DependentHandle_InternalGetTargetWithDebugValidation, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 

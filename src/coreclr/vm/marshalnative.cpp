@@ -254,7 +254,6 @@ extern "C" PVOID QCALLTYPE MarshalNative_GetFunctionPointerForDelegateInternal(Q
     return pFPtr;
 }
 
-#ifdef _DEBUG
 namespace
 {
     BOOL STDMETHODCALLTYPE IsInCooperativeGCMode()
@@ -269,7 +268,6 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 
     return IsInCooperativeGCMode;
 }
-#endif
 
 /************************************************************************
  * Support for the last PInvoke error
@@ -378,7 +376,7 @@ FCIMPL1(FC_BOOL_RET, GCHandle__InternalFree, OBJECTHANDLE handle)
 FCIMPLEND
 
 // Get the object referenced by a GC handle.
-FCIMPL1(LPVOID, GCHandle_InternalGet, OBJECTHANDLE handle)
+FCIMPL1(LPVOID, GCHandle_InternalGetWithDebugValidation, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 

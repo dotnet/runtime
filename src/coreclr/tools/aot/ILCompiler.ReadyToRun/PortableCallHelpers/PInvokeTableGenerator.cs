@@ -21,7 +21,7 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeTableGenerator(InteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes, bool skipRuntimeHelperTable = false)
+        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
         {
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
@@ -210,8 +210,7 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
-            if (!skipRuntimeHelperTable)
-                EmitQCallTable(w, target, qcallImports);
+            EmitQCallTable(w, target, qcallImports);
 
             static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
@@ -275,15 +274,15 @@ namespace ILCompiler.PortableCallHelpers
                     if (target.OperatingSystem == TargetOS.Browser)
                     {
                         w.WriteLine(qcall.EntryPoint == "memmove"
-                            ? "    void* QCall_memmove(void* dest, const void* src, size_t len);"
-                            : "    void* QCall_memset(void* dest, int value, size_t len);");
+                            ? "    void* RuntimeHelper_memmove(void* dest, const void* src, size_t len) __asm__(\"QCall_memmove\");"
+                            : "    void* RuntimeHelper_memset(void* dest, int value, size_t len) __asm__(\"QCall_memset\");");
                     }
                     continue;
                 }
 
-                // common.h can already declare QCalls with VM types. Use a separate C identifier
+                // common.h can already declare runtime helpers with VM types. Use a separate C identifier
                 // with the same linker symbol for the metadata-derived ABI declaration.
-                w.WriteLine(GenPInvokeDecl(qcall, $"QCall_{CEntryPoint(qcall)}"));
+                w.WriteLine(GenPInvokeDecl(qcall, $"RuntimeHelper_{CEntryPoint(qcall)}"));
             }
             w.WriteLine("} // extern \"C\"");
             w.WriteLine();
@@ -291,11 +290,11 @@ namespace ILCompiler.PortableCallHelpers
             foreach (PInvokeInfo qcall in qcalls)
             {
                 if (target.OperatingSystem == TargetOS.Browser && qcall.EntryPoint is "memmove" or "memset")
-                    w.WriteLine($"    {{ \"{qcall.EntryPoint}\", (void*)&QCall_{qcall.EntryPoint} }},");
+                    w.WriteLine($"    {{ \"{qcall.EntryPoint}\", (void*)&RuntimeHelper_{qcall.EntryPoint} }},");
                 else if (qcall.EntryPoint is "memmove" or "memset")
                     w.WriteLine($"    DllImportEntry({qcall.EntryPoint})");
                 else
-                    w.WriteLine($"    {{ \"{EscapeLiteral(qcall.EntryPoint)}\", (void*)&QCall_{CEntryPoint(qcall)} }},");
+                    w.WriteLine($"    {{ \"{EscapeLiteral(qcall.EntryPoint)}\", (void*)&RuntimeHelper_{CEntryPoint(qcall)} }},");
             }
             w.WriteLine(
                 """

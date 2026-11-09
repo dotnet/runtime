@@ -97,6 +97,7 @@ extern "C" void* QCall_memmove(void* dest, const void* src, size_t len);
 extern "C" void* QCall_memset(void* dest, int value, size_t len);
 #endif // TARGET_BROWSER
 
+#if !defined(TARGET_WASM) || !GEN_PINVOKE
 // Keep entries sorted by name using strcmp ordering for binary search.
 static const Entry s_RuntimeHelpers[] =
 {
@@ -209,8 +210,8 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(DependentHandle_InternalFree)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(DependentHandle_InternalGetDependent)
-    DllImportEntry(DependentHandle_InternalGetTarget)
     DllImportEntry(DependentHandle_InternalGetTargetAndDependent)
+    DllImportEntry(DependentHandle_InternalGetTargetWithDebugValidation)
     DllImportEntry(DependentHandle_InternalSetDependent)
     DllImportEntry(DependentHandle_InternalSetTargetToNull)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
@@ -261,10 +262,10 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(GCHandle_InternalAllocWithGCTransition)
     DllImportEntry(GCHandle_InternalCompareExchange)
     DllImportEntry(GCHandle_InternalFreeWithGCTransition)
-    DllImportEntry(GCHandle_InternalGet)
 #ifdef FEATURE_JAVAMARSHAL
     DllImportEntry(GCHandle_InternalGetBridgeWait)
 #endif // FEATURE_JAVAMARSHAL
+    DllImportEntry(GCHandle_InternalGetWithDebugValidation)
     DllImportEntry(GCHandle_InternalSet)
 #ifdef FEATURE_JAVAMARSHAL
     DllImportEntry(GCHandle_InternalTryGetBridgeWait)
@@ -374,9 +375,7 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(MarshalNative_GetIUnknownForObject)
     DllImportEntry(MarshalNative_GetIUnknownOrIDispatchForObject)
 #endif // FEATURE_COMINTEROP
-#ifdef _DEBUG
     DllImportEntry(MarshalNative_GetIsInCooperativeGCModeFunctionPointer)
-#endif // _DEBUG
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(MarshalNative_GetNativeVariantForObject)
     DllImportEntry(MarshalNative_GetObjectForIUnknown)
@@ -877,3 +876,4 @@ const void* ResolveRuntimeHelperEntrypoint(const char* name)
     const Entry* entry = search.Find(&key);
     return entry != nullptr ? entry->method : nullptr;
 }
+#endif // !defined(TARGET_WASM) || !GEN_PINVOKE

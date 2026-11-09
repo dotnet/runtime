@@ -21,7 +21,7 @@ extern "C"
 
     FCDECL2(LPVOID, GCHandle__InternalAlloc, Object *obj, int type);
     FCDECL1(FC_BOOL_RET, GCHandle__InternalFree, OBJECTHANDLE handle);
-    FCDECL1(LPVOID, GCHandle_InternalGet, OBJECTHANDLE handle);
+    FCDECL1(LPVOID, GCHandle_InternalGetWithDebugValidation, OBJECTHANDLE handle);
 #ifdef FEATURE_JAVAMARSHAL
     FCDECL2(FC_BOOL_RET, GCHandle_InternalTryGetBridgeWait, OBJECTHANDLE handle, Object** pObjResult);
 #endif
@@ -61,10 +61,8 @@ extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE han
 extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 #endif
 
-#ifdef _DEBUG
 using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
 extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGCModeFunctionPointer();
-#endif
 
 #ifdef FEATURE_COMINTEROP
 //====================================================================

@@ -1373,12 +1373,14 @@ public class WasmArgumentLayoutTests
             Assert.DoesNotContain("QCall_Unavailable", table);
             Assert.Contains("static const Entry s_RuntimeHelpers", table);
 
-            Assert.Contains("int64_t QCall_QCall_Test (int32_t, void *) __asm__(\"QCall_Test\");", table);
-            Assert.Equal(1, table.Split("{ \"QCall_Test\", (void*)&QCall_QCall_Test }").Length - 1);
+            Assert.Contains("int64_t RuntimeHelper_QCall_Test (int32_t, void *) __asm__(\"QCall_Test\");", table);
+            Assert.Equal(1, table.Split("{ \"QCall_Test\", (void*)&RuntimeHelper_QCall_Test }").Length - 1);
             if (targetOS == "browser")
             {
-                Assert.Contains("{ \"memmove\", (void*)&QCall_memmove }", table);
-                Assert.Contains("{ \"memset\", (void*)&QCall_memset }", table);
+                Assert.Contains("void* RuntimeHelper_memmove(void* dest, const void* src, size_t len) __asm__(\"QCall_memmove\");", table);
+                Assert.Contains("void* RuntimeHelper_memset(void* dest, int value, size_t len) __asm__(\"QCall_memset\");", table);
+                Assert.Contains("{ \"memmove\", (void*)&RuntimeHelper_memmove }", table);
+                Assert.Contains("{ \"memset\", (void*)&RuntimeHelper_memset }", table);
                 Assert.DoesNotContain("DllImportEntry(memmove)", table);
                 Assert.DoesNotContain("DllImportEntry(memset)", table);
             }
@@ -1473,11 +1475,9 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(TargetOS.Browser, false)]
-    [InlineData(TargetOS.Browser, true)]
-    [InlineData(TargetOS.Wasi, false)]
-    [InlineData(TargetOS.Wasi, true)]
-    public void PortableCallHelpersGeneratorProducesStableEntryPointTable(TargetOS targetOS, bool skipRuntimeHelperTable)
+    [InlineData(TargetOS.Browser)]
+    [InlineData(TargetOS.Wasi)]
+    public void PortableCallHelpersGeneratorProducesStableEntryPointTable(TargetOS targetOS)
     {
         string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         try
@@ -1488,7 +1488,6 @@ public class WasmArgumentLayoutTests
             {
                 OutputDirectory = workingDirectory,
                 TargetOS = targetOS == TargetOS.Browser ? "browser" : "wasi",
-                SkipRuntimeHelperTable = skipRuntimeHelperTable,
             };
             var log = new StringWriter();
             Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
@@ -1497,20 +1496,24 @@ public class WasmArgumentLayoutTests
             string table = File.ReadAllText(path);
 
             Assert.Contains("callhelpers_pinvoke_override", table);
-            Assert.Equal(!skipRuntimeHelperTable, table.Contains("ResolveRuntimeHelperEntrypoint", StringComparison.Ordinal));
-            Assert.Equal(!skipRuntimeHelperTable, table.Contains("static const Entry s_RuntimeHelpers[]", StringComparison.Ordinal));
-            if (!skipRuntimeHelperTable)
-            {
-                string entries = table.Split("static const Entry s_RuntimeHelpers[] = {", StringSplitOptions.None)[1]
-                    .Split("};", StringSplitOptions.None)[0];
-                string[] names = entries.Split('\n')
-                    .Where(line => line.TrimStart().StartsWith("{ \"", StringComparison.Ordinal))
-                    .Select(line => line.Split('"')[1])
-                    .ToArray();
-                Assert.NotEmpty(names);
-                Assert.Equal(names.Order(StringComparer.Ordinal), names);
-                Assert.Equal(names.Length, names.Distinct(StringComparer.Ordinal).Count());
-            }
+            Assert.Contains("ResolveRuntimeHelperEntrypoint", table);
+            Assert.Contains("static const Entry s_RuntimeHelpers[]", table);
+            string entries = table.Split("static const Entry s_RuntimeHelpers[] = {", StringSplitOptions.None)[1]
+                .Split("};", StringSplitOptions.None)[0];
+            string[] names = entries.Split('\n')
+                .Where(line => line.TrimStart().StartsWith("{ \"", StringComparison.Ordinal))
+                .Select(line => line.Split('"')[1])
+                .ToArray();
+            Assert.NotEmpty(names);
+            Assert.Equal(names.Order(StringComparer.Ordinal), names);
+            Assert.Equal(names.Length, names.Distinct(StringComparer.Ordinal).Count());
+            Assert.Contains("GCHandle_InternalGetWithDebugValidation", names);
+            Assert.Contains("DependentHandle_InternalGetTargetWithDebugValidation", names);
+            Assert.Contains("MarshalNative_GetIsInCooperativeGCModeFunctionPointer", names);
+            Assert.DoesNotContain("GCHandle_InternalGet", names);
+            Assert.DoesNotContain("DependentHandle_InternalGetTarget", names);
+            Assert.Contains("{ \"MathF_ModF\", (void*)&RuntimeHelper_MathF_ModF }", table);
+            Assert.DoesNotContain("(void*)&QCall_", table);
 
             DateTime timestamp = File.GetLastWriteTimeUtc(path);
             Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
@@ -1538,6 +1541,7 @@ public class WasmArgumentLayoutTests
         var table = new StringWriter();
         new PInvokeTableGenerator(log).EmitPInvokeTable(table, context.Target, context.SystemModule, [], [entry]);
         string declaration = table.ToString().Split('\n').Single(line => line.Contains("__asm__", StringComparison.Ordinal));
+        Assert.Contains($" RuntimeHelper_{entry.EntryPoint} (", declaration);
         Assert.Contains("(uintptr_t, void *", declaration);
         Assert.EndsWith($"uintptr_t) __asm__(\"{entry.EntryPoint}\");", declaration.TrimEnd());
     }

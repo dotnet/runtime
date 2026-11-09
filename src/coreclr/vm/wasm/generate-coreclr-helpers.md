@@ -38,12 +38,6 @@ Each run emits three files into the output directory:
 
 `callhelpers-pinvoke.cpp` contains an entrypoint table for all P/Invokes in the application, as well as all [QCalls and FCalls in System.Private.CoreLib](../../../../docs/design/coreclr/botr/corelib.md#Calling-from-managed-to-native-code). A few specialized FCalls have separate internal runtime implementations that are not included in this table. The QCalls and FCalls are discovered by scanning the members of System.Private.CoreLib to find the corresponding methods.
 
-
-The checked-in snapshots omit the QCall/FCall table and its resolver by passing
-`--skip-runtime-helper-table`. Prebuilt runtimes use the configuration-specific table in
-`runtimehelpers.cpp`. Application relinks generate their own table
-and resolver without this option.
-
 ## The P/Invoke module list
 
 Only the framework native libraries the runtime links statically get an entry in the generated

@@ -135,7 +135,6 @@
       <_GeneratorArg Include="--targetos:$(_TargetOS)" />
       <_GeneratorArg Include="--targetarch:wasm" />
       <_GeneratorArg Include="--generate-portable-callhelpers:$(_StagingDir)" />
-      <_GeneratorArg Include="--skip-runtime-helper-table" />
       <_GeneratorArg Include="@(_TargetPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_GeneratorArg Include="@(_ScanAssembly->'%(FullPath)')" />
     </ItemGroup>

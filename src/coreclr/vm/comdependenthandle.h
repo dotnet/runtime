@@ -40,7 +40,7 @@
 extern "C"
 {
     FCDECL2(OBJECTHANDLE, DependentHandle_InternalAlloc, Object *target, Object *dependent);
-    FCDECL1(Object *, DependentHandle_InternalGetTarget, OBJECTHANDLE handle);
+    FCDECL1(Object *, DependentHandle_InternalGetTargetWithDebugValidation, OBJECTHANDLE handle);
     FCDECL1(Object *, DependentHandle_InternalGetDependent, OBJECTHANDLE handle);
     FCDECL2(Object *, DependentHandle_InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
     FCDECL1(VOID, DependentHandle_InternalSetTargetToNull, OBJECTHANDLE handle);
