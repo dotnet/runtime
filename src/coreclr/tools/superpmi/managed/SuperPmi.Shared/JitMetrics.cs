@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Text;
 
 namespace SuperPmi;
 
-// The metrics that the JIT reports through reportMetadata, as listed by src/coreclr/jit/jitmetadatalist.h
-// (embedded as a resource, so new metrics don't need changes here).
+// The metrics that the JIT reports through reportMetadata, as listed by src/coreclr/jit/jitmetadatalist.h. The
+// replay host gets them from its native side, which is compiled with that list; the other tools have none.
 public sealed unsafe class JitMetrics
 {
+    // Matches JitMetricType in src/coreclr/tools/superpmi/jitinterface/jitinterface.cpp.
     public enum MetricType
     {
         Int,
@@ -22,36 +20,13 @@ public sealed unsafe class JitMetrics
 
     public readonly record struct Metric(string Name, byte[] Utf8Name, MetricType Type);
 
-    public static readonly Metric[] All = Load();
+    public static Metric[] All { get; private set; } = [];
 
     // Doubles are stored as their bits.
     private readonly long[] _values = new long[All.Length];
 
-    private static Metric[] Load()
-    {
-        using Stream stream = typeof(JitMetrics).Assembly.GetManifestResourceStream("jitmetadatalist.h");
-        using var reader = new StreamReader(stream);
-
-        const string Prefix = "JITMETADATAMETRIC(";
-        var metrics = new List<Metric>();
-        while (reader.ReadLine() is string line)
-        {
-            if (!line.StartsWith(Prefix, StringComparison.Ordinal))
-                continue;
-
-            string[] parts = line.Substring(Prefix.Length).Split(',');
-            string name = parts[0].Trim();
-            MetricType type = parts[1].Trim() switch
-            {
-                "int" => MetricType.Int,
-                "int64_t" => MetricType.Int64,
-                "double" => MetricType.Double,
-                string other => throw new InvalidDataException($"Unknown JIT metric type '{other}' for {name}"),
-            };
-            metrics.Add(new Metric(name, Encoding.UTF8.GetBytes(name), type));
-        }
-        return metrics.ToArray();
-    }
+    // Called before any compile results are created.
+    public static void Initialize(Metric[] metrics) => All = metrics;
 
     // The JIT reports metrics in the order they're listed, so the search resumes where the previous one
     // matched; in practice this matches on the first comparison.

@@ -10,7 +10,6 @@
     <Compile Include="..\..\..\Common\Pgo\PgoFormat.cs" Link="Pgo\PgoFormat.cs" />
     <Compile Include="..\..\..\Common\TypeSystem\Common\TargetArchitecture.cs" Link="TypeSystem\TargetArchitecture.cs" />
     <Compile Include="..\..\..\Common\CommandLineHelpers.TargetArchitecture.cs" Link="CommandLineHelpers.TargetArchitecture.cs" />
-    <EmbeddedResource Include="..\..\..\..\jit\jitmetadatalist.h" LogicalName="jitmetadatalist.h" />
     <EmbeddedResource Include="..\..\..\..\inc\jiteeversionguid.h" LogicalName="jiteeversionguid.h" />
   </ItemGroup>
 </Project>

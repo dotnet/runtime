@@ -209,6 +209,43 @@ DLL_EXPORT const PrintControl* GetCoreDisToolsPrinters(LogCallback callback)
     return &s_printControl;
 }
 
+// The types of the metrics that the JIT reports through reportMetadata. Matches JitMetrics.MetricType.
+enum JitMetricType
+{
+    JitMetricInt,
+    JitMetricInt64,
+    JitMetricDouble,
+};
+
+template <typename T> struct JitMetricTypeOf;
+template <> struct JitMetricTypeOf<int> { static const JitMetricType value = JitMetricInt; };
+template <> struct JitMetricTypeOf<int64_t> { static const JitMetricType value = JitMetricInt64; };
+template <> struct JitMetricTypeOf<double> { static const JitMetricType value = JitMetricDouble; };
+
+struct JitMetricInfo
+{
+    const char* name;
+    JitMetricType type;
+};
+
+static const JitMetricInfo s_jitMetrics[] = {
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) {#name, JitMetricTypeOf<type>::value},
+#include "../../../jit/jitmetadatalist.h"
+};
+
+DLL_EXPORT int GetJitMetricCount()
+{
+    return sizeof(s_jitMetrics) / sizeof(s_jitMetrics[0]);
+}
+
+// The metrics are in the order that the JIT reports them.
+DLL_EXPORT const char* GetJitMetric(int index, JitMetricType* type)
+{
+    *type = s_jitMetrics[index].type;
+    return s_jitMetrics[index].name;
+}
+
 static volatile uint64_t s_globalZero = 0;
 
 // A dynamic instrumentor can rewrite this function to provide the precise instruction counts that SuperPMI

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using Internal.JitInterface;
 
 namespace SuperPmi.Replay;
@@ -48,6 +49,24 @@ internal static unsafe partial class SpmiJitInterface
     // The level is 0 for errors, 1 for warnings, and 2 for everything else.
     [LibraryImport(Library)]
     public static partial IntPtr GetCoreDisToolsPrinters(delegate* unmanaged<int, byte*, void> callback);
+
+    [LibraryImport(Library)]
+    private static partial int GetJitMetricCount();
+
+    [LibraryImport(Library)]
+    private static partial byte* GetJitMetric(int index, JitMetrics.MetricType* type);
+
+    public static JitMetrics.Metric[] GetJitMetrics()
+    {
+        var metrics = new JitMetrics.Metric[GetJitMetricCount()];
+        for (int i = 0; i < metrics.Length; i++)
+        {
+            JitMetrics.MetricType type;
+            ReadOnlySpan<byte> name = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(GetJitMetric(i, &type));
+            metrics[i] = new JitMetrics.Metric(Encoding.UTF8.GetString(name), name.ToArray(), type);
+        }
+        return metrics;
+    }
 }
 
 // Measures the CPU time of the current thread, less the overhead of measuring it.

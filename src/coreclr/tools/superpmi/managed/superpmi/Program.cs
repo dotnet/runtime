@@ -21,6 +21,8 @@ internal static class Program
     {
         try
         {
+            JitMetrics.Initialize(SpmiJitInterface.GetJitMetrics());
+
             // As in C's argv, the first argument is the program as invoked.
             return Replay.Run([Environment.GetCommandLineArgs()[0], .. args]);
         }
