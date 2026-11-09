@@ -149,6 +149,12 @@ namespace ILCompiler.ObjectWriter
             _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_line"u8), offset);
         }
 
+        public void WriteAddressTableReference(long offset)
+        {
+            Debug.Assert(offset < uint.MaxValue);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_addr"u8), offset);
+        }
+
         public DwarfExpressionBuilder GetExpressionBuilder()
         {
             _expressionBufferWriter.ResetWrittenCount();

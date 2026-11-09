@@ -172,7 +172,7 @@ namespace ILCompiler.ObjectWriter
                 this,
                 _codeRelocType))
             {
-                dwarfInfoWriter.WriteStartDIE(DwarfAbbrev.CompileUnit);
+                dwarfInfoWriter.WriteStartDIE(_useDwarf5 ? DwarfAbbrev.CompileUnitDwarf5 : DwarfAbbrev.CompileUnit);
 
                 // DW_AT_producer
                 dwarfInfoWriter.WriteStringReference("NetRuntime");
@@ -193,6 +193,11 @@ namespace ILCompiler.ObjectWriter
                 dwarfInfoWriter.WriteEndRangeList();
                 // DW_AT_stmt_list
                 dwarfInfoWriter.WriteLineReference(0);
+                if (_useDwarf5)
+                {
+                    // DW_AT_addr_base
+                    dwarfInfoWriter.WriteAddressTableReference(AddressTableHeaderSize);
+                }
 
                 _dwarfTypeOffsets = new uint[_dwarfTypes.Count];
 
@@ -232,6 +237,25 @@ namespace ILCompiler.ObjectWriter
                 BinaryPrimitives.WriteUInt32LittleEndian(locListSizeBuffer, (uint)(locSectionWriter.Position - sizeof(uint)));
                 BinaryPrimitives.WriteUInt32LittleEndian(rangeListSizeBuffer, (uint)(rangeSectionWriter.Position - sizeof(uint)));
             }
+        }
+
+        // unit_length, version, address_size, segment_selector_size
+        private const int AddressTableHeaderSize = sizeof(uint) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
+
+        /// <summary>
+        /// Writes an empty DWARF 5 .debug_addr table so that DW_AT_addr_base can reference it.
+        /// </summary>
+        /// <remarks>
+        /// Nothing in this unit uses DW_FORM_addrx, but tools that rewrite the debug info
+        /// (such as dsymutil) may emit indexed address forms and rely on DW_AT_addr_base.
+        /// </remarks>
+        public void WriteAddressTable(SectionWriter addrSectionWriter)
+        {
+            Debug.Assert(_useDwarf5);
+            Debug.Assert(addrSectionWriter.Position == 0);
+            addrSectionWriter.WriteLittleEndian<uint>(AddressTableHeaderSize - sizeof(uint));
+            addrSectionWriter.WriteLittleEndian<ushort>(5);
+            addrSectionWriter.Write([_targetPointerSize, 0]);
         }
 
         private byte[] WriteListTableHeader(SectionWriter writer)

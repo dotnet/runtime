@@ -345,6 +345,7 @@ namespace ILCompiler.ObjectWriter
                 "rdata" => "__const",
                 "bss" => "__bss",
                 ".eh_frame" => "__eh_frame",
+                ".debug_addr" => "__debug_addr",
                 ".debug_info" => "__debug_info",
                 ".debug_abbrev" => "__debug_abbrev",
                 ".debug_ranges" => "__debug_ranges",
