@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -64,6 +65,25 @@ namespace Common.Tests
         [InlineData("34 28 0:28 / /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:16 - cgroup cgroup rw,cpu,cpuacct", "/", "/sys/fs/cgroup/cpu,cpuacct", "cgroup", "rw,cpu,cpuacct")]
         [InlineData("396 394 0:21 /kubepods/besteffort/pod9a18ffb8-8513-11e7-b26e-7e29fbe2a5a3/d28e0087cf8f3f0429f755d60b0de415b20fcf76736ded7bab6e30e7b739ee36 /sys/fs/cgroup/cpu ro,nosuid,nodev,noexec,relatime - cgroup cgroup rw,cpu", "/kubepods/besteffort/pod9a18ffb8-8513-11e7-b26e-7e29fbe2a5a3/d28e0087cf8f3f0429f755d60b0de415b20fcf76736ded7bab6e30e7b739ee36", "/sys/fs/cgroup/cpu", "cgroup", "rw,cpu")]
         [InlineData("55 79 259:2 / /boot rw,relatime shared:111 - ext4 /dev/nvme0n1p2 rw,seclabel", "/", "/boot", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\040path /mnt rw,relatime - ext4 /dev/root rw,seclabel", "/root path", "/mnt", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 / /run/media/user/DISC\\0403 ro,relatime - iso9660 /dev/sr0 ro", "/", "/run/media/user/DISC 3", "iso9660", "ro")]
+        [InlineData("36 35 98:0 /root\\011path /mnt rw,relatime - ext4 /dev/root rw,seclabel", "/root\tpath", "/mnt", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 / /mnt\\011path rw,relatime - ext4 /dev/root rw,seclabel", "/", "/mnt\tpath", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\012path /mnt rw,relatime - ext4 /dev/root rw,seclabel", "/root\npath", "/mnt", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 / /mnt\\012path rw,relatime - ext4 /dev/root rw,seclabel", "/", "/mnt\npath", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\134path /mnt rw,relatime - ext4 /dev/root rw,seclabel", "/root\\path", "/mnt", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 / /mnt\\134path rw,relatime - ext4 /dev/root rw,seclabel", "/", "/mnt\\path", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\040\\011\\012\\134path /mnt\\040\\011\\012\\134path rw,relatime - ext4 /dev/root rw,label=\\040\\134", "/root \t\n\\path", "/mnt \t\n\\path", "ext4", "rw,label=\\040\\134")]
+        [InlineData("36 35 98:0 /root\\040with\\040spaces /mnt\\040with\\040spaces rw,relatime shared:1 master:2 - ext4 /dev/root rw,seclabel", "/root with spaces", "/mnt with spaces", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\134040 /mnt\\134040 rw,relatime - ext4 /dev/root rw,seclabel", "/root\\040", "/mnt\\040", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\134011\\134012\\134134 /mnt\\134011\\134012\\134134 rw,relatime - ext4 /dev/root rw,seclabel", "/root\\011\\012\\134", "/mnt\\011\\012\\134", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\040-\\040path /mnt\\040-\\040path rw,relatime - ext4 /dev/root rw,seclabel", "/root - path", "/mnt - path", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\134\\040 /mnt\\040\\134 rw,relatime - ext4 /dev/root rw,seclabel", "/root\\ ", "/mnt \\", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\04 /mnt\\041 rw,relatime - ext4 /dev/root rw,seclabel", "/root\\04", "/mnt\\041", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\134\\134 /mnt\\134\\134 rw,relatime - ext4 /dev/root rw,seclabel", "/root\\\\", "/mnt\\\\", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\041\\040path /mnt\\x\\011path rw,relatime - ext4 /dev/root rw,seclabel", "/root\\041 path", "/mnt\\x\tpath", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /root\\040path\\0 /mnt\\011path\\ rw,relatime - ext4 /dev/root rw,seclabel", "/root path\\0", "/mnt\tpath\\", "ext4", "rw,seclabel")]
+        [InlineData("36 35 98:0 /r\u00E9sum\u00E9\\040path /mnt\uD83D\uDE00\\011path rw,relatime - ext4 /dev/root rw,seclabel", "/r\u00E9sum\u00E9 path", "/mnt\uD83D\uDE00\tpath", "ext4", "rw,seclabel")]
         public void ParseMountInfoLine_Success(
             string line,
             string expectedRoot,
@@ -78,6 +98,35 @@ namespace Common.Tests
             Assert.Equal(expectedMountPoint, result.MountPoint);
             Assert.Equal(expectedFileSystemType, result.FileSystemType);
             Assert.Equal(expectedSuperOptions, result.SuperOptions);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(248)]
+        [InlineData(249)]
+        [InlineData(250)]
+        [InlineData(251)]
+        [InlineData(4096)]
+        public void ParseMountInfoLine_EscapedPaths_VaryingLengths(int length)
+        {
+            string prefix = "/" + new string('a', length);
+            string line = $"36 35 98:0 {prefix}\\040x {prefix}\\134040 rw,relatime - ext4 /dev/root rw,seclabel";
+
+            Assert.True(Interop.procfs.TryParseMountInfoLine(line, out Interop.procfs.ParsedMount result));
+
+            Assert.Equal(prefix + " x", result.Root);
+            Assert.Equal(prefix + "\\040", result.MountPoint);
+        }
+
+        [Fact]
+        public void ParseMountInfoLine_UnescapedPathsReferenceInput()
+        {
+            string line = "55 79 259:2 /root /boot rw,relatime shared:111 - ext4 /dev/nvme0n1p2 rw,seclabel";
+
+            Assert.True(Interop.procfs.TryParseMountInfoLine(line, out Interop.procfs.ParsedMount result));
+
+            Assert.True(line.AsSpan().Overlaps(result.Root));
+            Assert.True(line.AsSpan().Overlaps(result.MountPoint));
         }
     }
 }
