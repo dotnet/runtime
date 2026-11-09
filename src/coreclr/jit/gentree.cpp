@@ -19368,6 +19368,11 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
         }
     }
 
+    if (((flags & GTF_ORDER_SIDEEFF) != 0) && tree->OperIs(GT_IND, GT_BLK) && tree->AsIndir()->IsVolatile())
+    {
+        return true;
+    }
+
     // Expressions declared as CSE by (e.g.) hoisting code are considered to have relevant side
     // effects (if we care about GTF_MAKE_CSE).
     if ((flags & GTF_MAKE_CSE) && (tree->gtFlags & GTF_MAKE_CSE))
@@ -19805,7 +19810,7 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
 //
 GenTree* Compiler::gtExtractSideEffectsFromUnusedNode(GenTree* node)
 {
-    if (node->OperIsBlk() && !node->OperIsStoreBlk())
+    if (node->OperIsBlk() && !node->OperIsStoreBlk() && !node->AsBlk()->IsVolatile())
     {
         JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
         gtChangeOperToNullCheck(node);
