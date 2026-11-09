@@ -36,7 +36,9 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection DebugStringSection = new ObjectNodeSection(".debug_str", SectionType.Debug);
         private static readonly ObjectNodeSection DebugAbbrevSection = new ObjectNodeSection(".debug_abbrev", SectionType.Debug);
         private static readonly ObjectNodeSection DebugLocSection = new ObjectNodeSection(".debug_loc", SectionType.Debug);
+        private static readonly ObjectNodeSection DebugLocListsSection = new ObjectNodeSection(".debug_loclists", SectionType.Debug);
         private static readonly ObjectNodeSection DebugRangesSection = new ObjectNodeSection(".debug_ranges", SectionType.Debug);
+        private static readonly ObjectNodeSection DebugRngListsSection = new ObjectNodeSection(".debug_rnglists", SectionType.Debug);
         private static readonly ObjectNodeSection DebugLineSection = new ObjectNodeSection(".debug_line", SectionType.Debug);
         private static readonly ObjectNodeSection DebugARangesSection = new ObjectNodeSection(".debug_aranges", SectionType.Debug);
 
@@ -293,8 +295,8 @@ namespace ILCompiler.ObjectWriter
             SectionWriter infoSectionWriter = GetOrCreateSection(DebugInfoSection);
             SectionWriter stringSectionWriter = GetOrCreateSection(DebugStringSection);
             SectionWriter abbrevSectionWriter = GetOrCreateSection(DebugAbbrevSection);
-            SectionWriter locSectionWriter = GetOrCreateSection(DebugLocSection);
-            SectionWriter rangeSectionWriter = GetOrCreateSection(DebugRangesSection);
+            SectionWriter locSectionWriter = GetOrCreateSection(_dwarfBuilder.UseDwarf5 ? DebugLocListsSection : DebugLocSection);
+            SectionWriter rangeSectionWriter = GetOrCreateSection(_dwarfBuilder.UseDwarf5 ? DebugRngListsSection : DebugRangesSection);
             SectionWriter lineSectionWriter = GetOrCreateSection(DebugLineSection);
             SectionWriter arangeSectionWriter = GetOrCreateSection(DebugARangesSection);
 

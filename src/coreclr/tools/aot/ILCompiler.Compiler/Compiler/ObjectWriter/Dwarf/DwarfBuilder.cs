@@ -106,6 +106,7 @@ namespace ILCompiler.ObjectWriter
 
         public TargetArchitecture TargetArchitecture => _architecture;
         public byte TargetPointerSize => _targetPointerSize;
+        public bool UseDwarf5 => _useDwarf5;
         public int FrameRegister => _frameRegister;
 
         public uint ResolveOffset(uint typeIndex) => typeIndex == 0 ? 0u : _dwarfTypeOffsets[typeIndex - 1];
@@ -139,6 +140,9 @@ namespace ILCompiler.ObjectWriter
             SectionWriter rangeSectionWriter,
             ResolveStaticVariable resolveStaticVariable)
         {
+            byte[] locListSizeBuffer = _useDwarf5 ? WriteListTableHeader(locSectionWriter) : null;
+            byte[] rangeListSizeBuffer = _useDwarf5 ? WriteListTableHeader(rangeSectionWriter) : null;
+
             // Length
             byte[] sizeBuffer = new byte[sizeof(uint)];
             infoSectionWriter.EmitData(sizeBuffer);
@@ -222,6 +226,24 @@ namespace ILCompiler.ObjectWriter
 
             // Update the size
             BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(infoSectionWriter.Position - sizeof(uint)));
+
+            if (_useDwarf5)
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(locListSizeBuffer, (uint)(locSectionWriter.Position - sizeof(uint)));
+                BinaryPrimitives.WriteUInt32LittleEndian(rangeListSizeBuffer, (uint)(rangeSectionWriter.Position - sizeof(uint)));
+            }
+        }
+
+        private byte[] WriteListTableHeader(SectionWriter writer)
+        {
+            // DWARF 5 list tables have a common header: https://dwarfstd.org/doc/DWARF5.pdf.
+            Debug.Assert(writer.Position == 0);
+            byte[] sizeBuffer = new byte[sizeof(uint)];
+            writer.EmitData(sizeBuffer);
+            writer.WriteLittleEndian<ushort>(5);
+            writer.Write([_targetPointerSize, 0]);
+            writer.WriteLittleEndian<uint>(0); // No offset table; lists use DW_FORM_sec_offset.
+            return sizeBuffer;
         }
 
         private void WriteLineInfoTable(SectionWriter lineSectionWriter)

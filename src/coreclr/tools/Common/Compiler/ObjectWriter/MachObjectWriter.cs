@@ -348,10 +348,12 @@ namespace ILCompiler.ObjectWriter
                 ".debug_info" => "__debug_info",
                 ".debug_abbrev" => "__debug_abbrev",
                 ".debug_ranges" => "__debug_ranges",
+                ".debug_rnglists" => "__debug_rnglists",
                 ".debug_aranges" => "__debug_aranges",
                 ".debug_str" => "__debug_str",
                 ".debug_line" => "__debug_line",
                 ".debug_loc" => "__debug_loc",
+                ".debug_loclists" => "__debug_loclists",
                 _ => section.Name
             };
 
