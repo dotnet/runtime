@@ -1216,6 +1216,12 @@ namespace System.Tests
             // "G"
             yield return new object[] { "1:12:24:02.243", "G", new TimeSpan(1, 12, 24, 2, 243) }; // DD:MM:HH:SS.FFF
             yield return new object[] { "-01:07:45:16.999", "G", -new TimeSpan(1, 7, 45, 16, 999) }; // -DD:MM:HH:SS.FFF
+            yield return new object[] { "0:00:00:00.000000049999999", "G", TimeSpan.Zero };
+            yield return new object[] { "0:00:00:00.000000050000000", "G", TimeSpan.FromTicks(1) };
+            yield return new object[] { "0:00:00:00.0000000268435455", "G", TimeSpan.Zero };
+            yield return new object[] { "0:00:00:00.00000000268435455", "G", TimeSpan.Zero };
+            yield return new object[] { "-0:00:00:00.000000049999999", "G", TimeSpan.Zero };
+            yield return new object[] { "-0:00:00:00.000000050000000", "G", TimeSpan.FromTicks(-1) };
 
             // Custom timespan formats
             yield return new object[] { "12.23:32:43", @"dd\.h\:m\:s", new TimeSpan(12, 23, 32, 43) };
