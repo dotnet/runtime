@@ -172,7 +172,7 @@ COR_ILMETHOD_DECODER* CLRToCOMCall::CreateCLRToCOMCallMethodIL(MethodDesc* pMD, 
     // The generated code always uses COM, so make sure that it is started.
     EnsureComStarted();
 
-    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> pResolver(new ILStubResolver());
     pResolver->SetStubMethodDesc(pMD);
 
     COR_ILMETHOD_DECODER* pIL;
@@ -188,7 +188,7 @@ COR_ILMETHOD_DECODER* CLRToCOMCall::CreateCLRToCOMCallMethodIL(MethodDesc* pMD, 
         pIL = PInvoke::CreateCLRToCOMMarshallingIL(pMD, dwStubFlags, pResolver);
     }
 
-    *ppResolver = pResolver.Extract();
+    *ppResolver = pResolver.Detach();
     return pIL;
 }
 

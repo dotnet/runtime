@@ -22,6 +22,7 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/module.h"
+#include <minipal/utf8.h>
 
 #include "errorstrings.h"
 
@@ -104,12 +105,9 @@ static INT FMTMSG__watoi( LPWSTR str )
 {
     CONST UINT MAX_NUMBER_LENGTH = 3;
     CHAR buf[ MAX_NUMBER_LENGTH ];
-    INT nRetVal = 0;
+    size_t converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)str, PAL_wcslen(str) + 1, buf, MAX_NUMBER_LENGTH, 0);
 
-    nRetVal = WideCharToMultiByte( CP_ACP, 0, str, -1, buf,
-                                   MAX_NUMBER_LENGTH, NULL, 0 );
-
-    if ( nRetVal != 0 )
+    if ( converted != 0 )
     {
         return atoi( buf );
     }

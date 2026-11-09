@@ -420,6 +420,12 @@ public:
             CORINFO_SIG_INFO *      callSig       /* IN */
             ) = 0;
 
+    // Records the method of a CORINFO_HELP_VIRTUAL_FUNC_PTR helper call that survived to lowering.
+    // This is a no-op on all targets except ReadyToRun Wasm compilation.
+    virtual void recordWasmVirtualFunctionPointerLookup(
+            CORINFO_METHOD_HANDLE   method        /* IN */
+            ) = 0;
+
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting
     virtual void recordRelocation(

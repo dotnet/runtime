@@ -7166,9 +7166,9 @@ void MethodTable::InitMethodDataCache()
     _ASSERTE(s_pMethodDataCache == NULL);
 
     UINT32 cb = MethodDataCache::GetObjectSize(8);
-    NewArrayHolder<BYTE> hb(new BYTE[cb]);
-    s_pMethodDataCache = new (hb.GetValue()) MethodDataCache(8);
-    hb.SuppressRelease();
+    NewArrayHolder<BYTE> hb{ new BYTE[cb] };
+    s_pMethodDataCache = new (static_cast<BYTE*>(hb)) MethodDataCache(8);
+    hb.Detach();
 }
 
 //==========================================================================================

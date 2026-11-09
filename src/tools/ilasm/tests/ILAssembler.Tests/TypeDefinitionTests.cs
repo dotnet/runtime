@@ -791,22 +791,30 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
 
         [Theory]
-        [InlineData("valuetype [mscorlib]System.Boolean", SignatureTypeCode.Boolean)]
-        [InlineData("valuetype [mscorlib]System.Int32", SignatureTypeCode.Int32)]
-        [InlineData("valuetype [mscorlib]System.Int64", SignatureTypeCode.Int64)]
-        [InlineData("valuetype [mscorlib]System.Single", SignatureTypeCode.Single)]
-        [InlineData("valuetype [mscorlib]System.Double", SignatureTypeCode.Double)]
-        [InlineData("valuetype [mscorlib]System.Char", SignatureTypeCode.Char)]
-        [InlineData("valuetype [mscorlib]System.Byte", SignatureTypeCode.Byte)]
-        [InlineData("valuetype [mscorlib]System.IntPtr", SignatureTypeCode.IntPtr)]
-        public void WellKnownValueType_UsesPrimitiveTypeCode(string ilType, SignatureTypeCode expectedCode)
+        [InlineData("Boolean")]
+        [InlineData("Byte")]
+        [InlineData("Char")]
+        [InlineData("Double")]
+        [InlineData("Int16")]
+        [InlineData("Int32")]
+        [InlineData("Int64")]
+        [InlineData("IntPtr")]
+        [InlineData("SByte")]
+        [InlineData("Single")]
+        [InlineData("TypedReference")]
+        [InlineData("UInt16")]
+        [InlineData("UInt32")]
+        [InlineData("UInt64")]
+        [InlineData("UIntPtr")]
+        [InlineData("Void")]
+        public void WellKnownValueType_PreservesExplicitTypeReference(string typeName)
         {
             string source = $$"""
                 .assembly extern mscorlib { }
                 .assembly test { }
                 .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
                 {
-                    .field public static {{ilType}} myField
+                    .field public static valuetype [mscorlib]System.{{typeName}} myField
                 }
                 """;
 
@@ -815,9 +823,14 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
             var sigReader = reader.GetBlobReader(field.Signature);
-            sigReader.ReadByte(); // field signature header
-            byte typeCode = sigReader.ReadByte();
-            Assert.Equal((byte)expectedCode, typeCode);
+            Assert.Equal((byte)SignatureKind.Field, sigReader.ReadByte());
+            Assert.Equal((byte)SignatureTypeKind.ValueType, sigReader.ReadByte());
+            var typeHandle = (TypeReferenceHandle)sigReader.ReadTypeHandle();
+            TypeReference type = reader.GetTypeReference(typeHandle);
+            Assert.Equal("System", reader.GetString(type.Namespace));
+            Assert.Equal(typeName, reader.GetString(type.Name));
+            Assert.Equal("mscorlib", reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)type.ResolutionScope).Name));
+            Assert.Equal(0, sigReader.RemainingBytes);
         }
 
 
