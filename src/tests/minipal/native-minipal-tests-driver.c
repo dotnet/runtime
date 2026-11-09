@@ -7,9 +7,9 @@ DEFINE_TEST_GROUP_INIT_H(minipal_utf8_tests_init);
 DEFINE_TEST_GROUP_INIT_H(minipal_u16_tests_init);
 
 static const Group test_groups[] = {
-    {"utf8", minipal_utf8_tests_init},
-    {"u16", minipal_u16_tests_init},
-    {NULL, NULL}
+    {"utf8", minipal_utf8_tests_init, true},
+    {"u16", minipal_u16_tests_init, true},
+    {NULL, NULL, false}
 };
 
 int DN_CALLBACK_CALLTYPE main(int argc, char **argv)

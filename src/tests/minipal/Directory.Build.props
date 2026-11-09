@@ -1,4 +1,7 @@
 <Project>
-  <!-- The minipal tests use the native test driver of the EventPipe and container tests. -->
-  <Import Project="$(MSBuildThisFileDirectory)..\tracing\eventpipe\native\Directory.Build.props" />
+  <!-- Minipal shares the native test infrastructure but is outside its merged runner. -->
+  <PropertyGroup>
+    <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
+  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)..\native\Directory.Build.props" />
 </Project>
