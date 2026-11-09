@@ -219,9 +219,8 @@ namespace System.Formats.Asn1
                     throw new AsnContentException();
                 }
 
-                // There are 36,000,000,000 ticks per hour, and hour is our largest scale.
-                // In case the double -> Ticks conversion allows for rounding up we can allow
-                // for a 12th digit.
+                // With at most 12 fraction digits, the seconds-to-ticks product fits in ulong.
+                // Any remaining digits are still validated below.
 
                 if (!Utf8Parser.TryParse(SliceAtMost(contents, 12), out fraction, out int fracLength) ||
                     fracLength == 0)
@@ -344,7 +343,6 @@ namespace System.Formats.Asn1
                 }
             }
 
-            double frac = (double)fraction / fractionScale;
             TimeSpan fractionSpan = TimeSpan.Zero;
 
             if (!minute.HasValue)
@@ -355,7 +353,7 @@ namespace System.Formats.Asn1
                 if (fraction != 0)
                 {
                     // No minutes means this is fractions of an hour
-                    fractionSpan = new TimeSpan((long)(frac * TimeSpan.TicksPerHour));
+                    fractionSpan = new TimeSpan((long)((decimal)fraction * TimeSpan.TicksPerHour / fractionScale));
                 }
             }
             else if (!second.HasValue)
@@ -365,13 +363,13 @@ namespace System.Formats.Asn1
                 if (fraction != 0)
                 {
                     // No seconds means this is fractions of a minute
-                    fractionSpan = new TimeSpan((long)(frac * TimeSpan.TicksPerMinute));
+                    fractionSpan = new TimeSpan((long)((decimal)fraction * TimeSpan.TicksPerMinute / fractionScale));
                 }
             }
             else if (fraction != 0)
             {
                 // Both minutes and seconds means fractions of a second.
-                fractionSpan = new TimeSpan((long)(frac * TimeSpan.TicksPerSecond));
+                fractionSpan = new TimeSpan((long)(fraction * (ulong)TimeSpan.TicksPerSecond / fractionScale));
             }
 
             DateTimeOffset value;
