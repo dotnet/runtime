@@ -15519,6 +15519,7 @@ EECodeInfo::EECodeInfo()
 
     m_pFunctionEntry = NULL;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15544,6 +15545,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
 
     m_codeAddress = codeAddress;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15564,6 +15566,7 @@ Invalid:
     m_pMD = NULL;
     m_relOffset = 0;
     m_pFunctionEntry = NULL;
+    m_gcInfoToken = { NULL, 0 };
 }
 
 TADDR EECodeInfo::GetSavedMethodCode()
