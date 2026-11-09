@@ -2292,7 +2292,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     }
 
     // If we also care about exceptions then check if the helper can throw
-    if (!ignoreExceptions && (CallExceptions(compiler) != ExceptionSetFlags::None))
+    if (!ignoreExceptions && !helperProperties.NoThrow(helper, compiler->IsNativeAot()))
     {
         return true;
     }
@@ -2510,13 +2510,7 @@ ExceptionSetFlags GenTreeCall::CallExceptions(Compiler* comp) const
         return ExceptionSetFlags::UnknownException;
     }
 
-    // NativeAOT compiles generic lookups it failed to build into helpers that throw when invoked.
-    if ((helper == CORINFO_HELP_READYTORUN_GENERIC_HANDLE) && comp->IsNativeAot())
-    {
-        return ExceptionSetFlags::UnknownException;
-    }
-
-    return Compiler::s_helperCallProperties.ThrownExceptions(helper);
+    return Compiler::s_helperCallProperties.ThrownExceptions(helper, comp->IsNativeAot());
 }
 
 //--------------------------------------------------------------------------

@@ -14949,7 +14949,8 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
                 }
             }
         }
-        if ((vnf == VNF_ReadyToRunGenericHandle) && (call->CallExceptions(this) != ExceptionSetFlags::None))
+        if ((vnf == VNF_ReadyToRunGenericHandle) &&
+            !s_helperCallProperties.NoThrow(call->GetHelperNum(), IsNativeAot()))
         {
             // A lookup that failed to build throws the same way wherever it is evaluated.
             ValueNumPair lookupExc = vnStore->VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc, call->gtVNPair);
@@ -15587,7 +15588,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
     bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc) || mayRunCctor; // a cctor may modify the heap
-    bool noThrow     = call->CallExceptions(this) == ExceptionSetFlags::None;
+    bool noThrow     = s_helperCallProperties.NoThrow(helpFunc, IsNativeAot());
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
 

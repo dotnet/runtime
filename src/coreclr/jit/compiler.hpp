@@ -1559,7 +1559,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -1622,7 +1622,7 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
