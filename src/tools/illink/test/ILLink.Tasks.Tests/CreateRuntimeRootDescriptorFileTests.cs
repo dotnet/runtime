@@ -724,11 +724,20 @@ namespace ILLink.Tasks.Tests
             XElement assembly = descriptor.Root.Element("assembly");
             XDocument attributes = XDocument.Load(test.AttributesPath);
             foreach (string name in new[] { "System.Runtime.CompilerServices.Unsafe",
-                "System.Reflection.InstanceCalliHelper", "System.Text.Rune" })
+                "System.Reflection.InstanceCalliHelper", "System.Text.Rune",
+                "System.Reflection.MethodBase", "System.Reflection.ConstructorInfo",
+                "System.Reflection.EventInfo", "System.Reflection.TypeDelegator",
+                "System.Reflection.MethodBaseInvoker", "System.Reflection.IntrinsicInvokeHelper" })
             {
                 XElement type = GetType(name);
                 Assert.Equal("false", (string)type.Attribute("required"));
                 Assert.Empty(type.Elements("method"));
+            }
+            foreach (string name in new[] { "System.Reflection.MethodInfo", "System.Reflection.FieldInfo",
+                "System.Reflection.PropertyInfo", "System.Runtime.CompilerServices.InitHelpers",
+                "System.Runtime.CompilerServices.StaticsHelpers" })
+            {
+                Assert.Null(GetType(name).Attribute("required"));
             }
             XElement activator = GetType("System.Activator");
             Assert.Equal("false", (string)activator.Attribute("required"));

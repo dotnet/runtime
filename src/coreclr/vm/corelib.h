@@ -233,7 +233,7 @@ DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,              
 DEFINE_METHOD(STUBMETHODINFO,       CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK
 
-DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
+DEFINE_CLASS_OPTIONAL(CONSTRUCTOR_INFO, Reflection,         ConstructorInfo)
 
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
@@ -322,7 +322,7 @@ DEFINE_METHOD(ENVIRONMENT,       EXECUTE_IN_DEFAULT_APP_DOMAIN, ExecuteInDefault
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
 
-DEFINE_CLASS(EVENT_INFO,            Reflection,             EventInfo)
+DEFINE_CLASS_OPTIONAL(EVENT_INFO,   Reflection,             EventInfo)
 
 DEFINE_CLASS_U(System,                 Exception,      ExceptionObject)
 DEFINE_FIELD_U(_exceptionMethod,   ExceptionObject,    _exceptionMethod)
@@ -521,16 +521,16 @@ DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
-DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
+DEFINE_CLASS_OPTIONAL(METHODBASEINVOKER, Reflection,         MethodBaseInvoker)
 
 DEFINE_CLASS_OPTIONAL(INSTANCE_CALLI_HELPER, Reflection,    InstanceCalliHelper)
-DEFINE_CLASS(INTRINSIC_INVOKE_HELPER, Reflection,           IntrinsicInvokeHelper)
+DEFINE_CLASS_OPTIONAL(INTRINSIC_INVOKE_HELPER, Reflection,   IntrinsicInvokeHelper)
 
 DEFINE_CLASS_U(Reflection,          RuntimeMethodInfo,      NoClass)
 DEFINE_FIELD_U(m_handle,            ReflectMethodObject,    m_pMD)
 DEFINE_CLASS(METHOD,                Reflection,             RuntimeMethodInfo)
 
-DEFINE_CLASS(METHOD_BASE,           Reflection,             MethodBase)
+DEFINE_CLASS_OPTIONAL(METHOD_BASE,  Reflection,             MethodBase)
 
 DEFINE_CLASS_U_OPTIONAL(Reflection,    RuntimeExceptionHandlingClause,    RuntimeExceptionHandlingClause)
 DEFINE_FIELD_U(_methodBody,            RuntimeExceptionHandlingClause,        _methodBody)
@@ -985,7 +985,7 @@ DEFINE_METHOD(AUTORELEASEPOOL,      DRAINAUTORELEASEPOOL,   DrainAutoreleasePool
 DEFINE_CLASS(TYPE,                  System,                 Type)
 DEFINE_METHOD(TYPE,                 GET_TYPE_FROM_HANDLE,   GetTypeFromHandle,          SM_RuntimeTypeHandle_RetType)
 
-DEFINE_CLASS(TYPE_DELEGATOR,        Reflection,             TypeDelegator)
+DEFINE_CLASS_OPTIONAL(TYPE_DELEGATOR, Reflection,            TypeDelegator)
 
 DEFINE_CLASS_U(Loader,             AssemblyLoadContext,           AssemblyLoadContextBaseObject)
 DEFINE_FIELD_U(_unloadLock,                 AssemblyLoadContextBaseObject, _unloadLock)

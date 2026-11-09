@@ -1189,13 +1189,11 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         return strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0;
     }
 
-    /* List of types that should be skipped to identify true caller */
+    // Required invocation types can be preloaded for faster caller classification.
     static const BinderClassID reflectionInvocationTypes[] = {
         CLASS__METHOD,
-        CLASS__METHOD_BASE,
         CLASS__METHOD_INFO,
         CLASS__CONSTRUCTOR,
-        CLASS__CONSTRUCTOR_INFO,
         CLASS__CLASS,
         CLASS__TYPE_HANDLE,
         CLASS__METHOD_HANDLE,
@@ -1205,19 +1203,27 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__RT_FIELD_INFO,
         CLASS__FIELD_INFO,
         CLASS__EVENT,
-        CLASS__EVENT_INFO,
         CLASS__PROPERTY,
         CLASS__PROPERTY_INFO,
         CLASS__ARRAY,
         CLASS__ASSEMBLYBASE,
         CLASS__ASSEMBLY,
-        CLASS__TYPE_DELEGATOR,
         CLASS__RUNTIME_HELPERS,
         CLASS__DELEGATE,
-        CLASS__METHODBASEINVOKER,
-        CLASS__INTRINSIC_INVOKE_HELPER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
+    };
+
+    static const BinderClassID optionalReflectionInvocationTypes[] = {
+        CLASS__DYNAMICMETHOD,
+        CLASS__ACTIVATOR,
+        CLASS__INSTANCE_CALLI_HELPER,
+        CLASS__METHOD_BASE,
+        CLASS__CONSTRUCTOR_INFO,
+        CLASS__EVENT_INFO,
+        CLASS__TYPE_DELEGATOR,
+        CLASS__METHODBASEINVOKER,
+        CLASS__INTRINSIC_INVOKE_HELPER,
     };
 
     static bool fInited = false;
@@ -1245,11 +1251,10 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         {
             // A non-loading lookup can still acquire loader locks.
             GCX_PREEMP();
-            if (CoreLibBinder::IsClassIfExist(pCaller, CLASS__DYNAMICMETHOD) ||
-                CoreLibBinder::IsClassIfExist(pCaller, CLASS__ACTIVATOR) ||
-                CoreLibBinder::IsClassIfExist(pCaller, CLASS__INSTANCE_CALLI_HELPER))
+            for (unsigned i = 0; i < ARRAY_SIZE(optionalReflectionInvocationTypes); i++)
             {
-                return true;
+                if (CoreLibBinder::IsClassIfExist(pCaller, optionalReflectionInvocationTypes[i]))
+                    return true;
             }
         }
     }

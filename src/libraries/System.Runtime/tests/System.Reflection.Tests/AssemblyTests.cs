@@ -758,10 +758,31 @@ namespace System.Reflection.Tests
             }
         }
 
+        [Theory]
+        [InlineData(nameof(Assembly.GetCallingAssembly))]
+        [InlineData(nameof(Assembly.GetExecutingAssembly))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        public void GetAssemblyThroughTypeDelegator(string methodName)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Equal(typeof(AssemblyTests).Assembly, InvokeAssemblyGetterThroughTypeDelegator(methodName));
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Assembly InvokeAssemblyGetter(string methodName)
         {
             return (Assembly)typeof(Assembly).GetMethod(methodName).Invoke(null, null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Assembly InvokeAssemblyGetterThroughTypeDelegator(string methodName)
+        {
+            var type = new TypeDelegator(typeof(Assembly));
+            return (Assembly)type.InvokeMember(methodName,
+                BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
+                binder: null, target: null, args: null);
         }
 
         [Fact]

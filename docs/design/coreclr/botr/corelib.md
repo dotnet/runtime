@@ -133,6 +133,14 @@ and Interlocked's emitted CompareExchange targets remain required. CompareExchan
 descriptor roots still match by name, so those required overloads conservatively
 retain the generic recognition overload too.
 
+Reflection caller classification separates required invocation types, which can be
+preloaded, from optional invocation types, which are compared without loading them.
+MethodBase, ConstructorInfo, EventInfo, TypeDelegator, MethodBaseInvoker, and
+IntrinsicInvokeHelper have optional binder registrations because their only native
+use is classifying already executing frames. Managed dependencies can independently
+retain them. MethodInfo, FieldInfo, and PropertyInfo remain required for native
+signatures; InitHelpers and StaticsHelpers remain required for emitted helpers.
+
 Applications using these CoreLib annotations must also use the matching linker build.
 Rebuilding runtime packs does not replace the SDK-selected linker. When testing local
 packs outside this repository, set `ILLinkTasksAssembly` to the matching built
