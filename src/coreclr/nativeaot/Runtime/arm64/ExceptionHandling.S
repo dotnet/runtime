@@ -319,18 +319,7 @@ LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
 //         X3:  pPreviousTransitionFrame
 //
 
-    NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
-
-#define rsp_offset_x0 0x10
-#define rsp_offset_x1 0x18
-#define rsp_offset_x2 0x20
-#define rsp_offset_x3 0x28
-
-        // Using the NO_FP macro so that the debugger unwinds using SP.
-        // This makes backtraces work even after loading the preserved registers.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -0x30
-        stp x0, x1,   [sp, #rsp_offset_x0]
-        stp x2, x3,   [sp, #rsp_offset_x2]
+    LEAF_ENTRY RhpCallPropagateExceptionCallback, _TEXT
 
         INLINE_GETTHREAD x5                                     // x5 <- Thread*
 
@@ -342,10 +331,6 @@ LOCAL_LABEL(ClearRetry_Propagate):
         stxr        w6, w4, [x12]
         cbnz        w6, LOCAL_LABEL(ClearRetry_Propagate)
 
-        //
-        // set preserved regs to the values expected by the funclet
-        //
-        ldr         x2, [sp, #rsp_offset_x2]                    // x2 <- REGDISPLAY*
         LOAD_FUNCLET_REGISTER x2, 19, x12
         LOAD_FUNCLET_REGISTER x2, 20, x12
         LOAD_FUNCLET_REGISTER x2, 21, x12
@@ -369,26 +354,18 @@ LOCAL_LABEL(ClearRetry_Propagate):
 
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
-        INLINE_THREAD_UNHIJACK x5, x3, x12                      // Thread in x5, trashes x3 and x12
+        INLINE_THREAD_UNHIJACK x5, x4, x12                      // Thread in x5, trashes x4 and x12
 
-        // restore preemptive mode
-        ldr         x4, [sp, #rsp_offset_x3]                    // pPreviousTransitionFrame
-        str         x4, [x5, #OFFSETOF__Thread__m_pTransitionFrame]
+        // Switch to preemptive mode.
+        str         x3, [x5, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        // reset SP and LR and jump to continuation address
-        ldr         x0, [sp, #rsp_offset_x0]                    // callback context
-        ldr         x1, [sp, #rsp_offset_x1]                    // callback
-        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__pLR]        // x3 <- &resume LR value
-        ldr         lr, [x3]
-        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__SP]         // x3 <- resume SP value
-        mov         sp, x3
+        // reset SP and LR and jump to the propagation callback
+        ldr         x4, [x2, #OFFSETOF__REGDISPLAY__pLR]        // x4 <- &resume LR value
+        ldr         lr, [x4]
+        ldr         x4, [x2, #OFFSETOF__REGDISPLAY__SP]         // x4 <- resume SP value
+        mov         sp, x4
         br          x1
 
-#undef rsp_offset_x0
-#undef rsp_offset_x1
-#undef rsp_offset_x2
-#undef rsp_offset_x3
-
-    NESTED_END RhpCallPropagateExceptionCallback, _Text
+    LEAF_END RhpCallPropagateExceptionCallback, _TEXT
 
 #endif // FEATURE_OBJCMARSHAL
