@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- A fresh process ensures no other test loads the TLS module before the first thread wave. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <R2RIncompatible>true</R2RIncompatible>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TlsField.cs" />
