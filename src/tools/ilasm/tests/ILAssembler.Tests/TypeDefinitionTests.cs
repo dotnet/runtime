@@ -1104,7 +1104,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             string source = """
                 .assembly extern mscorlib { }
                 .assembly test { }
-                .class public auto ansi beforefieldinit 'Contoso.Tools..ctor' extends [mscorlib]System.Object
+                .class public auto ansi beforefieldinit 'Contoso.Tools..Nested' extends [mscorlib]System.Object
                 {
                 }
                 """;
@@ -1114,9 +1114,9 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             var typeDef = reader.TypeDefinitions
                 .Select(handle => reader.GetTypeDefinition(handle))
-                .Single(type => reader.GetString(type.Name) == ".ctor");
+                .Single(type => reader.GetString(type.Name) == ".Nested");
 
-            Assert.Equal(".ctor", reader.GetString(typeDef.Name));
+            Assert.Equal(".Nested", reader.GetString(typeDef.Name));
             Assert.Equal("Contoso.Tools", reader.GetString(typeDef.Namespace));
         }
 

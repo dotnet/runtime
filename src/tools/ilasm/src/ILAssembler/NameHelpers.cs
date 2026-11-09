@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ILAssembler
 
             if (dottedName[lastDotIndex - 1] == '.')
             {
-                // COMPAT: Preserve the last dot as part of the name to correctly handle cases like "a.b..ctor".
+                // COMPAT: Preserve the last dot as part of the name to correctly handle cases like "a.b..T".
                 lastDotIndex -= 1;
             }
 
