@@ -35,33 +35,6 @@ internal sealed unsafe partial class CorInfoImpl
 
     private void AddCall(string name) => cr.AddCall(name);
 
-    private static T* P<T>(ref T value) where T : unmanaged => (T*)Unsafe.AsPointer(ref value);
-
-    // The by-ref parameters of pointer types, which refer to the JIT's memory.
-    private static void** P(ref void* value)
-    {
-        fixed (void** p = &value)
-            return p;
-    }
-
-    private static uint** P(ref uint* value)
-    {
-        fixed (uint** p = &value)
-            return p;
-    }
-
-    private static PgoInstrumentationSchema** P(ref PgoInstrumentationSchema* value)
-    {
-        fixed (PgoInstrumentationSchema** p = &value)
-            return p;
-    }
-
-    private static CORINFO_JUST_MY_CODE_HANDLE_** P(ref CORINFO_JUST_MY_CODE_HANDLE_* value)
-    {
-        fixed (CORINFO_JUST_MY_CODE_HANDLE_** p = &value)
-            return p;
-    }
-
     // An exception filter that records the code of the exception and lets it continue, so that the call is
     // recorded with it (and replayed by throwing).
     private static bool CaptureExceptionCode(Exception e, ref uint exceptionCode)
@@ -172,7 +145,8 @@ internal sealed unsafe partial class CorInfoImpl
         }
         finally
         {
-            mc.recResolveToken(P(ref pResolvedToken), exceptionCode);
+            fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+                mc.recResolveToken(pResolvedTokenPtr, exceptionCode);
         }
     }
 
@@ -315,7 +289,8 @@ internal sealed unsafe partial class CorInfoImpl
         }
         finally
         {
-            mc.recGetCallInfo(P(ref pResolvedToken), pConstrainedResolvedToken, callerHandle, flags, pResult, exceptionCode);
+            fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+                mc.recGetCallInfo(pResolvedTokenPtr, pConstrainedResolvedToken, callerHandle, flags, pResult, exceptionCode);
         }
     }
 
@@ -323,7 +298,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getTailCallHelpers");
         bool result = _original.getTailCallHelpers(ref callToken, sig, flags, ref pResult);
-        mc.recGetTailCallHelpers(P(ref callToken), sig, flags, result ? P(ref pResult) : null);
+        fixed (CORINFO_RESOLVED_TOKEN* callTokenPtr = &callToken)
+        fixed (CORINFO_TAILCALL_HELPERS* pResultPtr = &pResult)
+            mc.recGetTailCallHelpers(callTokenPtr, sig, flags, result ? pResultPtr : null);
         return result;
     }
 
@@ -397,7 +374,11 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getPgoInstrumentationResults");
         HRESULT temp = _original.getPgoInstrumentationResults(ftnHnd, ref pSchema, ref pCountSchemaItems, pInstrumentationData, ref pPgoSource, ref pDynamicPgo);
-        mc.recGetPgoInstrumentationResults(ftnHnd, P(ref pSchema), P(ref pCountSchemaItems), pInstrumentationData, P(ref pPgoSource), P(ref pDynamicPgo), (int)temp);
+        fixed (PgoInstrumentationSchema** pSchemaPtr = &pSchema)
+        fixed (uint* pCountSchemaItemsPtr = &pCountSchemaItems)
+        fixed (PgoSource* pPgoSourcePtr = &pPgoSource)
+        fixed (bool* pDynamicPgoPtr = &pDynamicPgo)
+            mc.recGetPgoInstrumentationResults(ftnHnd, pSchemaPtr, pCountSchemaItemsPtr, pInstrumentationData, pPgoSourcePtr, pDynamicPgoPtr, (int)temp);
         return temp;
     }
 
@@ -493,7 +474,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getEHinfo");
         _original.getEHinfo(ftn, EHnumber, ref clause);
-        mc.recGetEHinfo(ftn, EHnumber, P(ref clause));
+        fixed (CORINFO_EH_CLAUSE* clausePtr = &clause)
+            mc.recGetEHinfo(ftn, EHnumber, clausePtr);
     }
 
     private CORINFO_CLASS_STRUCT_* getMethodClass(CORINFO_METHOD_STRUCT_* method)
@@ -508,7 +490,10 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getMethodVTableOffset");
         _original.getMethodVTableOffset(method, ref offsetOfIndirection, ref offsetAfterIndirection, ref isRelative);
-        mc.recGetMethodVTableOffset(method, P(ref offsetOfIndirection), P(ref offsetAfterIndirection), P(ref isRelative));
+        fixed (uint* offsetOfIndirectionPtr = &offsetOfIndirection)
+        fixed (uint* offsetAfterIndirectionPtr = &offsetAfterIndirection)
+        fixed (bool* isRelativePtr = &isRelative)
+            mc.recGetMethodVTableOffset(method, offsetOfIndirectionPtr, offsetAfterIndirectionPtr, isRelativePtr);
     }
 
     private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
@@ -555,7 +540,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("expandRawHandleIntrinsic");
         _original.expandRawHandleIntrinsic(ref pResolvedToken, callerHandle, ref pResult);
-        mc.recExpandRawHandleIntrinsic(P(ref pResolvedToken), callerHandle, P(ref pResult));
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+        fixed (CORINFO_GENERICHANDLE_RESULT* pResultPtr = &pResult)
+            mc.recExpandRawHandleIntrinsic(pResolvedTokenPtr, callerHandle, pResultPtr);
     }
 
     private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
@@ -608,7 +595,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getOSRInfo");
         var patchpointInfo = _original.getOSRInfo(ref ilOffset);
-        mc.recGetOSRInfo(patchpointInfo, P(ref ilOffset));
+        fixed (uint* ilOffsetPtr = &ilOffset)
+            mc.recGetOSRInfo(patchpointInfo, ilOffsetPtr);
         return patchpointInfo;
     }
 
@@ -630,7 +618,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getTokenTypeAsHandle");
         var temp = _original.getTokenTypeAsHandle(ref pResolvedToken);
-        mc.recGetTokenTypeAsHandle(P(ref pResolvedToken), temp);
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+            mc.recGetTokenTypeAsHandle(pResolvedTokenPtr, temp);
         return temp;
     }
 
@@ -746,7 +735,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getIsClassInitedFlagAddress");
         var temp = _original.getIsClassInitedFlagAddress(cls, ref addr, ref offset);
-        mc.recGetIsClassInitedFlagAddress(cls, P(ref addr), P(ref offset), temp);
+        fixed (CORINFO_CONST_LOOKUP* addrPtr = &addr)
+        fixed (int* offsetPtr = &offset)
+            mc.recGetIsClassInitedFlagAddress(cls, addrPtr, offsetPtr, temp);
         return temp;
     }
 
@@ -770,7 +761,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getStaticBaseAddress");
         var temp = _original.getStaticBaseAddress(cls, isGc, ref addr);
-        mc.recGetStaticBaseAddress(cls, isGc, P(ref addr), temp);
+        fixed (CORINFO_CONST_LOOKUP* addrPtr = &addr)
+            mc.recGetStaticBaseAddress(cls, isGc, addrPtr, temp);
         return temp;
     }
 
@@ -850,7 +842,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getCastingHelper");
         var temp = _original.getCastingHelper(ref pResolvedToken, fThrowing);
-        mc.recGetCastingHelper(P(ref pResolvedToken), fThrowing, temp);
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+            mc.recGetCastingHelper(pResolvedTokenPtr, fThrowing, temp);
         return temp;
     }
 
@@ -922,7 +915,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getReadyToRunHelper");
         var result = _original.getReadyToRunHelper(ref pResolvedToken, id, callerHandle, ref pLookup);
-        mc.recGetReadyToRunHelper(P(ref pResolvedToken), id, callerHandle, P(ref pLookup), result);
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+        fixed (CORINFO_CONST_LOOKUP* pLookupPtr = &pLookup)
+            mc.recGetReadyToRunHelper(pResolvedTokenPtr, id, callerHandle, pLookupPtr, result);
         return result;
     }
 
@@ -930,7 +925,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getReadyToRunDelegateCtorHelper");
         _original.getReadyToRunDelegateCtorHelper(ref pTargetMethod, targetConstraint, delegateType, callerHandle, ref pLookup);
-        mc.recGetReadyToRunDelegateCtorHelper(P(ref pTargetMethod), (uint)targetConstraint, delegateType, callerHandle, P(ref pLookup));
+        fixed (CORINFO_RESOLVED_TOKEN* pTargetMethodPtr = &pTargetMethod)
+        fixed (CORINFO_LOOKUP* pLookupPtr = &pLookup)
+            mc.recGetReadyToRunDelegateCtorHelper(pTargetMethodPtr, (uint)targetConstraint, delegateType, callerHandle, pLookupPtr);
     }
 
     private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
@@ -1065,7 +1062,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("canAccessClass");
         var temp = _original.canAccessClass(ref pResolvedToken, callerHandle, ref pAccessHelper);
-        mc.recCanAccessClass(P(ref pResolvedToken), callerHandle, P(ref pAccessHelper), temp);
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+        fixed (CORINFO_HELPER_DESC* pAccessHelperPtr = &pAccessHelper)
+            mc.recCanAccessClass(pResolvedTokenPtr, callerHandle, pAccessHelperPtr, temp);
         return temp;
     }
 
@@ -1105,7 +1104,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getFieldInfo");
         _original.getFieldInfo(ref pResolvedToken, callerHandle, flags, pResult);
-        mc.recGetFieldInfo(P(ref pResolvedToken), callerHandle, flags, pResult);
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+            mc.recGetFieldInfo(pResolvedTokenPtr, callerHandle, flags, pResult);
     }
 
     private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* field, bool isGCType)
@@ -1150,7 +1150,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getBoundaries");
         _original.getBoundaries(ftn, ref cILOffsets, ref pILOffsets, implicitBoundaries);
-        mc.recGetBoundaries(ftn, P(ref cILOffsets), P(ref pILOffsets), implicitBoundaries);
+        fixed (uint* cILOffsetsPtr = &cILOffsets)
+        fixed (uint** pILOffsetsPtr = &pILOffsets)
+            mc.recGetBoundaries(ftn, cILOffsetsPtr, pILOffsetsPtr, implicitBoundaries);
     }
 
     private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
@@ -1164,7 +1166,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getVars");
         _original.getVars(ftn, ref cVars, vars, ref extendOthers);
-        mc.recGetVars(ftn, P(ref cVars), vars, P(ref extendOthers));
+        fixed (uint* cVarsPtr = &cVars)
+        fixed (bool* extendOthersPtr = &extendOthers)
+            mc.recGetVars(ftn, cVarsPtr, vars, extendOthersPtr);
     }
 
     private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
@@ -1212,21 +1216,24 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getEEInfo");
         _original.getEEInfo(ref pEEInfoOut);
-        mc.recGetEEInfo(P(ref pEEInfoOut));
+        fixed (CORINFO_EE_INFO* pEEInfoOutPtr = &pEEInfoOut)
+            mc.recGetEEInfo(pEEInfoOutPtr);
     }
 
     private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfo)
     {
         AddCall("getAsyncInfo");
         _original.getAsyncInfo(ref pAsyncInfo);
-        mc.recGetAsyncInfo(P(ref pAsyncInfo));
+        fixed (CORINFO_ASYNC_INFO* pAsyncInfoPtr = &pAsyncInfo)
+            mc.recGetAsyncInfo(pAsyncInfoPtr);
     }
 
     private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
     {
         AddCall("getAwaitReturnCall");
         var result = _original.getAwaitReturnCall(callerHandle, contextHandle, ref instArg);
-        mc.recGetAwaitReturnCall(callerHandle, contextHandle, P(ref instArg), result);
+        fixed (CORINFO_LOOKUP* instArgPtr = &instArg)
+            mc.recGetAwaitReturnCall(callerHandle, contextHandle, instArgPtr, result);
         return result;
     }
 
@@ -1234,7 +1241,9 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getAwaitAwaiterInContinuationCall");
         var result = _original.getAwaitAwaiterInContinuationCall(callerHandle, ref pResolvedToken, isUnsafe, contextHandle, ref instArg);
-        mc.recGetAwaitAwaiterInContinuationCall(callerHandle, P(ref pResolvedToken), isUnsafe, contextHandle, P(ref instArg), result);
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+        fixed (CORINFO_LOOKUP* instArgPtr = &instArg)
+            mc.recGetAwaitAwaiterInContinuationCall(callerHandle, pResolvedTokenPtr, isUnsafe, contextHandle, instArgPtr, result);
         return result;
     }
 
@@ -1282,14 +1291,16 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getSwiftLowering");
         _original.getSwiftLowering(structHnd, ref pLowering);
-        mc.recGetSwiftLowering(structHnd, P(ref pLowering));
+        fixed (CORINFO_SWIFT_LOWERING* pLoweringPtr = &pLowering)
+            mc.recGetSwiftLowering(structHnd, pLoweringPtr);
     }
 
     private void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING pLowering)
     {
         AddCall("getFpStructLowering");
         _original.getFpStructLowering(structHnd, ref pLowering);
-        mc.recGetFpStructLowering(structHnd, P(ref pLowering));
+        fixed (CORINFO_FPSTRUCT_LOWERING* pLoweringPtr = &pLowering)
+            mc.recGetFpStructLowering(structHnd, pLoweringPtr);
     }
 
     private CorInfoWasmType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
@@ -1312,14 +1323,16 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getWasmWellKnownGlobals");
         _original.getWasmWellKnownGlobals(ref pWellKnownGlobalsOut);
-        mc.recGetWasmWellKnownGlobals(P(ref pWellKnownGlobalsOut));
+        fixed (CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOutPtr = &pWellKnownGlobalsOut)
+            mc.recGetWasmWellKnownGlobals(pWellKnownGlobalsOutPtr);
     }
 
     private uint getThreadTLSIndex(ref void* ppIndirection)
     {
         AddCall("getThreadTLSIndex");
         var temp = _original.getThreadTLSIndex(ref ppIndirection);
-        mc.recGetThreadTLSIndex(P(ref ppIndirection), temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recGetThreadTLSIndex(ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1327,7 +1340,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getAddrOfCaptureThreadGlobal");
         var temp = _original.getAddrOfCaptureThreadGlobal(ref ppIndirection);
-        mc.recGetAddrOfCaptureThreadGlobal(P(ref ppIndirection), temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recGetAddrOfCaptureThreadGlobal(ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1335,21 +1349,24 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getFunctionEntryPoint");
         _original.getFunctionEntryPoint(ftn, ref pResult, accessFlags);
-        mc.recGetFunctionEntryPoint(ftn, P(ref pResult), accessFlags);
+        fixed (CORINFO_CONST_LOOKUP* pResultPtr = &pResult)
+            mc.recGetFunctionEntryPoint(ftn, pResultPtr, accessFlags);
     }
 
     private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
     {
         AddCall("getFunctionFixedEntryPoint");
         _original.getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, ref pResult);
-        mc.recGetFunctionFixedEntryPoint(ftn, P(ref pResult));
+        fixed (CORINFO_CONST_LOOKUP* pResultPtr = &pResult)
+            mc.recGetFunctionFixedEntryPoint(ftn, pResultPtr);
     }
 
     private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
     {
         AddCall("embedModuleHandle");
         var temp = _original.embedModuleHandle(handle, ref ppIndirection);
-        mc.recEmbedModuleHandle(handle, P(ref ppIndirection), temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recEmbedModuleHandle(handle, ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1357,7 +1374,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("embedClassHandle");
         var temp = _original.embedClassHandle(handle, ref ppIndirection);
-        mc.recEmbedClassHandle(handle, P(ref ppIndirection), temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recEmbedClassHandle(handle, ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1365,7 +1383,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("embedMethodHandle");
         var temp = _original.embedMethodHandle(handle, ref ppIndirection);
-        mc.recEmbedMethodHandle(handle, P(ref ppIndirection), temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recEmbedMethodHandle(handle, ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1373,7 +1392,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("embedFieldHandle");
         var temp = _original.embedFieldHandle(handle, ref ppIndirection);
-        mc.recEmbedFieldHandle(handle, P(ref ppIndirection), temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recEmbedFieldHandle(handle, ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1381,21 +1401,25 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("embedGenericHandle");
         _original.embedGenericHandle(ref pResolvedToken, fEmbedParent, callerHandle, ref pResult);
-        mc.recEmbedGenericHandle(P(ref pResolvedToken), fEmbedParent, callerHandle, P(ref pResult));
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+        fixed (CORINFO_GENERICHANDLE_RESULT* pResultPtr = &pResult)
+            mc.recEmbedGenericHandle(pResolvedTokenPtr, fEmbedParent, callerHandle, pResultPtr);
     }
 
     private void getLocationOfThisType(CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND pLookupKind)
     {
         AddCall("getLocationOfThisType");
         _original.getLocationOfThisType(context, ref pLookupKind);
-        mc.recGetLocationOfThisType(context, P(ref pLookupKind));
+        fixed (CORINFO_LOOKUP_KIND* pLookupKindPtr = &pLookupKind)
+            mc.recGetLocationOfThisType(context, pLookupKindPtr);
     }
 
     private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
     {
         AddCall("getAddressOfPInvokeTarget");
         _original.getAddressOfPInvokeTarget(method, ref pLookup);
-        mc.recGetAddressOfPInvokeTarget(method, P(ref pLookup));
+        fixed (CORINFO_CONST_LOOKUP* pLookupPtr = &pLookup)
+            mc.recGetAddressOfPInvokeTarget(method, pLookupPtr);
     }
 
     private void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
@@ -1410,7 +1434,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getJustMyCodeHandle");
         var temp = _original.getJustMyCodeHandle(method, ref ppIndirection);
-        mc.recGetJustMyCodeHandle(method, P(ref ppIndirection), temp);
+        fixed (CORINFO_JUST_MY_CODE_HANDLE_** ppIndirectionPtr = &ppIndirection)
+            mc.recGetJustMyCodeHandle(method, ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1418,7 +1443,10 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("GetProfilingHandle");
         _original.GetProfilingHandle(ref pbHookFunction, ref pProfilerHandle, ref pbIndirectedHandles);
-        mc.recGetProfilingHandle(P(ref pbHookFunction), P(ref pProfilerHandle), P(ref pbIndirectedHandles));
+        fixed (bool* pbHookFunctionPtr = &pbHookFunction)
+        fixed (void** pProfilerHandlePtr = &pProfilerHandle)
+        fixed (bool* pbIndirectedHandlesPtr = &pbIndirectedHandles)
+            mc.recGetProfilingHandle(pbHookFunctionPtr, pProfilerHandlePtr, pbIndirectedHandlesPtr);
     }
 
     private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* field, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
@@ -1449,7 +1477,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getVarArgsHandle");
         var temp = _original.getVarArgsHandle(pSig, methHnd, ref ppIndirection);
-        mc.recGetVarArgsHandle(pSig, methHnd, P(ref ppIndirection), (void*)temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recGetVarArgsHandle(pSig, methHnd, ppIndirectionPtr, (void*)temp);
         return temp;
     }
 
@@ -1465,7 +1494,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("emptyStringLiteral");
         var temp = _original.emptyStringLiteral(ref ppValue);
-        mc.recEmptyStringLiteral(P(ref ppValue), temp);
+        fixed (void** ppValuePtr = &ppValue)
+            mc.recEmptyStringLiteral(ppValuePtr, temp);
         return temp;
     }
 
@@ -1473,7 +1503,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getFieldThreadLocalStoreID");
         var temp = _original.getFieldThreadLocalStoreID(field, ref ppIndirection);
-        mc.recGetFieldThreadLocalStoreID(field, P(ref ppIndirection), temp);
+        fixed (void** ppIndirectionPtr = &ppIndirection)
+            mc.recGetFieldThreadLocalStoreID(field, ppIndirectionPtr, temp);
         return temp;
     }
 
@@ -1481,7 +1512,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("GetDelegateCtor");
         var temp = _original.GetDelegateCtor(methHnd, clsHnd, targetMethodHnd, ref pCtorData);
-        mc.recGetDelegateCtor(methHnd, clsHnd, targetMethodHnd, P(ref pCtorData), temp);
+        fixed (DelegateCtorArgs* pCtorDataPtr = &pCtorData)
+            mc.recGetDelegateCtor(methHnd, clsHnd, targetMethodHnd, pCtorDataPtr, temp);
         return temp;
     }
 
@@ -1495,7 +1527,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getContinuationType");
         var result = _original.getContinuationType(dataSize, ref objRefs, objRefsSize);
-        mc.recGetContinuationType(dataSize, P(ref objRefs), objRefsSize, result);
+        fixed (bool* objRefsPtr = &objRefs)
+            mc.recGetContinuationType(dataSize, objRefsPtr, objRefsSize, result);
         return result;
     }
 
@@ -1511,7 +1544,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("convertPInvokeCalliToCall");
         var result = _original.convertPInvokeCalliToCall(ref pResolvedToken, fMustConvert);
-        mc.recConvertPInvokeCalliToCall(P(ref pResolvedToken), fMustConvert, result);
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedTokenPtr = &pResolvedToken)
+            mc.recConvertPInvokeCalliToCall(pResolvedTokenPtr, fMustConvert, result);
         return result;
     }
 
@@ -1562,7 +1596,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("setEHinfo");
         _original.setEHinfo(EHnumber, ref clause);
-        cr.recSetEHinfo(EHnumber, P(ref clause));
+        fixed (CORINFO_EH_CLAUSE* clausePtr = &clause)
+            cr.recSetEHinfo(EHnumber, clausePtr);
     }
 
     private bool logMsg(uint level, byte* fmt, IntPtr args)
@@ -1620,7 +1655,8 @@ internal sealed unsafe partial class CorInfoImpl
     {
         AddCall("getJitFlags");
         var result = _original.getJitFlags(ref jitFlags, sizeInBytes);
-        mc.recGetJitFlags(P(ref jitFlags), sizeInBytes, result);
+        fixed (CORJIT_FLAGS* jitFlagsPtr = &jitFlags)
+            mc.recGetJitFlags(jitFlagsPtr, sizeInBytes, result);
         return result;
     }
 
