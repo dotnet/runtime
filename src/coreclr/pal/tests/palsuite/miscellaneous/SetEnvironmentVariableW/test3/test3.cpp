@@ -13,6 +13,7 @@
 ===========================================================*/
 
 #include <palsuite.h>
+#include <dn-u16.h>
 
 PALTEST(miscellaneous_SetEnvironmentVariableW_test3_paltest_setenvironmentvariablew_test3, "miscellaneous/SetEnvironmentVariableW/test3/paltest_setenvironmentvariablew_test3")
 {
@@ -94,7 +95,7 @@ PALTEST(miscellaneous_SetEnvironmentVariableW_test3_paltest_setenvironmentvariab
     }
 
     /* Compare the strings to see that the correct variable was returned */
-    if(wcscmp(pResultBuffer,FirstEnvironmentValue) != 0)
+    if(u16_strcmp(pResultBuffer,FirstEnvironmentValue) != 0)
     {
         Trace("ERROR: The value in the buffer should have been '%S' but "
              "was really '%S'.\n",FirstEnvironmentValue, pResultBuffer);          
@@ -125,7 +126,7 @@ PALTEST(miscellaneous_SetEnvironmentVariableW_test3_paltest_setenvironmentvariab
     }
 
     /* Compare the two strings to confirm that the right value is returned */
-    if(wcscmp(pResultBuffer,SecondEnvironmentValue) != 0) 
+    if(u16_strcmp(pResultBuffer,SecondEnvironmentValue) != 0) 
     {
         Trace("ERROR: The value in the buffer should have been '%S' but "
              "was really '%S'.\n",SecondEnvironmentValue,pResultBuffer);          

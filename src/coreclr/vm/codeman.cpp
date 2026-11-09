@@ -2297,15 +2297,15 @@ BOOL EEJitManager::LoadJIT()
         if (altJitOsConfig != NULL)
         {
             // We have some inconsistency all over the place with osx vs macos, let's handle both here
-            if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
+            if ((u16_stricmp(altJitOsConfig, W("macos")) == 0) || (u16_stricmp(altJitOsConfig, W("osx")) == 0))
             {
                 targetOs = CORINFO_APPLE;
             }
-            else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
+            else if ((u16_stricmp(altJitOsConfig, W("linux")) == 0) || (u16_stricmp(altJitOsConfig, W("unix")) == 0))
             {
                 targetOs = CORINFO_UNIX;
             }
-            else if (_wcsicmp(altJitOsConfig, W("windows")) == 0)
+            else if (u16_stricmp(altJitOsConfig, W("windows")) == 0)
             {
                 targetOs = CORINFO_WINNT;
             }
