@@ -27,6 +27,7 @@ namespace ILCompiler
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
+        private readonly int _methodPadding;
 
         private struct WorkerState
         {
@@ -54,7 +55,8 @@ namespace ILCompiler
             MethodLayoutAlgorithm methodLayoutAlgorithm,
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int parallelism,
-            string orderFile)
+            string orderFile,
+            int methodPadding)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -67,6 +69,7 @@ namespace ILCompiler
             _readOnlyFieldPolicy = readOnlyFieldPolicy;
 
             _parallelism = parallelism;
+            _methodPadding = methodPadding;
 
             _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory, orderFile);
         }
@@ -126,7 +129,7 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
-            ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger, _methodPadding);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
