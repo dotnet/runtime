@@ -770,27 +770,6 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR and run crossgen on S.P.CoreLib
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: checked
-          runtimeFlavor: coreclr
-          platforms:
-          - linux_x86
-          jobParameters:
-            testScope: innerloop
-            nameSuffix: CoreCLR
-            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib+clr.nativecorelib -c $(_BuildConfig)
-            timeoutInMinutes: 120
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
       # Build CoreCLR as a non-portable build
       #
       - template: /eng/pipelines/common/platform-matrix.yml

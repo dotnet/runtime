@@ -526,12 +526,16 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 42);
         }
 
-        [Fact]
-        public void CustomAttribute_VerbalTypeArgumentFromUnversionedAssemblyReference_EmitsAssemblyQualifiedTypeName()
+        [Theory]
+        [InlineData("", "PublicKeyToken=null")]
+        [InlineData(".publickeytoken = (B7 7A 5C 56 19 34 E0 89)", "PublicKeyToken=b77a5c561934e089")]
+        [InlineData(".publickey = (01 02 03 04)", "PublicKey=01020304")]
+        public void CustomAttribute_VerbalTypeArgumentFromUnversionedAssemblyReference_EmitsAssemblyQualifiedTypeName(
+            string keyDeclaration, string expectedKey)
         {
-            string source = """
+            string source = $$"""
                 .assembly extern mscorlib { }
-                .assembly extern External.Assembly { }
+                .assembly extern External.Assembly { {{keyDeclaration}} }
                 .assembly test { }
                 .class public auto ansi sealed TypeAttribute extends [mscorlib]System.Attribute
                 {
@@ -565,7 +569,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             var argument = Assert.Single(value.FixedArguments);
             Assert.Equal("System.Type", argument.Type);
             Assert.Equal(
-                "Contoso.ExternalType, External.Assembly, PublicKeyToken=null",
+                "Contoso.ExternalType, External.Assembly, " + expectedKey,
                 argument.Value);
             Assert.Empty(value.NamedArguments);
         }

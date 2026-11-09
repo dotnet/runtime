@@ -27,8 +27,6 @@ CreateFileWrapper(
 
 int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode);
 
-#endif //HOST_WINDOWS
-
 DWORD
 SearchPathWrapper(
     _In_opt_ LPCWSTR lpPath,
@@ -38,6 +36,8 @@ SearchPathWrapper(
     SString& lpBuffer,
     _Out_opt_ LPWSTR * lpFilePart
     );
+
+#endif //HOST_WINDOWS
 
 DWORD
 GetModuleFileNameWrapper(

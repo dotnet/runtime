@@ -2788,6 +2788,26 @@ GenTree* Lowering::LowerCall(GenTree* node)
     assert(!call->IsRuntimeLookupHelperCall(m_compiler) ||
            (call->gtCallDebugFlags & GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED) != 0);
 
+#ifdef TARGET_WASM
+    // Wasm ReadyToRun looks up virtual function pointers with CORINFO_HELP_VIRTUAL_FUNC_PTR instead of a
+    // VirtualEntry dynamic helper cell, so report each lookup that survived to lowering to let the EE add
+    // the dependencies the cell would have carried.
+    if (m_compiler->IsReadyToRun() && call->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    {
+        GenTree* methodHandle = call->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
+        if (methodHandle->OperIs(GT_IND))
+        {
+            methodHandle = methodHandle->AsIndir()->Addr();
+        }
+
+        if (methodHandle->IsIconHandle() && (methodHandle->AsIntCon()->GetCompileTimeHandle() != 0))
+        {
+            m_compiler->info.compCompHnd->recordWasmVirtualFunctionPointerLookup(
+                (CORINFO_METHOD_HANDLE)methodHandle->AsIntCon()->GetCompileTimeHandle());
+        }
+    }
+#endif // TARGET_WASM
+
     // Also, always expand static cctor helper for NativeAOT, see
     // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
     if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && m_compiler->IsStaticHelperEligibleForExpansion(call))
@@ -6981,7 +7001,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // First argument is the address of the frame variable.
         GenTree* frameAddr = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaInlinedPInvokeFrameVar, TYP_BYREF);
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking

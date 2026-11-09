@@ -18,6 +18,8 @@
 #include <unistd.h>
 #endif
 
+#define EP_RT_TEST_WAIT_TIMEOUT 258
+
 extern ep_rt_spin_lock_handle_t ep_rt_test_config_lock;
 
 void ep_rt_test_thread_exited(void);
