@@ -686,6 +686,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdIsSharedConst = isSharedConst;
         }
 
+        // Availability only needs the exceptions that defs rule out when occurrences
+        // differ in their exception sets.
+        if (!hashDsc->csdMixedExcSets && (vnStore->VNExceptionSet(vnLib) !=
+                                          vnStore->VNExceptionSet(hashDsc->csdTreeList.tslTree->GetVN(VNK_Liberal))))
+        {
+            hashDsc->csdMixedExcSets = true;
+        }
+
         // Append this expression to the end of the list
 
         treeStmtLst* newElem = new (this, CMK_TreeStatementList) treeStmtLst;
@@ -757,6 +765,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex          = 0;
             hashDsc->csdIsSharedConst  = false;
+            hashDsc->csdMixedExcSets   = false;
             hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
             hashDsc->csdUseCount       = 0;
@@ -1563,6 +1572,13 @@ void Compiler::optValnumCSE_DataFlow()
 //        e.g. m.a = p.a;
 //             e1 = (m.a + q.b)  :: e1 and e2 have different exception sets.
 //             e2 = (p.a + q.b)     but both compute the same normal value
+//     3. An earlier phase proved that an operation cannot fault in one place but not
+//        in another, e.g. local assertion prop marks only some indirections of the
+//        same address as non-faulting.
+//
+//     A def that is itself an indirection has established that its address is non-null,
+//     even when an earlier phase removed that null check from its exception set, so uses
+//     may rely on it. This handles case 3 for defs that load directly.
 //
 void Compiler::optValnumCSE_Availability()
 {
@@ -1661,13 +1677,24 @@ void Compiler::optValnumCSE_Availability()
                     {
                         // This is a CSE def
 
+                        // Besides the exceptions in its own VN, a def that loads through an address rules
+                        // out that address's null check, which an earlier phase may have dropped from it.
+                        //
+                        ValueNum defExcSet = theLiberalExcSet;
+                        if (desc->csdMixedExcSets && tree->OperIsIndirOrArrMetaData())
+                        {
+                            ValueNum const ownNullCheck =
+                                fgValueNumberIndirNullCheckExceptions(tree->GetIndirOrArrMetaDataAddr()).GetLiberal();
+                            defExcSet = vnStore->VNExcSetUnion(theLiberalExcSet, ownNullCheck);
+                        }
+
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?
                         if (desc->defExcSetCurrent == vnStore->VNForNull())
                         {
                             // This is the first time visited, so record this defs exception set
-                            desc->defExcSetCurrent = theLiberalExcSet;
+                            desc->defExcSetCurrent = defExcSet;
                         }
-                        else if (desc->defExcSetCurrent != theLiberalExcSet)
+                        else if (desc->defExcSetCurrent != defExcSet)
                         {
                             // We will change the value of desc->defExcSetCurrent to be the intersection of
                             // these two sets.
@@ -1675,7 +1702,7 @@ void Compiler::optValnumCSE_Availability()
                             // far)
                             //
                             ValueNum intersectionExcSet =
-                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
+                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, defExcSet);
 #ifdef DEBUG
                             if (this->verbose)
                             {
@@ -1683,8 +1710,8 @@ void Compiler::optValnumCSE_Availability()
                                 vnStore->vnDumpExc(this, desc->defExcSetCurrent);
                                 printf("\n");
 
-                                printf(">>> theLiberalExcSet is ");
-                                vnStore->vnDumpExc(this, theLiberalExcSet);
+                                printf(">>> defExcSet is ");
+                                vnStore->vnDumpExc(this, defExcSet);
                                 printf("\n");
 
                                 printf(">>> the intersectionExcSet is ");
@@ -1703,9 +1730,9 @@ void Compiler::optValnumCSE_Availability()
                         //
                         if (desc->defExcSetPromise != vnStore->VNForEmptyExcSet())
                         {
-                            // The exception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
+                            // The exception set held in desc->defExcSetPromise must be a subset of defExcSet
                             //
-                            if (vnStore->VNExcIsSubset(theLiberalExcSet, desc->defExcSetPromise))
+                            if (vnStore->VNExcIsSubset(defExcSet, desc->defExcSetPromise))
                             {
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
