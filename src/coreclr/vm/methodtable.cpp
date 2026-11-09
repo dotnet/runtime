@@ -3637,7 +3637,7 @@ void MethodTable::DoRunClassInitThrowing()
 
     ListLock *_pLock = pDomain->GetClassInitLock();
 
-    ListLockHolder pInitLock(_pLock);
+    ListLockHolder pInitLock = _pLock->TakeLock();
 
     // Check again
     if (IsClassInited())
@@ -3679,7 +3679,7 @@ void MethodTable::DoRunClassInitThrowing()
 
         // We need to release this lock because CreateTypeInitializationExceptionObject and fetching the TypeLoad exception can cause
         // managed code to re-enter into this codepath, causing a locking order violation.
-        pInitLock.Release();
+        pInitLock.Free();
 
         if (CoreLibBinder::GetException(kTypeInitializationException) != gc.pInitException->GetMethodTable())
         {
@@ -3746,7 +3746,7 @@ void MethodTable::DoRunClassInitThrowing()
         ListLockEntryLockHolder pLock(pEntry, FALSE);
 
         // We have a list entry, we can release the global lock now
-        pInitLock.Release();
+        pInitLock.Free();
 
         if (pLock.DeadlockAwareAcquire())
         {

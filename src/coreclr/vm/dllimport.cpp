@@ -5491,7 +5491,8 @@ namespace
             ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
-            ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
+            ListLock* pILStubGenLock = AppDomain::GetCurrentDomain()->GetILStubGenLock();
+            ListLockHolder pILStubLock = pILStubGenLock->TakeLock();
 
             {
                 ilStubCreatorHelper.GetStubMethodDesc();
@@ -5510,7 +5511,7 @@ namespace
                     ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
 
                     // We have the entry lock we need to use, so we can release the global lock.
-                    pILStubLock.Release();
+                    pILStubLock.Free();
 
                     {
                         ilStubCreatorHelper.GetStubMethodDesc();
@@ -5524,7 +5525,7 @@ namespace
                         {
                             // We need to re-acquire the lock in case we need to get a new pStubMD
                             // in the case that the owner of the shared stub was destroyed.
-                            pILStubLock.Acquire();
+                            pILStubLock = pILStubGenLock->TakeLock();
 
                             // Assure that pStubMD we have now has not been destroyed by other threads
                             ilStubCreatorHelper.GetStubMethodDesc();
@@ -5537,14 +5538,14 @@ namespace
                                 pEntryLock.Assign(pEntry, FALSE);
 
                                 // We have the entry lock we need to use, so we can release the global lock.
-                                pILStubLock.Release();
+                                pILStubLock.Free();
 
                                 if (!pEntryLock.DeadlockAwareAcquire())
                                 {
                                     UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                                 }
 
-                                pILStubLock.Acquire();
+                                pILStubLock = pILStubGenLock->TakeLock();
 
                                 ilStubCreatorHelper.GetStubMethodDesc();
                             }
@@ -5553,7 +5554,7 @@ namespace
                         for (;;)
                         {
                             // We have the entry lock now, we can release the global lock
-                            pILStubLock.Release();
+                            pILStubLock.Free();
 
                             _ASSERTE(pEntryLock.GetValue()->HasLock());
 

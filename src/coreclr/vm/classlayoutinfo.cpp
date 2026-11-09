@@ -855,10 +855,10 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
     if (pClass->GetNativeLayoutInfo() == nullptr)
     {
         GCX_PREEMP();
-        ListLockHolder nativeTypeLoadLock(AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock());
+        ListLockHolder nativeTypeLoadLock = AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock()->TakeLock();
         ListLockEntryHolder entry(ListLockEntry::Find(nativeTypeLoadLock, pMT->GetClass()));
         ListLockEntryLockHolder pEntryLock(entry, FALSE);
-        nativeTypeLoadLock.Release();
+        nativeTypeLoadLock.Free();
         if (!pEntryLock.DeadlockAwareAcquire())
         {
             DefineFullyQualifiedNameForClassW()

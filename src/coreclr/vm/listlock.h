@@ -163,7 +163,7 @@ public:
         }
         CONTRACTL_END;
 
-        ListLockHolder lock(m_pList);
+        ListLockHolder lock = m_pList->TakeLock();
 
         if (InterlockedDecrement((LONG*)&m_dwRefCount) == 0)
         {
@@ -406,19 +406,27 @@ class ListLockBase
     }
 #endif
 
-    DEBUG_NOINLINE static void HolderEnter(List_t *pThis)
+    struct LockHolderTraits final
+    {
+        using Type = List_t*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
+            if (value != NULL)
+                value->Leave();
+        }
+    };
+
+    using LockHolder = LifetimeHolder<LockHolderTraits>;
+
+    LockHolder TakeLock()
     {
         WRAPPER_NO_CONTRACT;
-        pThis->Enter();
-    }
 
-    DEBUG_NOINLINE static void HolderLeave(List_t *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-        pThis->Leave();
+        Enter();
+        return LockHolder(this);
     }
-
-    typedef Wrapper<List_t*, List_t::HolderEnter, List_t::HolderLeave> LockHolder;
 };
 
 class WaitingThreadListElement
