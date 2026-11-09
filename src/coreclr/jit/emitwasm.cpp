@@ -122,6 +122,37 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
+    // Double eqz normalizes an i32 to 0/1, which br_if does not need.
+    if ((ins == INS_br_if) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
+        (emitLastIns->idIns() == INS_i32_eqz))
+    {
+        insGroup*  prevIG = emitLastInsIG;
+        instrDesc* prev   = emitLastIns;
+        if (emitPrevID(prevIG, prev) && isInsIGSafeForPeepholeOptimization(prevIG, emitLastInsIG) &&
+            (prev->idIns() == INS_i32_eqz))
+        {
+            // Keep descriptors so captured instruction positions remain valid.
+            auto elide = [this](insGroup* ig, instrDesc* id) {
+                unsigned short size = static_cast<unsigned short>(id->idCodeSize());
+                if (ig == emitCurIG)
+                {
+                    emitCurIGsize -= size;
+                }
+                else
+                {
+                    ig->igSize -= size;
+                }
+                ig->igFlags |= IGF_UPD_ISZ;
+                id->idIns(INS_nop);
+                id->idInsFmt(IF_NONE);
+            };
+
+            JITDUMP("\n -- eliding 'i32.eqz; i32.eqz' before 'br_if'.\n");
+            elide(prevIG, prev);
+            elide(emitLastInsIG, emitLastIns);
+        }
+    }
+
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
@@ -727,6 +758,11 @@ static const unsigned PADDED_RELOC_SIZE = 5;
 
 unsigned emitter::instrDesc::idCodeSize() const
 {
+    if (idInsFmt() == IF_NONE)
+    {
+        return 0;
+    }
+
     unsigned int opcode = GetInsOpcode(idIns());
 
     unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
@@ -989,6 +1025,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (insFmt)
     {
+        case IF_NONE:
+            break;
         case IF_OPCODE:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1342,6 +1380,7 @@ void emitter::emitDispIns(
     //
     switch (fmt)
     {
+        case IF_NONE:
         case IF_OPCODE:
             break;
 
