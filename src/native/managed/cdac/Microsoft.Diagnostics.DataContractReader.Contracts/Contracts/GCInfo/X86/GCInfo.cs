@@ -978,7 +978,7 @@ public record X86GCInfo : IGCInfoDecoder
         }
     }
 
-    private void ApplyPointerTransition(
+    private static void ApplyPointerTransition(
         GcTransitionPointer ptrT,
         ref int depthSlots,
         SortedDictionary<int, uint> pushedPtrs)
