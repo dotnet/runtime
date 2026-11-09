@@ -56,11 +56,8 @@
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\StringPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt32Polyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt64Polyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UnreachableException.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Buffers\SpanAction.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\StringPolyfills.cs" />
-    <Using Include="System.Collections.Generic" />
-    <Using Include="Microsoft.Interop.UnreachableException" Alias="UnreachableException" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Diagnostics\UnreachableException.cs" />
   </ItemGroup>
 
   <Target Name="_AddReferenceAssemblyToPackage">
