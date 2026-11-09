@@ -109,8 +109,8 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         // Unwind the native frame adding all the memory accessed to the core dump via the read memory adapter.
         ULONG64 functionStart;
         isSignalFrame = false;
-        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter, &isSignalFrame)) {
-            TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
+        if (!VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter, &isSignalFrame)) {
+            TRACE("Unwind: VirtualUnwindOutOfProc returned false\n");
             break;
         }
 

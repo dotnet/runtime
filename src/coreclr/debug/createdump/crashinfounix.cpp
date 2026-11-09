@@ -131,7 +131,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     EnumerateProgramHeaders(baseAddress);
 }
 
-// Helper for PAL_GetUnwindInfoSize. Reads memory directly without adding it to the memory region list.
+// Helper for GetUnwindInfoSize. Reads memory directly without adding it to the memory region list.
 BOOL
 ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
 {
@@ -171,7 +171,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
             {
                 ULONG64 ehFrameStart;
                 ULONG64 ehFrameSize;
-                if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
+                if (GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
                 {
                     TRACE("VisitProgramHeader: ehFrameStart %" PRIA PRIx64 " ehFrameSize %08" PRIx64 "\n", ehFrameStart, ehFrameSize);
                     if (ehFrameStart != 0 && ehFrameSize != 0)
@@ -181,7 +181,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
                 }
                 else
                 {
-                    TRACE("VisitProgramHeader: PAL_GetUnwindInfoSize FAILED\n");
+                    TRACE("VisitProgramHeader: GetUnwindInfoSize FAILED\n");
                 }
             }
         }
