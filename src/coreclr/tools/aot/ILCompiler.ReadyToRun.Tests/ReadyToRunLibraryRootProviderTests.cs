@@ -637,12 +637,10 @@ public class ReadyToRunLibraryRootProviderTests
 
         if (moduleEager)
         {
-            Import eagerCell = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
-            HashSet<Import> eagerFixups = [eagerCell];
+            HashSet<Import> eagerFixups = [cell];
             callee.ApplyModuleEagerFixups(eagerFixups);
             caller.ApplyModuleEagerFixups(eagerFixups);
-            Assert.DoesNotContain(eagerCell, callee.GuaranteedPrecodeFixups);
-            Assert.DoesNotContain(eagerCell, callerGuarantees);
+            Assert.Empty(callee.Fixups);
         }
 
         Assert.Empty(caller.Fixups);

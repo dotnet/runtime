@@ -221,6 +221,13 @@ namespace ILCompiler
             return resultLevels;
         }
 
+        // Iterative Tarjan traversal avoids compiler-stack exhaustion on long call chains.
+        // traversal holds DFS frames, with NextEdge recording where each caller resumes;
+        // inProgress holds vertices awaiting SCC assignment, which can outlive their DFS frames.
+        // Discovery indices never change. An edge to an active vertex lowers the current low
+        // link using that vertex's discovery index; returning from a DFS child instead propagates
+        // the child's low link. Equality of a low link and discovery index identifies an SCC root.
+        // Traversal and level computation together use O(V + E) time and O(V) workspace.
         private static int[] ComputeStronglyConnectedComponents(int[][] adjacency, out int[] componentLevels)
         {
             int currentIndex = 0;

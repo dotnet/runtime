@@ -1003,6 +1003,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case IF_DEFERRED_CALL:
         {
+            // #DeferredWasmCallRelocationProtocol
+            // Lowering omits the final frame-identity/PEP argument from the call IR. Codegen
+            // includes it in the exact Wasm signature, and this fixed-width bundle supplies it.
+            // The managed CorInfoImpl consumes relocation callbacks in emission order: first
+            // the frame identity, then metadata-only WASM_DEFERRED_CALL with the signature,
+            // immediately followed by WASM_FUNCTION_INDEX_LEB for the target at the same offset.
+            // The metadata callback writes no bytes and produces no object relocation. Its
+            // signature occupies one pending slot until the function-index callback consumes it,
+            // so another deferred call must not interleave these callbacks.
+            // See #DeferredWasmCallRewriting for direct-call selection and indirect expansion.
             dst += emitOutputOpcode(dst, INS_i32_const);
             emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
                                  CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);

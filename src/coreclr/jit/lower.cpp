@@ -3008,6 +3008,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
         // Deferred instructions supply the final PEP argument after all other operands.
+        // See #DeferredWasmCallRelocationProtocol.
         if ((call->gtDirectCallAddress != nullptr) &&
             (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) != CorInfoReloc::WASM_DEFERRED_CALL))
         {

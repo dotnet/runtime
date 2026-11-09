@@ -4767,6 +4767,8 @@ namespace Internal.JitInterface
             // MultiCallableAddrOfCode into the location.
             bool handledByCodeStoreFixup = false;
 #if READYTORUN
+            // Capture metadata for the immediately following function-index relocation.
+            // See #DeferredWasmCallRelocationProtocol for the emitter/consumer ordering contract.
             if (fRelocType == CorInfoReloc.WASM_DEFERRED_CALL)
             {
                 Debug.Assert(locationBlock == BlockType.Code && addlDelta == 0);

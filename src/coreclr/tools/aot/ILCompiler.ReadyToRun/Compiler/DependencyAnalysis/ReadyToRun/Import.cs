@@ -101,6 +101,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sink.Add(ImportSignature, "Signature for ready-to-run fixup import");
         }
 
+        // Eager promotion mixes import subclasses and cells from different original sections.
+        // Concrete subclasses need distinct class codes, and the original table must break ties
+        // when promoted cells otherwise share their current section and signature. Signature
+        // pointers compare through their imports, keeping separately sorted cell/signature arrays paired.
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             Import otherNode = (Import)other;
