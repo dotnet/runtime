@@ -648,9 +648,13 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < frames.Length; i++)
             {
                 FrameInfo frame = frames[i];
-                uint frameSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData, out int bytesRead));
+                // The JIT interleaves frame size / 16 and virtual IP span / 2 in one ULEB128.
+                ulong encoded = DwarfHelper.ReadULEB128(frame.BlobData);
+                uint frameSize = (uint)((encoded & 0xF) | (((encoded >> 8) & 0xF) << 4) |
+                                        (((encoded >> 16) & 0xFFFF) << 8)) * 16;
                 Debug.Assert(frameSize % _nodeFactory.Target.PointerSize == 0);
-                uint virtualSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData.AsSpan(bytesRead)));
+                uint virtualSize = (uint)(((encoded >> 4) & 0xF) | (((encoded >> 12) & 0xF) << 4) |
+                                         (((encoded >> 32) & 0xFFFF) << 8)) * 2;
                 Debug.Assert(virtualSize != 0);
                 uint virtualStart = _nextVirtualIP;
                 _nextVirtualIP = checked(virtualStart + virtualSize);

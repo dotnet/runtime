@@ -636,7 +636,10 @@ For R2R images, `hasFlagByte` is always `false`.
 
 * For R2R code (`ReadyToRunJitManager`), the `GCInfo` is stored directly after the `UnwindData`. This in turn is found by looking up the `UnwindInfo` (`RUNTIME_FUNCTION`) and reading the `UnwindData` offset. We find the `UnwindInfo` as described above in `IExecutionManager.GetUnwindInfo`. Once we have the relevant unwind data, we calculate the size of the unwind data and return a pointer to the following byte (first byte of the GCInfo). The size of the unwind data is a platform specific. See src/coreclr/vm/codeman.cpp GetUnwindDataBlob for more details.
     * The `GCInfoVersion` of R2R code is mapped from the R2R MajorVersion and MinorVersion which is read from the ReadyToRunHeader which itself is read from the ReadyToRunInfo (can be found as in GetMethodInfo). The current GCInfoVersion mapping is:
-        * MajorVersion >= 11 and MajorVersion < 15 => 4
+        * MajorVersion < 11 => 3
+        * MajorVersion >= 11 and MajorVersion < 21 => 4
+        * MajorVersion >= 21 and MajorVersion < 34 => 5
+        * MajorVersion >= 34 => 6
 
 * For interpreted code (`InterpreterJitManager`), a pointer to the `GCInfo` is stored on the `InterpreterRealCodeHeader`, accessed via nibble map lookup as with the EE JitManager. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`. The GC info is decoded using interpreter-specific decoding (`DecodeInterpreterGCInfo`).
 

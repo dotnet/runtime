@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 
@@ -21,7 +22,7 @@ internal interface IWasmR2RInfo
 
     /// <summary>
     /// Returns the address of the WASM unwind blob for the function containing
-    /// <paramref name="controlPC"/>. The blob begins with a ULEB128 fixed frame size.
+    /// <paramref name="controlPC"/>. The blob contains a ULEB128 interleaving the frame size and virtual IP count.
     /// </summary>
     bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress);
 }
@@ -177,7 +178,9 @@ internal sealed class WasmUnwinder
         }
 
         uint frameIdentity = _target.Read<uint>(frameBase.Value + FrameIdentityOffset);
-        uint frameSize = DecodeULEB128(unwindData.Value);
+        ulong encoded = UnwindDataSize.ReadWasmUnwindData(_target, unwindData, out _);
+        uint frameSize = (uint)((encoded & 0xF) | (((encoded >> 8) & 0xF) << 4) |
+                                (((encoded >> 16) & 0xFFFF) << 8)) * 16;
         if (frameSize == 0)
         {
             // A zero frame size makes no progress; terminate rather than risk an unbounded walk.
@@ -218,22 +221,4 @@ internal sealed class WasmUnwinder
             && TryGetEstablishingFramePointer(frameBase, out framePointer);
     }
 
-    // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32. A ULEB128
-    // uint32 is at most 5 bytes (5 * 7 = 35 >= 32 bits); a longer encoding is malformed.
-    private uint DecodeULEB128(ulong address)
-    {
-        const int MaxBytes = 5;
-        uint result = 0;
-        int shift = 0;
-        for (ulong offset = 0; offset < MaxBytes; offset++)
-        {
-            byte b = _target.Read<byte>(address + offset);
-            result |= (uint)(b & 0x7F) << shift;
-            if ((b & 0x80) == 0)
-                return result;
-            shift += 7;
-        }
-
-        throw new InvalidOperationException("Malformed ULEB128 value in WASM unwind data.");
-    }
 }

@@ -3710,7 +3710,7 @@ public:
     {
     }
 
-    GcSlotId GetStackSlotId(INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase = GC_CALLER_SP_REL)
+    GcSlotId GetStackSlotId(INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase)
     {
         GcSlotId newSlotId = m_gcInfoEncoder->GetStackSlotId(spOffset, flags, spBase);
         if (m_doLogging)

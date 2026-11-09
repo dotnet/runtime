@@ -38,7 +38,7 @@ Added support for cached and virtual ReadyToRun argument maps:
 - `StackWalk` version `c2` decodes `THIS_REF` and `THIS_BYREF`, which encode the
   call-site receiver kind without a separate bit. `VASIG_COOKIE` moves from 5 to 7;
   version `c1` targets retain the old value.
-- Supported ReadyToRun images have major version 33 or newer, so all instance import maps
+- Supported ReadyToRun images have major version 34 or newer, so all instance import maps
   use contextual receiver tokens. Declaration lookup checks method-instantiation and explicit-context
   eligibility from metadata, without decoding maps or maintaining per-map format flags.
 - Prestub, call-counting, and stub-dispatch frames can reuse same-slot declaration maps,
