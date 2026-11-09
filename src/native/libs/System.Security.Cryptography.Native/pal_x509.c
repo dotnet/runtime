@@ -766,7 +766,7 @@ int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx
         X509* last = sk_X509_value(chain, errorDepth);
 
         // If the last element is in the trust store we need to build a new trust store.
-        if (X509_STORE_CTX_get1_issuer(&root, storeCtx, last))
+        if (X509_STORE_CTX_get1_issuer(&root, storeCtx, last) == 1)
         {
             if (root == last)
             {
@@ -962,7 +962,7 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
             nonceCheck = 1;
         }
 
-        if (nonceCheck == 1 && OCSP_basic_verify(basicResp, untrusted, store, OCSP_TRUSTOTHER))
+        if (nonceCheck == 1 && OCSP_basic_verify(basicResp, untrusted, store, OCSP_TRUSTOTHER) == 1)
         {
             ASN1_GENERALIZEDTIME* thisupd = NULL;
             ASN1_GENERALIZEDTIME* nextupd = NULL;
