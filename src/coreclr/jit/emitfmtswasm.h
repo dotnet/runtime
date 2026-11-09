@@ -26,7 +26,7 @@ enum ID_OPS
 //                  (unused)
 //////////////////////////////////////////////////////////////////////////////
 
-IF_DEF(NONE,          IS_NONE, NONE) // No emitted bytes.
+IF_DEF(NONE,          IS_NONE, NONE) // zero-byte placeholder
 IF_DEF(OPCODE,        IS_NONE, NONE) // <opcode>
 IF_DEF(BLOCK,         IS_NONE, NONE) // <opcode> <sig = 0x40>
 IF_DEF(RAW_ULEB128,   IS_NONE, NONE) // <ULEB128 immediate>

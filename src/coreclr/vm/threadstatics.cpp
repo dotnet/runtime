@@ -677,7 +677,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 #endif
             }
 
-            NewHolder<InFlightTLSData> pNewInFlightData = NULL;
+            NewHolder<InFlightTLSData> pNewInFlightData;
             if (!pMT->IsClassInited())
             {
                 pNewInFlightData = new InFlightTLSData(index);
@@ -707,8 +707,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
                     SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
                     pNewInFlightData->pNext = t_ThreadStatics.pInFlightData;
                     StoreObjectInHandle(pNewInFlightData->hTLSData, gc.tlsEntry);
-                    t_ThreadStatics.pInFlightData = pNewInFlightData;
-                    pNewInFlightData.SuppressRelease();
+                    t_ThreadStatics.pInFlightData = pNewInFlightData.Detach();
                 }
             }
             GCPROTECT_END();

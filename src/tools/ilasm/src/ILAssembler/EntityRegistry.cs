@@ -1007,7 +1007,7 @@ namespace Microsoft.DotNet.ILAssembler
                             asmRef.Name,
                             asmRef.Version,
                             string.IsNullOrEmpty(asmRef.Culture) ? null : asmRef.Culture,
-                            asmRef.PublicKeyOrToken is null ? AssemblyNameFlags.None : AssemblyNameFlags.PublicKey,
+                            (asmRef.Flags & AssemblyFlags.PublicKey) != 0 ? AssemblyNameFlags.PublicKey : AssemblyNameFlags.None,
                             asmRef.PublicKeyOrToken?.ToImmutableArray() ?? []);
                         builder.Append(", ");
                         builder.Append(assemblyNameInfo.FullName);
@@ -1795,10 +1795,22 @@ namespace Microsoft.DotNet.ILAssembler
 
         public ExportedTypeEntity GetOrCreateExportedType(EntityBase? implementation, string @namespace, string name, Action<ExportedTypeEntity> onCreateType)
         {
-            // We only key on the implementation if the type is nested (ExportedTypeEntity).
-            // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
-            // However, we need to pass the actual implementation to the entity constructor.
-            return GetOrCreateEntity((implementation as ExportedTypeEntity, @namespace, name), TableIndex.ExportedType, _seenExportedTypes, (key) => new(key.Item3, key.Item2, implementation), onCreateType);
+            var key = (implementation as ExportedTypeEntity, @namespace, name);
+            if (implementation is ExportedTypeEntity)
+            {
+                // We only key on the implementation if the type is nested (ExportedTypeEntity).
+                // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
+                // However, we need to pass the actual implementation to the entity constructor.
+                return GetOrCreateEntity(key, TableIndex.ExportedType, _seenExportedTypes, key => new(key.Item3, key.Item2, implementation), onCreateType);
+            }
+
+            // Error-tolerant mode preserves top-level duplicates after the caller diagnoses them.
+            // Keep the first declaration for nested exported-type name resolution.
+            var entity = new ExportedTypeEntity(name, @namespace, implementation);
+            RecordEntityInTable(TableIndex.ExportedType, entity);
+            _seenExportedTypes.TryAdd(key, entity);
+            onCreateType(entity);
+            return entity;
         }
 
         public ExportedTypeEntity? FindExportedType(ExportedTypeEntity? containingType, string @namespace, string @name)

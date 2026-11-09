@@ -34,7 +34,7 @@ namespace System.Management
     ///    <code lang='C#'>using System;
     /// using System.Management;
     ///
-    /// // This sample demonstrates how to read a ManagementObject asychronously
+    /// // This sample demonstrates how to read a ManagementObject asynchronously
     /// // using the ManagementOperationObserver object.
     ///
     /// class Sample_ManagementOperationObserver {
@@ -80,7 +80,7 @@ namespace System.Management
     ///    <code lang='VB'>Imports System
     /// Imports System.Management
     ///
-    /// ' This sample demonstrates how to read a ManagementObject asychronously
+    /// ' This sample demonstrates how to read a ManagementObject asynchronously
     /// ' using the ManagementOperationObserver object.
     ///
     /// Class Sample_ManagementOperationObserver

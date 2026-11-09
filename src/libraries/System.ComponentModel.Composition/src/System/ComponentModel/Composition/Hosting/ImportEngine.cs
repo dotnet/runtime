@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         /// <summary>
         ///     Previews all the required imports for the given <see cref="ComposablePart"/> to
-        ///     ensure they can all be satisified. The preview does not actually set the imports
+        ///     ensure they can all be satisfied. The preview does not actually set the imports
         ///     only ensures that they exist in the source provider. If the preview succeeds then
         ///     the <see cref="ImportEngine"/> also enforces that changes to exports in the source
         ///     provider will not break any of the required imports. If this enforcement needs to be
