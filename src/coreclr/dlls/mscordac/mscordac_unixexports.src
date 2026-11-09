@@ -76,7 +76,6 @@ nativeStringResourceTable_mscorrc
 #GetSystemInfo
 #LoadLibraryExA
 #LoadLibraryExW
-#MultiByteToWideChar
 #OutputDebugStringW
 #OutputDebugStringA
 #RaiseException
@@ -86,6 +85,5 @@ nativeStringResourceTable_mscorrc
 #SetThreadDescription
 #SwitchToThread
 #TerminateProcess
-#WideCharToMultiByte
 
 #GUID_NULL

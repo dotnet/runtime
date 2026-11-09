@@ -191,7 +191,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
                     {
-                        WStringHolder typeName = new WCHAR[MAX_LONGPATH + 1];
+                        WStringHolder typeName(new WCHAR[MAX_LONGPATH + 1]);
                         if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName)))
                         {
                             m_exceptionType = ConvertString(typeName);

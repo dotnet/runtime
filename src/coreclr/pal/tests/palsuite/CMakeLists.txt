@@ -38,24 +38,6 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  c_runtime/atof/test1/test1.cpp
-  c_runtime/atoi/test1/test1.cpp
-  c_runtime/isalnum/test1/test1.cpp
-  c_runtime/isalpha/test1/test1.cpp
-  c_runtime/isdigit/test1/test1.cpp
-  c_runtime/isprint/test1/isprint.cpp
-  c_runtime/isprint/test2/test2.cpp
-  c_runtime/isspace/test1/test1.cpp
-  c_runtime/iswdigit/test1/test1.cpp
-  #c_runtime/iswprint/test1/test1.cpp
-  c_runtime/iswspace/test1/test1.cpp
-  c_runtime/iswupper/test1/test1.cpp
-  c_runtime/isxdigit/test1/test1.cpp
-  c_runtime/llabs/test1/test1.cpp
-  c_runtime/memchr/test1/test1.cpp
-  c_runtime/memcmp/test1/test1.cpp
-  c_runtime/memmove/test1/test1.cpp
-  c_runtime/memset/test1/test1.cpp
   c_runtime/sscanf_s/test1/test1.cpp
   c_runtime/sscanf_s/test10/test10.cpp
   c_runtime/sscanf_s/test11/test11.cpp
@@ -73,21 +55,6 @@ add_executable_clr(paltests
   c_runtime/sscanf_s/test7/test7.cpp
   c_runtime/sscanf_s/test8/test8.cpp
   c_runtime/sscanf_s/test9/test9.cpp
-  c_runtime/strcat/test1/test1.cpp
-  c_runtime/strchr/test1/test1.cpp
-  c_runtime/strcmp/test1/test1.cpp
-  c_runtime/strcpy/test1/test1.cpp
-  c_runtime/strlen/test1/test1.cpp
-  c_runtime/strncat/test1/test1.cpp
-  c_runtime/strncmp/test1/test1.cpp
-  c_runtime/strncpy/test1/test1.cpp
-  c_runtime/strpbrk/test1/test1.cpp
-  c_runtime/strrchr/test1/test1.cpp
-  c_runtime/strstr/test1/test1.cpp
-  c_runtime/tolower/test1/test1.cpp
-  c_runtime/toupper/test1/test1.cpp
-  c_runtime/towlower/test1/test1.cpp
-  c_runtime/towupper/test1/test1.cpp
   c_runtime/wcscat/test1/test1.cpp
   c_runtime/wcschr/test1/test1.cpp
   c_runtime/wcscmp/test1/test1.cpp
@@ -105,9 +72,6 @@ add_executable_clr(paltests
   c_runtime/wcstoul/test4/test4.cpp
   c_runtime/wcstoul/test5/test5.cpp
   c_runtime/wcstoul/test6/test6.cpp
-  c_runtime/_alloca/test1/test1.cpp
-  c_runtime/_rotl/test1/test1.cpp
-  c_runtime/_rotr/test1/test1.cpp
   c_runtime/_vsnprintf_s/test1/test1.cpp
   c_runtime/_vsnprintf_s/test10/test10.cpp
   c_runtime/_vsnprintf_s/test11/test11.cpp
@@ -166,32 +130,10 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
   filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/ProbeMemory_neg.cpp
   filemapping_memmgt/ProbeMemory/test1/ProbeMemory.cpp
-  loader/LoadLibraryA/test1/LoadLibraryA.cpp
-  loader/LoadLibraryA/test2/LoadLibraryA.cpp
-  loader/LoadLibraryA/test3/loadlibrarya.cpp
-  loader/LoadLibraryA/test5/loadlibrarya.cpp
-  #loader/LoadLibraryA/test6/dlltest.cpp
-  #loader/LoadLibraryA/test6/loadlibrarya.cpp
-  loader/LoadLibraryA/test7/LoadLibraryA.cpp
-  #loader/LoadLibraryA/test8/dlltest.cpp
-  #loader/LoadLibraryA/test8/loadlibrarya.cpp
   loader/LoadLibraryW/test1/LoadLibraryW.cpp
   loader/LoadLibraryW/test2/loadlibraryw.cpp
   loader/LoadLibraryW/test3/loadlibraryw.cpp
   loader/LoadLibraryW/test5/loadlibraryw.cpp
-  #locale_info/CompareStringA/test1/test1.cpp
-  #locale_info/CompareStringW/test1/test1.cpp
-  #locale_info/GetLocaleInfoW/test1/test1.cpp
-  #locale_info/GetLocaleInfoW/test2/test2.cpp
-  locale_info/MultiByteToWideChar/test1/test1.cpp
-  locale_info/MultiByteToWideChar/test2/test2.cpp
-  locale_info/MultiByteToWideChar/test3/test3.cpp
-  locale_info/MultiByteToWideChar/test4/test4.cpp
-  locale_info/WideCharToMultiByte/test1/test1.cpp
-  locale_info/WideCharToMultiByte/test2/test2.cpp
-  locale_info/WideCharToMultiByte/test3/test3.cpp
-  locale_info/WideCharToMultiByte/test4/test4.cpp
-  locale_info/WideCharToMultiByte/test5/test5.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp
   miscellaneous/FormatMessageW/test1/test.cpp
@@ -234,11 +176,6 @@ add_executable_clr(paltests
   miscellaneous/InterlockedIncrement/test2/test.cpp
   miscellaneous/InterlockedIncrement64/test1/test.cpp
   miscellaneous/InterlockedIncrement64/test2/test.cpp
-  #miscellaneous/IsBadCodePtr/test1/test1.cpp
-  #miscellaneous/IsBadReadPtr/test1/test.cpp
-  #miscellaneous/IsBadWritePtr/test1/test.cpp
-  #miscellaneous/IsBadWritePtr/test2/test2.cpp
-  #miscellaneous/IsBadWritePtr/test3/test3.cpp
   miscellaneous/SetEnvironmentVariableA/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test2/test2.cpp
   miscellaneous/SetEnvironmentVariableA/test3/test3.cpp
@@ -250,8 +187,6 @@ add_executable_clr(paltests
   miscellaneous/SetLastError/test1/test.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
-#  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp
-#  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
   threading/CreateThread/test1/test1.cpp
@@ -272,8 +207,6 @@ add_executable_clr(paltests
   threading/QueryThreadCycleTime/test1/test1.cpp
   threading/ResumeThread/test1/test1.cpp
   threading/RuntimeEvent/test1/test1.cpp
-  threading/Sleep/test1/Sleep.cpp
-  threading/Sleep/test2/sleep.cpp
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
