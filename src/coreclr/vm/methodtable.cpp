@@ -7259,8 +7259,8 @@ MethodTable::GetMethodDataHelper(
 #endif //_DEBUG
 
     // Can't cache, since this is a custom method used in BuildMethodTable
-    MethodDataWrapper hDecl(GetMethodData(pMTDecl, computeOptions));
-    MethodDataWrapper hImpl(GetMethodData(pMTImpl, computeOptions));
+    MethodDataHolder hDecl(GetMethodData(pMTDecl, computeOptions));
+    MethodDataHolder hImpl(GetMethodData(pMTImpl, computeOptions));
 
     MethodDataInterfaceImpl * pData = new ({ pMTDecl}) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
 
@@ -7304,7 +7304,7 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
         }
         else {
             MethodDataHolder h(FindParentMethodDataHelper(pMTDecl));
-            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h.GetValue(), computeOptions);
+            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h, computeOptions);
         }
     }
     else {

@@ -1216,10 +1216,8 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
 
     // We are going to return an exception,
     // so we need to release any handles we have already allocated for returning results.
-    pDE->m_funcEvalResult.Release();
-    pDE->m_funcEvalResult = NULL;
-    pDE->m_externalMemoryOwner.Release();
-    pDE->m_externalMemoryOwner = NULL;
+    pDE->m_funcEvalResult.Free();
+    pDE->m_externalMemoryOwner.Free();
 
     //
     // Special handling for thread abort exceptions. We need to explicitly reset the

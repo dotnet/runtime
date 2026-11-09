@@ -1841,7 +1841,7 @@ public:
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
-    // Used to map to "the same" method between instantiations. 
+    // Used to map to "the same" method between instantiations.
     MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD);
     // Maps methods between instantiations + filters/adjusts the result according to the lookup.
     MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup);
@@ -3205,13 +3205,6 @@ public:
 
         ULONG Release() noexcept;
 
-        // Since all methods that return a MethodData already AddRef'd, we do NOT
-        // want to AddRef when putting a holder around it. We only want to release it.
-        static void HolderAcquire(MethodData *pEntry)
-            { LIMITED_METHOD_CONTRACT; return; }
-        static void HolderRelease(MethodData *pEntry) noexcept
-            { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
-
         static void* operator new(size_t size)
         {
             return ::operator new(size);
@@ -3316,8 +3309,19 @@ public:
             size_t                    cWorkingData);
     };  // class MethodData
 
-    typedef ::Holder < MethodData *, MethodData::HolderAcquire, MethodData::HolderRelease > MethodDataHolder;
-    typedef ::Wrapper < MethodData *, MethodData::HolderAcquire, MethodData::HolderRelease > MethodDataWrapper;
+    struct MethodDataHolderTraits final
+    {
+        using Type = MethodData*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
+            if (value != NULL)
+                value->Release();
+        }
+    };
+
+    using MethodDataHolder = LifetimeHolder<MethodDataHolderTraits>;
 
 protected:
     //--------------------------------------------------------------------------------------
@@ -3638,7 +3642,7 @@ public:
         MethodTable *             pMTImpl,
         MethodDataComputeOptions computeOption);
 
-    void CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT);
+    void CopySlotFrom(UINT32 slotNumber, MethodData *pSourceMTData, MethodTable *pSourceMT);
 
 protected:
     static MethodData *FindParentMethodDataHelper(MethodTable *pMT);

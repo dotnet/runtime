@@ -3304,8 +3304,20 @@ private:
 };
 
 
-typedef Wrapper<DebuggerExternalMemoryOwner*, DoNothing<DebuggerExternalMemoryOwner*>,
-    DeleteInteropSafe<DebuggerExternalMemoryOwner>> DebuggerExternalMemoryOwnerHolder;
+template<class T>
+struct DebuggerInteropSafeDeleteTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+            DeleteInteropSafe(value);
+    }
+};
+
+using DebuggerExternalMemoryOwnerHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerExternalMemoryOwner>>;
 
 // Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
 class DebuggerFuncEvalResult
@@ -3321,8 +3333,7 @@ private:
     ExternalMemoryHandle* m_resultHandle;
 };
 
-typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
-    DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
+using DebuggerFuncEvalResultHolder = LifetimeHolder<DebuggerInteropSafeDeleteTraits<DebuggerFuncEvalResult>>;
 
 class DebuggerEval
 {

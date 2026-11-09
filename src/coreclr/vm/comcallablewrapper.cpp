@@ -1899,7 +1899,20 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                 pStartWrapper = GetWrapperForObject(pServer, pTemplate);
                 if (pStartWrapper == NULL)
                 {
-                    Wrapper<OBJECTHANDLE, DoNothing, DestroyRefcountedHandle> oh;
+                    struct RefcountedHandleTraits final
+                    {
+                        using Type = OBJECTHANDLE;
+                        static constexpr Type Default() { return NULL; }
+                        static void Free(Type value) noexcept
+                        {
+                            WRAPPER_NO_CONTRACT;
+                            if (value != NULL)
+                                DestroyRefcountedHandle(value);
+                        }
+                    };
+
+                    LifetimeHolder<RefcountedHandleTraits> ownedHandle;
+                    OBJECTHANDLE oh = NULL;
 
                     ComCallWrapper *pRootWrapper = GetWrapperForObject(pServer, NULL);
                     if (pRootWrapper == NULL)
@@ -1909,13 +1922,13 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         // attempt to hand this out to another domain then we will assume that the object is truly
                         // agile and will convert the handle to a global handle.
                         oh = GetAppDomain()->CreateRefcountedHandle(NULL);
+                        ownedHandle = oh;
                         _ASSERTE(oh);
                     }
                     else
                     {
                         // if the object already has a CCW, we reuse the handle
                         oh = pRootWrapper->GetObjectHandle();
-                        oh.SuppressRelease();
                     }
 
                     // copy from template
@@ -1946,7 +1959,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         ComCallWrapper::SetNext(pRootWrapper, pNewCCW);
                     }
 
-                    oh.SuppressRelease();
+                    ownedHandle.Detach();
                     pNewCCW.SuppressRelease();
                     pSimpleWrap.Detach();
 
