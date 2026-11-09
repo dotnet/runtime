@@ -1170,7 +1170,7 @@ internal static class TestRunner
         }
 
         ProcessTextOutput output = Process.RunAndCaptureText(startInfo,
-                timeoutMilliseconds == Timeout.Infinite ? null : TimeSpan.FromMilliseconds(timeoutMilliseconds));
+                TimeSpan.FromMilliseconds(timeoutMilliseconds), entireProcessTree: true);
         if (output.ExitStatus.Canceled)
         {
             throw new TimeoutException($"{fileName} timed out.");

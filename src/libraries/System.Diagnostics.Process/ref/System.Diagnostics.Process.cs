@@ -193,7 +193,15 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.ProcessExitStatus Run(System.Diagnostics.ProcessStartInfo startInfo, System.TimeSpan timeout, bool entireProcessTree) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Diagnostics.ProcessExitStatus Run(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null, bool silent = false, System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.ProcessExitStatus Run(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, bool silent, System.TimeSpan timeout, bool entireProcessTree) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -201,7 +209,19 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.ProcessTextOutput RunAndCaptureText(System.Diagnostics.ProcessStartInfo startInfo, System.TimeSpan timeout, bool entireProcessTree) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Diagnostics.ProcessTextOutput RunAndCaptureText(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null, System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.ProcessTextOutput RunAndCaptureText(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, System.TimeSpan timeout, bool entireProcessTree) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessTextOutput> RunAndCaptureTextAsync(System.Diagnostics.ProcessStartInfo startInfo, bool entireProcessTree, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -209,11 +229,23 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessTextOutput> RunAndCaptureTextAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, bool entireProcessTree, System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Threading.Tasks.Task<System.Diagnostics.ProcessTextOutput> RunAndCaptureTextAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> RunAsync(System.Diagnostics.ProcessStartInfo startInfo, bool entireProcessTree, System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> RunAsync(System.Diagnostics.ProcessStartInfo startInfo, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> RunAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, bool silent, bool entireProcessTree, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]

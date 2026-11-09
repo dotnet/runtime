@@ -749,7 +749,7 @@ public class XUnitLogChecker
             input.Position = 0;
             symbolizerStartInfo.StandardInputHandle = input.SafeFileHandle;
 
-            ProcessTextOutput result = Process.RunAndCaptureText(symbolizerStartInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
+            ProcessTextOutput result = Process.RunAndCaptureText(symbolizerStartInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS), entireProcessTree: true);
             if (result.ExitStatus.Canceled)
             {
                 Console.WriteLine("llvm-symbolizer stdout:");
