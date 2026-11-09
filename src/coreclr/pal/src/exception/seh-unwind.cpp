@@ -702,15 +702,6 @@ Function:
 
 Parameters:
     ExceptionRecord - the Windows exception record to throw
-
-Note:
-    The name of this function and the name of the ExceptionRecord
-    parameter is used in the sos lldb plugin code to read the exception
-    record. See coreclr\tools\SOS\lldbplugin\services.cpp.
-
-    This function must not be inlined or optimized so the below PAL_VirtualUnwind
-    calls end up with RaiseException caller's context and so the above debugger
-    code finds the function and ExceptionRecord parameter.
 --*/
 PAL_NORETURN
 __attribute__((noinline))
@@ -782,8 +773,12 @@ RaiseException(IN DWORD dwExceptionCode,
     contextRecord->ContextFlags = CONTEXT_FULL;
     CONTEXT_CaptureContext(contextRecord);
 
-    // We have to unwind one level to get the actual context user code could be resumed at.
-    PAL_VirtualUnwind(contextRecord);
+    // Report the caller of RaiseException as the location the exception was raised at.
+    CONTEXTSetPC(contextRecord, (DWORD64)__builtin_return_address(0));
+    contextRecord->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
+#if defined(CONTEXT_UNWOUND_TO_CALL)
+    contextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
+#endif
 #endif // !TARGET_WASM
 
     exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
