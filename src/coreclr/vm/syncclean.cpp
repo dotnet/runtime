@@ -8,6 +8,8 @@
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
 
+#include "threadstatics.h"
+
 VolatilePtr<Bucket> SyncClean::m_HashMap = NULL;
 VolatilePtr<EEHashEntry*> SyncClean::m_EEHashTable;
 
@@ -95,4 +97,6 @@ void SyncClean::CleanUp ()
 
     // Give others we want to reclaim during the GC sync point a chance to do it
     VirtualCallStubManager::ReclaimAll();
+
+    CleanupRetiredTLSIndices();
 }
