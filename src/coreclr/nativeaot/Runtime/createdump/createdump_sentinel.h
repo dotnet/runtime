@@ -10,4 +10,5 @@
 extern bool g_createdumpLinked;
 extern bool g_createdumpDispatchSupported;
 
-int nativeaot_createdump_main(int argc, char* argv[]);
+// Returns true when the invocation was handled, with its success or failure result in exitCode.
+bool nativeaot_createdump(int argc, char* argv[], int* exitCode);

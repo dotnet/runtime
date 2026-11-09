@@ -4,6 +4,7 @@
 #include "createdump_sentinel.h"
 #include "createdumpcore.h"
 #include "dumpwriter.h"
+#include <sys/auxv.h>
 #include <time.h>
 
 // Exported symbol so PalCreateDump.cpp can detect that this library is linked.
@@ -89,7 +90,9 @@ bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
     {
         tempDirectory = DEFAULT_DUMP_PATH;
     }
-    int length = snprintf(buffer, bufferSize, "%s%s", tempDirectory, DEFAULT_DUMP_TEMPLATE);
+    size_t directoryLength = strlen(tempDirectory);
+    const char* separator = directoryLength > 0 && tempDirectory[directoryLength - 1] != '/' ? "/" : "";
+    int length = snprintf(buffer, bufferSize, "%s%s%s", tempDirectory, separator, DEFAULT_DUMP_TEMPLATE);
     if (tempDirectory[0] == '\0' || length < 0 || static_cast<size_t>(length) >= bufferSize)
     {
         printf_error("Could not get default dump path\n");
@@ -186,45 +189,54 @@ exit:
     return result;
 }
 
-int nativeaot_createdump_main(int argc, char* argv[])
+bool nativeaot_createdump(int argc, char* argv[], int* exitCode)
 {
-    CreateDumpOptions options{};
-    int exitCode = ParseCreateDumpOptions(argc, argv, &options);
-    if (exitCode == 0)
+    if (argc < 2 || getauxval(AT_SECURE) != 0 || strcmp(argv[1], CREATEDUMP_SENTINEL) != 0)
     {
-        // The shared parser also accepts CoreCLR options. This implementation has
-        // no DAC or crash-report writer, even when invoked directly via the sentinel.
-        options.AppModel = AppModelType::NativeAOT;
-        char defaultDumpPath[MAX_LONGPATH];
-        if (options.DumpPathTemplate == nullptr)
-        {
-            if (!GetDefaultDumpPath(defaultDumpPath, sizeof(defaultDumpPath)))
-            {
-                exitCode = -1;
-            }
-            else
-            {
-                options.DumpPathTemplate = defaultDumpPath;
-            }
-        }
-        if (exitCode == 0)
-        {
-            if (LinkedCreateDump(options))
-            {
-                printf_status("Dump successfully written\n");
-            }
-            else
-            {
-                printf_error("Failure writing dump\n");
-                exitCode = -1;
-            }
-        }
+        return false;
     }
 
+    // Remove the sentinel while preserving the executable name for the shared option parser.
+    argv[1] = argv[0];
+    argv++;
+    argc--;
+
+    CreateDumpOptions options{};
+    char defaultDumpPath[MAX_LONGPATH];
+    int result = ParseCreateDumpOptions(argc, argv, &options);
+    if (result != 0)
+    {
+        goto exit;
+    }
+
+    // The shared parser also accepts CoreCLR options. This implementation has
+    // no DAC or crash-report writer, even when invoked directly via the sentinel.
+    options.AppModel = AppModelType::NativeAOT;
+    if (options.DumpPathTemplate == nullptr)
+    {
+        if (!GetDefaultDumpPath(defaultDumpPath, sizeof(defaultDumpPath)))
+        {
+            result = -1;
+            goto exit;
+        }
+        options.DumpPathTemplate = defaultDumpPath;
+    }
+
+    if (!LinkedCreateDump(options))
+    {
+        printf_error("Failure writing dump\n");
+        result = -1;
+        goto exit;
+    }
+
+    printf_status("Dump successfully written\n");
+
+exit:
     if (g_logfile != nullptr)
     {
         fclose(g_logfile);
     }
 
-    return exitCode;
+    *exitCode = result;
+    return true;
 }

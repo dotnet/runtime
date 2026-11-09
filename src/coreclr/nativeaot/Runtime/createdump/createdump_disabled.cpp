@@ -5,7 +5,7 @@
 
 bool g_createdumpLinked = false;
 
-int nativeaot_createdump_main(int, char*[])
+bool nativeaot_createdump(int, char*[], int*)
 {
-    return 1;
+    return false;
 }

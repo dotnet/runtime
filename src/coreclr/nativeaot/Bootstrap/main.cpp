@@ -7,8 +7,6 @@
 #include <minipal/descriptorlimit.h>
 
 #ifdef TARGET_LINUX
-#include <string.h>
-#include <sys/auxv.h>
 #include "../Runtime/createdump/createdump_sentinel.h"
 
 // Native libraries and custom native entry points cannot dispatch a self-restarted helper.
@@ -275,15 +273,10 @@ int main(int argc, char* argv[])
 #endif
 {
 #ifdef TARGET_LINUX
-    // Check if we're being re-invoked as a dump generator.
-    // When a NativeAOT process crashes and createdump is linked in, it forks
-    // and re-executes itself with the GUID sentinel as argv[1].
-    if (g_createdumpLinked && getauxval(AT_SECURE) == 0 &&
-        argc >= 2 && strcmp(argv[1], CREATEDUMP_SENTINEL) == 0)
+    int createdumpExitCode;
+    if (nativeaot_createdump(argc, argv, &createdumpExitCode))
     {
-        // Remove the sentinel while preserving the executable name as argv[0].
-        argv[1] = argv[0];
-        return nativeaot_createdump_main(argc - 1, argv + 1);
+        return createdumpExitCode;
     }
 #endif
 
