@@ -1208,7 +1208,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__EVENT_INFO,
         CLASS__PROPERTY,
         CLASS__PROPERTY_INFO,
-        CLASS__ACTIVATOR,
         CLASS__ARRAY,
         CLASS__ASSEMBLYBASE,
         CLASS__ASSEMBLY,
@@ -1216,7 +1215,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__RUNTIME_HELPERS,
         CLASS__DELEGATE,
         CLASS__METHODBASEINVOKER,
-        CLASS__INSTANCE_CALLI_HELPER,
         CLASS__INTRINSIC_INVOKE_HELPER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
@@ -1243,15 +1241,17 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
                 return true;
         }
 
-        // A DynamicMethod frame implies the optional type has already been loaded.
-        PTR_MethodTable pDynamicMethod;
+        // A frame on an optional invocation type implies the type has already been loaded.
         {
             // A non-loading lookup can still acquire loader locks.
             GCX_PREEMP();
-            pDynamicMethod = CoreLibBinder::GetClassIfExist(CLASS__DYNAMICMETHOD);
+            if (CoreLibBinder::IsClassIfExist(pCaller, CLASS__DYNAMICMETHOD) ||
+                CoreLibBinder::IsClassIfExist(pCaller, CLASS__ACTIVATOR) ||
+                CoreLibBinder::IsClassIfExist(pCaller, CLASS__INSTANCE_CALLI_HELPER))
+            {
+                return true;
+            }
         }
-        if (pDynamicMethod == pCaller)
-            return true;
     }
 
     return false;

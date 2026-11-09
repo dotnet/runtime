@@ -39,6 +39,11 @@
 #define DEFINE_METHOD(classId, id, stringName, gSign)
 #endif
 
+// Recognition-only methods are not roots, even when their declaring type survives.
+#ifndef DEFINE_METHOD_OPTIONAL
+#define DEFINE_METHOD_OPTIONAL(classId, id, stringName, gSign) DEFINE_METHOD(classId, id, stringName, gSign)
+#endif
+
 #ifndef DEFINE_FIELD
 #define DEFINE_FIELD(classId, id, stringName)
 #endif
@@ -110,9 +115,9 @@
 
 // NOTE: Make this window really wide if you want to read the table...
 
-DEFINE_CLASS(ACTIVATOR,             System,                 Activator)
-DEFINE_METHOD(ACTIVATOR,            CREATE_INSTANCE_OF_T,   CreateInstance, GM_RetT)
-DEFINE_METHOD(ACTIVATOR,            CREATE_DEFAULT_INSTANCE_OF_T,   CreateDefaultInstance,  GM_RetT)
+DEFINE_CLASS_OPTIONAL(ACTIVATOR,    System,                 Activator)
+DEFINE_METHOD_OPTIONAL(ACTIVATOR,   CREATE_INSTANCE_OF_T,   CreateInstance, GM_RetT)
+DEFINE_METHOD(ACTIVATOR,            CREATE_DEFAULT_INSTANCE_OF_T, CreateDefaultInstance, GM_RetT)
 
 DEFINE_CLASS(ACCESS_VIOLATION_EXCEPTION, System,            AccessViolationException)
 DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, IP,                _ip)
@@ -304,7 +309,7 @@ DEFINE_FIELD(ENC_HELPER,            OBJECT_REFERENCE,       _objectReference)
 
 DEFINE_CLASS(ENCODING,              Text,                   Encoding)
 
-DEFINE_CLASS(RUNE,                  Text,                   Rune)
+DEFINE_CLASS_OPTIONAL(RUNE,         Text,                   Rune)
 
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
@@ -518,7 +523,7 @@ DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
 DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
 
-DEFINE_CLASS(INSTANCE_CALLI_HELPER, Reflection,             InstanceCalliHelper)
+DEFINE_CLASS_OPTIONAL(INSTANCE_CALLI_HELPER, Reflection,    InstanceCalliHelper)
 DEFINE_CLASS(INTRINSIC_INVOKE_HELPER, Reflection,           IntrinsicInvokeHelper)
 
 DEFINE_CLASS_U(Reflection,          RuntimeMethodInfo,      NoClass)
@@ -647,10 +652,10 @@ DEFINE_METHOD(RESOLVER,             RESOLVE_TOKEN,          ResolveToken,       
 DEFINE_METHOD(RESOLVER,             RESOLVE_SIGNATURE,      ResolveSignature,           SM_PtrResolver_Int_Int_PtrArrByte_PtrException_RetVoid)
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
-DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
+DEFINE_METHOD_OPTIONAL(RUNTIME_HELPERS, IS_BITWISE_EQUATABLE, IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
-DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
+DEFINE_METHOD_OPTIONAL(RUNTIME_HELPERS, ENUM_EQUALS,        EnumEquals, NoSig)
+DEFINE_METHOD_OPTIONAL(RUNTIME_HELPERS, ENUM_COMPARE_TO,    EnumCompareTo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 #ifdef FEATURE_IJW
@@ -739,53 +744,53 @@ DEFINE_METHOD(THROWHELPERS,    THROWMETHODACCESSEXCEPTION,          ThrowMethodA
 DEFINE_METHOD(THROWHELPERS,    THROWFIELDACCESSEXCEPTION,           ThrowFieldAccessException,  SM_PtrVoid_PtrVoid_RetVoid)
 DEFINE_METHOD(THROWHELPERS,    THROWCLASSACCESSEXCEPTION,           ThrowClassAccessException,  SM_PtrVoid_PtrVoid_RetVoid)
 
-DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
-DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_IS_NULL,          IsNullRef, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_NULLREF,          NullRef, NoSig)
-DEFINE_METHOD(UNSAFE,               AS_REF_IN,              AsRef, GM_RefT_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, GM_RefTFrom_RetRefTTo)
-DEFINE_METHOD(UNSAFE,               OBJECT_AS,              As, GM_Obj_RetT)
-DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, GM_RefT_Int_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_ADD,       Add, GM_RefT_IntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_ADD,      Add, GM_RefT_UIntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               PTR_ADD,                Add, GM_PtrVoid_Int_RetPtrVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_BYTE_OFFSET,      ByteOffset, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_ADD_BYTE_OFFSET,  AddByteOffset, GM_RefT_IntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_ADD_BYTE_OFFSET, AddByteOffset, GM_RefT_UIntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_ARE_SAME,         AreSame, NoSig)
-DEFINE_METHOD(UNSAFE,               PTR_BYREF_COPY,         Copy, GM_PtrVoid_RefT_RetVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_PTR_COPY,         Copy, GM_RefT_PtrVoid_RetVoid)
-DEFINE_METHOD(UNSAFE,               PTR_COPY_BLOCK,          CopyBlock, SM_PtrVoid_PtrVoid_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_COPY_BLOCK,       CopyBlock, SM_RefByte_RefByte_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               PTR_COPY_BLOCK_UNALIGNED, CopyBlockUnaligned, SM_PtrVoid_PtrVoid_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_COPY_BLOCK_UNALIGNED, CopyBlockUnaligned, SM_RefByte_RefByte_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_IS_ADDRESS_GREATER_THAN, IsAddressGreaterThan, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_IS_ADDRESS_LESS_THAN, IsAddressLessThan, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_INIT_BLOCK, InitBlockUnaligned, SM_RefByte_Byte_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               PTR_INIT_BLOCK, InitBlock, SM_PtrVoid_Byte_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_INIT_BLOCK_UNALIGNED, InitBlock, SM_RefByte_Byte_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               PTR_INIT_BLOCK_UNALIGNED, InitBlockUnaligned, SM_PtrVoid_Byte_UInt_RetVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_READ_UNALIGNED,   ReadUnaligned, GM_RefByte_RetT)
-DEFINE_METHOD(UNSAFE,               BYREF_WRITE_UNALIGNED,  WriteUnaligned, GM_RefByte_T_RetVoid)
-DEFINE_METHOD(UNSAFE,               PTR_READ_UNALIGNED,     ReadUnaligned, GM_PtrVoid_RetT)
-DEFINE_METHOD(UNSAFE,               PTR_WRITE_UNALIGNED,    WriteUnaligned, GM_PtrVoid_T_RetVoid)
-DEFINE_METHOD(UNSAFE,               READ,                   Read, NoSig)
-DEFINE_METHOD(UNSAFE,               SKIPINIT,               SkipInit, GM_RefT_RetVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_INT_SUBTRACT,     Subtract, GM_RefT_Int_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_SUBTRACT,  Subtract, GM_RefT_IntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_SUBTRACT, Subtract, GM_RefT_UIntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               PTR_INT_SUBTRACT,       Subtract, GM_PtrVoid_Int_RetPtrVoid)
-DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_SUBTRACT_BYTE_OFFSET,  SubtractByteOffset, GM_RefT_IntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET, SubtractByteOffset, GM_RefT_UIntPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               UNBOX,                  Unbox, NoSig)
-DEFINE_METHOD(UNSAFE,               WRITE,                  Write, NoSig)
+DEFINE_CLASS_OPTIONAL(UNSAFE,       CompilerServices,       Unsafe)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      AS_POINTER,             AsPointer, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_IS_NULL,          IsNullRef, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_NULLREF,          NullRef, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      AS_REF_IN,              AsRef, GM_RefT_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_AS,               As, GM_RefTFrom_RetRefTTo)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      OBJECT_AS,              As, GM_Obj_RetT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_ADD,              Add, GM_RefT_Int_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_INTPTR_ADD,       Add, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_UINTPTR_ADD,      Add, GM_RefT_UIntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_ADD,                Add, GM_PtrVoid_Int_RetPtrVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_BYTE_OFFSET,      ByteOffset, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_INTPTR_ADD_BYTE_OFFSET,  AddByteOffset, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_UINTPTR_ADD_BYTE_OFFSET, AddByteOffset, GM_RefT_UIntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_ARE_SAME,         AreSame, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_BYREF_COPY,         Copy, GM_PtrVoid_RefT_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_PTR_COPY,         Copy, GM_RefT_PtrVoid_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_COPY_BLOCK,         CopyBlock, SM_PtrVoid_PtrVoid_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_COPY_BLOCK,       CopyBlock, SM_RefByte_RefByte_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_COPY_BLOCK_UNALIGNED, CopyBlockUnaligned, SM_PtrVoid_PtrVoid_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_COPY_BLOCK_UNALIGNED, CopyBlockUnaligned, SM_RefByte_RefByte_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_IS_ADDRESS_GREATER_THAN, IsAddressGreaterThan, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_IS_ADDRESS_LESS_THAN, IsAddressLessThan, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_INIT_BLOCK,         InitBlockUnaligned, SM_RefByte_Byte_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_INIT_BLOCK,          InitBlock, SM_PtrVoid_Byte_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_INIT_BLOCK_UNALIGNED, InitBlock, SM_RefByte_Byte_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_INIT_BLOCK_UNALIGNED, InitBlockUnaligned, SM_PtrVoid_Byte_UInt_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_READ_UNALIGNED,    ReadUnaligned, GM_RefByte_RetT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_WRITE_UNALIGNED,   WriteUnaligned, GM_RefByte_T_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_READ_UNALIGNED,      ReadUnaligned, GM_PtrVoid_RetT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_WRITE_UNALIGNED,     WriteUnaligned, GM_PtrVoid_T_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      READ,                   Read, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      SKIPINIT,               SkipInit, GM_RefT_RetVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_INT_SUBTRACT,     Subtract, GM_RefT_Int_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_INTPTR_SUBTRACT,  Subtract, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_UINTPTR_SUBTRACT, Subtract, GM_RefT_UIntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      PTR_INT_SUBTRACT,       Subtract, GM_PtrVoid_Int_RetPtrVoid)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_INTPTR_SUBTRACT_BYTE_OFFSET,  SubtractByteOffset, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET, SubtractByteOffset, GM_RefT_UIntPtr_RetRefT)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      UNBOX,                  Unbox, NoSig)
+DEFINE_METHOD_OPTIONAL(UNSAFE,      WRITE,                  Write, NoSig)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
 DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDataReference, SM_Array_RetRefByte)
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
-DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
+DEFINE_METHOD_OPTIONAL(INTERLOCKED, COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_RefObject_Object_Object_RetObject)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_BYTE,  CompareExchange, SM_RefByte_Byte_Byte_RetByte)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_USHRT, CompareExchange, SM_RefUShrt_UShrt_UShrt_RetUShrt)
@@ -1447,6 +1452,7 @@ DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
 #undef DEFINE_CLASS_OPTIONAL
 #undef DEFINE_CLASS_CONDITIONAL
 #undef DEFINE_METHOD
+#undef DEFINE_METHOD_OPTIONAL
 #undef DEFINE_METHOD_CONDITIONAL
 #undef DEFINE_FIELD
 #undef DEFINE_FIELD_CONDITIONAL

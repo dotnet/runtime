@@ -220,14 +220,15 @@ namespace ILLink.Tasks
                     defElements = def.Split(separators, StringSplitOptions.RemoveEmptyEntries);
                 }
 
-                int conditionalArgumentCount = defElements?[0] switch {
+                int declarationArgumentCount = defElements?[0] switch {
                     "DEFINE_CLASS_CONDITIONAL" or "DEFINE_FIELD_CONDITIONAL" => 6,
                     "DEFINE_METHOD_CONDITIONAL" => 7,
+                    "DEFINE_METHOD_OPTIONAL" => 5,
                     _ => 0
                 };
-                if (conditionalArgumentCount != 0 && defElements.Length < conditionalArgumentCount)
+                if (declarationArgumentCount != 0 && defElements.Length < declarationArgumentCount)
                 {
-                    Log.LogError($"Conditional declaration is missing arguments in '{typeFile}': {def}.");
+                    Log.LogError($"Runtime root declaration is missing arguments in '{typeFile}': {def}.");
                     return;
                 }
 
@@ -267,7 +268,8 @@ namespace ILLink.Tasks
                     else
                         AddField(fieldName, classId, currentFeatureSwitch);
                 }
-                else if (def.StartsWith("DEFINE_METHOD(") || def.StartsWith("DEFINE_METHOD_CONDITIONAL("))
+                else if (def.StartsWith("DEFINE_METHOD(") || def.StartsWith("DEFINE_METHOD_OPTIONAL(") ||
+                    def.StartsWith("DEFINE_METHOD_CONDITIONAL("))
                 {
                     // E.g., DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_LOAD,       OnAssemblyLoadEvent,        IM_Assembly_RetVoid)
                     string methodName = defElements[3]; // OnAssemblyLoadEvent
@@ -275,7 +277,7 @@ namespace ILLink.Tasks
                     methodIdsToMembers[classId + "__" + defElements[2]] = (classId, methodName);
                     if (defElements[0] == "DEFINE_METHOD_CONDITIONAL")
                         conditionalDependencies.Add((classId, "method", methodName, defElements[5], defElements[6], currentFeatureSwitch));
-                    else
+                    else if (defElements[0] == "DEFINE_METHOD")
                         AddMethod(methodName, classId, null, null, currentFeatureSwitch);
                 }
                 else if (def.StartsWith("DEFINE_PROPERTY(") || def.StartsWith("DEFINE_STATIC_PROPERTY("))

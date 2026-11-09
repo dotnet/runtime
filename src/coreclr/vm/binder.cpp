@@ -164,6 +164,43 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
 #endif
 }
 
+#ifndef DACCESS_COMPILE
+bool CoreLibBinder::IsMethod(MethodDesc *pMethod, BinderMethodID id)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pMethod != nullptr);
+    _ASSERTE(id != METHOD__NIL && id <= g_CoreLib.m_cMethods);
+
+    MethodDesc *pCached = VolatileLoad(&g_CoreLib.m_pMethods[id]);
+    if (pCached != nullptr)
+        return pMethod->HasSameMethodDefAs(pCached);
+
+    const CoreLibMethodDescription *description = g_CoreLib.m_methodDescriptions + (id - 1);
+    if (strcmp(pMethod->GetName(), description->name) != 0 ||
+        !IsClassIfExist(pMethod->GetMethodTable()->GetTypicalMethodTable(), description->classID))
+    {
+        return false;
+    }
+
+    if (description->sig != nullptr)
+    {
+        Signature expected = GetSignature(description->sig);
+        PCCOR_SIGNATURE signature;
+        DWORD length;
+        pMethod->GetSig(&signature, &length);
+        if (!MetaSig::CompareMethodSigs(signature, length, pMethod->GetModule(), nullptr,
+            expected.GetRawSig(), expected.GetRawSigLen(), GetModule(), nullptr, FALSE))
+        {
+            return false;
+        }
+    }
+
+    VolatileStore(&g_CoreLib.m_pMethods[id], pMethod->LoadTypicalMethodDefinition());
+    return true;
+}
+#endif // !DACCESS_COMPILE
+
 NOINLINE FieldDesc * CoreLibBinder::LookupField(BinderFieldID id)
 {
     WRAPPER_NO_CONTRACT;
@@ -634,6 +671,41 @@ namespace
         return false;
     }
 
+    bool IsMetadataMethodPresent(BinderClassID classId, BinderMethodID methodId)
+    {
+        STANDARD_VM_CONTRACT;
+
+        mdTypeDef type = FindTypeDefinition(CoreLibBinder::GetClassNameSpace(classId), CoreLibBinder::GetClassName(classId));
+        if (type == mdTypeDefNil)
+            return false;
+
+        IMDInternalImport* import = CoreLibBinder::GetModule()->GetMDImport();
+        HENUMInternalHolder methods(import);
+        methods.EnumInit(mdtMethodDef, type);
+        mdMethodDef token;
+        while (import->EnumNext(&methods, &token))
+        {
+            LPCSTR name;
+            IfFailThrow(import->GetNameOfMethodDef(token, &name));
+            if (strcmp(CoreLibBinder::GetMethodName(methodId), name) != 0)
+                continue;
+
+            if (CoreLibBinder::GetMethodSig(methodId) == nullptr)
+                return true;
+
+            PCCOR_SIGNATURE signature;
+            ULONG length;
+            IfFailThrow(import->GetSigOfMethodDef(token, &length, &signature));
+            Signature expected = CoreLibBinder::GetMethodSignature(methodId);
+            if (MetaSig::CompareMethodSigs(signature, length, CoreLibBinder::GetModule(), nullptr,
+                expected.GetRawSig(), expected.GetRawSigLen(), CoreLibBinder::GetModule(), nullptr, FALSE))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool IsDependencyTriggerPresent(BinderFieldID fieldId)
     {
         STANDARD_VM_CONTRACT;
@@ -1097,6 +1169,8 @@ namespace
         bool defaultValue = true;
         #define DEFINE_METHOD(c,i,s,g) if (methodId == METHOD__ ## c ## __ ## i) \
             return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define DEFINE_METHOD_OPTIONAL(c,i,s,g) if (methodId == METHOD__ ## c ## __ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue) || !IsMetadataMethodPresent(CLASS__ ## c, methodId);
         #define DEFINE_METHOD_CONDITIONAL(c,i,s,g,k,t) if (methodId == METHOD__ ## c ## __ ## i) \
             return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue) || !IsDependencyTriggerPresent(k ## __ ## t);
         #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;

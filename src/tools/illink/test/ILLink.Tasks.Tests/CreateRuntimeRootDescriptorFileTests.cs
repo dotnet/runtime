@@ -16,6 +16,103 @@ namespace ILLink.Tasks.Tests
 {
     public class CreateRuntimeRootDescriptorFileTests
     {
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void OptionalMethodsRegisterTriggersWithoutRootingMembers(bool mandatoryAlias, bool feature)
+        {
+            using var test = new DescriptorTest();
+            XDocument descriptor = test.Generate(new[] {
+                "DEFINE_CLASS_OPTIONAL(OWNER, TestNS, Owner)",
+                "DEFINE_METHOD_OPTIONAL(OWNER, INTRINSIC, Intrinsic, NoSig)",
+                mandatoryAlias ? "DEFINE_METHOD(OWNER, REQUIRED, Intrinsic, OtherSig)" : "",
+                feature ? "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)" : "",
+                "DEFINE_METHOD_CONDITIONAL(OWNER, HELPER, Helper, NoSig, METHOD, OWNER__INTRINSIC)",
+                feature ? "END_ILLINK_FEATURE_SWITCH()" : ""
+            });
+
+            XElement owner = descriptor.Root.Element("assembly").Element("type");
+            Assert.Equal("false", (string)owner.Attribute("required"));
+            Assert.Equal(mandatoryAlias ? new[] { "Intrinsic" } : Array.Empty<string>(),
+                owner.Elements("method").Select(m => (string)m.Attribute("name")));
+            XDocument attributes = XDocument.Load(test.AttributesPath);
+            XElement provider = Assert.Single(attributes.Descendants("method"));
+            Assert.Equal("Intrinsic", (string)provider.Attribute("name"));
+            Assert.Equal(new[] { "Helper", "TestNS.Owner", "Input" },
+                provider.Element("attribute").Elements("argument").Select(a => a.Value));
+            Assert.Equal(feature ? "TestFeature" : null, (string)provider.Parent.Parent.Attribute("feature"));
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, true)]
+        public void LinkerRetainsOnlyReachableOptionalOverloads(bool typeReachable, bool called, bool mandatoryAlias)
+        {
+            using var test = new DescriptorTest();
+            test.Generate(new[] {
+                "DEFINE_CLASS_OPTIONAL(OWNER, TestNS, Owner)",
+                "DEFINE_METHOD_OPTIONAL(OWNER, INTRINSIC, Intrinsic, NoSig)",
+                mandatoryAlias ? "DEFINE_METHOD(OWNER, REQUIRED, Intrinsic, OtherSig)" : "",
+                "DEFINE_METHOD_CONDITIONAL(OWNER, HELPER, Helper, NoSig, METHOD, OWNER__INTRINSIC)"
+            });
+
+            string input = Path.Combine(test.DirectoryPath, "Input.dll");
+            using (AssemblyDefinition assembly = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition("Input", new Version(1, 0)), "Input", ModuleKind.Console))
+            {
+                ModuleDefinition module = assembly.MainModule;
+                var owner = new TypeDefinition("TestNS", "Owner", TypeAttributes.Public, module.ImportReference(typeof(object)));
+                module.Types.Add(owner);
+                MethodDefinition intrinsic = AddMethod(owner, "Intrinsic");
+                MethodDefinition overload = AddMethod(owner, "Intrinsic");
+                overload.Parameters.Add(new ParameterDefinition(module.TypeSystem.Int32));
+                AddMethod(owner, "Helper");
+                var program = new TypeDefinition("TestNS", "Program", TypeAttributes.Public, module.ImportReference(typeof(object)));
+                module.Types.Add(program);
+                MethodDefinition main = AddMethod(program, "Main");
+                if (typeReachable)
+                {
+                    main.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ldtoken, owner));
+                    main.Body.Instructions.Insert(1, Instruction.Create(OpCodes.Pop));
+                }
+                if (called)
+                    main.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Call, intrinsic));
+                module.EntryPoint = main;
+                assembly.Write(input);
+
+                static MethodDefinition AddMethod(TypeDefinition type, string name)
+                {
+                    var method = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.Static, type.Module.TypeSystem.Void);
+                    method.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+                    type.Methods.Add(method);
+                    return method;
+                }
+            }
+
+            string output = Path.Combine(test.DirectoryPath, "linked");
+            using var driver = new Driver(new Queue<string>(new[] {
+                "-a", "Input", "entrypoint", "-reference", input, "-x", test.DescriptorPath,
+                "--link-attributes", test.AttributesPath, "-out", output,
+                "-reference", typeof(object).Assembly.Location, "--action", "skip", "System.Private.CoreLib"
+            }));
+            var logger = new MockDriver.CustomLogger();
+            Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
+            Assert.DoesNotContain(logger.Messages, message => message.Category is MessageCategory.Warning or MessageCategory.Error);
+            using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
+            TypeDefinition retained = linked.MainModule.GetType("TestNS.Owner");
+            Assert.Equal(typeReachable, retained is not null);
+            if (retained is not null)
+            {
+                Assert.Equal(mandatoryAlias ? 2 : called ? 1 : 0, retained.Methods.Count(m => m.Name == "Intrinsic"));
+                Assert.Equal(called || mandatoryAlias, retained.Methods.Any(m => m.Name == "Helper"));
+            }
+        }
+
         [Fact]
         public void ConditionalEdgesResolveForwardReferencesAndFeatureGroups()
         {
@@ -566,6 +663,7 @@ namespace ILLink.Tasks.Tests
         [InlineData("DEFINE_FIELD_CONDITIONAL(TARGET, VALUE, Value, FIELD, TRIGGER__ABSENT)")]
         [InlineData("DEFINE_METHOD_CONDITIONAL(UNKNOWN, CALLBACK, Callback, NoSig, CLASS, TRIGGER)")]
         [InlineData("DEFINE_METHOD_CONDITIONAL(TARGET, CALLBACK)")]
+        [InlineData("DEFINE_METHOD_OPTIONAL(TARGET, CALLBACK)")]
         public void InvalidConditionalDeclarationsDoNotPublishDescriptors(string declaration)
         {
             using var test = new DescriptorTest();
@@ -625,6 +723,24 @@ namespace ILLink.Tasks.Tests
                 defines: varargs ? new[] { "FOR_ILLINK", "FEATURE_VARARGS" } : new[] { "FOR_ILLINK" });
             XElement assembly = descriptor.Root.Element("assembly");
             XDocument attributes = XDocument.Load(test.AttributesPath);
+            foreach (string name in new[] { "System.Runtime.CompilerServices.Unsafe",
+                "System.Reflection.InstanceCalliHelper", "System.Text.Rune" })
+            {
+                XElement type = GetType(name);
+                Assert.Equal("false", (string)type.Attribute("required"));
+                Assert.Empty(type.Elements("method"));
+            }
+            XElement activator = GetType("System.Activator");
+            Assert.Equal("false", (string)activator.Attribute("required"));
+            Assert.Equal("CreateDefaultInstance", (string)Assert.Single(activator.Elements("method")).Attribute("name"));
+            XElement runtimeHelpers = GetType("System.Runtime.CompilerServices.RuntimeHelpers");
+            Assert.Null(runtimeHelpers.Attribute("required"));
+            Assert.DoesNotContain(runtimeHelpers.Elements("method"),
+                m => (string)m.Attribute("name") is "IsBitwiseEquatable" or "EnumEquals" or "EnumCompareTo");
+            Assert.Contains(runtimeHelpers.Elements("method"), m => (string)m.Attribute("name") == "GetUninitializedObject");
+            XElement interlocked = GetType("System.Threading.Interlocked");
+            Assert.Null(interlocked.Attribute("required"));
+            Assert.Equal("CompareExchange", (string)Assert.Single(interlocked.Elements("method")).Attribute("name"));
             AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "None", "System.Reflection.RuntimeExceptionHandlingClause");
             AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "None", "System.Reflection.RuntimeLocalVariableInfo");
             AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "GetMethodBody", "System.RuntimeMethodHandle");

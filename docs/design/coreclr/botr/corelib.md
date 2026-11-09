@@ -101,14 +101,37 @@ point, and cycles with no independently reachable entry stay dead. Unconditional
 remain authoritative regardless of conditional aliases or disabled features.
 Class dependencies root the type; its ordinary optional member and layout obligations
 still apply whenever that type survives, even through another path. A conditional member
-roots its declaring type as well as that member. Method triggers and targets match by
-name, including all overloads, just like ordinary binder descriptor declarations.
+roots its declaring type as well as that member. Method triggers match by name,
+including all overloads, just like ordinary binder descriptor declarations. Conditional
+method targets use DynamicDependency signature syntax: the generated bare-name selector
+matches non-generic overloads. Native helpers with generic method bodies retain ordinary
+member obligations on their optional declaring type instead.
 Class targets use `DynamicallyAccessedMemberTypes.None` to retain only the type itself.
 No new descriptor XML elements or separate conditional-edge marking loop are needed.
 ILLink honors injected dependencies on types as well as methods and fields; the public
 attribute's source-code targets are unchanged.
 CoreLib's own library-build trim also receives the generated annotations explicitly,
 because that pass ignores embedded link attributes.
+
+`DEFINE_METHOD_OPTIONAL` registers a recognition-only binder identity without rooting
+the method or any overload, even if its declaring type survives. It can also serve as a
+conditional dependency trigger. Native intrinsic recognition uses `IsMethod`, which
+matches an existing method's declaring type, name, and hardcoded signature without
+demanding missing sibling methods. `NoSig` retains its existing unique-name contract.
+Successful matches cache the typical method definition; `GetMethod` remains a strict
+lookup for helpers that generated IL or native callers actually need. Debug consistency
+checks test optional overload presence against metadata and the hardcoded signature,
+not the loaded-method cache.
+
+The Unsafe declarations and RuntimeHelpers' bitwise/enum recognition methods are
+optional. Activator and InstanceCalliHelper are optional classes; the reflection caller
+stack walker compares them without loading them for unrelated frames.
+`Activator.CreateInstance<T>` is optional, while its transient-IL default-value helper
+is required whenever Activator survives. Rune's intrinsic identity is also
+optional. RuntimeHelpers itself, StructureMarshaler, the IJW copy-constructor helper,
+and Interlocked's emitted CompareExchange targets remain required. CompareExchange
+descriptor roots still match by name, so those required overloads conservatively
+retain the generic recognition overload too.
 
 Applications using these CoreLib annotations must also use the matching linker build.
 Rebuilding runtime packs does not replace the SDK-selected linker. When testing local
@@ -118,9 +141,9 @@ dependency support. Verify the effective linker path in the publish binlog, incl
 nested WebAssembly publishes. An older linker can report IL2037 for `None` and fail
 to preserve a type-only dependency; suppressing the warning does not make it safe.
 
-Method triggers that have no existing binder declaration use a conditional self-edge.
-This registers their identity without making them roots; an unreachable self-edge stays
-dead like any other cycle. Trigger-only declarations live alongside their corresponding
+Method triggers that have no existing binder declaration can use an optional method
+declaration or a conditional self-edge. Neither independently roots the method.
+Trigger-only declarations live alongside their corresponding
 types and members under `#if defined(FOR_ILLINK) || defined(DEBUG)`: descriptor generation
 and debug/Checked consistency checks need their identities, but release binder tables do not.
 
