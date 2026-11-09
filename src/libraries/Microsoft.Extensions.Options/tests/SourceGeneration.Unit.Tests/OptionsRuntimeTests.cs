@@ -419,7 +419,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 }, TaskCreationOptions.LongRunning)).ToArray());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void TestGeneratedRangeAttributeUsesErrorMessage()
         {
             OptionsWithRangeErrorMessage options = new OptionsWithRangeErrorMessage() { Temperature = 60, Level = 0, Size = 0, Count = 0 };
