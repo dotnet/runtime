@@ -84,7 +84,7 @@ namespace CorUnix
             const WCHAR *pwsz
             )
         {
-            SetStringWithLength(pwsz, PAL_wcslen(pwsz));
+            SetStringWithLength(pwsz, minipal_u16_strlen((const CHAR16_T*)pwsz));
         };
 
         void
