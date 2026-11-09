@@ -12004,6 +12004,8 @@ PhaseStatus Compiler::fgValueNumber()
     // Hoisting is currently the only consumer. Enable loopless records with a late consumer.
     vnRecordExceptionDependencies = m_loops->NumLoops() > 0;
     vnHasConservativeBranchFacts  = false;
+    vnKnownNullValues             = nullptr;
+    vnWriteBarrierStores          = nullptr;
 
     // At the block level, we will use a modified worklist algorithm.  We will have two
     // "todo" sets of unvisited blocks.  Blocks (other than the entry block) are put in a
@@ -12098,12 +12100,22 @@ PhaseStatus Compiler::fgValueNumber()
         fgValueNumberBlocks(block, visitedBlocks, &traits);
     }
 
+    if (vnWriteBarrierStores != nullptr)
+    {
+        for (int i = 0; i < vnWriteBarrierStores->Height(); i++)
+        {
+            fgValueNumberWriteBarrier(vnWriteBarrierStores->BottomRef(i));
+        }
+        vnWriteBarrierStores = nullptr;
+    }
+
 #ifdef DEBUG
     JitTestCheckVN();
     fgDebugCheckExceptionSets();
 #endif // DEBUG
 
     vnSurvivedExceptions = nullptr;
+    vnKnownNullValues    = nullptr;
     fgVNPassesCompleted++;
     vnState = nullptr;
 
@@ -13122,6 +13134,11 @@ void Compiler::fgValueNumberStore(GenTree* store)
         storeExcSet = vnStore->VNPUnionExcSet(store->AsIndir()->Addr()->gtVNPair, storeExcSet);
     }
     store->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), storeExcSet);
+
+    if (store->OperIsIndir())
+    {
+        fgVNCollectStoreProperties(store, valueVNPair.GetConservative());
+    }
 }
 
 //------------------------------------------------------------------------

@@ -6673,6 +6673,12 @@ public:
     void fgValueNumberTree(GenTree* tree);
 
     void fgValueNumberStore(GenTree* tree);
+    void fgValueNumberWriteBarrier(GenTree* store);
+    void fgVNCollectStoreProperties(GenTree* store, ValueNum valueVN);
+
+    // Stores awaiting classification once all reaching VNs, including backedges, are available.
+    ArrayStack<GenTree*>* vnWriteBarrierStores = nullptr;
+
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
     // Does value-numbering for a cast tree.
@@ -6742,8 +6748,9 @@ public:
         void IndexBlock(FlowGraphDominatorTree* domTree, BasicBlock* witness);
     };
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, VNFactBlocks> VNFactMap;
-    // Exception items survived on normal completion.
+    // Exception items survived on normal completion, and conservative VNs proven null by branch edges.
     VNFactMap* vnSurvivedExceptions = nullptr;
+    VNFactMap* vnKnownNullValues = nullptr;
     bool fgVNUpdatedSideEffects = false;
     bool vnHasConservativeBranchFacts = false;
     BasicBlock* fgVNSurvivedException(ValueNum excItemVN DEBUGARG(GenTree* source), BasicBlock* block = nullptr);
@@ -9452,7 +9459,6 @@ protected:
 
 public:
     RangeCheck*  GetRangeCheck(int customBudget = 0);
-    void         optVnWriteBarrierPropCurStmt(Statement* stmt, GenTreeStoreInd* store);
     fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree*     optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree*     optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
@@ -9547,8 +9553,6 @@ public:
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
-    bool     optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
-    bool     optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions, GenTreeBlk* store);
 
     enum class AssertVisit
     {

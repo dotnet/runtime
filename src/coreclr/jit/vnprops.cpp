@@ -9,6 +9,162 @@
 #include "valuenum.h"
 #include "ssaconfig.h"
 
+//------------------------------------------------------------------------
+// GetWriteBarrierForm: Determinate the exact type of write barrier required for the
+//    given address.
+//
+// Arguments:
+//    vnStore - ValueNumStore object
+//    vn      - VN of the address
+//
+// Return Value:
+//    Exact type of write barrier required for the given address.
+//
+static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
+{
+    ValueNumStore*  vnStore = comp->vnStore;
+    const var_types type    = vnStore->TypeOfVN(vn);
+    if (type == TYP_REF)
+    {
+        return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+    }
+    if (type != TYP_BYREF)
+    {
+        return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
+    }
+
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
+    {
+        if (funcApp.FuncIs(VNF_PtrToArrElem))
+        {
+            // Check whether the array is on the heap
+            ValueNum arrayVN = funcApp.GetArg(1);
+            return GetWriteBarrierForm(comp, arrayVN);
+        }
+        if (funcApp.FuncIs(VNF_PtrToLoc))
+        {
+            // Pointer to a local
+            return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+        }
+        if ((funcApp.FuncIs(VNF_PtrToStatic)) && vnStore->IsVNHandle(funcApp.GetArg(0), GTF_ICON_STATIC_BOX_PTR))
+        {
+            // Boxed static - always on the heap
+            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+        }
+        if (funcApp.FuncIs(VNF_ADD))
+        {
+            // Check arguments of the GT_ADD
+            // To make it conservative, we require one of the arguments to be a constant, e.g.:
+            //
+            //   addressOfLocal + cns    -> NoBarrier
+            //   cns + addressWithinHeap -> BarrierUnchecked
+            //
+            // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
+            // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
+            //
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(0)))
+            {
+                return GetWriteBarrierForm(comp, funcApp.GetArg(1));
+            }
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(1)))
+            {
+                return GetWriteBarrierForm(comp, funcApp.GetArg(0));
+            }
+        }
+    }
+    return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
+}
+
+//------------------------------------------------------------------------
+// fgVNCollectStoreProperties: Record contextual store facts and defer barrier classification
+// until all reaching values have been numbered. Memory-state updates remain with store numbering.
+//
+void Compiler::fgVNCollectStoreProperties(GenTree* store, ValueNum valueVN)
+{
+    assert(store->OperIs(GT_STOREIND, GT_STORE_BLK));
+    GenTree* value = store->Data();
+    // A null value never requires a write barrier. Keep the store and its destination
+    // null check: this fact says nothing about whether the destination is valid.
+    if ((vnKnownNullValues != nullptr) && store->OperIs(GT_STOREIND) && store->TypeIs(TYP_REF) &&
+        value->TypeIs(TYP_REF) && ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) &&
+        fgVNGetFactAnchor(vnKnownNullValues, valueVN, compCurBB, false))
+    {
+        store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        JITDUMP("Null-edge fact removes write barrier on [%06u]\n", dspTreeID(store));
+    }
+
+    bool classifyBarrier = false;
+    if (store->OperIs(GT_STOREIND))
+    {
+        classifyBarrier =
+            store->TypeIs(TYP_REF) && value->TypeIs(TYP_REF) && ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0);
+    }
+    else if (store->OperIs(GT_STORE_BLK))
+    {
+        classifyBarrier = store->AsBlk()->GetLayout()->HasGCPtr() &&
+                          ((store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP)) == 0);
+    }
+    if (classifyBarrier)
+    {
+        if (vnWriteBarrierStores == nullptr)
+        {
+            vnWriteBarrierStores =
+                new (getAllocator(CMK_ValueNumber)) ArrayStack<GenTree*>(getAllocator(CMK_ValueNumber));
+        }
+        vnWriteBarrierStores->Push(store);
+    }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberWriteBarrier: Publish the barrier classification before CSE can hide
+// the store's value or address behind locals. Called after all reaching VNs are available.
+//
+void Compiler::fgValueNumberWriteBarrier(GenTree* store)
+{
+    assert(store->OperIs(GT_STOREIND, GT_STORE_BLK));
+    if ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
+    {
+        return;
+    }
+
+    if (store->OperIs(GT_STOREIND))
+    {
+        if (!store->TypeIs(TYP_REF) || !store->Data()->TypeIs(TYP_REF))
+        {
+            return;
+        }
+        auto isNonGcValue = [this](ValueNum vn) {
+            return ((vn == ValueNumStore::VNForNull()) || vnStore->IsVNObjHandle(vn)) ? ValueNumStore::VNVisit::Continue
+                                                                                      : ValueNumStore::VNVisit::Abort;
+        };
+        if (vnStore->VNVisitReachingVNs(vnStore->VNConservativeNormalValue(store->Data()->gtVNPair), isNonGcValue) ==
+            ValueNumStore::VNVisit::Continue)
+        {
+            store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+            return;
+        }
+    }
+    else if (!store->AsBlk()->GetLayout()->HasGCPtr())
+    {
+        return;
+    }
+
+    if ((store->gtFlags & GTF_IND_TGT_HEAP) == 0)
+    {
+        GCInfo::WriteBarrierForm form =
+            GetWriteBarrierForm(this, vnStore->VNConservativeNormalValue(store->AsIndir()->Addr()->gtVNPair));
+        if (form == GCInfo::WBF_NoBarrier)
+        {
+            store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        }
+        else if (form == GCInfo::WBF_BarrierUnchecked)
+        {
+            store->gtFlags |= GTF_IND_TGT_HEAP;
+        }
+    }
+}
+
 //--------------------------------------------------------------------------------
 // fgVNDropSurvivedCastException: Drop a cast helper call's InvalidCastExc when a dominating cast of
 //    the same object to the same class has been survived, and record this one.
@@ -51,7 +207,7 @@ void Compiler::fgVNDropSurvivedCastException(GenTreeCall* call)
 }
 
 //--------------------------------------------------------------------------------
-// fgVNRecordNullBranchFacts: Record non-null facts established on branch edges.
+// fgVNRecordNullBranchFacts: Record null and non-null facts established on branch edges.
 //
 // Arguments:
 //    block - the block whose trees have just been value numbered
@@ -125,6 +281,21 @@ void Compiler::fgVNRecordNullBranchFacts(BasicBlock* block)
             vnHasConservativeBranchFacts = true;
             JITDUMP("Conservative non-null branch fact for " FMT_VN " at " FMT_BB "\n", conservativeVN,
                     successor->bbNum);
+        }
+    }
+
+    successor = cond->OperIs(GT_EQ) ? block->GetTrueTarget() : block->GetFalseTarget();
+    if (edgeEstablishesFact(successor))
+    {
+        ValueNum valueVN = vnStore->VNConservativeNormalValue(value->gtVNPair);
+        if (valueVN != ValueNumStore::VNForNull())
+        {
+            if (vnKnownNullValues == nullptr)
+            {
+                vnKnownNullValues = new (getAllocator(CMK_ValueNumber)) VNFactMap(getAllocator(CMK_ValueNumber));
+            }
+            fgVNGetFactAnchor(vnKnownNullValues, valueVN, successor, true);
+            JITDUMP("Null branch fact for " FMT_VN " at " FMT_BB "\n", valueVN, successor->bbNum);
         }
     }
 }

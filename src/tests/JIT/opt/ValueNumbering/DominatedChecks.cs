@@ -9,6 +9,7 @@ public class DominatedChecks
 {
     private sealed class Holder
     {
+        public object Value;
         public int First = 1, Second = 2;
     }
 
@@ -71,4 +72,39 @@ public class DominatedChecks
         Assert.Equal(0, s_marker);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreNull(Holder target, object value)
+    {
+        if (value == null)
+        {
+            target.Value = value;
+            s_marker = 1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference StoreYoung(Holder target)
+    {
+        object value = new object();
+        target.Value = value;
+        return new WeakReference(value);
+    }
+
+    [Fact]
+    public static void BarrierClassificationPreservesStores()
+    {
+        var target = new Holder { Value = new object() };
+        StoreNull(target, null);
+        Assert.Null(target.Value);
+        s_marker = 0;
+        Assert.Throws<NullReferenceException>(() => StoreNull(null, null));
+        Assert.Equal(0, s_marker);
+
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+        WeakReference weak = StoreYoung(target);
+        GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+        Assert.True(weak.IsAlive);
+        Assert.Same(weak.Target, target.Value);
+        GC.KeepAlive(target);
+    }
 }
