@@ -39,6 +39,7 @@ using std::nothrow;
 #include <minipal/guid.h>
 #include <minipal/log.h>
 #include <minipal/ospagesize.h>
+#include <minipal/utf8.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
@@ -206,28 +207,18 @@ typedef LPSTR   LPUTF8;
 // ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
-    int __l##ptrname = (int)u16_strlen(widestr); \
+    size_t __lsrc##ptrname = u16_strlen(widestr) + 1; \
+    size_t __l##ptrname = 0; \
     LPUTF8 ptrname = NULL; \
-    if (__l##ptrname <= MAKE_MAX_LENGTH) { \
-        __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
+    if (__lsrc##ptrname <= MAKE_MAX_LENGTH) { \
+        __l##ptrname = __lsrc##ptrname * 2; \
         ptrname = (LPUTF8) __qb##ptrname.AllocNoThrow(__l##ptrname); \
     } \
     if (ptrname) { \
-        INT32 __lresult##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __l##ptrname-1, NULL, NULL); \
-        DWORD __dwCaptureLastError##ptrname = ::GetLastError(); \
-        if ((__lresult##ptrname==0) && (((LPCWSTR)widestr)[0] != W('\0'))) { \
-            if (__dwCaptureLastError##ptrname==ERROR_INSUFFICIENT_BUFFER) { \
-                INT32 __lsize##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, NULL, 0, NULL, NULL); \
-                ptrname = (LPSTR) __qb##ptrname .AllocNoThrow(__lsize##ptrname); \
-                if (ptrname) { \
-                    if (WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
-                        ptrname[__l##ptrname] = 0; \
-                    } else { \
-                        ptrname = NULL; \
-                    } \
-                } \
-            } \
-            else { \
+        if (minipal_convert_utf16_to_utf8((const CHAR16_T*)(widestr), __lsrc##ptrname, ptrname, __l##ptrname, 0) == 0) { \
+            __l##ptrname = minipal_get_length_utf16_to_utf8((const CHAR16_T*)(widestr), __lsrc##ptrname, 0); \
+            ptrname = (LPUTF8) __qb##ptrname.AllocNoThrow(__l##ptrname); \
+            if (ptrname && minipal_convert_utf16_to_utf8((const CHAR16_T*)(widestr), __lsrc##ptrname, ptrname, __l##ptrname, 0) == 0) { \
                 ptrname = NULL; \
             } \
         } \
@@ -237,21 +228,23 @@ typedef LPSTR   LPUTF8;
 
 #define MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, n8chrs) \
     CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
+    size_t __n##ptrname = (size_t)(n8chrs); \
     LPWSTR ptrname = NULL; \
-    __l##ptrname = MultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
-    if (__l##ptrname <= MAKE_MAX_LENGTH) { \
-        ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
-        if (ptrname) { \
-            if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
-                ptrname[__l##ptrname] = 0; \
-            } else { \
-                ptrname = NULL; \
+    if (__n##ptrname != 0) { \
+        size_t __l##ptrname = minipal_get_length_utf8_to_utf16(utf8str, __n##ptrname, 0); \
+        if (__l##ptrname <= MAKE_MAX_LENGTH) { \
+            ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
+            if (ptrname) { \
+                if (minipal_convert_utf8_to_utf16(utf8str, __n##ptrname, (CHAR16_T*)ptrname, __l##ptrname, MINIPAL_MB_NO_REPLACE_INVALID_CHARS) != 0) { \
+                    ptrname[__l##ptrname] = 0; \
+                } else { \
+                    ptrname = NULL; \
+                } \
             } \
         } \
     }
 
-#define MAKE_WIDEPTR_FROMUTF8_NOTHROW(ptrname, utf8str)   MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, -1)
+#define MAKE_WIDEPTR_FROMUTF8_NOTHROW(ptrname, utf8str)   MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, (utf8str) != NULL ? strlen(utf8str) + 1 : 0)
 
 const SIZE_T MaxSigned32BitDecString = ARRAY_SIZE("-2147483648") - 1;
 const SIZE_T MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;

@@ -355,6 +355,13 @@ internal sealed unsafe partial class CorInfoImpl
         // No-op in the VM, nothing to record for replay.
     }
 
+    private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+    {
+        AddCall("recordWasmVirtualFunctionPointerLookup");
+        _original.recordWasmVirtualFunctionPointerLookup(method);
+        // No-op in the VM, nothing to record for replay.
+    }
+
     // The results of the error traps aren't recorded: when the call is replayed, its result depends on whether
     // 'function' calls something that throws at replay time rather than at recording time.
     private bool runWithErrorTrap(void* function, void* parameter)

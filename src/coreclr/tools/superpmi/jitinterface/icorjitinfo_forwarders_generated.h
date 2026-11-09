@@ -1134,6 +1134,11 @@ static void Forward_recordWasmManagedCallSig(ICorJitInfo* jitInfo, CorInfoExcept
     RunCapturingException(ppException, [&]() { jitInfo->recordWasmManagedCallSig(callSig); });
 }
 
+static void Forward_recordWasmVirtualFunctionPointerLookup(ICorJitInfo* jitInfo, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method)
+{
+    RunCapturingException(ppException, [&]() { jitInfo->recordWasmVirtualFunctionPointerLookup(method); });
+}
+
 static void Forward_recordRelocation(ICorJitInfo* jitInfo, CorInfoExceptionClass** ppException, void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int32_t addlDelta)
 {
     RunCapturingException(ppException, [&]() { jitInfo->recordRelocation(location, locationRW, target, fRelocType, addlDelta); });
@@ -1353,6 +1358,7 @@ static void* const s_forwarders[] =
     (void*)&Forward_allocPgoInstrumentationBySchema,
     (void*)&Forward_recordCallSite,
     (void*)&Forward_recordWasmManagedCallSig,
+    (void*)&Forward_recordWasmVirtualFunctionPointerLookup,
     (void*)&Forward_recordRelocation,
     (void*)&Forward_getRelocTypeHint,
     (void*)&Forward_getExpectedTargetArchitecture,

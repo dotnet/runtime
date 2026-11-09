@@ -1285,6 +1285,9 @@ internal sealed unsafe partial class CorInfoImpl
     // Only meaningful for ReadyToRun Wasm compilation.
     private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig) => AddCall("recordWasmManagedCallSig");
 
+    // Only meaningful for ReadyToRun Wasm compilation.
+    private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method) => AddCall("recordWasmVirtualFunctionPointerLookup");
+
     private void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta)
     {
         AddCall("recordRelocation");

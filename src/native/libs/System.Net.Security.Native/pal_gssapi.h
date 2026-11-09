@@ -99,7 +99,9 @@ PALEXPORT uint32_t NetSecurityNative_ReleaseName(uint32_t* minorStatus, GssName*
 /*
 Shims the gss_acquire_cred method with GSS_C_ACCEPT.
 */
-PALEXPORT uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus, GssCredId** outputCredHandle);
+PALEXPORT uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus,
+                                                      int32_t packageType,
+                                                      GssCredId** outputCredHandle);
 
 /*
 Shims the gss_acquire_cred method with SPNEGO oids with  GSS_C_INITIATE.

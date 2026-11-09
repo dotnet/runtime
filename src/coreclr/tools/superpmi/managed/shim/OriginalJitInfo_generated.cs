@@ -204,6 +204,7 @@ internal readonly unsafe struct OriginalJitInfo
         public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT> allocPgoInstrumentationBySchema;
         public delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void> recordCallSite;
         public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void> recordWasmManagedCallSig;
+        public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void> recordWasmVirtualFunctionPointerLookup;
         public delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, CorInfoReloc, int, void> recordRelocation;
         public delegate* unmanaged<IntPtr, IntPtr*, void*, CorInfoReloc> getRelocTypeHint;
         public delegate* unmanaged<IntPtr, IntPtr*, uint> getExpectedTargetArchitecture;
@@ -1950,6 +1951,14 @@ internal readonly unsafe struct OriginalJitInfo
     {
         IntPtr exception = 0;
         _forwarders->recordWasmManagedCallSig(_target, &exception, callSig);
+        if (exception != 0)
+            throw new EEException(exception);
+    }
+
+    public void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+    {
+        IntPtr exception = 0;
+        _forwarders->recordWasmVirtualFunctionPointerLookup(_target, &exception, method);
         if (exception != 0)
             throw new EEException(exception);
     }

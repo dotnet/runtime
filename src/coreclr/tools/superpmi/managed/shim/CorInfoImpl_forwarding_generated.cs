@@ -1076,6 +1076,12 @@ internal sealed unsafe partial class CorInfoImpl
         _original.recordWasmManagedCallSig(callSig);
     }
 
+    private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+    {
+        OnCall("recordWasmVirtualFunctionPointerLookup");
+        _original.recordWasmVirtualFunctionPointerLookup(method);
+    }
+
     private void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta)
     {
         OnCall("recordRelocation");

@@ -604,7 +604,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             pData->vmPEAssembly = loader.GetPEAssembly(handle).Value;
             bool isDynamic = loader.IsDynamic(handle);
             pData->fIsDynamic = isDynamic ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            string path = loader.GetPath(handle);
+            string path = string.Empty;
+            try
+            {
+                path = loader.GetPath(handle);
+            }
+            catch (VirtualReadException)
+            {
+
+            }
             pData->fInMemory = string.IsNullOrEmpty(path) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             if (!isDynamic && loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint _))
             {
