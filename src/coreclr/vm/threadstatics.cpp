@@ -677,7 +677,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 #endif
             }
 
-            NewHolder<InFlightTLSData> pNewInFlightData = NULL;
+            NewHolder<InFlightTLSData> pNewInFlightData;
             if (!pMT->IsClassInited())
             {
                 pNewInFlightData = new InFlightTLSData(index);
@@ -707,8 +707,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
                     SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
                     pNewInFlightData->pNext = t_ThreadStatics.pInFlightData;
                     StoreObjectInHandle(pNewInFlightData->hTLSData, gc.tlsEntry);
-                    t_ThreadStatics.pInFlightData = pNewInFlightData;
-                    pNewInFlightData.SuppressRelease();
+                    t_ThreadStatics.pInFlightData = pNewInFlightData.Detach();
                 }
             }
             GCPROTECT_END();
@@ -1154,8 +1153,6 @@ bool CanJITOptimizeTLSAccess()
     bool optimizeThreadStaticAccess = false;
 #if defined(TARGET_ARM)
     // Optimization is disabled for linux/windows arm
-#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
-    // Optimization is disabled for linux/x86
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
     // Optimization is disabled for linux musl arm64
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_RISCV64)

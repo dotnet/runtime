@@ -53,7 +53,8 @@ parameters:
     - linux_x64
     - linux_arm64
     - osx_arm64
-    - osx_x64
+    # ActiveIssue https://github.com/dotnet/runtime/issues/137115
+    # - osx_x64
 # osx_arm64 / osx_x64 are intentionally excluded from x-plat coverage.
 # Their dump payloads are large enough that downloading every platform's dumps
 # onto a single Helix host exceeds available disk space.

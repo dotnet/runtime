@@ -12,7 +12,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 // Format specifications: https://learn.microsoft.com/windows/win32/menurc/resource-file-formats
 // and https://learn.microsoft.com/windows/win32/debug/pe-format#the-rsrc-section

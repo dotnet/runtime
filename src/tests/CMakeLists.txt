@@ -7,7 +7,7 @@ include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
 
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal shared_minipal)
 list(APPEND LINK_LIBRARIES_ADDITIONAL PRIVATE minipal)
 
 # Add this subdir. We install the headers for the jit.

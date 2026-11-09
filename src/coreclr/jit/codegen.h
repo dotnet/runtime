@@ -742,6 +742,12 @@ protected:
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
 
+#if defined(TARGET_WASM)
+    // Wasm opens its method-wide scopes in the first emitted block rather than relying on the
+    // monotonic enter/exit cursors used by other targets.
+    bool siWasmScopesOpened;
+#endif // defined(TARGET_WASM)
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1218,40 +1224,6 @@ protected:
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
     void genAlignStackBeforeCall(GenTreeCall* call);
     void genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias = 0);
-
-#if defined(UNIX_X86_ABI)
-
-    unsigned curNestedAlignment; // Keep track of alignment adjustment required during codegen.
-    unsigned maxNestedAlignment; // The maximum amount of alignment adjustment required.
-
-    void SubtractNestedAlignment(unsigned adjustment)
-    {
-        assert(curNestedAlignment >= adjustment);
-        unsigned newNestedAlignment = curNestedAlignment - adjustment;
-        if (curNestedAlignment != newNestedAlignment)
-        {
-            JITDUMP("Adjusting stack nested alignment from %d to %d\n", curNestedAlignment, newNestedAlignment);
-        }
-        curNestedAlignment = newNestedAlignment;
-    }
-
-    void AddNestedAlignment(unsigned adjustment)
-    {
-        unsigned newNestedAlignment = curNestedAlignment + adjustment;
-        if (curNestedAlignment != newNestedAlignment)
-        {
-            JITDUMP("Adjusting stack nested alignment from %d to %d\n", curNestedAlignment, newNestedAlignment);
-        }
-        curNestedAlignment = newNestedAlignment;
-
-        if (curNestedAlignment > maxNestedAlignment)
-        {
-            JITDUMP("Max stack nested alignment changed from %d to %d\n", maxNestedAlignment, curNestedAlignment);
-            maxNestedAlignment = curNestedAlignment;
-        }
-    }
-
-#endif
 
 #ifndef TARGET_X86
     void genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArgVarNum);

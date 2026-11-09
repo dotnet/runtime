@@ -78,7 +78,7 @@ namespace System
     /// <summary>Provides a set of APIs that can be used to retrieve garbage collection information.</summary>
     /// <remarks>
     /// A GC is identified by its Index. which starts from 1 and increases with each GC (see more explanation
-    /// of it in the Index prooperty).
+    /// of it in the Index property).
     /// If you are asking for a GC that does not exist, eg, you called the GC.GetGCMemoryInfo API
     /// before a GC happened, or you are asking for a GC of GCKind.FullBlocking and no full blocking
     /// GCs have happened, you will get all 0's in the info, including the Index. So you can use Index 0
@@ -124,7 +124,7 @@ namespace System
         /// Let's take the example below:
         ///  | OBJ_A |     OBJ_B     | OBJ_C |   OBJ_D   | OBJ_E |
         ///
-        /// Let's say OBJ_B, OBJ_C and and OBJ_E are garbage and get collected, but the heap does not get compacted, the resulting heap will look like the following:
+        /// Let's say OBJ_B, OBJ_C and OBJ_E are garbage and get collected, but the heap does not get compacted, the resulting heap will look like the following:
         ///  | OBJ_A |           F           |   OBJ_D   |
         ///
         /// The memory between OBJ_A and OBJ_D marked `F` is considered part of the FragmentedBytes, and will be used to allocate new objects. The memory after OBJ_D will not be
