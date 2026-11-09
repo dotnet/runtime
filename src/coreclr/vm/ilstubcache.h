@@ -66,8 +66,7 @@ public:
 
     void AddMethodDescChunkWithLockTaken(MethodDesc *pMD);
 
-    // Frees the compile-time state of IL stubs created in a collectible LoaderAllocator. Stubs that
-    // were never compiled still hold it on the native heap. Called when the LoaderAllocator terminates.
+    // Frees compile-time state of IL stubs created in a collectible LoaderAllocator.
     void FreeCollectibleStubsCompileTimeState();
 
     static MethodDesc* CreateAndLinkNewILStubMethodDesc(
@@ -145,7 +144,7 @@ private:
     MethodTable*    m_pStubMT;
     SHash<ILStubCacheTraits> m_hashMap;
 
-    // Resolvers of the stubs created by CreateAndLinkNewILStubMethodDesc in a collectible LoaderAllocator
+    // Resolvers of stubs created in collectible LoaderAllocators.
     SArray<ILStubResolver*> m_collectibleStubResolvers;
 };
 

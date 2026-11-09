@@ -527,23 +527,7 @@ public:
             MODE_ANY;
         } CONTRACTL_END;
 
-        if (m_CodeHeaderRW != m_CodeHeader)
-            freeArrayInternal(m_CodeHeaderRW);
-
-        if (m_pOffsetMapping != NULL)
-            freeArrayInternal(m_pOffsetMapping);
-
-        if (m_pNativeVarInfo != NULL)
-            freeArrayInternal(m_pNativeVarInfo);
-
-        if (m_inlineTreeNodes != NULL)
-            freeArrayInternal(m_inlineTreeNodes);
-        if (m_richOffsetMappings != NULL)
-            freeArrayInternal(m_richOffsetMappings);
-        if (m_dbgAsyncSuspensionPoints != NULL)
-            freeArrayInternal(m_dbgAsyncSuspensionPoints);
-        if (m_dbgAsyncContinuationVars != NULL)
-            freeArrayInternal(m_dbgAsyncContinuationVars);
+        CEECodeGenInfo::ResetForJitRetry();
 
 #ifdef FEATURE_PGO
         if (m_foundPgoData != NULL)

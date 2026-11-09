@@ -99,8 +99,8 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     if (pAllocator->IsCollectible())
     {
-        // The stub may never be compiled, so its compile-time state has to be freed when the
-        // LoaderAllocator terminates.
+        // The stub may never be compiled, so its compile-time state
+        // may need to be freed when the LoaderAllocator is unloaded.
         ILStubCache* pCache = pAllocator->GetILStubCache();
         CrstHolder ch(&pCache->m_crst);
         pCache->m_collectibleStubResolvers.Append(pResolver);
@@ -725,10 +725,14 @@ void ILStubCache::FreeCollectibleStubsCompileTimeState()
     CrstHolder ch(&m_crst);
 
     // Stubs that were compiled have already freed their state, FreeCompileTimeState is a no-op for them.
-    for (COUNT_T i = 0; i < m_collectibleStubResolvers.GetCount(); i++)
+    for (SArray<ILStubResolver*>::Iterator i = m_collectibleStubResolvers.Begin(); i != m_collectibleStubResolvers.End(); ++i)
     {
-        m_collectibleStubResolvers[i]->FreeCompileTimeState();
+        (*i)->FreeCompileTimeState();
     }
+
+    // Shrinking the array to zero never allocates.
+    CONTRACT_VIOLATION(ThrowsViolation);
+    m_collectibleStubResolvers.Clear();
 #endif // DACCESS_COMPILE
 }
 
