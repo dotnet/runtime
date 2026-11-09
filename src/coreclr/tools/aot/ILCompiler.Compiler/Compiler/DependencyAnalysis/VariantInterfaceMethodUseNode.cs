@@ -136,7 +136,8 @@ namespace ILCompiler.DependencyAnalysis
                 result =
                     CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
                     (elementType.IsDefType && !elementType.IsValueType);
-            }
+            if (!result)
+                result = factory.TypeSystemContext.IsArrayVariantCastable(owningType);
 
             return result;
         }
