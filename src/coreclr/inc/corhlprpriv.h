@@ -286,6 +286,11 @@ public:
             ThrowHR(HRESULT_FROM_WIN32(errno));
         }
 
+        if (length > SIZE_MAX / sizeof(WCHAR))
+        {
+            ThrowHR(COR_E_OVERFLOW);
+        }
+
         CHAR16_T* buffer = (CHAR16_T*) AllocThrows(length * sizeof(WCHAR));
 
         if (minipal_convert_utf8_to_utf16(utf8str, sourceLength, buffer, length, 0) == 0)
