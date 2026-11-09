@@ -622,7 +622,7 @@ namespace ILLink.Tasks
                 {
                     string defineName = line.Substring(ifdefLength).Trim();
                     if (ifdefLength == 4 && defineName.StartsWith("defined(", StringComparison.Ordinal) &&
-                        defineName.EndsWith(")", StringComparison.Ordinal))
+                        defineName[defineName.Length - 1] == ')')
                     {
                         defineName = defineName.Substring("defined(".Length, defineName.Length - "defined(".Length - 1).Trim();
                     }
