@@ -1162,14 +1162,14 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *
  *  The runtime calls funclets with FP set to the FP of the parent function, and the funclet does not change it.
  *  Funclets access the locals of the parent function relative to FP. Funclets do not save the callee-saved
- *  registers other than FP and LR: the runtime preserves them around funclets that it calls, and the main function
- *  saves the ones used by the funclets in its own prolog. Call-to-finally sites do not keep any values in registers
- *  across the call. All temps are allocated in the parent frame, so the funclet frame only needs to hold FP/LR and
- *  the outgoing argument space.
+ *  registers: the runtime preserves them around funclets that it calls, and the main function saves the ones used
+ *  by the funclets in its own prolog. Call-to-finally sites do not keep any values in registers across the call.
+ *  All temps are allocated in the parent frame, so the funclet frame only needs to hold LR and the outgoing
+ *  argument space.
  *
  *  The ARM64 funclet prolog sequence is (Note: #outsz is the outgoing argument space, aligned to 16):
  *
- *     stp fp,lr,[sp,#-16]!         ; save FP/LR
+ *     str lr,[sp,#-16]!            ; save LR
  *     sub sp,sp,#outsz             ; create space for outgoing argument space, if any
  *
  *  The funclet frame is thus:
@@ -1178,7 +1178,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |      Saved FP, LR     | // 16 bytes
+ *      |   Saved LR, padding   | // 16 bytes
  *      |-----------------------|
  *      |   Outgoing arg space  | // multiple of 16 bytes (optional; if #outsz > 0)
  *      |-----------------------| <---- Ambient SP
@@ -1190,7 +1190,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *  The epilog sequence is then:
  *
  *     add sp,sp,#outsz             ; if any outgoing argument space
- *     ldp fp,lr,[sp],#16
+ *     ldr lr,[sp],#16
  *     ret lr
  *
  * See CodeGen::genPushCalleeSavedRegisters() for a description of the main function frame layout.
@@ -1217,9 +1217,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitPacInProlog();
     }
 
-    GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -2 * REGSIZE_BYTES,
-                                  INS_OPTS_PRE_INDEX);
-    m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -2 * REGSIZE_BYTES);
+    GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_LR, REG_SPBASE, -STACK_ALIGN, INS_OPTS_PRE_INDEX);
+    m_compiler->unwindSaveRegPreindexed(REG_LR, -STACK_ALIGN);
 
     if (genFuncletInfo.fiOutgoingArgSpace > 0)
     {
@@ -1253,9 +1252,8 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
                                   /* reportUnwindData */ true);
     }
 
-    GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 2 * REGSIZE_BYTES,
-                                  INS_OPTS_POST_INDEX);
-    m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -2 * REGSIZE_BYTES);
+    GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, REG_LR, REG_SPBASE, STACK_ALIGN, INS_OPTS_POST_INDEX);
+    m_compiler->unwindSaveRegPreindexed(REG_LR, -STACK_ALIGN);
 
     if (JitConfig.JitPacEnabled() != 0)
     {

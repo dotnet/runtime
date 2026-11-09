@@ -521,7 +521,7 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        unsigned fiOutgoingArgSpace; // Outgoing argument space allocated below the saved FP/LR, aligned to 16
+        unsigned fiOutgoingArgSpace; // Outgoing argument space allocated below the saved LR, aligned to 16
     };
 
     FuncletFrameInfoDsc genFuncletInfo;

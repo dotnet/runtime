@@ -181,13 +181,8 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
         [RuntimeImport(RuntimeLibrary, "RhpCallPropagateExceptionCallback")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if TARGET_AMD64 || TARGET_ARM64
         internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
             IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, IntPtr pPreviousTransitionFrame);
-#else
-        internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
-            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo, IntPtr pPreviousTransitionFrame);
-#endif
 #endif // FEATURE_OBJCMARSHAL
 
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]
