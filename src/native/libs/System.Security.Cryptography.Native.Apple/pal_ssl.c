@@ -578,7 +578,7 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     else
 #endif
     {
-        // MacCatalyst arm64, iOS, tvOS, watchOS
+        // MacCatalyst arm64, iOS, tvOS
         SSLCipherSuite* cipherSuites16 = (SSLCipherSuite*)calloc((size_t)numCipherSuites, sizeof(SSLCipherSuite));
 
         if (cipherSuites16 == NULL)

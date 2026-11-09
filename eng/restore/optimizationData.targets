@@ -6,6 +6,7 @@
     <MIBCPackageDef Include="optimization.windows_nt-arm64.mibc.runtime" Version="$(optimizationwindows_ntarm64MIBCRuntimeVersion)" MibcArchitecture="windows/arm64"/>
     <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="linux/x64"/>
     <MIBCPackageDef Include="optimization.linux-arm64.mibc.runtime" Version="$(optimizationlinuxarm64MIBCRuntimeVersion)" MibcArchitecture="linux/arm64"/>
+    <MIBCPackageDef Include="optimization.browser-wasm.mibc.runtime" Version="$(optimizationbrowserwasmMIBCRuntimeVersion)" MibcArchitecture="browser/wasm"/>
 
     <!-- Mibc data to use when exact architecture match not available -->
     <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="windows"/>

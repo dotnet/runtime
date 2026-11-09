@@ -20,6 +20,7 @@ set(ROLLUP_TS_SOURCES
 
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/types.ts"
 
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/appsettings.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/cross-module/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/ems-ambient/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/assets.ts"
@@ -30,6 +31,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/types.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/assets.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/bootstrap.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/callbacks.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/config.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/cross-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/dotnet.d.ts"
@@ -58,6 +60,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/public-api.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/v8.d.ts"
 
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/browser-profiler.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/client-commands.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/common.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/console-proxy.ts"

@@ -372,8 +372,23 @@ provider_unset_config (
 	return callback_data;
 }
 
+const EventPipeProviderCallbackData *
+provider_prepare_capture_state_callback (
+	EventPipeProvider *provider,
+	EventPipeProviderCallbackData *provider_callback_data,
+	EventPipeSessionID session_id)
+{
+	ep_requires_lock_held ();
+
+	return provider_prepare_callback_data (
+		provider, provider->keywords, provider->provider_level, NULL, provider_callback_data, session_id);
+}
+
+static
 void
-provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
+provider_invoke_callback_core (
+	EventPipeProviderCallbackData *provider_callback_data,
+	unsigned long control_code)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
@@ -384,7 +399,6 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 
 	const ep_char8_t *filter_data = ep_provider_callback_data_get_filter_data (provider_callback_data);
 	EventPipeCallback callback_function = ep_provider_callback_data_get_callback_function (provider_callback_data);
-	bool enabled = ep_provider_callback_data_get_enabled (provider_callback_data);
 	int64_t keywords = ep_provider_callback_data_get_keywords (provider_callback_data);
 	EventPipeEventLevel provider_level = ep_provider_callback_data_get_provider_level (provider_callback_data);
 	void *callback_data = ep_provider_callback_data_get_callback_data (provider_callback_data);
@@ -428,14 +442,11 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 		is_event_filter_desc_init = true;
 	}
 
-	// NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
-	// If we want to add new ControlCode, we have to make corresponding change in ETW callback signature
-	// to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
 	if (callback_function && !ep_rt_process_shutdown ()) {
 		ep_rt_provider_invoke_callback (
 			callback_function,
 			(uint8_t *)(session_id == 0 ? NULL : &session_id), /* session_id */
-			enabled ? 1 : 0, /* ControlCode */
+			control_code,
 			(uint8_t)provider_level,
 			(uint64_t)keywords,
 			0, /* match_all_keywords */
@@ -465,6 +476,19 @@ ep_on_exit:
 
 ep_on_error:
 	ep_exit_error_handler ();
+}
+
+void
+provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
+{
+	provider_invoke_callback_core (
+		provider_callback_data, ep_provider_callback_data_get_enabled (provider_callback_data) ? 1 : 0);
+}
+
+void
+provider_invoke_capture_state_callback (EventPipeProviderCallbackData *provider_callback_data)
+{
+	provider_invoke_callback_core (provider_callback_data, 2 /* EVENT_CONTROL_CODE_CAPTURE_STATE */);
 }
 
 EventPipeProvider *

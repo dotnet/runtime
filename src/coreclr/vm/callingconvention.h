@@ -317,7 +317,7 @@ struct TransitionBlock
         return (offset - TransitionBlock::GetOffsetOfArgs());
     }
 
-#ifdef CALLDESCR_FPARGREGS
+#ifdef HAS_FLOAT_ARGUMENT_REGISTERS
     static BOOL IsFloatArgumentRegisterOffset(int offset)
     {
         LIMITED_METHOD_CONTRACT;
@@ -328,32 +328,12 @@ struct TransitionBlock
 #endif
     }
 
-    // Check if an argument has floating point register, that means that it is
-    // either a floating point argument or a struct passed in registers that
-    // has a floating point member.
-    static BOOL HasFloatRegister(int offset, ArgLocDesc* argLocDescForStructInRegs)
-    {
-        LIMITED_METHOD_CONTRACT;
-    #if defined(UNIX_AMD64_ABI)
-        if (offset == TransitionBlock::StructInRegsOffset)
-        {
-            return argLocDescForStructInRegs->m_cFloatReg > 0;
-        }
-    #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if (argLocDescForStructInRegs != NULL)
-        {
-            return argLocDescForStructInRegs->m_cFloatReg > 0;
-        }
-    #endif
-        return offset < 0;
-    }
-
     static int GetOffsetOfFloatArgumentRegisters()
     {
         LIMITED_METHOD_CONTRACT;
         return -GetNegSpaceSize();
     }
-#endif // CALLDESCR_FPARGREGS
+#endif // HAS_FLOAT_ARGUMENT_REGISTERS
 
     static int GetOffsetOfCalleeSavedRegisters()
     {
@@ -365,7 +345,7 @@ struct TransitionBlock
     {
         LIMITED_METHOD_CONTRACT;
         int negSpaceSize = 0;
-#ifdef CALLDESCR_FPARGREGS
+#ifdef HAS_FLOAT_ARGUMENT_REGISTERS
         negSpaceSize += sizeof(FloatArgumentRegisters);
 #endif
 #ifdef TARGET_ARM
@@ -714,7 +694,7 @@ public:
     void GetAsyncContinuationLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetAsyncContinuationArgOffset(), pLoc); }
     void GetVASigCookieLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetVASigCookieOffset(), pLoc); }
 
-#ifndef CALLDESCR_RETBUFFARGREG
+#ifndef HAS_RETBUFF_ARGUMENT_REGISTER
     void GetRetBuffArgLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetRetBuffArgOffset(), pLoc); }
 #endif
 
@@ -1064,7 +1044,7 @@ protected:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifdef CALLDESCR_RETBUFFARGREG
+#ifdef HAS_RETBUFF_ARGUMENT_REGISTER
         // Codepaths where this could happen have been removed. If this occurs, something
         // has been missed and this needs another look.
         _ASSERTE(offset != TransitionBlock::GetOffsetOfRetBuffArgReg());
@@ -2438,17 +2418,6 @@ inline BOOL HasRetBuffArg(MetaSig * pSig)
     ArgIterator argit(pSig);
     return argit.HasRetBuffArg();
 }
-
-#ifdef UNIX_X86_ABI
-// For UNIX_X86_ABI and unmanaged function, we always need RetBuf if the return type is VALUETYPE
-inline BOOL HasRetBuffArgUnmanagedFixup(MetaSig * pSig)
-{
-    WRAPPER_NO_CONTRACT;
-    // We cannot just pSig->GetReturnType() here since it will return ELEMENT_TYPE_VALUETYPE for enums
-    CorElementType type = pSig->GetRetTypeHandleThrowing().GetInternalCorElementType();
-    return type == ELEMENT_TYPE_VALUETYPE;
-}
-#endif
 
 inline BOOL IsRetBuffPassedAsFirstArg()
 {

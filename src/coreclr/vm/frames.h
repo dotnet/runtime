@@ -73,12 +73,10 @@
 //    |   |
 //    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
 //    |
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectValueClassFrame
-//    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
 //    |
 //    +-DebuggerExitFrame - marker frame to indicate control flow has left the runtime
@@ -1800,60 +1798,6 @@ struct cdac_data<GCFrame>
 
 //-----------------------------------------------------------------------------
 
-struct ValueClassInfo;
-typedef DPTR(struct ValueClassInfo) PTR_ValueClassInfo;
-
-struct ValueClassInfo
-{
-    PTR_ValueClassInfo  pNext;
-    PTR_MethodTable     pMT;
-    PTR_VOID            pData;
-
-    ValueClassInfo(PTR_VOID aData, PTR_MethodTable aMT, PTR_ValueClassInfo aNext)
-        : pNext(aNext), pMT(aMT), pData(aData)
-    {
-    }
-};
-
-//-----------------------------------------------------------------------------
-// ProtectValueClassFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectValueClassFrame) PTR_ProtectValueClassFrame;
-
-class ProtectValueClassFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectValueClassFrame()
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push();
-    }
-
-    ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(vcInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
-
-    ValueClassInfo ** GetValueClassInfoList()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pVCInfo;
-    }
-
-private:
-
-    ValueClassInfo *m_pVCInfo;
-};
-
-
 #ifdef _DEBUG
 BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef);
 #endif
@@ -2204,13 +2148,9 @@ public:
     VOID Init();
 };
 
-// TODO [DAVBR]: For the full fix for VsWhidbey 450273, this
-// may be uncommented once isLegalManagedCodeCaller works properly
-// with non-return address inputs, and with non-DEBUG builds
-//bool isLegalManagedCodeCaller(TADDR retAddr);
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 //------------------------------------------------------------------------
 // This frame is used as padding for virtual stub dispatch tailcalls.
 // When A calls B via virtual stub dispatch, the stub dispatch stub resolves
@@ -2278,7 +2218,7 @@ struct cdac_data<TailCallFrame>
     static constexpr size_t ReturnAddress = offsetof(TailCallFrame, m_ReturnAddress);
 };
 
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
 //------------------------------------------------------------------------
 // ExceptionFilterFrame is a small frame whose only purpose in

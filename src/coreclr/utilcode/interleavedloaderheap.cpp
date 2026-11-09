@@ -199,7 +199,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
-    NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+    NewHolder<LoaderHeapBlock> pNewBlock{ new (nothrow) LoaderHeapBlock };
     if (pNewBlock == NULL)
     {
         return FALSE;
@@ -219,7 +219,6 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     m_dwTotalAlloc += dwSizeToCommit;
 
-    pNewBlock.SuppressRelease();
     pDataHolder.Detach();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -228,7 +227,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     pNewBlock->m_fReleaseMemory = TRUE;
 
     // Add to the linked list
-    m_pFirstBlock = pNewBlock;
+    m_pFirstBlock = pNewBlock.Detach();
 
     dwSizeToCommit /= 2;
 
@@ -283,7 +282,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         // Own the allocated thunks for automatic cleanup on the error paths below.
         ThunkMemoryHolder thunksHolder(newAllocatedThunks);
 
-        NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+        NewHolder<LoaderHeapBlock> pNewBlock{ new (nothrow) LoaderHeapBlock };
         if (pNewBlock == NULL)
         {
             return FALSE;
@@ -305,7 +304,6 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         m_dwTotalAlloc += dwSizeToReserve;
 
-        pNewBlock.SuppressRelease();
         thunksHolder.Detach();
 
         pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -314,7 +312,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         pNewBlock->m_fReleaseMemory = TRUE;
 
         // Add to the linked list
-        m_pFirstBlock = pNewBlock;
+        m_pFirstBlock = pNewBlock.Detach();
 
         m_pAllocPtr = (BYTE*)newAllocatedThunks;
         m_pPtrToEndOfCommittedRegion = m_pAllocPtr + GetStubCodePageSize();

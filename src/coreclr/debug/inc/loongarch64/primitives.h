@@ -16,11 +16,6 @@
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
-// Floating point registers are stored in a SIMD-capable layout (FPR64/LSX/LASX) where each register
-// occupies four 64-bit slots. FPRegister64 spans that slot so Get64bitFPRegisters strides correctly;
-// FPFillR8 reads the scalar value from the first 64 bits.
-typedef struct { ULONGLONG slots[4]; } FPRegister64;
-
 #define MAX_INSTRUCTION_LENGTH 4
 
 // Given a return address retrieved during stackwalk,
@@ -88,13 +83,13 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_LOONGARCH64_PC
 };
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID ip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID ip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Pc = (DWORD64)ip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
     return (CORDB_ADDRESS)(context->Sp);
@@ -165,7 +160,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
     return g_JITToCorDbgReg[reg];
 }
 
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context)
+inline LPVOID CORDbgGetIP(T_CONTEXT *context)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -207,7 +202,7 @@ inline void CORDbgInsertBreakpointExImpl(UNALIGNED CORDB_ADDRESS_TYPE *address)
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -224,13 +219,13 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 
 class Thread;
 // Enable single stepping.
-void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void SetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Disable single stepping
-void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void UnsetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
+bool IsSSFlagEnabled(T_CONTEXT *pCtx, Thread *pThread);
 
 
 inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)
