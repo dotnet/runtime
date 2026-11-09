@@ -28,6 +28,7 @@ namespace System.Net.Security
         /// Common values are Negotiate, NTLM or Kerberos. Default value is Negotiate.
         /// </summary>
         /// <remarks>
+        /// Specifying Kerberos or NTLM restricts authentication to that protocol.
         /// NTLM is a legacy authentication protocol and should be used only when required for
         /// compatibility with existing systems. Negotiate prefers Kerberos when available but
         /// can fall back to NTLM. To prevent NTLM, request Kerberos explicitly when supported
