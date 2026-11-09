@@ -92,7 +92,7 @@ internal sealed partial class GrammarActions
             return (currentNamespace, fullName);
         }
 
-        // COMPAT: Native ilasm composes the full name before splitting it (ns::SplitPath),
+        // COMPAT: Native ilasm composes the full name before splitting it,
         // so atypical dots can change the namespace/name boundary specified in the source.
         return NameHelpers.SplitDottedNameToNamespaceAndName(currentNamespace + "." + fullName);
     }

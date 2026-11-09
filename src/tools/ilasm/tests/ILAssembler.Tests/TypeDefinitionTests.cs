@@ -766,7 +766,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         [InlineData("N.", ".TestType", "N.", ".TestType")]
         [InlineData(".", ".TestType", ".", ".TestType")]
         [InlineData("A.B.C", "D.E.F", "A.B.C.D.E", "F")]
-        public void NamespaceAndTypeName_UseNativeSplit(
+        public void NamespaceAndTypeName_SplitsBasedOnFullName(
             string? namespaceName,
             string className,
             string expectedNamespace,
@@ -880,7 +880,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         [InlineData("...Inner", ".", ".Inner")]
         [InlineData("N.Inner", "N", "Inner")]
         [InlineData("N..Inner", "N", ".Inner")]
-        public void NestedTypeName_UsesNativeSplitWithoutCurrentNamespace(
+        public void NestedTypeName_SplitsNamespaceAndName_WithoutCurrentNamespace(
             string className,
             string expectedNamespace,
             string expectedTypeName)

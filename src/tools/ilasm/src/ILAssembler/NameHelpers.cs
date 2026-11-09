@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ILAssembler
 
             if (dottedName[lastDotIndex - 1] == '.')
             {
-                // Like ns::FindSep, preserve the last dot as part of the name (e.g., "a.b..ctor").
+                // COMPAT: Preserve the last dot as part of the name to correctly handle cases like "a.b..ctor".
                 lastDotIndex -= 1;
             }
 
