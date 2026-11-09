@@ -23,10 +23,10 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do t
 #endif //HAVE_VM_ALLOCATE
 
 #include "pal/utils.h"
-#include "pal/file.h"
 
 #include <errno.h>
 #include <string.h>
+#include <minipal/utf8.h>
 
 
 // In safemath.h, Template SafeInt uses macro _ASSERTE, which need to use variable
@@ -47,18 +47,18 @@ Parameters :
 
 Return Value :
     newly allocated buffer containing the converted string. Conversion is
-    performed using CP_ACP. Buffer is allocated with malloc(), release it
+    performed using UTF-8. Buffer is allocated with malloc(), release it
     with free().
     In case if failure, LastError will be set.
 --*/
 LPSTR UTIL_WCToMB_Alloc(LPCWSTR lpWideCharStr, int cchWideChar)
 {
-    int length;
+    size_t cchSource = cchWideChar < 0 ? minipal_u16_strlen((const CHAR16_T*)lpWideCharStr) + 1 : (size_t)cchWideChar;
+    size_t length;
     LPSTR lpMultiByteStr;
 
     /* get required buffer length */
-    length = WideCharToMultiByte(CP_ACP, 0, lpWideCharStr, cchWideChar,
-                                 NULL, 0, NULL, NULL);
+    length = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpWideCharStr, cchSource, 0);
     if(0 == length)
     {
         ERROR("WCToMB error; GetLastError returns %#x", GetLastError());
@@ -75,8 +75,7 @@ LPSTR UTIL_WCToMB_Alloc(LPCWSTR lpWideCharStr, int cchWideChar)
     }
 
     /* convert into allocated buffer */
-    length = WideCharToMultiByte(CP_ACP, 0, lpWideCharStr, cchWideChar,
-                                 lpMultiByteStr, length, NULL, NULL);
+    length = minipal_convert_utf16_to_utf8((const CHAR16_T*)lpWideCharStr, cchSource, lpMultiByteStr, length, 0);
     if(0 == length)
     {
         ASSERT("WCToMB error; GetLastError returns %#x\n", GetLastError());
@@ -99,18 +98,18 @@ Parameters :
 
 Return Value :
     newly allocated buffer containing the converted string. Conversion is
-    performed using CP_ACP. Buffer is allocated with malloc(), release it
+    performed using UTF-8. Buffer is allocated with malloc(), release it
     with free().
     In case if failure, LastError will be set.
 --*/
 LPWSTR UTIL_MBToWC_Alloc(LPCSTR lpMultiByteStr, int cbMultiByte)
 {
-    int length;
+    size_t cbSource = cbMultiByte < 0 ? strlen(lpMultiByteStr) + 1 : (size_t)cbMultiByte;
+    size_t length;
     LPWSTR lpWideCharStr;
 
     /* get required buffer length */
-    length = MultiByteToWideChar(CP_ACP, 0, lpMultiByteStr, cbMultiByte,
-                                      NULL, 0);
+    length = minipal_get_length_utf8_to_utf16(lpMultiByteStr, cbSource, 0);
     if(0 == length)
     {
         ERROR("MBToWC error; GetLastError returns %#x", GetLastError());
@@ -121,7 +120,7 @@ LPWSTR UTIL_MBToWC_Alloc(LPCSTR lpMultiByteStr, int cbMultiByte)
     size_t fullsize;
     if (!ClrSafeInt<size_t>::multiply(length,sizeof(WCHAR),fullsize))
     {
-        ERROR("integer overflow! length = %d , sizeof(WCHAR) = (%d)\n", length,sizeof(WCHAR) );
+        ERROR("integer overflow! length = %zu , sizeof(WCHAR) = (%zu)\n", length,sizeof(WCHAR) );
         SetLastError(ERROR_ARITHMETIC_OVERFLOW);
         return NULL;
     }
@@ -130,14 +129,13 @@ LPWSTR UTIL_MBToWC_Alloc(LPCSTR lpMultiByteStr, int cbMultiByte)
     if(NULL == lpWideCharStr)
     {
         ERROR("malloc() failed! errno is %d (%s)\n", errno,strerror(errno));
-        SetLastError(FILEGetLastErrorFromErrno());
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return NULL;
     }
 
     /* convert into allocated buffer */
-    length = MultiByteToWideChar(CP_ACP, 0, lpMultiByteStr, cbMultiByte,
-                                      lpWideCharStr, length);
-    if(0 >= length)
+    length = minipal_convert_utf8_to_utf16(lpMultiByteStr, cbSource, (CHAR16_T*)lpWideCharStr, length, 0);
+    if(0 == length)
     {
         ASSERT("MCToMB error; GetLastError returns %#x\n", GetLastError());
         free(lpWideCharStr);

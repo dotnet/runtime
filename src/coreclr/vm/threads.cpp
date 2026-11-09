@@ -1516,7 +1516,7 @@ Thread::Thread()
 
     exposedObjectHolder.SuppressRelease();
     strongHndToExposedObjectHolder.SuppressRelease();
-    contextHolder.SuppressRelease();
+    contextHolder.Detach();
 
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
@@ -3634,10 +3634,10 @@ void Thread::PrepareApartmentAndContext()
     // only if the internal config switch is on.
     if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
-        NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
+        NewHolder<ApartmentSpyImpl> pSpyImpl(new ApartmentSpyImpl());
 
         IfFailThrow(CoRegisterInitializeSpy(pSpyImpl, &m_uliInitializeSpyCookie));
-        pSpyImpl.SuppressRelease();
+        pSpyImpl.Detach();
 
         m_fInitializeSpyRegistered = true;
     }
@@ -6817,16 +6817,14 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
         EX_TRY
         {
-            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
             INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
-            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(CURRENT_THREAD, pByteCodeStart);
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
             UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH

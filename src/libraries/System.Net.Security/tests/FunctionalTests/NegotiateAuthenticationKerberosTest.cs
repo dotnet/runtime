@@ -27,46 +27,109 @@ namespace System.Net.Security.Tests
             _testOutputHelper = testOutputHelper;
         }
     
-        [Fact]
-        public async Task Loopback_Success()
+        [Theory]
+        [InlineData("Negotiate", "Negotiate")]
+        [InlineData("Kerberos", "Kerberos")]
+        [InlineData("Kerberos", "Negotiate")]
+        public async Task Loopback_Success(string clientPackage, string serverPackage)
         {
             using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
 
             kerberosExecutor.AddService("HTTP/linux.contoso.com");
             kerberosExecutor.AddUser("user");
 
-            await kerberosExecutor.Invoke(() =>
+            await kerberosExecutor.Invoke(LoopbackSuccess, clientPackage, serverPackage);
+        }
+
+        private static void LoopbackSuccess(string clientPackage, string serverPackage)
+        {
+            // Do a loopback authentication
+            NegotiateAuthenticationClientOptions clientOptions = new()
             {
-                // Do a loopback authentication
-                NegotiateAuthenticationClientOptions clientOptions = new()
-                {
-                    Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
-                    TargetName = $"HTTP/linux.contoso.com"
-                };
-                NegotiateAuthenticationServerOptions serverOptions = new() { };
-                NegotiateAuthentication clientNegotiateAuthentication = new(clientOptions);
-                NegotiateAuthentication serverNegotiateAuthentication = new(serverOptions);
+                Package = clientPackage,
+                Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
+                TargetName = "HTTP/linux.contoso.com"
+            };
+            NegotiateAuthenticationServerOptions serverOptions = new() { Package = serverPackage };
+            using NegotiateAuthentication clientNegotiateAuthentication = new(clientOptions);
+            using NegotiateAuthentication serverNegotiateAuthentication = new(serverOptions);
 
-                byte[]? serverBlob = null;
-                byte[]? clientBlob = null;
-                bool shouldContinue = true;
-                do
+            byte[]? serverBlob = null;
+            byte[]? clientBlob = null;
+            bool shouldContinue = true;
+            do
+            {
+                clientBlob = clientNegotiateAuthentication.GetOutgoingBlob(serverBlob, out NegotiateAuthenticationStatusCode statusCode);
+                shouldContinue = statusCode == NegotiateAuthenticationStatusCode.ContinueNeeded;
+                Assert.True(statusCode <= NegotiateAuthenticationStatusCode.ContinueNeeded, $"Client authentication failed with {statusCode}");
+                if (clientBlob != null)
                 {
-                    clientBlob = clientNegotiateAuthentication.GetOutgoingBlob(serverBlob, out NegotiateAuthenticationStatusCode statusCode);
-                    shouldContinue = statusCode == NegotiateAuthenticationStatusCode.ContinueNeeded;
-                    Assert.True(statusCode <= NegotiateAuthenticationStatusCode.ContinueNeeded, $"Client authentication failed with {statusCode}");
-                    if (clientBlob != null)
-                    {
-                        serverBlob = serverNegotiateAuthentication.GetOutgoingBlob(clientBlob, out statusCode);
-                        Assert.True(statusCode <= NegotiateAuthenticationStatusCode.ContinueNeeded, $"Server authentication failed with {statusCode}");
-                    }
+                    serverBlob = serverNegotiateAuthentication.GetOutgoingBlob(clientBlob, out statusCode);
+                    Assert.True(statusCode <= NegotiateAuthenticationStatusCode.ContinueNeeded, $"Server authentication failed with {statusCode}");
                 }
-                while (serverBlob != null && shouldContinue);
+            }
+            while (serverBlob != null && shouldContinue);
 
-                Assert.Equal("Kerberos", clientNegotiateAuthentication.Package);
-                Assert.Equal("Kerberos", serverNegotiateAuthentication.Package);
-                Assert.True(clientNegotiateAuthentication.IsAuthenticated);
-                Assert.True(serverNegotiateAuthentication.IsAuthenticated);
+            Assert.Equal("Kerberos", clientNegotiateAuthentication.Package);
+            Assert.Equal("Kerberos", serverNegotiateAuthentication.Package);
+            Assert.True(clientNegotiateAuthentication.IsAuthenticated);
+            Assert.True(serverNegotiateAuthentication.IsAuthenticated);
+        }
+
+        [ConditionalTheory(typeof(Capability), nameof(Capability.IsNtlmServerAvailable))]
+        [InlineData("Kerberos", "4e544c4d535350000100000033828ae2000000000000000000000000000000000601b01d0000000f")]
+        [InlineData("Kerberos", "604806062b0601050502a03e303ca00e300c060a2b06010401823702020aa22a04284e544c4d535350000100000033828ae2000000000000000000000000000000000601b01d0000000f")]
+        [InlineData("kErBeRoS", "4e544c4d535350000100000033828ae2000000000000000000000000000000000601b01d0000000f")]
+        public async Task ServerPackage_Kerberos_RejectsNtlm(string serverPackage, string tokenHex)
+        {
+            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
+            kerberosExecutor.AddService("HTTP/linux.contoso.com");
+
+            await kerberosExecutor.Invoke(static (package, token) =>
+            {
+                byte[] clientBlob = Convert.FromHexString(token);
+                using NegotiateAuthentication negotiateServer = new(new NegotiateAuthenticationServerOptions());
+                byte[]? challenge = negotiateServer.GetOutgoingBlob(clientBlob, out NegotiateAuthenticationStatusCode statusCode);
+                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+                Assert.NotNull(challenge);
+
+                using NegotiateAuthentication kerberosServer = new(new NegotiateAuthenticationServerOptions { Package = package });
+                byte[]? serverBlob = kerberosServer.GetOutgoingBlob(clientBlob, out statusCode);
+                Assert.True(statusCode >= NegotiateAuthenticationStatusCode.GenericFailure, $"Server accepted NTLM with {statusCode}");
+                Assert.Null(serverBlob);
+            }, serverPackage, tokenHex);
+        }
+
+        [ConditionalFact(typeof(Capability), nameof(Capability.IsNtlmServerAvailable))]
+        public async Task ServerPackage_Ntlm_RejectsKerberos()
+        {
+            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
+            kerberosExecutor.AddService("HTTP/linux.contoso.com");
+            kerberosExecutor.AddUser("user");
+
+            await kerberosExecutor.Invoke(static () =>
+            {
+                using NegotiateAuthentication client = new(new NegotiateAuthenticationClientOptions
+                {
+                    Package = "Kerberos",
+                    Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
+                    TargetName = "HTTP/linux.contoso.com",
+                    RequireMutualAuthentication = true
+                });
+                byte[]? clientBlob = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode statusCode);
+                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+                Assert.NotNull(clientBlob);
+
+                using NegotiateAuthentication ntlmControl = new(new NegotiateAuthenticationServerOptions { Package = "NTLM" });
+                byte[] ntlmBlob = Convert.FromHexString("4e544c4d535350000100000033828ae2000000000000000000000000000000000601b01d0000000f");
+                byte[]? ntlmChallenge = ntlmControl.GetOutgoingBlob(ntlmBlob, out statusCode);
+                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+                Assert.NotNull(ntlmChallenge);
+
+                using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions { Package = "NTLM" });
+                byte[]? serverBlob = server.GetOutgoingBlob(clientBlob, out statusCode);
+                Assert.True(statusCode >= NegotiateAuthenticationStatusCode.GenericFailure, $"Server accepted Kerberos with {statusCode}");
+                Assert.Null(serverBlob);
             });
         }
 

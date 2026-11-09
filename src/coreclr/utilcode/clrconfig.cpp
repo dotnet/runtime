@@ -179,7 +179,7 @@ namespace
 
         wcscat_s(buff, ARRAY_SIZE(buff), name);
 
-        NewArrayHolder<WCHAR> ret = NULL;
+        WStringHolder ret;
         HRESULT hr = S_OK;
         EX_TRY
         {
@@ -220,7 +220,7 @@ namespace
         }
 
         if(ret != NULL)
-            return ret.Extract();
+            return ret.Detach();
 
         return NULL;
     }
@@ -246,7 +246,7 @@ namespace
             ? 10
             : 16; // Parse as hex by default.
 
-        NewArrayHolder<WCHAR> val = EnvGetString(name, options);
+        WStringHolder val{ EnvGetString(name, options) };
         if (val != NULL)
         {
             errno = 0;
@@ -275,7 +275,7 @@ namespace
         }
         CONTRACTL_END;
 
-        NewArrayHolder<WCHAR> ret(NULL);
+        WStringHolder ret;
 
 
         ret = EnvGetString(name, options);
@@ -283,10 +283,9 @@ namespace
         {
             if (*ret != W('\0'))
             {
-                ret.SuppressRelease();
-                return ret;
+                return ret.Detach();
             }
-            ret.Clear();
+            ret.Free();
         }
 
         return NULL;
@@ -346,7 +345,7 @@ namespace
 
         // Create a new buffer to hold a copy of the trimmed string.  Caller will be
         // responsible for this buffer if we return it.
-        NewArrayHolder<WCHAR> wszTrimmedCopy(new (nothrow) WCHAR[cchAfterTrim + 1]);
+        WStringHolder wszTrimmedCopy{ new (nothrow) WCHAR[cchAfterTrim + 1] };
         if (wszTrimmedCopy == NULL)
         {
             return E_OUTOFMEMORY;
@@ -360,8 +359,7 @@ namespace
 
         // Successfully made a copy of the trimmed string.  Return it. Caller will be responsible for
         // deleting it.
-        wszTrimmedCopy.SuppressRelease();
-        *pwszTrimmed = wszTrimmedCopy;
+        *pwszTrimmed = wszTrimmedCopy.Detach();
         return S_OK;
     }
 }

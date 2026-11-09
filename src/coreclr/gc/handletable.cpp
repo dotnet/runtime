@@ -547,8 +547,12 @@ void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeC
 
     // choose a scanning method based on the async flag
     TABLESCANPROC pfnScanTable = TableScanHandles;
+#ifdef FEATURE_MULTITHREADING
     if (fAsync)
         pfnScanTable = xxxTableScanHandlesAsync;
+#else // FEATURE_MULTITHREADING
+    _ASSERTE(!fAsync);
+#endif // FEATURE_MULTITHREADING
 
     {
         // acquire the handle manager lock
@@ -663,10 +667,14 @@ void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, uintptr_t
 
     // choose a scanning method based on the async flag
     TABLESCANPROC pfnScanTable = TableScanHandles;
+#ifdef FEATURE_MULTITHREADING
     if (flags & HNDGCF_ASYNC)
     {
         pfnScanTable = xxxTableScanHandlesAsync;
     }
+#else // FEATURE_MULTITHREADING
+    _ASSERTE((flags & HNDGCF_ASYNC) == 0);
+#endif // FEATURE_MULTITHREADING
 
     {
         // lock the table down for concurrent GC only

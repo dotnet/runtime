@@ -546,13 +546,12 @@ buffer_manager_allocate_buffer_for_thread (
 
 	// Attempt to reserve the necessary buffer size. A normal Block-mode producer reserves through the fair
 	// FIFO path: a failed reserve enqueues it and returns NULL so the caller parks and retries (surfaced
-	// upstream as EP_WRITE_EVENT_RESULT_BLOCKED). A rundown writer must never park: rundown runs synchronously
-	// on the teardown thread after the streaming drain thread has already exited, so no drain thread is left to
-	// free capacity and a parked rundown writer would block forever. It takes the plain reserve and drops on
-	// failure, exactly as Drop mode does.
+	// upstream as EP_WRITE_EVENT_RESULT_BLOCKED). Stop-time capture-state and rundown writers must not park: a stop
+	// callback can run on the reader itself, and rundown runs after the drain thread has exited.
+	// Nonblocking writers take the plain reserve and drop on failure, exactly as Drop mode does.
 	EP_ASSERT(buffer_size > 0);
 	EventPipeThread *writer_thread = ep_thread_session_state_get_thread (thread_session_state);
-	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK && !ep_thread_is_rundown_thread (writer_thread)) {
+	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK && ep_thread_can_block (writer_thread)) {
 		if (!buffer_manager_try_reserve_buffer_fair (buffer_manager, writer_thread, buffer_size)) {
 			// Capacity is full and we were enqueued on the fair wait queue, so a reader will wake us: tell
 			// the caller it may park. Any allocation failure below is not enqueued, leaving should_block

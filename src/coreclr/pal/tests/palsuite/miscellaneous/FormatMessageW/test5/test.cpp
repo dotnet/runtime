@@ -13,6 +13,7 @@
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 PALTEST(miscellaneous_FormatMessageW_test5_paltest_formatmessagew_test5, "miscellaneous/FormatMessageW/test5/paltest_formatmessagew_test5")
 {
@@ -61,7 +62,7 @@ PALTEST(miscellaneous_FormatMessageW_test5_paltest_formatmessagew_test5, "miscel
   
     if(memcmp(OutBuffer,
               convert("Pal Foo Bar FooBar Testing"),
-              wcslen(OutBuffer)*2+2) != 0) 
+              u16_strlen(OutBuffer)*2+2) != 0) 
     {
         Fail("ERROR:  Since the FORMAT_MESSAGE_ALLOCATE_BUFFER flag was set, "
              "the result should have been 'Pal Foo Bar FooBar Testing' but "
