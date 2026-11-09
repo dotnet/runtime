@@ -149,6 +149,25 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IEnumerableGetEnumeratorThrowsOnMutation()
+        {
+            var builder = ImmutableSortedSet.CreateBuilder<int>();
+            builder.Add(1);
+            builder.Add(2);
+            builder.Add(3);
+
+            IEnumerable<int> enumerable = builder;
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (int item in enumerable)
+                {
+                    builder.Add(4);
+                }
+            });
+        }
+
+        [Fact]
         public void MaxMin()
         {
             ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.Create(1, 2, 3).ToBuilder();
