@@ -2329,7 +2329,7 @@ public unsafe class StackWalkTests
         if (seedFromNativeContext)
         {
             ContextHolder<WasmContext> nativeContext = new() { InstructionPointer = new TargetCodePointer(0x0009_9000) };
-            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes());
+            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes().ToArray());
         }
         else
         {
