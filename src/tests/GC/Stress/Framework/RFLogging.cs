@@ -380,14 +380,9 @@ internal class RFLogging
             {
                 if (File.Exists(Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js")))
                 {
-                    ProcessStartInfo psi = new ProcessStartInfo("cscript.exe",
+                    ProcessTextOutput result = Process.RunAndCaptureText("cscript.exe",
                         ["//b", "//nologo", Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js"),
                          "-i", Environment.ExpandEnvironmentVariables("%STRESSID%"), "-a", "UPDATE_RECORD", "-s", "RUNNING"]);
-                    psi.InheritedHandles = [];
-                    psi.RedirectStandardOutput = true;
-                    psi.RedirectStandardError = true;
-
-                    ProcessTextOutput result = Process.RunAndCaptureText(psi);
                     if (result.ExitStatus.ExitCode != 0)
                     {
                         string msg = String.Format("cscript.exe " + Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING\r\nWARNING: Status update did not return success!") + " ExitCode={0}", result.ExitStatus.ExitCode);

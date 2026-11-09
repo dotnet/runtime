@@ -8,12 +8,7 @@ using System.IO;
 string executableExtension = OperatingSystem.IsWindows() ? ".exe" : "";
 string helloExePath = Path.Combine(AppContext.BaseDirectory, $"HelloExe{executableExtension}");
 
-ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(helloExePath)
-{
-    RedirectStandardError = true,
-    RedirectStandardOutput = true,
-    InheritedHandles = [],
-});
+ProcessTextOutput result = Process.RunAndCaptureText(helloExePath);
 
 string output = result.StandardOutput.Trim();
 if (result.ExitStatus.ExitCode != 0 || output != "Hello from HelloExe")
