@@ -96,8 +96,13 @@ namespace System.Threading
         private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
         private Thread? _lockOwnerThread;
+        private ulong _lockOwnerOSThreadId;
 
         public SharedMemoryId Id => _processDataHeader._id;
+
+        protected SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> ProcessDataHeader => _processDataHeader;
+
+        protected ulong LockOwnerOSThreadId => _lockOwnerOSThreadId;
 
         public NamedMutexProcessDataBase? NextOwnedNamedMutex { get; set; }
 
@@ -316,6 +321,7 @@ namespace System.Threading
                 mutexData.SetLockOwnerToCurrentThread();
                 mutexData._lockCount = 1;
                 mutexData._lockOwnerThread = waitInfo.Thread;
+                mutexData._lockOwnerOSThreadId = Thread.CurrentOSThreadId;
                 // Add the ref count for the thread's wait info.
                 mutexData._processDataHeader.IncrementRefCount();
                 waitInfo.NamedMutexOwnershipChain.Add(mutexData);
@@ -413,6 +419,56 @@ namespace System.Threading
             if (Thread.CurrentThread == abandonedThread)
             {
                 base.AbandonLockCore(abandonedThread);
+                return;
+            }
+
+            // The abandoned thread's runtime state has been detached, but its OS thread may not have exited yet, so the
+            // kernel can still hold this mutex on that thread's robust futex list. Unmapping the shared memory before the
+            // OS thread exits makes the exit-time robust list walk fault and silently skip every earlier mutex on the list.
+            // Keep an extra reference on the mapping until the OS thread is gone.
+            ulong osThreadId = LockOwnerOSThreadId;
+            if (!HasOSThreadExited(osThreadId))
+            {
+                ProcessDataHeader.IncrementRefCount();
+                if (CanDetectOSThreadExit)
+                {
+                    _ = new NativeOwnerExitWatcher(ProcessDataHeader, osThreadId);
+                }
+
+                // Without a way to detect the exit, the reference is intentionally kept until the process exits.
+            }
+        }
+
+        private static bool CanDetectOSThreadExit => OperatingSystem.IsLinux();
+
+        // A thread id stays valid for tgkill until the kernel has finished tearing the thread down, which is after it has
+        // walked the thread's robust futex list. Any result other than ESRCH (including errors) means the thread may still exist.
+        private static bool HasOSThreadExited(ulong osThreadId) =>
+            CanDetectOSThreadExit
+            && Interop.Sys.TgKill(Environment.ProcessId, (int)osThreadId, 0) != 0
+            && Interop.Sys.GetLastErrorInfo().Error == Interop.Error.ESRCH;
+
+        // Holds a mapping reference for a native owner thread whose OS thread has not exited yet. It re-registers for
+        // finalization on each pass until the thread has exited, then releases the reference.
+        private sealed class NativeOwnerExitWatcher(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader, ulong osThreadId)
+        {
+            ~NativeOwnerExitWatcher()
+            {
+                if (!HasOSThreadExited(osThreadId))
+                {
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
+                WaitSubsystem.LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+                try
+                {
+                    processDataHeader.DecrementRefCount();
+                }
+                finally
+                {
+                    scope.Dispose();
+                }
             }
         }
 
