@@ -1136,7 +1136,9 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
 
     if (bio != NULL)
     {
-        resp = d2i_OCSP_RESPONSE_bio(bio, NULL);
+        // OpenSSL 4.1 defines d2i_OCSP_RESPONSE_bio and i2d_OCSP_RESPONSE_bio in terms of
+        // ASN1_item_d2i_bio, ASN1_item_i2d_bio and OCSP_RESPONSE_it, which are not in the shim.
+        resp = ASN1_d2i_bio_of(OCSP_RESPONSE, OCSP_RESPONSE_new, d2i_OCSP_RESPONSE, bio, NULL);
         BIO_free(bio);
     }
 
@@ -1261,7 +1263,7 @@ static int32_t X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, X509* subject, X509
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
 #pragma clang diagnostic ignored "-Wimplicit-void-ptr-cast"
-                if (i2d_OCSP_RESPONSE_bio(bio, resp))
+                if (ASN1_i2d_bio_of(OCSP_RESPONSE, i2d_OCSP_RESPONSE, bio, resp))
 #pragma clang diagnostic pop
                 {
                     clearErr = 0;
