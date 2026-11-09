@@ -42,6 +42,31 @@
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
     .endm
 
+// -----------------------------------------------------------------------------
+// Macro used to restore preserved general purpose and FP registers from REGDISPLAY
+// regdisplayReg - register pointing to the REGDISPLAY structure
+.macro RESTORE_PRESERVED_REGISTERS regdisplayReg
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 19, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 20, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 21, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 22, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 23, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 24, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 25, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 26, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 27, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 28, x12
+        LOAD_FUNCLET_REGISTER \regdisplayReg, 29, x12
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 8
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 9
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 10
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 11
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 12
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 13
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 14
+        LOAD_FUNCLET_FP_REGISTER \regdisplayReg, 15
+.endm
+
 .macro GetThreadX2
     stp x0, x1, [sp, -16]!
     bl C_FUNC(RhpGetThread)
@@ -282,7 +307,7 @@ LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
 
         ldp         x0, x1, [sp, #0x10]                         // x0 <- REGDISPLAY*, x1 <- resume IP
 
-        LOAD_FUNCLET_REGISTERS x0, x12
+        RESTORE_PRESERVED_REGISTERS x0
 
         // reset SP and jump to continuation address
         ldr         x2, [x0, #OFFSETOF__REGDISPLAY__SP]
@@ -314,7 +339,7 @@ LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
 #define rsp_offset_x3 0x28
 
         // Using the NO_FP macro so that the debugger unwinds using SP.
-        // This makes backtraces work even after using LOAD_FUNCLET_REGISTERS.
+        // This makes backtraces work even after using RESTORE_PRESERVED_REGISTERS.
         PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -0x30
         stp x0, x1,   [sp, #rsp_offset_x0]
         stp x2, x3,   [sp, #rsp_offset_x2]
@@ -334,7 +359,7 @@ LOCAL_LABEL(ClearRetry_Propagate):
         // set preserved regs to the values expected by the funclet
         //
         ldr         x2, [sp, #rsp_offset_x2]                    // x2 <- REGDISPLAY*
-        LOAD_FUNCLET_REGISTERS x2, x12
+        RESTORE_PRESERVED_REGISTERS x2
 
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.

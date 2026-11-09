@@ -38,22 +38,18 @@
         br      x9
     MEND
 
-;; CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT
+;; CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+;; $reg is the register number: 19-28 for x19-x28, which are followed by fp (29) in the CONTEXT.
     MACRO
-        LOAD_FUNCLET_REGISTERS $regs, $scratch
+        LOAD_FUNCLET_REGISTER $base, $reg, $scratch
 
-        ldp     x19, x20, [$regs, #OFFSETOF__CONTEXT__X19]
-        ldp     x21, x22, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x10)]
-        ldp     x23, x24, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x20)]
-        ldp     x25, x26, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x30)]
-        ldp     x27, x28, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x40)]
-        ldr     fp, [$regs, #OFFSETOF__CONTEXT__Fp]
+        ldr     x$reg, [$base, #(OFFSETOF__CONTEXT__X19 + ($reg - 19) * 8)]
     MEND
 
     MACRO
-        LOAD_FUNCLET_FRAME_POINTER $regs, $scratch
+        LOAD_FUNCLET_FP_REGISTER $base, $index
 
-        ldr     fp, [$regs, #OFFSETOF__CONTEXT__Fp]
+        ldr     d$index, [$base, #(OFFSETOF__CONTEXT__V + $index * 16)]
     MEND
 
 #else
@@ -65,18 +61,14 @@
         br      x9
 .endm
 
-// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT
-.macro LOAD_FUNCLET_REGISTERS regs, scratch
-        ldp     x19, x20, [\regs, #OFFSETOF__CONTEXT__X19]
-        ldp     x21, x22, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x10)]
-        ldp     x23, x24, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x20)]
-        ldp     x25, x26, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x30)]
-        ldp     x27, x28, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x40)]
-        ldr     fp, [\regs, #OFFSETOF__CONTEXT__Fp]
+// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+// reg is the register number: 19-28 for x19-x28, which are followed by fp (29) in the CONTEXT.
+.macro LOAD_FUNCLET_REGISTER base, reg, scratch
+        ldr     x\reg, [\base, #(OFFSETOF__CONTEXT__X19 + (\reg - 19) * 8)]
 .endm
 
-.macro LOAD_FUNCLET_FRAME_POINTER regs, scratch
-        ldr     fp, [\regs, #OFFSETOF__CONTEXT__Fp]
+.macro LOAD_FUNCLET_FP_REGISTER base, index
+        ldr     d\index, [\base, #(OFFSETOF__CONTEXT__V + \index * 16)]
 .endm
 
 #endif

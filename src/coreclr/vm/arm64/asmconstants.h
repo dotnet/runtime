@@ -91,6 +91,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__X19 == offsetof(T_CONTEXT, X19));
 #define OFFSETOF__CONTEXT__Fp         0xF0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
 
+#define OFFSETOF__CONTEXT__V          0x110
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__V == offsetof(T_CONTEXT, V));
+
 #define               OFFSETOF__DynamicHelperStubArgs__Constant1    0x0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant1
                     == offsetof(DynamicHelperStubArgs, Constant1));

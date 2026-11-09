@@ -1167,7 +1167,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *  All temps are allocated in the parent frame, so the funclet frame only needs to hold LR and the outgoing
  *  argument space.
  *
- *  The ARM64 funclet prolog sequence is (Note: #outsz is the outgoing argument space, aligned to 16):
+ *  The funclet prolog sequence is (Note: #outsz is the outgoing argument space, aligned to 16):
  *
  *     str lr,[sp,#-16]!            ; save LR
  *     sub sp,sp,#outsz             ; create space for outgoing argument space, if any
