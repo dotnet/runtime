@@ -38,6 +38,24 @@
         br      x9
     MEND
 
+;; CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT
+    MACRO
+        LOAD_FUNCLET_REGISTERS $regs, $scratch
+
+        ldp     x19, x20, [$regs, #OFFSETOF__CONTEXT__X19]
+        ldp     x21, x22, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x10)]
+        ldp     x23, x24, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x20)]
+        ldp     x25, x26, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x30)]
+        ldp     x27, x28, [$regs, #(OFFSETOF__CONTEXT__X19 + 0x40)]
+        ldr     fp, [$regs, #OFFSETOF__CONTEXT__Fp]
+    MEND
+
+    MACRO
+        LOAD_FUNCLET_FRAME_POINTER $regs, $scratch
+
+        ldr     fp, [$regs, #OFFSETOF__CONTEXT__Fp]
+    MEND
+
 #else
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
@@ -45,6 +63,20 @@
 .macro TAILCALL_GC_POLL_RARE
         PREPARE_EXTERNAL_VAR_INDIRECT g_pPollGC, x9
         br      x9
+.endm
+
+// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT
+.macro LOAD_FUNCLET_REGISTERS regs, scratch
+        ldp     x19, x20, [\regs, #OFFSETOF__CONTEXT__X19]
+        ldp     x21, x22, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x10)]
+        ldp     x23, x24, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x20)]
+        ldp     x25, x26, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x30)]
+        ldp     x27, x28, [\regs, #(OFFSETOF__CONTEXT__X19 + 0x40)]
+        ldr     fp, [\regs, #OFFSETOF__CONTEXT__Fp]
+.endm
+
+.macro LOAD_FUNCLET_FRAME_POINTER regs, scratch
+        ldr     fp, [\regs, #OFFSETOF__CONTEXT__Fp]
 .endm
 
 #endif

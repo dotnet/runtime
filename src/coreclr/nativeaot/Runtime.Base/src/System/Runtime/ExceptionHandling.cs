@@ -942,7 +942,7 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
                 InternalCalls.RhpPopExInfo(ref exInfo, frameIter.SP);
                 InternalCalls.RhpCallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, frameIter.PreviousTransitionFrame);
@@ -962,7 +962,7 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
             UIntPtr funcletCallerSP;
             byte* pResumeIP = InternalCalls.CallEHFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, &funcletCallerSP);
@@ -1106,7 +1106,7 @@ namespace System.Runtime
 #if NATIVEAOT
                     try
                     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
                         UIntPtr funcletCallerSP;
                         shouldInvokeHandler =
                             InternalCalls.CallEHFilterFunclet(exception, frameIter.RegisterSet, pFilterFunclet, &funcletCallerSP) != 0;
@@ -1259,7 +1259,7 @@ namespace System.Runtime
 
                 byte* pFinallyHandler = ehClause._handlerAddress;
                 exInfo._idxCurClause = curIdx;
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
                 UIntPtr funcletCallerSP;
                 InternalCalls.CallEHFunclet(null, pFinallyHandler, exInfo._frameIter.RegisterSet, &funcletCallerSP);
 #else

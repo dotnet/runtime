@@ -37,7 +37,7 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionGuardedTailCall;
 #endif
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 EXTERN_C CODE_LOCATION CallEHFunclet2;
 EXTERN_C CODE_LOCATION CallEHFilterFunclet2;
 #else
@@ -1086,7 +1086,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #else // FEATURE_PORTABLE_HELPERS
     PTR_uintptr_t SP;
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, CallEHFilterFunclet2);
 #else
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
@@ -1220,21 +1220,10 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR11 = SP++;
 
 #elif defined(TARGET_ARM64)
-    PTR_uint64_t d = (PTR_uint64_t)(m_RegDisplay.SP);
-
-    for (int i = 0; i < 8; i++)
-    {
-        m_RegDisplay.D[i] = *d++;
-    }
-
-    SP = (PTR_uintptr_t)d;
+    SP = (PTR_uintptr_t)(m_RegDisplay.SP);
 
     if (!isFilterInvoke)
     {
-        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
-        // thunks, but we don't need to know what they are here, so we just skip them.
-        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
-
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pX19  = m_RegDisplay.pX19;
         m_funcletPtrs.pX20  = m_RegDisplay.pX20;
@@ -1263,6 +1252,17 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pX26 = SP++;
     m_RegDisplay.pX27 = SP++;
     m_RegDisplay.pX28 = SP++;
+
+    PTR_uint64_t d = (PTR_uint64_t)SP;
+
+    for (int i = 0; i < 8; i++)
+    {
+        m_RegDisplay.D[i] = *d++;
+    }
+
+    SP = (PTR_uintptr_t)d;
+
+    SP += 2; // 2 locals
 
 #elif defined(TARGET_LOONGARCH64)
     PTR_uint64_t f = (PTR_uint64_t)(m_RegDisplay.SP);
@@ -2392,7 +2392,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InThrowSiteThunk;
     }
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (EQUALS_RETURN_ADDRESS(returnAddress, CallEHFunclet2))
     {
         return InFuncletInvokeThunk;
