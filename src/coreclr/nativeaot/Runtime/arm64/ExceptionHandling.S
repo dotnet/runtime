@@ -260,13 +260,9 @@ LOCAL_LABEL(NotHijacked):
 //         X1:  resume address returned by the catch funclet
 //
 
-    NESTED_ENTRY RhpResumeAfterCatch, _TEXT, NoHandler
+    LEAF_ENTRY RhpResumeAfterCatch, _TEXT
 
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -0x20
-        stp         x0, x1, [sp, #0x10]
-
-        bl          C_FUNC(RhpGetThread)
-        mov         x3, x0                                      // x3 <- Thread*
+        INLINE_GETTHREAD x3                                     // x3 <- Thread*
 
         // Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
         add         x12, x3, #OFFSETOF__Thread__m_ThreadStateFlags
@@ -279,8 +275,6 @@ LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
         INLINE_THREAD_UNHIJACK x3, x4, x12                      // Thread in x3, trashes x4 and x12
-
-        ldp         x0, x1, [sp, #0x10]                         // x0 <- REGDISPLAY*, x1 <- resume IP
 
         LOAD_FUNCLET_REGISTER x0, 19, x12
         LOAD_FUNCLET_REGISTER x0, 20, x12
@@ -308,7 +302,7 @@ LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
         mov         sp, x2
         br          x1
 
-    NESTED_END RhpResumeAfterCatch, _TEXT
+    LEAF_END RhpResumeAfterCatch, _TEXT
 
 #ifdef FEATURE_OBJCMARSHAL
 
@@ -338,8 +332,7 @@ LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
         stp x0, x1,   [sp, #rsp_offset_x0]
         stp x2, x3,   [sp, #rsp_offset_x2]
 
-        bl C_FUNC(RhpGetThread)
-        mov x5, x0                                              // x5 <- Thread*
+        INLINE_GETTHREAD x5                                     // x5 <- Thread*
 
         // Clear the DoNotTriggerGc state before calling out to the propagation callback.
         add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags

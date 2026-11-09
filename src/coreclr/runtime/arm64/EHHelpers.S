@@ -72,24 +72,18 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         str     x4, [x3]
 
 #ifdef FEATURE_NATIVEAOT
-        mov     x19, x0
-        mov     x20, x1
         str     x2, [sp, #locRegs]
 
-        bl      C_FUNC(RhpGetThread)
-        str     x0, [sp, #locThread]
+        INLINE_GETTHREAD x4
+        str     x4, [sp, #locThread]
 
         // Clear the DoNotTriggerGc state before calling out to the managed funclet.
-        add     x12, x0, #OFFSETOF__Thread__m_ThreadStateFlags
+        add     x12, x4, #OFFSETOF__Thread__m_ThreadStateFlags
 LOCAL_LABEL(CallEHFunclet_ClearRetry):
         ldxr    w4, [x12]
         bic     w4, w4, #TSF_DoNotTriggerGc
         stxr    w5, w4, [x12]
         cbnz    w5, LOCAL_LABEL(CallEHFunclet_ClearRetry)
-
-        mov     x0, x19
-        mov     x1, x20
-        ldr     x2, [sp, #locRegs]
 #endif
 
         LOAD_FUNCLET_REGISTER x2, 19, x12
