@@ -86,7 +86,7 @@ internal sealed unsafe class JitInstance
             return null;
         }
         if (st1 != null)
-            Logger.LogVerbose(CFormat.Sprintf("Jit startup took %fms", st1.Elapsed.TotalMilliseconds));
+            Logger.LogVerbose($"Jit startup took {st1.Elapsed.TotalMilliseconds:F6}ms");
 
         return jit;
     }

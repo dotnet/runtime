@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Internal.JitInterface;
 
 namespace SuperPmi.Mcs;
@@ -64,8 +65,8 @@ internal static unsafe class VerbASMDump
     {
         CORINFO_METHOD_INFO info = mc.repCompileMethod(out _, out _);
 
-        string header = CFormat.Sprintf(";;Generated from SuperPMI on original input '%s'", mc.cr.repProcessName())
-            + CFormat.Sprintf("\r\n Method Name \"%s\"", CallUtils.getMethodName(mc, info.ftn));
+        string header = $";;Generated from SuperPMI on original input '{mc.cr.repProcessName()}'"
+            + $"\r\n Method Name \"{Encoding.UTF8.GetString(CallUtils.getMethodName(mc, info.ftn))}\"";
 
         // A disassembler would read the code here, and relocate it; reading it checks that it was recorded.
         mc.cr.AllocMem.Get(0);

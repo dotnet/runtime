@@ -264,7 +264,7 @@ internal static partial class ILDumper
     {
         for (int i = 0; i < len; i++)
         {
-            CFormat.Printf(output, "IL_%04x: ", i);
+            output.Write($"IL_{i:x4}: ");
 
             (string name, Operand operand) = s_opcodes[ilCode[i]];
             if (ilCode[i] == 0xFE)
@@ -273,14 +273,14 @@ internal static partial class ILDumper
                 (name, operand) = s_fePrefixedOpcodes[ilCode[i]];
                 if (name == null)
                 {
-                    Logger.LogError(CFormat.Sprintf("unknown ilCode 0xfe%2x at offset %d in MethodGen::PrettyPrint", ilCode[i], i));
+                    Logger.LogError($"unknown ilCode 0xfe{ilCode[i],2:x} at offset {i} in MethodGen::PrettyPrint");
                     output.Write('\n');
                     continue;
                 }
             }
             else if (name == null)
             {
-                Logger.LogError(CFormat.Sprintf("unknown ilCode 0x%02x at offset %d in MethodGen::PrettyPrint", ilCode[i], i));
+                Logger.LogError($"unknown ilCode 0x{ilCode[i]:x2} at offset {i} in MethodGen::PrettyPrint");
                 output.Write('\n');
                 continue;
             }
@@ -327,11 +327,11 @@ internal static partial class ILDumper
                 i += 4;
                 break;
             case Operand.ShortBranch:
-                CFormat.Printf(output, "%s IL_%04x", name, at + 2 + ilCode[at + 1]);
+                output.Write($"{name} IL_{at + 2 + ilCode[at + 1]:x4}");
                 i += 1;
                 break;
             case Operand.Branch:
-                CFormat.Printf(output, "%s IL_%04x", name, at + 5 + Int32At(ilCode, at));
+                output.Write($"{name} IL_{at + 5 + Int32At(ilCode, at):x4}");
                 i += 4;
                 break;
             case Operand.Switch:

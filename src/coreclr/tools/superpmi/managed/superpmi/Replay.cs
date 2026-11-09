@@ -12,8 +12,12 @@ internal static class Replay
     // Parallel mode parses these status lines from the child processes. They must all start with the same
     // fixed prefix, to quickly tell when to parse a line fully.
     public const string AllFormatStringFixedPrefix = "Loaded ";
-    public const string SummaryFormatString = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d Missing %d";
-    public const string AsmDiffsSummaryFormatString = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d Missing %d Diffs %d";
+
+    public static string Summary(int loaded, int jitted, int failed, int excluded, int missing)
+        => $"Loaded {loaded}  Jitted {jitted}  FailedCompile {failed} Excluded {excluded} Missing {missing}";
+
+    public static string AsmDiffsSummary(int loaded, int jitted, int failed, int excluded, int missing, int diffs)
+        => $"{Summary(loaded, jitted, failed, excluded, missing)} Diffs {diffs}";
 
     private enum NearDifferResult
     {
@@ -172,8 +176,8 @@ internal static class Replay
                 Stopwatch st3 = Stopwatch.StartNew();
                 ReplayResults res = jit.CompileMethod(mc, mcIndex, collectThroughput);
                 st3.Stop();
-                Logger.LogDebug(CFormat.Sprintf("Method %d compiled%s in %fms, result %d", mcIndex, o.nameOfJit2 == null ? "" : " by JIT1",
-                    st3.Elapsed.TotalMilliseconds, (int)res.Result));
+                Logger.LogDebug($"Method {mcIndex} compiled{(o.nameOfJit2 == null ? "" : " by JIT1")} in {st3.Elapsed.TotalMilliseconds:F6}ms, " +
+                    $"result {(int)res.Result}");
 
                 if (res.Result == ReplayResult.Success)
                 {
@@ -209,7 +213,7 @@ internal static class Replay
                     Stopwatch st4 = Stopwatch.StartNew();
                     res2 = jit2.CompileMethod(mc, mcIndex, collectThroughput);
                     st4.Stop();
-                    Logger.LogDebug(CFormat.Sprintf("Method %d compiled by JIT2 in %fms, result %d", mcIndex, st4.Elapsed.TotalMilliseconds, (int)res2.Result));
+                    Logger.LogDebug($"Method {mcIndex} compiled by JIT2 in {st4.Elapsed.TotalMilliseconds:F6}ms, result {(int)res2.Result}");
 
                     if (res2.Result == ReplayResult.Success)
                     {
@@ -314,11 +318,11 @@ internal static class Replay
                     double percentComplete = 100.0 * (progressBeforeCurrentMC + iter) / totalWork;
                     int perSecond = (int)(progressInterval / st1.Elapsed.TotalSeconds);
                     if (o.applyDiff)
-                        Logger.LogVerbose(CFormat.Sprintf(" %2.1f%% - Loaded %d  Jitted %d  Diffs %d  FailedCompile %d at %d per second", percentComplete,
-                            loadedCount, jittedCount, diffsCount, failToReplayCount, perSecond));
+                        Logger.LogVerbose($" {percentComplete,2:F1}% - Loaded {loadedCount}  Jitted {jittedCount}  Diffs {diffsCount}  " +
+                            $"FailedCompile {failToReplayCount} at {perSecond} per second");
                     else
-                        Logger.LogVerbose(CFormat.Sprintf(" %2.1f%% - Loaded %d  Jitted %d  FailedCompile %d at %d per second", percentComplete,
-                            loadedCount, jittedCount, failToReplayCount, perSecond));
+                        Logger.LogVerbose($" {percentComplete,2:F1}% - Loaded {loadedCount}  Jitted {jittedCount}  FailedCompile " +
+                            $"{failToReplayCount} at {perSecond} per second");
                     st1.Restart();
                 }
 
@@ -329,11 +333,11 @@ internal static class Replay
 
     doneRepeatCount:
         if (o.applyDiff)
-            Logger.LogInfo(CFormat.Sprintf(AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount, missingCount, diffsCount));
+            Logger.LogInfo(AsmDiffsSummary(loadedCount, jittedCount, failToReplayCount, excludedCount, missingCount, diffsCount));
         else
-            Logger.LogInfo(CFormat.Sprintf(SummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount, missingCount));
+            Logger.LogInfo(Summary(loadedCount, jittedCount, failToReplayCount, excludedCount, missingCount));
 
-        Logger.LogVerbose(CFormat.Sprintf("Total time: %fms", st2.Elapsed.TotalMilliseconds));
+        Logger.LogVerbose($"Total time: {st2.Elapsed.TotalMilliseconds:F6}ms");
 
         if (o.mclFilename != null)
             failingToReplayMCL.CloseMCL();
@@ -422,10 +426,10 @@ internal static class Replay
 
     private static void PrintDiffsCsvRow(FileWriter fw, int context, uint contextSize, in ReplayResults baseRes, in ReplayResults diffRes, bool hasDiff)
     {
-        fw.Printf("%d,%u,", context, contextSize);
+        fw.Print($"{context},{contextSize},");
         fw.PrintQuotedCsvField(diffRes.CompileResults.MethodFullName ?? "");
-        fw.Printf(",%s,%s,%s,%s,%s,%lld,%lld", diffRes.CompileResults.TieringName ?? "", ResultToString(baseRes.Result), ResultToString(diffRes.Result),
-            diffRes.IsMinOpts ? "True" : "False", hasDiff ? "True" : "False", baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
+        fw.Print($",{diffRes.CompileResults.TieringName ?? ""},{ResultToString(baseRes.Result)},{ResultToString(diffRes.Result)}," +
+            $"{(diffRes.IsMinOpts ? "True" : "False")},{(hasDiff ? "True" : "False")},{baseRes.NumExecutedInstructions},{diffRes.NumExecutedInstructions}");
         for (int i = 0; i < JitMetrics.All.Length; i++)
             fw.Print($",{baseRes.CompileResults.Metrics.Format(i)},{diffRes.CompileResults.Metrics.Format(i)}");
         fw.Print("\n");
@@ -441,9 +445,9 @@ internal static class Replay
 
     private static void PrintReplayCsvRow(FileWriter fw, int context, uint contextSize, in ReplayResults res)
     {
-        fw.Printf("%d,%u,", context, contextSize);
+        fw.Print($"{context},{contextSize},");
         fw.PrintQuotedCsvField(res.CompileResults.MethodFullName ?? "");
-        fw.Printf(",%s,%s,%s,%lld", res.CompileResults.TieringName ?? "", ResultToString(res.Result), res.IsMinOpts ? "True" : "False", res.NumExecutedInstructions);
+        fw.Print($",{res.CompileResults.TieringName ?? ""},{ResultToString(res.Result)},{(res.IsMinOpts ? "True" : "False")},{res.NumExecutedInstructions}");
         for (int i = 0; i < JitMetrics.All.Length; i++)
             fw.Print($",{res.CompileResults.Metrics.Format(i)}");
         fw.Print("\n");

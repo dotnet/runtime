@@ -22,7 +22,7 @@ public sealed partial class MethodContext
     public void dmpGetClassAssemblyName(ulong key, uint value)
     {
         string assemblyName = GetClassAssemblyName.GetString(value);
-        CFormat.Printf(Out, "GetClassAssemblyName cls-%016llX, value-%u '%s'", key, value, assemblyName);
+        Out.Write($"GetClassAssemblyName cls-{key:X16}, value-{value} '{assemblyName ?? "(null)"}'");
         GetClassAssemblyName.Unlock();
     }
 
@@ -30,11 +30,11 @@ public sealed partial class MethodContext
     {
         const int ILVarInfoSize = 12; // ICorDebugInfo::ILVarInfo: startOffset, endOffset, varNumber
         ReadOnlySpan<byte> vars = GetVars.GetBuffer(value.vars_offset);
-        CFormat.Printf(Out, "GetVars key ftn-%016llX, value cVars-%u extendOthers-%u (", key, value.cVars, value.extendOthers);
+        Out.Write($"GetVars key ftn-{key:X16}, value cVars-{value.cVars} extendOthers-{value.extendOthers} (");
         for (uint i = 0; i < value.cVars; i++)
         {
             int at = (int)i * ILVarInfoSize;
-            CFormat.Printf(Out, "(%u %u %u %u)", i, U32(vars, at), U32(vars, at + 4), U32(vars, at + 8));
+            Out.Write($"({i} {U32(vars, at)} {U32(vars, at + 4)} {U32(vars, at + 8)})");
         }
         Out.Write(")");
         GetVars.Unlock();
@@ -42,11 +42,11 @@ public sealed partial class MethodContext
 
     public void dmpGetBoundaries(ulong key, in Agnostic_GetBoundaries value)
     {
-        CFormat.Printf(Out, "GetBoundaries key ftn-%016llX, value cnt-%u imp-%u{", key, value.cILOffsets, value.implicitBoundaries);
+        Out.Write($"GetBoundaries key ftn-{key:X16}, value cnt-{value.cILOffsets} imp-{value.implicitBoundaries}{{");
         ReadOnlySpan<byte> bnd = GetBoundaries.GetBuffer(value.pILOffset_offset);
         for (uint i = 0; i < value.cILOffsets; i++)
         {
-            CFormat.Printf(Out, "%u", U32(bnd, (int)i * 4));
+            Out.Write($"{U32(bnd, (int)i * 4)}");
             // Every element is followed by a comma.
             Out.Write(",");
         }
@@ -60,14 +60,15 @@ public sealed partial class MethodContext
         string className = GetMethodNameFromMetadata.GetString(value.className);
         string namespaceName = GetMethodNameFromMetadata.GetString(value.namespaceName);
         ReadOnlySpan<byte> enclosingClassNameIndices = GetMethodNameFromMetadata.GetBuffer(value.enclosingClassNames);
-        CFormat.Printf(Out, "GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u maxEnclosingClassNames-%u, value meth-'%s', class-'%s', namespace-'%s'",
-            key.ftn, key.className, key.namespaceName, key.maxEnclosingClassNames, methodName, className, namespaceName);
+        Out.Write($"GetMethodNameFromMetadata key - ftn-{key.ftn:X16} classNonNull-{key.className} namespaceNonNull-{key.namespaceName} " +
+            $"maxEnclosingClassNames-{key.maxEnclosingClassNames}, value meth-'{methodName ?? "(null)"}', class-'{className ?? "(null)"}', " +
+            $"namespace-'{namespaceName ?? "(null)"}'");
 
         for (uint i = 0; i < key.maxEnclosingClassNames; i++)
         {
             string enclosingClassName = GetMethodNameFromMetadata.GetString(U32(enclosingClassNameIndices, (int)i * 4));
             if (enclosingClassName != null)
-                CFormat.Printf(Out, " enclosingClass%u-'%s'", i, enclosingClassName);
+                Out.Write($" enclosingClass{i}-'{enclosingClassName}'");
         }
 
         GetMethodNameFromMetadata.Unlock();
@@ -77,24 +78,24 @@ public sealed partial class MethodContext
     {
         ReadOnlySpan<byte> jitflags = GetJitFlags.GetBuffer(value.A);
         ulong flags = U64(jitflags, 0);
-        CFormat.Printf(Out, "GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-", key, value.B, flags);
+        Out.Write($"GetJitFlags key {key} sizeInBytes-{value.B} jitFlags-{flags:X16} instructionSetFlags-");
 
         var isaFlags = new ulong[InstructionFlagsFieldCount];
         for (int i = 0; i < isaFlags.Length; i++)
             isaFlags[i] = U64(jitflags, 8 * (i + 1));
         for (int i = isaFlags.Length - 1; i >= 0; i--)
-            CFormat.Printf(Out, "%016llX", isaFlags[i]);
+            Out.Write($"{isaFlags[i]:X16}");
 
         Out.Write(" (");
         for (uint flag = 0; flag < 64; flag++)
         {
             if ((flags & (1UL << (int)flag)) != 0)
-                CFormat.Printf(Out, " %s", JitFlagNames.CorJitFlagToString(flag));
+                Out.Write($" {JitFlagNames.CorJitFlagToString(flag)}");
         }
         for (uint isa = 0; isa < 64 * isaFlags.Length; isa++)
         {
             if ((isaFlags[isa / 64] & (1UL << (int)(isa % 64))) != 0)
-                CFormat.Printf(Out, " %s", JitFlagNames.InstructionSetToString(isa));
+                Out.Write($" {JitFlagNames.InstructionSetToString(isa)}");
         }
         Out.Write(" )");
         GetJitFlags.Unlock();
@@ -102,42 +103,42 @@ public sealed partial class MethodContext
 
     public void dmpGetFieldInfo(in Agnostic_GetFieldInfo key, in Agnostic_CORINFO_FIELD_INFO value)
     {
-        CFormat.Printf(Out, "GetFieldInfo key ch-%016llX flg-%08X rt{%s}", key.callerHandle, key.flags,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken));
+        Out.Write($"GetFieldInfo key ch-{key.callerHandle:X16} flg-{key.flags:X8} " +
+            $"rt{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken)}}}");
 
-        CFormat.Printf(Out, ", value fa-%u fflg-%08X hlp-%u off-%u fT-%u(%s) sT-%016llX aa-%u hnum-%u na-%u {", value.fieldAccessor,
-            value.fieldFlags, value.helper, value.offset, value.fieldType, toString_CorInfoType(value.fieldType),
-            value.structType, value.accessAllowed, value.accessCalloutHelper.helperNum, value.accessCalloutHelper.numArgs);
+        Out.Write($", value fa-{value.fieldAccessor} fflg-{value.fieldFlags:X8} hlp-{value.helper} off-{value.offset} " +
+            $"fT-{value.fieldType}({toString_CorInfoType(value.fieldType)}) sT-{value.structType:X16} aa-{value.accessAllowed} " +
+            $"hnum-{value.accessCalloutHelper.helperNum} na-{value.accessCalloutHelper.numArgs} {{");
 
         for (int i = 0; i < 4; i++)
         {
             Agnostic_CORINFO_HELPER_ARG arg = value.accessCalloutHelper.args[i];
-            string format = arg.argType switch
+            string kind = arg.argType switch
             {
-                1 => "{%u: fld-%016llX}",
-                2 => "{%u: mth-%016llX}",
-                3 => "{%u: cls-%016llX}",
-                4 => "{%u: mod-%016llX}",
-                5 => "{%u: const-%016llX}",
+                1 => "fld",
+                2 => "mth",
+                3 => "cls",
+                4 => "mod",
+                5 => "const",
                 _ => null,
             };
-            if (format == null)
-                CFormat.Printf(Out, "{%u: illegal}", i);
+            if (kind == null)
+                Out.Write($"{{{i}: illegal}}");
             else
-                CFormat.Printf(Out, format, i, arg.constant);
+                Out.Write($"{{{i}: {kind}-{arg.constant:X16}}}");
         }
-        CFormat.Printf(Out, " fl %s}", SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.fieldLookup));
+        Out.Write($" fl {SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.fieldLookup)}}}");
     }
 
     public void dmpGetClassGClayout(ulong key, in Agnostic_GetClassGClayout value)
     {
-        CFormat.Printf(Out, "GetClassGCLayout key %016llX, value len %u cnt %u {", key, value.len, value.valCount);
+        Out.Write($"GetClassGCLayout key {key:X16}, value len {value.len} cnt {value.valCount} {{");
         if (value.gcPtrs_Index != uint.MaxValue)
         {
             ReadOnlySpan<byte> ptr = GetClassGClayout.GetBuffer(value.gcPtrs_Index);
             for (uint i = 0; i < value.len; i++)
             {
-                CFormat.Printf(Out, "0x%02x", ptr[(int)i]);
+                Out.Write($"0x{ptr[(int)i]:x2}");
                 if (i + 1 < value.len)
                     Out.Write(",");
             }
@@ -148,17 +149,17 @@ public sealed partial class MethodContext
 
     public void dmpCanAccessClass(in Agnostic_CanAccessClassIn key, in Agnostic_CanAccessClassOut value)
     {
-        CFormat.Printf(Out, "CanAccessClass key rt{%s}, callerHandle %016llX\n",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken), key.callerHandle);
-        CFormat.Printf(Out, ", value hnum-%u na-%u {", value.AccessHelper.helperNum, value.AccessHelper.numArgs);
+        Out.Write($"CanAccessClass key rt{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken)}}}, callerHandle " +
+            $"{key.callerHandle:X16}\n");
+        Out.Write($", value hnum-{value.AccessHelper.helperNum} na-{value.AccessHelper.numArgs} {{");
         for (int i = 0; i < 4; i++)
-            CFormat.Printf(Out, "{%016llX %u}", value.AccessHelper.args[i].constant, value.AccessHelper.args[i].argType);
-        CFormat.Printf(Out, "} res-%u", value.result);
+            Out.Write($"{{{value.AccessHelper.args[i].constant:X16} {value.AccessHelper.args[i].argType}}}");
+        Out.Write($"}} res-{value.result}");
     }
 
     public void dmpGetTypeLayout(ulong key, in Agnostic_GetTypeLayoutResult value)
     {
-        CFormat.Printf(Out, "GetTypeLayout key type-%016llX value result=%d numNodes=%d", key, value.result, value.numNodes);
+        Out.Write($"GetTypeLayout key type-{key:X16} value result={(int)value.result} numNodes={(int)value.numNodes}");
         if (value.numNodes > 0)
         {
             ReadOnlySpan<Agnostic_CORINFO_TYPE_LAYOUT_NODE> nodes =
@@ -179,9 +180,9 @@ public sealed partial class MethodContext
             Out.Write("  ");
 
         Agnostic_CORINFO_TYPE_LAYOUT_NODE node = nodes[(int)index];
-        CFormat.Printf(Out, "%zu: parent %u offset %u size %u type %s numFields %u hasSignificantPadding %s simdTypeHnd %016llX diagFieldHnd %016llX",
-            index, node.parent, node.offset, node.size, toString_CorInfoType(node.type), node.numFields,
-            node.hasSignificantPadding != 0 ? "yes" : "no", node.simdTypeHnd, node.diagFieldHnd);
+        Out.Write($"{index}: parent {node.parent} offset {node.offset} size {node.size} type {toString_CorInfoType(node.type)} numFields " +
+            $"{node.numFields} hasSignificantPadding {(node.hasSignificantPadding != 0 ? "yes" : "no")} simdTypeHnd {node.simdTypeHnd:X16} " +
+            $"diagFieldHnd {node.diagFieldHnd:X16}");
 
         index++;
         for (ulong i = 0; i < node.numFields; i++)
@@ -199,8 +200,8 @@ public sealed partial class MethodContext
 
     public void dmpAllocPgoInstrumentationBySchema(ulong key, in Agnostic_AllocPgoInstrumentationBySchema value)
     {
-        CFormat.Printf(Out, "AllocPgoInstrumentationBySchema key ftn-%016llX, value res-%08X addr-%016llX cnt-%u schema{\n",
-            key, value.result, value.instrumentationDataAddress, value.countSchemaItems);
+        Out.Write($"AllocPgoInstrumentationBySchema key ftn-{key:X16}, value res-{value.result:X8} addr-{value.instrumentationDataAddress:X16} " +
+            $"cnt-{value.countSchemaItems} schema{{\n");
 
         if (value.countSchemaItems > 0)
         {
@@ -209,8 +210,8 @@ public sealed partial class MethodContext
             for (uint i = 0; i < value.countSchemaItems; i++)
             {
                 Agnostic_PgoInstrumentationSchema s = PgoSchemaAt(pBuf, i);
-                CFormat.Printf(Out, " %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u}\n",
-                    i, s.Offset, s.ILOffset, s.InstrumentationKind, s.InstrumentationKind, s.Count, s.Other);
+                Out.Write($" {i}-{{Offset {s.Offset:X16} ILOffset {s.ILOffset} Kind {s.InstrumentationKind}(0x{s.InstrumentationKind:x}) Count " +
+                    $"{s.Count} Other {s.Other}}}\n");
             }
             AllocPgoInstrumentationBySchema.Unlock();
         }
@@ -219,8 +220,8 @@ public sealed partial class MethodContext
 
     public void dmpGetPgoInstrumentationResults(ulong key, in Agnostic_GetPgoInstrumentationResults value)
     {
-        CFormat.Printf(Out, "GetPgoInstrumentationResults key ftn-%016llX, value res-%08X schemaCnt-%u profileBufSize-%u source-%u dynamic-%u schema{",
-            key, value.result, value.countSchemaItems, value.dataByteCount, value.pgoSource, value.dynamicPgo);
+        Out.Write($"GetPgoInstrumentationResults key ftn-{key:X16}, value res-{value.result:X8} schemaCnt-{value.countSchemaItems} " +
+            $"profileBufSize-{value.dataByteCount} source-{value.pgoSource} dynamic-{value.dynamicPgo} schema{{");
 
         if (value.countSchemaItems > 0)
         {
@@ -231,49 +232,49 @@ public sealed partial class MethodContext
             for (uint i = 0; i < value.countSchemaItems; i++)
             {
                 Agnostic_PgoInstrumentationSchema s = PgoSchemaAt(pBuf, i);
-                CFormat.Printf(Out, " %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u Data ",
-                    i, s.Offset, s.ILOffset, s.InstrumentationKind, s.InstrumentationKind, s.Count, s.Other);
+                Out.Write($" {i}-{{Offset {s.Offset:X16} ILOffset {s.ILOffset} Kind {s.InstrumentationKind}(0x{s.InstrumentationKind:x}) Count " +
+                    $"{s.Count} Other {s.Other} Data ");
 
                 int at = (int)s.Offset;
                 switch ((PgoInstrumentationKind)s.InstrumentationKind)
                 {
                     case PgoInstrumentationKind.BasicBlockIntCount:
-                        CFormat.Printf(Out, "B %u", U32(data, at));
+                        Out.Write($"B {U32(data, at)}");
                         break;
                     case PgoInstrumentationKind.BasicBlockLongCount:
-                        CFormat.Printf(Out, "B %llu", U64(data, at));
+                        Out.Write($"B {U64(data, at)}");
                         break;
                     case PgoInstrumentationKind.EdgeIntCount:
-                        CFormat.Printf(Out, "E %u", U32(data, at));
+                        Out.Write($"E {U32(data, at)}");
                         break;
                     case PgoInstrumentationKind.EdgeLongCount:
-                        CFormat.Printf(Out, "E %llu", U64(data, at));
+                        Out.Write($"E {U64(data, at)}");
                         break;
                     case PgoInstrumentationKind.HandleHistogramIntCount:
-                        CFormat.Printf(Out, "T %u", U32(data, at));
+                        Out.Write($"T {U32(data, at)}");
                         break;
                     case PgoInstrumentationKind.HandleHistogramLongCount:
-                        CFormat.Printf(Out, "T %llu", U64(data, at));
+                        Out.Write($"T {U64(data, at)}");
                         break;
                     case PgoInstrumentationKind.HandleHistogramTypes:
                     case PgoInstrumentationKind.HandleHistogramMethods:
                         for (uint j = 0; j < s.Count; j++)
-                            CFormat.Printf(Out, "[%u] %016llX ", j, ReadPointer(data, at + (int)j * IntPtr.Size));
+                            Out.Write($"[{j}] {ReadPointer(data, at + (int)j * IntPtr.Size):X16} ");
                         break;
                     case PgoInstrumentationKind.ValueHistogramIntCount:
-                        CFormat.Printf(Out, "V %u", U32(data, at));
+                        Out.Write($"V {U32(data, at)}");
                         break;
                     case PgoInstrumentationKind.ValueHistogramLongCount:
-                        CFormat.Printf(Out, "V %llu", U64(data, at));
+                        Out.Write($"V {U64(data, at)}");
                         break;
                     case PgoInstrumentationKind.ValueHistogram:
                         for (uint j = 0; j < s.Count; j++)
-                            CFormat.Printf(Out, "[%u] %08X ", j, U32(data, at + (int)j * sizeof(uint)));
+                            Out.Write($"[{j}] {U32(data, at + (int)j * sizeof(uint)):X8} ");
                         break;
                     case PgoInstrumentationKind.GetLikelyClass:
                     case PgoInstrumentationKind.GetLikelyMethod:
                         // (N)umber, (L)ikelihood, (H)andle
-                        CFormat.Printf(Out, "N %u L %u H %016llX", s.Other >> 8, s.Other & 0xFF, ReadPointer(data, at));
+                        Out.Write($"N {s.Other >> 8} L {s.Other & 0xFF} H {ReadPointer(data, at):X16}");
                         break;
                     default:
                         Out.Write("?");
@@ -284,7 +285,7 @@ public sealed partial class MethodContext
             }
             GetPgoInstrumentationResults.Unlock();
         }
-        CFormat.Printf(Out, "} data_index-%u", value.data_index);
+        Out.Write($"}} data_index-{value.data_index}");
     }
 
     // Instrumentation data holds handles in the collecting host's pointer size.
@@ -293,35 +294,34 @@ public sealed partial class MethodContext
 
     public void dmpGetSystemVAmd64PassStructInRegisterDescriptor(ulong key, in Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor value)
     {
-        CFormat.Printf(Out, "GetSystemVAmd64PassStructInRegisterDescriptor key structHnd-%016llX, value passInReg-%u 8bCount-%u", key,
-            value.passedInRegisters, value.eightByteCount);
+        Out.Write($"GetSystemVAmd64PassStructInRegisterDescriptor key structHnd-{key:X16}, value passInReg-{value.passedInRegisters} " +
+            $"8bCount-{value.eightByteCount}");
         for (int i = 0; i < 2; i++)
         {
-            CFormat.Printf(Out, " 8bClass[%u]-%u 8bSz[%u]-%u 8bOff[%u]-%u", i, value.eightByteClassifications[i], i,
-                value.eightByteSizes[i], i, value.eightByteOffsets[i]);
+            Out.Write($" 8bClass[{i}]-{value.eightByteClassifications[i]} 8bSz[{i}]-{value.eightByteSizes[i]} " +
+                $"8bOff[{i}]-{value.eightByteOffsets[i]}");
         }
-        CFormat.Printf(Out, " result %u", value.result);
+        Out.Write($" result {value.result}");
     }
 
     public void dmpGetSwiftLowering(ulong key, in Agnostic_GetSwiftLowering value)
     {
-        CFormat.Printf(Out, "GetSwiftLowering key structHnd-%016llX, value byReference-%u numLoweredElements-%u", key,
-            value.byReference, value.numLoweredElements);
+        Out.Write($"GetSwiftLowering key structHnd-{key:X16}, value byReference-{value.byReference} numLoweredElements-{value.numLoweredElements}");
         if (value.byReference == 0)
         {
             for (int i = 0; i < value.numLoweredElements; i++)
-                CFormat.Printf(Out, " [%zu] %u", i, value.loweredElements[i]);
+                Out.Write($" [{i}] {value.loweredElements[i]}");
         }
     }
 
     public void dmpGetFpStructLowering(ulong key, in Agnostic_GetFpStructLowering value)
     {
-        CFormat.Printf(Out, "GetFpStructLowering key structHnd-%016llX, value byIntegerCallConv-%u numLoweredElements-%u", key,
-            value.byIntegerCallConv, value.numLoweredElements);
+        Out.Write($"GetFpStructLowering key structHnd-{key:X16}, value byIntegerCallConv-{value.byIntegerCallConv} " +
+            $"numLoweredElements-{value.numLoweredElements}");
         if (value.byIntegerCallConv == 0)
         {
             for (int i = 0; i < value.numLoweredElements; i++)
-                CFormat.Printf(Out, " [%zu] %u", i, value.loweredElements[i]);
+                Out.Write($" [{i}] {value.loweredElements[i]}");
         }
     }
 
@@ -329,28 +329,28 @@ public sealed partial class MethodContext
     {
         string className = GetClassNameFromMetadata.GetString(value.A);
         string namespaceName = GetClassNameFromMetadata.GetString(value.B);
-        CFormat.Printf(Out, "GetClassNameFromMetadata key - classNonNull-%llu namespaceNonNull-%u, value class-'%s', namespace-'%s'",
-            key.A, key.B, className, namespaceName);
+        Out.Write($"GetClassNameFromMetadata key - classNonNull-{key.A} namespaceNonNull-{key.B}, value class-'{className ?? "(null)"}', " +
+            $"namespace-'{namespaceName ?? "(null)"}'");
         GetClassNameFromMetadata.Unlock();
     }
 
     public void dmpPrint(string name, LightWeightMapBuffer buffer, ulong key, in Agnostic_PrintResult value)
     {
-        CFormat.Printf(Out, "%s key hnd-%016llX, stringBufferSize-%u, requiredBufferSize-%u", name, key, value.stringBufferSize, value.requiredBufferSize);
+        Out.Write($"{name} key hnd-{key:X16}, stringBufferSize-{value.stringBufferSize}, requiredBufferSize-{value.requiredBufferSize}");
         buffer.Unlock();
     }
 
     public void dmpCheckMethodModifier(in Agnostic_CheckMethodModifier key, uint value)
     {
-        CFormat.Printf(Out, "CheckMethodModifier key, ftn-%016llX mod-'%s' opt-%u, value res-%u", key.hMethod,
-            CheckMethodModifier.GetString(key.modifier), key.fOptional, value);
+        Out.Write($"CheckMethodModifier key, ftn-{key.hMethod:X16} mod-'{CheckMethodModifier.GetString(key.modifier) ?? "(null)"}' " +
+            $"opt-{key.fOptional}, value res-{value}");
         CheckMethodModifier.Unlock();
     }
 
     public void dmpGetIntConfigValue(in Agnostic_ConfigIntInfo key, uint value)
     {
         string name = GetIntConfigValue.GetString(key.nameIndex);
-        CFormat.Printf(Out, "GetIntConfigValue name %s, default value %d, value %d", name, key.defaultValue, value);
+        Out.Write($"GetIntConfigValue name {name ?? "(null)"}, default value {(int)key.defaultValue}, value {(int)value}");
         GetIntConfigValue.Unlock();
     }
 
@@ -358,574 +358,511 @@ public sealed partial class MethodContext
     {
         string name = GetStringConfigValue.GetString(nameIndex);
         string result = GetStringConfigValue.GetString(resultIndex);
-        CFormat.Printf(Out, "GetStringConfigValue name %s, result %s", name, result);
+        Out.Write($"GetStringConfigValue name {name ?? "(null)"}, result {result ?? "(null)"}");
         GetStringConfigValue.Unlock();
     }
 
     public void dmpCompileMethod(uint key, in Agnostic_CompileMethod value)
-        => CFormat.Printf(Out, "CompileMethod key %u, value ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%u rk-%u args-%s locals-%s flg-%08X os-%u",
-            key, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize, value.info.maxStack,
-            value.info.EHcount, value.info.options, value.info.regionKind,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap),
-            value.flags, value.os);
+        => Out.Write($"CompileMethod key {key}, value ftn-{value.info.ftn:X16} scp-{value.info.scope:X16} ilo-{value.info.ILCode_offset} " +
+            $"ils-{value.info.ILCodeSize} ms-{value.info.maxStack} ehc-{value.info.EHcount} opt-{value.info.options} rk-{value.info.regionKind} " +
+            $"args-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap)} " +
+            $"locals-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap)} flg-{value.flags:X8} " +
+            $"os-{value.os}");
 
     public void dmpGetMethodClass(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetMethodClass key %016llX, value %016llX", key, value);
+        => Out.Write($"GetMethodClass key {key:X16}, value {value:X16}");
 
     public void dmpGetClassAttribs(ulong key, uint value)
-        => CFormat.Printf(Out, "GetClassAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper.DumpCorInfoFlag(value));
+        => Out.Write($"GetClassAttribs key {key:X16}, value {value:X8} ({SpmiDumpHelper.DumpCorInfoFlag(value)})");
 
     public void dmpIsIntrinsic(ulong key, uint value)
-        => CFormat.Printf(Out, "IsIntrinsic key ftn-%016llX, value res-%u", key, value);
+        => Out.Write($"IsIntrinsic key ftn-{key:X16}, value res-{value}");
 
     public void dmpNotifyMethodInfoUsage(ulong key, uint value)
-        => CFormat.Printf(Out, "NotifyMethodInfoUsage key ftn-%016llX, value res-%u", key, value);
+        => Out.Write($"NotifyMethodInfoUsage key ftn-{key:X16}, value res-{value}");
 
     public void dmpNotifyInstructionSetUsage(DD key, uint value)
-        => CFormat.Printf(Out, "NotifyInstructionSetUsage key isa-%u, supported-%u, preserve-negative-dependency-%u, res-%u",
-            key.A, key.B & 1, (key.B >> 1) & 1, value);
+        => Out.Write($"NotifyInstructionSetUsage key isa-{key.A}, supported-{key.B & 1}, preserve-negative-dependency-{(key.B >> 1) & 1}, " +
+            $"res-{value}");
 
     public void dmpGetMethodAttribs(ulong key, uint value)
-        => CFormat.Printf(Out, "GetMethodAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper.DumpCorInfoFlag(value));
+        => Out.Write($"GetMethodAttribs key {key:X16}, value {value:X8} ({SpmiDumpHelper.DumpCorInfoFlag(value)})");
 
     public void dmpInitClass(in Agnostic_InitClass key, uint value)
-        => CFormat.Printf(Out, "InitClass key fld-%016llX meth-%016llX con-%016llX, value res-%u", key.field, key.method,
-            key.context, value);
+        => Out.Write($"InitClass key fld-{key.field:X16} meth-{key.method:X16} con-{key.context:X16}, value res-{value}");
 
     public void dmpCanInline(DLDL key, in Agnostic_CanInline value)
-        => CFormat.Printf(Out, "CanInline key - callerHnd-%016llX calleeHnd-%016llX, value result-%u exceptionCode-%08X",
-            key.A, key.B, value.result, value.exceptionCode);
+        => Out.Write($"CanInline key - callerHnd-{key.A:X16} calleeHnd-{key.B:X16}, value result-{value.result} " +
+            $"exceptionCode-{value.exceptionCode:X8}");
 
     public void dmpResolveToken(in Agnostic_CORINFO_RESOLVED_TOKENin key, in ResolveTokenValue value)
-        => CFormat.Printf(Out, "ResolveToken key: %s, value: %s excp-%08X",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKENin(key),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKENout(value.tokenOut),
-            value.exceptionCode);
+        => Out.Write($"ResolveToken key: {SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKENin(key)}, value: " +
+            $"{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKENout(value.tokenOut)} excp-{value.exceptionCode:X8}");
 
     public void dmpGetCallInfo(in Agnostic_GetCallInfo key, in Agnostic_CORINFO_CALL_INFO value)
-        => CFormat.Printf(Out, "GetCallInfo key rt{%s} crt{%s} ch-%016llX flg-%08X, value mth-%016llX, mf-%08X (%s) cf-%08X (%s) sig-%s aa-%u cch{hn-%u na-%u (TODO: dump callsiteCalloutHelper.args)} tt-%u k-%u (%s) nic-%u (%s) ch-%016llX ecnrl-%u (%s) stubLookup{%s} ipl{at-%08X (%s) hnd-%016llX} excp-%08X",
-            // input
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ConstrainedResolvedToken),
-            key.callerHandle,
-            key.flags,
-            // output
-            value.hMethod,
-            value.methodFlags,
-            SpmiDumpHelper.DumpCorInfoFlag(value.methodFlags),
-            value.classFlags,
-            SpmiDumpHelper.DumpCorInfoFlag(value.classFlags),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap),
-            value.accessAllowed,
-            value.callsiteCalloutHelper.helperNum,
-            value.callsiteCalloutHelper.numArgs,
-            value.thisTransform,
-            value.kind,
-            toString_CORINFO_CALL_KIND(value.kind),
-            value.nullInstanceCheck,
-            (value.nullInstanceCheck != 0) ? "true" : "false",
-            value.contextHandle,
-            value.exactContextNeedsRuntimeLookup,
-            (value.exactContextNeedsRuntimeLookup != 0) ? "true" : "false",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.stubLookup),
-            value.instParamLookup.accessType,
-            toString_InfoAccessType(value.instParamLookup.accessType),
-            value.instParamLookup.handle,
-            value.exceptionCode);
+        => Out.Write($"GetCallInfo key rt{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken)}}} " +
+            $"crt{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ConstrainedResolvedToken)}}} ch-{key.callerHandle:X16} " +
+            $"flg-{key.flags:X8}, value mth-{value.hMethod:X16}, mf-{value.methodFlags:X8} ({SpmiDumpHelper.DumpCorInfoFlag(value.methodFlags)}) " +
+            $"cf-{value.classFlags:X8} ({SpmiDumpHelper.DumpCorInfoFlag(value.classFlags)}) " +
+            $"sig-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap)} aa-{value.accessAllowed} " +
+            $"cch{{hn-{value.callsiteCalloutHelper.helperNum} na-{value.callsiteCalloutHelper.numArgs} (TODO: dump callsiteCalloutHelper.args)}} " +
+            $"tt-{value.thisTransform} k-{value.kind} ({toString_CORINFO_CALL_KIND(value.kind)}) nic-{value.nullInstanceCheck} " +
+            $"({((value.nullInstanceCheck != 0) ? "true" : "false")}) ch-{value.contextHandle:X16} ecnrl-{value.exactContextNeedsRuntimeLookup} " +
+            $"({((value.exactContextNeedsRuntimeLookup != 0) ? "true" : "false")}) " +
+            $"stubLookup{{{SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.stubLookup)}}} ipl{{at-{value.instParamLookup.accessType:X8} " +
+            $"({toString_InfoAccessType(value.instParamLookup.accessType)}) hnd-{value.instParamLookup.handle:X16}}} excp-{value.exceptionCode:X8}");
 
     public void dmpExpandRawHandleIntrinsic(in Agnostic_ExpandRawHandleIntrinsic key, in Agnostic_CORINFO_GENERICHANDLE_RESULT result)
-        => CFormat.Printf(Out, "ExpandRawHandleIntrinsic key: %s, value %s cth-%016llx ht-%u",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKENin(key.ResolvedToken),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(result.lookup),
-            result.compileTimeHandle,
-            result.handleType);
+        => Out.Write($"ExpandRawHandleIntrinsic key: {SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKENin(key.ResolvedToken)}, value " +
+            $"{SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(result.lookup)} cth-{result.compileTimeHandle:x16} ht-{result.handleType}");
 
     public void dmpIsIntrinsicType(ulong key, uint value)
-        => CFormat.Printf(Out, "IsIntrinsicType key mth-%016llX, value intr-%u", key, value);
+        => Out.Write($"IsIntrinsicType key mth-{key:X16}, value intr-{value}");
 
     public void dmpAsCorInfoType(ulong key, uint value)
-        => CFormat.Printf(Out, "AsCorInfoType key cls-%016llX, value cit-%u(%s)", key, value, toString_CorInfoType(value));
+        => Out.Write($"AsCorInfoType key cls-{key:X16}, value cit-{value}({toString_CorInfoType(value)})");
 
     public void dmpIsValueClass(ulong key, uint value)
-        => CFormat.Printf(Out, "IsValueClass key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"IsValueClass key cls-{key:X16}, value res-{value}");
 
     public void dmpIsByRefLike(ulong key, uint value)
-        => CFormat.Printf(Out, "IsByRefLike key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"IsByRefLike key cls-{key:X16}, value res-{value}");
 
     public void dmpIsSharedInst(ulong key, uint value)
-        => CFormat.Printf(Out, "IsSharedInst key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"IsSharedInst key cls-{key:X16}, value res-{value}");
 
     public void dmpGetClassSize(ulong key, uint val)
-        => CFormat.Printf(Out, "GetClassSize key %016llX, value %u", key, val);
+        => Out.Write($"GetClassSize key {key:X16}, value {val}");
 
     public void dmpGetHeapClassSize(ulong key, uint val)
-        => CFormat.Printf(Out, "GetHeapClassSize key %016llX, value %u", key, val);
+        => Out.Write($"GetHeapClassSize key {key:X16}, value {val}");
 
     public void dmpCanAllocateOnStack(ulong key, uint val)
-        => CFormat.Printf(Out, "CanAllocateOnStack key %016llX, value %u", key, val);
+        => Out.Write($"CanAllocateOnStack key {key:X16}, value {val}");
 
     public void dmpGetClassNumInstanceFields(ulong key, uint value)
-        => CFormat.Printf(Out, "GetClassNumInstanceFields key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"GetClassNumInstanceFields key cls-{key:X16}, value res-{value}");
 
     public void dmpGetNewArrHelper(ulong key, uint value)
-        => CFormat.Printf(Out, "GetNewArrHelper key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"GetNewArrHelper key cls-{key:X16}, value res-{value}");
 
     public void dmpGetSharedCCtorHelper(ulong key, uint value)
-        => CFormat.Printf(Out, "GetSharedCCtorHelper key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"GetSharedCCtorHelper key cls-{key:X16}, value res-{value}");
 
     public void dmpGetTypeForBox(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetTypeForBox key cls-%016llX, value res-%016llX", key, value);
+        => Out.Write($"GetTypeForBox key cls-{key:X16}, value res-{value:X16}");
 
     public void dmpGetBoxHelper(ulong key, uint value)
-        => CFormat.Printf(Out, "GetBoxHelper key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"GetBoxHelper key cls-{key:X16}, value res-{value}");
 
     public void dmpGetBuiltinClass(uint key, ulong value)
-        => CFormat.Printf(Out, "GetBuiltinClass key cls-%08X, value cls-%016llX", key, value);
+        => Out.Write($"GetBuiltinClass key cls-{key:X8}, value cls-{value:X16}");
 
     public void dmpGetTypeForPrimitiveValueClass(ulong key, uint value)
-        => CFormat.Printf(Out, "GetTypeForPrimitiveValueClass key cls-%016llX, value cit-%u(%s)", key, value, toString_CorInfoType(value));
+        => Out.Write($"GetTypeForPrimitiveValueClass key cls-{key:X16}, value cit-{value}({toString_CorInfoType(value)})");
 
     public void dmpGetTypeForPrimitiveNumericClass(ulong key, uint value)
-        => CFormat.Printf(Out, "GetTypeForPrimitiveNumericClass key cls-%016llX, value cit-%u(%s)", key, value,
-            toString_CorInfoType(value));
+        => Out.Write($"GetTypeForPrimitiveNumericClass key cls-{key:X16}, value cit-{value}({toString_CorInfoType(value)})");
 
     public void dmpGetParentType(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetParentType key cls-%016llX, value cls-%016llX", key, value);
+        => Out.Write($"GetParentType key cls-{key:X16}, value cls-{value:X16}");
 
     public void dmpIsSDArray(ulong key, uint value)
-        => CFormat.Printf(Out, "IsSDArray key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"IsSDArray key cls-{key:X16}, value res-{value}");
 
     public void dmpGetFieldClass(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetFieldClass key %016llX, value %016llX", key, value);
+        => Out.Write($"GetFieldClass key {key:X16}, value {value:X16}");
 
     public void dmpGetFieldOffset(ulong key, uint value)
-        => CFormat.Printf(Out, "GetFieldOffset key FLD-%016llX, value %08X", key, value);
+        => Out.Write($"GetFieldOffset key FLD-{key:X16}, value {value:X8}");
 
     public void dmpGetUnBoxHelper(ulong key, uint value)
-        => CFormat.Printf(Out, "GetUnBoxHelper key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"GetUnBoxHelper key cls-{key:X16}, value res-{value}");
 
     public void dmpGetRuntimeTypePointer(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetRuntimeTypePointer key cls-%016llX, value res-%016llX", key, value);
+        => Out.Write($"GetRuntimeTypePointer key cls-{key:X16}, value res-{value:X16}");
 
     public void dmpIsObjectImmutable(ulong key, uint value)
-        => CFormat.Printf(Out, "IsObjectImmutable key obj-%016llX, value res-%u", key, value);
+        => Out.Write($"IsObjectImmutable key obj-{key:X16}, value res-{value}");
 
     public void dmpGetStringChar(DLD key, DD value)
-        => CFormat.Printf(Out, "IsObjectImmutable key obj-%016llX, index-%u, value res-%u, val-%u", key.A, key.B, value.A, value.B);
+        => Out.Write($"IsObjectImmutable key obj-{key.A:X16}, index-{key.B}, value res-{value.A}, val-{value.B}");
 
     public void dmpGetObjectType(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetObjectType key obj-%016llX, value res-%016llX", key, value);
+        => Out.Write($"GetObjectType key obj-{key:X16}, value res-{value:X16}");
 
     public void dmpGetReadyToRunHelper(GetReadyToRunHelper_TOKENin key, GetReadyToRunHelper_TOKENout value)
     {
-        CFormat.Printf(Out, "GetReadyToRunHelper key: tk{%s} id-%u",
-               SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken), key.id);
-        CFormat.Printf(Out, ", value: lk{ %s } %u", SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.Lookup),
-               value.result);
+        Out.Write($"GetReadyToRunHelper key: tk{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken)}}} id-{key.id}");
+        Out.Write($", value: lk{{ {SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.Lookup)} }} {value.result}");
     }
 
     public void dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key, Agnostic_CORINFO_LOOKUP value)
     {
-        CFormat.Printf(Out, "GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016llX constraint-%08X",
-               SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod), key.delegateType, key.targetConstraint);
-        CFormat.Printf(Out, ", value: %s", SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value));
+        Out.Write($"GetReadyToRunDelegateCtorHelper key: method tk{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod)}}} " +
+            $"type-{key.delegateType:X16} constraint-{key.targetConstraint:X8}");
+        Out.Write($", value: {SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value)}");
     }
 
     public void dmpGetHelperFtn(uint key, Agnostic_GetHelperFtn value)
-        => CFormat.Printf(Out, "GetHelperFtn key ftn-%u nativeEntrypoint {%s}, helperMethod-%016llX", key,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.helperLookup),
-            value.helperMethod);
+        => Out.Write($"GetHelperFtn key ftn-{key} nativeEntrypoint {{{SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.helperLookup)}}}, " +
+            $"helperMethod-{value.helperMethod:X16}");
 
     public void dmpGetJustMyCodeHandle(ulong key, DLDL value)
-        => CFormat.Printf(Out, "GetJustMyCodeHandle key ftn-%016llX, value pp-%016llX, res-%016llX", key, value.A, value.B);
+        => Out.Write($"GetJustMyCodeHandle key ftn-{key:X16}, value pp-{value.A:X16}, res-{value.B:X16}");
 
     public void dmpGetFunctionEntryPoint(DLD key, DLD value)
-        => CFormat.Printf(Out, "GetFunctionEntryPoint key ftn-%016llX af-%08X, value add-%016llX at-%u", key.A, key.B, value.A, value.B);
+        => Out.Write($"GetFunctionEntryPoint key ftn-{key.A:X16} af-{key.B:X8}, value add-{value.A:X16} at-{value.B}");
 
     public void dmpConstructStringLiteral(DLD key, DLD value)
-        => CFormat.Printf(Out, "ConstructStringLiteral key mod-%016llX tok-%08X, value pp-%016llX iat-%u", key.A, key.B, value.A, value.B);
+        => Out.Write($"ConstructStringLiteral key mod-{key.A:X16} tok-{key.B:X8}, value pp-{value.A:X16} iat-{value.B}");
 
     public void dmpConvertPInvokeCalliToCall(DLD key, DLDL value)
-        => CFormat.Printf(Out, "ConvertPInvokeCalliToCall key mod-%016llX tok-%08X, value cls-%016llX meth-%016llX",
-            key.A, key.B, value.A, value.B);
+        => Out.Write($"ConvertPInvokeCalliToCall key mod-{key.A:X16} tok-{key.B:X8}, value cls-{value.A:X16} meth-{value.B:X16}");
 
     public void dmpEmptyStringLiteral(uint key, DLD value)
-        => CFormat.Printf(Out, "EmptyStringLiteral key %u, value pVal-%016llX res-%u", key, value.A, value.B);
+        => Out.Write($"EmptyStringLiteral key {key}, value pVal-{value.A:X16} res-{value.B}");
 
     public void dmpGetArgType(in Agnostic_GetArgType_Key key, in Agnostic_GetArgType_Value value)
     {
-        CFormat.Printf(Out, "GetArgType key flg-%08X na-%u %s %s msig-%016llX scp-%016llX arg-%016llX",
-            key.flags, key.numArgs,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "cc", "ci", key.sigInst_classInstCount, key.sigInst_classInst_Index, SigInstHandleMap),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "mc", "mi", key.sigInst_methInstCount, key.sigInst_methInst_Index, SigInstHandleMap),
-            key.methodSignature, key.scope, key.args);
-        CFormat.Printf(Out, ", value result(cit)-%u(%s) vcType-%016llX excp-%08X", value.result, toString_CorInfoTypeWithMod(value.result), value.vcTypeRet, value.exceptionCode);
+        Out.Write($"GetArgType key flg-{key.flags:X8} na-{key.numArgs} " +
+            $"{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "cc", "ci", key.sigInst_classInstCount, key.sigInst_classInst_Index, SigInstHandleMap)} " +
+            $"{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "mc", "mi", key.sigInst_methInstCount, key.sigInst_methInst_Index, SigInstHandleMap)} " +
+            $"msig-{key.methodSignature:X16} scp-{key.scope:X16} arg-{key.args:X16}");
+        Out.Write($", value result(cit)-{value.result}({toString_CorInfoTypeWithMod(value.result)}) vcType-{value.vcTypeRet:X16} " +
+            $"excp-{value.exceptionCode:X8}");
     }
 
     public void dmpGetExactClasses(DLD key, in Agnostic_GetExactClassesResult value)
-        => CFormat.Printf(Out, "GetExactClasses key baseType-%016llX, maxExactCls-%u, value numClasses-%d",
-            key.A, key.B, value.numClasses);
+        => Out.Write($"GetExactClasses key baseType-{key.A:X16}, maxExactCls-{key.B}, value numClasses-{value.numClasses}");
 
     public void dmpGetArgNext(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetArgNext key %016llX, value %016llX", key, value);
+        => Out.Write($"GetArgNext key {key:X16}, value {value:X16}");
 
     public void dmpGetMethodSig(DLDL key, in Agnostic_CORINFO_SIG_INFO value)
-        => CFormat.Printf(Out, "GetMethodSig key ftn-%016llX prt-%016llX, value-%s", key.A, key.B,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap));
+        => Out.Write($"GetMethodSig key ftn-{key.A:X16} prt-{key.B:X16}, " +
+            $"value-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap)}");
 
     public void dmpGetArgClass(in Agnostic_GetArgClass_Key key, in Agnostic_GetArgClass_Value value)
     {
-        CFormat.Printf(Out, "GetArgClass key %s %s msig-%016llX scp-%016llX args-%016llX",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "cc", "ci", key.sigInst_classInstCount, key.sigInst_classInst_Index, SigInstHandleMap),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "mc", "mi", key.sigInst_methInstCount, key.sigInst_methInst_Index, SigInstHandleMap),
-            key.methodSignature, key.scope, key.args);
-        CFormat.Printf(Out, ", value %016llX excp-%08X", value.result, value.exceptionCode);
+        Out.Write("GetArgClass key " +
+            $"{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "cc", "ci", key.sigInst_classInstCount, key.sigInst_classInst_Index, SigInstHandleMap)} " +
+            $"{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INST_Element("", "mc", "mi", key.sigInst_methInstCount, key.sigInst_methInst_Index, SigInstHandleMap)} " +
+            $"msig-{key.methodSignature:X16} scp-{key.scope:X16} args-{key.args:X16}");
+        Out.Write($", value {value.result:X16} excp-{value.exceptionCode:X8}");
     }
 
     public void dmpGetHFAType(ulong key, uint value)
-        => CFormat.Printf(Out, "GetHFAType key %016llX, value %u ", key, value);
+        => Out.Write($"GetHFAType key {key:X16}, value {value} ");
 
     public void dmpGetMethodInfo(DLDL key, in Agnostic_GetMethodInfo value)
     {
         if (value.result != 0)
         {
-            CFormat.Printf(Out, "GetMethodInfo key ftn-%016llX ctx-%016llX, value res-%u ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%08X rk-%u args-%s locals-%s excp-%08X",
-                key.A, key.B, value.result, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize,
-                value.info.maxStack, value.info.EHcount, value.info.options, value.info.regionKind,
-                SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap),
-                SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap),
-                value.exceptionCode);
+            Out.Write($"GetMethodInfo key ftn-{key.A:X16} ctx-{key.B:X16}, value res-{value.result} ftn-{value.info.ftn:X16} " +
+                $"scp-{value.info.scope:X16} ilo-{value.info.ILCode_offset} ils-{value.info.ILCodeSize} ms-{value.info.maxStack} " +
+                $"ehc-{value.info.EHcount} opt-{value.info.options:X8} rk-{value.info.regionKind} " +
+                $"args-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap)} " +
+                $"locals-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap)} " +
+                $"excp-{value.exceptionCode:X8}");
         }
         else
         {
-            CFormat.Printf(Out, "GetMethodInfo key ftn-%016llX ctx-%016llX, value res-%u excp-%08X",
-                key.A, key.B, value.result, value.exceptionCode);
+            Out.Write($"GetMethodInfo key ftn-{key.A:X16} ctx-{key.B:X16}, value res-{value.result} excp-{value.exceptionCode:X8}");
         }
     }
 
     public void dmpHaveSameMethodDefinition(in DLDL key, uint value)
-        => CFormat.Printf(Out, "HaveSameMethodDefinition key methHnd1-%016llX, methHnd2-%016llX, value %u", key.A, key.B, value);
+        => Out.Write($"HaveSameMethodDefinition key methHnd1-{key.A:X16}, methHnd2-{key.B:X16}, value {value}");
 
     public void dmpGetTypeDefinition(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetTypeDefinition key cls-%016llX, value cls-%016llX", key, value);
+        => Out.Write($"GetTypeDefinition key cls-{key:X16}, value cls-{value:X16}");
 
     public void dmpGetNewHelper(ulong key, in DDD value)
-        => CFormat.Printf(Out, "GetNewHelper key %016llX, hasSideEffects-%u, value res-%u, exceptionCode-%08X", key, value.A, value.B, value.C);
+        => Out.Write($"GetNewHelper key {key:X16}, hasSideEffects-{value.A}, value res-{value.B}, exceptionCode-{value.C:X8}");
 
     public void dmpEmbedGenericHandle(in Agnostic_EmbedGenericHandle key, in Agnostic_CORINFO_GENERICHANDLE_RESULT value)
-        => CFormat.Printf(Out, "EmbedGenericHandle key rt{%s} emb-%u, value %s cth-%016llX ht-%u",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken),
-            key.fEmbedParent,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.lookup),
-            value.compileTimeHandle,
-            value.handleType);
+        => Out.Write($"EmbedGenericHandle key rt{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken)}}} " +
+            $"emb-{key.fEmbedParent}, value {SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.lookup)} cth-{value.compileTimeHandle:X16} " +
+            $"ht-{value.handleType}");
 
     public void dmpGetEHinfo(DLD key, in Agnostic_CORINFO_EH_CLAUSE value)
-        => CFormat.Printf(Out, "GetEHinfo key ftn-%016llX ehn-%u, value flg-%u to-%u tl-%u ho-%u hl-%u ct-%u", key.A, key.B, value.Flags,
-            value.TryOffset, value.TryLength, value.HandlerOffset, value.HandlerLength, value.ClassToken);
+        => Out.Write($"GetEHinfo key ftn-{key.A:X16} ehn-{key.B}, value flg-{value.Flags} to-{value.TryOffset} tl-{value.TryLength} " +
+            $"ho-{value.HandlerOffset} hl-{value.HandlerLength} ct-{value.ClassToken}");
 
     public void dmpGetMethodVTableOffset(ulong key, DDD value)
-        => CFormat.Printf(Out, "GetMethodVTableOffset key ftn-%016llX, value offi-%u, offa-%u. offr-%d", key, value.A, value.B, value.C);
+        => Out.Write($"GetMethodVTableOffset key ftn-{key:X16}, value offi-{value.A}, offa-{value.B}. offr-{(int)value.C}");
 
     public void dmpResolveVirtualMethod(in Agnostic_ResolveVirtualMethodKey key, in Agnostic_ResolveVirtualMethodResult result)
     {
-        CFormat.Printf(Out, "ResolveVirtualMethod key virtMethod-%016llX, objClass-%016llX, context-%016llX pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
-            key.virtualMethod,
-            key.objClass,
-            key.context,
-            key.pResolvedTokenVirtualMethodNonNull,
-            (key.pResolvedTokenVirtualMethodNonNull != 0) ? SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod) : "???");
-        CFormat.Printf(Out, ", value returnValue-%s, devirtMethod-%016llX, tokenLookupContext-%016llX, detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}, instParamLookup{%s}",
-            (result.returnValue != 0) ? "true" : "false",
-            result.devirtualizedMethod,
-            result.tokenLookupContext,
-            result.detail,
-            (result.returnValue != 0) ? SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod) : "???",
-            (result.returnValue != 0) ? SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod) : "???",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(result.instParamLookup));
+        Out.Write($"ResolveVirtualMethod key virtMethod-{key.virtualMethod:X16}, objClass-{key.objClass:X16}, context-{key.context:X16} " +
+            $"pResolvedTokenVirtualMethodNonNull-{key.pResolvedTokenVirtualMethodNonNull:X8} " +
+            $"pResolvedTokenVirtualMethod{{{((key.pResolvedTokenVirtualMethodNonNull != 0) ? SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod) : "???")}}}");
+        Out.Write($", value returnValue-{((result.returnValue != 0) ? "true" : "false")}, devirtMethod-{result.devirtualizedMethod:X16}, " +
+            $"tokenLookupContext-{result.tokenLookupContext:X16}, detail-{(int)result.detail}, " +
+            $"tokDvMeth{{{((result.returnValue != 0) ? SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod) : "???")}}}, " +
+            $"tokDvUnboxMeth{{{((result.returnValue != 0) ? SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod) : "???")}}}, " +
+            $"instParamLookup{{{SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(result.instParamLookup)}}}");
     }
 
     public void dmpGetAsyncOtherVariant(ulong key, DLD value)
-        => CFormat.Printf(Out, "GetAsyncOtherVariant ftn-%016llX, result-%016llX, variantIsThunk-%u", key, value.A, value.B);
+        => Out.Write($"GetAsyncOtherVariant ftn-{key:X16}, result-{value.A:X16}, variantIsThunk-{value.B}");
 
     public void dmpGetDefaultComparerClass(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetDefaultComparerClass key cls-%016llX, value cls-%016llX", key, value);
+        => Out.Write($"GetDefaultComparerClass key cls-{key:X16}, value cls-{value:X16}");
 
     public void dmpGetDefaultEqualityComparerClass(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetDefaultEqualityComparerClass key cls-%016llX, value cls-%016llX", key, value);
+        => Out.Write($"GetDefaultEqualityComparerClass key cls-{key:X16}, value cls-{value:X16}");
 
     public void dmpGetSZArrayHelperEnumeratorClass(ulong key, ulong value)
-        => CFormat.Printf(Out, "GetSZArrayHelperEnumeratorClass key cls-%016llX, value cls-%016llX", key, value);
+        => Out.Write($"GetSZArrayHelperEnumeratorClass key cls-{key:X16}, value cls-{value:X16}");
 
     public void dmpGetTokenTypeAsHandle(in GetTokenTypeAsHandleValue key, ulong value)
-        => CFormat.Printf(Out, "GetTokenTypeAsHandle key ftn-%016llX fld-%016llX, value cls-%016llX", key.hMethod, key.hField, value);
+        => Out.Write($"GetTokenTypeAsHandle key ftn-{key.hMethod:X16} fld-{key.hField:X16}, value cls-{value:X16}");
 
     public void dmpGetThreadLocalFieldInfo(DLD key, uint value)
-        => CFormat.Printf(Out, "GetThreadLocalFieldInfo key hnd-%016llX,gctype-%d result-%u", key.A, key.B, value);
+        => Out.Write($"GetThreadLocalFieldInfo key hnd-{key.A:X16},gctype-{(int)key.B} result-{value}");
 
     public void dmpGetThreadLocalStaticBlocksInfo(uint key, in Agnostic_GetThreadLocalStaticBlocksInfo value)
-        => CFormat.Printf(Out, "GetThreadLocalStaticBlocksInfo key %u, tlsIndex-%s, , tlsGetAddrFtnPtr-%016llX, tlsIndexObject - %016llX, threadVarsSection - %016llX, offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u, offsetOfThreadStaticBlocks-%u, offsetOfBaseOfThreadLocalData-%u",
-            key, SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex), value.tlsGetAddrFtnPtr,
-            value.tlsIndexObject, value.threadVarsSection, value.offsetOfThreadLocalStoragePointer,
-            value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfBaseOfThreadLocalData);
+        => Out.Write($"GetThreadLocalStaticBlocksInfo key {key}, tlsIndex-{SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex)}, , " +
+            $"tlsGetAddrFtnPtr-{value.tlsGetAddrFtnPtr:X16}, tlsIndexObject - {value.tlsIndexObject:X16}, threadVarsSection - " +
+            $"{value.threadVarsSection:X16}, offsetOfThreadLocalStoragePointer-{value.offsetOfThreadLocalStoragePointer}, " +
+            $"offsetOfMaxThreadStaticBlocks-{value.offsetOfMaxThreadStaticBlocks}, offsetOfThreadStaticBlocks-{value.offsetOfThreadStaticBlocks}, " +
+            $"offsetOfBaseOfThreadLocalData-{value.offsetOfBaseOfThreadLocalData}");
 
     public void dmpGetThreadLocalStaticInfo_NativeAOT(ulong key, in Agnostic_GetThreadStaticInfo_NativeAOT value)
-        => CFormat.Printf(Out, "GetThreadLocalStaticInfo_NativeAOT key %016llX, tlsRootObject-%s, tlsIndexObject-%s,  offsetOfThreadLocalStoragePointer-%u, threadStaticBaseSlow-%s, tlsGetAddrFtnPtr-%s",
-            key, SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsRootObject),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndexObject),
-            value.offsetOfThreadLocalStoragePointer,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.threadStaticBaseSlow),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsGetAddrFtnPtr));
+        => Out.Write($"GetThreadLocalStaticInfo_NativeAOT key {key:X16}, " +
+            $"tlsRootObject-{SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsRootObject)}, " +
+            $"tlsIndexObject-{SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndexObject)},  " +
+            $"offsetOfThreadLocalStoragePointer-{value.offsetOfThreadLocalStoragePointer}, " +
+            $"threadStaticBaseSlow-{SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.threadStaticBaseSlow)}, " +
+            $"tlsGetAddrFtnPtr-{SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsGetAddrFtnPtr)}");
 
     public void dmpEmbedMethodHandle(ulong key, DLDL value)
-        => CFormat.Printf(Out, "EmbedMethodHandle key ftn-%016llX, value pp-%016llX res-%016llX", key, value.A, value.B);
+        => Out.Write($"EmbedMethodHandle key ftn-{key:X16}, value pp-{value.A:X16} res-{value.B:X16}");
 
     public void dmpGetStaticFieldContent(DLDDD key, DD value)
     {
-        CFormat.Printf(Out, "GetStaticFieldContent key fld-%016llX bufSize-%u, ignoremovable-%u, valOffset-%u result-%u", key.A, key.B, key.C, key.D, value.A);
+        Out.Write($"GetStaticFieldContent key fld-{key.A:X16} bufSize-{key.B}, ignoremovable-{key.C}, valOffset-{key.D} result-{value.A}");
         GetStaticFieldContent.Unlock();
     }
 
     public void dmpGetObjectContent(DLDD key, DD value)
     {
-        CFormat.Printf(Out, "GetObjectContent key fld-%016llX bufSize-%u, valOffset-%u result-%u", key.A, key.B, key.C, value.A);
+        Out.Write($"GetObjectContent key fld-{key.A:X16} bufSize-{key.B}, valOffset-{key.C} result-{value.A}");
         GetObjectContent.Unlock();
     }
 
     public void dmpGetStaticFieldCurrentClass(DLD key, in Agnostic_GetStaticFieldCurrentClass value)
-        => CFormat.Printf(Out, "GetStaticFieldCurrentClass key fld-%016llX, value clsHnd-%016llX isSpeculative-%u", key.A, value.classHandle,
-            value.isSpeculative);
+        => Out.Write($"GetStaticFieldCurrentClass key fld-{key.A:X16}, value clsHnd-{value.classHandle:X16} isSpeculative-{value.isSpeculative}");
 
     public void dmpGetClassAlignmentRequirement(DLD key, uint value)
-        => CFormat.Printf(Out, "GetClassAlignmentRequirement key %016llX %u, value %u", key.A, key.B, value);
+        => Out.Write($"GetClassAlignmentRequirement key {key.A:X16} {key.B}, value {value}");
 
     public void dmpGetCastingHelper(in Agnostic_GetCastingHelper key, uint value)
-        => CFormat.Printf(Out, "GetCastingHelper key cls-%016llX, thw-%u, value res-%u", key.hClass, key.fThrowing, value);
+        => Out.Write($"GetCastingHelper key cls-{key.hClass:X16}, thw-{key.fThrowing}, value res-{value}");
 
     public void dmpEmbedModuleHandle(ulong key, DLDL value)
-        => CFormat.Printf(Out, "EmbedModuleHandle key mod-%016llX, value pp-%016llX res-%016llX", key, value.A, value.B);
+        => Out.Write($"EmbedModuleHandle key mod-{key:X16}, value pp-{value.A:X16} res-{value.B:X16}");
 
     public void dmpEmbedClassHandle(ulong key, DLDL value)
-        => CFormat.Printf(Out, "EmbedClassHandle key cls-%016llX, value pp-%016llX res-%016llX", key, value.A, value.B);
+        => Out.Write($"EmbedClassHandle key cls-{key:X16}, value pp-{value.A:X16} res-{value.B:X16}");
 
     public void dmpPInvokeMarshalingRequired(in MethodOrSigInfoValue key, uint value)
-        => CFormat.Printf(Out, "PInvokeMarshalingRequired key mth-%016llX scp-%016llX sig-%s, value res-%u",
-            key.method, key.scope,
-            SpmiDumpHelper.DumpPSig(key.pSig_Index, key.cbSig, PInvokeMarshalingRequired),
-            value);
+        => Out.Write($"PInvokeMarshalingRequired key mth-{key.method:X16} scp-{key.scope:X16} " +
+            $"sig-{SpmiDumpHelper.DumpPSig(key.pSig_Index, key.cbSig, PInvokeMarshalingRequired)}, value res-{value}");
 
     public void dmpGetUnmanagedCallConv(in MethodOrSigInfoValue key, DD value)
-        => CFormat.Printf(Out, "GetUnmanagedCallConv key mth-%016llX scp-%016llX sig-%s, value res-%u,%u",
-            key.method, key.scope,
-            SpmiDumpHelper.DumpPSig(key.pSig_Index, key.cbSig, GetUnmanagedCallConv),
-            value.A, value.B);
+        => Out.Write($"GetUnmanagedCallConv key mth-{key.method:X16} scp-{key.scope:X16} " +
+            $"sig-{SpmiDumpHelper.DumpPSig(key.pSig_Index, key.cbSig, GetUnmanagedCallConv)}, value res-{value.A},{value.B}");
 
     public void dmpFindSig(in Agnostic_FindSig key, in Agnostic_CORINFO_SIG_INFO value)
     {
-        CFormat.Printf(Out, "FindSig key module-%016llX sigTOK-%08X context-%016llX", key.module, key.sigTOK, key.context);
-        CFormat.Printf(Out, ", value-%s",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap));
+        Out.Write($"FindSig key module-{key.module:X16} sigTOK-{key.sigTOK:X8} context-{key.context:X16}");
+        Out.Write($", value-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap)}");
     }
 
     public void dmpGetEEInfo(uint key, in Agnostic_CORINFO_EE_INFO value)
-        => CFormat.Printf(Out, "GetEEInfo key %u, value icfi{sz-%u sz-witharg-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u ossa-%u osap-%u} otf-%u ogcs-%u odi-%u odft-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
-            key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.sizeWithSecretStubArg,
-            value.inlinedCallFrameInfo.offsetOfFrameLink,
-            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
-            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
-            value.inlinedCallFrameInfo.offsetOfSecretStubArg, value.inlinedCallFrameInfo.offsetOfSPAfterProlog,
-            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
-            value.offsetOfDelegateFirstTarget,
-            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
-            value.osType);
+        => Out.Write($"GetEEInfo key {key}, value icfi{{sz-{value.inlinedCallFrameInfo.size} " +
+            $"sz-witharg-{value.inlinedCallFrameInfo.sizeWithSecretStubArg} ofl-{value.inlinedCallFrameInfo.offsetOfFrameLink} " +
+            $"ocsp-{value.inlinedCallFrameInfo.offsetOfCallSiteSP} ocsfp-{value.inlinedCallFrameInfo.offsetOfCalleeSavedFP} " +
+            $"oct-{value.inlinedCallFrameInfo.offsetOfCallTarget} ora-{value.inlinedCallFrameInfo.offsetOfReturnAddress} " +
+            $"ossa-{value.inlinedCallFrameInfo.offsetOfSecretStubArg} osap-{value.inlinedCallFrameInfo.offsetOfSPAfterProlog}}} " +
+            $"otf-{value.offsetOfThreadFrame} ogcs-{value.offsetOfGCState} odi-{value.offsetOfDelegateInstance} " +
+            $"odft-{value.offsetOfDelegateFirstTarget} srpf-{value.sizeOfReversePInvokeFrame} osps-{value.osPageSize} " +
+            $"muono-{value.maxUncheckedOffsetForNullObject} tabi-{value.targetAbi} osType-{value.osType}");
 
     public void dmpGetAsyncInfo(uint key, in Agnostic_CORINFO_ASYNC_INFO value)
-        => CFormat.Printf(Out, "GetAsyncInfo key %u value contClsHnd-%016llX contNextFldHnd-%016llX contResumeInfoFldHnd-%016llX contStateFldHnd-%016llX contFlagsFldHnd-%016llX",
-            key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeInfoFldHnd,
-            value.continuationStateFldHnd, value.continuationFlagsFldHnd);
+        => Out.Write($"GetAsyncInfo key {key} value contClsHnd-{value.continuationClsHnd:X16} contNextFldHnd-{value.continuationNextFldHnd:X16} " +
+            $"contResumeInfoFldHnd-{value.continuationResumeInfoFldHnd:X16} contStateFldHnd-{value.continuationStateFldHnd:X16} " +
+            $"contFlagsFldHnd-{value.continuationFlagsFldHnd:X16}");
 
     public void dmpGetWasmWellKnownGlobals(uint key, in Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS value)
-        => CFormat.Printf(Out, "GetWasmWellKnownGlobals key %u value stackPointer-%016llX imageBase-%016llX tableBase-%016llX asyncContinuation-%016llX",
-            key, value.stackPointer, value.imageBase, value.tableBase, value.asyncContinuation);
+        => Out.Write($"GetWasmWellKnownGlobals key {key} value stackPointer-{value.stackPointer:X16} imageBase-{value.imageBase:X16} " +
+            $"tableBase-{value.tableBase:X16} asyncContinuation-{value.asyncContinuation:X16}");
 
     public void dmpGetAwaitReturnCall(ulong key, in Agnostic_GetAwaitReturnCallResult value)
-        => CFormat.Printf(Out, "GetAwaitReturnCall key %016llX value methodHnd-%016llX contextHandle-%016llX instArg %s",
-            key,
-            value.methodHnd,
-            value.contextHandle,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.instArg));
+        => Out.Write($"GetAwaitReturnCall key {key:X16} value methodHnd-{value.methodHnd:X16} contextHandle-{value.contextHandle:X16} instArg " +
+            $"{SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.instArg)}");
 
     public void dmpGetAwaitAwaiterInContinuationCall(in Agnostic_GetAwaitAwaiterInContinuationCall key, in Agnostic_GetAwaitReturnCallResult value)
-        => CFormat.Printf(Out, "GetAwaitAwaiterInContinuationCall caller-%016llX rt{%s} unsafe-%u methodHnd-%016llX contextHandle-%016llX instArg %s",
-            key.callerHnd,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken),
-            key.isUnsafe,
-            value.methodHnd,
-            value.contextHandle,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.instArg));
+        => Out.Write($"GetAwaitAwaiterInContinuationCall caller-{key.callerHnd:X16} " +
+            $"rt{{{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken)}}} unsafe-{key.isUnsafe} methodHnd-{value.methodHnd:X16} " +
+            $"contextHandle-{value.contextHandle:X16} instArg {SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP(value.instArg)}");
 
     public void dmpGetGSCookie(uint key, DLDL value)
-        => CFormat.Printf(Out, "GetGSCookie key 0, value pCookieVal-%016llX ppCookieVal-%016llX", value.A, value.B);
+        => Out.Write($"GetGSCookie key 0, value pCookieVal-{value.A:X16} ppCookieVal-{value.B:X16}");
 
     public void dmpGetOSRInfo(uint key, in Agnostic_GetOSRInfo value)
     {
         // todo - dump patchpoint info?
-        CFormat.Printf(Out, "GetOSRInfo key %u, value patchpointInfo-%u {...} iloffset-%u\n",
-            key, value.index, value.ilOffset);
+        Out.Write($"GetOSRInfo key {key}, value patchpointInfo-{value.index} {{...}} iloffset-{value.ilOffset}\n");
     }
 
     public void dmpGetClassModuleIdForStatics(ulong key, in Agnostic_GetClassModuleIdForStatics value)
-        => CFormat.Printf(Out, "GetClassModuleIdForStatics key cls-%016llX, value mod-%016llX pp-%016llX res-%016llX", key, value.Module,
-            value.pIndirection, value.result);
+        => Out.Write($"GetClassModuleIdForStatics key cls-{key:X16}, value mod-{value.Module:X16} pp-{value.pIndirection:X16} " +
+            $"res-{value.result:X16}");
 
     public void dmpGetIsClassInitedFlagAddress(ulong key, in Agnostic_GetIsClassInitedFlagAddress value)
-        => CFormat.Printf(Out, "GetIsClassInitedFlagAddress key hnd-%016llX, value addr-%016llX, result-%u", key, value.addr.handle, value.result);
+        => Out.Write($"GetIsClassInitedFlagAddress key hnd-{key:X16}, value addr-{value.addr.handle:X16}, result-{value.result}");
 
     public void dmpGetStaticBaseAddress(DLD key, in Agnostic_GetStaticBaseAddress value)
-        => CFormat.Printf(Out, "GetStaticBaseAddress key hnd-%016llX, value addr-%016llX, result-%u", key.A, value.addr.handle, value.result);
+        => Out.Write($"GetStaticBaseAddress key hnd-{key.A:X16}, value addr-{value.addr.handle:X16}, result-{value.result}");
 
     public void dmpGetThreadTLSIndex(uint key, DLD value)
-        => CFormat.Printf(Out, "GetThreadTLSIndex key 0, value ppIndirection-%016llX result-%08X", value.A, value.B);
+        => Out.Write($"GetThreadTLSIndex key 0, value ppIndirection-{value.A:X16} result-{value.B:X8}");
 
     public void dmpGetAddrOfCaptureThreadGlobal(uint key, DLDL value)
-        => CFormat.Printf(Out, "GetAddrOfCaptureThreadGlobal key %u, value ppi-%016llX res-%016llX", key, value.A, value.B);
+        => Out.Write($"GetAddrOfCaptureThreadGlobal key {key}, value ppi-{value.A:X16} res-{value.B:X16}");
 
     public void dmpGetClassStaticDynamicInfo(ulong key, DLD value)
-        => CFormat.Printf(Out, "GetClassStaticDynamicInfo key cls-%016llX, value pp-%016llX res-%u", key, value.A, value.B);
+        => Out.Write($"GetClassStaticDynamicInfo key cls-{key:X16}, value pp-{value.A:X16} res-{value.B}");
 
     public void dmpGetClassThreadStaticDynamicInfo(ulong key, DLD value)
-        => CFormat.Printf(Out, "GetClassThreadStaticDynamicInfo key cls-%016llX, value pp-%016llX res-%u", key, value.A, value.B);
+        => Out.Write($"GetClassThreadStaticDynamicInfo key cls-{key:X16}, value pp-{value.A:X16} res-{value.B}");
 
     public void dmpGetLocationOfThisType(ulong key, in Agnostic_CORINFO_LOOKUP_KIND value)
-        => CFormat.Printf(Out, "GetLocationOfThisType key ftn-%016llX, value %s", key,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP_KIND(value));
+        => Out.Write($"GetLocationOfThisType key ftn-{key:X16}, value {SpmiDumpHelper.DumpAgnostic_CORINFO_LOOKUP_KIND(value)}");
 
     public void dmpGetDelegateCtor(in Agnostic_GetDelegateCtorIn key, in Agnostic_GetDelegateCtorOut value)
-        => CFormat.Printf(Out, "GetDelegateCtor key ftn-%016llX cls-%016llX tftn-%016llX, value pm-%016llX a3-%016llX a4-%016llX a5-%016llX res-%016llX",
-            key.methHnd, key.clsHnd, key.targetMethodHnd, value.CtorData.pMethod, value.CtorData.pArg3,
-            value.CtorData.pArg4, value.CtorData.pArg5, value.result);
+        => Out.Write($"GetDelegateCtor key ftn-{key.methHnd:X16} cls-{key.clsHnd:X16} tftn-{key.targetMethodHnd:X16}, value " +
+            $"pm-{value.CtorData.pMethod:X16} a3-{value.CtorData.pArg3:X16} a4-{value.CtorData.pArg4:X16} a5-{value.CtorData.pArg5:X16} " +
+            $"res-{value.result:X16}");
 
     public void dmpGetFunctionFixedEntryPoint(ulong key, in Agnostic_CORINFO_CONST_LOOKUP value)
-        => CFormat.Printf(Out, "GetFunctionFixedEntryPoint key ftn-%016llX, value %s", key,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value));
+        => Out.Write($"GetFunctionFixedEntryPoint key ftn-{key:X16}, value {SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(value)}");
 
     public void dmpGetFieldInClass(DLD key, ulong value)
-        => CFormat.Printf(Out, "GetFieldInClass key cls-%016llX ind-%u, value %016llX", key.A, key.B, value);
+        => Out.Write($"GetFieldInClass key cls-{key.A:X16} ind-{key.B}, value {value:X16}");
 
     public void dmpGetFieldType(DLDL key, DLD value)
-        => CFormat.Printf(Out, "GetFieldType key fld-%016llX cls-%016llX, value ch-%016llX cit-%u(%s)", key.A, key.B, value.A, value.B,
-            toString_CorInfoType(value.B));
+        => Out.Write($"GetFieldType key fld-{key.A:X16} cls-{key.B:X16}, value ch-{value.A:X16} cit-{value.B}({toString_CorInfoType(value.B)})");
 
     public void dmpSatisfiesMethodConstraints(DLDL key, uint value)
-        => CFormat.Printf(Out, "SatisfiesMethodConstraints key cls-%016llX ftn-%016llX, value res-%u", key.A, key.B, value);
+        => Out.Write($"SatisfiesMethodConstraints key cls-{key.A:X16} ftn-{key.B:X16}, value res-{value}");
 
     public void dmpGetStringLiteral(DLDDD key, DD value)
     {
-        CFormat.Printf(Out, "GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, startIndex-%u, len-%u", key.A, key.B, key.C, key.D, value.A);
+        Out.Write($"GetStringLiteral key mod-{key.A:X16} tok-{key.B:X8}, bufSize-{key.C}, startIndex-{key.D}, len-{value.A}");
         GetStringLiteral.Unlock();
     }
 
     public void dmpCanCast(DLDL key, uint value)
-        => CFormat.Printf(Out, "CanCast key chd-%016llX par-%016llX, value res-%u", key.A, key.B, value);
+        => Out.Write($"CanCast key chd-{key.A:X16} par-{key.B:X16}, value res-{value}");
 
     public void dmpGetChildType(ulong key, DLD value)
-        => CFormat.Printf(Out, "GetChildType key cls-%016llX, value clsr-%016llX cit-%u(%s)", key, value.A, value.B,
-            toString_CorInfoType(value.B));
+        => Out.Write($"GetChildType key cls-{key:X16}, value clsr-{value.A:X16} cit-{value.B}({toString_CorInfoType(value.B)})");
 
     public void dmpGetArrayInitializationData(DLD key, ulong value)
-        => CFormat.Printf(Out, "GetArrayInitializationData key field-%016llX size-%08X, value result-%016llX", key.A, key.B, value);
+        => Out.Write($"GetArrayInitializationData key field-{key.A:X16} size-{key.B:X8}, value result-{value:X16}");
 
     public void dmpGetAddressOfPInvokeTarget(ulong key, DLD value)
-        => CFormat.Printf(Out, "GetAddressOfPInvokeTarget key ftn-%016llX, value addr-%016llX at-%u", key, value.A, value.B);
+        => Out.Write($"GetAddressOfPInvokeTarget key ftn-{key:X16}, value addr-{value.A:X16} at-{value.B}");
 
     public void dmpGetMethodHash(ulong key, uint value)
-        => CFormat.Printf(Out, "GetMethodHash key %016llX, value %u", key, value);
+        => Out.Write($"GetMethodHash key {key:X16}, value {value}");
 
     public void dmpCanTailCall(in Agnostic_CanTailCall key, uint value)
-        => CFormat.Printf(Out, "CanTailCall key clr-%016llX dcle-%016llX ecle-%016llX pfx-%u, value res-%u", key.callerHnd,
-            key.declaredCalleeHnd, key.exactCalleeHnd, key.fIsTailPrefix, value);
+        => Out.Write($"CanTailCall key clr-{key.callerHnd:X16} dcle-{key.declaredCalleeHnd:X16} ecle-{key.exactCalleeHnd:X16} " +
+            $"pfx-{key.fIsTailPrefix}, value res-{value}");
 
     public void dmpIsDelegateCreationAllowed(DLDL key, uint value)
-        => CFormat.Printf(Out, "IsDelegateCreationAllowed key delegateHnd-%016llX calleeHnd-%016llX result-%08X", key.A, key.B, value);
+        => Out.Write($"IsDelegateCreationAllowed key delegateHnd-{key.A:X16} calleeHnd-{key.B:X16} result-{value:X8}");
 
     public void dmpFindCallSiteSig(in Agnostic_FindCallSiteSig key, in Agnostic_CORINFO_SIG_INFO value)
     {
-        CFormat.Printf(Out, "dmpFindCallSiteSig key module-%016llX methTok-%08X context-%016llX", key.module, key.methTok, key.context);
-        CFormat.Printf(Out, ", value-%s",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap));
+        Out.Write($"dmpFindCallSiteSig key module-{key.module:X16} methTok-{key.methTok:X8} context-{key.context:X16}");
+        Out.Write($", value-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap)}");
     }
 
     public void dmpGetVarArgsHandle(in GetVarArgsHandleValue key, DLDL value)
     {
-        CFormat.Printf(Out, "GetVarArgsHandle key sig-%s scope-%016llX token-%08X methHnd-%016llX",
-            SpmiDumpHelper.DumpPSig(key.pSig_Index, key.cbSig, GetVarArgsHandle),
-            key.scope, key.token, key.methHnd);
-        CFormat.Printf(Out, ", value ppIndirection-%016llX result-%016llX", value.A, value.B);
+        Out.Write($"GetVarArgsHandle key sig-{SpmiDumpHelper.DumpPSig(key.pSig_Index, key.cbSig, GetVarArgsHandle)} scope-{key.scope:X16} " +
+            $"token-{key.token:X8} methHnd-{key.methHnd:X16}");
+        Out.Write($", value ppIndirection-{value.A:X16} result-{value.B:X16}");
     }
 
     public void dmpGetFieldThreadLocalStoreID(ulong key, DLD value)
-        => CFormat.Printf(Out, "GetFieldThreadLocalStoreID key field-%016llX, value ppIndirection-%016llX result-%08X", key, value.A,
-            value.B);
+        => Out.Write($"GetFieldThreadLocalStoreID key field-{key:X16}, value ppIndirection-{value.A:X16} result-{value.B:X8}");
 
     public void dmpIsMoreSpecificType(DLDL key, uint value)
-        => CFormat.Printf(Out, "IsMoreSpecificType key cls1-%016llX cls2-%016llX, value %u", key.A, key.B, value);
+        => Out.Write($"IsMoreSpecificType key cls1-{key.A:X16} cls2-{key.B:X16}, value {value}");
 
     public void dmpIsExactType(ulong key, uint value)
-        => CFormat.Printf(Out, "IsExactType key cls-%016llX, value res-%u", key, value);
+        => Out.Write($"IsExactType key cls-{key:X16}, value res-{value}");
 
     public void dmpIsGenericType(ulong key, uint value)
-        => CFormat.Printf(Out, "IsGenericType key cls-%016llX, value res-%d", key, value);
+        => Out.Write($"IsGenericType key cls-{key:X16}, value res-{(int)value}");
 
     public void dmpIsNullableType(ulong key, uint value)
-        => CFormat.Printf(Out, "IsNullableType key cls-%016llX, value res-%d", key, value);
+        => Out.Write($"IsNullableType key cls-{key:X16}, value res-{(int)value}");
 
     public void dmpIsEnum(ulong key, DLD value)
-        => CFormat.Printf(Out, "IsEnum key cls-%016llX, value underlyingType-%016llX result-%u", key, value.A, value.B);
+        => Out.Write($"IsEnum key cls-{key:X16}, value underlyingType-{value.A:X16} result-{value.B}");
 
     public void dmpGetCookieForInterpreterCalliSig(in GetCookieForInterpreterCalliSigValue key, DLDL value)
-        => CFormat.Printf(Out, "GetCookieForInterpreterCalliSig NYI");
+        => Out.Write("GetCookieForInterpreterCalliSig NYI");
 
     public void dmpErrorList(uint key, uint value)
-        => CFormat.Printf(Out, "ErrorList NYI");
+        => Out.Write("ErrorList NYI");
 
     public void dmpGetProfilingHandle(uint key, in Agnostic_GetProfilingHandle value)
-        => CFormat.Printf(Out, "GetProfilingHandle key %u, value bHookFtn-%u profHnd-%016llX bIndHnd-%u", key, value.bHookFunction,
-            value.ProfilerHandle, value.bIndirectedHandles);
+        => Out.Write($"GetProfilingHandle key {key}, value bHookFtn-{value.bHookFunction} profHnd-{value.ProfilerHandle:X16} " +
+            $"bIndHnd-{value.bIndirectedHandles}");
 
     public void dmpEmbedFieldHandle(ulong key, DLDL value)
-        => CFormat.Printf(Out, "EmbedFieldHandle NYI");
+        => Out.Write("EmbedFieldHandle NYI");
 
     public void dmpCompareTypesForCast(DLDL key, uint value)
-        => CFormat.Printf(Out, "CompareTypesForCast key fromClass=%016llX, toClass=%016llx, result=%d", key.A, key.B, value);
+        => Out.Write($"CompareTypesForCast key fromClass={key.A:X16}, toClass={key.B:x16}, result={(int)value}");
 
     public void dmpCompareTypesForEquality(DLDL key, uint value)
-        => CFormat.Printf(Out, "CompareTypesForEquality key cls1=%016llX, cls2=%016llx, result=%d", key.A, key.B, value);
+        => Out.Write($"CompareTypesForEquality key cls1={key.A:X16}, cls2={key.B:x16}, result={(int)value}");
 
     public void dmpGetWasmLowering(ulong key, uint value)
-        => CFormat.Printf(Out, "GetWasmLowering key structHnd-%016llX, value %d ", key, value);
+        => Out.Write($"GetWasmLowering key structHnd-{key:X16}, value {(int)value} ");
 
     public void dmpGetRelocTypeHint(ulong key, uint value)
-        => CFormat.Printf(Out, "GetRelocTypeHint key tgt-%016llX, value hint-%u", key, value);
+        => Out.Write($"GetRelocTypeHint key tgt-{key:X16}, value hint-{value}");
 
     public void dmpGetAddressAlignment(ulong key, uint value)
-        => CFormat.Printf(Out, "GetAddressAlignment key addr-%016llX, value align-%u", key, value);
+        => Out.Write($"GetAddressAlignment key addr-{key:X16}, value align-{value}");
 
     public void dmpGetExpectedTargetArchitecture(uint key, uint result)
-        => CFormat.Printf(Out, "GetExpectedTargetArchitecture key %u, res %u", key, result);
+        => Out.Write($"GetExpectedTargetArchitecture key {key}, res {result}");
 
     public void dmpDoesFieldBelongToClass(DLDL key, uint value)
-        => CFormat.Printf(Out, "DoesFieldBelongToClass key fld=%016llX, cls=%016llx, result=%d", key.A, key.B, value);
+        => Out.Write($"DoesFieldBelongToClass key fld={key.A:X16}, cls={key.B:x16}, result={(int)value}");
 
     public void dmpGetTypeInstantiationArgument(DLD key, ulong value)
     {
-        CFormat.Printf(Out, "GetTypeInstantiationArgument key - classNonNull-%llu, index-%u, value NonNull-%llu", key.A, key.B, value);
+        Out.Write($"GetTypeInstantiationArgument key - classNonNull-{key.A}, index-{key.B}, value NonNull-{value}");
         GetTypeInstantiationArgument.Unlock();
     }
 
     public void dmpGetMethodInstantiationArgument(DLD key, ulong value)
     {
-        CFormat.Printf(Out, "GetMethodInstantiationArgument key - methodNonNull-%llu, index-%u, value NonNull-%llu", key.A, key.B, value);
+        Out.Write($"GetMethodInstantiationArgument key - methodNonNull-{key.A}, index-{key.B}, value NonNull-{value}");
         GetMethodInstantiationArgument.Unlock();
     }
 
@@ -951,54 +888,46 @@ public sealed partial class MethodContext
 
     public void dmpGetTailCallHelpers(in Agnostic_GetTailCallHelpers key, in Agnostic_CORINFO_TAILCALL_HELPERS value)
     {
-        CFormat.Printf(Out, "GetTailCallHelpers key callToken-%s sig-%s flg-%08X",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.callToken),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(key.sig, GetTailCallHelpers, SigInstHandleMap),
-            key.flags);
-        CFormat.Printf(Out, ", value result-%s flg-%08X hStoreArgs-%016llX hCallTarget-%016llX hDispatcher-%016llX",
-            (value.result != 0) ? "true" : "false",
-            value.flags,
-            value.hStoreArgs,
-            value.hCallTarget,
-            value.hDispatcher);
+        Out.Write($"GetTailCallHelpers key callToken-{SpmiDumpHelper.DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.callToken)} " +
+            $"sig-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(key.sig, GetTailCallHelpers, SigInstHandleMap)} flg-{key.flags:X8}");
+        Out.Write($", value result-{((value.result != 0) ? "true" : "false")} flg-{value.flags:X8} hStoreArgs-{value.hStoreArgs:X16} " +
+            $"hCallTarget-{value.hCallTarget:X16} hDispatcher-{value.hDispatcher:X16}");
     }
 
     public void dmpGetAsyncResumptionStub(uint key, in DLDL value)
-        => CFormat.Printf(Out, "GetAsyncResumptionStub key-%u, hnd-%016llX, entrypoint-%016llX", key, value.A, value.B);
+        => Out.Write($"GetAsyncResumptionStub key-{key}, hnd-{value.A:X16}, entrypoint-{value.B:X16}");
 
     public void dmpGetContinuationType(in Agnostic_GetContinuationTypeIn key, ulong value)
-        => CFormat.Printf(Out, "GetContinuationType dataSize-%016llX, objRefs-%u, handle-%016llX",
-            key.dataSize, key.objRefs, value);
+        => Out.Write($"GetContinuationType dataSize-{key.dataSize:X16}, objRefs-{key.objRefs}, handle-{value:X16}");
 
     public void dmpUpdateEntryPointForTailCall(in Agnostic_CORINFO_CONST_LOOKUP origEntryPoint, in Agnostic_CORINFO_CONST_LOOKUP newEntryPoint)
-        => CFormat.Printf(Out, "UpdateEntryPointForTailcall orig=%s new=%s",
-            SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(origEntryPoint),
-            SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(newEntryPoint));
+        => Out.Write($"UpdateEntryPointForTailcall orig={SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(origEntryPoint)} " +
+            $"new={SpmiDumpHelper.DumpAgnostic_CORINFO_CONST_LOOKUP(newEntryPoint)}");
 
     public void dmpGetMethodDefFromMethod(ulong key, uint value)
-        => CFormat.Printf(Out, "GetMethodDefFromMethod key ftn-%016llX, value res-%u", key, value);
+        => Out.Write($"GetMethodDefFromMethod key ftn-{key:X16}, value res-{value}");
 
     public void dmpGetArrayRank(ulong key, uint value)
-        => CFormat.Printf(Out, "GetArrayRank key %016llX, value %u", key, value);
+        => Out.Write($"GetArrayRank key {key:X16}, value {value}");
 
     public void dmpGetArrayIntrinsicID(ulong key, uint value)
-        => CFormat.Printf(Out, "GetArrayIntrinsicID key %016llX, value %u", key, value);
+        => Out.Write($"GetArrayIntrinsicID key {key:X16}, value {value}");
 
     public void dmpIsFieldStatic(ulong key, uint value)
-        => CFormat.Printf(Out, "IsFieldStatic key %016llX, value %u", key, value);
+        => Out.Write($"IsFieldStatic key {key:X16}, value {value}");
 
     public void dmpGetArrayOrStringLength(ulong key, uint value)
-        => CFormat.Printf(Out, "GetArrayOrStringLength key %016llX, value %u", key, value);
+        => Out.Write($"GetArrayOrStringLength key {key:X16}, value {value}");
 
     public void dmpGetSpecialCopyHelper(ulong key, ulong value)
-        => CFormat.Printf(Out, "getSpecialCopyHelper key %016llX, value %016llX", key, value);
+        => Out.Write($"getSpecialCopyHelper key {key:X16}, value {value:X16}");
 
     public void dmpGetWasmTypeSymbol(in Agnostic_GetWasmTypeSymbol key, ulong value)
-        => CFormat.Printf(Out, "getWasmTypeSymbol types %u, typesSize %u, value %016llX", key.types, key.typesSize, value);
+        => Out.Write($"getWasmTypeSymbol types {key.types}, typesSize {key.typesSize}, value {value:X16}");
 
     public void dmpSigInstHandleMap(uint key, ulong value)
-        => CFormat.Printf(Out, "SigInstHandleMap key %u, value %016llX", key, value);
+        => Out.Write($"SigInstHandleMap key {key}, value {value:X16}");
 
     public void dmpCanValueClassInstancePointerEscape(ulong key, uint value)
-        => CFormat.Printf(Out, "CanValueClassInstancePointerEscape key ftn-%016llX, value res-%u", key, value);
+        => Out.Write($"CanValueClassInstancePointerEscape key ftn-{key:X16}, value res-{value}");
 }

@@ -18,13 +18,13 @@ public sealed partial class CompileResult
 
     public void dmpAssertLog(uint key, uint value)
     {
-        CFormat.Printf(Out, "AssertLog key %u, value '%s'", key, AssertLog.GetString(value));
+        Out.Write($"AssertLog key {key}, value '{AssertLog.GetString(value) ?? "(null)"}'");
         AssertLog.Unlock();
     }
 
     public void dmpCallLog(uint key, uint value)
     {
-        CFormat.Printf(Out, "CallLog %u '%s'", key, CallLog.GetString(value));
+        Out.Write($"CallLog {key} '{CallLog.GetString(value) ?? "(null)"}'");
         CallLog.Unlock();
     }
 
@@ -32,13 +32,13 @@ public sealed partial class CompileResult
     {
         const int OffsetMappingSize = 12; // ICorDebugInfo::OffsetMapping: nativeOffset, ilOffset, source
         ReadOnlySpan<byte> om = SetBoundaries.GetBuffer(value.pMap_offset);
-        CFormat.Printf(Out, "SetBoundaries key 0, value ftn-%016llX cMap-%u %u{", value.ftn, value.cMap, value.pMap_offset);
+        Out.Write($"SetBoundaries key 0, value ftn-{value.ftn:X16} cMap-{value.cMap} {value.pMap_offset}{{");
         for (uint i = 0; i < value.cMap; i++)
         {
             if (i != 0)
                 Out.Write(", ");
             int at = (int)i * OffsetMappingSize;
-            CFormat.Printf(Out, "%u %u %u", U32(om, at + 4), U32(om, at), U32(om, at + 8));
+            Out.Write($"{U32(om, at + 4)} {U32(om, at)} {U32(om, at + 8)}");
         }
         Out.Write("}");
         SetBoundaries.Unlock();
@@ -49,13 +49,13 @@ public sealed partial class CompileResult
         // ICorDebugInfo::NativeVarInfo: startOffset, endOffset, callReturnValueILOffset, varNumber, then a 16-byte VarLoc.
         const int NativeVarInfoSize = 32;
         ReadOnlySpan<byte> om = SetVars.GetBuffer(value.vars_offset);
-        CFormat.Printf(Out, "SetVars key %u, value ftn-%016llX cVars-%u %u{", key, value.ftn, value.cVars, value.vars_offset);
+        Out.Write($"SetVars key {key}, value ftn-{value.ftn:X16} cVars-{value.cVars} {value.vars_offset}{{");
         for (uint i = 0; i < value.cVars; i++)
         {
             if (i != 0)
                 Out.Write(", ");
             int at = (int)i * NativeVarInfoSize;
-            CFormat.Printf(Out, "so-%u eo-%u var-%u", U32(om, at), U32(om, at + 4), U32(om, at + 12));
+            Out.Write($"so-{U32(om, at)} eo-{U32(om, at + 4)} var-{U32(om, at + 12)}");
         }
         Out.Write("}");
         SetVars.Unlock();
@@ -64,7 +64,7 @@ public sealed partial class CompileResult
     public void dmpSetPatchpointInfo(uint key, in Agnostic_SetPatchpointInfo value)
     {
         SetPatchpointInfo.GetBuffer(value.index);
-        CFormat.Printf(Out, "SetPatchpointInfo key %u, index %u{", key, value.index);
+        Out.Write($"SetPatchpointInfo key {key}, index {value.index}{{");
         Out.Write("}");
         SetPatchpointInfo.Unlock();
     }
@@ -74,95 +74,91 @@ public sealed partial class CompileResult
     {
         ReadOnlySpan<byte> buff = AllocGCInfo.GetBuffer(value.retval_offset);
         Out.Write("AllocGCInfo key 0, ");
-        CFormat.Printf(Out, "sz-%llu %s{ ", value.size, value.retval_offset == uint.MaxValue ? "(nil)" : CFormat.Sprintf("0x%x", value.retval_offset));
+        Out.Write($"sz-{value.size} {(value.retval_offset == uint.MaxValue ? "(nil)" : $"0x{value.retval_offset:x}")}{{ ");
         for (ulong i = 0; i < value.size; i++)
-            CFormat.Printf(Out, "%02X ", buff[(int)i]);
+            Out.Write($"{buff[(int)i]:X2} ");
         Out.Write("}");
         AllocGCInfo.Unlock();
     }
 
     public void dmpReportInliningDecision(uint key, in Agnostic_ReportInliningDecision value)
     {
-        CFormat.Printf(Out, "ReportInliningDecision key %u, value inliner-%016llX inlinee-%016llX res-%u reason-'%s'", key,
-            value.inlinerHnd, value.inlineeHnd, value.inlineResult, ReportInliningDecision.GetString(value.reason_offset));
+        Out.Write($"ReportInliningDecision key {key}, value inliner-{value.inlinerHnd:X16} inlinee-{value.inlineeHnd:X16} " +
+            $"res-{value.inlineResult} reason-'{ReportInliningDecision.GetString(value.reason_offset) ?? "(null)"}'");
         ReportInliningDecision.Unlock();
     }
 
     public void dmpReportTailCallDecision(uint key, in Agnostic_ReportTailCallDecision value)
     {
-        CFormat.Printf(Out, "ReportTailCallDecision key-%u, value cr-%016llX ce-%016llX tail-%u call-%u -%s", key, value.callerHnd,
-            value.calleeHnd, value.tailCallResult, value.tailCallResult, ReportTailCallDecision.GetString(value.reason_index));
+        Out.Write($"ReportTailCallDecision key-{key}, value cr-{value.callerHnd:X16} ce-{value.calleeHnd:X16} tail-{value.tailCallResult} " +
+            $"call-{value.tailCallResult} -{ReportTailCallDecision.GetString(value.reason_index) ?? "(null)"}");
         ReportTailCallDecision.Unlock();
     }
 
     public void dmpProcessName(uint key, uint value)
     {
-        CFormat.Printf(Out, "ProcessName key %u, value '%s'", key, ProcessName.GetString(value));
+        Out.Write($"ProcessName key {key}, value '{ProcessName.GetString(value) ?? "(null)"}'");
         ProcessName.Unlock();
     }
 
     public void dmpAllocMem(uint key, in Agnostic_AllocMemDetails value)
-        => CFormat.Printf(Out, "AllocMem key 0, value hotCodeSize-%u coldCodeSize-%u roDataSize-%u xcptnsCount-%u hotCodeBlock_offset-%u coldCodeBlock_offset-%u roDataBlock_offset-%u hotCodeBlock-%016llX coldCodeBlock-%016llX roDataBlock-%016llX",
-            value.hotCodeSize, value.coldCodeSize, value.roDataSize, value.xcptnsCount,
-            value.hotCodeBlock_offset, value.coldCodeBlock_offset, value.roDataBlock_offset, value.hotCodeBlock,
-            value.coldCodeBlock, value.roDataBlock);
+        => Out.Write($"AllocMem key 0, value hotCodeSize-{value.hotCodeSize} coldCodeSize-{value.coldCodeSize} roDataSize-{value.roDataSize} " +
+            $"xcptnsCount-{value.xcptnsCount} hotCodeBlock_offset-{value.hotCodeBlock_offset} coldCodeBlock_offset-{value.coldCodeBlock_offset} " +
+            $"roDataBlock_offset-{value.roDataBlock_offset} hotCodeBlock-{value.hotCodeBlock:X16} coldCodeBlock-{value.coldCodeBlock:X16} " +
+            $"roDataBlock-{value.roDataBlock:X16}");
 
     public void dmpCompileMethod(uint key, in Agnostic_CompileMethodResults value)
-        => CFormat.Printf(Out, "CompileMethod key %u, value nativeEntry-%016llX nativeSizeOfCode-%u CorJitResult-%u", key,
-            value.nativeEntry, value.nativeSizeOfCode, value.CorJitResult);
+        => Out.Write($"CompileMethod key {key}, value nativeEntry-{value.nativeEntry:X16} nativeSizeOfCode-{value.nativeSizeOfCode} " +
+            $"CorJitResult-{value.CorJitResult}");
 
     public void dmpMessageLog(uint key, uint value)
-        => CFormat.Printf(Out, "MessageLog NYI");
+        => Out.Write("MessageLog NYI");
 
     public void dmpSetEHcount(uint key, uint value)
-        => CFormat.Printf(Out, "SetEHcount key %u, value %u", key, value);
+        => Out.Write($"SetEHcount key {key}, value {value}");
 
     public void dmpSetEHinfo(uint key, in Agnostic_CORINFO_EH_CLAUSE value)
     {
-        CFormat.Printf(Out, "SetEHinfo key %u, value flg-%u to-%u tl-%u ho-%u hl-%u", key, value.Flags, value.TryOffset, value.TryLength,
-               value.HandlerOffset, value.HandlerLength);
+        Out.Write($"SetEHinfo key {key}, value flg-{value.Flags} to-{value.TryOffset} tl-{value.TryLength} ho-{value.HandlerOffset} " +
+            $"hl-{value.HandlerLength}");
         if (value.Flags == CORINFO_EH_CLAUSE_FILTER)
         {
-            CFormat.Printf(Out, " fo-%u", value.ClassToken); // FilterOffset
+            Out.Write($" fo-{value.ClassToken}"); // FilterOffset
         }
         else if (value.Flags == CORINFO_EH_CLAUSE_NONE)
         {
-            CFormat.Printf(Out, " cls-%08X", value.ClassToken);
+            Out.Write($" cls-{value.ClassToken:X8}");
         }
         // else, no need to print for finally/fault handlers
     }
 
     public void dmpSetMethodAttribs(ulong key, uint value)
     {
-        CFormat.Printf(Out, "SetMethodAttribs key ftn-%016llX, value attr-%08X", key, value);
+        Out.Write($"SetMethodAttribs key ftn-{key:X16}, value attr-{value:X8}");
     }
 
     public void dmpReportFatalError(uint key, uint value)
-        => CFormat.Printf(Out, "ReportFatalError key Count-%u, value result-%08X", key, value);
+        => Out.Write($"ReportFatalError key Count-{key}, value result-{value:X8}");
 
     public void dmpRecordRelocation(uint key, in Agnostic_RecordRelocation value)
-        => CFormat.Printf(Out, "RecordRelocation key %u, value loc-%016llX tgt-%016llX fRelocType-%u(%s) addlDelta:%d", key,
-            value.location, value.target, value.fRelocType, relocationTypeToString(value.fRelocType),
-            (int)value.addlDelta);
+        => Out.Write($"RecordRelocation key {key}, value loc-{value.location:X16} tgt-{value.target:X16} " +
+            $"fRelocType-{value.fRelocType}({relocationTypeToString(value.fRelocType)}) addlDelta:{(int)value.addlDelta}");
 
     public void dmpReserveUnwindInfo(uint key, in Agnostic_ReserveUnwindInfo value)
-        => CFormat.Printf(Out, "ReserveUnwindInfo key %u, value isFun-%u isCold-%u usz-%u", key, value.isFunclet, value.isColdCode,
-            value.unwindSize);
+        => Out.Write($"ReserveUnwindInfo key {key}, value isFun-{value.isFunclet} isCold-{value.isColdCode} usz-{value.unwindSize}");
 
     public void dmpAllocUnwindInfo(uint key, in Agnostic_AllocUnwindInfo value)
-        => CFormat.Printf(Out, "AllocUnwindInfo key %u, value pHot-%016llX pCold-%016llX startOff-%u endOff-%u unwindSz-%u blki-%u funcKind-%u",
-            key, value.pHotCode, value.pColdCode, value.startOffset, value.endOffset, value.unwindSize,
-            value.pUnwindBlock_index, value.funcKind);
+        => Out.Write($"AllocUnwindInfo key {key}, value pHot-{value.pHotCode:X16} pCold-{value.pColdCode:X16} startOff-{value.startOffset} " +
+            $"endOff-{value.endOffset} unwindSz-{value.unwindSize} blki-{value.pUnwindBlock_index} funcKind-{value.funcKind}");
 
     public void dmpRecordCallSiteWithSignature(uint key, in Agnostic_RecordCallSite value)
-        => CFormat.Printf(Out, "RecordCallSite key %u, callSig-%s ftn-%016llX",
-            key,
-            SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap),
-            value.methodHandle);
+        => Out.Write($"RecordCallSite key {key}, " +
+            $"callSig-{SpmiDumpHelper.DumpAgnostic_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap)} " +
+            $"ftn-{value.methodHandle:X16}");
 
     public void dmpRecordCallSiteWithoutSignature(uint key, ulong methodHandle)
-        => CFormat.Printf(Out, "RecordCallSite without call signature key %u, ftn-%016llX", key, methodHandle);
+        => Out.Write($"RecordCallSite without call signature key {key}, ftn-{methodHandle:X16}");
 
     public void dmpCrSigInstHandleMap(uint key, ulong value)
-        => CFormat.Printf(Out, "CrSigInstHandleMap key %u, value %016llX", key, value);
+        => Out.Write($"CrSigInstHandleMap key {key}, value {value:X16}");
 }

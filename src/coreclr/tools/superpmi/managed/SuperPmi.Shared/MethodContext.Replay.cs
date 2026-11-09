@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.JitInterface;
@@ -28,7 +29,8 @@ public sealed unsafe partial class MethodContext
         tempAllocations = null;
     }
 
-    // 'keyFormat' describes the key for the failure message, printf-style.
+    // 'keyFormat' describes the key for the failure message, as a composite format string of a, b, c and d. It is only
+    // formatted on failure, so that the lookups that succeed don't format anything.
     private static TItem LookupByKeyOrMiss<TKey, TItem>(LightWeightMap<TKey, TItem> map, TKey key, string keyFormat = "",
         ulong a = 0, ulong b = 0, ulong c = 0, ulong d = 0,
         [CallerArgumentExpression(nameof(map))] string mapName = "", [CallerArgumentExpression(nameof(key))] string keyName = "")
@@ -36,13 +38,15 @@ public sealed unsafe partial class MethodContext
         where TItem : unmanaged
     {
         if (map == null)
-            ErrorHandling.LogException(ExceptionCodes.MC, $"SuperPMI assertion failed (missing map {mapName}){CFormat.Sprintf(keyFormat, a, b, c, d)}");
+            ErrorHandling.LogException(ExceptionCodes.MC, "SuperPMI assertion failed (missing map " +
+                $"{mapName}){string.Format(CultureInfo.InvariantCulture, keyFormat, a, b, c, d)}");
 
         int index = map.GetIndex(key);
         if (index == -1)
         {
             ErrorHandling.LogException(ExceptionCodes.MC,
-                $"SuperPMI assertion failed (missing key \"{(keyName == "0u" ? "0" : keyName)}\" in map {mapName}){CFormat.Sprintf(keyFormat, a, b, c, d)}");
+                $"SuperPMI assertion failed (missing key \"{(keyName == "0u" ? "0" : keyName)}\" in map " +
+                    $"{mapName}){string.Format(CultureInfo.InvariantCulture, keyFormat, a, b, c, d)}");
         }
 
         return map.GetItem(index);
@@ -66,14 +70,15 @@ public sealed unsafe partial class MethodContext
         where TItem : unmanaged
     {
         ulong key = CastHandle(handle);
-        return LookupByKeyOrMiss(map, key, ": key %016llX", key, mapName: mapName);
+        return LookupByKeyOrMiss(map, key, ": key {0:X16}", key, mapName: mapName);
     }
 
     private static void AssertMapExists(LightWeightMapBuffer map, string keyFormat = "", ulong a = 0, ulong b = 0,
         [CallerArgumentExpression(nameof(map))] string mapName = "")
     {
         if (map == null)
-            ErrorHandling.LogException(ExceptionCodes.MC, $"SuperPMI assertion failed (missing map {mapName}){CFormat.Sprintf(keyFormat, a, b)}");
+            ErrorHandling.LogException(ExceptionCodes.MC, "SuperPMI assertion failed (missing map " +
+                $"{mapName}){string.Format(CultureInfo.InvariantCulture, keyFormat, a, b)}");
     }
 
     private static ReadOnlySpan<byte> Bytes(void* data, nuint length) => data == null ? default : new ReadOnlySpan<byte>(data, (int)length);
@@ -175,7 +180,7 @@ public sealed unsafe partial class MethodContext
     public CorInfoInitClassResult repInitClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
     {
         var key = new Agnostic_InitClass { field = CastHandle(field), method = CastHandle(method), context = CastHandle(context) };
-        return (CorInfoInitClassResult)LookupByKeyOrMiss(InitClass, key, ": fld-%016llX meth-%016llX con-%016llX", key.field, key.method, key.context);
+        return (CorInfoInitClassResult)LookupByKeyOrMiss(InitClass, key, ": fld-{0:X16} meth-{1:X16} con-{2:X16}", key.field, key.method, key.context);
     }
 
     public byte* repGetMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** moduleName, byte** namespaceName, byte** enclosingClassNames,
@@ -190,7 +195,7 @@ public sealed unsafe partial class MethodContext
         };
 
         Agnostic_CORINFO_METHODNAME_TOKENout value = LookupByKeyOrMiss(GetMethodNameFromMetadata, key,
-            ": ftn-%016llX className-%u namespaceName-%u maxEnclosingClassNames-%u", key.ftn, key.className, key.namespaceName, key.maxEnclosingClassNames);
+            ": ftn-{0:X16} className-{1} namespaceName-{2} maxEnclosingClassNames-{3}", key.ftn, key.className, key.namespaceName, key.maxEnclosingClassNames);
 
         byte* result = GetMethodNameFromMetadata.GetBufferPointer(value.methodName);
         if (moduleName != null)
@@ -230,7 +235,7 @@ public sealed unsafe partial class MethodContext
     public void repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, out uint exceptionCode)
     {
         Agnostic_CORINFO_RESOLVED_TOKENin key = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
-        ResolveTokenValue value = LookupByKeyOrMiss(ResolveToken, key, ": token %x", (uint)pResolvedToken->token);
+        ResolveTokenValue value = LookupByKeyOrMiss(ResolveToken, key, ": token {0:x}", (uint)pResolvedToken->token);
         Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
         exceptionCode = value.exceptionCode;
     }
@@ -249,7 +254,7 @@ public sealed unsafe partial class MethodContext
         if (pConstrainedResolvedToken != null)
             key.ConstrainedResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pConstrainedResolvedToken, GetCallInfo);
 
-        Agnostic_CORINFO_CALL_INFO value = LookupByKeyOrMiss(GetCallInfo, key, ": key %08x, %016llx", key.ResolvedToken.inValue.token, key.ResolvedToken.outValue.hClass);
+        Agnostic_CORINFO_CALL_INFO value = LookupByKeyOrMiss(GetCallInfo, key, ": key {0:x8}, {1:x16}", key.ResolvedToken.inValue.token, key.ResolvedToken.outValue.hClass);
 
         if (value.exceptionCode != 0)
         {
@@ -319,7 +324,7 @@ public sealed unsafe partial class MethodContext
             }
         }
 
-        ErrorHandling.LogException(ExceptionCodes.MC, CFormat.Sprintf("Didn't find key %016llX.", CastHandle(methodHandle)));
+        ErrorHandling.LogException(ExceptionCodes.MC, $"Didn't find key {CastHandle(methodHandle):X16}.");
     }
 
     public void repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
@@ -329,7 +334,7 @@ public sealed unsafe partial class MethodContext
             ResolvedToken = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken),
             hCallerHandle = CastHandle(callerHandle),
         };
-        Agnostic_CORINFO_GENERICHANDLE_RESULT value = LookupByKeyOrMiss(ExpandRawHandleIntrinsic, key, ": key %x", (uint)pResolvedToken->token);
+        Agnostic_CORINFO_GENERICHANDLE_RESULT value = LookupByKeyOrMiss(ExpandRawHandleIntrinsic, key, ": key {0:x}", (uint)pResolvedToken->token);
         Restore_CORINFO_GENERICHANDLE_RESULT(pResult, value);
     }
 
@@ -362,7 +367,7 @@ public sealed unsafe partial class MethodContext
     public CORINFO_CLASS_STRUCT_* repGetBuiltinClass(CorInfoClassId classId)
     {
         uint key = (uint)classId;
-        return (CORINFO_CLASS_STRUCT_*)LookupByKeyOrMiss(GetBuiltinClass, key, ": key %08X", key);
+        return (CORINFO_CLASS_STRUCT_*)LookupByKeyOrMiss(GetBuiltinClass, key, ": key {0:X8}", key);
     }
 
     public CorInfoType repGetTypeForPrimitiveValueClass(CORINFO_CLASS_STRUCT_* cls) => (CorInfoType)LookupByHandle(GetTypeForPrimitiveValueClass, cls);
@@ -386,7 +391,7 @@ public sealed unsafe partial class MethodContext
     public bool repGetStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* charValue)
     {
         var key = new DLD { A = CastHandle(strObj), B = (uint)index };
-        DD value = LookupByKeyOrMiss(GetStringChar, key, ": key %016llX", key.A);
+        DD value = LookupByKeyOrMiss(GetStringChar, key, ": key {0:X16}", key.A);
         *charValue = (ushort)value.B;
         return value.A != 0;
     }
@@ -426,7 +431,7 @@ public sealed unsafe partial class MethodContext
     public void repGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethodHandle)
     {
         uint key = (uint)ftnNum;
-        Agnostic_GetHelperFtn value = LookupByKeyOrMiss(GetHelperFtn, key, ": key %u", key);
+        Agnostic_GetHelperFtn value = LookupByKeyOrMiss(GetHelperFtn, key, ": key {0}", key);
         if (pNativeEntrypoint != null)
             *pNativeEntrypoint = RestoreCORINFO_CONST_LOOKUP(value.helperLookup);
         if (pMethodHandle != null)
@@ -509,7 +514,7 @@ public sealed unsafe partial class MethodContext
     public InfoAccessType repConstructStringLiteral(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken metaTok, void** ppValue)
     {
         var key = new DLD { A = CastHandle(moduleHandle), B = (uint)metaTok };
-        DLD value = LookupByKeyOrMiss(ConstructStringLiteral, key, ": key %016llX", CastHandle(moduleHandle));
+        DLD value = LookupByKeyOrMiss(ConstructStringLiteral, key, ": key {0:X16}", CastHandle(moduleHandle));
         *ppValue = (void*)value.A;
         return (InfoAccessType)value.B;
     }
@@ -535,7 +540,7 @@ public sealed unsafe partial class MethodContext
 
     public CorInfoTypeWithMod repGetArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet, out uint exceptionCode)
     {
-        AssertMapExists(GetArgType, ": key %016llX %016llX", CastHandle(sig->scope), CastHandle(args));
+        AssertMapExists(GetArgType, ": key {0:X16} {1:X16}", CastHandle(sig->scope), CastHandle(args));
 
         var key = new Agnostic_GetArgType_Key
         {
@@ -550,7 +555,7 @@ public sealed unsafe partial class MethodContext
             sigInst_methInst_Index = ContainsHandleMap(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap),
         };
 
-        Agnostic_GetArgType_Value value = LookupByKeyOrMiss(GetArgType, key, ": key %016llX %016llX", key.scope, key.args);
+        Agnostic_GetArgType_Value value = LookupByKeyOrMiss(GetArgType, key, ": key {0:X16} {1:X16}", key.scope, key.args);
         *vcTypeRet = (CORINFO_CLASS_STRUCT_*)value.vcTypeRet;
         exceptionCode = value.exceptionCode;
         return (CorInfoTypeWithMod)value.result;
@@ -559,7 +564,7 @@ public sealed unsafe partial class MethodContext
     public int repGetExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
     {
         var key = new DLD { A = CastHandle(baseType), B = (uint)maxExactClasses };
-        Agnostic_GetExactClassesResult value = LookupByKeyOrMiss(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+        Agnostic_GetExactClassesResult value = LookupByKeyOrMiss(GetExactClasses, key, ": key {0:X16} {1:X8}", key.A, key.B);
         ErrorHandling.AssertCode(maxExactClasses >= value.numClasses, ExceptionCodes.ASSERT, "maxExactClasses >= value.numClasses");
 
         byte* buffer = GetExactClasses.GetBufferPointer(value.classes);
@@ -573,7 +578,7 @@ public sealed unsafe partial class MethodContext
     public void repGetMethodSig(CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent)
     {
         var key = new DLDL { A = CastHandle(ftn), B = CastHandle(memberParent) };
-        Agnostic_CORINFO_SIG_INFO value = LookupByKeyOrMiss(GetMethodSig, key, ": key ftn-%016llX prt-%016llX", key.A, key.B);
+        Agnostic_CORINFO_SIG_INFO value = LookupByKeyOrMiss(GetMethodSig, key, ": key ftn-{0:X16} prt-{1:X16}", key.A, key.B);
         *sig = Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap, cr.MemoryTracker);
     }
 
@@ -590,7 +595,7 @@ public sealed unsafe partial class MethodContext
             sigInst_methInst_Index = ContainsHandleMap(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap),
         };
 
-        Agnostic_GetArgClass_Value value = LookupByKeyOrMiss(GetArgClass, key, ": key %016llX %016llX", key.scope, key.args);
+        Agnostic_GetArgClass_Value value = LookupByKeyOrMiss(GetArgClass, key, ": key {0:X16} {1:X16}", key.scope, key.args);
         exceptionCode = value.exceptionCode;
         return (CORINFO_CLASS_STRUCT_*)value.result;
     }
@@ -600,7 +605,7 @@ public sealed unsafe partial class MethodContext
     public bool repGetMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_STRUCT* context, out uint exceptionCode)
     {
         var key = new DLDL { A = CastHandle(ftn), B = CastHandle(context) };
-        Agnostic_GetMethodInfo value = LookupByKeyOrMiss(GetMethodInfo, key, ": key %016llX", key.A);
+        Agnostic_GetMethodInfo value = LookupByKeyOrMiss(GetMethodInfo, key, ": key {0:X16}", key.A);
         if (value.result != 0)
             Restore_CORINFO_METHOD_INFO(info, value.info, GetMethodInfo);
         exceptionCode = value.exceptionCode;
@@ -610,7 +615,7 @@ public sealed unsafe partial class MethodContext
     public bool repHaveSameMethodDefinition(CORINFO_METHOD_STRUCT_* methHnd1, CORINFO_METHOD_STRUCT_* methHnd2)
     {
         var key = new DLDL { A = CastHandle(methHnd1), B = CastHandle(methHnd2) };
-        return LookupByKeyOrMiss(HaveSameMethodDefinition, key, "key %016llX, %016llX", key.A, key.B) != 0;
+        return LookupByKeyOrMiss(HaveSameMethodDefinition, key, "key {0:X16}, {1:X16}", key.A, key.B) != 0;
     }
 
     public CORINFO_CLASS_STRUCT_* repGetTypeDefinition(CORINFO_CLASS_STRUCT_* cls) => (CORINFO_CLASS_STRUCT_*)LookupByHandle(GetTypeDefinition, cls);
@@ -639,10 +644,10 @@ public sealed unsafe partial class MethodContext
 
     public void repGetEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, CORINFO_EH_CLAUSE* clause)
     {
-        AssertMapExists(GetEHinfo, ": key %016llX", CastHandle(ftn));
+        AssertMapExists(GetEHinfo, ": key {0:X16}", CastHandle(ftn));
 
         var key = new DLD { A = CastHandle(ftn), B = EHnumber };
-        Agnostic_CORINFO_EH_CLAUSE value = LookupByKeyOrMiss(GetEHinfo, key, ": key %016llX", CastHandle(ftn));
+        Agnostic_CORINFO_EH_CLAUSE value = LookupByKeyOrMiss(GetEHinfo, key, ": key {0:X16}", CastHandle(ftn));
         clause->Flags = (CORINFO_EH_CLAUSE_FLAGS)value.Flags;
         clause->TryOffset = value.TryOffset;
         clause->TryLength = value.TryLength;
@@ -671,7 +676,7 @@ public sealed unsafe partial class MethodContext
         if (key.pResolvedTokenVirtualMethodNonNull != 0)
             key.pResolvedTokenVirtualMethod = StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
 
-        Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX-%08X",
+        Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": {0:X16}-{1:X16}-{2:X16}-{3:X8}",
             key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
 
         info->devirtualizedMethod = (CORINFO_METHOD_STRUCT_*)result.devirtualizedMethod;
@@ -707,7 +712,7 @@ public sealed unsafe partial class MethodContext
 
     public void repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     {
-        AssertMapExists(GetFieldInfo, ": key %x", (uint)pResolvedToken->token);
+        AssertMapExists(GetFieldInfo, ": key {0:x}", (uint)pResolvedToken->token);
 
         var key = new Agnostic_GetFieldInfo
         {
@@ -733,7 +738,7 @@ public sealed unsafe partial class MethodContext
                 if (keyIndex != -1)
                     Logger.LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_INLINECHECK");
                 else
-                    ErrorHandling.LogException(ExceptionCodes.MC, CFormat.Sprintf("repGetFieldInfo: didn't find %x", (uint)pResolvedToken->token));
+                    ErrorHandling.LogException(ExceptionCodes.MC, $"repGetFieldInfo: didn't find {(uint)pResolvedToken->token:x}");
             }
         }
 
@@ -752,13 +757,13 @@ public sealed unsafe partial class MethodContext
     public uint repGetThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* field, bool isGCType)
     {
         var key = new DLD { A = CastHandle(field), B = isGCType ? 0u : 1u };
-        return LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key hnd-%016llX, gctype-%u", key.A, key.B);
+        return LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key hnd-{0:X16}, gctype-{1}", key.A, key.B);
     }
 
     public void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     {
         uint key = 0;
-        Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, key, ": key %u", key);
+        Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, key, ": key {0}", key);
         pInfo->tlsIndex = RestoreCORINFO_CONST_LOOKUP(value.tlsIndex);
         pInfo->tlsGetAddrFtnPtr = (nuint)value.tlsGetAddrFtnPtr;
         pInfo->tlsIndexObject = (nuint)value.tlsIndexObject;
@@ -772,7 +777,7 @@ public sealed unsafe partial class MethodContext
     public void repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
     {
         ulong key = 1;
-        Agnostic_GetThreadStaticInfo_NativeAOT value = LookupByKeyOrMiss(GetThreadLocalStaticInfo_NativeAOT, key, ": key %016llX", key);
+        Agnostic_GetThreadStaticInfo_NativeAOT value = LookupByKeyOrMiss(GetThreadLocalStaticInfo_NativeAOT, key, ": key {0:X16}", key);
         pInfo->tlsRootObject = RestoreCORINFO_CONST_LOOKUP(value.tlsRootObject);
         pInfo->tlsIndexObject = RestoreCORINFO_CONST_LOOKUP(value.tlsIndexObject);
         pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
@@ -791,7 +796,7 @@ public sealed unsafe partial class MethodContext
     public bool repGetStaticFieldContent(CORINFO_FIELD_STRUCT_* field, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
     {
         var key = new DLDDD { A = CastHandle(field), B = (uint)bufferSize, C = ignoreMovableObjects ? 1u : 0u, D = (uint)valueOffset };
-        DD value = LookupByKeyOrMiss(GetStaticFieldContent, key, ": key %016llX", key.A);
+        DD value = LookupByKeyOrMiss(GetStaticFieldContent, key, ": key {0:X16}", key.A);
         if (buffer != null && value.A != 0)
             CopyContent(GetStaticFieldContent.GetBufferPointer(value.B), buffer, bufferSize);
         return value.A != 0;
@@ -800,7 +805,7 @@ public sealed unsafe partial class MethodContext
     public bool repGetObjectContent(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
     {
         var key = new DLDD { A = CastHandle(obj), B = (uint)bufferSize, C = (uint)valueOffset };
-        DD value = LookupByKeyOrMiss(GetObjectContent, key, ": key %016llX", key.A);
+        DD value = LookupByKeyOrMiss(GetObjectContent, key, ": key {0:X16}", key.A);
         if (buffer != null && value.A != 0)
             CopyContent(GetObjectContent.GetBufferPointer(value.B), buffer, bufferSize);
         return value.A != 0;
@@ -815,7 +820,7 @@ public sealed unsafe partial class MethodContext
     public CORINFO_CLASS_STRUCT_* repGetStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
     {
         var key = new DLD { A = CastHandle(field), B = pIsSpeculative != null ? 1u : 0u };
-        Agnostic_GetStaticFieldCurrentClass value = LookupByKeyOrMiss(GetStaticFieldCurrentClass, key, ": key %016llX", key.A);
+        Agnostic_GetStaticFieldCurrentClass value = LookupByKeyOrMiss(GetStaticFieldCurrentClass, key, ": key {0:X16}", key.A);
         if (pIsSpeculative != null)
             *pIsSpeculative = value.isSpeculative;
         return (CORINFO_CLASS_STRUCT_*)value.classHandle;
@@ -832,19 +837,19 @@ public sealed unsafe partial class MethodContext
     public uint repGetClassAlignmentRequirement(CORINFO_CLASS_STRUCT_* cls, bool fDoubleAlignHint)
     {
         var key = new DLD { A = CastHandle(cls), B = fDoubleAlignHint ? 1u : 0u };
-        return LookupByKeyOrMiss(GetClassAlignmentRequirement, key, ": key %016llX", key.A);
+        return LookupByKeyOrMiss(GetClassAlignmentRequirement, key, ": key {0:X16}", key.A);
     }
 
     public CorInfoIsAccessAllowedResult repCanAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_HELPER_DESC* pAccessHelper)
     {
-        AssertMapExists(CanAccessClass, ": key %016llX", CastHandle(pResolvedToken->hClass));
+        AssertMapExists(CanAccessClass, ": key {0:X16}", CastHandle(pResolvedToken->hClass));
 
         var key = new Agnostic_CanAccessClassIn
         {
             ResolvedToken = RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, CanAccessClass),
             callerHandle = CastHandle(callerHandle),
         };
-        Agnostic_CanAccessClassOut value = LookupByKeyOrMiss(CanAccessClass, key, ": key %016llX", CastHandle(pResolvedToken->hClass));
+        Agnostic_CanAccessClassOut value = LookupByKeyOrMiss(CanAccessClass, key, ": key {0:X16}", CastHandle(pResolvedToken->hClass));
         *pAccessHelper = RestoreCORINFO_HELPER_DESC(value.AccessHelper);
         return (CorInfoIsAccessAllowedResult)value.result;
     }
@@ -852,7 +857,7 @@ public sealed unsafe partial class MethodContext
     public CorInfoHelpFunc repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
     {
         var key = new Agnostic_GetCastingHelper { hClass = CastHandle(pResolvedToken->hClass), fThrowing = fThrowing ? 1u : 0u };
-        return (CorInfoHelpFunc)LookupByKeyOrMiss(GetCastingHelper, key, ": key %016llX", key.hClass);
+        return (CorInfoHelpFunc)LookupByKeyOrMiss(GetCastingHelper, key, ": key {0:X16}", key.hClass);
     }
 
     public CORINFO_MODULE_STRUCT_* repEmbedModuleHandle(CORINFO_MODULE_STRUCT_* handle, void** ppIndirection)
@@ -880,7 +885,7 @@ public sealed unsafe partial class MethodContext
             return handle;
         }
 
-        DLDL value = LookupByKeyOrMiss(EmbedClassHandle, key, ": key %016llX", key);
+        DLDL value = LookupByKeyOrMiss(EmbedClassHandle, key, ": key {0:X16}", key);
         *ppIndirection = (void*)value.A;
         return (CORINFO_CLASS_STRUCT_*)value.B;
     }
@@ -1043,7 +1048,7 @@ public sealed unsafe partial class MethodContext
     public bool repGetStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
     {
         var key = new DLD { A = CastHandle(cls), B = isGc ? 1u : 0u };
-        Agnostic_GetStaticBaseAddress value = LookupByKeyOrMiss(GetStaticBaseAddress, key, ": key %016llX", key.A);
+        Agnostic_GetStaticBaseAddress value = LookupByKeyOrMiss(GetStaticBaseAddress, key, ": key {0:X16}", key.A);
         addr->accessType = (InfoAccessType)value.addr.accessType;
         addr->addr = (void*)value.addr.handle;
         return value.result != 0;
@@ -1084,7 +1089,7 @@ public sealed unsafe partial class MethodContext
         DelegateCtorArgs* pCtorData)
     {
         var key = new Agnostic_GetDelegateCtorIn { methHnd = CastHandle(methHnd), clsHnd = CastHandle(clsHnd), targetMethodHnd = CastHandle(targetMethodHnd) };
-        Agnostic_GetDelegateCtorOut value = LookupByKeyOrMiss(GetDelegateCtor, key, ": key %016llX", key.methHnd);
+        Agnostic_GetDelegateCtorOut value = LookupByKeyOrMiss(GetDelegateCtor, key, ": key {0:X16}", key.methHnd);
         pCtorData->pMethod = (void*)value.CtorData.pMethod;
         pCtorData->pArg3 = (void*)value.CtorData.pArg3;
         pCtorData->pArg4 = (void*)value.CtorData.pArg4;
@@ -1099,13 +1104,13 @@ public sealed unsafe partial class MethodContext
     public CORINFO_FIELD_STRUCT_* repGetFieldInClass(CORINFO_CLASS_STRUCT_* clsHnd, int num)
     {
         var key = new DLD { A = CastHandle(clsHnd), B = (uint)num };
-        return (CORINFO_FIELD_STRUCT_*)LookupByKeyOrMiss(GetFieldInClass, key, ": key %016llX", key.A);
+        return (CORINFO_FIELD_STRUCT_*)LookupByKeyOrMiss(GetFieldInClass, key, ": key {0:X16}", key.A);
     }
 
     public GetTypeLayoutResult repGetTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, nuint* numNodes)
     {
         ulong key = CastHandle(typeHnd);
-        Agnostic_GetTypeLayoutResult value = LookupByKeyOrMiss(GetTypeLayout, key, ": key type-%016llX", key);
+        Agnostic_GetTypeLayoutResult value = LookupByKeyOrMiss(GetTypeLayout, key, ": key type-{0:X16}", key);
 
         var result = (GetTypeLayoutResult)value.result;
         if (result == GetTypeLayoutResult.Failure)
@@ -1123,7 +1128,7 @@ public sealed unsafe partial class MethodContext
     public CorInfoType repGetFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* fieldOwnerHint)
     {
         var key = new DLDL { A = CastHandle(field), B = CastHandle(fieldOwnerHint) };
-        DLD value = LookupByKeyOrMiss(GetFieldType, key, ": key %016llX", key.A);
+        DLD value = LookupByKeyOrMiss(GetFieldType, key, ": key {0:X16}", key.A);
         if (structType != null)
             *structType = (CORINFO_CLASS_STRUCT_*)value.A;
         return (CorInfoType)value.B;
@@ -1138,7 +1143,7 @@ public sealed unsafe partial class MethodContext
     public int repGetStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int bufferSize, int startIndex)
     {
         var key = new DLDDD { A = CastHandle(module), B = metaTOK, C = (uint)bufferSize, D = (uint)startIndex };
-        DD value = LookupByKeyOrMiss(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d startIndex-%d", key.A, key.B, key.C, key.D);
+        DD value = LookupByKeyOrMiss(GetStringLiteral, key, ": key handle-{0:X16} token-{1:X} bufferSize-{2} startIndex-{3}", key.A, key.B, key.C, key.D);
 
         int srcBufferLength = (int)value.A;
         if (buffer != null && srcBufferLength > 0)
@@ -1154,7 +1159,7 @@ public sealed unsafe partial class MethodContext
     public bool repCanCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
     {
         var key = new DLDL { A = CastHandle(child), B = CastHandle(parent) };
-        return LookupByKeyOrMiss(CanCast, key, ": key %016llX %016llX", key.A, key.B) != 0;
+        return LookupByKeyOrMiss(CanCast, key, ": key {0:X16} {1:X16}", key.A, key.B) != 0;
     }
 
     public CorInfoType repGetChildType(CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_CLASS_STRUCT_** clsRet)
@@ -1192,13 +1197,13 @@ public sealed unsafe partial class MethodContext
             exactCalleeHnd = CastHandle(exactCalleeHnd),
             fIsTailPrefix = fIsTailPrefix ? (ushort)1 : (ushort)0,
         };
-        return LookupByKeyOrMiss(CanTailCall, key, ": key %016llX", key.callerHnd) != 0;
+        return LookupByKeyOrMiss(CanTailCall, key, ": key {0:X16}", key.callerHnd) != 0;
     }
 
     public void repFindCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
     {
         var key = new Agnostic_FindCallSiteSig { module = CastHandle(module), methTok = methTOK, context = CastHandle(context) };
-        Agnostic_CORINFO_SIG_INFO value = LookupByKeyOrMiss(FindCallSiteSig, key, ": key %08X", key.methTok);
+        Agnostic_CORINFO_SIG_INFO value = LookupByKeyOrMiss(FindCallSiteSig, key, ": key {0:X8}", key.methTok);
         *sig = Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap, cr.MemoryTracker);
     }
 
@@ -1337,7 +1342,7 @@ public sealed unsafe partial class MethodContext
     public bool repIsMoreSpecificType(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
     {
         var key = new DLDL { A = CastHandle(cls1), B = CastHandle(cls2) };
-        return LookupByKeyOrMiss(IsMoreSpecificType, key, ": key %016llX %016llX", key.A, key.B) != 0;
+        return LookupByKeyOrMiss(IsMoreSpecificType, key, ": key {0:X16} {1:X16}", key.A, key.B) != 0;
     }
 
     public bool repIsExactType(CORINFO_CLASS_STRUCT_* cls) => LookupByHandle(IsExactType, cls) != 0;
@@ -1387,13 +1392,13 @@ public sealed unsafe partial class MethodContext
     public TypeCompareState repCompareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
     {
         var key = new DLDL { A = CastHandle(fromClass), B = CastHandle(toClass) };
-        return (TypeCompareState)LookupByKeyOrMiss(CompareTypesForCast, key, ": key %016llX %016llX", key.A, key.B);
+        return (TypeCompareState)LookupByKeyOrMiss(CompareTypesForCast, key, ": key {0:X16} {1:X16}", key.A, key.B);
     }
 
     public TypeCompareState repCompareTypesForEquality(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
     {
         var key = new DLDL { A = CastHandle(cls1), B = CastHandle(cls2) };
-        return (TypeCompareState)LookupByKeyOrMiss(CompareTypesForEquality, key, ": key %016llX %016llX", key.A, key.B);
+        return (TypeCompareState)LookupByKeyOrMiss(CompareTypesForEquality, key, ": key {0:X16} {1:X16}", key.A, key.B);
     }
 
     public bool repGetSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
@@ -1463,13 +1468,13 @@ public sealed unsafe partial class MethodContext
     public uint repGetExpectedTargetArchitecture()
     {
         uint key = 0;
-        return LookupByKeyOrMiss(GetExpectedTargetArchitecture, key, ": key %08X", key);
+        return LookupByKeyOrMiss(GetExpectedTargetArchitecture, key, ": key {0:X8}", key);
     }
 
     public byte* repGetClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
     {
         var key = new DLD { A = CastHandle(cls), B = namespaceName != null ? 1u : 0u };
-        DD value = LookupByKeyOrMiss(GetClassNameFromMetadata, key, " : key cls-%016llX hasNs-%u", key.A, key.B);
+        DD value = LookupByKeyOrMiss(GetClassNameFromMetadata, key, " : key cls-{0:X16} hasNs-{1}", key.A, key.B);
         if (namespaceName != null)
             *namespaceName = GetClassNameFromMetadata.GetBufferPointer(value.B);
         return GetClassNameFromMetadata.GetBufferPointer(value.A);
@@ -1493,7 +1498,7 @@ public sealed unsafe partial class MethodContext
     {
         int index = map?.GetIndex(handle) ?? -1;
         if (index == -1)
-            LookupByKeyOrMiss(map, handle, ": map " + name + " key %016llx", handle, mapName: "map", keyName: "handle");
+            LookupByKeyOrMiss(map, handle, ": map " + name + " key {0:x16}", handle, mapName: "map", keyName: "handle");
         Agnostic_PrintResult res = map.GetItem(index);
 
         if (pRequiredBufferSize != null)
@@ -1667,7 +1672,7 @@ public sealed unsafe partial class MethodContext
             types = (uint)GetWasmTypeSymbol.Contains(Bytes(types, (nuint)sizeof(CorInfoWasmType) * typesSize)),
             typesSize = (uint)typesSize,
         };
-        return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)LookupByKeyOrMiss(GetWasmTypeSymbol, key, ": types %u, typesSize %u", key.types, key.typesSize);
+        return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)LookupByKeyOrMiss(GetWasmTypeSymbol, key, ": types {0}, typesSize {1}", key.types, key.typesSize);
     }
 
     public bool repCanValueClassInstancePointerEscape(CORINFO_METHOD_STRUCT_* ftn) => LookupByHandle(CanValueClassInstancePointerEscape, ftn) != 0;

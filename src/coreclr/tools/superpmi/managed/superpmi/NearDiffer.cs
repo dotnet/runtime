@@ -448,12 +448,12 @@ internal sealed unsafe class NearDiffer : IDisposable
             // This situation is interesting to find out about.
             if (Debugger.IsAttached)
                 Debugger.Break();
-            Logger.LogVerbose(CFormat.Sprintf("compareVars found non-matching CORINFO_METHOD_HANDLE %p %p", CastHandle(ftn_1), CastHandle(ftn_2)));
+            Logger.LogVerbose($"compareVars found non-matching CORINFO_METHOD_HANDLE 0x{CastHandle(ftn_1):x} 0x{CastHandle(ftn_2):x}");
             return false;
         }
         if (ftn_1 != info.ftn)
         {
-            Logger.LogVerbose(CFormat.Sprintf("compareVars found issues with the CORINFO_METHOD_HANDLE %p %p", CastHandle(ftn_1), CastHandle(info.ftn)));
+            Logger.LogVerbose($"compareVars found issues with the CORINFO_METHOD_HANDLE 0x{CastHandle(ftn_1):x} 0x{CastHandle(info.ftn):x}");
             return false;
         }
 
@@ -482,7 +482,7 @@ internal sealed unsafe class NearDiffer : IDisposable
 
         if (ftn_1 != ftn_2)
         {
-            Logger.LogVerbose(CFormat.Sprintf("compareBoundaries found non-matching CORINFO_METHOD_HANDLE %p %p", CastHandle(ftn_1), CastHandle(ftn_2)));
+            Logger.LogVerbose($"compareBoundaries found non-matching CORINFO_METHOD_HANDLE 0x{CastHandle(ftn_1):x} 0x{CastHandle(ftn_2):x}");
             return false;
         }
 
@@ -550,9 +550,9 @@ internal sealed unsafe class NearDiffer : IDisposable
             }
         }
 
-        public readonly string Describe(int n) => CFormat.Sprintf("HCS%d %d CCS%d %d RDS%d %d xcpnt%d %d HCB %p CCB %p RDB %p ohcb %p occb %p odb %p",
-            n, hotCodeSize, n, coldCodeSize, n, roDataSize1, n, xcptnsCount, (ulong)hotCodeBlock, (ulong)coldCodeBlock, (ulong)roDataBlock,
-            CastHandle(origHotCodeBlock), CastHandle(origColdCodeBlock), CastHandle(origRoDataBlock1));
+        public readonly string Describe(int n) => $"HCS{n} {hotCodeSize} CCS{n} {coldCodeSize} RDS{n} {roDataSize1} xcpnt{n} {xcptnsCount} HCB " +
+            $"0x{(ulong)hotCodeBlock:x} CCB 0x{(ulong)coldCodeBlock:x} RDB 0x{(ulong)roDataBlock:x} ohcb 0x{CastHandle(origHotCodeBlock):x} occb " +
+            $"0x{CastHandle(origColdCodeBlock):x} odb 0x{CastHandle(origRoDataBlock1):x}";
 
         // Fixes up the code with the recorded relocations, for the original base addresses.
         public readonly void ApplyRelocs(MethodContext mc, CompileResult cr)

@@ -29,8 +29,6 @@ internal sealed class FileWriter : IDisposable
 
     public void Print(string value) => _writer.Write(value);
 
-    public void Printf(string format, params object[] args) => _writer.Write(CFormat.Sprintf(format, args));
-
     public void PrintQuotedCsvField(string value) => _writer.Write($"\"{value.Replace("\"", "\"\"")}\"");
 
     public void Dispose() => _writer.Dispose();

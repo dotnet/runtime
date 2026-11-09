@@ -379,7 +379,8 @@ public sealed unsafe partial class CompileResult
         nuint section_begin = (nuint)block1;
         nuint section_end = (nuint)block1 + blocksize1; // address is exclusive
 
-        Logger.LogDebug(CFormat.Sprintf("applyRelocs block [%p,%p) block size %u, orig addr %p", (ulong)block1, (ulong)(block1 + blocksize1), blocksize1, CastHandle(originalAddr)));
+        Logger.LogDebug($"applyRelocs block [0x{(ulong)block1:x},0x{(ulong)(block1 + blocksize1):x}) block size {blocksize1}, orig addr " +
+            $"0x{CastHandle(originalAddr):x}");
 
         ReadOnlySpan<Agnostic_RecordRelocation> relocations = RecordRelocation.GetRawItems();
         for (int i = 0; i < relocations.Length; i++)
@@ -406,7 +407,7 @@ public sealed unsafe partial class CompileResult
             {
                 if (inSection)
                 {
-                    Logger.LogDebug(CFormat.Sprintf("    fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, (ulong)address, *(uint*)address, (uint)tmp.target));
+                    Logger.LogDebug($"    fixupLoc-{fixupLocation:X16} (@0x{(ulong)address:x}) : {*(uint*)address:X8} => {(uint)tmp.target:X8}");
                     *(uint*)address = (uint)tmp.target;
                 }
                 wasRelocHandled = true;
@@ -530,7 +531,7 @@ public sealed unsafe partial class CompileResult
                     // Write 64 bits into the location.
                     if (inSection)
                     {
-                        Logger.LogDebug(CFormat.Sprintf("    fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, (ulong)address, *(ulong*)address, tmp.target));
+                        Logger.LogDebug($"    fixupLoc-{fixupLocation:X16} (@0x{(ulong)address:x}) {*(ulong*)address:X16} => {tmp.target:X16}");
                         *(ulong*)address = tmp.target;
                     }
                     wasRelocHandled = true;
@@ -582,7 +583,8 @@ public sealed unsafe partial class CompileResult
                 int index = mc.GetRelocTypeHint.GetIndex(tmp.target);
                 if (index != -1 && (CorInfoReloc)mc.GetRelocTypeHint.GetItem(index) == CorInfoReloc.RELATIVE32)
                 {
-                    Logger.LogDebug(CFormat.Sprintf("    RELATIVE32 target used as argument to getRelocTypeHint: setting delta=%d (0x%X)", (ulong)(long)(int)tmp.target, (uint)tmp.target));
+                    Logger.LogDebug($"    RELATIVE32 target used as argument to getRelocTypeHint: setting delta={(int)tmp.target} " +
+                        $"(0x{(uint)tmp.target:X})");
                     delta = (int)tmp.target;
                     deltaIsFinal = true;
                 }
@@ -597,7 +599,8 @@ public sealed unsafe partial class CompileResult
                 {
                     if (value.helperLookup.handle == tmp.target)
                     {
-                        Logger.LogDebug(CFormat.Sprintf("    RELATIVE32 target is result of getHelperFtn(): setting delta=%d (0x%X)", (ulong)(long)(int)tmp.target, (uint)tmp.target));
+                        Logger.LogDebug($"    RELATIVE32 target is result of getHelperFtn(): setting delta={(int)tmp.target} " +
+                            $"(0x{(uint)tmp.target:X})");
                         delta = (int)tmp.target;
                         deltaIsFinal = true;
                         break;
@@ -612,7 +615,8 @@ public sealed unsafe partial class CompileResult
                 {
                     if (value.A == tmp.target)
                     {
-                        Logger.LogDebug(CFormat.Sprintf("    RELATIVE32 target is result of getFunctionEntryPoint(): setting delta=%d (0x%X)", (ulong)(long)(int)tmp.target, (uint)tmp.target));
+                        Logger.LogDebug($"    RELATIVE32 target is result of getFunctionEntryPoint(): setting delta={(int)tmp.target} " +
+                            $"(0x{(uint)tmp.target:X})");
                         delta = (int)tmp.target;
                         deltaIsFinal = true;
                         break;
@@ -629,13 +633,13 @@ public sealed unsafe partial class CompileResult
                 {
                     delta = (long)(rc.originalHotCodeAddress + rc.hotCodeSize + ro_section_offset - baseAddr);
                     deltaIsFinal = true;
-                    Logger.LogDebug(CFormat.Sprintf("    RELATIVE32 hot code target is in RO data section: setting delta=%d (0x%X)", (ulong)delta, (ulong)delta));
+                    Logger.LogDebug($"    RELATIVE32 hot code target is in RO data section: setting delta={(int)delta} (0x{(uint)delta:X})");
                 }
                 else if (rc.originalColdCodeAddress <= (nuint)fixupLocation && (nuint)fixupLocation < rc.originalColdCodeAddress + rc.coldCodeSize)
                 {
                     delta = (long)(rc.originalColdCodeAddress + rc.coldCodeSize + ro_section_offset - baseAddr);
                     deltaIsFinal = true;
-                    Logger.LogDebug(CFormat.Sprintf("    RELATIVE32 cold code target is in RO data section: setting delta=%d (0x%X)", (ulong)delta, (ulong)delta));
+                    Logger.LogDebug($"    RELATIVE32 cold code target is in RO data section: setting delta={(int)delta} (0x{(uint)delta:X})");
                 }
             }
 
@@ -645,7 +649,7 @@ public sealed unsafe partial class CompileResult
                 // compilation fit fine. This is only an issue for 32-bit offsets on 64-bit targets.
                 target = CastHandle(originalAddr) + blocksize1;
                 long newdelta = (long)(target - baseAddr);
-                Logger.LogDebug(CFormat.Sprintf("    RELATIVE32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target, (ulong)delta, (ulong)newdelta));
+                Logger.LogDebug($"    RELATIVE32 overflow. Mapping target to {target:X16}. Mapping delta: {delta:X16} => {newdelta:X16}");
                 delta = newdelta;
             }
         }
@@ -658,7 +662,7 @@ public sealed unsafe partial class CompileResult
         }
         else if (delta != (int)delta)
         {
-            Logger.LogError(CFormat.Sprintf("RELATIVE32 relocation overflows field! delta=0x%016llX", (ulong)delta));
+            Logger.LogError($"RELATIVE32 relocation overflows field! delta=0x{delta:X16}");
         }
 
         if (GetSpmiTargetArchitecture() == TargetArchitecture.X64 && !deltaIsFinal)
@@ -672,7 +676,7 @@ public sealed unsafe partial class CompileResult
         }
 
         // Write 32 bits into the location.
-        Logger.LogDebug(CFormat.Sprintf("    fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, (ulong)address, *(uint*)address, (ulong)delta));
+        Logger.LogDebug($"    fixupLoc-{fixupLocation:X16} (@0x{(ulong)address:x}) : {*(uint*)address:X8} => {(uint)delta:X8}");
         *(uint*)address = (uint)delta;
     }
 

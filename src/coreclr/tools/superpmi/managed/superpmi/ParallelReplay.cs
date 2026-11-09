@@ -235,12 +235,12 @@ internal static class ParallelReplay
             if (!usageError)
             {
                 if (o.applyDiff)
-                    Logger.LogInfo(CFormat.Sprintf(Replay.AsmDiffsSummaryFormatString, loaded, jitted, failed, excluded, missing, diffs));
+                    Logger.LogInfo(Replay.AsmDiffsSummary(loaded, jitted, failed, excluded, missing, diffs));
                 else
-                    Logger.LogInfo(CFormat.Sprintf(Replay.SummaryFormatString, loaded, jitted, failed, excluded, missing));
+                    Logger.LogInfo(Replay.Summary(loaded, jitted, failed, excluded, missing));
             }
 
-            Logger.LogVerbose(CFormat.Sprintf("Total time: %fms", st.Elapsed.TotalMilliseconds));
+            Logger.LogVerbose($"Total time: {st.Elapsed.TotalMilliseconds:F6}ms");
         }
 
         if (!o.skipCleanup)

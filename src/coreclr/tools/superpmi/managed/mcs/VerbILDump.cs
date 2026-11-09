@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Text;
 using Internal.JitInterface;
 
 namespace SuperPmi.Mcs;
@@ -37,19 +38,19 @@ internal static unsafe partial class ILDumper
     {
         CORINFO_METHOD_INFO cmi = mc.repCompileMethod(out _, out _);
 
-        CFormat.Printf(Out, "// ProcessName - '%s'\n", mc.cr.repProcessName());
+        Out.Write($"// ProcessName - '{mc.cr.repProcessName()}'\n");
         Out.Write(".assembly extern mscorlib{}\n");
         Out.Write(".assembly dumped_asm\n");
-        CFormat.Printf(Out, ".class %s\n", CallUtils.getClassName(mc, mc.repGetMethodClass(cmi.ftn)));
+        Out.Write($".class {Encoding.UTF8.GetString(CallUtils.getClassName(mc, mc.repGetMethodClass(cmi.ftn)))}\n");
         Out.Write("{\n");
         Out.Write("   .method ");
         SigDumper.DumpAttributeToConsoleBare(mc.repGetMethodAttribs(cmi.ftn));
         SigDumper.DumpPrimToConsoleBare(mc, cmi.args.retType, cmi.args.retTypeClass);
-        CFormat.Printf(Out, " %s(", CallUtils.getMethodName(mc, cmi.ftn));
+        Out.Write($" {Encoding.UTF8.GetString(CallUtils.getMethodName(mc, cmi.ftn))}(");
         SigDumper.DumpSigToConsoleBare(mc, cmi.args);
         Out.Write(")\n");
         Out.Write("   {\n");
-        CFormat.Printf(Out, "      .maxstack  %u\n", cmi.maxStack);
+        Out.Write($"      .maxstack  {cmi.maxStack}\n");
         Out.Write((cmi.options & CorInfoOptions.CORINFO_OPT_INIT_LOCALS) == CorInfoOptions.CORINFO_OPT_INIT_LOCALS ? "      .locals init (" : "      .locals (");
         SigDumper.DumpSigToConsoleBare(mc, cmi.locals);
         Out.Write(")\n");

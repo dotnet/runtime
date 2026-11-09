@@ -56,27 +56,27 @@ public static class SpmiDumpHelper
     private const int MaxHandleArrayDisplayElems = 5;
 
     public static string DumpAgnostic_CORINFO_RESOLVED_TOKENin(in Agnostic_CORINFO_RESOLVED_TOKENin tokenIn)
-        => CFormat.Sprintf("tc-%016llX ts-%016llX tok-%08X tt-%u", tokenIn.tokenContext, tokenIn.tokenScope, tokenIn.token, tokenIn.tokenType);
+        => $"tc-{tokenIn.tokenContext:X16} ts-{tokenIn.tokenScope:X16} tok-{tokenIn.token:X8} tt-{tokenIn.tokenType}";
 
     public static string DumpAgnostic_CORINFO_RESOLVED_TOKENout(in Agnostic_CORINFO_RESOLVED_TOKENout tokenOut)
-        => CFormat.Sprintf("cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u", tokenOut.hClass, tokenOut.hMethod, tokenOut.hField,
-            tokenOut.pTypeSpec_Index, tokenOut.cbTypeSpec, tokenOut.pMethodSpec_Index, tokenOut.cbMethodSpec);
+        => $"cls-{tokenOut.hClass:X16} meth-{tokenOut.hMethod:X16} fld-{tokenOut.hField:X16} ti-{tokenOut.pTypeSpec_Index} " +
+            $"ts-{tokenOut.cbTypeSpec} mi-{tokenOut.pMethodSpec_Index} ms-{tokenOut.cbMethodSpec}";
 
     public static string DumpAgnostic_CORINFO_RESOLVED_TOKEN(in Agnostic_CORINFO_RESOLVED_TOKEN token)
         => DumpAgnostic_CORINFO_RESOLVED_TOKENin(token.inValue) + " " + DumpAgnostic_CORINFO_RESOLVED_TOKENout(token.outValue);
 
     public static string DumpAgnostic_CORINFO_LOOKUP_KIND(in Agnostic_CORINFO_LOOKUP_KIND lookupKind)
-        => CFormat.Sprintf("nrl-%u rlk-%u", lookupKind.needsRuntimeLookup, lookupKind.runtimeLookupKind);
+        => $"nrl-{lookupKind.needsRuntimeLookup} rlk-{lookupKind.runtimeLookupKind}";
 
     public static string DumpAgnostic_CORINFO_CONST_LOOKUP(in Agnostic_CORINFO_CONST_LOOKUP constLookup)
-        => CFormat.Sprintf("at-%u handle/address-%016llX", constLookup.accessType, constLookup.handle);
+        => $"at-{constLookup.accessType} handle/address-{constLookup.handle:X16}";
 
     public static string DumpAgnostic_CORINFO_RUNTIME_LOOKUP(in Agnostic_CORINFO_RUNTIME_LOOKUP lookup)
     {
-        var sb = new StringBuilder(CFormat.Sprintf(" sig-%016llX hlp-%u ind-%u tfn-%u so-%u { ", lookup.signature, lookup.helper,
-            lookup.indirections, lookup.testForNull, lookup.sizeOffset));
+        var sb = new StringBuilder($" sig-{lookup.signature:X16} hlp-{lookup.helper} ind-{lookup.indirections} tfn-{lookup.testForNull} " +
+            $"so-{lookup.sizeOffset} {{ ");
         foreach (ulong offset in lookup.offsets)
-            sb.Append(CFormat.Sprintf("%016llX ", offset));
+            sb.Append($"{offset:X16} ");
         sb.Append('}');
         return sb.ToString();
     }
@@ -94,7 +94,7 @@ public static class SpmiDumpHelper
         where TKey : unmanaged
         where TItem : unmanaged
     {
-        var sb = new StringBuilder(CFormat.Sprintf("cbSig-%u, si-%08X", cbSig, pSig_Index));
+        var sb = new StringBuilder($"cbSig-{cbSig}, si-{pSig_Index:X8}");
 
         // pSig_Index is usually -1 without a signature, but can be 0 in error cases where it is never
         // consulted, so only look at the buffer when there is a size.
@@ -134,13 +134,13 @@ public static class SpmiDumpHelper
         where TKey : unmanaged
         where TItem : unmanaged
     {
-        var sb = new StringBuilder(CFormat.Sprintf("{callConv-%08X retTypeClass-%016llX retTypeSigClass-%016llX retType-%08X(%s) flg-%08X na-%u",
-            sigInfo.callConv, sigInfo.retTypeClass, sigInfo.retTypeSigClass, sigInfo.retType, DumpStrings.toString_CorInfoType(sigInfo.retType),
-            sigInfo.flags, sigInfo.numArgs));
+        var sb = new StringBuilder($"{{callConv-{sigInfo.callConv:X8} retTypeClass-{sigInfo.retTypeClass:X16} " +
+            $"retTypeSigClass-{sigInfo.retTypeSigClass:X16} retType-{sigInfo.retType:X8}({DumpStrings.toString_CorInfoType(sigInfo.retType)}) " +
+            $"flg-{sigInfo.flags:X8} na-{sigInfo.numArgs}");
         FormatAgnostic_CORINFO_SIG_INST_Element(sb, " ", "cc", "ci", sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap);
         FormatAgnostic_CORINFO_SIG_INST_Element(sb, " ", "mc", "mi", sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap);
-        sb.Append(CFormat.Sprintf(" args-%016llX sig-%s msig-%016llX scp-%016llX tok-%08X}", sigInfo.args,
-            DumpPSig(sigInfo.pSig_Index, sigInfo.cbSig, buffers), sigInfo.methodSignature, sigInfo.scope, sigInfo.token));
+        sb.Append($" args-{sigInfo.args:X16} sig-{DumpPSig(sigInfo.pSig_Index, sigInfo.cbSig, buffers)} msig-{sigInfo.methodSignature:X16} " +
+            $"scp-{sigInfo.scope:X16} tok-{sigInfo.token:X8}}}");
         return sb.ToString();
     }
 
@@ -155,7 +155,7 @@ public static class SpmiDumpHelper
     private static void FormatAgnostic_CORINFO_SIG_INST_Element(StringBuilder sb, string prefixStr, string instCountPrefixStr,
         string instIndexPrefixStr, uint handleInstCount, uint handleInstIndex, DenseLightWeightMap<ulong> handleMap)
     {
-        sb.Append(CFormat.Sprintf("%s%s-%u %s-%u ", prefixStr, instCountPrefixStr, handleInstCount, instIndexPrefixStr, handleInstIndex));
+        sb.Append($"{prefixStr}{instCountPrefixStr}-{handleInstCount} {instIndexPrefixStr}-{handleInstIndex} ");
         FormatHandleArray(sb, handleMap, handleInstCount, handleInstIndex);
     }
 
@@ -165,7 +165,7 @@ public static class SpmiDumpHelper
         sb.Append('{');
         uint displayElems = Math.Min(MaxHandleArrayDisplayElems, count);
         for (uint i = startIndex; i < startIndex + displayElems; i++)
-            sb.Append(CFormat.Sprintf("%s%016llX", i == startIndex ? "" : " ", map.Get(i)));
+            sb.Append($"{(i == startIndex ? "" : " ")}{map.Get(i):X16}");
         if (displayElems < count)
             sb.Append(" ...");
         sb.Append('}');
@@ -217,7 +217,7 @@ public static class SpmiDumpHelper
             }
         }
         if (flags != 0)
-            s.Append(CFormat.Sprintf(" Unknown flags-%08X", flags));
+            s.Append($" Unknown flags-{flags:X8}");
         return s.ToString();
     }
 
