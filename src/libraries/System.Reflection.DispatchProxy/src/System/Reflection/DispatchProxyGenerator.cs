@@ -47,7 +47,10 @@ namespace System.Reflection
 
         // We group AssemblyBuilders by the ALC of the base type's assembly.
         // This allows us to granularly unload generated proxy types.
-        private static readonly ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly> s_alcProxyAssemblyMap = new();
+        // Within that, we group them by the ALC of the interface type's assembly: a dynamic module resolves an assembly
+        // name to the first assembly it referenced with that name, so the same interface assembly loaded in two ALCs
+        // needs two AssemblyBuilders.
+        private static readonly ConditionalWeakTable<AssemblyLoadContext, ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly>> s_alcProxyAssemblyMap = new();
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
@@ -71,7 +74,13 @@ namespace System.Reflection
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
             Debug.Assert(alc != null);
 
-            ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetOrAdd(alc, static x => new ProxyAssembly(x));
+            // An assembly can have no load context, such as a Reflection.Emit assembly on Mono;
+            // an interface from one uses the base type's.
+            AssemblyLoadContext interfaceAlc = AssemblyLoadContext.GetLoadContext(interfaceType.Assembly) ?? alc;
+
+            ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap
+                .GetOrAdd(alc, static _ => new ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly>())
+                .GetOrAdd(interfaceAlc, static (_, x) => new ProxyAssembly(x), alc);
             GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
         }
