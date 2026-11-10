@@ -6673,7 +6673,6 @@ public:
     void fgValueNumberTree(GenTree* tree);
 
     void fgValueNumberStore(GenTree* tree);
-
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
     // Does value-numbering for a cast tree.
@@ -6722,11 +6721,8 @@ public:
     // The value numbers a null check of an address is keyed on, constant offsets peeled
     void fgVNNullCheckBases(GenTree* baseAddr, ValueNum* baseLVN, ValueNum* baseCVN);
 
-    // During value numbering, for each exception item the blocks that survived it, none dominating
-    // another. Reaching a point one of them dominates means the item was not raised there, so it cannot
-    // be raised here either: the same null check, division or cast has been survived.
-    // The first surviving block is held inline, most items never see a second one.
-    struct SurvivedBlocks
+    // Keep the first establishing block inline; most facts need only one.
+    struct VNFactBlocks
     {
         typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, BasicBlock*> DominanceIndex;
         struct Additional
@@ -6743,21 +6739,68 @@ public:
         Additional* more = nullptr;
 
         BasicBlock* FindDominating(FlowGraphDominatorTree* domTree, BasicBlock* block);
-        void IndexBlock(FlowGraphDominatorTree* domTree, BasicBlock* block);
+        void IndexBlock(FlowGraphDominatorTree* domTree, BasicBlock* witness);
     };
-    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, SurvivedBlocks> SurvivedExceptionsMap;
-    SurvivedExceptionsMap* vnSurvivedExceptions = nullptr;
-    BasicBlock* fgVNSurvivedException(ValueNum excItemVN);
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, VNFactBlocks> VNFactMap;
+    // Exception items survived on normal completion.
+    VNFactMap* vnSurvivedExceptions = nullptr;
+    bool fgVNUpdatedSideEffects = false;
+    bool vnHasConservativeBranchFacts = false;
+    BasicBlock* fgVNSurvivedException(ValueNum excItemVN DEBUGARG(GenTree* source), BasicBlock* block = nullptr);
+    BasicBlock* fgVNGetFactAnchor(VNFactMap* facts, ValueNum factVN, BasicBlock* block, bool record);
+
+    // Provenance of GTF_ORDER_DOMINATED: where the check that a node's contextual exception
+    // proof relies on was performed. This describes facts; whether a transformation may move
+    // the node is answered by the motion queries below. A missing record means the dependency is
+    // unknown, which prohibits any motion that needs it. Records are usable only through the
+    // phases explicitly given the records by the driver; the flag outlives them.
+    using VNExceptionDependencyMap = JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*>;
+    struct VNExceptionDependencies
+    {
+        VNExceptionDependencyMap* map;
+        FlowGraphDominatorTree*    domTree;
+    };
+
+private:
+    // VN's output under construction. The driver takes it before entering hoisting;
+    // consumers can only query records supplied explicitly, never this producer state.
+    VNExceptionDependencyMap* vnExceptionDependencies = nullptr;
+    bool                     vnRecordExceptionDependencies = false;
+
+public:
+    void fgVNRecordExceptionDependency(GenTree* node, BasicBlock* anchor);
+    void fgVNCopyExceptionDependencies(GenTree* source, GenTree* clone, const VNExceptionDependencies& dependencies);
+    bool fgVNGetExceptionDependency(GenTree* node, BasicBlock** anchor,
+                                   const VNExceptionDependencies& dependencies) const;
+
+    // Kinds of facts an operation may establish for GTF_ORDER_DOMINATED nodes that follow it.
+    // Used by the survivor audit and by LIR motion when crossing a dependent operation.
+    enum ProofFacts : uint8_t
+    {
+        PROOF_NONE     = 0,
+        PROOF_NULL     = 1, // a null check of some address
+        PROOF_DIVISION = 2, // a divisor not zero, or a division not overflowing
+        PROOF_ANY      = PROOF_NULL | PROOF_DIVISION,
+    };
+    static ProofFacts gtNodeMayEstablishProof(GenTree* node);
+
+
+    bool gtNodeOrderingAllowsHoist(GenTree* node, BasicBlock* preheader,
+                                   const VNExceptionDependencies& dependencies);
+    bool gtOrderingAllowsSwap(GenTree* first, GenTree* second);
+    void fgVNRecordNullBranchFacts(BasicBlock* block);
     void fgVNDropSurvivedCastException(GenTreeCall* call);
 
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
     // Compute exceptions for a division operation
-    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper,
+    ValueNumPair fgValueNumberDivisionExceptions(GenTree* operation, genTreeOps oper,
                                                  GenTree*   dividend,
                                                  GenTree*   divisor,
-                                                 var_types  simdBaseType = TYP_UNDEF);
+                                                 var_types  simdBaseType = TYP_UNDEF,
+                                                 GenTreeFlags* nonThrowingFlags = nullptr,
+                                                 BasicBlock** orderDependency = nullptr);
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
@@ -7768,7 +7811,7 @@ public:
 
 protected:
     // Do hoisting for all loops.
-    PhaseStatus optHoistLoopCode();
+    PhaseStatus optHoistLoopCode(const VNExceptionDependencies& dependencies);
 
     // To represent sets of VN's that have already been hoisted in outer loops.
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> VNSet;
@@ -7780,6 +7823,8 @@ protected:
         VNSet* m_pHoistedInCurLoop;
 
     public:
+        const VNExceptionDependencies& m_exceptionDependencies;
+
         // Value numbers of expressions that have been hoisted in the current (or most recent) loop in the nest.
         // Previous decisions on loop-invariance of value numbers in the current loop.
         VNSet m_curLoopVnInvariantCache;
@@ -7815,8 +7860,10 @@ protected:
             JITDUMP("Resetting m_pHoistedInCurLoop\n");
         }
 
-        LoopHoistContext(Compiler* comp)
-            : m_pHoistedInCurLoop(nullptr), m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
+        LoopHoistContext(Compiler* comp, const VNExceptionDependencies& dependencies)
+            : m_pHoistedInCurLoop(nullptr)
+            , m_exceptionDependencies(dependencies)
+            , m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
         {
         }
     };
@@ -7857,7 +7904,8 @@ private:
     void optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNaturalLoop* mostNestedLoop);
 
     // Hoist the expression "expr" out of "loop"
-    void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, FlowGraphNaturalLoop* loop);
+    void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, FlowGraphNaturalLoop* loop,
+                             const VNExceptionDependencies& dependencies);
 
 public:
     PhaseStatus optOptimizeBools();
@@ -9404,7 +9452,7 @@ protected:
 
 public:
     RangeCheck*  GetRangeCheck(int customBudget = 0);
-    void         optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
+    void         optVnWriteBarrierPropCurStmt(Statement* stmt, GenTreeStoreInd* store);
     fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree*     optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree*     optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);

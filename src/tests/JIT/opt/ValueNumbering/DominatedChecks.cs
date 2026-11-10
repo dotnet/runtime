@@ -7,6 +7,11 @@ using Xunit;
 
 public class DominatedChecks
 {
+    private sealed class Holder
+    {
+        public int First = 1, Second = 2;
+    }
+
     private static int s_marker, s_sink;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -34,6 +39,35 @@ public class DominatedChecks
     {
         s_marker = 0;
         Assert.Throws<NullReferenceException>(() => FinallyCheck(null));
+        Assert.Equal(0, s_marker);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NestedLoops(Holder value, int n, int m, bool enter)
+    {
+        int sum = 0;
+        for (int i = 0; i < n; i++)
+        {
+            if (enter)
+            {
+                sum += value.First;
+                for (int j = 0; j < m; j++)
+                    sum += value.Second;
+            }
+            s_marker++;
+        }
+        return sum;
+    }
+
+    [Fact]
+    public static void HoistingKeepsConditionalCheck()
+    {
+        s_marker = 0;
+        Assert.Equal(0, NestedLoops(null, 2, 3, false));
+        Assert.Equal(2, s_marker);
+        Assert.Equal(14, NestedLoops(new Holder(), 2, 3, true));
+        s_marker = 0;
+        Assert.Throws<NullReferenceException>(() => NestedLoops(null, 2, 3, true));
         Assert.Equal(0, s_marker);
     }
 

@@ -633,7 +633,7 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_EFFECT)) != 0)
     {
         // The fold makes NN evaluate unconditionally, so it must be safe to speculate.
         // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
@@ -1372,7 +1372,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     GenTree* relop  = test.compTree;
     bool     isBool = test.isBool;
 
-    if (comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF))
+    if (comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_EFFECT))
     {
         return;
     }

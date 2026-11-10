@@ -838,8 +838,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         JITDUMP(" cannot reorder global reference with persistent side effects\n");
         return false;
     }
-    if (((fwdSubNode->gtFlags & GTF_ORDER_SIDEEFF) != 0) &&
-        ((fsv.GetFlags() & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+    if (((fwdSubNode->gtFlags & GTF_ORDER_EFFECT) != 0) && ((fsv.GetFlags() & (GTF_GLOB_REF | GTF_ORDER_EFFECT)) != 0))
     {
         JITDUMP(" cannot reorder ordering side effect with global reference/ordering side effect\n");
         return false;

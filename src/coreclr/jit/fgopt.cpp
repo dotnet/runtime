@@ -6020,17 +6020,17 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
         JITDUMP("  cannot reorder global reference with persistent side effects\n");
         return false;
     }
-    if ((tree1Flags & GTF_ORDER_SIDEEFF) != 0)
+    if ((tree1Flags & GTF_ORDER_EFFECT) != 0)
     {
-        if ((tree2Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0)
+        if ((tree2Flags & (GTF_GLOB_REF | GTF_ORDER_EFFECT)) != 0)
         {
             JITDUMP("  cannot reorder ordering side effect\n");
             return false;
         }
     }
-    if ((tree2Flags & GTF_ORDER_SIDEEFF) != 0)
+    if ((tree2Flags & GTF_ORDER_EFFECT) != 0)
     {
-        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0)
+        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_EFFECT)) != 0)
         {
             JITDUMP("  cannot reorder ordering side effect\n");
             return false;

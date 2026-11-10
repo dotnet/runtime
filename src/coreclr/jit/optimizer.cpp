@@ -3536,8 +3536,12 @@ void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
 //   origExpr - tree to hoist
 //   exprBb   - block containing the tree
 //   loop     - loop that we're hoisting origExpr out of
+//   dependencies - the records supplied to hoisting
 //
-void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGraphNaturalLoop* loop)
+void Compiler::optPerformHoistExpr(GenTree*                       origExpr,
+                                   BasicBlock*                    exprBb,
+                                   FlowGraphNaturalLoop*          loop,
+                                   const VNExceptionDependencies& dependencies)
 {
     assert(exprBb != nullptr);
     assert(loop->EntryEdges().size() == 1);
@@ -3565,6 +3569,9 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
 
     // Copy any loop memory dependence.
     optCopyLoopMemoryDependence(origExpr, hoistExpr);
+
+    // Preserve provenance because this clone may be considered for further motion.
+    fgVNCopyExceptionDependencies(origExpr, hoistExpr, dependencies);
 
     // At this point we should have a cloned expression
     hoistExpr->gtFlags |= GTF_MAKE_CSE;
@@ -3648,7 +3655,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
 // Returns:
 //    suitable phase status
 //
-PhaseStatus Compiler::optHoistLoopCode()
+PhaseStatus Compiler::optHoistLoopCode(const VNExceptionDependencies& dependencies)
 {
     // If we don't have any loops in the method then take an early out now.
     if (m_loops->NumLoops() == 0)
@@ -3679,7 +3686,7 @@ PhaseStatus Compiler::optHoistLoopCode()
     // Consider all the loops, visiting child loops first.
     //
     bool             modified = false;
-    LoopHoistContext hoistCtxt(this);
+    LoopHoistContext hoistCtxt(this, dependencies);
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
 #if LOOP_HOIST_STATS
@@ -4308,6 +4315,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             bool m_hoistable;
             bool m_cctorDependent;
             bool m_invariant;
+            bool m_orderingSatisfied;
 
 #ifdef DEBUG
             const char* m_failReason;
@@ -4318,6 +4326,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 , m_hoistable(false)
                 , m_cctorDependent(false)
                 , m_invariant(false)
+                , m_orderingSatisfied(true)
             {
 #ifdef DEBUG
                 m_failReason = "unset";
@@ -4338,7 +4347,33 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
         BitVecTraits*         m_traits;
         BitVec                m_defExec;
 
-        bool IsNodeHoistable(GenTree* node)
+        //------------------------------------------------------------------------
+        // IsOrderingSatisfiedAtPreheader: Whether the ordering constraints of a tree allow
+        //   evaluating it at the end of the preheader.
+        //
+        // Arguments:
+        //    node                      - the tree's root
+        //    childrenOrderingSatisfied - whether this holds for each operand
+        //
+        bool IsOrderingSatisfiedAtPreheader(GenTree* node, bool childrenOrderingSatisfied)
+        {
+            if ((node->gtFlags & GTF_ORDER_EFFECT) == 0)
+            {
+                return true;
+            }
+
+            if (!childrenOrderingSatisfied)
+            {
+                return false;
+            }
+
+            // Hoisting appends to the canonical preheader, after its existing statements.
+            BasicBlock* const preheader = m_loop->EntryEdge(0)->getSourceBlock();
+            assert(preheader->KindIs(BBJ_ALWAYS));
+            return m_compiler->gtNodeOrderingAllowsHoist(node, preheader, m_hoistContext->m_exceptionDependencies);
+        }
+
+        bool IsNodeHoistable(GenTree* node, bool orderingSatisfied)
         {
             // TODO-CQ: This is a more restrictive version of a check that optIsCSEcandidate already does - it allows
             // a struct typed node if a class handle can be recovered from it.
@@ -4348,20 +4383,21 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             }
             else if (node->OperIs(GT_NULLCHECK))
             {
-                // If a null-check is for `this` object, it is safe to
-                // hoist it out of the loop. Assertionprop will get rid
-                // of left over nullchecks present inside the loop. Also,
-                // since NULLCHECK has no value, it will never be CSE,
-                // hence this check is not present in optIsCSEcandidate().
-                return true;
+                // Null checks have no value, so CSE does not nominate them. A
+                // discharged check has nothing to hoist; faulting checks must
+                // still respect any contextual dependencies in their operands.
+                return ((node->gtFlags & GTF_IND_NONFAULTING) == 0) &&
+                       (((node->gtFlags & GTF_ORDER_DOMINATED) == 0) || orderingSatisfied);
             }
-            else if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+            else if (((node->gtFlags & GTF_ORDER_EFFECT) != 0) && !orderingSatisfied)
             {
-                // If a node has an order side effect, we can't hoist it at all: we don't know what the order
-                // dependence actually is. For example, assertion prop might have determined a node can't throw
-                // an exception, and eliminated the GTF_EXCEPT flag, replacing it with GTF_ORDER_SIDEEFF. We
-                // can't hoist because we might then hoist above the expression that led assertion prop to make
-                // that decision. This can happen in JitOptRepeat, where hoisting can follow assertion prop.
+                // If a node has an order side effect, we can't hoist it at all unless every one of them is a
+                // non-throwing proof that holds in the preheader (see IsOrderingSatisfiedAtPreheader). Otherwise we
+                // don't know what the order dependence actually is. For example, assertion prop might have determined a
+                // node can't throw an exception, and eliminated the GTF_EXCEPT flag, replacing it with
+                // GTF_ORDER_SIDEEFF. We can't hoist because we might then hoist above the expression that led assertion
+                // prop to make that decision. This can happen in JitOptRepeat, where hoisting can follow assertion
+                // prop.
                 return false;
             }
 
@@ -4390,7 +4426,9 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
         {
             JITDUMP("      [%06u]", dspTreeID(node));
 
-            if ((node->gtFlags & GTF_ALL_EFFECT) != 0)
+            // The caller has already proved this candidate's dominated dependencies hold at
+            // the preheader. They impose no additional restriction when passing a throwing sibling.
+            if ((node->gtFlags & (GTF_ALL_EFFECT & ~GTF_ORDER_DOMINATED)) != 0)
             {
                 // If the hoistable node has any side effects, make sure
                 // we don't hoist it past a sibling that throws any exception.
@@ -4566,7 +4604,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     // In general it doesn't make sense to hoist a local node but there are exceptions, for example
                     // LCL_FLD nodes (because then the variable cannot be enregistered and the node always turns
                     // into a memory access).
-                    top.m_hoistable = IsNodeHoistable(tree);
+                    top.m_orderingSatisfied = IsOrderingSatisfiedAtPreheader(tree, true);
+                    top.m_hoistable         = IsNodeHoistable(tree, top.m_orderingSatisfied);
                 }
 
 #ifdef DEBUG
@@ -4587,9 +4626,10 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 return fgWalkResult::WALK_CONTINUE;
             }
 
-            bool treeIsCctorDependent     = tree->OperIsIndir() && ((tree->gtFlags & GTF_IND_INITCLASS) != 0);
-            bool treeIsInvariant          = true;
-            bool treeHasHoistableChildren = false;
+            bool treeIsCctorDependent      = tree->OperIsIndir() && ((tree->gtFlags & GTF_IND_INITCLASS) != 0);
+            bool treeIsInvariant           = true;
+            bool treeHasHoistableChildren  = false;
+            bool childrenOrderingSatisfied = true;
             int  childCount;
 
 #ifdef DEBUG
@@ -4599,6 +4639,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             for (childCount = 0; m_valueStack.TopRef(childCount).Node() != tree; childCount++)
             {
                 Value& child = m_valueStack.TopRef(childCount);
+
+                childrenOrderingSatisfied &= child.m_orderingSatisfied;
 
                 if (child.m_hoistable)
                 {
@@ -4655,38 +4697,26 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             {
                 if (treeIsHoistable)
                 {
-                    treeIsHoistable = IsNodeHoistable(tree);
+                    treeIsHoistable =
+                        IsNodeHoistable(tree, IsOrderingSatisfiedAtPreheader(tree, childrenOrderingSatisfied));
                     if (!treeIsHoistable)
                     {
                         INDEBUG(failReason = "not handled by hoisting or CSE";)
                     }
                 }
 
-                // If it's a call, it must be a helper call, and be pure.
-                // Further, if it may run a cctor, it must be labeled as "Hoistable"
-                // (meaning the class is not precise-init, so the cctor may run earlier).
+                // CSE eligibility already requires a pure, non-allocating helper. It ignores cctors,
+                // so hoisting must still check whether class initialization may run earlier.
                 if (treeIsHoistable && tree->IsCall())
                 {
                     GenTreeCall* call = tree->AsCall();
-                    if (!call->IsHelperCall())
+                    assert(call->IsHelperCall());
+                    CorInfoHelpFunc helpFunc = call->GetHelperNum();
+                    assert(s_helperCallProperties.IsPure(helpFunc));
+                    if (s_helperCallProperties.MayRunCctor(helpFunc) && ((call->gtFlags & GTF_CALL_HOISTABLE) == 0))
                     {
-                        INDEBUG(failReason = "non-helper call";)
+                        INDEBUG(failReason = "non-hoistable helper call";)
                         treeIsHoistable = false;
-                    }
-                    else
-                    {
-                        CorInfoHelpFunc helpFunc = call->GetHelperNum();
-                        if (!s_helperCallProperties.IsPure(helpFunc))
-                        {
-                            INDEBUG(failReason = "impure helper call";)
-                            treeIsHoistable = false;
-                        }
-                        else if (s_helperCallProperties.MayRunCctor(helpFunc) &&
-                                 ((call->gtFlags & GTF_CALL_HOISTABLE) == 0))
-                        {
-                            INDEBUG(failReason = "non-hoistable helper call";)
-                            treeIsHoistable = false;
-                        }
                     }
                 }
 
@@ -4725,13 +4755,13 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             //
             if (m_canHoistSideEffects)
             {
-                if (!treeIsHoistable)
+                if (!treeIsHoistable && ((tree->gtFlags & GTF_EXCEPT) != 0))
                 {
-                    // Check if we should clear m_canHoistSideEffects.
-                    // If 'tree' cannot be hoisted and can throw an exception then we need to set
-                    // m_canHoistSideEffects to false.
-                    // Note that calls are handled below
-                    if (tree->OperMayThrow(m_compiler) && !tree->IsCall())
+                    // The published flags rule out exceptions for the whole tree when clear. When set,
+                    // distinguish this operation from children that may be hoisted independently.
+                    // A throwing operation left in the loop prevents later exceptions from moving ahead
+                    // of it. Calls are handled below.
+                    if (!tree->IsCall() && tree->OperMayThrow(m_compiler))
                     {
                         m_canHoistSideEffects = false;
                     }
@@ -4768,10 +4798,9 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                             m_canHoistSideEffects = false;
                         }
 
-                        // Additional check for helper calls that throw exceptions
-                        if (!treeIsHoistable)
+                        // With GTF_EXCEPT set, distinguish the helper's exceptions from its operands'.
+                        if (!treeIsHoistable && ((tree->gtFlags & GTF_EXCEPT) != 0))
                         {
-                            // Does this helper call throw?
                             if (!s_helperCallProperties.NoThrow(helpFunc))
                             {
                                 m_canHoistSideEffects = false;
@@ -4886,9 +4915,10 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
 
             Value& top = m_valueStack.TopRef();
             assert(top.Node() == tree);
-            top.m_hoistable      = treeIsHoistable;
-            top.m_cctorDependent = treeIsCctorDependent;
-            top.m_invariant      = treeIsInvariant;
+            top.m_hoistable         = treeIsHoistable;
+            top.m_cctorDependent    = treeIsCctorDependent;
+            top.m_orderingSatisfied = IsOrderingSatisfiedAtPreheader(tree, childrenOrderingSatisfied);
+            top.m_invariant         = treeIsInvariant;
 
 #ifdef DEBUG
             if (!top.m_invariant || !top.m_hoistable)
@@ -4959,7 +4989,7 @@ void Compiler::optHoistCandidate(
 #endif // defined(DEBUG)
 
     // Expression can be hoisted
-    optPerformHoistExpr(tree, treeBb, loop);
+    optPerformHoistExpr(tree, treeBb, loop, hoistCtxt->m_exceptionDependencies);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
     if (varTypeUsesIntReg(tree))

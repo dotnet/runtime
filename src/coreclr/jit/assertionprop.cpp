@@ -4424,6 +4424,12 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
                                            Statement*       stmt,
                                            BasicBlock*      block)
 {
+    // Unsigned operations have no signed-to-unsigned rewrite or overflow proof left to do.
+    if (tree->OperIs(GT_UDIV, GT_UMOD) && ((tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) != 0))
+    {
+        return nullptr;
+    }
+
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
@@ -5357,7 +5363,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 {
     assert(indir->OperIsIndirOrArrMetaData());
 
-    if ((indir->gtFlags & GTF_EXCEPT) == 0)
+    if ((indir->gtFlags & (GTF_EXCEPT | GTF_IND_NONFAULTING)) != GTF_EXCEPT)
     {
         return false;
     }
@@ -6461,7 +6467,10 @@ public:
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        m_compiler->optVnNonNullPropCurStmt(m_block, m_stmt, *use);
+        if ((*use)->OperIs(GT_STOREIND))
+        {
+            m_compiler->optVnWriteBarrierPropCurStmt(m_stmt, (*use)->AsStoreInd());
+        }
 
         return m_compiler->optVNBasedFoldCurStmt(m_block, m_stmt, user, *use);
     }
@@ -6648,41 +6657,17 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
 }
 
 //------------------------------------------------------------------------------
-// optVnNonNullPropCurStmt
-//    Performs VN based non-null propagation on the tree node.
-//
-// Assumption:
-//    This function is called as part of a pre-order tree walk.
+// optVnWriteBarrierPropCurStmt: Classify a store's write barrier using VN.
 //
 // Arguments:
-//    block - The block that contains the statement that contains the tree.
-//    stmt  - The statement node in which the "tree" is present.
-//    tree  - The currently visited tree node.
+//    stmt  - The statement containing the store.
+//    store - The store to classify.
 //
-// Return Value:
-//    None.
-//
-// Description:
-//    Performs value number based non-null propagation on GT_CALL and
-//    indirections. This is different from flow based assertions and helps
-//    unify VN based constant prop and non-null prop in a single pre-order walk.
-//
-void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
+void Compiler::optVnWriteBarrierPropCurStmt(Statement* stmt, GenTreeStoreInd* store)
 {
-    ASSERT_TP empty   = BitVecOps::UninitVal();
-    GenTree*  newTree = nullptr;
-    if (tree->OperIs(GT_CALL))
+    if (optWriteBarrierAssertionProp_StoreInd(BitVecOps::UninitVal(), store))
     {
-        newTree = optNonNullAssertionProp_Call(empty, tree->AsCall());
-    }
-    else if (tree->OperIsIndir())
-    {
-        newTree = optAssertionProp_Ind(empty, tree, stmt);
-    }
-    if (newTree)
-    {
-        assert(newTree == tree);
-        optAssertionProp_Update(newTree, tree, stmt);
+        optAssertionProp_Update(store, store, stmt);
     }
 }
 

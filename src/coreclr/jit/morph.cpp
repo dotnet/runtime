@@ -2135,7 +2135,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     // Calls themselves don't originate an ordering side effect.
     // Instead, derive it from the call args via flagsSummary
-    call->gtFlags &= ~GTF_ORDER_SIDEEFF;
+    call->gtFlags &= ~GTF_ORDER_EFFECT;
 
     // Union in the side effect flags from the call's operands
     call->gtFlags |= flagsSummary & GTF_ALL_EFFECT;
@@ -12292,7 +12292,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     // M & (N - 1) == N - 1
     // op is | for variable counts, and either | or ^ for constant counts
 
-    if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0))
+    if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || ((tree->gtFlags & GTF_ORDER_EFFECT) != 0))
     {
         // We can't do anything if the tree has stores, calls, or volatile reads. Note that we allow
         // GTF_EXCEPT side effect since any exceptions thrown by the original tree will be thrown by

@@ -2046,6 +2046,11 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(!OperIsConst(oper)); // use BashToConst() instead
 
     GenTreeFlags mask = GTF_COMMON_MASK;
+    // Test the requested opcode so constant-opcode callers can fold this mask.
+    if (!OperIsIndirOrArrMetaData(oper) && oper != GT_DIV && oper != GT_UDIV && oper != GT_MOD && oper != GT_UMOD)
+    {
+        mask &= ~GTF_ORDER_DOMINATED_OWN;
+    }
     if (this->OperIsIndirOrArrMetaData() && OperIsIndirOrArrMetaData(oper))
     {
         mask |= GTF_IND_NONFAULTING;
