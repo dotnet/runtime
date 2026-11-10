@@ -4106,7 +4106,20 @@ namespace Internal.JitInterface
             // so add the dependencies of the cell's signature for each lookup that survives to lowering.
             if (_compilation.NodeFactory.Target.IsWasm)
             {
-                MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, HandleToObject(method));
+                MethodDesc lookupMethod = HandleToObject(method);
+
+                // A non-generic method on a non-generic interface is a single global slot, so marking it used
+                // would root its implementation on every instantiation of every implementing type (for example,
+                // IEnumerable.GetEnumerator on every collection instantiation), and those implementations pull in
+                // further instantiations. Leave such implementations to the runtime instead.
+                if (lookupMethod.OwningType.IsInterface &&
+                    !lookupMethod.OwningType.HasInstantiation &&
+                    !lookupMethod.HasInstantiation)
+                {
+                    return;
+                }
+
+                MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, lookupMethod);
             }
         }
 

@@ -3573,6 +3573,12 @@ public class R2RTestSuites
 
             string diag;
 
+            // Test3: Explicit DIM of a non-generic interface method
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
+
+            // Test14: Explicit non-generic interface impl on a generic base type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test14A`1<int>", "ITest14.Test14Method", out diag), diag);
+
             // Test8: non-generic value type - both interface and Object.ToString dispatch arrive
             // with a boxed 'this' and so need an unboxing thunk
             Assert.True(R2RAssert.HasUnboxingThunk(reader, "Test8", "Test8Method", out diag), diag);
@@ -3611,6 +3617,12 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             AssertNonGVMImplementationsCompiled(reader);
+
+            // Lookups through a non-generic interface method do not root its implementations on Wasm,
+            // so they are left to the runtime.
+            Assert.False(
+                R2RAssert.HasCompiledMethod(reader, "Test14A`1<int>", "ITest14.Test14Method", out _),
+                "ITest14.Test14Method on Test14A`1<int> should not be compiled.");
 
             Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out string diag), diag);
             Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "UG", out diag), diag);
@@ -3782,9 +3794,6 @@ public class R2RTestSuites
         // Test2: Virtual override on generic intermediate type
         Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2C`1<int>", "Test2Method", out diag), diag);
 
-        // Test3: Explicit DIM
-        Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
-
         // Test4: Explicit interface impl on generic base
         Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4A`1<int>", "ITest4<T>.Test4Method", out diag), diag);
 
@@ -3802,6 +3811,9 @@ public class R2RTestSuites
 
         // Test13: Delegate over a virtual method overridden on a generic intermediate type
         Assert.True(R2RAssert.HasCompiledMethod(reader, "Test13B`1<int>", "Test13Method", out diag), diag);
+
+        // Test14: Explicit generic interface impl on a generic base type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test14A`1<int>", "ITest14<T>.Test14GenericMethod", out diag), diag);
     }
 
     private static void AssertGVMImplementationsCompiled(ReadyToRunReader reader)

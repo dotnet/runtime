@@ -239,6 +239,28 @@ class Test13C<T> : Test13B<T>
 {
 }
 
+// Test14 -- Explicit implementations of a non-generic and a generic interface on a generic base
+// type instantiated over a value type
+interface ITest14
+{
+    int Test14Method();
+}
+
+interface ITest14<T>
+{
+    T Test14GenericMethod();
+}
+
+class Test14A<T> : ITest14, ITest14<T>
+{
+    int ITest14.Test14Method() => 42;
+    T ITest14<T>.Test14GenericMethod() => default;
+}
+
+class Test14B : Test14A<int>
+{
+}
+
 // Entry points that drive dependency analysis
 static class NonGVMTests
 {
@@ -286,6 +308,12 @@ static class NonGVMTests
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Test13A<T> CreateTest13<T>() => new Test13C<T>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ITest14 CreateTest14() => new Test14B();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ITest14<int> CreateTest14Generic() => new Test14B();
 
     static void Run()
     {
@@ -339,5 +367,12 @@ static class NonGVMTests
 
         Func<int> t13 = CreateTest13<int>().Test13Method;
         Console.WriteLine(t13());
+
+        // Test14: the same instantiation reached through a non-generic and a generic interface
+        ITest14 t14 = CreateTest14();
+        Console.WriteLine(t14.Test14Method());
+
+        ITest14<int> t14Generic = CreateTest14Generic();
+        Console.WriteLine(t14Generic.Test14GenericMethod());
     }
 }
