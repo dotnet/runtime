@@ -273,6 +273,11 @@ check_symbol_exists(
     HAVE_SCHED_GETCPU)
 
 check_symbol_exists(
+    pthread_cpu_number_np
+    "pthread.h"
+    HAVE_PTHREAD_CPU_NUMBER_NP)
+
+check_symbol_exists(
     pthread_setcancelstate
     "pthread.h"
     HAVE_PTHREAD_SETCANCELSTATE)
