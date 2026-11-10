@@ -28,7 +28,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NestedBuildProperty Include="WasmNativeBuildId" />
     <NestedBuildProperty Include="EnableAggressiveTrimming" />
     <NestedBuildProperty Include="EventSourceSupport" />
     <NestedBuildProperty Include="InvariantGlobalization" />

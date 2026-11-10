@@ -25,12 +25,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, DOTNET: ${_ems_.DOTNET.gitHash}`);
     }
 
-    // For an application re-link, the build_id comes from the (re)linked native module via the
-    // WASM_BUILD_ID env var and overrides the default rollup constant baked into dotnet.js.
-    if (_ems_.DOTNET.buildId) {
-        runtimeApi.runtimeBuildInfo.buildId = _ems_.DOTNET.buildId;
-    }
-
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
         getWasmMemory,
         getWasmTable,

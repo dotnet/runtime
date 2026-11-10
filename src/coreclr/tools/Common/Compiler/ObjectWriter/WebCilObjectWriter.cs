@@ -37,19 +37,16 @@ namespace ILCompiler.ObjectWriter
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
-        private readonly byte[] _wasmNativeBuildId;
         private readonly bool _emitNameSection;
 
         public WebCilObjectWriter(
             NodeFactory factory,
             ObjectWritingOptions options,
             OutputInfoBuilder outputInfoBuilder,
-            bool emitNameSection,
-            string wasmNativeBuildId = null)
+            bool emitNameSection)
             : base(factory, options, outputInfoBuilder)
         {
             _emitNameSection = emitNameSection;
-            _wasmNativeBuildId = WasmCustomSectionWriter.ParseBuildId(wasmNativeBuildId);
         }
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
@@ -569,7 +566,7 @@ namespace ILCompiler.ObjectWriter
             }
 
 #if READYTORUN
-            byte[] webcilBuildId = _wasmNativeBuildId ?? ComputeModuleHash(outputFileStream);
+            byte[] webcilBuildId = ComputeModuleHash(outputFileStream);
             WasmCustomSectionWriter.ProducerValue[] producers =
             [
                 new(WasmCustomSectionWriter.ProducersFieldProcessedBy, "WebCIL", string.Empty),

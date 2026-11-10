@@ -47,14 +47,11 @@ try {
     gitHash = "unknown";
 }
 
-export const buildId = process.env.WASM_BUILD_ID || "";
-
 export const envConstants = {
     productVersion,
     configuration,
     runtimeFlavor,
     gitHash,
-    buildId,
     isContinuousIntegrationBuild,
 };
 

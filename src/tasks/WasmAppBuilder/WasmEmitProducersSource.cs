@@ -23,9 +23,11 @@ public class WasmEmitProducersSource : Task
     public string OutputPath { get; set; } = string.Empty;
 
     /// <summary>Runtime engine name used for the producers <c>processed-by</c> field (e.g. Mono, CoreCLR).</summary>
+    [Required]
     public string RuntimeName { get; set; } = string.Empty;
 
     /// <summary>Runtime/product version used for the producers <c>processed-by</c> and <c>sdk</c> fields.</summary>
+    [Required]
     public string ProductVersion { get; set; } = string.Empty;
 
     public override bool Execute()
@@ -57,12 +59,8 @@ public class WasmEmitProducersSource : Task
     {
         var source = new StringBuilder();
         source.Append(".section .custom_section.producers,\"\",@\n");
-        source.Append(".uleb128 ").Append(string.IsNullOrEmpty(RuntimeName) ? 2 : 3).Append('\n');
-        AppendField(source, "language", "C#", string.Empty, "language");
-
-        if (!string.IsNullOrEmpty(RuntimeName))
-            AppendField(source, "processed-by", RuntimeName, ProductVersion, "processed_by");
-
+        source.Append(".uleb128 2\n");
+        AppendField(source, "processed-by", RuntimeName, ProductVersion, "processed_by");
         AppendField(source, "sdk", ".NET", ProductVersion, "sdk");
         return source.ToString();
     }

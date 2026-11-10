@@ -12,7 +12,6 @@ import { InternalExchangeIndex } from "../types";
 import ProductVersion from "consts:productVersion";
 import BuildConfiguration from "consts:configuration";
 import GitHash from "consts:gitHash";
-import BuildId from "consts:buildId";
 
 import { loaderConfig, getLoaderConfig } from "./config";
 import { exit, isExited, isRuntimeRunning, addOnExitListener, registerExit, quitNow } from "./exit";
@@ -34,7 +33,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: GitHash,
-            buildId: BuildId,
+            buildId: "",
             buildConfiguration: BuildConfiguration,
             wasmEnableThreads: false,
             wasmEnableSIMD: true,

@@ -293,8 +293,6 @@ export type EmscriptenBuildOptions = {
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
-    // build_id from the last native (re)link, via the WASM_BUILD_ID env var. Empty when not pinned.
-    buildId: string,
 };
 export type EmscriptenInternals = {
     isPThread: boolean,

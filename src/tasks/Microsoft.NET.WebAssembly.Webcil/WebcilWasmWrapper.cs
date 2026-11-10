@@ -68,12 +68,6 @@ public class WebcilWasmWrapper
     /// <summary>Version used for the <c>producers</c> <c>processed-by</c>/<c>sdk</c> fields.</summary>
     public string ProductVersion { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Explicit <c>build_id</c> bytes (e.g. from <c>$(WasmNativeBuildId)</c>). When <see langword="null"/>,
-    /// a content hash of the webcil payload is used so each module is self-identifying.
-    /// </summary>
-    public byte[]? BuildId { get; set; }
-
     public WebcilWasmWrapper(Stream webcilPayloadStream)
         : this(webcilPayloadStream, selfInstalling: false)
     {
@@ -112,7 +106,7 @@ public class WebcilWasmWrapper
             new WasmCustomSectionWriter.ProducerValue(WasmCustomSectionWriter.ProducersFieldSdk, ".NET", ProductVersion),
         };
 
-        byte[]? buildId = BuildId ?? ComputePayloadHash();
+        byte[]? buildId = ComputePayloadHash();
         WasmCustomSectionWriter.WriteProducersSection(outputStream, producers);
         if (buildId is not null)
             WasmCustomSectionWriter.WriteBuildIdSection(outputStream, buildId);

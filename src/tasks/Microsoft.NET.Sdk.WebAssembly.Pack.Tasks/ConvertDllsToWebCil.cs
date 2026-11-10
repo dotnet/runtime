@@ -214,7 +214,10 @@ public class ConvertDllsToWebcil : Task
         bool outputHasExpectedFlavor = OutputHasExpectedWebcilFlavor(finalWebcil, useR2R: !string.IsNullOrEmpty(r2rWebcilPath));
         if (!string.IsNullOrEmpty(r2rWebcilPath))
         {
-            if (forceWebcilConversion || !outputHasExpectedFlavor || Utils.IsNewerThan(r2rWebcilPath, finalWebcil))
+            bool stageR2RWebcil = !outputHasExpectedFlavor
+                || Utils.IsNewerThan(r2rWebcilPath, finalWebcil)
+                || (forceWebcilConversion && buildId is null);
+            if (stageR2RWebcil)
             {
                 if (!Directory.Exists(candidatePath))
                     Directory.CreateDirectory(candidatePath);
@@ -238,7 +241,6 @@ public class ConvertDllsToWebcil : Task
             var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion);
             webcilWriter.EmitMetadataSections = EmitMetadataSections;
             webcilWriter.ProductVersion = ProductVersion ?? string.Empty;
-            webcilWriter.BuildId = buildId;
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))
@@ -253,6 +255,16 @@ public class ConvertDllsToWebcil : Task
         else
         {
             Log.LogMessage(MessageImportance.Low, $"Skipping {dllFilePath} as it is older than the output file {finalWebcil}");
+        }
+
+        if (buildId is not null)
+        {
+            byte[] module = File.ReadAllBytes(finalWebcil);
+            byte[] output = WasmCustomSectionWriter.ReplaceBuildId(module, buildId);
+            string tmpWebcil = Path.Combine(tmpDir, Guid.NewGuid().ToString("N") + Utils.WebcilInWasmExtension);
+            File.WriteAllBytes(tmpWebcil, output);
+            if (!Utils.MoveIfDifferent(tmpWebcil, finalWebcil))
+                File.Delete(tmpWebcil);
         }
 
         _fileWrites.Add(finalWebcil);

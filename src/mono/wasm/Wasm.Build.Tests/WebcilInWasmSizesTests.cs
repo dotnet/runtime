@@ -307,6 +307,52 @@ public class WebcilInWasmSizesTests
         Assert.True(r2rWebcil.SequenceEqual(File.ReadAllBytes(Path.Combine(outputDirectory, "R2RAssembly.wasm"))));
     }
 
+    [Fact]
+    public void ConvertDllsToWebcil_DoesNotRestageR2RWebcilForUnchangedBuildId()
+    {
+        using var directory = new TempDirectory();
+        string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
+        string outputDirectory = Path.Combine(directory.Path, "output");
+        string intermediateDirectory = Path.Combine(directory.Path, "intermediate");
+        string conversionStamp = Path.Combine(directory.Path, "conversion.stamp");
+        Directory.CreateDirectory(prebuiltDirectory);
+
+        string candidatePath = Path.Combine(prebuiltDirectory, "R2RAssembly.dll");
+        File.WriteAllBytes(candidatePath, BuildWebcilInWasm(payloadSize: 4, tableSize: 1));
+        File.SetLastWriteTimeUtc(candidatePath, DateTime.UtcNow.AddMinutes(-20));
+
+        var candidate = new TaskItem(candidatePath);
+        candidate.SetMetadata("RelativePath", "R2RAssembly.dll");
+
+        ConvertDllsToWebcil CreateTask(string? stamp = null) => new()
+        {
+            BuildEngine = new TestBuildEngine(),
+            Candidates = [candidate],
+            IntermediateOutputPath = intermediateDirectory,
+            IsEnabled = true,
+            OutputPath = outputDirectory,
+            PrebuiltR2RDirectory = prebuiltDirectory,
+            ConversionStamp = stamp,
+            EmitMetadataSections = true,
+            WasmNativeBuildId = "1a2b3c4d",
+        };
+
+        Assert.True(CreateTask().Execute());
+
+        string outputPath = Path.Combine(outputDirectory, "R2RAssembly.wasm");
+        byte[] expectedOutput = File.ReadAllBytes(outputPath);
+        File.SetLastWriteTimeUtc(outputPath, DateTime.UtcNow.AddMinutes(-10));
+        DateTime expectedTimestamp = File.GetLastWriteTimeUtc(outputPath);
+        File.WriteAllText(conversionStamp, string.Empty);
+
+        ConvertDllsToWebcil incrementalTask = CreateTask(conversionStamp);
+        Assert.True(incrementalTask.Execute());
+        Assert.NotNull(incrementalTask.FilesToTouch);
+        Assert.Empty(incrementalTask.FilesToTouch);
+        Assert.Equal(expectedOutput, File.ReadAllBytes(outputPath));
+        Assert.Equal(expectedTimestamp, File.GetLastWriteTimeUtc(outputPath));
+    }
+
     [Theory]
     [InlineData(false, null)]
     [InlineData(true, null)]

@@ -56,9 +56,6 @@ public class WebcilConverter
     /// <summary>Version used for the producers section.</summary>
     public string ProductVersion { get; set; } = string.Empty;
 
-    /// <summary>Explicit build_id bytes; when null a content hash of the payload is used.</summary>
-    public byte[]? BuildId { get; set; }
-
     private WebcilConverter(string inputPath, string outputPath, int webcilVersion)
     {
         if (webcilVersion != 0 && webcilVersion != 1)
@@ -98,7 +95,6 @@ public class WebcilConverter
             {
                 EmitMetadataSections = EmitMetadataSections,
                 ProductVersion = ProductVersion,
-                BuildId = BuildId,
             };
             memoryStream.Seek(0, SeekOrigin.Begin);
             wrapper.WriteWasmWrappedWebcil(outputStream);

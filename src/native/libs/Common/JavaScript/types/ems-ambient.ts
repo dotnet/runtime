@@ -60,7 +60,6 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
         isAborting?: boolean;
         isAsyncMain?: boolean;
         gitHash?: string;
-        buildId?: string;
     }
     DOTNET_INTEROP: {
         gitHash?: string;

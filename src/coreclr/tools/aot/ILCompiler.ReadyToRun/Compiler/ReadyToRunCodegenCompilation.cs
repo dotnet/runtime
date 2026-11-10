@@ -333,7 +333,6 @@ namespace ILCompiler
         }
 
         private readonly int _customPESectionAlignment;
-        private readonly string _wasmNativeBuildId;
         private readonly ReadyToRunContainerFormat _format;
 
         /// <summary>
@@ -372,8 +371,7 @@ namespace ILCompiler
             int customPESectionAlignment,
             bool verifyTypeAndFieldLayout,
             ReadyToRunContainerFormat format,
-            WasmDebugInfo wasmDebugInfo,
-            string wasmNativeBuildId = null)
+            WasmDebugInfo wasmDebugInfo)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -397,7 +395,6 @@ namespace ILCompiler
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
-            _wasmNativeBuildId = wasmNativeBuildId;
             _wasmDebugInfo = wasmDebugInfo;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
@@ -460,8 +457,7 @@ namespace ILCompiler
                     _format,
                     _customPESectionAlignment,
                     _wasmDebugInfo,
-                    _logger,
-                    _wasmNativeBuildId);
+                    _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -618,8 +614,7 @@ namespace ILCompiler
                 componentFormat,
                 customPESectionAlignment: 0,
                 wasmDebugInfo: _wasmDebugInfo,
-                logger: _logger,
-                wasmNativeBuildId: _wasmNativeBuildId);
+                logger: _logger);
         }
 
         public override void WriteDependencyLog(string outputFileName)

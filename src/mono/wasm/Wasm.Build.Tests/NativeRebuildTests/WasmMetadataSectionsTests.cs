@@ -44,7 +44,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: true);
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
-            AssertProducers(wasm, NativeRuntimeProducer, expectCSharpLanguage: true);
+            AssertProducers(wasm, NativeRuntimeProducer);
             Assert.Equal(PinnedBuildId, GetBuildIdHex(wasm));
             AssertBuildIdInBootConfig(config);
         }
@@ -76,7 +76,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
             if (emitProducers)
-                AssertProducers(wasm, NativeRuntimeProducer, expectCSharpLanguage: true);
+                AssertProducers(wasm, NativeRuntimeProducer);
             else
                 Assert.Null(ReadCustomSection(wasm, "producers"));
 
@@ -94,18 +94,25 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: false);
 
             string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
-            AssertProducers(webcil, "WebCIL", expectCSharpLanguage: false);
+            AssertProducers(webcil, "WebCIL");
 
             // Without an explicit id, each webcil gets a SHA-256 content hash (32 bytes).
             byte[]? buildId = ReadBuildId(webcil);
             Assert.NotNull(buildId);
             Assert.Equal(32, buildId!.Length);
+
+            string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
+            string frameworkWebcil = FindWasmAsset(frameworkDirectory, "System.Private.CoreLib");
+            string? frameworkBuildId = GetBuildIdHex(frameworkWebcil);
+            Assert.NotNull(frameworkBuildId);
+            Assert.Equal(64, frameworkBuildId!.Length);
+            Assert.NotEqual(GetBuildIdHex(webcil), frameworkBuildId);
         }
 
         [TestCategory("no-workload")]
         [ConditionalTheory(typeof(BuildTestBase), nameof(UseWebcil))]
         [InlineData(Configuration.Release)]
-        public void Webcil_WithBuildId_UsesPinnedBuildId(Configuration config)
+        public void Webcil_WithNativeBuildId_UsesPinnedBuildId(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_webcil_id");
             PublishProject(info, config,
@@ -113,8 +120,18 @@ namespace Wasm.Build.NativeRebuild.Tests
                 isNativeBuild: false);
 
             string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
-            AssertProducers(webcil, "WebCIL", expectCSharpLanguage: false);
-            Assert.Equal(PinnedBuildId, GetBuildIdHex(webcil));
+            AssertProducers(webcil, "WebCIL");
+            string? webcilBuildId = GetBuildIdHex(webcil);
+            Assert.Equal(PinnedBuildId, webcilBuildId);
+
+            string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
+            string frameworkWebcil = FindWasmAsset(frameworkDirectory, "System.Private.CoreLib");
+            string? frameworkBuildId = GetBuildIdHex(frameworkWebcil);
+            Assert.Equal(PinnedBuildId, frameworkBuildId);
+
+            string nativeWasm = FindWasmAsset(frameworkDirectory, "dotnet.native");
+            Assert.Equal(PinnedBuildId, GetBuildIdHex(nativeWasm));
+            AssertBuildIdInBootConfig(config);
         }
 
         [TestCategory("no-workload")]
@@ -190,7 +207,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             using var reader = new StreamReader(entry.Open());
             string source = reader.ReadToEnd();
             Assert.Contains(".section .custom_section.producers", source);
-            Assert.Contains(".ascii \"C#\"", source);
+            Assert.DoesNotContain(".ascii \"C#\"", source);
             Assert.Contains($".ascii \"{NativeRuntimeProducer}\"", source);
             Assert.Contains(".ascii \".NET\"", source);
             Assert.Contains($".ascii \"{runtimePackVersion}\"", source);
@@ -216,20 +233,17 @@ namespace Wasm.Build.NativeRebuild.Tests
             Assert.Equal(PinnedBuildId, bootJson.buildId);
         }
 
-        private static void AssertProducers(string wasmPath, string expectedProcessedBy, bool expectCSharpLanguage)
-            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy, expectCSharpLanguage);
+        private static void AssertProducers(string wasmPath, string expectedProcessedBy)
+            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy);
 
-        private static void AssertProducers(byte[] wasm, string expectedProcessedBy, bool expectCSharpLanguage)
+        private static void AssertProducers(byte[] wasm, string expectedProcessedBy)
         {
             byte[]? producers = ReadCustomSection(wasm, "producers");
             Assert.NotNull(producers);
 
             // The section holds length-prefixed ASCII field/value strings; a substring scan is enough.
             string text = Encoding.Latin1.GetString(producers!);
-            if (expectCSharpLanguage)
-                Assert.Contains("C#", text);
-            else
-                Assert.DoesNotContain("C#", text);
+            Assert.DoesNotContain("C#", text);
             Assert.Contains(".NET", text);
             Assert.Contains(expectedProcessedBy, text);
         }

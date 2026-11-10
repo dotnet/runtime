@@ -50,13 +50,6 @@ public class WebcilConverter
         set => _converter.ProductVersion = value;
     }
 
-    /// <summary>Explicit build_id bytes; when null a content hash of the payload is used.</summary>
-    public byte[]? BuildId
-    {
-        get => _converter.BuildId;
-        set => _converter.BuildId = value;
-    }
-
     public void ConvertToWebcil()
     {
         Log.LogMessage(MessageImportance.Low, $"Converting to Webcil: input {_inputPath} output: {_outputPath}");
