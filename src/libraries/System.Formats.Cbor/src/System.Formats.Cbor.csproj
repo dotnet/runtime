@@ -58,6 +58,7 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="$(CommonPath)Polyfills\BinaryPrimitivesPolyfills.cs" Link="Common\Polyfills\BinaryPrimitivesPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\DecimalPolyfills.cs" Link="Common\Polyfills\DecimalPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\StackPolyfills.cs" Link="Common\Polyfills\StackPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StringPolyfills.Create.cs" Link="Common\Polyfills\StringPolyfills.Create.cs" />
     <Compile Include="$(CommonPath)System\Buffers\SpanAction.cs" Link="Common\System\Buffers\SpanAction.cs" />
   </ItemGroup>
 
