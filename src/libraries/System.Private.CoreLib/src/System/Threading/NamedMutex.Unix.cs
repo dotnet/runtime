@@ -432,7 +432,8 @@ namespace System.Threading
                 ProcessDataHeader.IncrementRefCount();
                 if (CanDetectOSThreadExit)
                 {
-                    _ = new NativeOwnerExitWatcher(ProcessDataHeader, osThreadId);
+                    SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader = ProcessDataHeader;
+                    Gen2GcCallback.Register(() => ReleaseMappingWhenOSThreadExited(processDataHeader, osThreadId));
                 }
 
                 // Without a way to detect the exit, the reference is intentionally kept until the process exits.
@@ -448,28 +449,25 @@ namespace System.Threading
             && Interop.Sys.TgKill(Environment.ProcessId, (int)osThreadId, 0) != 0
             && Interop.Sys.GetLastErrorInfo().Error == Interop.Error.ESRCH;
 
-        // Holds a mapping reference for a native owner thread whose OS thread has not exited yet. It re-registers for
-        // finalization on each pass until the thread has exited, then releases the reference.
-        private sealed class NativeOwnerExitWatcher(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader, ulong osThreadId)
+        // Returns true while the OS thread is still alive so that the Gen2GcCallback retries after the next gen 2 GC.
+        private static bool ReleaseMappingWhenOSThreadExited(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader, ulong osThreadId)
         {
-            ~NativeOwnerExitWatcher()
+            if (!HasOSThreadExited(osThreadId))
             {
-                if (!HasOSThreadExited(osThreadId))
-                {
-                    GC.ReRegisterForFinalize(this);
-                    return;
-                }
-
-                WaitSubsystem.LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
-                try
-                {
-                    processDataHeader.DecrementRefCount();
-                }
-                finally
-                {
-                    scope.Dispose();
-                }
+                return true;
             }
+
+            WaitSubsystem.LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+            try
+            {
+                processDataHeader.DecrementRefCount();
+            }
+            finally
+            {
+                scope.Dispose();
+            }
+
+            return false;
         }
 
         protected override void ReleaseLockCore(bool abandoning)
