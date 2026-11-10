@@ -24,20 +24,32 @@ public abstract class CachedToolTask : ToolTask
 
     protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
     {
+        if (!TryExecuteCached(pathToTool, responseFileCommands, commandLineCommands, out int exitCode))
+            exitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
+
+        return exitCode == 0 && base.HasLoggedErrors ? -1 : exitCode;
+    }
+
+    private bool TryExecuteCached(string pathToTool, string responseFileCommands, string commandLineCommands,
+        out int exitCode)
+    {
+        exitCode = -1;
+        InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(Log, CacheConfiguration);
+        if (cache is null)
+            return false;
+
+        InvocationDescription? invocation = DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands);
+        if (invocation is null)
+            return false;
+
         var result = new InvocationResult(-1);
         try
         {
-            InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(Log, CacheConfiguration);
-            if (cache is not null &&
-                DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands) is { } invocation &&
-                cache.TryExecuteCached(invocation, ExecuteAndCapture, out InvocationResult cachedResult))
-            {
-                result = cachedResult;
-            }
-            else
-            {
-                result = new InvocationResult(ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands));
-            }
+            if (!cache.TryExecuteCached(invocation, ExecuteAndCapture, out result))
+                return false;
+
+            exitCode = result.ExitCode;
+            return true;
         }
         finally
         {
@@ -49,16 +61,12 @@ public abstract class CachedToolTask : ToolTask
             ReplayOutput(standardOutput, standardError);
         }
 
-        return result.ExitCode == 0 && base.HasLoggedErrors ? -1 : result.ExitCode;
-
         InvocationResult ExecuteAndCapture()
         {
-            var standardOutput = new List<string>();
-            var standardError = new List<string>();
-            _capturedStandardOutput = standardOutput;
-            _capturedStandardError = standardError;
-            int exitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
-            return new InvocationResult(exitCode, standardOutput, standardError);
+            _capturedStandardOutput = new List<string>();
+            _capturedStandardError = new List<string>();
+            int toolExitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
+            return new InvocationResult(toolExitCode, _capturedStandardOutput, _capturedStandardError);
         }
     }
 

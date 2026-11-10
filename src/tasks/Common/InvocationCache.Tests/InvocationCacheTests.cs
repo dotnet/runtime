@@ -1217,6 +1217,7 @@ public class InvocationCacheTests
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]
+    [InlineData(true, true)]
     public void SharedExecutionBypassesWithoutSkippingTaskPreparation(bool configured, bool eligible)
         => RemoteExecutor.Invoke(static (enabled, supported) =>
     {
@@ -1229,7 +1230,7 @@ public class InvocationCacheTests
         File.WriteAllText(stale, "stale");
         int executions = 0;
 
-        var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
+        var invocation = new InvocationDescription(InvocationInputs.FromFiles(test.Source), Array.Empty<string>(), test.OutputOutputs);
         var task = new CachedTestToolTask(test.BuildEngine,
             describe: (_, _, _) => isEligible ? invocation : null,
             execute: (_, _, _) => ExecuteNormally());
@@ -1248,6 +1249,31 @@ public class InvocationCacheTests
             return 42;
         }
     }, configured.ToString(), eligible.ToString()).Dispose();
+
+    [Theory]
+    [InlineData(0, false, 0)]
+    [InlineData(0, true, -1)]
+    [InlineData(42, true, 42)]
+    public void CachedToolTaskPreservesUncachedLoggingFailures(int toolExitCode, bool logError, int expectedExitCode)
+        => RemoteExecutor.Invoke(static (toolExit, error, expectedExit) =>
+    {
+        using var test = new CacheTestDirectory();
+        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "false");
+        int executions = 0;
+        var task = new CachedTestToolTask(test.BuildEngine,
+            describe: static (_, _, _) => throw new InvalidOperationException("Disabled caching must skip description."),
+            execute: (_, _, _) =>
+            {
+                executions++;
+                return int.Parse(toolExit);
+            });
+        if (bool.Parse(error))
+            task.Log.LogError("Expected logging error.");
+
+        Assert.Equal(int.Parse(expectedExit), task.Run());
+        Assert.Equal(1, executions);
+        Assert.False(Directory.Exists(test.Cache.CacheDirectory));
+    }, toolExitCode.ToString(), logError.ToString(), expectedExitCode.ToString()).Dispose();
 
     [Theory]
     [InlineData(false)]

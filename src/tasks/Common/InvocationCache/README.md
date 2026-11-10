@@ -28,6 +28,10 @@ On a hit, `TryExecuteCached` returns the restored result without invoking the ca
 On a bypass, it returns false without executing; the base class executes normally without capture.
 Only eligible misses allocate capture buffers, and capture state is released even when execution throws.
 
+The base class owns capture buffers because it fills them, just as execution owns the files at declared
+output paths. The cache consumes completed outputs rather than managing their collection. Invoking an
+execution callback on misses avoids a separate preparation/completion lifecycle for capture.
+
 `CachedToolTask` replays returned output on both hits and misses through its ordinary `ToolTask`
 logging path, using current importance and stderr-as-error policy rather than policy cached from
 execution. These settings are not passed to the cache. Cacheable executions defer tool-output logging
@@ -72,6 +76,11 @@ preserving line order within each stream. Cross-stream callback timing
 does not affect the stored diagnostics or their integrity records; bypassed logging retains the
 tool task's ordinary interleaving. Validate all records and files before modifying outputs; replay
 on hits begins only after restoration succeeds.
+
+Capture-then-replay deliberately gives eligible misses and hits the same stdout-then-stderr ordering.
+Capturing alongside live logging would leave misses interleaved but hits grouped by stream. This choice
+preserves order within each stream, not cross-stream interleaving; bypassed invocations retain
+`ToolTask`'s normal live logging.
 
 The cache returns diagnostic data without replaying it. `CachedToolTask` owns replay after restoration
 or execution completes. Logging failures must not rerun the tool, since partial replay cannot be undone.
