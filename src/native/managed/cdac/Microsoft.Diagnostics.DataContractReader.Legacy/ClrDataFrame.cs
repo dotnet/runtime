@@ -55,7 +55,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         try
         {
             IStackWalk stackWalk = _target.Contracts.StackWalk;
-            byte[] context = stackWalk.GetRawContext(_dataFrame);
+            ReadOnlySpan<byte> context = stackWalk.GetRawContext(_dataFrame);
 
             // TODO(https://github.com/dotnet/runtime/issues/125791):
             // Use contextFlags to compute the required size via ContextSizeForFlags
@@ -70,7 +70,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 throw new ArgumentException();
 
             if (contextBufSize > 0 && context.Length > 0)
-                Array.Copy(context, 0, contextBuf, 0, context.Length);
+                context.CopyTo(contextBuf);
         }
         catch (System.Exception ex)
         {
@@ -490,7 +490,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         IDebugInfo debugInfo = _target.Contracts.DebugInfo;
 
         TargetCodePointer codePointer = stackWalk.GetInstructionPointer(_dataFrame);
-        byte[] context = stackWalk.GetRawContext(_dataFrame);
+        byte[] context = stackWalk.GetRawContext(_dataFrame).ToArray();
         IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out uint codeOffset);
         NativeVarLocation[] locations = FindAndResolveVarLocation(varInfos, codeOffset, varInfoSlot, context, _target);
 

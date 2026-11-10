@@ -1776,9 +1776,41 @@ namespace Internal.JitInterface
             return ObjectToHandle(method);
         }
 
+        private bool IsTypeVersionResilientForComparer(TypeDesc type)
+        {
+#if READYTORUN
+            // A type (or one of its base types) can gain IEquatable<T> or IComparable<T> across version bubbles
+            // unless the hierarchy versions with the compilation. Nullable<T> delegates to its underlying value type T,
+            // and primitives, enums, strings, and canonical types have fixed or runtime-determined comparers.
+            if (type.IsNullable)
+            {
+                type = type.Instantiation[0];
+            }
+
+            if (type.IsPrimitive || type.IsEnum || type.IsString || type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                return true;
+            }
+
+            for (TypeDesc t = type; t is not null && !t.IsObject && !t.IsWellKnownType(WellKnownType.ValueType); t = t.BaseType)
+            {
+                if (!_compilation.CompilationModuleGroup.VersionsWithType(t))
+                {
+                    return false;
+                }
+            }
+#endif
+            return true;
+        }
+
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc comparand = HandleToObject(elemType);
+            if (!IsTypeVersionResilientForComparer(comparand))
+            {
+                return null;
+            }
+
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
         }
@@ -1786,6 +1818,11 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc comparand = HandleToObject(elemType);
+            if (!IsTypeVersionResilientForComparer(comparand))
+            {
+                return null;
+            }
+
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetEqualityComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
         }

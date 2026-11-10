@@ -219,37 +219,6 @@ add_library(coreclrpal STATIC
   $<TARGET_OBJECTS:coreclrpal_objects>
   ${LIBUNWIND_OBJECTS}
 )
-
-# Build separate pal library for DAC (addition to regular pal library)
-if(CLR_CMAKE_TARGET_APPLE)
-  set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)
-
-  add_library(coreclrpal_dac STATIC
-    exception/remote-unwind.cpp
-    ${LIBUNWIND_DAC_OBJECTS}
-  )
-
-  target_include_directories(coreclrpal_dac PUBLIC
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
-  )
-
-  target_compile_definitions(coreclrpal_dac PUBLIC -DUNW_REMOTE_ONLY)
-else()
-  if(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-    add_library(coreclrpal_dac STATIC
-      exception/remote-unwind.cpp
-      ${LIBUNWIND_OBJECTS}
-    )
-
-    if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-      target_link_libraries(coreclrpal_dac PUBLIC ${UNWIND_LIBS})
-    endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-  endif(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-endif(CLR_CMAKE_TARGET_APPLE)
-
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
 #

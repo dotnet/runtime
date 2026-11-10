@@ -721,7 +721,6 @@ extern "C" {
     void QCall_FileLoadException_GetMessageForHR (int32_t, void *, void *) __asm__("FileLoadException_GetMessageForHR");
     void * QCall_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
     void QCall_GCHandle_InternalFreeWithGCTransition (void *, void *) __asm__("GCHandle_InternalFreeWithGCTransition");
-    void QCall_GCInterface_AddMemoryPressure (uint64_t, void *) __asm__("GCInterface_AddMemoryPressure");
     void QCall_GCInterface_AllocateNewArray (void *, int32_t, int32_t, void *, void *) __asm__("GCInterface_AllocateNewArray");
     void QCall_GCInterface_Collect (int32_t, int32_t, uint32_t, void *) __asm__("GCInterface_Collect");
     int32_t QCall_GCInterface_EnableNoGCRegionCallback (void *, int64_t, void *) __asm__("GCInterface_EnableNoGCRegionCallback");
@@ -734,7 +733,6 @@ extern "C" {
     void QCall_GCInterface_ReRegisterForFinalize (void *, void *) __asm__("GCInterface_ReRegisterForFinalize");
     int32_t QCall_GCInterface_RefreshMemoryLimit (void *, void *) __asm__("GCInterface_RefreshMemoryLimit");
     void * QCall_GCInterface_RegisterFrozenSegment (void *, void *, void *) __asm__("GCInterface_RegisterFrozenSegment");
-    void QCall_GCInterface_RemoveMemoryPressure (uint64_t, void *) __asm__("GCInterface_RemoveMemoryPressure");
     int32_t QCall_GCInterface_StartNoGCRegion (int64_t, int32_t, int64_t, int32_t, void *) __asm__("GCInterface_StartNoGCRegion");
     void QCall_GCInterface_UnregisterFrozenSegment (void *, void *) __asm__("GCInterface_UnregisterFrozenSegment");
     int32_t QCall_GCInterface_WaitForFullGCApproach (int32_t, void *) __asm__("GCInterface_WaitForFullGCApproach");
@@ -781,6 +779,8 @@ extern "C" {
     void QCall_NativeRuntimeEventSource_LogContentionLockCreated (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogContentionLockCreated");
     void QCall_NativeRuntimeEventSource_LogContentionStart (uint32_t, uint32_t, void *, void *, uint64_t, void *) __asm__("NativeRuntimeEventSource_LogContentionStart");
     void QCall_NativeRuntimeEventSource_LogContentionStop (uint32_t, uint32_t, double, void *) __asm__("NativeRuntimeEventSource_LogContentionStop");
+    void QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogDecreaseMemoryPressure");
+    void QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogIncreaseMemoryPressure");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIODequeue");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (void *, void *, int32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOEnqueue");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIOPack (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOPack");
@@ -1023,7 +1023,6 @@ static const Entry s_QCall[] = {
     { "FileLoadException_GetMessageForHR", (void*)&QCall_FileLoadException_GetMessageForHR },
     { "GCHandle_InternalAllocWithGCTransition", (void*)&QCall_GCHandle_InternalAllocWithGCTransition },
     { "GCHandle_InternalFreeWithGCTransition", (void*)&QCall_GCHandle_InternalFreeWithGCTransition },
-    { "GCInterface_AddMemoryPressure", (void*)&QCall_GCInterface_AddMemoryPressure },
     { "GCInterface_AllocateNewArray", (void*)&QCall_GCInterface_AllocateNewArray },
     { "GCInterface_Collect", (void*)&QCall_GCInterface_Collect },
     { "GCInterface_EnableNoGCRegionCallback", (void*)&QCall_GCInterface_EnableNoGCRegionCallback },
@@ -1036,7 +1035,6 @@ static const Entry s_QCall[] = {
     { "GCInterface_ReRegisterForFinalize", (void*)&QCall_GCInterface_ReRegisterForFinalize },
     { "GCInterface_RefreshMemoryLimit", (void*)&QCall_GCInterface_RefreshMemoryLimit },
     { "GCInterface_RegisterFrozenSegment", (void*)&QCall_GCInterface_RegisterFrozenSegment },
-    { "GCInterface_RemoveMemoryPressure", (void*)&QCall_GCInterface_RemoveMemoryPressure },
     { "GCInterface_StartNoGCRegion", (void*)&QCall_GCInterface_StartNoGCRegion },
     { "GCInterface_UnregisterFrozenSegment", (void*)&QCall_GCInterface_UnregisterFrozenSegment },
     { "GCInterface_WaitForFullGCApproach", (void*)&QCall_GCInterface_WaitForFullGCApproach },
@@ -1083,6 +1081,8 @@ static const Entry s_QCall[] = {
     { "NativeRuntimeEventSource_LogContentionLockCreated", (void*)&QCall_NativeRuntimeEventSource_LogContentionLockCreated },
     { "NativeRuntimeEventSource_LogContentionStart", (void*)&QCall_NativeRuntimeEventSource_LogContentionStart },
     { "NativeRuntimeEventSource_LogContentionStop", (void*)&QCall_NativeRuntimeEventSource_LogContentionStop },
+    { "NativeRuntimeEventSource_LogDecreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure },
+    { "NativeRuntimeEventSource_LogIncreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure },
     { "NativeRuntimeEventSource_LogThreadPoolIODequeue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue },
     { "NativeRuntimeEventSource_LogThreadPoolIOEnqueue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue },
     { "NativeRuntimeEventSource_LogThreadPoolIOPack", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOPack },

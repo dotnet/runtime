@@ -12,7 +12,7 @@ namespace System.Diagnostics.Tracing
     /// Microsoft-Windows-DotNETRuntime provider and will throw a NotImplementedException without hand-written overloads of the Events.
     /// To have a runtime event be fired from the managed code, you need to add a managed definition for that event
     /// and call into the native runtime that invoke the appropriate native sinks for the platform (i.e. ETW, EventPipe, LTTng).
-    /// To see some examples of this, refer to NativeRuntimeEventSource.Threading.NativeSinks.cs and NativeRuntimeEventSource.Threading.cs.
+    /// To see some examples of this, refer to NativeRuntimeEventSource.Events.NativeSinks.cs and NativeRuntimeEventSource.Events.cs.
     /// Then, modify NativeRuntimeEventSourceGenerator.cs to skip over the event so that it doesn't generate the dummy method.
     ///
     /// The events in NativeRuntimeEventSource.*.NativeSinks.cs do not call into the typical WriteEvent* APIs unlike most EventSources because that results in the

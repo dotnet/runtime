@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
-#include "AsmOffsets.inc"
+#include "AsmMacros_Shared.h"
 
 #define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 15)&(~15))
 
@@ -41,162 +40,6 @@
         // } end PAL_LIMITED_CONTEXT
 
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
-    .endm
-
-// -----------------------------------------------------------------------------
-// Macro used to create frame of funclet calling helpers (RhpCallXXXXFunclet)
-// extraStackSize - extra stack space that the user of the macro can use to
-//                   store additional registers
-    .macro ALLOC_CALL_FUNCLET_FRAME extraStackSize
-
-        // Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-60!
-        // is intentional. Above statement would also emit instruction to save
-        // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
-        // of method. However, this method needs to be able to change fp before calling funclet.
-        // This is required to access locals in funclet.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp,lr, -0x60
-        PROLOG_SAVE_REG_PAIR x19, x20, 0x10
-        PROLOG_SAVE_REG_PAIR x21, x22, 0x20
-        PROLOG_SAVE_REG_PAIR x23, x24, 0x30
-        PROLOG_SAVE_REG_PAIR x25, x26, 0x40
-        PROLOG_SAVE_REG_PAIR x27, x28, 0x50
-        mov fp, sp
-        .cfi_def_cfa_register fp
-
-        .if \extraStackSize != 0
-            PROLOG_STACK_ALLOC \extraStackSize
-        .endif
-    .endm
-
-// -----------------------------------------------------------------------------
-// Macro used to free frame of funclet calling helpers (RhpCallXXXXFunclet)
-// extraStackSize - extra stack space that the user of the macro can use to
-//                   store additional registers.
-//                   It needs to match the value passed to the corresponding
-//                   ALLOC_CALL_FUNCLET_FRAME.
-    .macro FREE_CALL_FUNCLET_FRAME extraStackSize
-
-        .if \extraStackSize != 0
-            EPILOG_STACK_FREE \extraStackSize
-        .endif
-
-        EPILOG_RESTORE_REG_PAIR x19, x20, 0x10
-        EPILOG_RESTORE_REG_PAIR x21, x22, 0x20
-        EPILOG_RESTORE_REG_PAIR x23, x24, 0x30
-        EPILOG_RESTORE_REG_PAIR x25, x26, 0x40
-        EPILOG_RESTORE_REG_PAIR x27, x28, 0x50
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 0x60
-   .endm
-
-
-// -----------------------------------------------------------------------------
-// Macro used to restore preserved general purpose and FP registers from REGDISPLAY
-// regdisplayReg - register pointing to the REGDISPLAY structure
-   .macro RESTORE_PRESERVED_REGISTERS regdisplayReg
-
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX19]
-        ldr         x19, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX20]
-        ldr         x20, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX21]
-        ldr         x21, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX22]
-        ldr         x22, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX23]
-        ldr         x23, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX24]
-        ldr         x24, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX25]
-        ldr         x25, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX26]
-        ldr         x26, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX27]
-        ldr         x27, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX28]
-        ldr         x28, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pFP]
-        ldr         fp,  [x12]
-        //
-        // load FP preserved regs
-        //
-        add         x12, \regdisplayReg, #OFFSETOF__REGDISPLAY__D
-        ldp         d8, d9,   [x12, #0x00]
-        ldp         d10, d11, [x12, #0x10]
-        ldp         d12, d13, [x12, #0x20]
-        ldp         d14, d15, [x12, #0x30]
-    .endm
-
-// -----------------------------------------------------------------------------
-// Macro used to save preserved general purpose and FP registers to REGDISPLAY
-// regdisplayReg - register pointing to the REGDISPLAY structure
-   .macro SAVE_PRESERVED_REGISTERS regdisplayReg
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX19]
-        str         x19, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX20]
-        str         x20, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX21]
-        str         x21, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX22]
-        str         x22, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX23]
-        str         x23, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX24]
-        str         x24, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX25]
-        str         x25, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX26]
-        str         x26, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX27]
-        str         x27, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX28]
-        str         x28, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pFP]
-        str         fp,  [x12]
-        //
-        // store vfp preserved regs
-        //
-        add         x12, \regdisplayReg, #OFFSETOF__REGDISPLAY__D
-        stp         d8, d9,   [x12, #0x00]
-        stp         d10, d11, [x12, #0x10]
-        stp         d12, d13, [x12, #0x20]
-        stp         d14, d15, [x12, #0x30]
-    .endm
-
-
-// -----------------------------------------------------------------------------
-// Macro used to thrash preserved general purpose registers in REGDISPLAY
-// to make sure nobody uses them
-// regdisplayReg - register pointing to the REGDISPLAY structure
-   .macro TRASH_PRESERVED_REGISTERS_STORAGE regdisplayReg
-
-#if _DEBUG
-        movz        x3, #0xbaad, LSL #48
-        movk        x3, #0xdeed, LSL #32
-        movk        x3, #0xbaad, LSL #16
-        movk        x3, #0xdeed
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX19]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX20]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX21]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX22]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX23]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX24]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX25]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX26]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX27]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pX28]
-        str         x3, [x12]
-        ldr         x12, [\regdisplayReg, #OFFSETOF__REGDISPLAY__pFP]
-        str         x3, [x12]
-#endif // _DEBUG
     .endm
 
 .macro GetThreadX2
@@ -408,378 +251,121 @@ LOCAL_LABEL(NotHijacked):
     NESTED_END RhpRethrow, _TEXT
 
 //
-// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
-//                                    ExInfo* pExInfo)
+// void FASTCALL RhpResumeAfterCatch(REGDISPLAY* pRegDisplay, void* pResumeIP)
 //
-// INPUT:  X0:  exception object
-//         X1:  handler funclet address
-//         X2:  REGDISPLAY*
-//         X3:  ExInfo*
+// Resumes execution after a catch funclet called by CallEHFunclet has returned and the dispatcher has popped
+// the ExInfos below the resume SP. Does not return.
 //
-// OUTPUT:
+// INPUT:  X0:  REGDISPLAY* of the frame that contains the catch
+//         X1:  resume address returned by the catch funclet
 //
 
-    NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
+    LEAF_ENTRY RhpResumeAfterCatch, _TEXT
 
-        ALLOC_CALL_FUNCLET_FRAME 0x70 // Size needs to be equal with ExceptionHandling.asm variant of this function
-        stp d8, d9,   [sp, #0x00]
-        stp d10, d11, [sp, #0x10]
-        stp d12, d13, [sp, #0x20]
-        stp d14, d15, [sp, #0x30]
-        stp x0, x1,   [sp, #0x40] // x0 to x3 are stored to restore them anytime
-        stp x2, x3,   [sp, #0x50]
+        INLINE_GETTHREAD x3                                     // x3 <- Thread*
 
-#define rsp_offset_x0 0x40
-#define rsp_offset_x1 0x48
-#define rsp_offset_x2 0x50
-#define rsp_offset_x3 0x58
-#define rsp_CatchFunclet_offset_thread 0x60
-
-        //
-        // clear the DoNotTriggerGc flag, trashes x4-x6
-        //
-
-        bl C_FUNC(RhpGetThread)
-        str x0, [sp, rsp_CatchFunclet_offset_thread]
-        mov x5,x0
-        ldp x0, x1,   [sp, #0x40]
-        ldp x2, x3,   [sp, #0x50]
-
-        add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags
-
-LOCAL_LABEL(ClearRetry_Catch):
+        // Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
+        add         x12, x3, #OFFSETOF__Thread__m_ThreadStateFlags
+LOCAL_LABEL(ResumeAfterCatch_ClearRetry):
         ldxr        w4, [x12]
         bic         w4, w4, #TSF_DoNotTriggerGc
-        stxr        w6, w4, [x12]
-        cbz         w6, LOCAL_LABEL(ClearSuccess_Catch)
-        b           LOCAL_LABEL(ClearRetry_Catch)
-LOCAL_LABEL(ClearSuccess_Catch):
-
-        //
-        // set preserved regs to the values expected by the funclet
-        //
-        RESTORE_PRESERVED_REGISTERS x2
-        //
-        // trash the values at the old homes to make sure nobody uses them
-        //
-        TRASH_PRESERVED_REGISTERS_STORAGE x2
-
-        //
-        // call the funclet
-        //
-        // x0 still contains the exception object
-        blr         x1
-
-ALTERNATE_ENTRY RhpCallCatchFunclet2
-
-        // x0 contains resume IP
-
-        ldr         x2, [sp, #rsp_offset_x2]                    // x2 <- REGDISPLAY*
-
-#ifdef _DEBUG
-        // Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we
-        // have to spill all the preserved registers and then refill them after the call.
-
-        str         x0, [sp, rsp_offset_x0]
-
-        SAVE_PRESERVED_REGISTERS x2
-
-        ldr         x0, [sp, rsp_CatchFunclet_offset_thread]    // x0 <- Thread*
-        ldr         x1, [sp, #rsp_offset_x3]                    // x1 <- current ExInfo*
-        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
-        bl          C_FUNC(RhpValidateExInfoPop)
-
-        ldr         x2, [sp, rsp_offset_x2]                             // x2 <- REGDISPLAY*
-
-        RESTORE_PRESERVED_REGISTERS x2
-
-        ldr         x0, [sp, rsp_offset_x0]                             // reload resume IP
-#endif
-
-        ldr         x1, [sp, rsp_CatchFunclet_offset_thread]
+        stxr        w5, w4, [x12]
+        cbnz        w5, LOCAL_LABEL(ResumeAfterCatch_ClearRetry)
 
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
-        INLINE_THREAD_UNHIJACK x1, x3, x12                      // Thread in x1, trashes x3 and x12
+        INLINE_THREAD_UNHIJACK x3, x4, x12                      // Thread in x3, trashes x4 and x12
 
-        ldr         x3, [sp, #rsp_offset_x3]                    // x3 <- current ExInfo*
-        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
+        LOAD_FUNCLET_REGISTER x0, 19, x12
+        LOAD_FUNCLET_REGISTER x0, 20, x12
+        LOAD_FUNCLET_REGISTER x0, 21, x12
+        LOAD_FUNCLET_REGISTER x0, 22, x12
+        LOAD_FUNCLET_REGISTER x0, 23, x12
+        LOAD_FUNCLET_REGISTER x0, 24, x12
+        LOAD_FUNCLET_REGISTER x0, 25, x12
+        LOAD_FUNCLET_REGISTER x0, 26, x12
+        LOAD_FUNCLET_REGISTER x0, 27, x12
+        LOAD_FUNCLET_REGISTER x0, 28, x12
+        LOAD_FUNCLET_REGISTER x0, 29, x12
 
-LOCAL_LABEL(PopExInfoLoop):
-        ldr         x3, [x3, #OFFSETOF__ExInfo__m_pPrevExInfo]  // x3 <- next ExInfo
-        cbz         x3, LOCAL_LABEL(DonePopping)                // if (pExInfo == null) { we're done }
-        cmp         x3, x2
-        blt         LOCAL_LABEL(PopExInfoLoop)                  // if (pExInfo < resume SP} { keep going }
-
-LOCAL_LABEL(DonePopping):
-        str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
+        LOAD_FUNCLET_FP_REGISTER x0, 8
+        LOAD_FUNCLET_FP_REGISTER x0, 9
+        LOAD_FUNCLET_FP_REGISTER x0, 10
+        LOAD_FUNCLET_FP_REGISTER x0, 11
+        LOAD_FUNCLET_FP_REGISTER x0, 12
+        LOAD_FUNCLET_FP_REGISTER x0, 13
+        LOAD_FUNCLET_FP_REGISTER x0, 14
+        LOAD_FUNCLET_FP_REGISTER x0, 15
 
         // reset SP and jump to continuation address
+        ldr         x2, [x0, #OFFSETOF__REGDISPLAY__SP]
         mov         sp, x2
-        br          x0
+        br          x1
 
-#undef rsp_offset_x0
-#undef rsp_offset_x1
-#undef rsp_offset_x2
-#undef rsp_offset_x3
-#undef rsp_CatchFunclet_offset_thread
-
-    NESTED_END RhpCallCatchFunclet, _Text
-
-//
-// void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
-//
-// INPUT:  X0:  handler funclet address
-//         X1:  REGDISPLAY*
-//
-// OUTPUT:
-//
-
-    NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
-
-        ALLOC_CALL_FUNCLET_FRAME 0x60 // Size needs to be equal with ExceptionHandling.asm variant of this function
-        stp d8, d9,   [sp, #0x00]
-        stp d10, d11, [sp, #0x10]
-        stp d12, d13, [sp, #0x20]
-        stp d14, d15, [sp, #0x30]
-        stp x0, x1,   [sp, #0x40]   // x0 and x1 are saved so we have them later
-
-#define rsp_offset_x1 0x48
-#define rsp_FinallyFunclet_offset_thread 0x50
-
-
-        // We want to suppress hijacking between invocations of subsequent finallys.  We do this because we
-        // cannot tolerate a GC after one finally has run (and possibly side-effected the GC state of the
-        // method) and then been popped off the stack, leaving behind no trace of its effect.
-        //
-        // So we clear the state before and set it after invocation of the handler.
-        //
-
-        //
-        // clear the DoNotTriggerGc flag, trashes x2-x4
-        //
-
-        bl C_FUNC(RhpGetThread)
-        str x0, [sp, rsp_FinallyFunclet_offset_thread]
-        mov x2, x0
-        ldp x0, x1, [sp, #0x40]
-
-        add         x12, x2, #OFFSETOF__Thread__m_ThreadStateFlags
-
-LOCAL_LABEL(ClearRetry):
-        ldxr        w4, [x12]
-        bic         w4, w4, #TSF_DoNotTriggerGc
-        stxr        w3, w4, [x12]
-        cbz         w3, LOCAL_LABEL(ClearSuccess)
-        b           LOCAL_LABEL(ClearRetry)
-LOCAL_LABEL(ClearSuccess):
-
-        //
-        // set preserved regs to the values expected by the funclet
-        //
-        RESTORE_PRESERVED_REGISTERS x1
-        //
-        // trash the values at the old homes to make sure nobody uses them
-        //
-        TRASH_PRESERVED_REGISTERS_STORAGE x1
-
-        //
-        // call the funclet
-        //
-        blr         x0
-
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
-
-        ldr         x1, [sp, #rsp_offset_x1]        // reload REGDISPLAY pointer
-
-        //
-        // save new values of preserved regs into REGDISPLAY
-        //
-        SAVE_PRESERVED_REGISTERS x1
-
-        //
-        // set the DoNotTriggerGc flag, trashes x1-x3
-        //
-
-        ldr x2, [sp, rsp_FinallyFunclet_offset_thread]
-
-        add         x12, x2, #OFFSETOF__Thread__m_ThreadStateFlags
-LOCAL_LABEL(SetRetry):
-        ldxr        w1, [x12]
-        orr         w1, w1, #TSF_DoNotTriggerGc
-        stxr        w3, w1, [x12]
-        cbz         w3, LOCAL_LABEL(SetSuccess)
-        b           LOCAL_LABEL(SetRetry)
-LOCAL_LABEL(SetSuccess):
-
-        ldp         d8, d9,   [sp, #0x00]
-        ldp         d10, d11, [sp, #0x10]
-        ldp         d12, d13, [sp, #0x20]
-        ldp         d14, d15, [sp, #0x30]
-
-        FREE_CALL_FUNCLET_FRAME 0x60
-        EPILOG_RETURN
-
-#undef rsp_offset_x1
-#undef rsp_FinallyFunclet_offset_thread
-
-    NESTED_END RhpCallFinallyFunclet, _Text
-
-
-//
-// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
-//
-// INPUT:  X0:  exception object
-//         X1:  filter funclet address
-//         X2:  REGDISPLAY*
-//
-// OUTPUT:
-//
-
-    NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
-        ALLOC_CALL_FUNCLET_FRAME 0x40
-        stp d8, d9,   [sp, #0x00]
-        stp d10, d11, [sp, #0x10]
-        stp d12, d13, [sp, #0x20]
-        stp d14, d15, [sp, #0x30]
-
-        ldr         x12, [x2, #OFFSETOF__REGDISPLAY__pFP]
-        ldr         fp, [x12]
-
-        //
-        // call the funclet
-        //
-        // x0 still contains the exception object
-        blr         x1
-
-ALTERNATE_ENTRY RhpCallFilterFunclet2
-
-        ldp         d8, d9,   [sp, #0x00]
-        ldp         d10, d11, [sp, #0x10]
-        ldp         d12, d13, [sp, #0x20]
-        ldp         d14, d15, [sp, #0x30]
-
-        FREE_CALL_FUNCLET_FRAME 0x40
-        EPILOG_RETURN
-
-    NESTED_END RhpCallFilterFunclet, Text
+    LEAF_END RhpResumeAfterCatch, _TEXT
 
 #ifdef FEATURE_OBJCMARSHAL
 
 //
 // void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
-//                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
+//                                    PInvokeTransitionFrame* pPreviousTransitionFrame)
+//
+// Jumps to the propagation callback after the dispatcher has popped the ExInfos below the SP of the frame
+// described by pRegDisplay. Does not return.
 //
 // INPUT:  X0:  callback context
 //         X1:  callback
 //         X2:  REGDISPLAY*
-//         X3:  ExInfo*
-//         X4:  pPreviousTransitionFrame
-//
-// OUTPUT:
+//         X3:  pPreviousTransitionFrame
 //
 
-    NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+    LEAF_ENTRY RhpCallPropagateExceptionCallback, _TEXT
 
-#define rsp_offset_x0 0x10
-#define rsp_offset_x1 0x18
-#define rsp_offset_x2 0x20
-#define rsp_offset_x3 0x28
-#define rsp_offset_x4 0x30
-#define rsp_CallPropagationCallback_offset_thread 0x38
+        INLINE_GETTHREAD x5                                     // x5 <- Thread*
 
-        // Using the NO_FP macro so that the debugger unwinds using SP.
-        // This makes backtraces work even after using RESTORE_PRESERVED_REGISTERS.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -0x40
-        mov fp, sp
-        stp x0, x1,   [sp, #rsp_offset_x0] // x0 to x3 are stored to restore them anytime
-        stp x2, x3,   [sp, #rsp_offset_x2]
-        stp x4, xzr,  [sp, #rsp_offset_x4]
-        // str xzr,      [sp, #rsp_CallPropagationCallback_offset_thread] // xzr makes space to store the thread obj
-
-        //
-        // clear the DoNotTriggerGc flag, trashes x4-x6
-        //
-
-        bl C_FUNC(RhpGetThread)
-        str x0, [sp, rsp_CallPropagationCallback_offset_thread]
-        mov x5,x0
-        ldp x0, x1,   [sp, #rsp_offset_x0]
-        ldp x2, x3,   [sp, #rsp_offset_x2]
-
+        // Clear the DoNotTriggerGc state before calling out to the propagation callback.
         add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags
-
 LOCAL_LABEL(ClearRetry_Propagate):
         ldxr        w4, [x12]
         bic         w4, w4, #TSF_DoNotTriggerGc
         stxr        w6, w4, [x12]
-        cbz         w6, LOCAL_LABEL(ClearSuccess_Propagate)
-        b           LOCAL_LABEL(ClearRetry_Propagate)
-LOCAL_LABEL(ClearSuccess_Propagate):
+        cbnz        w6, LOCAL_LABEL(ClearRetry_Propagate)
 
-        //
-        // set preserved regs to the values expected by the funclet
-        //
-        RESTORE_PRESERVED_REGISTERS x2
-        //
-        // trash the values at the old homes to make sure nobody uses them
-        //
-        TRASH_PRESERVED_REGISTERS_STORAGE x2
+        LOAD_FUNCLET_REGISTER x2, 19, x12
+        LOAD_FUNCLET_REGISTER x2, 20, x12
+        LOAD_FUNCLET_REGISTER x2, 21, x12
+        LOAD_FUNCLET_REGISTER x2, 22, x12
+        LOAD_FUNCLET_REGISTER x2, 23, x12
+        LOAD_FUNCLET_REGISTER x2, 24, x12
+        LOAD_FUNCLET_REGISTER x2, 25, x12
+        LOAD_FUNCLET_REGISTER x2, 26, x12
+        LOAD_FUNCLET_REGISTER x2, 27, x12
+        LOAD_FUNCLET_REGISTER x2, 28, x12
+        LOAD_FUNCLET_REGISTER x2, 29, x12
 
-#ifdef _DEBUG
-        // Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we
-        // have to spill all the preserved registers and then refill them after the call.
-
-        SAVE_PRESERVED_REGISTERS x2
-
-        ldr         x0, [sp, rsp_CallPropagationCallback_offset_thread]  // x0 <- Thread*
-        ldr         x1, [sp, #rsp_offset_x3]                             // x1 <- current ExInfo*
-        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]                  // x2 <- resume SP value
-        bl          C_FUNC(RhpValidateExInfoPop)
-
-        ldr         x2, [sp, rsp_offset_x2]                              // x2 <- REGDISPLAY*
-
-        RESTORE_PRESERVED_REGISTERS x2
-#endif
-
-        ldr         x1, [sp, rsp_CallPropagationCallback_offset_thread]
+        LOAD_FUNCLET_FP_REGISTER x2, 8
+        LOAD_FUNCLET_FP_REGISTER x2, 9
+        LOAD_FUNCLET_FP_REGISTER x2, 10
+        LOAD_FUNCLET_FP_REGISTER x2, 11
+        LOAD_FUNCLET_FP_REGISTER x2, 12
+        LOAD_FUNCLET_FP_REGISTER x2, 13
+        LOAD_FUNCLET_FP_REGISTER x2, 14
+        LOAD_FUNCLET_FP_REGISTER x2, 15
 
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
-        INLINE_THREAD_UNHIJACK x1, x3, x12                      // Thread in x1, trashes x3 and x12
+        INLINE_THREAD_UNHIJACK x5, x4, x12                      // Thread in x5, trashes x4 and x12
 
-        ldr         x3, [sp, #rsp_offset_x3]                    // x3 <- current ExInfo*
-        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
+        // Switch to preemptive mode.
+        str         x3, [x5, #OFFSETOF__Thread__m_pTransitionFrame]
 
-LOCAL_LABEL(Propagate_PopExInfoLoop):
-        ldr         x3, [x3, #OFFSETOF__ExInfo__m_pPrevExInfo]  // x3 <- next ExInfo
-        cbz         x3, LOCAL_LABEL(Propagate_DonePopping)      // if (pExInfo == null) { we're done }
-        cmp         x3, x2
-        blt         LOCAL_LABEL(Propagate_PopExInfoLoop)        // if (pExInfo < resume SP} { keep going }
-
-LOCAL_LABEL(Propagate_DonePopping):
-        str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
-
-        // restore preemptive mode
-        ldr         x4, [sp, #rsp_offset_x4]                    // pPreviousTransitionFrame
-        str         x4, [x1, #OFFSETOF__Thread__m_pTransitionFrame]
-
-        // reset SP and LR and jump to continuation address
-        ldr         x0, [sp, #rsp_offset_x0]                    // callback context
-        ldr         x1, [sp, #rsp_offset_x1]                    // callback
-        ldr         x2, [sp, #rsp_offset_x2]                    // REGDISPLAY*
-        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__pLR]        // x3 <- &resume LR value
-        ldr         lr, [x3]
-        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__SP]         // x3 <- resume SP value
-        mov         sp, x3
+        // reset SP and LR and jump to the propagation callback
+        ldr         x4, [x2, #OFFSETOF__REGDISPLAY__pLR]        // x4 <- &resume LR value
+        ldr         lr, [x4]
+        ldr         x4, [x2, #OFFSETOF__REGDISPLAY__SP]         // x4 <- resume SP value
+        mov         sp, x4
         br          x1
 
-#undef rsp_offset_x0
-#undef rsp_offset_x1
-#undef rsp_offset_x2
-#undef rsp_offset_x3
-#undef rsp_CallPropagationCallback_offset_thread
-
-    NESTED_END RhpCallPropagateExceptionCallback, _Text
+    LEAF_END RhpCallPropagateExceptionCallback, _TEXT
 
 #endif // FEATURE_OBJCMARSHAL

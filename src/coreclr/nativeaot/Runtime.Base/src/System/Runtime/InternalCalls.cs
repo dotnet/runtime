@@ -144,7 +144,7 @@ namespace System.Runtime
         // Miscellaneous helpers.
         //
 
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         [RuntimeImport(RuntimeLibrary, "CallEHFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe byte* CallEHFunclet(
@@ -181,13 +181,8 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
         [RuntimeImport(RuntimeLibrary, "RhpCallPropagateExceptionCallback")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if TARGET_AMD64
         internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
             IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, IntPtr pPreviousTransitionFrame);
-#else
-        internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
-            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo, IntPtr pPreviousTransitionFrame);
-#endif
 #endif // FEATURE_OBJCMARSHAL
 
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]

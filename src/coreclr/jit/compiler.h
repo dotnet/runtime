@@ -3358,6 +3358,12 @@ public:
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
 
+    GenTree* gtNewValueSize(ValueSize size, var_types type);
+
+#ifdef FEATURE_SIMD
+    GenTree* gtNewVectorTSizeNode(var_types type);
+#endif
+
     GenTreeILOffset* gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset));
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
@@ -3401,6 +3407,8 @@ public:
     GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
 #if defined(TARGET_ARM64)
     GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(float value);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(double value);
 
     inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
     {
