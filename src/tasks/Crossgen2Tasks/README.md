@@ -40,6 +40,8 @@ PDBs are supported. It requires fully qualified, non-wildcard input/output paths
 represented safely in the task's response file.
 Paths ending in whitespace, including normalized symbol-output directories, bypass
 caching because the response-file reader trims unquoted arguments.
+Cleanup and overlap checks use the effective trimmed symbol directory without
+changing the compiler arguments or touching the distinct untrimmed directory.
 It does not parse extra command
 strings in general: an unrecognized argument (including anything with a path-like
 shape, response files, or an unexpected value) bypasses caching. A small allowlist

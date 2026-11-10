@@ -618,15 +618,23 @@ namespace Microsoft.NET.Build.Tasks
 
         private string GetOwnedSymbolOutputPath()
         {
-            if (ActuallyUseCrossgen2 && !Crossgen2IsVersion5 &&
-                (!_emitSymbols || Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows" ||
-                 Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) == "1"))
+            string symbols = _outputPDBImage;
+            if (ActuallyUseCrossgen2 && !Crossgen2IsVersion5)
             {
-                return GetSymbolOutputPath(_outputR2RImage, _outputPDBImage,
-                    Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows");
+                if (!string.IsNullOrEmpty(symbols))
+                {
+                    // The unquoted --pdb-path/--perfmap-path response line loses trailing whitespace.
+                    symbols = Path.Combine(Path.GetDirectoryName(symbols).TrimEnd(), Path.GetFileName(symbols));
+                }
+                if (!_emitSymbols || Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows" ||
+                    Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) == "1")
+                {
+                    return GetSymbolOutputPath(_outputR2RImage, symbols,
+                        Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows");
+                }
             }
 
-            return _outputPDBImage;
+            return symbols;
         }
 
         internal static string GetSymbolOutputPath(string image, string symbols, bool windows)

@@ -586,20 +586,20 @@ public class Crossgen2CacheTests
         Assert.Contains(task.Engine.Messages, m => m.Contains(expectedDiagnostic, StringComparison.Ordinal));
     }, shape).Dispose();
 
+    public static IEnumerable<object[]> WhitespacePathCases =>
+        from configuration in new[] { "enabled", "disabled", "bypassed" }
+        from shape in new[] { "input", "symbols", "normalized-symbols", "legacy-symbols", "no-symbols" }
+        from whitespace in new[] { " ", "\t", "\u00a0" }
+        select new object[] { configuration, shape, whitespace };
+
     [LinuxCacheTheory]
-    [InlineData("input", " ")]
-    [InlineData("input", "\t")]
-    [InlineData("input", "\u00a0")]
-    [InlineData("symbols", " ")]
-    [InlineData("symbols", "\t")]
-    [InlineData("symbols", "\u00a0")]
-    [InlineData("normalized-symbols", " ")]
-    [InlineData("normalized-symbols", "\t")]
-    [InlineData("normalized-symbols", "\u00a0")]
-    public void LinuxWhitespacePathsBypass(string shape, string whitespace) => RemoteExecutor.Invoke((value, suffix) =>
+    [MemberData(nameof(WhitespacePathCases))]
+    public void LinuxWhitespacePathsBypass(string configuration, string shape, string whitespace) => RemoteExecutor.Invoke((mode, value, suffix) =>
     {
         using var fixture = new Fixture();
         MockCompiler task = fixture.Create();
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+        task.ShowCompilerWarnings = mode == "bypassed";
         task.ImplementationAssemblyReferences = new[] { new TaskItem(fixture.Reference) };
         if (value == "input")
         {
@@ -615,13 +615,74 @@ public class Crossgen2CacheTests
             {
                 directory = Path.Combine(directory, ".");
             }
-            task.CompilationEntry.SetMetadata("OutputPDBImage", Path.Combine(directory, Path.GetFileName(fixture.Map)));
+            string name = value == "legacy-symbols"
+                ? Path.GetFileName(Path.ChangeExtension(fixture.Output, $".ni.{{{ReadMvid(fixture.Input)}}}.map"))
+                : Path.GetFileName(fixture.Map);
+            if (value == "legacy-symbols")
+            {
+                task.Crossgen2Tool.SetMetadata("PerfmapFormatVersion", "0");
+            }
+            task.CompilationEntry.SetMetadata("EmitSymbols", (value != "no-symbols").ToString().ToLowerInvariant());
+            task.CompilationEntry.SetMetadata("OutputPDBImage", Path.Combine(directory, name));
+            string effectiveDirectory = value == "normalized-symbols" ? directory : directory.TrimEnd();
+            string otherDirectory = value == "normalized-symbols" ? Path.GetFullPath(directory).TrimEnd() : directory;
+            Directory.CreateDirectory(effectiveDirectory);
+            Directory.CreateDirectory(otherDirectory);
+            string effectiveOutput = Path.Combine(effectiveDirectory, name);
+            string unrelated = Path.Combine(otherDirectory, name);
+            File.WriteAllText(effectiveOutput, "stale symbols");
+            File.WriteAllText(unrelated, "unrelated symbols");
+            task.BeforeExecute = () =>
+            {
+                Assert.False(File.Exists(effectiveOutput));
+                Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
+            };
         }
         Assert.True(task.Execute());
         Assert.Equal(1, task.Executions);
-        Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass: Unsupported response-file path:", StringComparison.Ordinal));
+        if (mode == "enabled")
+        {
+            Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass: Unsupported response-file path:", StringComparison.Ordinal));
+        }
         Assert.False(Directory.Exists(fixture.Cache));
-    }, shape, whitespace).Dispose();
+    }, configuration, shape, whitespace).Dispose();
+
+    public static IEnumerable<object[]> WhitespaceSymbolOverlapCases =>
+        from configuration in new[] { "enabled", "disabled", "bypassed" }
+        from shape in new[] { "symbols", "no-symbols", "legacy-symbols" }
+        select new object[] { configuration, shape };
+
+    [LinuxCacheTheory]
+    [MemberData(nameof(WhitespaceSymbolOverlapCases))]
+    public void TrimmedSymbolDirectoryOverlapsFailBeforeCleanup(string configuration, string shape) => RemoteExecutor.Invoke((mode, value) =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler task = fixture.Create();
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+        task.ShowCompilerWarnings = mode == "bypassed";
+        string directory = Path.Combine(fixture.Root, "symbols");
+        Directory.CreateDirectory(directory);
+        Directory.CreateDirectory(directory + " ");
+        string name = value == "legacy-symbols"
+            ? Path.GetFileName(Path.ChangeExtension(fixture.Output, $".ni.{{{ReadMvid(fixture.Input)}}}.map"))
+            : Path.GetFileName(fixture.Map);
+        string reference = Path.Combine(directory, name);
+        File.Copy(fixture.Reference, reference);
+        byte[] original = File.ReadAllBytes(reference);
+        string unrelated = Path.Combine(directory + " ", name);
+        File.WriteAllText(unrelated, "unrelated symbols");
+        task.ImplementationAssemblyReferences = new[] { new TaskItem(reference) };
+        task.Crossgen2Tool.SetMetadata("PerfmapFormatVersion", value == "legacy-symbols" ? "0" : "1");
+        task.CompilationEntry.SetMetadata("EmitSymbols", (value != "no-symbols").ToString().ToLowerInvariant());
+        task.CompilationEntry.SetMetadata("OutputPDBImage", unrelated);
+
+        Assert.False(task.Execute());
+        Assert.Equal(0, task.Executions);
+        Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
+        Assert.Equal(original, File.ReadAllBytes(reference));
+        Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
+        Assert.False(Directory.Exists(fixture.Cache));
+    }, configuration, shape).Dispose();
 
     public static IEnumerable<object[]> InputOutputOverlapCases =>
         from configuration in new[] { "enabled", "disabled", "bypassed" }
@@ -1483,10 +1544,14 @@ public class Crossgen2CacheTests
         }
     }, symbols.ToString(), separateDirectory.ToString()).Dispose();
 
+    public static IEnumerable<object[]> RealWhitespacePathCases =>
+        from configuration in new[] { "enabled", "disabled", "bypassed" }
+        from shape in new[] { "input", "symbols", "normalized-symbols" }
+        select new object[] { configuration, shape };
+
     [LinuxCacheTheory(realCompiler: true)]
-    [InlineData("input")]
-    [InlineData("symbols")]
-    public void RealCompilerWhitespacePathsBypass(string shape) => RemoteExecutor.Invoke(value =>
+    [MemberData(nameof(RealWhitespacePathCases))]
+    public void RealCompilerWhitespacePathsBypass(string configuration, string shape) => RemoteExecutor.Invoke((mode, value) =>
     {
         using var fixture = new Fixture();
         string runtime = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
@@ -1503,18 +1568,28 @@ public class Crossgen2CacheTests
         else
         {
             symbolDirectory += " ";
+            if (value == "normalized-symbols")
+            {
+                effectiveSymbolDirectory = symbolDirectory;
+                symbolDirectory = Path.Combine(symbolDirectory, ".");
+            }
         }
         Directory.CreateDirectory(symbolDirectory);
         Directory.CreateDirectory(effectiveSymbolDirectory);
         string output = Path.Combine(fixture.Root, "out", "System.Linq.dll");
         string symbolName = Path.ChangeExtension(Path.GetFileName(output), Fixture.SymbolExtension);
+        string unrelated = Path.Combine(fixture.Root, value == "normalized-symbols" ? "symbols" : "symbols ", symbolName);
+        Directory.CreateDirectory(Path.GetDirectoryName(unrelated)!);
+        File.WriteAllText(unrelated, "unrelated symbols");
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
         MockCompiler Create()
         {
             MockCompiler task = fixture.Create("System.Linq.dll");
             task.RealTool = true;
+            task.ShowCompilerWarnings = mode == "bypassed";
             task.Crossgen2Tool.ItemSpec = Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")!;
             task.CompilationEntry.ItemSpec = declaredInput;
-            task.CompilationEntry.SetMetadata("EmitSymbols", (value == "symbols").ToString());
+            task.CompilationEntry.SetMetadata("EmitSymbols", (value != "input").ToString());
             task.CompilationEntry.SetMetadata("OutputPDBImage", Path.Combine(symbolDirectory, symbolName));
             task.ImplementationAssemblyReferences = Directory.GetFiles(runtime, "*.dll").Where(HasMetadata).Select(p => new TaskItem(p)).ToArray();
             task.Crossgen2PgoFiles = Array.Empty<ITaskItem>();
@@ -1522,19 +1597,26 @@ public class Crossgen2CacheTests
         }
         for (int i = 0; i < 2; i++)
         {
+            string effectiveSymbols = Path.Combine(effectiveSymbolDirectory, symbolName);
+            File.WriteAllText(effectiveSymbols, "stale symbols");
             MockCompiler task = Create();
+            task.BeforeExecute = () =>
+            {
+                Assert.False(File.Exists(effectiveSymbols));
+                Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
+            };
             Assert.True(task.Execute(), string.Join(Environment.NewLine, task.Engine.Messages));
             Assert.Equal(1, task.Executions);
-            Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass: Unsupported response-file path:", StringComparison.Ordinal));
+            if (mode == "enabled")
+            {
+                Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass: Unsupported response-file path:", StringComparison.Ordinal));
+            }
             Assert.Equal("System.Linq", System.Reflection.AssemblyName.GetAssemblyName(output).Name);
+            Assert.Equal(value != "input", File.Exists(effectiveSymbols));
+            Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
             Assert.False(Directory.Exists(fixture.Cache));
         }
-        if (value == "symbols")
-        {
-            Assert.True(File.Exists(Path.Combine(effectiveSymbolDirectory, symbolName)));
-            Assert.False(File.Exists(Path.Combine(symbolDirectory, symbolName)));
-        }
-    }, shape).Dispose();
+    }, configuration, shape).Dispose();
 
     private static byte[] NormalizeNativePdbIdentity(byte[] image)
     {
