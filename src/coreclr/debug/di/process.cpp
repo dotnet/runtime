@@ -1732,6 +1732,15 @@ HRESULT CordbProcess::Init()
             }
         }
 
+#ifdef FEATURE_DBGIPC_TRANSPORT_DI
+        // The transport does not send DB_IPCE_LEFTSIDE_STARTUP to finish initialization later.
+        // Let an in-process debugger retry after runtime startup instead of returning an
+        // uninitialized process object.
+        if (!fIsLSStarted && m_id == GetCurrentProcessId())
+        {
+            ThrowHR(CORDBG_E_DEBUGGING_NOT_POSSIBLE);
+        }
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
 
         if (fIsLSStarted)
         {
