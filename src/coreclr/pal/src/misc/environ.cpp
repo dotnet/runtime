@@ -12,6 +12,7 @@ Abstract:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
+#include <minipal/utf8.h>
 
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
@@ -154,7 +155,7 @@ GetEnvironmentVariableW(
 {
     CHAR *inBuff = nullptr;
     CHAR *outBuff = nullptr;
-    INT inBuffSize;
+    size_t inBuffSize;
     DWORD size = 0;
 
     PERF_ENTRY(GetEnvironmentVariableW);
@@ -162,8 +163,7 @@ GetEnvironmentVariableW(
           lpName ? lpName : W16_NULLSTRING,
           lpName ? lpName : W16_NULLSTRING, lpBuffer, nSize);
 
-    inBuffSize = WideCharToMultiByte(CP_ACP, 0, lpName, -1,
-                                     inBuff, 0, nullptr, nullptr);
+    inBuffSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, 0) : 0;
     if (0 == inBuffSize)
     {
         ERROR("lpName has to be a valid parameter\n");
@@ -190,10 +190,9 @@ GetEnvironmentVariableW(
         }
     }
 
-    if (0 == WideCharToMultiByte(CP_ACP, 0, lpName, -1, inBuff,
-                                   inBuffSize, nullptr, nullptr))
+    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, inBuff, inBuffSize, 0))
     {
-        ASSERT("WideCharToMultiByte failed!\n");
+        ASSERT("UTF-16 to UTF-8 conversion failed!\n");
         SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
@@ -215,7 +214,8 @@ GetEnvironmentVariableW(
     }
     else
     {
-        size = MultiByteToWideChar(CP_ACP, 0, outBuff, -1, lpBuffer, nSize);
+        size_t converted = minipal_convert_utf8_to_utf16(outBuff, strlen(outBuff) + 1, (CHAR16_T*)lpBuffer, nSize, 0);
+        size = (DWORD)converted;
         if (0 != size)
         {
             // -1 for the null.
@@ -223,7 +223,7 @@ GetEnvironmentVariableW(
         }
         else
         {
-            ASSERT("MultiByteToWideChar failed!\n");
+            ASSERT("UTF-8 to UTF-16 conversion failed!\n");
             SetLastError(ERROR_INTERNAL_ERROR);
             size = 0;
             *lpBuffer = '\0';
@@ -281,8 +281,8 @@ SetEnvironmentVariableW(
 {
     PCHAR name = nullptr;
     PCHAR value = nullptr;
-    INT nameSize = 0;
-    INT valueSize = 0;
+    size_t nameSize = 0;
+    size_t valueSize = 0;
     BOOL bRet = FALSE;
 
     PERF_ENTRY(SetEnvironmentVariableW);
@@ -290,10 +290,9 @@ SetEnvironmentVariableW(
         lpName?lpName:W16_NULLSTRING,
         lpName?lpName:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING);
 
-    if ((nameSize = WideCharToMultiByte(CP_ACP, 0, lpName, -1, name, 0,
-                                        nullptr, nullptr)) == 0)
+    if ((nameSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, 0) : 0) == 0)
     {
-        ERROR("WideCharToMultiByte failed\n");
+        ERROR("UTF-16 to UTF-8 conversion failed\n");
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
@@ -306,20 +305,18 @@ SetEnvironmentVariableW(
         goto done;
     }
 
-    if (0 == WideCharToMultiByte(CP_ACP, 0, lpName,  -1,
-                                 name,  nameSize, nullptr, nullptr))
+    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, name, nameSize, 0))
     {
-        ASSERT("WideCharToMultiByte returned 0\n");
+        ASSERT("UTF-16 to UTF-8 conversion returned 0\n");
         SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
 
     if (lpValue != nullptr)
     {
-        if ((valueSize = WideCharToMultiByte(CP_ACP, 0, lpValue, -1, value,
-                                             0, nullptr, nullptr)) == 0)
+        if ((valueSize = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpValue, minipal_u16_strlen((const CHAR16_T*)lpValue) + 1, 0)) == 0)
         {
-            ERROR("WideCharToMultiByte failed\n");
+            ERROR("UTF-16 to UTF-8 conversion failed\n");
             SetLastError(ERROR_INVALID_PARAMETER);
             goto done;
         }
@@ -333,10 +330,9 @@ SetEnvironmentVariableW(
             goto done;
         }
 
-        if (0 == WideCharToMultiByte(CP_ACP, 0, lpValue, -1,
-                                     value, valueSize, nullptr, nullptr))
+        if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpValue, minipal_u16_strlen((const CHAR16_T*)lpValue) + 1, value, valueSize, 0))
         {
-            ASSERT("WideCharToMultiByte failed\n");
+            ASSERT("UTF-16 to UTF-8 conversion failed\n");
             SetLastError( ERROR_INTERNAL_ERROR );
             goto done;
         }
@@ -384,7 +380,8 @@ GetEnvironmentStringsW(
                VOID)
 {
     WCHAR *wenviron = nullptr, *tempEnviron;
-    int i, len, envNum;
+    int i;
+    size_t len, envNum;
 
     PERF_ENTRY(GetEnvironmentStringsW);
     ENTRY("GetEnvironmentStringsW()\n");
@@ -398,7 +395,7 @@ GetEnvironmentStringsW(
     /* get total length of the bytes that we need to allocate */
     for (i = 0; palEnvironment[i] != 0; i++)
     {
-        len = MultiByteToWideChar(CP_ACP, 0, palEnvironment[i], -1, wenviron, 0);
+        len = minipal_get_length_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, 0);
         envNum += len;
     }
 
@@ -414,7 +411,7 @@ GetEnvironmentStringsW(
     tempEnviron = wenviron;
     for (i = 0; palEnvironment[i] != 0; i++)
     {
-        len = MultiByteToWideChar(CP_ACP, 0, palEnvironment[i], -1, tempEnviron, envNum);
+        len = minipal_convert_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, (CHAR16_T*)tempEnviron, envNum, 0);
         tempEnviron += len;
         envNum      -= len;
     }

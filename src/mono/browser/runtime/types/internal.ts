@@ -118,7 +118,7 @@ export interface AssetEntryInternal extends AssetEntry {
 }
 
 export type LoaderCallbacks = {
-    configLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
+    configLoaded: ((config: MonoConfig, api: RuntimeAPI) => void | Promise<void>)[];
     dotnetReady?: () => void | Promise<void>;
     downloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
 }

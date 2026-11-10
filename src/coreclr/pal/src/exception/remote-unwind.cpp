@@ -91,7 +91,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 #include <elf.h>
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_ARM)
 #define PRIx PRIx32
 #define PRIu PRIu32
 #define PRId PRId32
@@ -1734,13 +1734,6 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
-#elif defined(TARGET_X86)
-    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
-    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
-    unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
-    unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
-    unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
-    unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
 #elif defined(TARGET_ARM)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
@@ -1893,13 +1886,6 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_X86_64_R13:   *valp = (unw_word_t)winContext->R13; break;
     case UNW_X86_64_R14:   *valp = (unw_word_t)winContext->R14; break;
     case UNW_X86_64_R15:   *valp = (unw_word_t)winContext->R15; break;
-#elif defined(TARGET_X86)
-    case UNW_REG_IP:       *valp = (unw_word_t)winContext->Eip; break;
-    case UNW_REG_SP:       *valp = (unw_word_t)winContext->Esp; break;
-    case UNW_X86_EBX:      *valp = (unw_word_t)winContext->Ebx; break;
-    case UNW_X86_ESI:      *valp = (unw_word_t)winContext->Esi; break;
-    case UNW_X86_EDI:      *valp = (unw_word_t)winContext->Edi; break;
-    case UNW_X86_EBP:      *valp = (unw_word_t)winContext->Ebp; break;
 #elif defined(TARGET_ARM)
     case UNW_ARM_R4:       *valp = (unw_word_t)winContext->R4; break;
     case UNW_ARM_R5:       *valp = (unw_word_t)winContext->R5; break;

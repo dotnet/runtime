@@ -94,9 +94,9 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:b1220e64d4b94596deb9d861aacd2ad3d40c41b175d2bffd0c9d06ffeee6ba1d
+        - (Debian.13.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:b1220e64d4b94596deb9d861aacd2ad3d40c41b175d2bffd0c9d06ffeee6ba1d
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:b1220e64d4b94596deb9d861aacd2ad3d40c41b175d2bffd0c9d06ffeee6ba1d
+        - (Debian.13.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:b1220e64d4b94596deb9d861aacd2ad3d40c41b175d2bffd0c9d06ffeee6ba1d
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
@@ -115,9 +115,9 @@ jobs:
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.324.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:c69109df40ae82a419d5af3581a8a7a403680882daf6cdc4379d37460c8be929
+        - (Alpine.324.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:c69109df40ae82a419d5af3581a8a7a403680882daf6cdc4379d37460c8be929
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.324.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:c69109df40ae82a419d5af3581a8a7a403680882daf6cdc4379d37460c8be929
+        - (Alpine.324.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7@sha256:c69109df40ae82a419d5af3581a8a7a403680882daf6cdc4379d37460c8be929
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:

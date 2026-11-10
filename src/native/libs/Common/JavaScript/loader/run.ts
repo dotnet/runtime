@@ -69,7 +69,9 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
                 dotnetApi.runtimeBuildInfo.buildId = loaderConfig.buildId;
             }
 
-            await loaderCallbacks.configLoaded?.(loaderConfig);
+            for (const callback of [...loaderCallbacks.configLoaded]) {
+                await callback(loaderConfig);
+            }
             validateLoaderConfig();
 
             modulesAfterConfigLoadedPromises = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);

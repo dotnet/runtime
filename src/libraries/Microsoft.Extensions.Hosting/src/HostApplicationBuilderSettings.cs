@@ -28,14 +28,16 @@ namespace Microsoft.Extensions.Hosting
         /// </value>
         /// <remarks>
         ///   The following defaults are applied to the <see cref="IHostBuilder"/>:
-        ///     * set the <see cref="IHostEnvironment.ContentRootPath"/> to the result of <see cref="Directory.GetCurrentDirectory()"/>
-        ///     * load <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables
-        ///     * load <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'
-        ///     * load <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly
-        ///     * load <see cref="IConfiguration"/> from environment variables
-        ///     * load <see cref="IConfiguration"/> from supplied command line args
-        ///     * configure the <see cref="ILoggerFactory"/> to log to the console, debug, and event source output
-        ///     * enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'
+        ///   <list type="bullet">
+        ///     <item>set the <see cref="IHostEnvironment.ContentRootPath"/> to the result of <see cref="Directory.GetCurrentDirectory()"/></item>
+        ///     <item>load <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables</item>
+        ///     <item>load <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'</item>
+        ///     <item>load <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</item>
+        ///     <item>load <see cref="IConfiguration"/> from environment variables</item>
+        ///     <item>load <see cref="IConfiguration"/> from supplied command line args</item>
+        ///     <item>configure the <see cref="ILoggerFactory"/> to log to the console, debug, and event source output</item>
+        ///     <item>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</item>
+        ///   </list>
         /// </remarks>
         public bool DisableDefaults { get; set; }
 

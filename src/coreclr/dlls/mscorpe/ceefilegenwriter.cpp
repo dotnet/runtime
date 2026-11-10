@@ -132,7 +132,7 @@ HRESULT CeeFileGenWriter::CreateNewInstance(CeeFileGenWriter* & pGenWriter,
 {
     HRESULT hr = S_OK;
     ULONG preallocatedOffset = 0;
-    NewHolder<PEWriter> pPEWriter(NULL);
+    NewHolder<PEWriter> pPEWriter;
     NewHolder<CeeFileGenWriter> pPrivateGenWriter;
     CeeSection *corHeaderSection = NULL;
 
@@ -180,9 +180,8 @@ HRESULT CeeFileGenWriter::CreateNewInstance(CeeFileGenWriter* & pGenWriter,
     // set il RVA to be after the preallocated sections
     pPEWriter->setIlRva(preallocatedOffset);
 
-    pPEWriter.SuppressRelease();
-    pPrivateGenWriter.SuppressRelease();
-    pGenWriter = pPrivateGenWriter;
+    pPEWriter.Detach();
+    pGenWriter = pPrivateGenWriter.Detach();
 
 ErrExit:
     return hr;

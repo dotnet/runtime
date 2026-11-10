@@ -148,17 +148,17 @@ variables:
   # Linux ARM32
   # Latest: Debian 13 (full support EOL: 2028-08-09)
   - name: helix_linux_arm32_latest
-    value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_latest_internal
-    value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   # Oldest: Debian 13 (full support EOL: 2028-08-09)
   - name: helix_linux_arm32_oldest
-    value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_oldest_internal
-    value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   # Linux ARM64
   # Latest: Ubuntu 26.04 (EOL: 2031-05)
@@ -181,17 +181,17 @@ variables:
   # Linux musl ARM32
   # Latest: Alpine 3.24 (EOL: 2028-06-01)
   - name: helix_linux_musl_arm32_latest
-    value: (Alpine.324.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
+    value: (Alpine.324.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   - name: helix_linux_musl_arm32_latest_internal
-    value: (Alpine.324.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
+    value: (Alpine.324.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   # Oldest: Alpine 3.24 (EOL: 2028-06-01)
   - name: helix_linux_musl_arm32_oldest
-    value: (Alpine.324.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
+    value: (Alpine.324.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   - name: helix_linux_musl_arm32_oldest_internal
-    value: (Alpine.324.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
+    value: (Alpine.324.Arm32)AzureLinux.4.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   # Linux musl ARM64
   # Latest: Alpine 3.24 (EOL: 2028-06-01)
