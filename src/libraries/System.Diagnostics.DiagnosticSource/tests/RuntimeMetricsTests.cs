@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -343,6 +344,79 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotNull(instrument);
             Assert.IsType<ObservableUpDownCounter<long>>(instrument);
         }
+
+#if NET11_0_OR_GREATER
+        public static bool CanTestPauseCallbacks => RemoteExecutor.IsSupported && (PlatformDetection.IsCoreCLR || PlatformDetection.IsNativeAot);
+
+        [ConditionalTheory(typeof(RuntimeMetricsTests), nameof(CanTestPauseCallbacks))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void DetailedGcPauseDuration_ListenerLifecycle(int stopMode)
+        {
+            RemoteExecutor.Invoke(mode =>
+            {
+                using MeterListener listener = new();
+                using ManualResetEventSlim recorded = new();
+                Instrument? histogram = null;
+                double duration = -1;
+                listener.InstrumentPublished = (instrument, subscriber) =>
+                {
+                    if (instrument.Meter.Name == "System.Runtime.Detailed.GC" && instrument.Name == "dotnet.gc.pause.duration")
+                    {
+                        histogram = instrument;
+                        subscriber.EnableMeasurementEvents(instrument);
+                    }
+                };
+                listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
+                {
+                    bool generationFound = false;
+                    bool typeFound = false;
+                    foreach (KeyValuePair<string, object?> tag in tags)
+                    {
+                        generationFound |= tag.Key == "gc.heap.generation" && Equals(tag.Value, "gen1");
+                        typeFound |= tag.Key == "gc.pause.type" && Equals(tag.Value, "blocking");
+                    }
+
+                    if (!generationFound || !typeFound)
+                    {
+                        return;
+                    }
+
+                    duration = value;
+                    switch (mode)
+                    {
+                        case "0":
+                            listener.DisableMeasurementEvents(instrument);
+                            break;
+                        case "1":
+                            listener.Dispose();
+                            break;
+                        case "2":
+                            instrument.Meter.Dispose();
+                            break;
+                    }
+                    recorded.Set();
+                });
+                try
+                {
+                    listener.Start();
+                    Assert.NotNull(histogram);
+                    Assert.IsType<Histogram<double>>(histogram);
+                    Assert.Equal("s", histogram.Unit);
+                    GC.Collect(1, GCCollectionMode.Forced, blocking: true);
+                    Assert.True(recorded.Wait(TimeSpan.FromSeconds(30)));
+                    Assert.True(duration >= 0);
+                    Assert.False(histogram.Enabled);
+                }
+                finally
+                {
+                    listener.Dispose();
+                    GC.WaitForPendingFinalizers();
+                }
+            }, stopMode.ToString(System.Globalization.CultureInfo.InvariantCulture)).Dispose();
+        }
+#endif
 
         private sealed class RuntimeMeterException() : Exception { }
 

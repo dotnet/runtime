@@ -141,6 +141,9 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public bool Enabled => _subscriptions.First is not null;
 
+        // Invoke outside SyncObject, before application completion callbacks.
+        internal Action? ListenerStateChanged { get; set; }
+
         /// <summary>
         /// A property tells if the instrument is an observable instrument.
         /// </summary>
@@ -157,6 +160,7 @@ namespace System.Diagnostics.Metrics
             }
 
             _subscriptions.Clear();
+            ListenerStateChanged?.Invoke();
         }
 
         internal static void ValidateTypeParameter<T>()

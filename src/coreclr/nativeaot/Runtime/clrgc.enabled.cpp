@@ -29,9 +29,6 @@ enum GC_LOAD_STATUS {
 // global indicates where the failure occurred.
 GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 
-// The version of the GC that we have loaded.
-VersionInfo g_gc_version_info;
-
 CrstStatic g_eventStashLock;
 
 GCEventLevel g_stashedLevel = GCEventLevel_None;
