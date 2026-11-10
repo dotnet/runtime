@@ -25,7 +25,6 @@ nativeStringResourceTable_mscorrc
 #PAL_CopyModuleData
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
-#PAL_GetUnwindInfoSize
 #PAL_GetApplicationGroupId
 #PAL_GetTransportName
 #PAL_GetCurrentThread
@@ -36,8 +35,6 @@ nativeStringResourceTable_mscorrc
 #PAL_InitializeDLL
 #PAL_TerminateEx
 #PAL_ProbeMemory
-#PAL_VirtualUnwindOutOfProc
-
 #sprintf_s
 #vsprintf_s
 #_snprintf_s
