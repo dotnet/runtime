@@ -227,6 +227,38 @@ public sealed class CommandLinePdbFileTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("", false, "D1")]
+    [InlineData("-err", true, "D1")]
+    [InlineData("-error", true, "D1")]
+    [InlineData("", false, "D2")]
+    [InlineData("-err", true, "D2")]
+    [InlineData("-error", true, "D2")]
+    public void DuplicateTypeForwarders_AreWrittenOnlyWithErrorTolerantSwitch(string switches, bool errorTolerant, string secondDestination)
+    {
+        string source = $$"""
+            .assembly test { }
+            .assembly extern D1 { }
+            .assembly extern D2 { }
+            .class extern forwarder Testspace.TestType { .assembly extern D1 }
+            .class extern forwarder Testspace.TestType { .assembly extern {{secondDestination}} }
+            """;
+        string dll = OutputPath("DuplicateTypeForwarders.dll");
+
+        Assert.Equal(errorTolerant ? 0 : 1, RunIlasm(source, "DuplicateTypeForwarders", dll, switches));
+        Assert.Equal(errorTolerant, File.Exists(dll));
+        if (errorTolerant)
+        {
+            using PEReader pe = ReadImage(dll);
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(2, reader.ExportedTypes.Count);
+            Assert.Equal(
+                new[] { "D1", secondDestination },
+                reader.ExportedTypes.Select(handle =>
+                    reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)reader.GetExportedType(handle).Implementation).Name)));
+        }
+    }
+
     // With -DEBUG or -PDB the PDB is a file beside the output, the CodeView entry names its full path (without -DET)
     // and carries its id, and nothing is embedded in the image.
     [Theory]

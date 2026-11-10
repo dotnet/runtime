@@ -12126,7 +12126,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     // to use as the target. That is non-optimal because it will be modeled as conflicting
     // with the source register(s).
     // So, to summarize:
-    // - On ARM64, always use GT_NULLCHECK for a dead indirection.
+    // - Volatile loads always use GT_IND to preserve acquire semantics.
+    // - On ARM64, use GT_NULLCHECK for a dead non-volatile indirection.
     // - On ARM, always use GT_IND.
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
     // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
@@ -12134,6 +12135,21 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     // on XARCH as an optimization.
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK));
+
+    // Null checks do not provide the acquire semantics of volatile loads.
+    if (ind->IsVolatile())
+    {
+        if (ind->TypeIs(TYP_STRUCT))
+        {
+            ind->ChangeType(TYP_UBYTE);
+        }
+        if (!ind->OperIs(GT_IND))
+        {
+            ind->SetOper(GT_IND);
+            ind->SetUnusedValue();
+        }
+        return;
+    }
 
     ind->ChangeType(m_compiler->gtTypeForNullCheck(ind));
 

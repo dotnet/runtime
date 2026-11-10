@@ -86,7 +86,6 @@ int fsetpos_64(FILE* stream, int64_t pos)
 HRESULT HRESULTFromErr(int err)
 {
     // maps the common I/O errors
-    // based on FILEGetLastErrorFromErrno
     
     int32_t win32Err;
 

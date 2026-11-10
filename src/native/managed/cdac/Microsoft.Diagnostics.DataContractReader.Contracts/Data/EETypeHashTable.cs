@@ -29,6 +29,19 @@ internal sealed partial class EETypeHashTable : IData<EETypeHashTable>
         return entries;
     }
 
+    [DataDescriptorDependency("Buckets", "pointer")]
+    [DataDescriptorDependency("Count", "uint32")]
+    [DataDescriptorDependency("VolatileEntryValue", "pointer")]
+    [DataDescriptorDependency("VolatileEntryNextEntry", "pointer")]
+    public IEnumerable<Entry> Lookup(uint hash)
+    {
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.EETypeHashTable);
+        DacEnumerableHash baseHashTable = new(_target, Address, type);
+
+        foreach (TargetPointer entry in baseHashTable.Lookup(hash))
+            yield return new(_target.ReadPointer(entry));
+    }
+
     public readonly struct Entry(TargetPointer value)
     {
         public TargetPointer TypeHandle { get; } = value & ~FLAG_MASK;

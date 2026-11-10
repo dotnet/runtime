@@ -426,7 +426,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     UnRegister();
 
-    pTable = newPTable.Extract();
+    pTable = newPTable.Detach();
     cTableCurCount = toIdx;
     cTableMaxCount = desiredSpace;
     cDeletedEntries = 0;
@@ -570,9 +570,9 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
         // OS registration is deferred to the first flush in FlushPendingEntriesUnderGate.
         NewHolder<UnwindInfoTable> newTable(new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
 
-        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, newTable.GetValue(), (UnwindInfoTable*)NULL) == NULL)
+        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, static_cast<UnwindInfoTable*>(newTable), (UnwindInfoTable*)NULL) == NULL)
         {
-            newTable.SuppressRelease();
+            newTable.Detach();
         }
         // else another thread won. NewHolder frees our unregistered table (no OS call).
 
@@ -2297,15 +2297,15 @@ BOOL EEJitManager::LoadJIT()
         if (altJitOsConfig != NULL)
         {
             // We have some inconsistency all over the place with osx vs macos, let's handle both here
-            if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
+            if ((u16_stricmp(altJitOsConfig, W("macos")) == 0) || (u16_stricmp(altJitOsConfig, W("osx")) == 0))
             {
                 targetOs = CORINFO_APPLE;
             }
-            else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
+            else if ((u16_stricmp(altJitOsConfig, W("linux")) == 0) || (u16_stricmp(altJitOsConfig, W("unix")) == 0))
             {
                 targetOs = CORINFO_UNIX;
             }
-            else if (_wcsicmp(altJitOsConfig, W("windows")) == 0)
+            else if (u16_stricmp(altJitOsConfig, W("windows")) == 0)
             {
                 targetOs = CORINFO_WINNT;
             }
@@ -2665,7 +2665,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          DBG_ADDR(pHp->startAddress), DBG_ADDR(pHp->startAddress+pHp->maxCodeHeapSize)
          ));
 
-    pCodeHeap.SuppressRelease();
+    pCodeHeap.Detach();
     _ASSERTE((pHp != NULL) || pInfo->IsSpecificMemoryRangeRequested());
     return pHp;
 }
@@ -3400,7 +3400,7 @@ EEJitManager::DomainCodeHeapList* EECodeGenManager::CreateCodeHeapList(CodeHeapR
         : m_DomainCodeHeaps.AppendThrowing();
     *ppList = pNewList;
 
-    return pNewList.Extract();
+    return pNewList.Detach();
 }
 
 LoaderHeap *EECodeGenManager::GetJitMetaHeap(MethodDesc *pMD)
@@ -3625,44 +3625,43 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
     {
         _ASSERTE(!HasCachedTypeHandle(pEHClause));
 
-        GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(pCf->GetRegisterSet(), pCf->GetCodeInfo());
-        _ASSERTE(SafeToReportGenericParamContext(pCf));
-        if (SafeToReportGenericParamContext(pCf))
+        PTR_VOID genericsToken = NULL;
+        GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(
+            pCf->GetRegisterSet(),
+            pCf->GetCodeInfo(),
+            &genericsToken);
+        MethodDesc *pMD = pCf->GetFunction();
+        TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
+
+        // Shared generic code needs the frame's exact generic context to resolve the exception type.
+        if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
         {
-            MethodDesc *pMD = pCf->GetFunction();
-            TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
-
-            // Handle the case where the method is a static shared generic method and we need to keep the type
-            // of the generic parameters alive
-            if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
-            {
-                pMD = dac_cast<PTR_MethodDesc>(pCf->GetParamTypeArg());
-                declaringType = (TypeHandle)pMD->GetMethodTable();
-            }
-            else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
-            {
-                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetParamTypeArg());
-            }
-            else
-            {
-                _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
-                GCX_COOP();
-                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
-                if (declaringType.IsNull())
-                {
-                    COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-                }
-            }
-
-            _ASSERTE(!declaringType.IsNull());
-
-            SigTypeContext typeContext(pMD, declaringType);
-
-            Module* pModule = pMD->GetModule();
-
-            thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
-                                                       ClassLoader::ReturnNullIfNotFound);
+            pMD = dac_cast<PTR_MethodDesc>(genericsToken);
+            declaringType = (TypeHandle)pMD->GetMethodTable();
         }
+        else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
+        {
+            declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(genericsToken);
+        }
+        else
+        {
+            _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
+            GCX_COOP();
+            declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
+            if (declaringType.IsNull())
+            {
+                COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+            }
+        }
+
+        _ASSERTE(!declaringType.IsNull());
+
+        SigTypeContext typeContext(pMD, declaringType);
+
+        Module* pModule = pMD->GetModule();
+
+        thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
+                                                   ClassLoader::ReturnNullIfNotFound);
     }
 
     return thResolved;
@@ -4688,6 +4687,7 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
     if (pCodeInfo)
     {
         pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(pCHdr));
+        pCodeInfo->m_gcInfoToken = { NULL, 0 };
 
         // This can be counted on for Jitted code. For NGEN code in the case
         // where we have hot/cold splitting this isn't valid and we need to
@@ -7242,7 +7242,8 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
 #ifdef FEATURE_COLD_R2R_CODE
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
-    if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
+    const bool isColdCode = (lookupIndex != -1) && ((lookupIndex & 1) == 1);
+    if (isColdCode)
     {
         // If the MethodIndex happens to be the cold code block, turn it into the associated hot code block
         MethodIndex = pInfo->m_pHotColdMap[lookupIndex];
@@ -7265,20 +7266,33 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     {
         // We are using RUNTIME_FUNCTION as METHODTOKEN
         pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntry));
+        pCodeInfo->m_gcInfoToken = { NULL, 0 };
 
         AMD64_ONLY(_ASSERTE((RawFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0));
         pCodeInfo->m_pFunctionEntry = RawFunctionEntry;
-        MethodRegionInfo methodRegionInfo;
-        JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &methodRegionInfo);
-        if ((methodRegionInfo.coldSize > 0) && (currentInstr >= methodRegionInfo.coldStartAddress))
+#ifdef FEATURE_COLD_R2R_CODE
+        if (isColdCode)
         {
+            MethodRegionInfo methodRegionInfo;
+            JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &methodRegionInfo);
+            _ASSERTE((methodRegionInfo.coldSize > 0) && (currentInstr >= methodRegionInfo.coldStartAddress));
             pCodeInfo->m_relOffset = (DWORD)
                 (methodRegionInfo.hotSize + (currentInstr - methodRegionInfo.coldStartAddress));
         }
         else
+#endif // FEATURE_COLD_R2R_CODE
         {
-            pCodeInfo->m_relOffset = (DWORD)(currentInstr - methodRegionInfo.hotStartAddress);
+            pCodeInfo->m_relOffset = (DWORD)(currentInstr - JitTokenToStartAddress(pCodeInfo->m_methodToken));
         }
+
+#ifdef _DEBUG
+        MethodRegionInfo debugMethodRegionInfo;
+        JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &debugMethodRegionInfo);
+        DWORD expectedRelOffset = ((debugMethodRegionInfo.coldSize > 0) && (currentInstr >= debugMethodRegionInfo.coldStartAddress))
+            ? (DWORD)(debugMethodRegionInfo.hotSize + (currentInstr - debugMethodRegionInfo.coldStartAddress))
+            : (DWORD)(currentInstr - debugMethodRegionInfo.hotStartAddress);
+        _ASSERTE(pCodeInfo->m_relOffset == expectedRelOffset);
+#endif // _DEBUG
     }
 
     return TRUE;
