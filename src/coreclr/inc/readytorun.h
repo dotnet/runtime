@@ -86,7 +86,7 @@
 // GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
 // signatures with their GCRefMaps.
 // R2R Version 33.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
-// R2R Version 34 changes the ABI for funclets on ARM64, LoongArch64 and RISC-V64 to match AMD64: funclets save
+// R2R Version 34 changes the ABI for funclets on other architectures to match AMD64: funclets save
 //                only the return address, and the runtime preserves the callee-saved registers around the
 //                funclets that it calls
 
