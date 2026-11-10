@@ -333,8 +333,11 @@ Copyright (c) .NET Foundation. All rights reserved.
                              Condition="'$(PublishReadyToRunComposite)' == 'true'" />
       <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the
            R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. -->
+      <!-- Exclude by full path: OutputR2RImage keeps any '..' segments from IntermediateOutputPath (e.g. an
+           unnormalized ArtifactsPath) while _WasmPublishR2RDir is normalized, and Exclude compares the
+           strings literally, so a raw path would never match and the fresh images would be deleted. -->
       <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm;$(_WasmPublishR2RDir)*.dll"
-                           Exclude="@(_WasmEmittedPerAppR2R)" />
+                           Exclude="@(_WasmEmittedPerAppR2R->'%(FullPath)')" />
     </ItemGroup>
     <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>
