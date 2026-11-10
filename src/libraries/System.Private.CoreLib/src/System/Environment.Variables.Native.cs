@@ -35,7 +35,9 @@ namespace System
                     // The value did not fit, and length is the required size. Retry in case the value changed.
                     if (rented != null)
                     {
-                        ArrayPool<byte>.Shared.Return(rented);
+                        byte[] toReturn = rented;
+                        rented = null;
+                        ArrayPool<byte>.Shared.Return(toReturn);
                     }
                     buffer = rented = ArrayPool<byte>.Shared.Rent(length);
                 }
