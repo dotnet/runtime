@@ -209,7 +209,7 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
             // Display metadata only for object files.
             // If szObjName is specified, display metadata only for that one object file.
             if (!_stricmp(&szName[strlen(szName) - OBJ_EXT_LEN], OBJ_EXT) &&
-                (!szObjName || !_wcsicmp(szObjName, wzName)))
+                (!szObjName || !u16_stricmp(szObjName, wzName)))
             {
                 // Try to find the MetaData section in the current object file.
                 hr = FindObjMetaData(pbMapAddress+IMAGE_SIZEOF_ARCHIVE_MEMBER_HDR, &pvMetaData, &cbMetaData);
@@ -281,13 +281,13 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
 
     if (DumpFilter & MDInfo::dumpValidate)
     {
-        if (pExt && (!_wcsicmp(pExt, OBJ_EXT_W) || !_wcsicmp(pExt, LIB_EXT_W)))
+        if (pExt && (!u16_stricmp(pExt, OBJ_EXT_W) || !u16_stricmp(pExt, LIB_EXT_W)))
             g_ValModuleType = ValidatorModuleTypeObj;
         else
             g_ValModuleType = ValidatorModuleTypePE;
     }
 
-    if (pExt && !_wcsicmp(pExt, LIB_EXT_W))
+    if (pExt && !u16_stricmp(pExt, LIB_EXT_W))
         DisplayArchive(szFile, DumpFilter, szObjName, pDisplayString);
     else
     {

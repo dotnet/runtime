@@ -378,10 +378,10 @@ private:
 
     uint32_t ParseLevel(ComponentSpan const & component) const
     {
-        int level = TRACE_LEVEL_VERBOSE; // Verbose
+        uint32_t level = TRACE_LEVEL_VERBOSE; // Verbose
         if ((component.End - component.Start) != 0)
         {
-            level = _wtoi(component.Start);
+            level = u16_strtoul(component.Start, nullptr, 10);
         }
         return level;
     }
@@ -423,7 +423,7 @@ public:
         auto providerName = config.GetProviderName();
         auto enabledKeywordsMask = config.GetEnabledKeywordsMask();
         auto level = config.GetLevel();
-        if (_wcsicmp(providerName, W("*")) == 0 && enabledKeywordsMask == (ULONGLONG)(-1) && level == TRACE_LEVEL_VERBOSE)
+        if (u16_stricmp(providerName, W("*")) == 0 && enabledKeywordsMask == (ULONGLONG)(-1) && level == TRACE_LEVEL_VERBOSE)
         {
             ActivateAllKeywordsOfAllProviders();
         }
@@ -461,7 +461,7 @@ private:
         auto length = u16_strlen(providerName);
         for (auto provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
-            if (_wcsicmp(provider->Name, providerName) == 0)
+            if (u16_stricmp(provider->Name, providerName) == 0)
             {
                 return provider;
             }

@@ -163,7 +163,7 @@ GetEnvironmentVariableW(
           lpName ? lpName : W16_NULLSTRING,
           lpName ? lpName : W16_NULLSTRING, lpBuffer, nSize);
 
-    inBuffSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, 0) : 0;
+    inBuffSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, 0) : 0;
     if (0 == inBuffSize)
     {
         ERROR("lpName has to be a valid parameter\n");
@@ -190,7 +190,7 @@ GetEnvironmentVariableW(
         }
     }
 
-    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, inBuff, inBuffSize, 0))
+    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, inBuff, inBuffSize, 0))
     {
         ASSERT("UTF-16 to UTF-8 conversion failed!\n");
         SetLastError(ERROR_INTERNAL_ERROR);
@@ -290,7 +290,7 @@ SetEnvironmentVariableW(
         lpName?lpName:W16_NULLSTRING,
         lpName?lpName:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING);
 
-    if ((nameSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, 0) : 0) == 0)
+    if ((nameSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, 0) : 0) == 0)
     {
         ERROR("UTF-16 to UTF-8 conversion failed\n");
         SetLastError(ERROR_INVALID_PARAMETER);
@@ -305,7 +305,7 @@ SetEnvironmentVariableW(
         goto done;
     }
 
-    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, name, nameSize, 0))
+    if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, minipal_u16_strlen((const CHAR16_T*)lpName) + 1, name, nameSize, 0))
     {
         ASSERT("UTF-16 to UTF-8 conversion returned 0\n");
         SetLastError(ERROR_INTERNAL_ERROR);
@@ -314,7 +314,7 @@ SetEnvironmentVariableW(
 
     if (lpValue != nullptr)
     {
-        if ((valueSize = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpValue, PAL_wcslen(lpValue) + 1, 0)) == 0)
+        if ((valueSize = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpValue, minipal_u16_strlen((const CHAR16_T*)lpValue) + 1, 0)) == 0)
         {
             ERROR("UTF-16 to UTF-8 conversion failed\n");
             SetLastError(ERROR_INVALID_PARAMETER);
@@ -330,7 +330,7 @@ SetEnvironmentVariableW(
             goto done;
         }
 
-        if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpValue, PAL_wcslen(lpValue) + 1, value, valueSize, 0))
+        if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpValue, minipal_u16_strlen((const CHAR16_T*)lpValue) + 1, value, valueSize, 0))
         {
             ASSERT("UTF-16 to UTF-8 conversion failed\n");
             SetLastError( ERROR_INTERNAL_ERROR );

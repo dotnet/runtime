@@ -184,7 +184,7 @@ OutputDebugStringW(
         goto EXIT;
     }
 
-    if ((strLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpOutputString, PAL_wcslen(lpOutputString) + 1, 0))
+    if ((strLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpOutputString, minipal_u16_strlen((const CHAR16_T*)lpOutputString) + 1, 0))
         == 0)
     {
         ASSERT("failed to get wide chars length\n");
@@ -200,7 +200,7 @@ OutputDebugStringW(
         goto EXIT;
     }
 
-    if(! minipal_convert_utf16_to_utf8((const CHAR16_T*)lpOutputString, PAL_wcslen(lpOutputString) + 1,
+    if(! minipal_convert_utf16_to_utf8((const CHAR16_T*)lpOutputString, minipal_u16_strlen((const CHAR16_T*)lpOutputString) + 1,
                                        lpOutputStringA, strLen, 0))
     {
         ASSERT("failed to convert wide chars to multibytes\n");
@@ -321,7 +321,7 @@ DebugBreakCommand()
 
         if (exe_module.lib_name != NULL)
         {
-            libNameLength = PAL_wcslen(exe_module.lib_name);
+            libNameLength = minipal_u16_strlen((const CHAR16_T*)exe_module.lib_name);
         }
 
         SIZE_T dwexe_buf = strlen(EXE_TEXT) + libNameLength + 1;

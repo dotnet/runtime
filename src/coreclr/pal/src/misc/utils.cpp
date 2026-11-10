@@ -53,7 +53,7 @@ Return Value :
 --*/
 LPSTR UTIL_WCToMB_Alloc(LPCWSTR lpWideCharStr, int cchWideChar)
 {
-    size_t cchSource = cchWideChar < 0 ? PAL_wcslen(lpWideCharStr) + 1 : (size_t)cchWideChar;
+    size_t cchSource = cchWideChar < 0 ? minipal_u16_strlen((const CHAR16_T*)lpWideCharStr) + 1 : (size_t)cchWideChar;
     size_t length;
     LPSTR lpMultiByteStr;
 

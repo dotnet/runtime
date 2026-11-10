@@ -6764,7 +6764,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
 
     DumpMI((char*)GUICookie); // initialize the print function for DumpMetaInfo
 
-    if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
+    if(pch && (!u16_stricmp(pch+1,W("lib")) || !u16_stricmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
         if (SUCCEEDED(CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&g_pDisp)))

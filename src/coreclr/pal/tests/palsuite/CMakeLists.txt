@@ -55,23 +55,6 @@ add_executable_clr(paltests
   c_runtime/sscanf_s/test7/test7.cpp
   c_runtime/sscanf_s/test8/test8.cpp
   c_runtime/sscanf_s/test9/test9.cpp
-  c_runtime/wcscat/test1/test1.cpp
-  c_runtime/wcschr/test1/test1.cpp
-  c_runtime/wcscmp/test1/test1.cpp
-  c_runtime/wcscpy/test1/test1.cpp
-  c_runtime/wcslen/test1/test1.cpp
-  c_runtime/wcsncmp/test1/test1.cpp
-  c_runtime/wcsncpy/test1/test1.cpp
-  c_runtime/wcsrchr/test1/test1.cpp
-  c_runtime/wcsstr/test1/test1.cpp
-  c_runtime/wcstod/test1/test1.cpp
-  c_runtime/wcstod/test2/test2.cpp
-  c_runtime/wcstoul/test1/test1.cpp
-  c_runtime/wcstoul/test2/test2.cpp
-  c_runtime/wcstoul/test3/test3.cpp
-  c_runtime/wcstoul/test4/test4.cpp
-  c_runtime/wcstoul/test5/test5.cpp
-  c_runtime/wcstoul/test6/test6.cpp
   c_runtime/_vsnprintf_s/test1/test1.cpp
   c_runtime/_vsnprintf_s/test10/test10.cpp
   c_runtime/_vsnprintf_s/test11/test11.cpp
@@ -88,10 +71,7 @@ add_executable_clr(paltests
   c_runtime/_vsnprintf_s/test6/test6.cpp
   c_runtime/_vsnprintf_s/test8/test8.cpp
   c_runtime/_vsnprintf_s/test9/test9.cpp
-  c_runtime/_wcsicmp/test1/test1.cpp
   c_runtime/_wcslwr_s/test1/test1.cpp
-  c_runtime/_wcsnicmp/test1/test1.cpp
-  c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   debug_api/OutputDebugStringW/test1/test1.cpp
   #exception_handling/pal_except/test1/test1.cpp

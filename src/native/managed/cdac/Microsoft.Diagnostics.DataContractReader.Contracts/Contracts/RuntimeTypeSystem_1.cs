@@ -1336,6 +1336,42 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
     }
 
+    private uint GetConstructedTypeHash(ITypeHandle? typeHandle, CorElementType elementType, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
+    {
+        // Match HashTypeKey in src/coreclr/vm/typehash.cpp. Module and array rank are not hashed.
+        uint hash = 5381;
+        if (elementType == CorElementType.GenericInst)
+        {
+            Debug.Assert(typeHandle is not null);
+            hash = Mix(hash, GetTypeDefToken(typeHandle));
+            foreach (ITypeHandle? argument in typeArguments)
+            {
+                Debug.Assert(argument is not null);
+                hash = Mix(hash, argument.Address.Value);
+            }
+        }
+        else if (elementType == CorElementType.FnPtr)
+        {
+            hash = Mix(hash, (uint)CorElementType.FnPtr);
+            hash = Mix(hash, (uint)callConv);
+            hash = Mix(hash, unchecked((uint)(typeArguments.Length - 1)));
+            foreach (ITypeHandle? argument in typeArguments)
+            {
+                Debug.Assert(argument is not null);
+                hash = Mix(hash, argument.Address.Value);
+            }
+        }
+        else
+        {
+            Debug.Assert(typeHandle is not null);
+            hash = Mix(hash, (uint)elementType);
+            hash = Mix(hash, typeHandle.Address.Value);
+        }
+        return hash;
+
+        static uint Mix(uint hash, ulong value) => unchecked((hash * 33) ^ (uint)value);
+    }
+
     ITypeHandle? IRuntimeTypeSystem.GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
     {
         if (typeHandle is null && corElementType != CorElementType.FnPtr)
@@ -1358,7 +1394,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         ITypeHandle potentialMatch;
-        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        uint hash = GetConstructedTypeHash(typeHandle, corElementType, typeArguments, callConv);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle, hash))
         {
             potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
@@ -2106,11 +2143,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
         ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+        TargetPointer module = GetModule(methodTable);
+        AsyncMethodFlags methodFlags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(methodDescHandle);
+        bool matchSlot = methodDesc.Slot != ushort.MaxValue &&
+            methodFlags.HasFlag(AsyncMethodFlags.IsAsyncVariant) &&
+            !methodFlags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk);
 
         foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
         {
             MethodDesc candidate = _methodDescs[candidateHandle.Address];
-            if (candidate.Slot != methodDesc.Slot)
+            if (matchSlot ? candidate.Slot != methodDesc.Slot :
+                candidate.Token != methodDesc.Token ||
+                GetModule(GetTypeHandle(candidate.MethodTable)) != module)
                 continue;
 
             AsyncMethodFlags flags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(candidateHandle);

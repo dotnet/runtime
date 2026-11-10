@@ -147,7 +147,6 @@ endif()
 
 set(SOURCES
   com/guid.cpp
-  cruntime/wchar.cpp
   exception/seh.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp

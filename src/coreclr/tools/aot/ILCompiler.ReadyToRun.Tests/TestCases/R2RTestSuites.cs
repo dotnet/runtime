@@ -683,6 +683,95 @@ public class R2RTestSuites
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ComparerAndPerInstantiationIntrinsicsRespectVersionBubble(bool inputBubble)
+    {
+        var externalLib = new CompiledAssembly
+        {
+            AssemblyName = "ExternalLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/ExternalLib.cs"],
+        };
+        var testAssembly = new CompiledAssembly
+        {
+            AssemblyName = nameof(ComparerAndPerInstantiationIntrinsicsRespectVersionBubble),
+            SourceResourceNames = ["CastFolding/ComparerFolding.cs"],
+            References = [externalLib],
+        };
+
+        List<Crossgen2Option> options = inputBubble
+            ? [Crossgen2Option.Composite, Crossgen2Option.Optimize]
+            : [Crossgen2Option.Optimize];
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ComparerAndPerInstantiationIntrinsicsRespectVersionBubble),
+            [
+                new(nameof(ComparerAndPerInstantiationIntrinsicsRespectVersionBubble),
+                    [
+                        new CrossgenAssembly(externalLib) { Kind = Crossgen2InputKind.Reference },
+                        new CrossgenAssembly(testAssembly),
+                    ])
+                {
+                    Options = options,
+                    AdditionalArgs = inputBubble
+                        ? ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath]
+                        : ["--opt-cross-module", "System.Private.CoreLib"],
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            var formattingOptions = new SignatureFormattingOptions();
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+
+            bool HasFixupContaining(string methodName, string substring, out string diag)
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    m => m.Name == methodName);
+                var fixups = (method.Fixups ?? Array.Empty<FixupCell>()).Select(f => f.Signature.ToString(formattingOptions)).ToList();
+                diag = $"{methodName}: [{string.Join(", ", fixups)}]";
+                return fixups.Any(s => s.Contains(substring, StringComparison.Ordinal));
+            }
+
+            var importedTypes = new HashSet<string>();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature is null)
+                        continue;
+
+                    string signature = entry.Signature.ToString(formattingOptions);
+                    int kindStart = signature.LastIndexOf(" (", StringComparison.Ordinal);
+                    if (kindStart <= 0)
+                        continue;
+
+                    importedTypes.Add(signature[..kindStart]);
+                }
+            }
+
+            string d = $"Imported types: [{string.Join(", ", importedTypes)}]";
+            // EqualityComparer<T>.Default exact return type inference folds `is ICheckComparer<T>`
+            // (eliminating the ICheckComparer<T> cast import when ObjectEqualityComparer<T> is in the bubble)
+            // only when T and its non-Object/ValueType base hierarchy version with the current bubble.
+            Assert.True(importedTypes.Contains("ICheckComparer`1<LocalStruct>") != inputBubble, d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<LocalSealedClass>") != inputBubble, d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<LocalDerivedFromExternal>"), d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<ExternalLib+ExternalStruct>"), d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<ExternalLib+ExternalType>"), d);
+
+            // Per-instantiation synthesized intrinsics (EqualityComparer<T>.Create / RuntimeHelpers.IsBitwiseEquatable<T>)
+            // inline only when T versions with the bubble or opt-cross-module set.
+            if (inputBubble)
+                Assert.Contains(importedTypes, s => s.Contains("ObjectEqualityComparer`1<LocalStruct>", StringComparison.Ordinal));
+            Assert.DoesNotContain(importedTypes, s => s.Contains("ObjectEqualityComparer`1<ExternalLib+ExternalStruct>", StringComparison.Ordinal));
+            Assert.False(HasFixupContaining("ExternalStructDefaultComparerEquals", "System.ValueType.Equals", out d), d);
+            Assert.False(HasFixupContaining("SharedGenericSpanIndexOf", "UnreachableException", out d), d);
+        }
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]
