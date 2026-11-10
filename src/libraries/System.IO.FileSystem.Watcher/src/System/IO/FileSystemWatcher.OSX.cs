@@ -77,6 +77,9 @@ namespace System.IO
 
         private CancellationTokenSource? _cancellation;
 
+        private void RestartForInternalBufferSize()
+            => Restart();
+
         private static FSEventStreamEventFlags TranslateFlags(NotifyFilters flagsToTranslate)
         {
             FSEventStreamEventFlags flags = 0;
@@ -301,9 +304,6 @@ namespace System.IO
 
                     _context = ExecutionContext.Capture();
 
-                    // Make sure the OS file buffer(s) are fully flushed so we don't get events from cached I/O
-                    Interop.Sys.Sync();
-
                     Debug.Assert(!_gcHandle.IsAllocated);
                     _gcHandle = GCHandle.Alloc(this);
 
@@ -437,6 +437,14 @@ namespace System.IO
 
                     ReadOnlySpan<char> path = parsedEvent.Path;
                     Debug.Assert(path[^1] != '/', "Trailing slashes on events is not supported");
+
+                    // Root was deleted/renamed.
+                    if (eventFlags[i].HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagRootChanged))
+                    {
+                        watcher.OnError(new ErrorEventArgs(CreateWatchedDirectoryDeletedOrMovedException(_fullDirectory)));
+                        CleanupEventStream();
+                        return;
+                    }
 
                     // Match Windows and don't notify us about changes to the Root folder
                     if (_fullDirectory.Length >= path.Length && path.Equals(_fullDirectory.AsSpan(0, path.Length), StringComparison.OrdinalIgnoreCase))
@@ -609,7 +617,6 @@ namespace System.IO
                 return (flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagMustScanSubDirs) ||
                         flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagUserDropped) ||
                         flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagKernelDropped) ||
-                        flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagRootChanged) ||
                         flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagMount) ||
                         flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagUnmount));
             }

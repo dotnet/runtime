@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -36,9 +37,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static partial SafeX509Handle DecodeX509(ref byte buf, int len);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
-        internal static partial SafeX509Handle DecodeX509(IntPtr buf, int len);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509DerSize")]
         internal static partial int GetX509DerSize(SafeX509Handle x);
 
@@ -47,18 +45,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Destroy")]
         internal static partial void X509Destroy(IntPtr a);
-
-        /// <summary>
-        /// Clone the input certificate into a new object.
-        /// </summary>
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
-        internal static partial SafeX509Handle X509Duplicate(IntPtr handle);
-
-        /// <summary>
-        /// Clone the input certificate into a new object.
-        /// </summary>
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
-        internal static partial SafeX509Handle X509Duplicate(SafeX509Handle handle);
 
         /// <summary>
         /// Increment the native reference count of the certificate to protect against
@@ -250,13 +236,13 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetAppData")]
         internal static unsafe partial void* X509StoreCtxGetAppData(SafeX509StoreCtxHandle ctx);
 
-        internal static string GetX509VerifyCertErrorString(int n)
+        internal static unsafe string GetX509VerifyCertErrorString(int n)
         {
-            return Marshal.PtrToStringUTF8(CryptoNative_X509VerifyCertErrorString(n))!;
+            return Utf8StringMarshaller.ConvertToManaged(CryptoNative_X509VerifyCertErrorString(n))!;
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial IntPtr CryptoNative_X509VerifyCertErrorString(int n);
+        private static unsafe partial byte* CryptoNative_X509VerifyCertErrorString(int n);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CrlDestroy")]
         internal static partial void X509CrlDestroy(IntPtr a);
@@ -342,14 +328,6 @@ internal static partial class Interop
             X509_V_ERR_EMAIL_MISMATCH = 63,
             X509_V_ERR_IP_ADDRESS_MISMATCH = 64,
         }
-        internal enum X509VerifyStatusCode102
-        {
-            X509_V_ERR_INVALID_CA = 24,
-
-            X509_V_ERR_INVALID_CALL = 65,
-            X509_V_ERR_STORE_LOOKUP = 66,
-            X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION = 67,
-        }
 
         internal enum X509VerifyStatusCode111
         {
@@ -420,7 +398,6 @@ internal static partial class Interop
             }
 
             public X509VerifyStatusCodeUniversal UniversalCode => (X509VerifyStatusCodeUniversal)Code;
-            public X509VerifyStatusCode102 Code102 => (X509VerifyStatusCode102)Code;
             public X509VerifyStatusCode111 Code111 => (X509VerifyStatusCode111)Code;
             public X509VerifyStatusCode30 Code30 => (X509VerifyStatusCode30)Code;
 

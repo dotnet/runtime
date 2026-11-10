@@ -156,6 +156,7 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_SECURITY_CONTEXT = 0x99,
         LDAP_OPT_ROOTDSE_CACHE = 0x9a, // Not Supported in Linux
         LDAP_OPT_DEBUG_LEVEL = 0x5001,
+        LDAP_OPT_NETWORK_TIMEOUT = 0x5005, // Not Supported in Windows
         LDAP_OPT_URI = 0x5006, // Not Supported in Windows
         LDAP_OPT_X_TLS_CACERTDIR = 0x6003, // Not Supported in Windows
         LDAP_OPT_X_TLS_NEWCTX = 0x600F, // Not Supported in Windows
@@ -171,11 +172,12 @@ namespace System.DirectoryServices.Protocols
         LDAP_MSG_POLLINGALL = 3 // Not Supported in Linux
     }
 
+    // Matches both the Windows LDAP_TIMEVAL (LONG fields) and the Unix struct timeval (time_t / suseconds_t, i.e. C long).
     [StructLayout(LayoutKind.Sequential)]
     internal struct LDAP_TIMEVAL
     {
-        public int tv_sec;
-        public int tv_usec;
+        public CLong tv_sec;
+        public CLong tv_usec;
     }
 
 #if NET

@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public partial class X509StoreTests
     {
-        [ConditionalFact(nameof(NotRunningAsRootAndRemoteExecutorSupported))] // root can read '2.pem'
+        [ConditionalFact(typeof(X509StoreTests), nameof(NotRunningAsRootAndRemoteExecutorSupported))] // root can read '2.pem'
         [PlatformSpecific(TestPlatforms.Linux)] // Windows/OSX doesn't use SSL_CERT_{DIR,FILE}.
         private void X509Store_MachineStoreLoadSkipsInvalidFiles()
         {

@@ -78,21 +78,28 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
 HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, MethodContext* firstContext)
 {
     // startup jit
-    DWORD dwRetVal = 0;
     UINT  uRetVal  = 0;
     BOOL  bRetVal  = FALSE;
 
     SetBreakOnDebugBreakOrAV(breakOnDebugBreakorAV);
 
-    char pFullPathName[MAX_PATH];
-
     // find the full jit path
-    dwRetVal = ::GetFullPathNameA(PathToJit, MAX_PATH, pFullPathName, nullptr);
+#ifdef TARGET_UNIX
+    char pFullPathName[PATH_MAX];
+    if (realpath(PathToJit, pFullPathName) == nullptr)
+    {
+        LogError("realpath failed (errno=%d)", errno);
+        return E_FAIL;
+    }
+#else
+    char pFullPathName[MAX_PATH];
+    DWORD dwRetVal = ::GetFullPathNameA(PathToJit, MAX_PATH, pFullPathName, nullptr);
     if (dwRetVal == 0)
     {
         LogError("GetFullPathName failed (0x%08x)", ::GetLastError());
         return E_FAIL;
     }
+#endif
 
 #ifndef TARGET_UNIX // No file version APIs in the PAL
     // Do a quick version check
@@ -281,28 +288,32 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
 
             switch (pParam->pThis->mc->repGetExpectedTargetArchitecture())
             {
-                case IMAGE_FILE_MACHINE_AMD64:
+                case CORINFO_ARCH_X64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64);
                     break;
 
-                case IMAGE_FILE_MACHINE_I386:
+                case CORINFO_ARCH_X86:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_X86);
                     break;
 
-                case IMAGE_FILE_MACHINE_ARMNT:
+                case CORINFO_ARCH_ARM:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM);
                     break;
 
-                case IMAGE_FILE_MACHINE_ARM64:
+                case CORINFO_ARCH_ARM64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
                     break;
 
-                case IMAGE_FILE_MACHINE_LOONGARCH64:
+                case CORINFO_ARCH_LOONGARCH64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
                     break;
 
-                case IMAGE_FILE_MACHINE_RISCV64:
+                case CORINFO_ARCH_RISCV64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_RISCV64);
+                    break;
+
+                case CORINFO_ARCH_WASM32:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_WASM32);
                     break;
 
                 default:
@@ -330,7 +341,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             }
         }
 
-        if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE))
+        if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE) || (jitResult == CORJIT_R2R_UNSUPPORTED))
         {
             // capture the results of compilation
             pParam->pThis->mc->cr->recCompileMethod(&NEntryBlock, &NCodeSizeBlock, jitResult);

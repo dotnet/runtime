@@ -68,7 +68,7 @@ unsigned Frame::GetFrameAttribs()
 }
 
 #ifndef DACCESS_COMPILE
-void Frame::ExceptionUnwind()
+void Frame::ExceptionUnwind() noexcept
 {
     switch (GetFrameIdentifier())
     {
@@ -213,6 +213,20 @@ Frame::Interception Frame::GetInterception()
     }
 }
 
+#ifdef DACCESS_COMPILE
+Frame::StubFrameType Frame::GetStubFrameType()
+{
+    switch (GetFrameIdentifier())
+    {
+#define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetStubFrameType_Impl(); }
+#include "FrameTypes.h"
+    default:
+        FRAME_POLYMORPHIC_DISPATCH_UNREACHABLE();
+        return STUB_FRAME_NONE;
+    }
+}
+#endif // DACCESS_COMPILE
+
 void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {
     switch (GetFrameIdentifier())
@@ -314,16 +328,9 @@ void Frame::Log() {
 
     STRESS_LOG3(LF_STUBS, LL_INFO1000000, "STUBS: In Stub with Frame %p assoc Method %pM FrameType = %pV\n", this, method, *((void**) this));
 
-    char buff[64];
     const char* frameType;
     if (GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame)
         frameType = "PreStub";
-    else if (GetFrameIdentifier() == FrameIdentifier::PInvokeCalliFrame)
-    {
-        sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
-                  DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
-        frameType = buff;
-    }
     else if (GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
         frameType = "StubDispatch";
     else if (GetFrameIdentifier() == FrameIdentifier::ExternalMethodFrame)
@@ -373,62 +380,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
 //-----------------------------------------------------------------------
 #endif // _DEBUG
 //-----------------------------------------------------------------------
-
-
-// TODO [DAVBR]: For the full fix for VsWhidbey 450273, all the below
-// may be uncommented once isLegalManagedCodeCaller works properly
-// with non-return address inputs, and with non-DEBUG builds
-#if 0
-//-----------------------------------------------------------------------
-// returns TRUE if retAddr, is a return address that can call managed code
-
-bool isLegalManagedCodeCaller(PCODE retAddr) {
-    WRAPPER_NO_CONTRACT;
-#ifdef TARGET_X86
-
-        // we expect to be called from JITTED code or from special code sites inside
-        // mscorwks like callDescr which we have put a NOP (0x90) so we know that they
-        // are specially blessed.
-    if (!ExecutionManager::IsManagedCode(retAddr) &&
-        (
-#ifdef DACCESS_COMPILE
-         !(PTR_BYTE(retAddr).IsValid()) ||
-#endif
-         ((*PTR_BYTE(retAddr) != 0x90) &&
-          (*PTR_BYTE(retAddr) != 0xcc))))
-    {
-        LOG((LF_GC, LL_INFO10, "Bad caller to managed code: retAddr=0x%08x, *retAddr=0x%x\n",
-             retAddr, *(BYTE*)PTR_BYTE(retAddr)));
-
-        return false;
-    }
-
-        // it better be a return address of some kind
-    TADDR dummy;
-    if (isRetAddr(retAddr, &dummy))
-        return true;
-
-#ifndef DACCESS_COMPILE
-#ifdef DEBUGGING_SUPPORTED
-    // The debugger could have dropped an INT3 on the instruction that made the call
-    // Calls can be 2 to 7 bytes long
-    if (CORDebuggerAttached()) {
-        PTR_BYTE ptr = PTR_BYTE(retAddr);
-        for (int i = -2; i >= -7; --i)
-            if (ptr[i] == 0xCC)
-                return true;
-        return false;
-    }
-#endif // DEBUGGING_SUPPORTED
-#endif // #ifndef DACCESS_COMPILE
-
-    _ASSERTE(!"Bad return address on stack");
-    return false;
-#else  // TARGET_X86
-    return true;
-#endif // TARGET_X86
-}
-#endif //0
 
 
 //-----------------------------------------------------------------------
@@ -554,14 +505,14 @@ VOID Frame::Push(Thread *pThread)
 
     m_Next = pThread->GetFrame();
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
-             (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             (PBYTE(m_Next) + (2 * minipal_getpagesize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
@@ -576,7 +527,7 @@ VOID Frame::Push(Thread *pThread)
     pThread->SetFrame(this);
 }
 
-VOID Frame::Pop()
+VOID Frame::Pop() noexcept
 {
     CONTRACTL
     {
@@ -589,7 +540,7 @@ VOID Frame::Pop()
     Pop(GetThread());
 }
 
-VOID Frame::Pop(Thread *pThread)
+VOID Frame::Pop(Thread *pThread) noexcept
 {
     CONTRACTL
     {
@@ -614,7 +565,7 @@ VOID Frame::Pop(Thread *pThread)
 }
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
-void Frame::PopIfChained()
+void Frame::PopIfChained() noexcept
 {
     CONTRACTL
     {
@@ -634,27 +585,90 @@ void Frame::PopIfChained()
 }
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-/* static */
-void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
+
+void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
 {
+    LIMITED_METHOD_CONTRACT;
+    // Default implementation unwinds floating point registers to target SP
     _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
-    while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
+
+    do
     {
 #ifdef TARGET_UNIX
-        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+        PAL_VirtualUnwind(pRD->pCurrentContext);
 #else
         Thread::VirtualUnwindCallFrame(pRD);
 #endif
     }
+    while (::GetSP(pRD->pCurrentContext) < targetSP);
+
+    _ASSERTE(::GetSP(pRD->pCurrentContext) == targetSP);
 }
-#endif // !TARGET_X86 || TARGET_UNIX
+
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
+{
+#ifdef CONTEXT_FLOATING_POINT
+    _ASSERTE((pRD->pCurrentContext->ContextFlags & (CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)) != 0);
+#endif
+    switch (GetFrameIdentifier())
+    {
+#define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateFloatingPointRegisters_Impl(pRD, targetSP); }
+#include "FrameTypes.h"
+    default:
+        FRAME_POLYMORPHIC_DISPATCH_UNREACHABLE();
+        return;
+    }
+}
+
+void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
+{
+#ifdef FEATURE_INTERPRETER
+    if (IsInInterpreter())
+    {
+        InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)m_Next;
+        pInterpreterFrame->UpdateFloatingPointRegisters(pRD, 0 /* unused for interpreter frame*/);
+        pInterpreterFrame->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
+        return;
+    }
+#endif // FEATURE_INTERPRETER
+    {
+        _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
+        while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
+        {
+    #ifdef TARGET_UNIX
+            PAL_VirtualUnwind(pRD->pCurrentContext);
+    #else
+            Thread::VirtualUnwindCallFrame(pRD);
+    #endif
+        }
+    }
+}
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
+
+#ifdef FEATURE_INTERPRETER
+BOOL InlinedCallFrame::IsInInterpreter()
+{
+    PTR_InterpreterFrame pInterpreterFrame = NULL;
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        PTR_InterpreterFrame pInterpreterFrame = (PTR_InterpreterFrame)m_Next;
+        // The interpreter frame is in the interpreter when its top method context frame matches the m_pCallSiteSP
+        return (dac_cast<PTR_VOID>(pInterpreterFrame->GetTopInterpMethodContextFrame()) == m_pCallSiteSP);
+    }
+
+    return FALSE;
+}
+#endif // FEATURE_INTERPRETER
+
 //---------------------------------------------------------------
 // Get the extra param for shared generic code.
 //---------------------------------------------------------------
+static UINT OffsetFromGCRefMapPos(int pos);
+
 PTR_VOID TransitionFrame::GetParamTypeArg()
 {
     CONTRACTL
@@ -678,6 +692,30 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
     MethodDesc *pFunction = GetFunction();
     _ASSERTE (pFunction->RequiresInstArg());
 
+    // A target prepared with a GCRefMap need not have loaded the signature types
+    // that ArgIterator requires, so locate the argument through the map instead.
+    FrameIdentifier frame = GetFrameIdentifier();
+    PTR_BYTE pGCRefMap = nullptr;
+    if (frame == FrameIdentifier::ExternalMethodFrame)
+        pGCRefMap = dac_cast<PTR_ExternalMethodFrame>(this)->GetGCRefMap();
+    else if (frame == FrameIdentifier::PrestubMethodFrame || frame == FrameIdentifier::CallCountingHelperFrame)
+        pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
+
+    if (pGCRefMap != nullptr)
+    {
+        GCRefMapDecoder decoder(pGCRefMap);
+#ifdef TARGET_X86
+        decoder.ReadStackPop();
+#endif
+        while (!decoder.AtEnd())
+        {
+            int pos = decoder.CurrentPos();
+            int token = decoder.ReadToken();
+            if (token == GCREFMAP_METHOD_PARAM || token == GCREFMAP_TYPE_PARAM)
+                return PTR_VOID(*PTR_TADDR(GetTransitionBlock() + OffsetFromGCRefMapPos(pos)));
+        }
+    }
+
     MetaSig msig(pFunction);
     ArgIterator argit (&msig);
 
@@ -693,6 +731,7 @@ TADDR TransitionFrame::GetAddrOfThis()
     return GetTransitionBlock() + ArgIterator::GetThisOffset();
 }
 
+#ifdef FEATURE_VARARGS
 VASigCookie * TransitionFrame::GetVASigCookie()
 {
 #if defined(TARGET_X86)
@@ -708,6 +747,7 @@ VASigCookie * TransitionFrame::GetVASigCookie()
         *dac_cast<PTR_TADDR>(GetTransitionBlock() + argit.GetVASigCookieOffset()));
 #endif
 }
+#endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 PrestubMethodFrame::PrestubMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
@@ -796,33 +836,19 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    PEImageLayout *pNativeImage = pZapModule->GetReadyToRunImage();
+    ReadyToRunLoadedImage *pNativeImage = pZapModule->GetReadyToRunImage();
 
     RVA rva = pNativeImage->GetDataRva(ptr);
 
     PTR_READYTORUN_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
-    if (pImportSection == NULL)
+    if (pImportSection == NULL ||
+        (pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) == ReadyToRunImportSectionFlags::None)
         return NULL;
 
     COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
 
-    PTR_BYTE pGCRefMap = dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pImportSection->AuxiliaryData));
-    _ASSERTE(pGCRefMap != NULL);
-
-    // GCRefMap starts with lookup index to limit size of linear scan that follows.
-    PTR_BYTE p = pGCRefMap + dac_cast<PTR_DWORD>(pGCRefMap)[index / GCREFMAP_LOOKUP_STRIDE];
-    COUNT_T remaining = index % GCREFMAP_LOOKUP_STRIDE;
-
-    while (remaining > 0)
-    {
-        while ((*p & 0x80) != 0)
-            p++;
-        p++;
-
-        remaining--;
-    }
-
-    return p;
+    PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
+    return dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pSignatures[index]));
 }
 
 PTR_BYTE StubDispatchFrame::GetGCRefMap()
@@ -1048,20 +1074,6 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-//-----------------------------------------------------------------------
-// A rather specialized routine for the exclusive use of the COM PreStub.
-//-----------------------------------------------------------------------
-VOID
-ComPrestubMethodFrame::Init()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Initializes the frame's identifier.
-    Frame::Init(FrameIdentifier::ComPrestubMethodFrame);
-}
-#endif // FEATURE_COMINTEROP
-
 //-----------------------------------------------------------------------
 // GCFrames
 //-----------------------------------------------------------------------
@@ -1070,7 +1082,7 @@ ComPrestubMethodFrame::Init()
 //--------------------------------------------------------------------
 // This constructor pushes a new GCFrame on the frame chain.
 //--------------------------------------------------------------------
-GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
+GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags)
 {
     CONTRACTL
     {
@@ -1081,8 +1093,12 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+    m_osStackLocation = this;
+#endif
+
 #ifdef USE_CHECKED_OBJECTREFS
-    if (!maybeInterior) {
+    if (!gcFlags) {
         UINT i;
         for(i = 0; i < numObjRefs; i++)
             Thread::ObjectRefProtected(&pObjRefs[i]);
@@ -1111,7 +1127,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 
     m_pObjRefs      = pObjRefs;
     m_numObjRefs    = numObjRefs;
-    m_MaybeInterior = maybeInterior;
+    m_gcFlags       = gcFlags;
 
     Push(pThread);
 }
@@ -1123,28 +1139,29 @@ GCFrame::~GCFrame()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;
 
-    // m_pNext is NULL when the frame was already popped from the stack.
-    if (m_Next != NULL)
+    // Normally the destructor performs the pop for a GCPROTECT_BEGIN/END scope, so the frame is
+    // still linked when we get here. If it was already popped explicitly - by PopExplicitFrames
+    // during EH unwind, or by the interpreter's GCReporting::Unregister - then m_pCurThread is
+    // NULL and there is nothing left to do.
+    if (m_pCurThread != NULL)
     {
-        // This is a GCFrame that was not popped.  This is a problem.
-        // We should have popped it before we destruct
         // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
         // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
-        BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
+        Thread *pThread = m_pCurThread;
+        BOOL wasCoop = pThread->PreemptiveGCDisabled();
         if (!wasCoop)
         {
-            m_pCurThread->DisablePreemptiveGC();
+            pThread->DisablePreemptiveGC();
         }
 
         Pop();
 
         if (!wasCoop)
         {
-            m_pCurThread->EnablePreemptiveGC();
+            pThread->EnablePreemptiveGC();
         }
     }
 }
@@ -1166,13 +1183,13 @@ void GCFrame::Push(Thread* pThread)
     m_Next = pThread->GetGCFrame();
     m_pCurThread = pThread;
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
-    _ASSERTE(((m_Next == GCFRAME_TOP) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+    _ASSERTE(((m_Next == NULL) ||
+              (PBYTE(m_Next->GetOSStackLocation()) + (2 * minipal_getpagesize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
     pThread->SetGCFrame(this);
@@ -1196,13 +1213,15 @@ void GCFrame::Pop()
     _ASSERTE(m_pCurThread->GetGCFrame() == this && "Popping a GCFrame out of order ?");
 
     m_pCurThread->SetGCFrame(m_Next);
-    m_Next = NULL;
 
 #ifdef _DEBUG
     m_pCurThread->EnableStressHeap();
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 void GCFrame::Remove()
@@ -1218,7 +1237,7 @@ void GCFrame::Remove()
 
     GCFrame *pPrevFrame = NULL;
     GCFrame *pFrame = m_pCurThread->GetGCFrame();
-    while (pFrame != GCFRAME_TOP)
+    while (pFrame != NULL)
     {
         if (pFrame == this)
         {
@@ -1230,8 +1249,6 @@ void GCFrame::Remove()
             {
                 m_pCurThread->SetGCFrame(m_Next);
             }
-
-            m_Next = NULL;
 
 #ifdef _DEBUG
             m_pCurThread->EnableStressHeap();
@@ -1246,6 +1263,9 @@ void GCFrame::Remove()
     }
 
     _ASSERTE_MSG(pFrame != NULL, "GCFrame not found in the current thread's stack");
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 #endif // !DACCESS_COMPILE
@@ -1266,9 +1286,10 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     for (UINT i = 0; i < m_numObjRefs; i++)
     {
         auto fromAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i]);
-        if (m_MaybeInterior)
+        if (m_gcFlags != 0)
         {
-            PromoteCarefully(fn, pRefs + i, sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
+            _ASSERTE(m_gcFlags & GC_CALL_INTERIOR);
+            PromoteCarefully(fn, pRefs + i, sc, m_gcFlags | CHECK_APP_DOMAIN);
         }
         else
         {
@@ -1330,7 +1351,7 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
 
     GCFrame* pGCFrame = GetThread()->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != NULL)
     {
         if (pGCFrame->Protects(ppObjectRef)) {
             d.count++;
@@ -1406,28 +1427,66 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
 
-void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ValueClassInfo *pVCInfo = m_pVCInfo;
-    while (pVCInfo != NULL)
-    {
-        _ASSERTE(pVCInfo->pMT->IsValueType());
-        ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
-        pVCInfo = pVCInfo->pNext;
-    }
-}
-
 //
 // Promote Caller Stack
 //
 //
+
+PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(ScanContext* sc)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    FrameIdentifier frame = GetFrameIdentifier();
+    switch (frame)
+    {
+    case FrameIdentifier::PrestubMethodFrame:
+    case FrameIdentifier::CallCountingHelperFrame:
+    case FrameIdentifier::StubDispatchFrame:
+    {
+        FramedMethodFrame* pFrame = static_cast<FramedMethodFrame*>(this);
+        // Cache both hits and misses so later walks never repeat receiver-based lookup.
+        // Diagnostic unwinding may perform a cold lookup: any relocation that needed
+        // this lookup would already have completed it during marking.
+        const PTR_BYTE noMap = dac_cast<PTR_BYTE>(static_cast<TADDR>(-1));
+        PTR_BYTE cachedMap = VolatileLoad(&pFrame->m_pCachedGCRefMap);
+        if (cachedMap != nullptr)
+            return cachedMap == noMap ? nullptr : cachedMap;
+
+        MethodDesc* pMD = GetFunction();
+        if (pMD == nullptr)
+            return nullptr;
+#ifndef DACCESS_COMPILE
+        _ASSERTE(sc == nullptr || sc->promotion);
+#endif // DACCESS_COMPILE
+        bool dispatch = frame == FrameIdentifier::StubDispatchFrame;
+        PTR_BYTE map = pMD->FindGCRefMap(nullptr, dispatch);
+        // A relocated receiver root can point at its destination before the object is copied;
+        // dereferencing it here could read an invalid MethodTable.
+        if (sc != nullptr && !sc->promotion)
+            return map;
+        // Object-returning constructors do not supply an ordinary receiver. A String prestub
+        // frame can still name the instance constructor rather than its static factory.
+        if (map == nullptr && !pMD->IsStatic() && !pMD->IsObjectReturningCtor() && !pMD->HasMethodInstantiation() &&
+            (dispatch || !pMD->RequiresInstArg()))
+        {
+            MethodTable* pReceiverMT = pMD->GetMethodTable();
+            if (dispatch || !pReceiverMT->IsValueType() || pMD->IsUnboxingStub())
+            {
+                PTR_TADDR receiver = dac_cast<PTR_TADDR>(GetThisPtr());
+                if (*receiver != 0)
+                    pReceiverMT = dac_cast<PTR_Object>(*receiver)->GetGCSafeMethodTable();
+            }
+            map = pMD->FindGCRefMap(pReceiverMT, dispatch);
+        }
+#ifndef DACCESS_COMPILE
+        VolatileStore(&pFrame->m_pCachedGCRefMap, map != nullptr ? map : noMap);
+#endif // DACCESS_COMPILE
+        return map;
+    }
+    default:
+        return nullptr;
+    }
+}
 
 void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 {
@@ -1439,7 +1498,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     //    INSTANCE_CHECK;
     //    NOTHROW;
     //    GC_NOTRIGGER;
-    //    FORBID_FAULT;
     //    MODE_ANY;
     //}
     //CONTRACTL_END
@@ -1454,6 +1512,13 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     if (pFunction == NULL)
         return;
 
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(sc);
+    if (pGCRefMap != nullptr)
+    {
+        PromoteCallerStackUsingGCRefMap(fn, sc, pGCRefMap);
+        return;
+    }
+
     // Now get the signature...
     Signature callSignature = pFunction->GetSignature();
     if (callSignature.IsEmpty())
@@ -1461,8 +1526,21 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         return;
     }
 
-    //If not "vararg" calling convention, assume "default" calling convention
-    if (!MetaSig::IsVarArg(callSignature))
+#ifndef FEATURE_VARARGS
+    _ASSERTE(!MetaSig::IsVarArg(callSignature));
+#else // FEATURE_VARARGS
+    if (MetaSig::IsVarArg(callSignature))
+    {
+        VASigCookie *varArgSig = GetVASigCookie();
+
+        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
+        MetaSig msig(varArgSig->signature,
+                     varArgSig->pModule,
+                     &typeContext);
+        PromoteCallerStackHelper (fn, sc, pFunction, &msig);
+    }
+    else // not "vararg" calling convention, assume "default" calling convention
+#endif // FEATURE_VARARGS
     {
         SigTypeContext typeContext(pFunction);
         PCCOR_SIGNATURE pSig;
@@ -1471,8 +1549,7 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         MetaSig msig(pSig, cbSigSize, pFunction->GetModule(), &typeContext);
 
-        bool fCtorOfVariableSizedObject = msig.HasThis() && (pFunction->GetMethodTable() == g_pStringClass) && pFunction->IsCtor();
-        if (fCtorOfVariableSizedObject)
+        if (pFunction->IsStringCtor())
             msig.ClearHasThis();
 
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
@@ -1481,16 +1558,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         if (pFunction->IsAsyncMethod())
             msig.SetIsAsyncCall();
 
-        PromoteCallerStackHelper (fn, sc, pFunction, &msig);
-    }
-    else
-    {
-        VASigCookie *varArgSig = GetVASigCookie();
-
-        SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
-        MetaSig msig(varArgSig->signature,
-                     varArgSig->pModule,
-                     &typeContext);
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
 }
@@ -1505,7 +1572,6 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
     //    INSTANCE_CHECK;
     //    NOTHROW;
     //    GC_NOTRIGGER;
-    //    FORBID_FAULT;
     //    MODE_ANY;
     //}
     //CONTRACTL_END
@@ -1528,6 +1594,17 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
             PromoteCarefully(fn, PTR_PTR_Object(pThis), sc, GC_CALL_INTERIOR|CHECK_APP_DOMAIN);
         else
             (fn)(PTR_PTR_Object(pThis), sc, CHECK_APP_DOMAIN);
+    }
+
+    // Promote async continuation for async methods
+    if (argit.HasAsyncContinuation())
+    {
+        PTR_PTR_VOID pAsyncCont = dac_cast<PTR_PTR_VOID>(pTransitionBlock + argit.GetAsyncContinuationArgOffset());
+        LOG((LF_GC, INFO3,
+             "    async continuation argument at " FMT_ADDR "promoted from" FMT_ADDR "\n",
+             DBG_ADDR(pAsyncCont), DBG_ADDR(*pAsyncCont) ));
+
+        (fn)(PTR_PTR_Object(pAsyncCont), sc, CHECK_APP_DOMAIN);
     }
 
     int argOffset;
@@ -1582,6 +1659,24 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
 
         switch (token)
         {
+        case GCREFMAP_THIS_REF:
+        case GCREFMAP_THIS_BYREF:
+        {
+            bool interior = token == GCREFMAP_THIS_BYREF;
+            FrameIdentifier frame = GetFrameIdentifier();
+            if (frame == FrameIdentifier::StubDispatchFrame)
+                interior = false;
+            else if (frame == FrameIdentifier::PrestubMethodFrame || frame == FrameIdentifier::CallCountingHelperFrame)
+            {
+                MethodDesc* pMD = GetFunction();
+                interior = pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub();
+            }
+            if (interior)
+                PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
+            else
+                fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
+            break;
+        }
         case GCREFMAP_SKIP:
             break;
         case GCREFMAP_REF:
@@ -1612,6 +1707,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
             break;
         case GCREFMAP_VASIG_COOKIE:
             {
+#ifdef FEATURE_VARARGS
                 VASigCookie *varArgSig = dac_cast<PTR_VASigCookie>(*ppObj);
 
                 SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
@@ -1619,6 +1715,9 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
                                 varArgSig->pModule,
                                 &typeContext);
                 PromoteCallerStackHelper (fn, sc, NULL, &msig);
+#else // !FEATURE_VARARGS
+                _ASSERTE(!"Unexpected GCREFMAP_VASIG_COOKIE without FEATURE_VARARGS");
+#endif // FEATURE_VARARGS
             }
             break;
         default:
@@ -1628,90 +1727,9 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
     }
 }
 
-void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    LOG((LF_GC, INFO3, "    Promoting CALLI caller Arguments\n" ));
-
-    // get the signature
-    VASigCookie *varArgSig = GetVASigCookie();
-    if (varArgSig->signature.IsEmpty())
-    {
-        return;
-    }
-
-    SigTypeContext typeContext(varArgSig->classInst, varArgSig->methodInst);
-    MetaSig msig(varArgSig->signature,
-                 varArgSig->pModule,
-                 &typeContext);
-    PromoteCallerStackHelper(fn, sc, NULL, &msig);
-}
-
-#ifndef DACCESS_COMPILE
-PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
-    : FramedMethodFrame(FrameIdentifier::PInvokeCalliFrame, pTransitionBlock, NULL)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pVASigCookie = pVASigCookie;
-    m_pUnmanagedTarget = pUnmanagedTarget;
-}
-#endif // #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
-    : FramedMethodFrame(FrameIdentifier::CLRToCOMMethodFrame, pTransitionBlock, pMD)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-#endif // #ifndef DACCESS_COMPILE
-
-void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // CLRToCOMMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
-    // so we need to promote the arguments and return value manually.
-
-    FramedMethodFrame::GcScanRoots_Impl(fn, sc);
-    PromoteCallerStack(fn, sc);
-
-    //
-    // Promote the returned object
-    //
-
-    MetaSig sig(GetFunction());
-
-    TypeHandle thValueType;
-    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
-    if (CorTypeInfo::IsObjRef_NoThrow(et))
-    {
-        (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
-    }
-    else if (CorTypeInfo::IsByRef_NoThrow(et))
-    {
-        PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
-    }
-    else if (et == ELEMENT_TYPE_VALUETYPE)
-    {
-        ArgIterator argit(&sig);
-        if (!argit.HasRetBuffArg())
-        {
-#ifdef TARGET_UNIX
-#error Non-Windows ABIs must be special cased
-#endif
-            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
-        }
-    }
-}
-#endif // FEATURE_COMINTEROP
-
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected
-// by a CLRToCOMMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
+// by a TransitionFrame. Since GCScanRoots for those frames are
 // quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
@@ -1747,63 +1765,7 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
-#ifdef FEATURE_COMINTEROP
-
-#ifdef TARGET_X86
-// Return the # of stack bytes pushed by the unmanaged caller.
-UINT ComMethodFrame::GetNumCallerStackBytes()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    ComCallMethodDesc* pCMD = PTR_ComCallMethodDesc((TADDR)GetDatum());
-    _ASSERTE(pCMD != NULL);
-    // assumes __stdcall
-    // compute the callee pop stack bytes
-    return pCMD->GetNumStackBytes();
-}
-#endif // TARGET_X86
-
 #ifndef DACCESS_COMPILE
-void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Find ComMethodFrame
-
-    while ((pCurFrame != FRAME_TOP) &&
-           (pCurFrame->GetFrameIdentifier() != FrameIdentifier::ComMethodFrame))
-    {
-        pCurFrame = pCurFrame->PtrNextFrame();
-    }
-
-    if (pCurFrame == FRAME_TOP)
-        return;
-
-    ComMethodFrame * pComMethodFrame = (ComMethodFrame *)pCurFrame;
-
-    _ASSERTE(pComMethodFrame != NULL);
-    Thread * pThread = GetThread();
-    GCX_COOP_THREAD_EXISTS(pThread);
-    // Unwind the frames till the entry frame (which was ComMethodFrame)
-    pCurFrame = pThread->GetFrame();
-    while ((pCurFrame != NULL) && (pCurFrame <= pComMethodFrame))
-    {
-        pCurFrame->ExceptionUnwind();
-        pCurFrame = pCurFrame->PtrNextFrame();
-    }
-
-    // At this point, pCurFrame would be the ComMethodFrame's predecessor frame
-    // that we need to reset to.
-    _ASSERTE((pCurFrame != NULL) && (pComMethodFrame->PtrNextFrame() == pCurFrame));
-    pThread->SetFrame(pCurFrame);
-}
-#endif // !DACCESS_COMPILE
-
-#endif // FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-
 VOID InlinedCallFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
@@ -1814,41 +1776,12 @@ VOID InlinedCallFrame::Init()
     m_pCallSiteSP = NULL;
     m_pCallerReturnAddress = (TADDR)NULL;
 }
-
-
-#ifdef FEATURE_COMINTEROP
-void UnmanagedToManagedFrame::ExceptionUnwind_Impl()
-{
-    WRAPPER_NO_CONTRACT;
-
-    AppDomain::ExceptionUnwind(this);
-}
-#endif // FEATURE_COMINTEROP
-
 #endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCODE pRetAddr = Frame::GetReturnAddress_Impl();
-
-    if (InlinedCallFrame::FrameHasActiveCall(m_Next) &&
-        pRetAddr == m_Next->GetReturnAddress())
-    {
-        // there's actually no unmanaged code involved - we were called directly
-        // from managed code using an InlinedCallFrame
-        return NULL;
-    }
-    else
-    {
-        return pRetAddr;
-    }
-}
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_INTERPRETER
+
+TADDR InterpreterFrame::DummyCallerIP = (TADDR)&InterpreterFrame::DummyFuncletCaller;
+
 PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1890,23 +1823,41 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
     SetIP(pContext, (TADDR)pFrame->ip);
     SetSP(pContext, dac_cast<TADDR>(pFrame));
     SetFP(pContext, (TADDR)pFrame->pStack);
-    SetFirstArgReg(pContext, (TADDR)this);
+    SetFirstArgReg(pContext, dac_cast<TADDR>(this));
+    pContext->ContextFlags = CONTEXT_FULL;
+    if (m_isFaulting)
+    {
+        pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    }
 }
 
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     SyncRegDisplayToCurrentContext(pRD);
     TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
+    // Update the SSP to match the updated regdisplay
+    size_t *targetSSP = (size_t *)GetInterpExecMethodSSP();
+    if (targetSSP != NULL)
+    {
+        while (*targetSSP++ != pRD->ControlPC)
+        {
+        }
+        _ASSERTE(targetSSP != NULL);
+        pRD->SSP = (TADDR)targetSSP;
+    }
+#endif // TARGET_AMD64 && TARGET_WINDOWS
 }
 
 #ifndef DACCESS_COMPILE
-void InterpreterFrame::ExceptionUnwind_Impl()
+void InterpreterFrame::ExceptionUnwind_Impl() noexcept
 {
     WRAPPER_NO_CONTRACT;
 
     Thread *pThread = GetThread();
     InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
-    InterpMethodContextFrame *pInterpMethodContextFrame = m_pTopInterpMethodContextFrame;
+    InterpMethodContextFrame *pInterpMethodContextFrame = GetTopInterpMethodContextFrame();
 
     // Unwind the interpreter frames belonging to the current InterpreterFrame.
     while (pInterpMethodContextFrame != NULL)
@@ -1962,6 +1913,12 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
         else
         if (pMD->RequiresInstMethodTableArg())
             *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_TYPE_PARAM;
+    }
+
+    // Encode async continuation arg (it's a GC reference)
+    if (argit.HasAsyncContinuation())
+    {
+        FakePromote((Object **)(pFrame + argit.GetAsyncContinuationArgOffset()), &sc, 0);
     }
 
     // If the function has a this pointer, add it to the mask
@@ -2030,6 +1987,14 @@ static void DumpGCRefMap(const char *name, BYTE *address)
                     buf.AppendUTF8("I(");
                     break;
 
+                case GCREFMAP_THIS_REF:
+                    buf.AppendUTF8("THIS:R(");
+                    break;
+
+                case GCREFMAP_THIS_BYREF:
+                    buf.AppendUTF8("THIS:I(");
+                    break;
+
                 case GCREFMAP_METHOD_PARAM:
                     buf.AppendUTF8("M(");
                     break;
@@ -2092,11 +2057,18 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
     while (!invalidGCRefMap && !(decoderNew.AtEnd() && decoderExisting.AtEnd()))
     {
         if (decoderNew.AtEnd() != decoderExisting.AtEnd() ||
-            decoderNew.CurrentPos() != decoderExisting.CurrentPos() ||
-            decoderNew.ReadToken() != decoderExisting.ReadToken())
+            decoderNew.CurrentPos() != decoderExisting.CurrentPos())
         {
             invalidGCRefMap = true;
+            break;
         }
+        int newToken = decoderNew.ReadToken();
+        int oldToken = decoderExisting.ReadToken();
+        if (oldToken == GCREFMAP_THIS_REF)
+            oldToken = GCREFMAP_REF;
+        else if (oldToken == GCREFMAP_THIS_BYREF)
+            oldToken = GCREFMAP_INTERIOR;
+        invalidGCRefMap |= newToken != oldToken;
     }
     if (invalidGCRefMap)
     {
@@ -2124,8 +2096,7 @@ void ComputeCallRefMap(MethodDesc* pMD,
     pMD->GetSig(&pSig, &cbSigSize);
     MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
 
-    bool fCtorOfVariableSizedObject = msig.HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
-    if (fCtorOfVariableSizedObject)
+    if (pMD->IsStringCtor())
     {
         msig.ClearHasThis();
     }
@@ -2144,11 +2115,14 @@ void ComputeCallRefMap(MethodDesc* pMD,
         {
             msig.SetHasParamTypeArg();
         }
+    }
 
-        if (pMD->IsAsyncMethod())
-        {
-            msig.SetIsAsyncCall();
-        }
+    // The async continuation is a caller-side argument that is always passed
+    // regardless of whether the dispatch target has been resolved, unlike the
+    // instantiation argument which is an implementation detail of shared generics.
+    if (pMD->IsAsyncMethod())
+    {
+        msig.SetIsAsyncCall();
     }
 
     ArgIterator argit(&msig);

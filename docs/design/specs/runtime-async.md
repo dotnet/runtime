@@ -40,7 +40,7 @@ Async methods support suspension using one of the following methods:
           public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion;
           [MethodImpl(MethodImplOptions.Async)]
           public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion;
-          
+
           [MethodImpl(MethodImplOptions.Async)]
           public static void Await(Task task);
           [MethodImpl(MethodImplOptions.Async)]
@@ -64,7 +64,7 @@ Async methods support suspension using one of the following methods:
 
 These methods are only legal to call inside async methods. The `...AwaitAwaiter` methods will have semantics analogous to the current `AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted` methods. After calling either method, it can be presumed that the task or awaiter has completed. The `Await` methods perform suspension like the `...AwaitAwaiter` methods, but are optimized for calling on the return value of a call to an async method. To achieve maximum performance, the IL sequence of two `call` instructions -- one to the async method and immediately one to the `Await` method -- should be preferred.
 
-Local variables used across suspension points are considered "hoisted." That is, only "hoisted" local variables will have their state preserved after returning from a suspension. By-ref variables may not be hoisted across suspension points, and any read of a by-ref variable after a suspension point will produce null. Structs containing by-ref variables will also not be hoisted across suspension points and will have their default value after a suspension point.
+Local variables used across suspension points are considered "hoisted." That is, only "hoisted" local variables will have their state preserved after returning from a suspension. By-ref variables may not be hoisted across suspension points, and any read of a by-ref variable after a suspension point will produce null. Byref-like structs will also not be hoisted across suspension points and will have their default value after a suspension point.
 In the same way, pinning locals may not be "hoisted" across suspension points and will have `null` value after a suspension point.
 
 Async methods have some temporary restrictions with may be lifted later:
@@ -73,7 +73,8 @@ Async methods have some temporary restrictions with may be lifted later:
 
 Other restrictions are likely to be permanent, including
 * By-ref locals cannot be hoisted across suspension points
-* Suspension points may not appear in exception handling blocks.
+* Suspension points may not appear in a handler block (`catch`, `filter`,
+  `finally`, or `fault`). They are permitted in the protected `try` block.
 * Only four types will be supported as the return type for "runtime-async" methods: `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, and `System.Threading.ValueTask<T>`
 
 
@@ -83,3 +84,5 @@ Other restrictions are likely to be permanent, including
 | ------------- | ------------- | ------------- |
 | . . . | . . . | . . . |
 |Async |0x2000 |Method is an Async Method.|
+
+The flag is represented in IL by the `async` keyword. Tools like `ilasm` and `ildasm` recognize this flag.

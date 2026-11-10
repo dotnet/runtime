@@ -102,7 +102,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Tcp)]
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Udp)]
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.IcmpV6)]
-        [ConditionalTheory(nameof(SupportsRawSockets))]
+        [ConditionalTheory(typeof(CreateSocket), nameof(SupportsRawSockets))]
         public void Ctor_Raw_Supported_Success(AddressFamily addressFamily, ProtocolType protocolType)
         {
             using (new Socket(addressFamily, SocketType.Raw, protocolType))
@@ -117,7 +117,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Tcp)]
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Udp)]
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.IcmpV6)]
-        [ConditionalTheory(nameof(NotSupportsRawSockets))]
+        [ConditionalTheory(typeof(CreateSocket), nameof(NotSupportsRawSockets))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public void Ctor_Raw_NotSupported_ExpectedError(AddressFamily addressFamily, ProtocolType protocolType)
         {
@@ -460,7 +460,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(42, buffer[0]);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
@@ -704,6 +704,20 @@ namespace System.Net.Sockets.Tests
 
             close(ptr[0]);
             close(ptr[1]);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows has no API to query the blocking state of a socket and assumes true.
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Socket.Blocking")]
+        public void Ctor_SafeHandle_BlockingMatchesHandle(bool blocking)
+        {
+            using var orig = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            orig.Blocking = blocking;
+
+            using var copy = new Socket(orig.SafeHandle);
+            Assert.Equal(blocking, copy.Blocking);
         }
 
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)

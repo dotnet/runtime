@@ -11,8 +11,17 @@
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
         // r11 currently contains the indirection cell address.
+        // Save it in r10 before overwriting, in case we need to re-dispatch on a race.
+        mov     r10, r11
         // load r11 to point to the vtable offset (which is stored in the m_pCache field).
         mov     r11, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        // Validate m_pCache has the vtable offset tag (low 2 bits == 0x2).
+        // A stale m_pCache from a race will have different low bits.
+        mov     eax, r11d
+        and     eax, IDC_CACHE_POINTER_MASK
+        cmp     eax, 2
+        jne     LOCAL_LABEL(RhpVTableOffsetRaceRetry)
 
         // r11 now contains the VTableOffset where the upper 32 bits are the offset to adjust
         // to get to the VTable chunk
@@ -23,7 +32,7 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         // to get the address in the vtable chunk list of what we want to dereference
 #ifdef TARGET_APPLE
 // Apple's linker has issues which break unwind info if
-// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/issues/119005
 .cfi_endproc
 #endif
     ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
@@ -42,6 +51,11 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         mov     rax, [rax + r11]
 
         TAILJMP_RAX
+
+LOCAL_LABEL(RhpVTableOffsetRaceRetry):
+        // Restore cell address and re-dispatch through the indirection cell
+        mov     r11, r10
+        jmp     [r11]
 LEAF_END RhpVTableOffsetDispatch, _TEXT
 
 // On Input:

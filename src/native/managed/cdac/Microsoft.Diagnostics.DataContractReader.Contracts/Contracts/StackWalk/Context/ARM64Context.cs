@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM64;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -23,21 +24,34 @@ internal struct ARM64Context : IPlatformContext
         CONTEXT_X18 = CONTEXT_ARM64 | 0x10,
         CONTEXT_XSTATE = CONTEXT_ARM64 | 0x20,
         CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
-        CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_X18,
+        CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS,
 
+        //
+        // This flag is set by the unwinder if it has unwound to a call
+        // site, and cleared whenever it unwinds through a trap frame.
+        // It is used by language-specific exception handlers to help
+        // differentiate exception scopes during dispatching.
+        //
+        CONTEXT_UNWOUND_TO_CALL = 0x20000000,
         CONTEXT_AREA_MASK = 0xFFFF,
     }
 
     public readonly uint Size => 0x390;
 
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+
+    public readonly int StackPointerRegister => 31;
 
     public TargetPointer StackPointer
     {
         readonly get => new(Sp);
         set => Sp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Pc);
         set => Pc = value.Value;
@@ -48,9 +62,237 @@ internal struct ARM64Context : IPlatformContext
         set => Fp = value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
-        Unwinder.ARM64Unwind(ref this, target);
+        ARM64Unwinder unwinder = new(target);
+        unwinder.Unwind(ref this);
+    }
+
+    // Clears the AArch64 hardware single-step flag (CPSR.SS, bit 0x00200000).
+    public void UnsetSingleStepFlag() => Cpsr &= ~0x00200000u;
+
+    public bool TrySetRegister(string name, TargetNUInt value)
+    {
+        if (name.Equals("cpsr", StringComparison.OrdinalIgnoreCase)) { Cpsr = (uint)value.Value; return true; }
+        if (name.Equals("x0", StringComparison.OrdinalIgnoreCase)) { X0 = value.Value; return true; }
+        if (name.Equals("x1", StringComparison.OrdinalIgnoreCase)) { X1 = value.Value; return true; }
+        if (name.Equals("x2", StringComparison.OrdinalIgnoreCase)) { X2 = value.Value; return true; }
+        if (name.Equals("x3", StringComparison.OrdinalIgnoreCase)) { X3 = value.Value; return true; }
+        if (name.Equals("x4", StringComparison.OrdinalIgnoreCase)) { X4 = value.Value; return true; }
+        if (name.Equals("x5", StringComparison.OrdinalIgnoreCase)) { X5 = value.Value; return true; }
+        if (name.Equals("x6", StringComparison.OrdinalIgnoreCase)) { X6 = value.Value; return true; }
+        if (name.Equals("x7", StringComparison.OrdinalIgnoreCase)) { X7 = value.Value; return true; }
+        if (name.Equals("x8", StringComparison.OrdinalIgnoreCase)) { X8 = value.Value; return true; }
+        if (name.Equals("x9", StringComparison.OrdinalIgnoreCase)) { X9 = value.Value; return true; }
+        if (name.Equals("x10", StringComparison.OrdinalIgnoreCase)) { X10 = value.Value; return true; }
+        if (name.Equals("x11", StringComparison.OrdinalIgnoreCase)) { X11 = value.Value; return true; }
+        if (name.Equals("x12", StringComparison.OrdinalIgnoreCase)) { X12 = value.Value; return true; }
+        if (name.Equals("x13", StringComparison.OrdinalIgnoreCase)) { X13 = value.Value; return true; }
+        if (name.Equals("x14", StringComparison.OrdinalIgnoreCase)) { X14 = value.Value; return true; }
+        if (name.Equals("x15", StringComparison.OrdinalIgnoreCase)) { X15 = value.Value; return true; }
+        if (name.Equals("x16", StringComparison.OrdinalIgnoreCase)) { X16 = value.Value; return true; }
+        if (name.Equals("x17", StringComparison.OrdinalIgnoreCase)) { X17 = value.Value; return true; }
+        if (name.Equals("x18", StringComparison.OrdinalIgnoreCase)) { X18 = value.Value; return true; }
+        if (name.Equals("x19", StringComparison.OrdinalIgnoreCase)) { X19 = value.Value; return true; }
+        if (name.Equals("x20", StringComparison.OrdinalIgnoreCase)) { X20 = value.Value; return true; }
+        if (name.Equals("x21", StringComparison.OrdinalIgnoreCase)) { X21 = value.Value; return true; }
+        if (name.Equals("x22", StringComparison.OrdinalIgnoreCase)) { X22 = value.Value; return true; }
+        if (name.Equals("x23", StringComparison.OrdinalIgnoreCase)) { X23 = value.Value; return true; }
+        if (name.Equals("x24", StringComparison.OrdinalIgnoreCase)) { X24 = value.Value; return true; }
+        if (name.Equals("x25", StringComparison.OrdinalIgnoreCase)) { X25 = value.Value; return true; }
+        if (name.Equals("x26", StringComparison.OrdinalIgnoreCase)) { X26 = value.Value; return true; }
+        if (name.Equals("x27", StringComparison.OrdinalIgnoreCase)) { X27 = value.Value; return true; }
+        if (name.Equals("x28", StringComparison.OrdinalIgnoreCase)) { X28 = value.Value; return true; }
+        if (name.Equals("fp", StringComparison.OrdinalIgnoreCase)) { Fp = value.Value; return true; }
+        if (name.Equals("lr", StringComparison.OrdinalIgnoreCase)) { Lr = value.Value; return true; }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { Sp = value.Value; return true; }
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase)) { Pc = value.Value; return true; }
+        if (name.Equals("fpcr", StringComparison.OrdinalIgnoreCase)) { Fpcr = (uint)value.Value; return true; }
+        if (name.Equals("fpsr", StringComparison.OrdinalIgnoreCase)) { Fpsr = (uint)value.Value; return true; }
+        return false;
+    }
+
+    public bool TryReadRegister(string name, out TargetNUInt value)
+    {
+        value = default;
+        if (name.Equals("cpsr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Cpsr); return true; }
+        if (name.Equals("x0", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X0); return true; }
+        if (name.Equals("x1", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X1); return true; }
+        if (name.Equals("x2", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X2); return true; }
+        if (name.Equals("x3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X3); return true; }
+        if (name.Equals("x4", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X4); return true; }
+        if (name.Equals("x5", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X5); return true; }
+        if (name.Equals("x6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X6); return true; }
+        if (name.Equals("x7", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X7); return true; }
+        if (name.Equals("x8", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X8); return true; }
+        if (name.Equals("x9", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X9); return true; }
+        if (name.Equals("x10", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X10); return true; }
+        if (name.Equals("x11", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X11); return true; }
+        if (name.Equals("x12", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X12); return true; }
+        if (name.Equals("x13", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X13); return true; }
+        if (name.Equals("x14", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X14); return true; }
+        if (name.Equals("x15", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X15); return true; }
+        if (name.Equals("x16", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X16); return true; }
+        if (name.Equals("x17", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X17); return true; }
+        if (name.Equals("x18", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X18); return true; }
+        if (name.Equals("x19", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X19); return true; }
+        if (name.Equals("x20", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X20); return true; }
+        if (name.Equals("x21", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X21); return true; }
+        if (name.Equals("x22", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X22); return true; }
+        if (name.Equals("x23", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X23); return true; }
+        if (name.Equals("x24", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X24); return true; }
+        if (name.Equals("x25", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X25); return true; }
+        if (name.Equals("x26", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X26); return true; }
+        if (name.Equals("x27", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X27); return true; }
+        if (name.Equals("x28", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(X28); return true; }
+        if (name.Equals("fp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fp); return true; }
+        if (name.Equals("lr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Lr); return true; }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Sp); return true; }
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Pc); return true; }
+        if (name.Equals("fpcr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fpcr); return true; }
+        if (name.Equals("fpsr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fpsr); return true; }
+        return false;
+    }
+
+    public bool TrySetRegister(int number, TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: X0 = value.Value; return true;
+            case 1: X1 = value.Value; return true;
+            case 2: X2 = value.Value; return true;
+            case 3: X3 = value.Value; return true;
+            case 4: X4 = value.Value; return true;
+            case 5: X5 = value.Value; return true;
+            case 6: X6 = value.Value; return true;
+            case 7: X7 = value.Value; return true;
+            case 8: X8 = value.Value; return true;
+            case 9: X9 = value.Value; return true;
+            case 10: X10 = value.Value; return true;
+            case 11: X11 = value.Value; return true;
+            case 12: X12 = value.Value; return true;
+            case 13: X13 = value.Value; return true;
+            case 14: X14 = value.Value; return true;
+            case 15: X15 = value.Value; return true;
+            case 16: X16 = value.Value; return true;
+            case 17: X17 = value.Value; return true;
+            case 18: X18 = value.Value; return true;
+            case 19: X19 = value.Value; return true;
+            case 20: X20 = value.Value; return true;
+            case 21: X21 = value.Value; return true;
+            case 22: X22 = value.Value; return true;
+            case 23: X23 = value.Value; return true;
+            case 24: X24 = value.Value; return true;
+            case 25: X25 = value.Value; return true;
+            case 26: X26 = value.Value; return true;
+            case 27: X27 = value.Value; return true;
+            case 28: X28 = value.Value; return true;
+            case 29: Fp = value.Value; return true;
+            case 30: Lr = value.Value; return true;
+            case 31: Sp = value.Value; return true;
+            case 32: Pc = value.Value; return true;
+            default: return false;
+        }
+    }
+
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        if ((uint)(number - 33) < 32)
+        {
+            value = ReadVectorRegister(number - 33);
+            return true;
+        }
+
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(X0); return true;
+            case 1: value = new TargetNUInt(X1); return true;
+            case 2: value = new TargetNUInt(X2); return true;
+            case 3: value = new TargetNUInt(X3); return true;
+            case 4: value = new TargetNUInt(X4); return true;
+            case 5: value = new TargetNUInt(X5); return true;
+            case 6: value = new TargetNUInt(X6); return true;
+            case 7: value = new TargetNUInt(X7); return true;
+            case 8: value = new TargetNUInt(X8); return true;
+            case 9: value = new TargetNUInt(X9); return true;
+            case 10: value = new TargetNUInt(X10); return true;
+            case 11: value = new TargetNUInt(X11); return true;
+            case 12: value = new TargetNUInt(X12); return true;
+            case 13: value = new TargetNUInt(X13); return true;
+            case 14: value = new TargetNUInt(X14); return true;
+            case 15: value = new TargetNUInt(X15); return true;
+            case 16: value = new TargetNUInt(X16); return true;
+            case 17: value = new TargetNUInt(X17); return true;
+            case 18: value = new TargetNUInt(X18); return true;
+            case 19: value = new TargetNUInt(X19); return true;
+            case 20: value = new TargetNUInt(X20); return true;
+            case 21: value = new TargetNUInt(X21); return true;
+            case 22: value = new TargetNUInt(X22); return true;
+            case 23: value = new TargetNUInt(X23); return true;
+            case 24: value = new TargetNUInt(X24); return true;
+            case 25: value = new TargetNUInt(X25); return true;
+            case 26: value = new TargetNUInt(X26); return true;
+            case 27: value = new TargetNUInt(X27); return true;
+            case 28: value = new TargetNUInt(X28); return true;
+            case 29: value = new TargetNUInt(Fp); return true;
+            case 30: value = new TargetNUInt(Lr); return true;
+            case 31: value = new TargetNUInt(Sp); return true;
+            case 32: value = new TargetNUInt(Pc); return true;
+            default: value = default; return false;
+        }
+    }
+
+    // V0-V31 are the 128-bit NEON registers, a 16-byte stride within the context.
+    private const int VRegisterCount = 32;
+    private const int VRegisterStride = 16;
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<ARM64Context>(nameof(V)), VRegisterStride, VRegisterCount, index, out value);
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<ARM64Context>(nameof(V)), VRegisterStride, VRegisterCount, index, value);
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<ARM64Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(Fp));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(V));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<ARM64Context>(nameof(Cpsr));
+            end = (int)Marshal.OffsetOf<ARM64Context>(nameof(X0));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(X0));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(Fp));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(V));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(Bcr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<ARM64Context>(nameof(Bcr));
+            int end = (int)Marshal.OffsetOf<ARM64Context>(nameof(Wvr)) + (ARM64_MAX_WATCHPOINTS * sizeof(ulong));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
+
+    private readonly unsafe TargetNUInt ReadVectorRegister(int index)
+    {
+        // V indexes into the low 64 bits of each 128-bit register, so double the index.
+        return new TargetNUInt(V[index * 2]);
     }
 
     // Control flags
@@ -60,7 +302,7 @@ internal struct ARM64Context : IPlatformContext
 
     #region General registers
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x4)]
     public uint Cpsr;
 

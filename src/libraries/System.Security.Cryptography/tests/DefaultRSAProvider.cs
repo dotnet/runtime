@@ -3,18 +3,22 @@
 
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Tests;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public class DefaultRSAProvider : IRSAProvider
+    public sealed class DefaultRSAProvider : RSAProvider
     {
-        private bool? _supports384PrivateKey;
-        private bool? _supportsSha1Signatures;
-        private bool? _supportsMd5Signatures;
+        public static readonly DefaultRSAProvider Instance = new DefaultRSAProvider();
 
-        public RSA Create() => RSA.Create();
+        private LazyBool _supportsSha1Signatures;
+        private LazyBool _supportsMd5Signatures;
 
-        public RSA Create(int keySize)
+        private DefaultRSAProvider() { }
+
+        public override RSA Create() => RSA.Create();
+
+        public override RSA Create(int keySize)
         {
 #if NET
             return RSA.Create(keySize);
@@ -26,35 +30,16 @@ namespace System.Security.Cryptography.Rsa.Tests
 #endif
         }
 
-        public bool Supports384PrivateKey
-        {
-            get
-            {
-                if (!_supports384PrivateKey.HasValue)
-                {
-                    // For Windows 7 (Microsoft Windows 6.1) and Windows 8 (Microsoft Windows 6.2) this is false for RSACng.
-                    _supports384PrivateKey = !RuntimeInformation.OSDescription.Contains("Windows 6.1") &&
-                        !RuntimeInformation.OSDescription.Contains("Windows 6.2");
-                }
+        public override bool Supports384PrivateKey => PlatformSupport.IsRSA384Supported;
+        public override bool SupportsSha1Signatures => _supportsSha1Signatures.GetOrInit(() => SignatureSupport.CanProduceSha1Signature(Create()));
+        public override bool SupportsMd5Signatures => _supportsMd5Signatures.GetOrInit(() => SignatureSupport.CanProduceMd5Signature(Create()));
 
-                return _supports384PrivateKey.Value;
-            }
-        }
+        public override bool SupportsLargeExponent => true;
 
-        public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
-        public bool SupportsMd5Signatures => _supportsMd5Signatures ??= SignatureSupport.CanProduceMd5Signature(Create());
+        public override bool SupportsSha2Oaep { get; } = true;
 
-        public bool SupportsLargeExponent => true;
+        public override bool SupportsPss { get; } = true;
 
-        public bool SupportsSha2Oaep { get; } = true;
-
-        public bool SupportsPss { get; } = true;
-
-        public bool SupportsSha3 { get; } = SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
-    }
-
-    public partial class RSAFactory
-    {
-        private static readonly IRSAProvider s_provider = new DefaultRSAProvider();
+        public override bool SupportsSha3 { get; } = SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
     }
 }

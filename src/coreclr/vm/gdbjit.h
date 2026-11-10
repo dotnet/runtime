@@ -21,7 +21,7 @@
 #include "../inc/llvm/ELF.h"
 #include "../inc/llvm/Dwarf.h"
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_ARM)
     typedef Elf32_Ehdr  Elf_Ehdr;
     typedef Elf32_Shdr  Elf_Shdr;
     typedef Elf32_Sym   Elf_Sym;
@@ -146,7 +146,7 @@ public:
         int ilEndOffset;
     };
     int size;
-    NewArrayHolder< NewArrayHolder<char> > localsName;
+    NewArrayHolder< AStringHolder > localsName;
     NewArrayHolder<Scope> localsScope;
     ULONG32 countVars;
     NewArrayHolder<ICorDebugInfo::NativeVarInfo> vars;
@@ -173,7 +173,7 @@ public:
     TypeHandle GetTypeHandle();
     TypeKey* GetTypeKey();
 
-    NewArrayHolder<char> m_type_name;
+    AStringHolder m_type_name;
     int m_type_name_offset;
     ULONG m_type_size;
     int m_type_offset;
@@ -190,7 +190,7 @@ public:
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
 
-    NewArrayHolder<char> m_typedef_name;
+    AStringHolder m_typedef_name;
     int m_typedef_type;
     int m_typedef_type_offset;
     int m_typedef_name_offset;
@@ -271,7 +271,7 @@ public:
     void DumpDebugInfo(char* ptr, int& offset) override;
     void DumpStaticDebugInfo(char* ptr, int& offset);
 
-    NewArrayHolder<char> m_member_name;
+    AStringHolder m_member_name;
     int m_member_name_offset;
     int m_member_offset;
     TADDR m_static_member_address;
@@ -324,7 +324,7 @@ public:
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
 
-    NewArrayHolder<char> m_var_name;
+    AStringHolder m_var_name;
     int m_var_abbrev;
     int m_var_name_offset;
     int m_il_index;
@@ -340,7 +340,7 @@ struct Elf_Symbol {
     int m_off;
     TADDR m_value;
     int m_section, m_size;
-    NewArrayHolder<char> m_symbol_name;
+    AStringHolder m_symbol_name;
     Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
 };
 
@@ -352,8 +352,7 @@ class NotifyGdb
 public:
     class FileTableBuilder;
     static void Initialize();
-    static void MethodPrepared(MethodDesc* methodDescPtr);
-    static void MethodPitched(MethodDesc* methodDescPtr);
+    static void MethodPrepared(MethodDesc* methodDescPtr, PCODE pCode, const COR_ILMETHOD_DECODER* ilHeader);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
     {
@@ -407,7 +406,7 @@ private:
 
     struct MemBuf
     {
-        NewArrayHolder<char> MemPtr;
+        AStringHolder MemPtr;
         unsigned MemSize;
         MemBuf() : MemPtr(0), MemSize(0)
         {}
@@ -420,13 +419,13 @@ private:
                 return;
             }
             char *tmp = new char [newSize];
-            memmove(tmp, MemPtr.GetValue(), newSize < MemSize ? newSize : MemSize);
+            memmove(tmp, MemPtr, newSize < MemSize ? newSize : MemSize);
             MemPtr = tmp;
             MemSize = newSize;
         }
     };
 
-    static void OnMethodPrepared(MethodDesc* methodDescPtr);
+    static void OnMethodPrepared(MethodDesc* methodDescPtr, PCODE pCode, const COR_ILMETHOD_DECODER* ilHeader);
 
 #ifdef FEATURE_GDBJIT_FRAME
     static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
@@ -434,7 +433,8 @@ private:
 #ifdef FEATURE_GDBJIT_SYMTAB
     static bool EmitSymtab(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize);
 #endif // FEATURE_GDBJIT_SYMTAB
-    static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize);
+    static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize,
+                              const COR_ILMETHOD_DECODER* ilHeader);
 
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, int methodCount,
                                         NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
@@ -462,9 +462,11 @@ private:
 class FunctionMember: public TypeMember
 {
 public:
-    FunctionMember(MethodDesc *md, int num_locals, int num_args)
+    FunctionMember(MethodDesc *md, PCODE nativeCode, const COR_ILMETHOD_DECODER *ilHeader, int num_locals, int num_args)
         : TypeMember(),
           md(md),
+          m_nativeCode(nativeCode),
+          m_ilHeader(ilHeader),
           m_file(1),
           m_line(1),
           m_sub_low_pc(0),
@@ -483,8 +485,6 @@ public:
         m_sub_loc[0] = 1;
 #if defined(TARGET_AMD64)
         m_sub_loc[1] = DW_OP_reg6;
-#elif defined(TARGET_X86)
-        m_sub_loc[1] = DW_OP_reg5;
 #elif defined(TARGET_ARM64)
         m_sub_loc[1] = DW_OP_reg29;
 #elif defined(TARGET_ARM)
@@ -507,6 +507,8 @@ public:
     }
 
     MethodDesc *md;
+    PCODE m_nativeCode;
+    const COR_ILMETHOD_DECODER *m_ilHeader;
     uint8_t m_file, m_line;
     uintptr_t m_sub_low_pc, m_sub_high_pc;
     uint8_t m_sub_loc[2];

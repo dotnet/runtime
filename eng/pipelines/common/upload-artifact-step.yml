@@ -21,11 +21,11 @@ steps:
       includeRootFolder: ${{ parameters.includeRootFolder }}
     condition: ${{ parameters.condition }}
 
-  - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
+  - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
     parameters:
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       displayName: 'Publish ${{ parameters.displayName }}'
       inputs:
-        PathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
-        artifactName:  ${{ parameters.artifactName }}
+        targetPath:   $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
+        artifactName: ${{ parameters.artifactName }}
       condition: ${{ parameters.condition }}

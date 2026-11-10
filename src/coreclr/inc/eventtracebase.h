@@ -31,6 +31,7 @@ struct EventStructTypeData;
 void InitializeEventTracing();
 
 class PrepareCodeConfig;
+class CodeHeapIterator;
 
 // !!!!!!! NOTE !!!!!!!!
 // The flags must match those in the ETW manifest exactly
@@ -120,16 +121,20 @@ enum EtwGCSettingFlags
 #define ETWFireEvent(EventName) FireEtw##EventName(GetClrInstanceId())
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)) || \
-        (UserEventsHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
-        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
-        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
+#else // FEATURE_EVENTSOURCE_XPLAT
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
+#define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
+#define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
+#define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
+#endif // FEATURE_EVENTSOURCE_XPLAT
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
@@ -250,16 +255,11 @@ struct ProfilingScanContext;
 extern UINT32 g_nClrInstanceId;
 
 #define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
-#if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#if defined(HOST_UNIX) && defined(FEATURE_EVENT_TRACE)
 #define KEYWORDZERO 0x0
-
-#define DEF_LTTNG_KEYWORD_ENABLED 1
-#ifdef FEATURE_EVENT_TRACE
 #include "clrproviders.h"
-#endif // FEATURE_EVENT_TRACE
 #include "clrconfig.h"
-
-#endif // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#endif // defined(HOST_UNIX) && defined(FEATURE_EVENT_TRACE)
 
 #if defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
@@ -279,18 +279,7 @@ public:
     XplatEventLoggerConfiguration() = default;
 
     XplatEventLoggerConfiguration(XplatEventLoggerConfiguration const & other) = delete;
-    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other)
-    {
-        _provider = std::move(other._provider);
-        _isValid = other._isValid;
-        _enabledKeywords = other._enabledKeywords;
-        _level = other._level;
-    }
-
-    ~XplatEventLoggerConfiguration()
-    {
-        _provider = nullptr;
-    }
+    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other) = default;
 
     void Parse(LPWSTR configString)
     {
@@ -364,9 +353,9 @@ private:
         return ComponentSpan(start, end);
     }
 
-    NewArrayHolder<WCHAR> ParseProviderName(ComponentSpan const & component) const
+    WStringHolder ParseProviderName(ComponentSpan const & component) const
     {
-        NewArrayHolder<WCHAR> providerName = nullptr;
+        WStringHolder providerName;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -389,17 +378,17 @@ private:
 
     uint32_t ParseLevel(ComponentSpan const & component) const
     {
-        int level = TRACE_LEVEL_VERBOSE; // Verbose
+        uint32_t level = TRACE_LEVEL_VERBOSE; // Verbose
         if ((component.End - component.Start) != 0)
         {
-            level = _wtoi(component.Start);
+            level = u16_strtoul(component.Start, nullptr, 10);
         }
         return level;
     }
 
-    NewArrayHolder<WCHAR> ParseArgument(ComponentSpan const & component) const
+    WStringHolder ParseArgument(ComponentSpan const & component) const
     {
-        NewArrayHolder<WCHAR> argument = nullptr;
+        WStringHolder argument;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -410,15 +399,15 @@ private:
         return argument;
     }
 
-    NewArrayHolder<WCHAR> _provider;
+    WStringHolder _provider;
     uint64_t _enabledKeywords;
     uint32_t _level;
-    NewArrayHolder<WCHAR> _argument;
+    WStringHolder _argument;
     bool _isValid;
 };
 #endif // defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
-#if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 
 class XplatEventLoggerController
 {
@@ -434,11 +423,11 @@ public:
         auto providerName = config.GetProviderName();
         auto enabledKeywordsMask = config.GetEnabledKeywordsMask();
         auto level = config.GetLevel();
-        if (_wcsicmp(providerName, W("*")) == 0 && enabledKeywordsMask == (ULONGLONG)(-1) && level == TRACE_LEVEL_VERBOSE)
+        if (u16_stricmp(providerName, W("*")) == 0 && enabledKeywordsMask == (ULONGLONG)(-1) && level == TRACE_LEVEL_VERBOSE)
         {
             ActivateAllKeywordsOfAllProviders();
         }
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
         else
         {
             LTTNG_TRACE_CONTEXT *provider = GetProvider(providerName);
@@ -455,7 +444,7 @@ public:
 
     static void ActivateAllKeywordsOfAllProviders()
     {
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
         for (LTTNG_TRACE_CONTEXT * const provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
             provider->EnabledKeywordsBitmask = (ULONGLONG)(-1);
@@ -466,13 +455,13 @@ public:
     }
 
 private:
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
     static LTTNG_TRACE_CONTEXT * const GetProvider(LPCWSTR providerName)
     {
         auto length = u16_strlen(providerName);
         for (auto provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
-            if (_wcsicmp(provider->Name, providerName) == 0)
+            if (u16_stricmp(provider->Name, providerName) == 0)
             {
                 return provider;
             }
@@ -492,7 +481,7 @@ public:
         return configEventLogging.val(CLRConfig::EXTERNAL_EnableEventLog);
     }
 
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
     inline static bool IsProviderEnabled(DOTNET_TRACE_CONTEXT providerCtx)
     {
         return providerCtx.LttngProvider->IsEnabled;
@@ -559,7 +548,7 @@ public:
 };
 
 
-#endif  // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#endif  // defined(FEATURE_EVENTSOURCE_XPLAT)
 
 #if defined(FEATURE_EVENT_TRACE)
 
@@ -605,7 +594,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 
 #ifndef  HOST_UNIX
 // Callback and stack support
-#if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)
+#if !defined(DISABLE_ETW_CALLBACK_HOOKS) && !defined(DACCESS_COMPILE)
 extern "C" {
     /* ETW control callback
          * Desc:        This function handles the ETW control
@@ -651,20 +640,13 @@ extern "C" {
 //
 #define MCGEN_CALLOUT(RegHandle, Descriptor, NumberOfArguments, EventData) \
         EtwCallout(RegHandle, Descriptor, NumberOfArguments, EventData)
-#endif //!DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
+#endif // !DISABLE_ETW_CALLBACK_HOOKS && !DACCESS_COMPILE
 
 #endif //!HOST_UNIX
 #include "clretwallmain.h"
 
 #if defined(FEATURE_PERFTRACING)
 class EventPipeHelper
-{
-public:
-    static bool Enabled();
-    static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
-};
-
-class UserEventsHelper
 {
 public:
     static bool Enabled();
@@ -919,12 +901,22 @@ namespace ETW
             BOOL fSendILToNativeMapEvent,
             BOOL fSendRichDebugInfoEvent,
             BOOL fGetCodeIds);
+
+        static VOID SendEventsForJitMethodsHelper2(
+            CodeHeapIterator codeHeapIterator,
+            DWORD dwEventOptions,
+            BOOL fLoadOrDCStart,
+            BOOL fUnloadOrDCEnd,
+            BOOL fSendMethodEvent,
+            BOOL fSendILToNativeMapEvent,
+            BOOL fSendRichDebugInfoEvent,
+            BOOL fGetCodeIds);
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
         static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
         static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId);
         static VOID SendMethodRichDebugInfo(MethodDesc * pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId, MethodDescSet* sentMethodDetailsSet);
         static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL, MethodDescSet* sentMethodDetailsSet = NULL);
-        static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
+        static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName, DWORD dwEventOptions);
     public:
         typedef union _MethodStructs
         {
@@ -957,7 +949,9 @@ namespace ETW
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID SendMethodDetailsEvent(MethodDesc *pMethodDesc);
         static VOID SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set);
-        static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
+        static VOID HelperInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
+        static VOID HelperDestroyed(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
+        static VOID SendCopiedWriteBarrierEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName, DWORD dwEventOptions);
         static VOID MethodRestored(MethodDesc * pMethodDesc);
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc);
         static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods);
@@ -967,7 +961,8 @@ namespace ETW
         static VOID GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPoint) {};
         static VOID MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
-        static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
+        static VOID HelperInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName) {};
+        static VOID HelperDestroyed(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName) {};
         static VOID MethodRestored(MethodDesc * pMethodDesc) {};
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
         static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods) {};

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.AMD64;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -30,14 +31,21 @@ internal struct AMD64Context : IPlatformContext
     }
 
     public readonly uint Size => 0x4d0;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+
+    public readonly int StackPointerRegister => 4;
 
     public TargetPointer StackPointer
     {
         readonly get => new(Rsp);
         set => Rsp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Rip);
         set => Rip = value.Value;
@@ -48,9 +56,208 @@ internal struct AMD64Context : IPlatformContext
         set => Rbp = value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
-        Unwinder.AMD64Unwind(ref this, target);
+        AMD64Unwinder unwinder = new(target);
+        unwinder.Unwind(ref this);
+    }
+
+    // Clears the x64 hardware trace flag (EFLAGS.TF, bit 0x100).
+    public void UnsetSingleStepFlag() => EFlags &= ~0x100;
+
+    public bool TrySetRegister(string name, TargetNUInt value)
+    {
+        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { Cs = (ushort)value.Value; return true; }
+        if (name.Equals("ds", StringComparison.OrdinalIgnoreCase)) { Ds = (ushort)value.Value; return true; }
+        if (name.Equals("es", StringComparison.OrdinalIgnoreCase)) { Es = (ushort)value.Value; return true; }
+        if (name.Equals("fs", StringComparison.OrdinalIgnoreCase)) { Fs = (ushort)value.Value; return true; }
+        if (name.Equals("gs", StringComparison.OrdinalIgnoreCase)) { Gs = (ushort)value.Value; return true; }
+        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { Ss = (ushort)value.Value; return true; }
+        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { EFlags = (int)value.Value; return true; }
+        if (name.Equals("dr0", StringComparison.OrdinalIgnoreCase)) { Dr0 = value.Value; return true; }
+        if (name.Equals("dr1", StringComparison.OrdinalIgnoreCase)) { Dr1 = value.Value; return true; }
+        if (name.Equals("dr2", StringComparison.OrdinalIgnoreCase)) { Dr2 = value.Value; return true; }
+        if (name.Equals("dr3", StringComparison.OrdinalIgnoreCase)) { Dr3 = value.Value; return true; }
+        if (name.Equals("dr6", StringComparison.OrdinalIgnoreCase)) { Dr6 = value.Value; return true; }
+        if (name.Equals("dr7", StringComparison.OrdinalIgnoreCase)) { Dr7 = value.Value; return true; }
+        if (name.Equals("rax", StringComparison.OrdinalIgnoreCase)) { Rax = value.Value; return true; }
+        if (name.Equals("rcx", StringComparison.OrdinalIgnoreCase)) { Rcx = value.Value; return true; }
+        if (name.Equals("rdx", StringComparison.OrdinalIgnoreCase)) { Rdx = value.Value; return true; }
+        if (name.Equals("rbx", StringComparison.OrdinalIgnoreCase)) { Rbx = value.Value; return true; }
+        if (name.Equals("rsp", StringComparison.OrdinalIgnoreCase)) { Rsp = value.Value; return true; }
+        if (name.Equals("rbp", StringComparison.OrdinalIgnoreCase)) { Rbp = value.Value; return true; }
+        if (name.Equals("rsi", StringComparison.OrdinalIgnoreCase)) { Rsi = value.Value; return true; }
+        if (name.Equals("rdi", StringComparison.OrdinalIgnoreCase)) { Rdi = value.Value; return true; }
+        if (name.Equals("r8", StringComparison.OrdinalIgnoreCase)) { R8 = value.Value; return true; }
+        if (name.Equals("r9", StringComparison.OrdinalIgnoreCase)) { R9 = value.Value; return true; }
+        if (name.Equals("r10", StringComparison.OrdinalIgnoreCase)) { R10 = value.Value; return true; }
+        if (name.Equals("r11", StringComparison.OrdinalIgnoreCase)) { R11 = value.Value; return true; }
+        if (name.Equals("r12", StringComparison.OrdinalIgnoreCase)) { R12 = value.Value; return true; }
+        if (name.Equals("r13", StringComparison.OrdinalIgnoreCase)) { R13 = value.Value; return true; }
+        if (name.Equals("r14", StringComparison.OrdinalIgnoreCase)) { R14 = value.Value; return true; }
+        if (name.Equals("r15", StringComparison.OrdinalIgnoreCase)) { R15 = value.Value; return true; }
+        if (name.Equals("rip", StringComparison.OrdinalIgnoreCase)) { Rip = value.Value; return true; }
+        if (name.Equals("debugcontrol", StringComparison.OrdinalIgnoreCase)) { DebugControl = value.Value; return true; }
+        if (name.Equals("lastbranchtorip", StringComparison.OrdinalIgnoreCase)) { LastBranchToRip = value.Value; return true; }
+        if (name.Equals("lastbranchfromrip", StringComparison.OrdinalIgnoreCase)) { LastBranchFromRip = value.Value; return true; }
+        if (name.Equals("lastexceptiontorip", StringComparison.OrdinalIgnoreCase)) { LastExceptionToRip = value.Value; return true; }
+        if (name.Equals("lastexceptionfromrip", StringComparison.OrdinalIgnoreCase)) { LastExceptionFromRip = value.Value; return true; }
+        return false;
+    }
+
+    public bool TryReadRegister(string name, out TargetNUInt value)
+    {
+        value = default;
+        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Cs); return true; }
+        if (name.Equals("ds", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ds); return true; }
+        if (name.Equals("es", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Es); return true; }
+        if (name.Equals("fs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fs); return true; }
+        if (name.Equals("gs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Gs); return true; }
+        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ss); return true; }
+        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(unchecked((uint)EFlags)); return true; }
+        if (name.Equals("dr0", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr0); return true; }
+        if (name.Equals("dr1", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr1); return true; }
+        if (name.Equals("dr2", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr2); return true; }
+        if (name.Equals("dr3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr3); return true; }
+        if (name.Equals("dr6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr6); return true; }
+        if (name.Equals("dr7", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr7); return true; }
+        if (name.Equals("rax", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rax); return true; }
+        if (name.Equals("rcx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rcx); return true; }
+        if (name.Equals("rdx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rdx); return true; }
+        if (name.Equals("rbx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rbx); return true; }
+        if (name.Equals("rsp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rsp); return true; }
+        if (name.Equals("rbp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rbp); return true; }
+        if (name.Equals("rsi", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rsi); return true; }
+        if (name.Equals("rdi", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rdi); return true; }
+        if (name.Equals("r8", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R8); return true; }
+        if (name.Equals("r9", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R9); return true; }
+        if (name.Equals("r10", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R10); return true; }
+        if (name.Equals("r11", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R11); return true; }
+        if (name.Equals("r12", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R12); return true; }
+        if (name.Equals("r13", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R13); return true; }
+        if (name.Equals("r14", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R14); return true; }
+        if (name.Equals("r15", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R15); return true; }
+        if (name.Equals("rip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rip); return true; }
+        if (name.Equals("debugcontrol", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(DebugControl); return true; }
+        if (name.Equals("lastbranchtorip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastBranchToRip); return true; }
+        if (name.Equals("lastbranchfromrip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastBranchFromRip); return true; }
+        if (name.Equals("lastexceptiontorip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastExceptionToRip); return true; }
+        if (name.Equals("lastexceptionfromrip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastExceptionFromRip); return true; }
+        return false;
+    }
+
+    public bool TrySetRegister(int number, TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: Rax = value.Value; return true;
+            case 1: Rcx = value.Value; return true;
+            case 2: Rdx = value.Value; return true;
+            case 3: Rbx = value.Value; return true;
+            case 4: Rsp = value.Value; return true;
+            case 5: Rbp = value.Value; return true;
+            case 6: Rsi = value.Value; return true;
+            case 7: Rdi = value.Value; return true;
+            case 8: R8 = value.Value; return true;
+            case 9: R9 = value.Value; return true;
+            case 10: R10 = value.Value; return true;
+            case 11: R11 = value.Value; return true;
+            case 12: R12 = value.Value; return true;
+            case 13: R13 = value.Value; return true;
+            case 14: R14 = value.Value; return true;
+            case 15: R15 = value.Value; return true;
+            default: return false;
+        }
+    }
+
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(Rax); return true;
+            case 1: value = new TargetNUInt(Rcx); return true;
+            case 2: value = new TargetNUInt(Rdx); return true;
+            case 3: value = new TargetNUInt(Rbx); return true;
+            case 4: value = new TargetNUInt(Rsp); return true;
+            case 5: value = new TargetNUInt(Rbp); return true;
+            case 6: value = new TargetNUInt(Rsi); return true;
+            case 7: value = new TargetNUInt(Rdi); return true;
+            case 8: value = new TargetNUInt(R8); return true;
+            case 9: value = new TargetNUInt(R9); return true;
+            case 10: value = new TargetNUInt(R10); return true;
+            case 11: value = new TargetNUInt(R11); return true;
+            case 12: value = new TargetNUInt(R12); return true;
+            case 13: value = new TargetNUInt(R13); return true;
+            case 14: value = new TargetNUInt(R14); return true;
+            case 15: value = new TargetNUInt(R15); return true;
+            default: value = default; return false;
+        }
+    }
+
+    // XMM0-XMM15 occupy the FltSave area with a 16-byte (128-bit) stride.
+    private const int XmmRegisterCount = 16;
+    private const int XmmRegisterStride = 16;
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, out value);
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, value);
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<AMD64Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ds));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ss));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rsp));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rbp));
+            source[start..end].CopyTo(destination[start..end]);
+            // Native CORDbgCopyThreadContext includes the unnamed legacy x87 save area.
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rsp));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rbp));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_SEGMENTS) == (uint)ContextFlagsValues.CONTEXT_SEGMENTS)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ds));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ss));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(MxCsr));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm));
+            end = start + (XmmRegisterCount * XmmRegisterStride);
+            source[start..end].CopyTo(destination[start..end]);
+        }
     }
 
     [FieldOffset(0x0)]
@@ -74,12 +281,13 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x30)]
     public uint ContextFlags;
 
+    [Register(RegisterType.FloatingPoint)]
     [FieldOffset(0x34)]
     public uint MxCsr;
 
     #region Segment registers
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x38)]
     public ushort Cs;
 
@@ -99,13 +307,13 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x40)]
     public ushort Gs;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x42)]
     public ushort Ss;
 
     #endregion
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x44)]
     public int EFlags;
 
@@ -159,7 +367,7 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x98)]
     public ulong Rsp;
 
-    [Register(RegisterType.Control | RegisterType.FramePointer)]
+    [Register(RegisterType.General | RegisterType.FramePointer)]
     [FieldOffset(0xa0)]
     public ulong Rbp;
 
@@ -211,33 +419,24 @@ internal struct AMD64Context : IPlatformContext
 
     #region Floating point registers
 
-    // [Register(RegisterType.FloatPoint)]
-    // [FieldOffset(0x100)]
-    // public XmmSaveArea FltSave;
-
-    // [Register(RegisterType.FloatPoint)]
-    // [FieldOffset(0x300)]
-    // public VectorRegisterArea VectorRegisters;
+    [Register(RegisterType.FloatingPoint)]
+    [FieldOffset(0x1a0)]
+    public unsafe fixed ulong Xmm[16 * 2];
 
     #endregion
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4a8)]
     public ulong DebugControl;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4b0)]
     public ulong LastBranchToRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4b8)]
     public ulong LastBranchFromRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4c0)]
     public ulong LastExceptionToRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4c8)]
     public ulong LastExceptionFromRip;
 }

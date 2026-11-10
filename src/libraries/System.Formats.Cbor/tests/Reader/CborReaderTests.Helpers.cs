@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Test.Cryptography;
@@ -227,7 +228,9 @@ namespace System.Formats.Cbor.Tests
                 "60",
                 "6161",
                 "6449455446",
+                "63e6b0b4",
                 "7f62616260ff",
+                "7f63e6b0b46161ff",
                 // Arrays
                 "80",
                 "840120604107",
@@ -244,11 +247,16 @@ namespace System.Formats.Cbor.Tests
                 // simple values
                 "f4",
                 "f6",
+                "f8ff",
                 // floating point encodings
+                "f93c00",
                 "fa47c35000",
+                "fb3ff199999999999a",
             };
 
-        public static string[] InvalidCborValues =>
+        // Truncations of well-formed encodings: appending the right bytes to any of these
+        // produces a valid value, so non-final-block readers can complete them with more data.
+        public static string[] TruncatedCborValues =>
             new[]
             {
                 "",
@@ -275,10 +283,9 @@ namespace System.Formats.Cbor.Tests
                 // definite-length maps with missing fields
                 "a1",
                 "a20102",
-                // maps with odd number of elements
+                // maps with missing values
                 "a101",
                 "a2010203",
-                "bf01ff",
                 // indefinite-length collections with missing break byte
                 "9f",
                 "9f01",
@@ -288,7 +295,6 @@ namespace System.Formats.Cbor.Tests
                 "d8",
                 "d9ff",
                 "daffffff",
-                "daffffffffff",
                 // valid tag not followed by value
                 "c2",
                 // floats missing data
@@ -298,5 +304,28 @@ namespace System.Formats.Cbor.Tests
                 // two-byte simple value missing data
                 "f8",
             };
+
+        // Encodings that are invalid regardless of any data that could follow.
+        public static string[] MalformedCborValues =>
+            new[]
+            {
+                "bf01ff", // indefinite-length map key missing a value
+                "daffffffffff", // tag followed by break byte
+                "fc", // reserved additional information in major type 7
+                "fd",
+                "fe",
+                "81fc", // reserved initial byte in an array
+                "a101fd", // reserved initial byte as a map value
+                "c1fe", // tag followed by a reserved initial byte
+            };
+
+        public static string[] InvalidCborValues => TruncatedCborValues.Concat(MalformedCborValues).ToArray();
+
+        public static IEnumerable<object[]> ReservedSimpleValueInputs =>
+            from mode in new[] { CborConformanceMode.Lax, CborConformanceMode.Strict, CborConformanceMode.Canonical, CborConformanceMode.Ctap2Canonical }
+            from isFinalBlock in new[] { true, false }
+            where isFinalBlock || mode == CborConformanceMode.Lax
+            from hexEncoding in new[] { "fc", "fd", "fe" }
+            select new object[] { mode, isFinalBlock, hexEncoding };
     }
 }

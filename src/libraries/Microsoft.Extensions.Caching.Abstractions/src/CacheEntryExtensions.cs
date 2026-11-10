@@ -136,6 +136,11 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="size">The size to set on the <paramref name="entry"/>.</param>
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is negative.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The <paramref name="entry"/> has already been disposed and its implementation does not allow the
+        /// size to change afterwards.
+        /// </exception>
         public static ICacheEntry SetSize(
             this ICacheEntry entry,
             long size)
@@ -155,15 +160,21 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="options">Set the values of these options on the <paramref name="entry"/>.</param>
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// The <paramref name="entry"/> has already been disposed and its implementation does not allow
+        /// <see cref="ICacheEntry.Size"/> to change afterwards.
+        /// </exception>
         public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
 
+            // Apply Size first because some implementations reject it after disposal. If that happens,
+            // none of the other options should have been changed.
+            entry.Size = options.Size;
             entry.AbsoluteExpiration = options.AbsoluteExpiration;
             entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
             entry.SlidingExpiration = options.SlidingExpiration;
             entry.Priority = options.Priority;
-            entry.Size = options.Size;
 
             if (options.ExpirationTokensDirect is { } expirationTokens)
             {

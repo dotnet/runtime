@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
@@ -60,7 +60,7 @@ namespace System.Net.Security
         private const int S33 = 11;
         private const int S34 = 15;
 
-        internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        internal static unsafe void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             Debug.Assert(destination.Length == 128 >> 3);
 
@@ -186,7 +186,7 @@ namespace System.Net.Security
             }
         }
 
-        private static void MD4Transform(Span<uint> state, ReadOnlySpan<byte> block)
+        private static unsafe void MD4Transform(Span<uint> state, ReadOnlySpan<byte> block)
         {
             uint a = state[0];
             uint b = state[1];

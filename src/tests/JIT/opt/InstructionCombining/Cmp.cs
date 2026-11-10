@@ -50,6 +50,11 @@ namespace TestCompare
                 fail = true;
             }
 
+            if (!CmpLargeShift64BitSwap(0x580000000000000, 0xB))
+            {
+                fail = true;
+            }
+
             if (!CmpOptimizeBoolsReturn(5, 3, 10))
             {
                 fail = true;
@@ -151,9 +156,19 @@ namespace TestCompare
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CmpLargeShift64Bit(long a, long b)
         {
-            //ARM64-FULL-LINE: lsl {{x[0-9]+}}, {{x[0-9]+}}, #55
-            //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}, LSL #55
             if (a == (b<<119))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CmpLargeShift64BitSwap(long a, long b)
+        {
+            //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}, LSL #55
+            if ((b<<119) == a)
             {
                 return true;
             }

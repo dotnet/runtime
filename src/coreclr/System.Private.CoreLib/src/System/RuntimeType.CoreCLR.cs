@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -25,20 +27,13 @@ namespace System
         FormatFullInst = 0x00000002, // Include namespace and assembly in generic types (regardless of other flag settings)
         FormatAssembly = 0x00000004, // Include assembly display name in type names
         FormatSignature = 0x00000008, // Include signature in method names
-        FormatNoVersion = 0x00000010, // Suppress version and culture information in all assembly names
+        // unused = 0x00000010,
 #if DEBUG
         FormatDebug = 0x00000020, // For debug printing of types only
 #endif
         FormatAngleBrackets = 0x00000040, // Whether generic types are C<T> or C[T]
         FormatStubInfo = 0x00000080, // Include stub info like {unbox-stub}
         FormatGenericParam = 0x00000100, // Use !name and !!name for generic type and method parameters
-    }
-
-    internal enum TypeNameKind
-    {
-        Name,
-        ToString,
-        FullName,
     }
 
     internal sealed partial class RuntimeType : TypeInfo, ICloneable
@@ -51,87 +46,6 @@ namespace System
             CaseSensitive,
             CaseInsensitive,
             HandleToInfo
-        }
-
-        // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
-        internal struct ListBuilder<T> where T : class
-        {
-            private T[]? _items;
-            private T _item;
-            private int _count;
-            private int _capacity;
-
-            public ListBuilder(int capacity)
-            {
-                _items = null;
-                _item = null!;
-                _count = 0;
-                _capacity = capacity;
-            }
-
-            public T this[int index]
-            {
-                get
-                {
-                    Debug.Assert(index < Count);
-                    return (_items != null) ? _items[index] : _item;
-                }
-            }
-
-            public T[] ToArray()
-            {
-                if (_count == 0)
-                    return Array.Empty<T>();
-                if (_count == 1)
-                    return [_item];
-
-                Array.Resize(ref _items, _count);
-                _capacity = _count;
-                return _items!;
-            }
-
-            public void CopyTo(object[] array, int index)
-            {
-                if (_count == 0)
-                    return;
-
-                if (_count == 1)
-                {
-                    array[index] = _item;
-                    return;
-                }
-
-                Array.Copy(_items!, 0, array, index, _count);
-            }
-
-            public int Count => _count;
-
-            public void Add(T item)
-            {
-                if (_count == 0)
-                {
-                    _item = item;
-                }
-                else
-                {
-                    if (_count == 1)
-                    {
-                        if (_capacity < 2)
-                            _capacity = 4;
-                        _items = new T[_capacity];
-                        _items[0] = _item;
-                    }
-                    else if (_capacity == _count)
-                    {
-                        int newCapacity = 2 * _capacity;
-                        Array.Resize(ref _items, newCapacity);
-                        _capacity = newCapacity;
-                    }
-
-                    _items![_count] = item;
-                }
-                _count++;
-            }
         }
 
         internal sealed class RuntimeTypeCache
@@ -567,7 +481,7 @@ namespace System
                                 cachedMembers = cachedMembers2;
                             }
 
-                            Debug.Assert(cachedMembers![freeSlotIndex] == null);
+                            Debug.Assert(cachedMembers[freeSlotIndex] == null);
                             Volatile.Write(ref cachedMembers[freeSlotIndex], newMemberInfo); // value may be read outside of lock
                             freeSlotIndex++;
                         }
@@ -586,7 +500,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
-                    if (declaringType.IsInterface)
+                    if (declaringType.IsActualInterface)
                     {
                         #region IsInterface
 
@@ -612,6 +526,13 @@ namespace System
                                 continue;
                             #endregion
 
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                            {
+                                continue;
+                            }
+
                             #region Calculate Binding Flags
                             bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
                             bool isStatic = (methodAttributes & MethodAttributes.Static) != 0;
@@ -622,7 +543,7 @@ namespace System
                             RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                             RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                            instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                             list.Add(runtimeMethodInfo);
                             #endregion
@@ -692,6 +613,14 @@ namespace System
 
                                 #endregion
 
+                                // Filter out deleted method before setting override state, so that a deleted override in a subclass does not hide override in an ancestor.
+                                if (MetadataUpdater.IsSupported &&
+                                    RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                    RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                                {
+                                    continue;
+                                }
+
                                 #region Continue if this is a virtual and is already overridden
                                 if (isVirtual)
                                 {
@@ -726,7 +655,7 @@ namespace System
                                 RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                                 RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                    instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                                 list.Add(runtimeMethodInfo);
                                 #endregion
@@ -744,7 +673,7 @@ namespace System
                 {
                     if (ReflectedType.IsGenericParameter)
                     {
-                        return Array.Empty<RuntimeConstructorInfo>();
+                        return [];
                     }
 
                     ListBuilder<RuntimeConstructorInfo> list = default;
@@ -770,6 +699,13 @@ namespace System
                         Debug.Assert(
                             (methodAttributes & MethodAttributes.Abstract) == 0 &&
                             (methodAttributes & MethodAttributes.Virtual) == 0);
+
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                        {
+                            continue;
+                        }
 
                         #region Calculate Binding Flags
                         bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
@@ -882,6 +818,13 @@ namespace System
                                 continue;
                         }
 
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeFieldHandle.GetToken(handle)))
+                        {
+                            continue;
+                        }
+
                         #region Calculate Binding Flags
                         bool isPublic = fieldAccess == FieldAttributes.Public;
                         bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
@@ -892,8 +835,7 @@ namespace System
                         if (needsStaticFieldForGeneric && isStatic)
                             runtimeFieldHandle = RuntimeFieldHandle.GetStaticFieldForGenericType(runtimeFieldHandle, declaringType);
 
-                        RuntimeFieldInfo runtimeFieldInfo =
-                            new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
+                        var runtimeFieldInfo = new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
 
                         list.Add(runtimeFieldInfo);
                     }
@@ -910,8 +852,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -943,6 +885,13 @@ namespace System
                                     continue;
                             }
 
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkField))
+                            {
+                                continue;
+                            }
+
                             #region Calculate Binding Flags
                             bool isPublic = fieldAccess == FieldAttributes.Public;
                             bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
@@ -955,7 +904,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private void AddSpecialInterface(
@@ -1005,7 +954,7 @@ namespace System
                                     continue;
                             }
 
-                            Debug.Assert(interfaceType.IsInterface);
+                            Debug.Assert(interfaceType.IsActualInterface);
                             list.Add(interfaceType);
                         }
 
@@ -1035,7 +984,7 @@ namespace System
                         for (int i = 0; i < constraints.Length; i++)
                         {
                             RuntimeType constraint = (RuntimeType)constraints[i];
-                            if (constraint.IsInterface)
+                            if (constraint.IsActualInterface)
                                 al.Add(constraint);
 
                             Type[] temp = constraint.GetInterfaces();
@@ -1073,7 +1022,7 @@ namespace System
 
                     // For example, TypeDescs do not have metadata tokens
                     if (MdToken.IsNullToken(tkEnclosingType))
-                        return Array.Empty<RuntimeType>();
+                        return [];
 
                     ListBuilder<RuntimeType> list = default;
 
@@ -1120,7 +1069,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     ListBuilder<RuntimeEventInfo> list = default;
 
-                    if (!declaringType.IsInterface)
+                    if (!declaringType.IsActualInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1151,8 +1100,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1171,6 +1120,13 @@ namespace System
                                 continue;
                         }
 
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkEvent))
+                        {
+                            continue;
+                        }
+
                         RuntimeEventInfo eventInfo = new RuntimeEventInfo(
                             tkEvent, declaringType, m_runtimeTypeCache, out bool isPrivate);
 
@@ -1184,10 +1140,8 @@ namespace System
                         {
                             string name = eventInfo.Name;
 
-                            if (csEventInfos.ContainsKey(name))
+                            if (!csEventInfos.TryAdd(name, eventInfo))
                                 continue;
-
-                            csEventInfos[name] = eventInfo;
                         }
                         else
                         {
@@ -1198,7 +1152,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1213,7 +1167,7 @@ namespace System
 
                     ListBuilder<RuntimePropertyInfo> list = default;
 
-                    if (!declaringType.IsInterface)
+                    if (!declaringType.IsActualInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1258,15 +1212,15 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                    Debug.Assert((declaringType.IsInterface && isInterface && csPropertyInfos == null) ||
-                                 (!declaringType.IsInterface && !isInterface && usedSlots.Length >= numVirtuals));
+                    Debug.Assert((declaringType.IsActualInterface && isInterface && csPropertyInfos == null) ||
+                                 (!declaringType.IsActualInterface && !isInterface && usedSlots.Length >= numVirtuals));
 
                     for (int i = 0; i < tkProperties.Length; i++)
                     {
@@ -1281,6 +1235,14 @@ namespace System
 
                             if (!filter.Match(name))
                                 continue;
+                        }
+
+                        // Filter out deleted property before updating usedSlots, so that a deleted override in a subclass does not hide override in an ancestor.
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkProperty))
+                        {
+                            continue;
                         }
 
                         RuntimePropertyInfo propertyInfo =
@@ -1357,7 +1319,7 @@ namespace System
 
                                 for (int j = 0; j < list.Count; j++)
                                 {
-                                    if (propertyInfo.EqualsSig(list[j]!))
+                                    if (propertyInfo.EqualsSig(list[j]))
                                     {
                                         duplicate = true;
                                         break;
@@ -1372,7 +1334,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
                 #endregion
 
@@ -1408,7 +1370,8 @@ namespace System
             private RuntimeType? m_enclosingType;
             private TypeCode m_typeCode;
             private string? m_name;
-            private string? m_fullname;
+            private string? m_fullName;
+            private string? m_assemblyQualifiedName;
             private string? m_toString;
             private string? m_namespace;
             private readonly bool m_isGlobal;
@@ -1438,8 +1401,10 @@ namespace System
             #endregion
 
             #region Private Members
-            private string ConstructName([NotNull] ref string? name, TypeNameFormatFlags formatFlags) =>
-                name ??= new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
+            // This is the slow path for construction. Mark it to avoid inlining it into the caller.
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private string ConstructName(ref string? name, TypeNameFormatFlags formatFlags) =>
+                name = new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
 
             private T[] GetMemberList<T>(ref MemberInfoCache<T>? m_cache, MemberListType listType, string? name, CacheType cacheType)
                 where T : MemberInfo
@@ -1462,6 +1427,7 @@ namespace System
 
                 return existingCache;
             }
+
             #endregion
 
             #region Internal Members
@@ -1494,51 +1460,31 @@ namespace System
                 }
             }
 
-            internal string? GetName(TypeNameKind kind)
-            {
-                switch (kind)
-                {
-                    case TypeNameKind.Name:
-                        // No namespace, full instantiation, and assembly.
-                        return ConstructName(ref m_name, TypeNameFormatFlags.FormatBasic);
+            // No namespace, full instantiation, and assembly.
+            internal string GetName() => m_name ?? ConstructName(ref m_name, TypeNameFormatFlags.FormatBasic)!;
 
-                    case TypeNameKind.FullName:
-                        // We exclude the types that contain generic parameters because their names cannot be roundtripped.
-                        // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be roundtriped.
-                        // Theoretically generic types instantiated with generic type definitions can be roundtripped, e.g. List`1<Dictionary`2>.
-                        // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
-                        // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
-                        if (!m_runtimeType.GetRootElementType().IsGenericTypeDefinition && m_runtimeType.ContainsGenericParameters)
-                            return null;
+            // No assembly.
+            internal string? GetFullName() => m_fullName ??
+                (IsFullNameRoundtripCompatible(m_runtimeType)
+                    ? ConstructName(ref m_fullName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst)
+                    : null);
 
-                        // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
-                        // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
-                        if (m_runtimeType.IsFunctionPointer)
-                            return null;
+            // No full instantiation and assembly.
+            internal string GetToString() => m_toString ?? ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace)!;
 
-                        // No assembly.
-                        return ConstructName(ref m_fullname, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
+            internal string? GetAssemblyQualifiedName() => m_assemblyQualifiedName ??
+                (IsFullNameRoundtripCompatible(m_runtimeType)
+                    ? ConstructName(ref m_assemblyQualifiedName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst | TypeNameFormatFlags.FormatAssembly)
+                    : null);
 
-                    case TypeNameKind.ToString:
-                        // No full instantiation and assembly.
-                        return ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace);
-
-                    default:
-                        throw new InvalidOperationException();
-                }
-            }
-
-            internal string? GetNameSpace()
+            internal string? GetNamespace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
                 if (m_namespace == null)
                 {
-                    Type type = m_runtimeType;
-
+                    Type type = m_runtimeType.GetRootElementType();
                     if (type.IsFunctionPointer)
                         return null;
-
-                    type = type.GetRootElementType();
 
                     while (type.IsNested)
                         type = type.DeclaringType!;
@@ -1781,7 +1727,7 @@ namespace System
 
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, IRuntimeMethodInfo methodHandle)
         {
-            MethodBase? retval = GetMethodBase(reflectedType, methodHandle.Value);
+            MethodBase? retval = GetMethodBase(reflectedType, IRuntimeMethodInfo.GetValue(methodHandle));
             GC.KeepAlive(methodHandle);
             return retval;
         }
@@ -1829,7 +1775,7 @@ namespace System
                     for (int i = 0; i < methodBases.Length; i++)
                     {
                         IRuntimeMethodInfo rmi = (IRuntimeMethodInfo)methodBases[i];
-                        if (rmi.Value.Value == methodHandle.Value)
+                        if (IRuntimeMethodInfo.GetValue(rmi).Value == methodHandle.Value)
                             loaderAssuredCompatible = true;
                     }
 
@@ -2382,11 +2328,6 @@ namespace System
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
-
-        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(ValueType);
-
-        private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
-        private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
         #endregion
 
         #region Constructor
@@ -2394,6 +2335,22 @@ namespace System
         internal RuntimeType() { throw new NotSupportedException(); }
 
         #endregion
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode()
+        {
+            // CLSID types share the __ComObject handle, so preserve their identity hashes.
+            if (IsGenericCOMObjectImpl())
+                return RuntimeHelpers.GetHashCode(this);
+
+            // Fibonacci hashing moves the entropy in aligned handles into the high bits.
+#if TARGET_64BIT
+            return (int)(((ulong)(nuint)m_handle * 0x9E3779B97F4A7C15UL) >> 32);
+#else
+            uint hash = (uint)(nuint)m_handle * 0x9E3779B9U;
+            return (int)(hash ^ (hash >> 16));
+#endif
+        }
 
         #region Private\Internal Members
 
@@ -2721,7 +2678,7 @@ namespace System
 
             TypeHandle.VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
             Debug.Assert(interfaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
-            Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
+            Debug.Assert(!IsActualInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
@@ -2736,24 +2693,34 @@ namespace System
             im.InterfaceMethods = new MethodInfo[ifaceVirtualMethodCount];
             im.TargetMethods = new MethodInfo[ifaceVirtualMethodCount];
 
+            int actualCount = 0;
             for (int i = 0; i < ifaceVirtualMethodCount; i++)
             {
                 RuntimeMethodHandleInternal ifaceRtMethodHandle = RuntimeTypeHandle.GetMethodAt(ifaceRtType, i);
 
+                // GetMethodAt may return null handle for methods that do not exist or are not supposed
+                // to be seen in reflection. One example is async variant methods.
+                // We do not record mapping for interface methods that do not exist.
+                if (ifaceRtMethodHandle.IsNullHandle())
+                    continue;
+
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
                 MethodBase ifaceMethodBase = GetMethodBase(ifaceRtType, ifaceRtMethodHandle)!;
                 Debug.Assert(ifaceMethodBase is RuntimeMethodInfo);
-                im.InterfaceMethods[i] = (MethodInfo)ifaceMethodBase;
+                im.InterfaceMethods[actualCount] = (MethodInfo)ifaceMethodBase;
 
                 // If the impl is null, then virtual stub dispatch is active.
                 RuntimeMethodHandleInternal classRtMethodHandle = TypeHandle.GetInterfaceMethodImplementation(ifaceRtTypeHandle, ifaceRtMethodHandle);
 
                 if (classRtMethodHandle.IsNullHandle())
+                {
+                    actualCount++;
                     continue;
+                }
 
                 // If we resolved to an interface method, use the interface type as reflected type. Otherwise use `this`.
                 RuntimeType reflectedType = RuntimeMethodHandle.GetDeclaringType(classRtMethodHandle);
-                if (!reflectedType.IsInterface)
+                if (!reflectedType.IsActualInterface)
                     reflectedType = this;
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
@@ -2764,8 +2731,14 @@ namespace System
                 // the TargetMethod provided to us by runtime internals may be a generic method instance,
                 //  potentially with invalid arguments. TargetMethods in the InterfaceMap should never be
                 //  instances, only definitions.
-                im.TargetMethods[i] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
+                im.TargetMethods[actualCount++] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
                     ? targetMethod.GetGenericMethodDefinition() : targetMethod!;
+            }
+
+            if (actualCount != ifaceVirtualMethodCount)
+            {
+                Array.Resize(ref im.InterfaceMethods, actualCount);
+                Array.Resize(ref im.TargetMethods, actualCount);
             }
 
             return im;
@@ -3235,12 +3208,15 @@ namespace System
 
         #region Identity
 
-        public sealed override bool IsCollectible
+        public sealed override unsafe bool IsCollectible
         {
             get
             {
-                RuntimeType thisType = this;
-                return RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref thisType)) != Interop.BOOL.FALSE;
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isCollectible = th.IsTypeDesc ? th.AsTypeDesc()->IsCollectible : th.AsMethodTable()->IsCollectible;
+                GC.KeepAlive(this);
+                return isCollectible;
             }
         }
 
@@ -3283,7 +3259,7 @@ namespace System
             // pretty much everything is a subclass of object, even interfaces
             // notice that interfaces are really odd because they do not have a BaseType
             // yet IsSubclassOf(typeof(object)) returns true
-            if (rtType == ObjectType && rtType != this)
+            if (rtType == typeof(object) && rtType != this)
                 return true;
 
             return false;
@@ -3318,28 +3294,15 @@ namespace System
 
         #region Name
 
-        public override string? FullName => GetCachedName(TypeNameKind.FullName);
+        public override string? FullName => Cache.GetFullName();
 
-        public override string? AssemblyQualifiedName
-        {
-            get
-            {
-                string? fullname = FullName;
-
-                // FullName is null if this type contains generic parameters but is not a generic type definition
-                // or if it is a function pointer.
-                if (fullname == null)
-                    return null;
-
-                return Assembly.CreateQualifiedName(Assembly.FullName, fullname);
-            }
-        }
+        public override string? AssemblyQualifiedName => Cache.GetAssemblyQualifiedName();
 
         public override string? Namespace
         {
             get
             {
-                string? ns = Cache.GetNameSpace();
+                string? ns = Cache.GetNamespace();
                 if (string.IsNullOrEmpty(ns))
                 {
                     return null;
@@ -3366,8 +3329,7 @@ namespace System
                 Guid result;
 #if FEATURE_COMINTEROP
                 Debug.Assert(OperatingSystem.IsWindows());
-                // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
-                if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
+                if (IsGenericCOMObjectImpl())
                 {
                     GetComObjectGuidWorker(this, &result);
                 }
@@ -3381,6 +3343,7 @@ namespace System
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
         private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
@@ -3393,6 +3356,7 @@ namespace System
             GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
         private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
 #endif // FEATURE_COMINTEROP
@@ -3453,7 +3417,7 @@ namespace System
             }
         }
 
-        internal new unsafe bool IsInterface
+        internal unsafe bool IsActualInterface
         {
             get
             {
@@ -3556,6 +3520,30 @@ namespace System
         #endregion
 
         #region Generics
+
+        public override unsafe Type? GetNullableUnderlyingType()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+            if (!th.IsTypeDesc)
+            {
+                MethodTable* pMT = th.AsMethodTable();
+                if (pMT->IsNullable)
+                {
+                    // The open generic Nullable<> is also classified as Nullable, and a constructed
+                    // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
+                    // MethodTable*) for its argument. Fall back to managed reflection in those cases.
+                    if (pMT->ContainsGenericVariables)
+                    {
+                        return GetGenericArguments()[0];
+                    }
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->NullableType.AsMethodTable());
+                    GC.KeepAlive(this);
+                    return result;
+                }
+            }
+            return null;
+        }
+
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
             return GetRootElementType().TypeHandle.GetInstantiationInternal();
@@ -3563,8 +3551,7 @@ namespace System
 
         public override Type[] GetGenericArguments()
         {
-            Type[] types = GetRootElementType().TypeHandle.GetInstantiationPublic();
-            return types ?? EmptyTypes;
+            return GetRootElementType().TypeHandle.GetInstantiationPublic() ?? [];
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
@@ -3657,8 +3644,7 @@ namespace System
             if (!IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-            Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? EmptyTypes;
+            return new RuntimeTypeHandle(this).GetConstraints() ?? [];
         }
         #endregion
 
@@ -3696,6 +3682,26 @@ namespace System
                 throw new IndexOutOfRangeException();
 
             return new RuntimeTypeHandle(this).MakeArray(rank);
+        }
+
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            if (this.IsGenericTypeDefinition)
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this));
+
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            foreach (Type? paramType in parameterTypes)
+            {
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType is not RuntimeType)
+                    return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType), nameof(parameterTypes));
+            }
+
+            return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
         }
 
         public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
@@ -3777,7 +3783,7 @@ namespace System
             }
 
             // Requires a modified type to return the modifiers.
-            return EmptyTypes;
+            return [];
         }
 
         public override Type[] GetFunctionPointerParameterTypes()
@@ -3792,7 +3798,7 @@ namespace System
 
             if (parameters.Length == 1)
             {
-                return EmptyTypes;
+                return [];
             }
 
             return parameters.AsSpan(1).ToArray();
@@ -3811,17 +3817,11 @@ namespace System
 
         #endregion
 
-        public override string ToString() => GetCachedName(TypeNameKind.ToString)!;
+        public override string ToString() => Cache.GetToString();
 
         #region MemberInfo Overrides
 
-        public override string Name => GetCachedName(TypeNameKind.Name)!;
-
-        // This method looks like an attractive inline but expands to two calls,
-        // neither of which can be inlined or optimized further. So block it
-        // from inlining.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private string? GetCachedName(TypeNameKind kind) => Cache.GetName(kind);
+        public override string Name => Cache.GetName();
 
         public override Type? DeclaringType => Cache.GetEnclosingType();
 
@@ -3850,7 +3850,7 @@ namespace System
 
             object? instance;
 
-            args ??= Array.Empty<object>();
+            args ??= [];
 
             // Without a binder we need to do use the default binder...
             binder ??= DefaultBinder;
@@ -3871,7 +3871,7 @@ namespace System
                 int consCount = 0;
 
                 // We cannot use Type.GetTypeArray here because some of the args might be null
-                Type[] argsType = args.Length != 0 ? new Type[args.Length] : EmptyTypes;
+                Type[] argsType = args.Length != 0 ? new Type[args.Length] : [];
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] is object arg)
@@ -3974,6 +3974,11 @@ namespace System
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
 
+            if (IsByRefLike)
+            {
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+            }
+
             // Compat: allocation always takes place outside the try block so that OOMs
             // bubble up to the caller; the ctor invocation is within the try block so
             // that it can be wrapped in TIE if needed.
@@ -3996,6 +4001,8 @@ namespace System
         [DebuggerHidden]
         internal object? CreateInstanceOfT()
         {
+            Debug.Assert(!IsValueType);
+
             ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
             if (!cache.CtorIsPublic)
@@ -4047,7 +4054,8 @@ namespace System
         protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.CanCastTo(this, (RuntimeType)typeof(__ComObject));
 
         // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
-        internal bool IsGenericCOMObjectImpl() => TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsGenericCOMObjectImpl() => m_handle == RuntimeTypeHandle.ToIntPtr(typeof(__ComObject).TypeHandle);
 #else
         protected override bool IsCOMObjectImpl() => false;
 
@@ -4059,6 +4067,7 @@ namespace System
         #endregion
 
 #if FEATURE_COMINTEROP
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_InvokeDispMethod")]
         private static partial void InvokeDispMethod(
             ObjectHandleOnStack type,
@@ -4194,11 +4203,9 @@ namespace System
                         case DispatchWrapperType.Error:
                             wrapperType = typeof(ErrorWrapper);
                             break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             wrapperType = typeof(CurrencyWrapper);
                             break;
-#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             wrapperType = typeof(BStrWrapper);
                             isString = true;
@@ -4255,11 +4262,9 @@ namespace System
                         case DispatchWrapperType.Error:
                             aArgs[i] = new ErrorWrapper(aArgs[i]);
                             break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             aArgs[i] = new CurrencyWrapper(aArgs[i]);
                             break;
-#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             aArgs[i] = new BStrWrapper((string)aArgs[i]);
                             break;
@@ -4293,6 +4298,7 @@ namespace System
     #region Library
     internal readonly unsafe partial struct MdUtf8String
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);

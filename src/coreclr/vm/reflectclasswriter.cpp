@@ -12,58 +12,37 @@
 //* constructor for RefClassWriter
 //*
 //******************************************************
-HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
+HRESULT RefClassWriter::Init(
+    IMDInternalEmit *pEmitter,
+    IMDInternalImport *pInternalImport,
+    LPCWSTR szName)
 {
-    CONTRACT(HRESULT) {
-        NOTHROW;
-        GC_NOTRIGGER;
-        // we know that the com implementation is ours so we use mode-any to simplify
-        // having to switch mode
-        MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN(E_OUTOFMEMORY));
+    CONTRACTL {
+        STANDARD_VM_CHECK;
 
-        PRECONDITION(CheckPointer(pCeeGen));
-        PRECONDITION(CheckPointer(pUnk));
-
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_emitter) : TRUE);
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_importer) : TRUE);
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_pEmitHelper) : TRUE);
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_internalimport) : TRUE);
+        PRECONDITION(CheckPointer(pEmitter));
+        PRECONDITION(CheckPointer(pInternalImport));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Initialize the Import and Emitter interfaces
     m_emitter = NULL;
-    m_importer = NULL;
     m_internalimport = NULL;
     m_ulResourceSize = 0;
 
-    m_pCeeGen = pCeeGen;
-    pCeeGen->AddRef();
-
-    // Get the interfaces
-    HRESULT hr = pUnk->QueryInterface(IID_IMetaDataEmit2, (void**)&m_emitter);
-    if (FAILED(hr))
-        RETURN(hr);
-
-    hr = pUnk->QueryInterface(IID_IMetaDataImport, (void**)&m_importer);
-    if (FAILED(hr))
-        RETURN(hr);
-
-    hr = pUnk->QueryInterface(IID_IMetaDataEmitHelper, (void**)&m_pEmitHelper);
-    if (FAILED(hr))
-        RETURN(hr);
-
-    hr = GetMDInternalInterfaceFromPublic(pUnk, IID_IMDInternalImport, (void**)&m_internalimport);
-    if (FAILED(hr))
-        RETURN(hr);
+    m_emitter = pEmitter;
+    m_emitter->AddRef();
+    m_internalimport = pInternalImport;
+    m_internalimport->AddRef();
 
     // <TODO> We will need to set this at some point.</TODO>
-    hr = m_emitter->SetModuleProps(szName);
+    HRESULT hr = m_emitter->SetModuleProps(szName);
     if (FAILED(hr))
-        RETURN(hr);
+        return hr;
 
-    RETURN(S_OK);
+    _ASSERTE(m_emitter != nullptr);
+    _ASSERTE(m_internalimport != nullptr);
+    return S_OK;
 }
 
 
@@ -80,7 +59,6 @@ RefClassWriter::~RefClassWriter()
         // we know that the com implementation is ours so we use mode-any to simplify
         // having to switch mode
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -88,20 +66,7 @@ RefClassWriter::~RefClassWriter()
         m_emitter->Release();
     }
 
-    if (m_importer) {
-        m_importer->Release();
-    }
-
-    if (m_pEmitHelper) {
-        m_pEmitHelper->Release();
-    }
-
     if (m_internalimport) {
         m_internalimport->Release();
-    }
-
-    if (m_pCeeGen) {
-        m_pCeeGen->Release();
-        m_pCeeGen = NULL;
     }
 }

@@ -18,7 +18,13 @@ TYPE LookupMap<TYPE>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supporte
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 #ifndef DACCESS_COMPILE
-    TYPE value = dac_cast<TYPE>(VolatileLoadWithoutBarrier(pValue)); // LookupMap's hold pointers, so we can use a data dependency instead of an explicit barrier here.
+    // LookupMap's hold pointers to data which is immutable, so normally we could use a data
+    // dependency instead of an explicit barrier here. However, the access pattern between
+    // m_TypeDefToMethodTableMap and m_MethodDefToDescMap/m_FieldDefToDescMap is such that a
+    // data dependency is not sufficient to ensure that the MethodTable is visible when we
+    // access the MethodDesc/FieldDesc. Since those loads are independent, we use
+    // VolatileLoad here to ensure proper ordering.
+    TYPE value = dac_cast<TYPE>(VolatileLoad(pValue));
 #else
     TYPE value = dac_cast<TYPE>(*pValue);
 #endif
@@ -51,7 +57,13 @@ SIZE_T LookupMap<SIZE_T>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supp
 {
     WRAPPER_NO_CONTRACT;
 
-    TADDR value = VolatileLoadWithoutBarrier(pValue); // LookupMap's hold pointers, so we can use a data dependency instead of an explicit barrier here.
+    // LookupMap's hold pointers to data which is immutable, so normally we could use a data
+    // dependency instead of an explicit barrier here. However, the access pattern between
+    // m_TypeDefToMethodTableMap and m_MethodDefToDescMap/m_FieldDefToDescMap is such that a
+    // data dependency is not sufficient to ensure that the MethodTable is visible when we
+    // access the MethodDesc/FieldDesc. Since those loads are independent, we use
+    // VolatileLoad here to ensure proper ordering.
+    TADDR value = VolatileLoad(pValue);
 
     if (pFlags)
         *pFlags = value & supportedFlags;
@@ -135,7 +147,6 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -168,7 +179,6 @@ void LookupMap<TYPE>::EnsureElementCanBeStored(Module * pModule, DWORD rid)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -274,6 +284,7 @@ inline PTR_MethodDesc Module::LookupMethodDef(mdMethodDef token)
     return m_MethodDefToDescMap.GetElement(RidFromToken(token));
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef token)
 {
     CONTRACTL
@@ -288,6 +299,7 @@ inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
     return m_ILCodeVersioningStateMap.GetElement(RidFromToken(token));
 }
+#endif // FEATURE_CODE_VERSIONING
 
 inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
 {
@@ -312,7 +324,7 @@ inline Assembly *ModuleBase::LookupAssemblyRef(mdAssemblyRef token)
 #ifndef DACCESS_COMPILE
 inline void Module::ForceStoreAssemblyRef(mdAssemblyRef token, Assembly *value)
 {
-    WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+    WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
     _ASSERTE(value->GetModule());
     _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
 
@@ -338,21 +350,21 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 
 #include "nibblestream.h"
 
-FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods)
+FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods)
 {
     WRAPPER_NO_CONTRACT;
 
     COUNT_T nImportSections;
     PTR_READYTORUN_IMPORT_SECTION pImportSections = GetImportSections(&nImportSections);
 
-    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetReadyToRunImage(), mayUsePrecompiledNDirectMethods);
+    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetReadyToRunImage(), mayUsePrecompiledPInvokeMethods);
 }
 
 template<typename Ptr, typename FixupNativeEntryCallback>
 BOOL Module::FixupDelayListAux(TADDR pFixupList,
                                Ptr pThis, FixupNativeEntryCallback pfnCB,
                                PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                               PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods)
+                               ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -442,7 +454,7 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
         {
             CONSISTENCY_CHECK(fixupIndex * sizeof(TADDR) < cbData);
 
-            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR)), mayUsePrecompiledNDirectMethods))
+            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR)), mayUsePrecompiledPInvokeMethods))
                 return FALSE;
 
             int delta = reader.ReadEncodedU32();

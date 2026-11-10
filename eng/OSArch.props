@@ -4,6 +4,7 @@
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('NETBSD'))">netbsd</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('OPENBSD'))">openbsd</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">solaris</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('HAIKU'))">haiku</_hostOS>
@@ -31,6 +32,10 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm'">true</TargetsWasm>
   </PropertyGroup>
 
   <PropertyGroup>

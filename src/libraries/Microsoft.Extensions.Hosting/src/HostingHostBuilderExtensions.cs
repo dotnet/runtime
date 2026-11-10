@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -182,6 +181,7 @@ namespace Microsoft.Extensions.Hosting
         ///     * load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables
         ///     * load host <see cref="IConfiguration"/> from supplied command line args
         ///     * load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'
+        ///     * load app <see cref="IConfiguration"/> from '[<see cref="IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="IHostEnvironment.ApplicationName"/>].settings.[<see cref="IHostEnvironment.EnvironmentName"/>].json' when <see cref="IHostEnvironment.ApplicationName"/> is not empty
         ///     * load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly
         ///     * load app <see cref="IConfiguration"/> from environment variables
         ///     * load app <see cref="IConfiguration"/> from supplied command line args
@@ -218,12 +218,7 @@ namespace Microsoft.Extensions.Hosting
             // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
             // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
             string cwd = Environment.CurrentDirectory;
-            if (
-#if NETFRAMEWORK
-                Environment.OSVersion.Platform != PlatformID.Win32NT ||
-#else
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-#endif
+            if (!OperatingSystem.IsWindows() ||
                 !string.Equals(cwd, Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 hostConfigBuilder.AddInMemoryCollection(new[]
@@ -240,6 +235,14 @@ namespace Microsoft.Extensions.Hosting
 
             appConfigBuilder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
                     .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+
+            if (env.ApplicationName is { Length: > 0 })
+            {
+                string sanitizedApplicationName = env.ApplicationName.Replace(Path.DirectorySeparatorChar, '_')
+                                                                    .Replace(Path.AltDirectorySeparatorChar, '_');
+                appConfigBuilder.AddJsonFile($"{sanitizedApplicationName}.settings.json", optional: true, reloadOnChange: reloadOnChange)
+                        .AddJsonFile($"{sanitizedApplicationName}.settings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+            }
 
             if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
             {
@@ -274,14 +277,7 @@ namespace Microsoft.Extensions.Hosting
         {
             services.AddLogging(logging =>
             {
-                bool isWindows =
-#if NET
-                    OperatingSystem.IsWindows();
-#elif NETFRAMEWORK
-                    Environment.OSVersion.Platform == PlatformID.Win32NT;
-#else
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#endif
+                bool isWindows = OperatingSystem.IsWindows();
 
                 // IMPORTANT: This needs to be added *before* configuration is loaded, this lets
                 // the defaults be overridden by the configuration.

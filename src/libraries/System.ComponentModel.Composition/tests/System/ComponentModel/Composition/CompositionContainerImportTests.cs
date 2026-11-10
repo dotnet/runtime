@@ -181,7 +181,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [ConditionalFact(Helpers.ComImportAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.ComImportAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ImportValueComComponent()
@@ -207,7 +207,7 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        [ConditionalFact(Helpers.ComImportAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.ComImportAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void DelayImportValueComComponent()

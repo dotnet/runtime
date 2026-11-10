@@ -46,13 +46,13 @@ public class MiscTypesTesting : Server.Contract.IMiscTypesTesting
         result = value;
     }
 
-    private class InterfaceImpl : Server.Contract.IInterface2
+    private class InterfaceImpl : Server.Contract.IInterface1
     {
     }
 
-    Server.Contract.IInterface2 Server.Contract.IMiscTypesTesting.Marshal_Interface(object inst)
+    Server.Contract.IInterface1 Server.Contract.IMiscTypesTesting.Marshal_Interface(object inst)
     {
-        if (inst is not Server.Contract.IInterface2)
+        if (inst is not Server.Contract.IInterface1)
         {
             throw new InvalidCastException();
         }

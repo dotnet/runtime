@@ -43,8 +43,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
     public sealed class ToolboxItemFilterAttribute : Attribute
     {
-        private string? _typeId;
-
         /// <summary>
         /// Initializes a new ToolboxItemFilterAttribute with the provide filter string and a filter type of
         /// "Allow".
@@ -78,7 +76,7 @@ namespace System.ComponentModel
         /// The unique identifier for this attribute. All ToolboxItemFilterAttributes with the same filter string
         /// are considered the same, so they return the same TypeId.
         /// </summary>
-        public override object TypeId => _typeId ??= GetType().FullName + FilterString;
+        public override object TypeId => field ??= GetType().FullName + FilterString;
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {

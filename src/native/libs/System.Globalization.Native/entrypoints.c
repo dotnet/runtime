@@ -41,8 +41,6 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_GetSortHandle)
     DllImportEntry(GlobalizationNative_GetSortKey)
     DllImportEntry(GlobalizationNative_GetSortVersion)
-    DllImportEntry(GlobalizationNative_GetTimeZoneDisplayName)
-    DllImportEntry(GlobalizationNative_IanaIdToWindowsId)
     DllImportEntry(GlobalizationNative_IndexOf)
     DllImportEntry(GlobalizationNative_InitICUFunctions)
     DllImportEntry(GlobalizationNative_IsNormalized)
@@ -54,7 +52,11 @@ static const Entry s_globalizationNative[] =
 #endif
     DllImportEntry(GlobalizationNative_NormalizeString)
     DllImportEntry(GlobalizationNative_StartsWith)
+#ifndef __wasm__
+    DllImportEntry(GlobalizationNative_GetTimeZoneDisplayName)
+    DllImportEntry(GlobalizationNative_IanaIdToWindowsId)
     DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
+#endif
 #if defined(APPLE_HYBRID_GLOBALIZATION)
     DllImportEntry(GlobalizationNative_ChangeCaseInvariantNative)
     DllImportEntry(GlobalizationNative_ChangeCaseNative)
@@ -79,9 +81,10 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_NormalizeStringNative)
     DllImportEntry(GlobalizationNative_StartsWithNative)
 #endif
-     DllImportEntry(GlobalizationNative_ToAscii)
-     DllImportEntry(GlobalizationNative_ToUnicode)
-     DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
+    DllImportEntry(GlobalizationNative_ToAscii)
+    DllImportEntry(GlobalizationNative_ToUnicode)
+    DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
+    DllImportEntry(GlobalizationNative_InitOrdinalLowerCasingPage)
 };
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name);

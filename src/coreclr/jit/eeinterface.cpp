@@ -92,11 +92,10 @@ void Compiler::eePrintCorInfoType(StringPrinter* printer, CorInfoType corInfoTyp
 {
     static const char* preciseVarTypeMap[CORINFO_TYPE_COUNT] = {// see the definition of enum CorInfoType in file
                                                                 // inc/corinfo.h
-                                                                "<UNDEF>", "void",       "bool",   "char",  "sbyte",
-                                                                "byte",    "short",      "ushort", "int",   "uint",
-                                                                "long",    "ulong",      "nint",   "nuint", "float",
-                                                                "double",  "string",     "ptr",    "byref", "struct",
-                                                                "class",   "typedbyref", "var"};
+                                                                "<UNDEF>", "void",  "bool",   "char",   "sbyte",
+                                                                "byte",    "short", "ushort", "int",    "uint",
+                                                                "long",    "ulong", "nint",   "nuint",  "float",
+                                                                "double",  "ptr",   "byref",  "struct", "class"};
 
     const char* corInfoTypeName = "CORINFO_TYPE_INVALID";
     if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)
@@ -239,6 +238,10 @@ void AppendCorInfoTypeWithModModifiers(StringPrinter* printer, CorInfoTypeWithMo
     {
         printer->Append("COPY_WITH_HELPER__");
     }
+    if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) == CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT)
+    {
+        printer->Append("SECRET_STUB_ARGUMENT__");
+    }
 }
 
 //------------------------------------------------------------------------
@@ -248,9 +251,11 @@ void AppendCorInfoTypeWithModModifiers(StringPrinter* printer, CorInfoTypeWithMo
 //
 // Arguments:
 //    printer                    - the printer
-//    clsHnd                     - Handle for the owning class, or NO_CLASS_HANDLE to not print the class.
+//    clsHnd                     - Handle for the owning class.
 //    sig                        - The signature of the method.
-//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when clsHnd is passed.
+//    includeAssembly            - Whether to print the assembly name.
+//    includeClass               - Whether to print the class name.
+//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when includeClass is passed.
 //    includeMethodInstantiation - Whether to print the method instantiation. Requires the signature to be passed.
 //    includeSignature           - Whether to print the signature.
 //    includeReturnType          - Whether to include the return type at the end.
@@ -261,6 +266,8 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
                              CORINFO_SIG_INFO*     sig,
+                             bool                  includeAssembly,
+                             bool                  includeClass,
                              bool                  includeClassInstantiation,
                              bool                  includeMethodInstantiation,
                              bool                  includeSignature,
@@ -275,7 +282,14 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
         return;
     }
 
-    if (clsHnd != NO_CLASS_HANDLE)
+    if (includeAssembly)
+    {
+        const char* pAssemblyName = info.compCompHnd->getClassAssemblyName(clsHnd);
+        printer->Append(pAssemblyName);
+        printer->Append('!');
+    }
+
+    if (includeClass)
     {
         eePrintType(printer, clsHnd, includeClassInstantiation);
         printer->Append(':');
@@ -314,7 +328,9 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
             CorInfoTypeWithMod   argTypeWithMod = info.compCompHnd->getArgType(sig, argLst, &vcClsHnd);
             AppendCorInfoTypeWithModModifiers(printer, argTypeWithMod);
 
-            var_types type = JitType2PreciseVarType(strip(argTypeWithMod));
+            // The VM can report CORINFO_TYPE_UNDEF for types it cannot classify; print them as <UNDEF>.
+            CorInfoType argType = strip(argTypeWithMod);
+            var_types   type    = (argType == CORINFO_TYPE_UNDEF) ? TYP_UNDEF : JitType2PreciseVarType(argType);
             switch (type)
             {
                 case TYP_REF:
@@ -342,7 +358,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 
         if (includeReturnType)
         {
-            var_types retType = JitType2PreciseVarType(sig->retType);
+            var_types retType = (sig->retType == CORINFO_TYPE_UNDEF) ? TYP_UNDEF : JitType2PreciseVarType(sig->retType);
             if (retType != TYP_VOID)
             {
                 printer->Append(':');
@@ -430,8 +446,11 @@ const char* Compiler::eeGetMethodFullName(
     bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
         clsHnd = info.compCompHnd->getMethodClass(hnd);
         CORINFO_SIG_INFO sig;
-        eeGetMethodSig(hnd, &sig);
+        // Not eeGetMethodSig: its asserts reject open generic methods, whose types are CORINFO_TYPE_UNDEF.
+        info.compCompHnd->getMethodSig(hnd, &sig);
         eePrintMethod(&p, clsHnd, hnd, &sig,
+                                      /* includeAssembly */ false,
+                                      /* includeClass */ true,
                                       /* includeClassInstantiation */ true,
                                       /* includeMethodInstantiation */ true,
                                       /* includeSignature */ true, includeReturnType, includeThisSpecifier);
@@ -448,6 +467,8 @@ const char* Compiler::eeGetMethodFullName(
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, clsHnd, hnd,
                       /* sig */ nullptr,
+                      /* includeAssembly */ false,
+                      /* includeClass */ true,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,
@@ -464,8 +485,10 @@ const char* Compiler::eeGetMethodFullName(
     p.Truncate(0);
 
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
-        eePrintMethod(&p, nullptr, hnd,
+        eePrintMethod(&p, NO_CLASS_HANDLE, hnd,
                       /* sig */ nullptr,
+                      /* includeAssembly */ false,
+                      /* includeClass */ false,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,
@@ -504,6 +527,8 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffe
     bool          success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, NO_CLASS_HANDLE, methHnd,
                                /* sig */ nullptr,
+                               /* includeAssembly */ false,
+                               /* includeClass */ false,
                                /* includeClassInstantiation */ false,
                                /* includeMethodInstantiation */ false,
                                /* includeSignature */ false,
@@ -673,3 +698,37 @@ void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDL
 
     printf("%s '%s'", prefix, str);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// eePrintStringLiteral:
+//   Print a string literal. If missing information (in SPMI),
+//   then print a placeholder string.
+//
+// Arguments:
+//    module - The literal's scope handle
+//    token  - The literal's token
+//
+void Compiler::eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token)
+{
+    const int MAX_LITERAL_LENGTH      = 50;
+    char16_t  str[MAX_LITERAL_LENGTH] = {};
+    int       length                  = -1;
+    eeRunFunctorWithSPMIErrorTrap([&]() {
+        length = info.compCompHnd->getStringLiteral(module, token, str, MAX_LITERAL_LENGTH);
+    });
+
+    if (length < 0)
+    {
+        printf("<unknown string literal>");
+    }
+    else
+    {
+        char dst[MAX_LITERAL_LENGTH * 3 + 1];
+        // Truncate length to MAX_LITERAL_LENGTH since that's the maximum we copied into str
+        int truncatedLength = min(length, MAX_LITERAL_LENGTH);
+        convertUtf16ToUtf8ForPrinting(str, truncatedLength, dst, sizeof(dst));
+        printf("\"%s%s\"", dst, length > MAX_LITERAL_LENGTH ? "..." : "");
+    }
+}
+#endif // DEBUG

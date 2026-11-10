@@ -119,21 +119,21 @@ void PromotionLiveness::ComputeUseDefSets()
                 GenTree* qmark = m_compiler->fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
                 if (qmark == nullptr)
                 {
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
-                        MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
-                    }
+                    stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                        MarkUseDef(stmt, occurrence, bb.VarUse, bb.VarDef);
+                        return GenTree::VisitResult::Continue;
+                    });
                 }
                 else
                 {
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
+                    stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
                         // Skip liveness updates/marking for defs; they may be conditionally executed.
-                        if ((lcl->gtFlags & GTF_VAR_DEF) == 0)
+                        if ((occurrence.GetFlags() & GTF_VAR_DEF) == 0)
                         {
-                            MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
+                            MarkUseDef(stmt, occurrence, bb.VarUse, bb.VarDef);
                         }
-                    }
+                        return GenTree::VisitResult::Continue;
+                    });
                 }
             }
         }
@@ -141,10 +141,10 @@ void PromotionLiveness::ComputeUseDefSets()
         {
             for (Statement* stmt : block->Statements())
             {
-                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                {
-                    MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
-                }
+                stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                    MarkUseDef(stmt, occurrence, bb.VarUse, bb.VarDef);
+                    return GenTree::VisitResult::Continue;
+                });
             }
         }
 
@@ -167,27 +167,28 @@ void PromotionLiveness::ComputeUseDefSets()
 //   Mark use/def information for a single appearence of a local.
 //
 // Parameters:
-//   stmt   - Statement containing the local
-//   lcl    - The local node
-//   useSet - The use set to mark in.
-//   defSet - The def set to mark in.
+//   stmt       - Statement containing the local
+//   occurrence - The local occurrence
+//   useSet     - The use set to mark in.
+//   defSet     - The def set to mark in.
 //
-void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet)
+template <typename TOccurrence>
+void PromotionLiveness::MarkUseDef(Statement* stmt, const TOccurrence& occurrence, BitVec& useSet, BitVec& defSet)
 {
-    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+    AggregateInfo* agg = m_aggregates.Lookup(occurrence.GetLclNum());
     if (agg == nullptr)
     {
         return;
     }
 
+    GenTree*                     lcl   = occurrence.GetNode();
     jitstd::vector<Replacement>& reps  = agg->Replacements;
-    bool                         isDef = (lcl->gtFlags & GTF_VAR_DEF) != 0;
+    bool                         isDef = (occurrence.GetFlags() & GTF_VAR_DEF) != 0;
     bool                         isUse = !isDef;
 
-    unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
-    var_types accessType = lcl->TypeGet();
+    unsigned baseIndex = m_structLclToTrackedIndex[occurrence.GetLclNum()];
 
-    if ((accessType == TYP_STRUCT) || lcl->OperIs(GT_LCL_ADDR))
+    if (lcl->OperIs(GT_LCL_ADDR) || (occurrence.GetAccessType(m_compiler) == TYP_STRUCT))
     {
         if (lcl->OperIsScalarLocal())
         {
@@ -199,9 +200,10 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
         }
         else
         {
-            unsigned offs  = lcl->GetLclOffs();
-            unsigned size  = GetSizeOfStructLocal(stmt, lcl);
-            size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
+            unsigned offs = occurrence.GetLclOffs();
+            unsigned size =
+                lcl->OperIs(GT_LCL_ADDR) ? GetSizeOfLocalAddrDef(stmt, lcl) : occurrence.GetAccessSize(m_compiler);
+            size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
 
             if ((ssize_t)index < 0)
             {
@@ -228,11 +230,11 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
     }
     else
     {
-        unsigned offs  = lcl->GetLclOffs();
+        unsigned offs  = occurrence.GetLclOffs();
         size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
         if ((ssize_t)index < 0)
         {
-            unsigned size             = genTypeSize(accessType);
+            unsigned size             = occurrence.GetAccessSize(m_compiler);
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
             MarkIndex(baseIndex, isUse, isFullDefOfRemainder, useSet, defSet);
         }
@@ -245,27 +247,36 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
 }
 
 //------------------------------------------------------------------------
-// GetSizeOfStructLocal:
-//   Get the size of a struct local (either a TYP_STRUCT typed local, or a
-//   GT_LCL_ADDR retbuf definition).
+// GetSizeOfLocalAddrDef:
+//   Get the size written through a call-defined local address.
 //
 // Parameters:
-//   stmt   - Statement containing the local
-//   lcl    - The local node
+//   stmt    - Statement containing the address.
+//   lclAddr - The local address node.
 //
-unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarCommon* lcl)
+// Return Value:
+//   The definition size in bytes.
+//
+unsigned PromotionLiveness::GetSizeOfLocalAddrDef(Statement* stmt, GenTree* lclAddr)
 {
-    if (lcl->OperIs(GT_LCL_ADDR))
-    {
-        // Retbuf definition. Find the definition size from the
-        // containing call.
-        Compiler::FindLinkData data = m_compiler->gtFindLink(stmt, lcl);
-        assert((data.parent != nullptr) && data.parent->IsCall() &&
-               (m_compiler->gtCallGetDefinedRetBufLclAddr(data.parent->AsCall()) == lcl));
-        return m_compiler->typGetObjLayout(data.parent->AsCall()->gtRetClsHnd)->GetSize();
-    }
+    assert(lclAddr->OperIs(GT_LCL_ADDR));
+    Compiler::FindLinkData data = m_compiler->gtFindLink(stmt, lclAddr);
+    assert((data.parent != nullptr) && data.parent->IsCall());
 
-    return lcl->GetLayout(m_compiler)->GetSize();
+    unsigned defSize = UINT_MAX;
+    auto     findDef = [&](const auto& def) {
+        if (def.GetDefNode() == lclAddr)
+        {
+            defSize = def.GetStoreSize(m_compiler).GetExact();
+            return GenTree::VisitResult::Abort;
+        }
+
+        return GenTree::VisitResult::Continue;
+    };
+
+    GenTree::VisitResult result = data.parent->VisitLogicalLocalDefs(m_compiler, findDef);
+    assert(result == GenTree::VisitResult::Abort);
+    return defSize;
 }
 
 //------------------------------------------------------------------------
@@ -515,7 +526,8 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
         else
         {
             unsigned offs  = lcl->GetLclOffs();
-            unsigned size  = GetSizeOfStructLocal(stmt, lcl);
+            unsigned size  = lcl->OperIs(GT_LCL_ADDR) ? GetSizeOfLocalAddrDef(stmt, lcl)
+                                                      : LocalOccurrence(lcl).GetAccessSize(m_compiler);
             size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
 
             if ((ssize_t)index < 0)
@@ -631,6 +643,42 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// IsReplacementUsed:
+//   Check if a replacement field is used before being defined in a block.
+//
+// Parameters:
+//   bb               - The block
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the upward-exposed use set.
+//
+bool PromotionLiveness::IsReplacementUsed(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    unsigned index = m_structLclToTrackedIndex[structLcl] + 1 + replacementIndex;
+    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarUse, index);
+}
+
+//------------------------------------------------------------------------
+// IsReplacementDefined:
+//   Check if a replacement field is fully defined in a block.
+//
+// Parameters:
+//   bb               - The block
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the definition set.
+//
+bool PromotionLiveness::IsReplacementDefined(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    unsigned index = m_structLclToTrackedIndex[structLcl] + 1 + replacementIndex;
+    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarDef, index);
 }
 
 //------------------------------------------------------------------------

@@ -19,6 +19,7 @@ By default, the dependency manifest contains information about the application's
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\OperatingSystemPolyfills.cs" Link="Common\Polyfills\OperatingSystemPolyfills.cs" />
     <Compile Remove="**\*.netcoreapp.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />

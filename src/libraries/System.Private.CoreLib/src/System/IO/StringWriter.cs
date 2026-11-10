@@ -12,8 +12,6 @@ namespace System.IO
     // the resulting sequence of characters to be presented as a string.
     public class StringWriter : TextWriter
     {
-        private static UnicodeEncoding? s_encoding;
-
         private readonly StringBuilder _sb;
         private bool _isOpen;
 
@@ -57,7 +55,7 @@ namespace System.IO
         }
 
 
-        public override Encoding Encoding => s_encoding ??= new UnicodeEncoding(false, false);
+        public override Encoding Encoding => field ??= new UnicodeEncoding(false, false);
 
         // Returns the underlying StringBuilder. This is either the StringBuilder
         // that was passed to the constructor, or the StringBuilder that was
@@ -66,6 +64,92 @@ namespace System.IO
         public virtual StringBuilder GetStringBuilder()
         {
             return _sb;
+        }
+
+        public override void Write(int value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        public override void Write(uint value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(long value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        public override void Write(ulong value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(float value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(double value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(decimal value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
         }
 
         // Writes a character to the underlying string buffer.

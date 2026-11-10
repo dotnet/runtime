@@ -29,7 +29,7 @@ static void get_environ_helper(const void *key, const void *value, void *context
     size_t utf8_value_length = strlen(utf8_value);
     char *key_value_pair;
 
-    key_value_pair = malloc(utf8_key_length + utf8_value_length + 2);
+    key_value_pair = (char*)malloc(utf8_key_length + utf8_value_length + 2);
     if (key_value_pair != NULL)
     {
         strcpy(key_value_pair, utf8_key);

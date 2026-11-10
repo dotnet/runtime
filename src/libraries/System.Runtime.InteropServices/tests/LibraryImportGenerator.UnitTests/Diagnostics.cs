@@ -14,7 +14,7 @@ using Microsoft.Interop.UnitTests;
 using Xunit;
 
 using StringMarshalling = Microsoft.Interop.StringMarshalling;
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -41,7 +41,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
                     .WithLocation(0)
                     .WithArguments("NS.MyClass", "c"),
@@ -71,7 +71,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupported)
                     .WithLocation(0)
                     .WithArguments("NS.MyClass", "Method1"),
@@ -93,7 +93,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "c"),
@@ -118,7 +118,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "Method1"),
@@ -143,7 +143,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments(nameof(MarshalAsAttribute), "i1"),
@@ -168,15 +168,120 @@ namespace LibraryImportGenerator.UnitTests
                     [return: MarshalAs(UnmanagedType.FunctionPtr)]
                     public static partial bool {|#1:Method2|}(int i);
                 }
+
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments(nameof(MarshalAsAttribute), "Method1"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments(nameof(MarshalAsAttribute), "Method2"));
+        }
+
+        [Fact]
+        public async Task InvalidErrorHandlerAttribute_ReportsDiagnostic()
+        {
+            string source = """
+
+                using System;
+                using System.Runtime.InteropServices;
+
+                namespace System.Runtime.InteropServices
+                {
+                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+                    internal sealed class ErrorHandlerAttribute : Attribute
+                    {
+                        public ErrorHandlerAttribute(Type marshallerType)
+                        {
+                        }
+
+                        public ErrorHandlerAttribute(Type marshallerType, int location)
+                        {
+                        }
+                    }
+                }
+
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    [{|#0:ErrorHandler(typeof(int))|}]
+                    public static partial void Method1();
+
+                    [LibraryImport("DoesNotExist")]
+                    [{|#1:ErrorHandler(typeof(int), 4)|}]
+                    public static partial void Method2();
+
+                    [LibraryImport("DoesNotExist")]
+                    [ErrorHandler(typeof(int), 0)]
+                    [{|#2:ErrorHandler(typeof(int), 1)|}]
+                    public static partial void Method3();
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("ErrorHandlerAttribute"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(1)
+                    .WithArguments("ErrorHandlerAttribute"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(2)
+                    .WithArguments("ErrorHandlerAttribute"));
+        }
+
+        [Fact]
+        public async Task ErrorHandlerWithMismatchedManagedType_ReportsDiagnostic()
+        {
+            string source = """
+
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace System.Runtime.InteropServices
+                {
+                    [AttributeUsage(AttributeTargets.Method)]
+                    internal sealed class ErrorHandlerAttribute : Attribute
+                    {
+                        public ErrorHandlerAttribute(Type marshallerType, int location)
+                        {
+                        }
+                    }
+                }
+
+                struct CustomError
+                {
+                }
+
+                [CustomMarshaller(typeof(CustomError), MarshalMode.Default, typeof(CustomErrorMarshaller))]
+                static class CustomErrorMarshaller
+                {
+                    public static int ConvertToUnmanaged(CustomError error) => 0;
+                    public static CustomError ConvertToManaged(int error) => default;
+                }
+
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    [{|#0:ErrorHandler(typeof(CustomErrorMarshaller), 0)|}]
+                    public static partial int Method1();
+
+                    [LibraryImport("DoesNotExist")]
+                    [{|#1:ErrorHandler(typeof(CustomErrorMarshaller), 1)|}]
+                    public static partial void Method2(out int error);
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("ErrorHandlerAttribute"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(1)
+                    .WithArguments("ErrorHandlerAttribute"));
         }
 
         [Fact]
@@ -196,7 +301,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
                     .WithLocation(0)
                     .WithArguments(1, nameof(UnmanagedType)),
@@ -228,53 +333,39 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.SafeArraySubType)}"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
                     .WithLocation(1)
-                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)}"));
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
         }
 
         [Fact]
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
+            // The downlevel injected StringMarshalling enum only has Utf16 = 2.
+            // Use a numeric cast to exercise a non-Utf16 value that should trigger CannotForwardToDllImport.
             string source = """
-
                 using System.Runtime.InteropServices;
                 partial class Test
                 {
-                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf8)]
+                    [LibraryImport("DoesNotExist", StringMarshalling = (StringMarshalling)1)]
                     public static partial void {|#0:Method1|}(string s);
-
-                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
-                    public static partial void {|#1:Method2|}(string s);
-
-                    struct Native
-                    {
-                        public Native(string s) { }
-                        public string ToManaged() => default;
-                    }
                 }
-                """ + CodeSnippets.LibraryImportAttributeDeclaration;
-            DiagnosticResult[] expectedDiags =
-            [
-                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
-                    .WithLocation(0)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
-                    .WithLocation(1)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}")
-            ];
+                """;
 
-            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator>.Test(TestTargetFramework.Standard2_0)
+            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.Interop.Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer>.Test(TestTargetFramework.Standard2_0)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
-            test.ExpectedDiagnostics.AddRange(expectedDiags);
+            test.ExpectedDiagnostics.Add(
+                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"));
             await test.RunAsync();
         }
 
@@ -302,7 +393,7 @@ namespace LibraryImportGenerator.UnitTests
                 """;
 
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidStringMarshallingConfiguration)
                     .WithLocation(0)
                     .WithArguments("Method1", "'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'."),
@@ -327,7 +418,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(0)
                     .WithArguments("Method"),
@@ -349,13 +440,10 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(0)
-                    .WithArguments("Method"),
-                // Generator ignores the method
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(0));
+                    .WithArguments("Method"));
         }
 
         [Fact]
@@ -374,18 +462,13 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(0)
                     .WithArguments("Method1"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(1)
-                    .WithArguments("Method2"),
-                // Generator ignores the method
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(0),
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(1));
+                    .WithArguments("Method2"));
         }
 
         [Theory]
@@ -404,16 +487,10 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers)
                     .WithLocation(0)
-                    .WithArguments("Method", "Test"),
-                // Generator ignores the method
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(0),
-                // Also expect CS0751: A partial method must be declared within a partial type
-                DiagnosticResult.CompilerError("CS0751")
-                    .WithLocation(0));
+                    .WithArguments("Method", "Test"));
         }
 
         [Theory]
@@ -435,10 +512,64 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers)
                     .WithLocation(0)
                     .WithArguments("Method", "Test"));
+        }
+
+        [Theory]
+        [InlineData("StringMarshalling = StringMarshalling.Utf16")]
+        [InlineData("StringMarshalling = StringMarshalling.Utf8")]
+        [InlineData("")]
+        public async Task StringBuilderNotSupported_ReportsDiagnostic(string stringMarshallingArg)
+        {
+            string marshallingPart = string.IsNullOrEmpty(stringMarshallingArg)
+                ? ""
+                : $", {stringMarshallingArg}";
+
+            // StringBuilder as a simple parameter
+            string source = $$"""
+
+                using System.Runtime.InteropServices;
+                using System.Text;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist"{{marshallingPart}})]
+                    public static partial void Method(StringBuilder {|#0:sb|});
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("System.Text.StringBuilder", "sb"));
+        }
+
+        [Theory]
+        [InlineData("StringMarshalling = StringMarshalling.Utf16")]
+        [InlineData("StringMarshalling = StringMarshalling.Utf8")]
+        public async Task StringBuilderNotSupported_WithStringParam_ReportsDiagnostic(string stringMarshallingArg)
+        {
+            // StringBuilder with [Out] alongside a string parameter
+            string source = $$"""
+
+                using System.Runtime.InteropServices;
+                using System.Text;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", {{stringMarshallingArg}})]
+                    internal static partial int Method(
+                        string volumeMountPoint,
+                        [Out] StringBuilder {|#0:volumeName|},
+                        int bufferLength);
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("System.Text.StringBuilder", "volumeName"));
         }
 
         private static void VerifyDiagnostics(DiagnosticResult[] expectedDiagnostics, Diagnostic[] actualDiagnostics)

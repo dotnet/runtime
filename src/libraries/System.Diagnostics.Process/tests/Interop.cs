@@ -72,6 +72,14 @@ internal static partial class Interop
         public int Attributes;
     }
 
+        
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern SafeProcessHandle OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GenerateConsoleCtrlEvent(uint dwCtrlEvent, uint dwProcessGroupId);
+
     [DllImport("kernel32.dll")]
     public static extern bool GetProcessWorkingSetSizeEx(SafeProcessHandle hProcess, out IntPtr lpMinimumWorkingSetSize, out IntPtr lpMaximumWorkingSetSize, out uint flags);
 
@@ -90,11 +98,17 @@ internal static partial class Interop
     [DllImport("kernel32.dll")]
     internal static extern int GetConsoleOutputCP();
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern int SetConsoleCP(int codePage);
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern int SetConsoleOutputCP(int codePage);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern int FreeConsole();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern int AllocConsole();
 
     [DllImport("advapi32.dll")]
     internal static extern bool OpenProcessToken(SafeProcessHandle ProcessHandle, uint DesiredAccess, out SafeProcessHandle TokenHandle);

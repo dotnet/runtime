@@ -1143,7 +1143,7 @@ namespace System.Xml.XPath
     /// </summary>
     internal sealed class XmlEmptyNavigator : XPathNavigator
     {
-        private static volatile XmlEmptyNavigator? s_singleton;
+        private static XmlEmptyNavigator? s_singleton;
 
         private XmlEmptyNavigator()
         {

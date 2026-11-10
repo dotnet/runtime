@@ -37,8 +37,25 @@ namespace System.IO.Tests
         [Fact]
         public static void NegativeBufferSize_ThrowsArgumentOutOfRangeException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter("path", false, Encoding.UTF8, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter("path", false, Encoding.UTF8, -2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter("path", true, Encoding.UTF8, 0));
+        }
+
+        [Fact]
+        public static void NegativeOneBufferSize_ShouldNotThrowException()
+        {
+            string testfile = Path.GetTempFileName();
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(testfile, false, Encoding.UTF8, -1))
+                {
+                    Assert.NotNull(sw);
+                }
+            }
+            finally
+            {
+                File.Delete(testfile);
+            }
         }
 
         [Fact]

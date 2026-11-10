@@ -81,7 +81,7 @@ void Exception::operator delete(void* ptr)
 #endif
 
 //------------------------------------------------------------------------------
-void Exception::Delete(Exception* pvMemory)
+void Exception::Delete(Exception* pvMemory) noexcept
 {
     CONTRACTL
     {
@@ -96,12 +96,7 @@ void Exception::Delete(Exception* pvMemory)
         return;
     }
 
-#ifdef DACCESS_COMPILE
     delete pvMemory;
-#else
-    ::delete pvMemory;
-#endif
-
 }
 
 void Exception::GetMessage(SString &result)
@@ -125,19 +120,19 @@ Exception *Exception::Clone()
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
-    NewHolder<Exception> retExcep(CloneHelper());
+    NewHolder<Exception> retExcep{ CloneHelper() };
     if (m_innerException)
     {
         retExcep->m_innerException = m_innerException->Clone();
     }
 
-    retExcep.SuppressRelease();
-    return retExcep;
+    return retExcep.Detach();
 }
 
 Exception *Exception::CloneHelper()
@@ -149,22 +144,15 @@ Exception *Exception::CloneHelper()
 
 Exception *Exception::DomainBoundClone()
 {
-    CONTRACTL
-    {
-        // Because we may call DomainBoundCloneHelper() of ObjrefException or CLRLastThrownObjectException
-        // this should be GC_TRIGGERS, but we can not include EE contracts in Utilcode.
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
-    NewHolder<Exception> retExcep(DomainBoundCloneHelper());
+    NewHolder<Exception> retExcep{ DomainBoundCloneHelper() };
     if (m_innerException)
     {
         retExcep->m_innerException = m_innerException->DomainBoundClone();
     }
 
-    retExcep.SuppressRelease();
-    return retExcep;
+    return retExcep.Detach();
 }
 
 BOOL Exception::IsTerminal()
@@ -183,7 +171,16 @@ BOOL Exception::IsTerminal()
     }
     CONTRACTL_END;
 
-    HRESULT hr = GetHR();
+    // IsTerminal is intentionally GC_NOTRIGGER so it can be used by terminal-exception
+    // checks (e.g., RethrowTerminalExceptions) from GC_NOTRIGGER scopes. The virtual
+    // GetHR() resolves to CLRException::GetHR() for CLR exceptions, which is GC_TRIGGERS
+    // because it can materialize the throwable. On terminal-exception paths the throwable
+    // is already materialized, so no GC actually occurs here.
+    HRESULT hr;
+    {
+        CONTRACT_VIOLATION(GCViolation);
+        hr = GetHR();
+    }
     return (COR_E_THREADABORTED == hr);
 }
 
@@ -214,7 +211,7 @@ BOOL Exception::IsTransient(HRESULT hr)
 //------------------------------------------------------------------------------
 // Functions to manage the preallocated exceptions.
 // Virtual
-BOOL Exception::IsPreallocatedException()
+BOOL Exception::IsPreallocatedException() noexcept
 {   // Most exceptions can't be preallocated.  If they can be, their class
     //  should provide a virtual override of this function.
     return FALSE;
@@ -793,6 +790,7 @@ HRESULT HRException::GetHR()
 // SEHException class.  Implements exception API for SEH exception info
 // ---------------------------------------------------------------------------
 
+#ifdef TARGET_WINDOWS
 HRESULT SEHException::GetHR()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -833,6 +831,7 @@ void SEHException::GetMessage(SString &string)
         }
     }
 }
+#endif // TARGET_WINDOWS
 
 //==============================================================================
 // DelegatingException class.  Implements exception API for "foreign" exceptions.
@@ -935,7 +934,7 @@ Exception *DelegatingException::Clone()
 
     // Clone the base exception, this will also take care of cloning the inner
     // exception if there is one.
-    NewHolder<DelegatingException> retExcep((DelegatingException*)Exception::Clone());
+    NewHolder<DelegatingException> retExcep{ static_cast<DelegatingException*>(Exception::Clone()) };
 
     // If there is a valid delegating exception...
     if (IsDelegateValid())
@@ -947,8 +946,7 @@ Exception *DelegatingException::Clone()
         retExcep->m_delegatedException = m_delegatedException;
     }
 
-    retExcep.SuppressRelease();
-    return retExcep;
+    return retExcep.Detach();
 } // virtual Exception *DelegatingException::Clone()
 
 //==============================================================================
@@ -1005,7 +1003,7 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr, UINT uText)
 
     // We won't check the return value here. If it fails, we'll just
     // throw the HR
-    sExceptionText.LoadResource(CCompRC::Error, uText);
+    sExceptionText.LoadResource(uText);
 
     EX_THROW(HRMsgException, (hr, sExceptionText));
 }
@@ -1080,12 +1078,7 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
 //--------------------------------------------------------------------------------
 Exception *ExThrowWithInnerHelper(Exception *inner)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
     // Yes, NULL is a legal case. Makes it easier to author uniform helpers for
     // both wrapped and normal exceptions.
@@ -1156,7 +1149,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
 
     if (FAILED(hr) && HRESULT_FACILITY(hr) == FACILITY_URT && HRESULT_CODE(hr) < MAX_URT_HRESULT_CODE)
     {
-        fHaveDescr = strDescr.LoadResource(CCompRC::Error, MSG_FOR_URT_HR(hr));
+        fHaveDescr = strDescr.LoadResource(MSG_FOR_URT_HR(hr));
     }
     else
     {
@@ -1267,7 +1260,6 @@ static DWORD MarkAsThrownByUsWorker(UINT numArgs, /*out*/ ULONG_PTR exceptionArg
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     _ASSERTE(numArgs < INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE);
@@ -1286,7 +1278,6 @@ DWORD MarkAsThrownByUs(/*out*/ ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     return MarkAsThrownByUsWorker(0, exceptionArgs);
 }
@@ -1295,7 +1286,6 @@ DWORD MarkAsThrownByUs(/*out*/ ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     return MarkAsThrownByUsWorker(1, exceptionArgs, arg0);
 }
@@ -1309,7 +1299,6 @@ BOOL WasThrownByUs(const EXCEPTION_RECORD *pcER, DWORD dwExceptionCode)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     _ASSERTE(IsInstanceTaggedSEHCode(dwExceptionCode));
@@ -1350,7 +1339,6 @@ VOID RaiseComPlusException()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];

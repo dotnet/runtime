@@ -13,9 +13,6 @@
 Commonly Used Types:
 System.IO.Ports.SerialPort</PackageDescription>
 
-    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -117,8 +114,7 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="System\IO\Ports\SerialPort.Win32.cs" />
-    <Compile Include="System\IO\Ports\SerialStream.Win32.cs" />
+    <Compile Include="System\IO\Ports\SerialPort.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"

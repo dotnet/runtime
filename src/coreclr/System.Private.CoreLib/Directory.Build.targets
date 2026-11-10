@@ -1,0 +1,8 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <Import Project="$(MSBuildThisFileDirectory)CreateRuntimeRootILLinkDescriptorFile.targets" />
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
+
+</Project>

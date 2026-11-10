@@ -44,9 +44,6 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 char *mono_method_get_full_name (MonoMethod *method);
 char *mono_method_full_name (MonoMethod *method, int32_t signature);
 
-#ifndef INVARIANT_TIMEZONE
-extern void mono_register_timezones_bundle (void);
-#endif /* INVARIANT_TIMEZONE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
@@ -80,17 +77,17 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_register_root (char *start, size_t size, const char *name)
+SystemInteropJS_RegisterGCRoot (char *start, size_t size, const char *name)
 {
 	int result;
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "SystemInteropJS_RegisterGCRoot");
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_deregister_root (char *addr)
+SystemInteropJS_UnregisterGCRoot (char *addr)
 {
 	MONO_ENTER_GC_UNSAFE;
 	mono_gc_deregister_root (addr);
@@ -193,12 +190,6 @@ mono_wasm_load_runtime (int debug_level, int propertyCount, const char **propert
 
 	monovm_initialize (propertyCount, propertyKeys, propertyValues);
 
-#ifndef INVARIANT_TIMEZONE
-	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
-	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
-		mono_register_timezones_bundle ();
-#endif /* INVARIANT_TIMEZONE */
-
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
@@ -213,8 +204,9 @@ int initialize_runtime()
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 	appctx_keys [1] = "RUNTIME_IDENTIFIER";
 
+	const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 	const char *appctx_values[2];
-	appctx_values [0] = "/";
+	appctx_values [0] = browserVirtualAppBase;
 	appctx_values [1] = "browser-wasm";
 
 	// this does not support loading runtimeConfig.json part of boot.config.json
@@ -223,15 +215,13 @@ int initialize_runtime()
 	return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
+static void
+invoke_jsexport_method (MonoMethod *method, void **invoke_args)
 {
 	PVOLATILE(MonoObject) temp_exc = NULL;
 
-	void *invoke_args[1] = { args };
-
 	MONO_ENTER_GC_UNSAFE;
-	mono_runtime_invoke (method, NULL, args ? invoke_args : NULL, (MonoObject **)&temp_exc);
+	mono_runtime_invoke (method, NULL, invoke_args, (MonoObject **)&temp_exc);
 
 	// this failure is unlikely because it would be runtime error, not application exception.
 	// the application exception is passed inside JSMarshalerArguments `args`
@@ -247,6 +237,32 @@ mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 		abort ();
 	}
 	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
+{
+	void *invoke_args[1] = { args };
+
+	invoke_jsexport_method (method, args ? invoke_args : NULL);
+}
+
+// JavaScriptExports.CallJSExport, which dispatches to the [JSExport] wrapper registered under a handle
+static MonoMethod *jsexport_dispatcher = NULL;
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_set_jsexport_dispatcher (MonoMethod *method)
+{
+	jsexport_dispatcher = method;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle (int handle, void* args)
+{
+	void *invoke_args[2] = { &handle, args };
+
+	assert (jsexport_dispatcher);
+	invoke_jsexport_method (jsexport_dispatcher, invoke_args);
 }
 
 #ifndef DISABLE_THREADS
@@ -281,6 +297,26 @@ mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, v
 	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
 }
 
+// this is running on the target thread
+static void
+mono_wasm_invoke_jsexport_by_handle_async_post_cb (gpointer handle, void* args)
+{
+	mono_wasm_invoke_jsexport_by_handle ((int)(intptr_t)handle, args);
+	if (args) {
+		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
+		if(*is_receiver_should_free != 0){
+			free (args);
+		}
+	}
+}
+
+// async
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle_async_post (void* target_thread, int handle, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_by_handle_async_post_cb, (gpointer)(intptr_t)handle, args);
+}
+
 
 typedef void (*js_interop_event)(void* args);
 typedef void (*sync_context_pump)(void);
@@ -302,6 +338,22 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
+}
+
+// this is running on the target thread
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle_sync (int handle, void* args)
+{
+	before_sync_js_import (args);
+	mono_wasm_invoke_jsexport_by_handle (handle, args);
+	after_sync_js_import (args);
+}
+
+// sync
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle_sync_send (void* target_thread, int handle, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_by_handle_sync, (gpointer)(intptr_t)handle, args);
 }
 
 EMSCRIPTEN_KEEPALIVE void mono_wasm_synchronization_context_pump (void)

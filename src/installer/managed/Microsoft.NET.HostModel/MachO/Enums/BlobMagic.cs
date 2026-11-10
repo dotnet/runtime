@@ -8,8 +8,8 @@ namespace Microsoft.NET.HostModel.MachO;
 /// </summary>
 internal enum BlobMagic : uint
 {
-    Requirements = 0xfade0c01,
-    CodeDirectory = 0xfade0c02,
     EmbeddedSignature = 0xfade0cc0,
+    CodeDirectory = 0xfade0c02,
+    Requirements = 0xfade0c01,
     CmsWrapper = 0xfade0b01,
 }

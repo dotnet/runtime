@@ -19,11 +19,8 @@ namespace System.Data.Common
     {
         // NOTE: Initializing a Task in SQL CLR requires the "UNSAFE" permission set (https://learn.microsoft.com/dotnet/framework/performance/sql-server-programming-and-host-protection-attributes)
         // Therefore we are lazily initializing these Tasks to avoid forcing customers to use the "UNSAFE" set when they are actually using no Async features
-        private static Task<bool>? _trueTask;
-        internal static Task<bool> TrueTask => _trueTask ??= Task.FromResult(true);
-
-        private static Task<bool>? _falseTask;
-        internal static Task<bool> FalseTask => _falseTask ??= Task.FromResult(false);
+        internal static Task<bool> TrueTask => field ??= Task.FromResult(true);
+        internal static Task<bool> FalseTask => field ??= Task.FromResult(false);
 
         internal const CompareOptions DefaultCompareOptions = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
@@ -229,26 +226,18 @@ namespace System.Data.Common
             }
         }
 
-        // only StackOverflowException & ThreadAbortException are sealed classes
-        private static readonly Type s_stackOverflowType = typeof(StackOverflowException);
-        private static readonly Type s_outOfMemoryType = typeof(OutOfMemoryException);
-        private static readonly Type s_threadAbortType = typeof(ThreadAbortException);
-        private static readonly Type s_nullReferenceType = typeof(NullReferenceException);
-        private static readonly Type s_accessViolationType = typeof(AccessViolationException);
-        private static readonly Type s_securityType = typeof(SecurityException);
-
         internal static bool IsCatchableExceptionType(Exception e)
         {
             // a 'catchable' exception is defined by what it is not.
             Debug.Assert(e != null, "Unexpected null exception!");
             Type type = e.GetType();
 
-            return ((type != s_stackOverflowType) &&
-                     (type != s_outOfMemoryType) &&
-                     (type != s_threadAbortType) &&
-                     (type != s_nullReferenceType) &&
-                     (type != s_accessViolationType) &&
-                     !s_securityType.IsAssignableFrom(type));
+            return ((type != typeof(StackOverflowException)) &&
+                     (type != typeof(OutOfMemoryException)) &&
+                     (type != typeof(ThreadAbortException)) &&
+                     (type != typeof(NullReferenceException)) &&
+                     (type != typeof(AccessViolationException)) &&
+                     !typeof(SecurityException).IsAssignableFrom(type));
         }
 
         internal static bool IsCatchableOrSecurityExceptionType(Exception e)
@@ -263,11 +252,11 @@ namespace System.Data.Common
             Debug.Assert(e != null, "Unexpected null exception!");
             Type type = e.GetType();
 
-            return ((type != s_stackOverflowType) &&
-                     (type != s_outOfMemoryType) &&
-                     (type != s_threadAbortType) &&
-                     (type != s_nullReferenceType) &&
-                     (type != s_accessViolationType));
+            return ((type != typeof(StackOverflowException)) &&
+                     (type != typeof(OutOfMemoryException)) &&
+                     (type != typeof(ThreadAbortException)) &&
+                     (type != typeof(NullReferenceException)) &&
+                     (type != typeof(AccessViolationException)));
         }
 
         // Invalid Enumeration

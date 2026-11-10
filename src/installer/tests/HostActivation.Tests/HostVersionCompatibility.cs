@@ -30,8 +30,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string appExe = app.AppExe;
 
             RuntimeConfig appConfig = RuntimeConfig.FromFile(app.RuntimeConfigJson);
-            Assert.NotEqual(appConfig.Tfm, TestContext.Tfm);
-            Assert.NotEqual(appConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version, TestContext.MicrosoftNETCoreAppVersion);
+            Assert.NotEqual(appConfig.Tfm, HostTestContext.Tfm);
+            Assert.NotEqual(appConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version, HostTestContext.MicrosoftNETCoreAppVersion);
 
             // Use the newer apphost
             // This emulates the case when:
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {TestContext.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
 
             // Use the newer apphost and hostFxr
             // This emulates the case when:
@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {TestContext.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -71,8 +71,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             RuntimeConfig previousAppConfig = RuntimeConfig.FromFile(previousVersionApp.RuntimeConfigJson);
             string previousVersion = previousAppConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version;
-            Assert.NotEqual(TestContext.Tfm, previousAppConfig.Tfm);
-            Assert.NotEqual(TestContext.MicrosoftNETCoreAppVersion, previousVersion);
+            Assert.NotEqual(HostTestContext.Tfm, previousAppConfig.Tfm);
+            Assert.NotEqual(HostTestContext.MicrosoftNETCoreAppVersion, previousVersion);
 
             // Use the older apphost
             // This emulates the case when:
@@ -80,22 +80,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //  2) App rolls forward to newer runtime
             File.Copy(previousVersionApp.AppExe, appExe, true);
             Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
+                .CaptureStdOut().CaptureStdErr()
+                .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdErrContaining($"--- Invoked apphost [version: {previousVersion}");
 
             // Use the older apphost and hostfxr
-            // This emulates the case when:
-            //  1) One-off deployment of older runtime (not in global location)
-            //  2) Older apphost executed, but found newer runtime because of multi-level lookup on Windows
-            //     Note that we don't have multi-level on hostfxr so we will always find the older\one-off hostfxr
+            // This emulates the case when an older runtime is deployed one-off (not in the global location)
             if (OperatingSystem.IsWindows())
             {
                 File.Copy(previousVersionApp.HostFxrDll, app.HostFxrDll, true);
                 Command.Create(appExe)
-                    .EnableTracingAndCaptureOutputs()
+                    .CaptureStdOut().CaptureStdErr()
+                    .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")

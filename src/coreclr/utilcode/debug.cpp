@@ -11,6 +11,10 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "corexcep.h"
+#include <time.h>
+#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST) || defined(HOST_ANDROID)
+#include <sys/time.h>
+#endif
 
 #include <minipal/debugger.h>
 
@@ -61,6 +65,7 @@ static void DECLSPEC_NORETURN FailFastOnAssert()
     CreateCrashDumpIfEnabled();
 #endif
     RaiseFailFastException(NULL, NULL, 0);
+    UNREACHABLE();
 }
 
 #ifdef _DEBUG
@@ -83,7 +88,6 @@ void DoRaiseExceptionOnAssert(DWORD chance)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
 #if !defined(DACCESS_COMPILE)
@@ -113,7 +117,6 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // ok for debug-only code to take locks
@@ -133,7 +136,7 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (option == rTestAndRaise && fRet != 0)
     {
@@ -158,11 +161,22 @@ VOID LogAssert(
     // may not be a string literal (particularly for formatt-able asserts).
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
-    SYSTEMTIME st;
-#ifndef TARGET_UNIX
-    GetLocalTime(&st);
+    struct timespec ts;
+#if defined(HOST_ANDROID)
+    // timespec_get is not supported on Android API levels we target, use gettimeofday instead
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    ts.tv_sec = tv.tv_sec;
+    ts.tv_nsec = tv.tv_usec * 1000;
 #else
-    GetSystemTime(&st);
+    int ret = timespec_get(&ts, TIME_UTC);
+#endif
+
+    struct tm local;
+#ifdef HOST_WINDOWS
+    localtime_s(&local, &ts.tv_sec);
+#else
+    localtime_r(&ts.tv_sec, &local);
 #endif
 
     SString exename;
@@ -170,18 +184,18 @@ VOID LogAssert(
 
     LOG((LF_ASSERT,
          LL_FATALERROR,
-         "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%lu/%lu/%lu: %02lu:%02lu:%02lu %s): File: %s, Line %d : %s\n",
+         "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
          GetCurrentProcessId(),
          GetCurrentProcessId(),
          GetCurrentThreadId(),
          GetCurrentThreadId(),
-         (ULONG)st.wMonth,
-         (ULONG)st.wDay,
-         (ULONG)st.wYear,
-         1 + (( (ULONG)st.wHour + 11 ) % 12),
-         (ULONG)st.wMinute,
-         (ULONG)st.wSecond,
-         (st.wHour < 12) ? "am" : "pm",
+         local.tm_mon,
+         local.tm_mday,
+         local.tm_year,
+         1 + (( local.tm_hour + 11 ) % 12),
+         local.tm_min,
+         local.tm_sec,
+         (local.tm_hour < 12) ? "am" : "pm",
          szFile,
          iLine,
          szExpr));
@@ -219,10 +233,9 @@ bool _DbgBreakCheck(
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
+    CONTRACT_VIOLATION(GCViolation | TakesLockViolation);
 
     char formatBuffer[4096];
 
@@ -250,7 +263,7 @@ bool _DbgBreakCheck(
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     // Emit assert in debug output and console for easy access.
@@ -295,7 +308,6 @@ bool _DbgBreakCheckNoThrow(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
     bool failed = false;
@@ -308,7 +320,7 @@ bool _DbgBreakCheckNoThrow(
     {
         failed = true;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (failed)
     {
@@ -348,7 +360,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     DEBUG_ONLY_FUNCTION;
@@ -407,7 +418,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 #ifndef DACCESS_COMPILE
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             szExprToDisplay = &g_szExprWithStack2[0];
             strcpy(szExprToDisplay, szExpr);
             strcat_s(szExprToDisplay, ARRAY_SIZE(g_szExprWithStack2), "\n\n");
@@ -417,7 +427,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 #endif  // DACCESS_COMPILE
 #endif  // TARGET_UNIX
 
@@ -445,7 +455,6 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
      // NULL means use the current context.
     bool fSuccess = false;
 
-    FAULT_NOT_FATAL();
 
 #ifndef TARGET_UNIX
     EX_TRY
@@ -465,7 +474,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
     {
         // Nothing to do here.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // TARGET_UNIX
 
     return fSuccess;

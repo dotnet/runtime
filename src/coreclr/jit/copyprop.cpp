@@ -46,24 +46,17 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
     {
         for (GenTree* const tree : stmt->TreeList())
         {
-            GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
+            if (!tree->OperIsSsaDef())
             {
-                if (lclDefNode->HasCompositeSsaName())
-                {
-                    LclVarDsc* varDsc = lvaGetDesc(lclDefNode);
-                    assert(varDsc->lvPromoted);
-
-                    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
-                    {
-                        popDef(varDsc->lvFieldLclStart + index, lclDefNode->GetSsaNum(this, index));
-                    }
-                }
-                else
-                {
-                    popDef(lclDefNode->GetLclNum(), lclDefNode->GetSsaNum());
-                }
+                continue;
             }
+
+            auto visitDef = [=](const auto& def) {
+                popDef(def.GetLclNum(), def.GetSsaNum(this));
+                return GenTree::VisitResult::Continue;
+            };
+
+            tree->VisitLogicalLocalDefs(this, visitDef);
         }
     }
 }
@@ -198,11 +191,25 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an
-        // enregisterable lclVar.
+        // It may not be profitable to propagate a local if that changes its expected enregister status.
         LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
-        if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
+        bool enregOld = !varDsc->lvDoNotEnregister && (!varDsc->IsLiveInOutOfHandler() || IsEHVarARegCandidate(varDsc));
+        bool enregNew = !newLclVarDsc->lvDoNotEnregister &&
+                        (!newLclVarDsc->IsLiveInOutOfHandler() || IsEHVarARegCandidate(newLclVarDsc));
+        if (enregOld != enregNew)
         {
+            continue;
+        }
+
+        // Avoid having to DNER an otherwise enregisterable local
+        if (tree->OperIs(GT_LCL_FLD) && !newLclVarDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        if (varDsc->lvOnlyUsedOnSynchronousPath || newLclVarDsc->lvOnlyUsedOnSynchronousPath)
+        {
+            // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
             continue;
         }
 
@@ -264,6 +271,10 @@ bool Compiler::optCopyProp(
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
+        if (newLclVarDsc->RequiresGlobRefFlag())
+        {
+            tree->gtFlags |= GTF_GLOB_REF;
+        }
 
         // Update VN to match, and propagate up through any enclosing commas.
         // (we could in principle try updating through other parents, but
@@ -301,64 +312,44 @@ bool Compiler::optCopyProp(
 }
 
 //------------------------------------------------------------------------------
-// optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
+// optCopyPropPushDef: Push the new live SSA def on the stack.
 //
 // Arguments:
-//    defNode    - The definition node for this def (store/GT_CALL) (will be "nullptr" for "use" defs)
 //    lclNode    - The local tree representing "the def"
+//    lclNum     - The logical local being defined
+//    ssaNum     - The SSA number of the definition
 //    curSsaName - The map of local numbers to stacks of their defs
 //
-void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
+void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
+                                  unsigned             lclNum,
+                                  unsigned             ssaNum,
+                                  LclNumToLiveDefsMap* curSsaName)
 {
-    unsigned lclNum = lclNode->GetLclNum();
-
     // Shadowed parameters are special: they will (at most) have one use, as values in a store
     // to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
-    if ((gsShadowVarInfo != nullptr) && lvaGetDesc(lclNum)->lvIsParam &&
-        (gsShadowVarInfo[lclNum].shadowCopy != BAD_VAR_NUM))
+    unsigned nodeLclNum = lclNode->GetLclNum();
+    if ((gsShadowVarInfo != nullptr) && lvaGetDesc(nodeLclNum)->lvIsParam &&
+        (gsShadowVarInfo[nodeLclNum].shadowCopy != BAD_VAR_NUM))
     {
-        assert(!curSsaName->Lookup(lclNum));
+        assert(!curSsaName->Lookup(nodeLclNum));
         return;
     }
 
-    auto pushDef = [=](unsigned defLclNum, unsigned defSsaNum) {
-        // The default is "not available".
-        LclSsaVarDsc* ssaDef = nullptr;
-
-        if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
-        {
-            ssaDef = lvaGetDesc(defLclNum)->GetPerSsaData(defSsaNum);
-        }
-
-        CopyPropSsaDefStack* defStack;
-        if (!curSsaName->Lookup(defLclNum, &defStack))
-        {
-            defStack = new (curSsaName->GetAllocator()) CopyPropSsaDefStack(curSsaName->GetAllocator());
-            curSsaName->Set(defLclNum, defStack);
-        }
-
-        defStack->Push(CopyPropSsaDef(ssaDef, lclNode));
-    };
-
-    if (lclNode->HasCompositeSsaName())
+    if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
     {
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        assert(varDsc->lvPromoted);
+        return;
+    }
 
-        for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
-        {
-            unsigned ssaNum = lclNode->GetSsaNum(this, index);
-            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-            {
-                pushDef(varDsc->lvFieldLclStart + index, ssaNum);
-            }
-        }
-    }
-    else if (lclNode->HasSsaName())
+    LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
+
+    CopyPropSsaDefStack* defStack;
+    if (!curSsaName->Lookup(lclNum, &defStack))
     {
-        unsigned ssaNum = lclNode->GetSsaNum();
-        pushDef(lclNum, ssaNum);
+        defStack = new (curSsaName->GetAllocator()) CopyPropSsaDefStack(curSsaName->GetAllocator());
+        curSsaName->Set(lclNum, defStack);
     }
+
+    defStack->Push(CopyPropSsaDef(ssaDef, lclNode));
 }
 
 //------------------------------------------------------------------------------
@@ -398,12 +389,16 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
         // SSA renaming process.
         for (GenTree* const tree : stmt->TreeList())
         {
-            treeLifeUpdater.UpdateLife(tree);
+            treeLifeUpdater.UpdateLife<false>(tree);
 
-            GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
+            if (tree->OperIsSsaDef())
             {
-                optCopyPropPushDef(tree, lclDefNode, curSsaName);
+                auto visitDef = [=](const auto& def) {
+                    optCopyPropPushDef(def.GetDefNode(), def.GetLclNum(), def.GetSsaNum(this), curSsaName);
+                    return GenTree::VisitResult::Continue;
+                };
+
+                tree->VisitLogicalLocalDefs(this, visitDef);
             }
             else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {
@@ -413,11 +408,11 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                 // live definition. Since they are always live, we'll do it only once.
                 if ((lvaGetDesc(lclNum)->lvIsParam || (lclNum == info.compThisArg)) && !curSsaName->Lookup(lclNum))
                 {
-                    optCopyPropPushDef(nullptr, tree->AsLclVarCommon(), curSsaName);
+                    optCopyPropPushDef(tree->AsLclVarCommon(), lclNum, tree->AsLclVarCommon()->GetSsaNum(), curSsaName);
                 }
 
                 // TODO-Review: EH successor/predecessor iteration seems broken.
-                if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+                if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
                 {
                     continue;
                 }

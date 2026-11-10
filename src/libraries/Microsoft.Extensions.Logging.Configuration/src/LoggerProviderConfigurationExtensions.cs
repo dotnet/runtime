@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging.Configuration
         /// <typeparam name="TProvider">The provider class.</typeparam>
         [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
-        public static void RegisterProviderOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions, TProvider>(IServiceCollection services) where TOptions : class
+        public static void RegisterProviderOptions<TOptions, TProvider>(IServiceCollection services) where TOptions : class
         {
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<TOptions>, LoggerProviderConfigureOptions<TOptions, TProvider>>());
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IOptionsChangeTokenSource<TOptions>, LoggerProviderOptionsChangeTokenSource<TOptions, TProvider>>());

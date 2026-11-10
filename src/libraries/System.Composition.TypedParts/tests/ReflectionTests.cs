@@ -26,7 +26,7 @@ namespace System.Composition.TypedParts.Tests
         /// This can cause arguments to an export's constructor to incorrectly
         /// revert to a default value during GetExport.
         /// </remarks>
-        [ConditionalFact(nameof(HasMultiplierProcessors))]
+        [ConditionalFact(typeof(ReflectionTests), nameof(HasMultiplierProcessors))]
         public void MultiThreadedGetExportsWorkWithImportingConstructor()
         {
             var errors = new ConcurrentBag<Exception>();

@@ -5,6 +5,9 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -95,6 +98,7 @@
     <Compile Include="TypeBuilder\TypeBuilderAssemblyQualifiedName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderCreateType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderCreateTypeInfo.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderCustomModifierOrder.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDeclaringMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineConstructor.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineDefaultConstructor.cs" />
@@ -114,6 +118,7 @@
     <Compile Include="TypeBuilder\TypeBuilderGetField.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGetGenericTypeDefinition.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGetMethod.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGetNullableUnderlyingType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGUID.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsByRefLike.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsGenericParameter.cs" />
@@ -122,6 +127,7 @@
     <Compile Include="TypeBuilder\TypeBuilderMakeArrayType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeByRefType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeGenericType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeFunctionPointerType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakePointerType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderNamespace.cs" />
@@ -132,9 +138,11 @@
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit\src\System.Reflection.Emit.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
 

@@ -36,19 +36,19 @@ namespace System.IO.Ports.Tests
         public enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
 
         #region Test Cases
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Buffer_Null()
         {
             VerifyReadException(null, 0, 1, typeof(ArgumentNullException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Offset_NEG1()
         {
             VerifyReadException(new char[defaultCharArraySize], -1, defaultCharCount, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Offset_NEGRND()
         {
             Random rndGen = new Random(-55);
@@ -56,19 +56,19 @@ namespace System.IO.Ports.Tests
             VerifyReadException(new char[defaultCharArraySize], rndGen.Next(int.MinValue, 0), defaultCharCount, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Offset_MinInt()
         {
             VerifyReadException(new char[defaultCharArraySize], int.MinValue, defaultCharCount, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Count_NEG1()
         {
             VerifyReadException(new char[defaultCharArraySize], defaultCharOffset, -1, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Count_NEGRND()
         {
             Random rndGen = new Random(-55);
@@ -76,13 +76,13 @@ namespace System.IO.Ports.Tests
             VerifyReadException(new char[defaultCharArraySize], defaultCharOffset, rndGen.Next(int.MinValue, 0), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Count_MinInt()
         {
             VerifyReadException(new char[defaultCharArraySize], defaultCharOffset, int.MinValue, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void OffsetCount_EQ_Length_Plus_1()
         {
             Random rndGen = new Random(-55);
@@ -94,7 +94,7 @@ namespace System.IO.Ports.Tests
             VerifyReadException(new char[bufferLength], offset, count, expectedException);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void OffsetCount_GT_Length()
         {
             Random rndGen = new Random(-55);
@@ -107,7 +107,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Offset_GT_Length()
         {
             Random rndGen = new Random(-55);
@@ -120,7 +120,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Count_GT_Length()
         {
             Random rndGen = new Random(-55);
@@ -132,7 +132,7 @@ namespace System.IO.Ports.Tests
             VerifyReadException(new char[bufferLength], offset, count, expectedException);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void OffsetCount_EQ_Length()
         {
             Random rndGen = new Random(-55);
@@ -143,7 +143,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void Offset_EQ_Length_Minus_1()
         {
             Random rndGen = new Random(-55);
@@ -154,7 +154,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void Count_EQ_Length()
         {
             Random rndGen = new Random(-55);
@@ -165,7 +165,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasOneSerialPort))]
         public void Count_EQ_Zero()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -180,7 +180,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding()
         {
             Random rndGen = new Random(-55);
@@ -191,7 +191,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             Random rndGen = new Random(-55);
@@ -202,7 +202,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding()
         {
             Random rndGen = new Random(-55);
@@ -213,25 +213,25 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding_1Char()
         {
             VerifyRead(new char[1], 0, 1, new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding_1Char()
         {
             VerifyRead(new char[1], 0, 1, new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding_1Char()
         {
             VerifyRead(new char[1], 0, 1, new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void LargeInputBuffer()
         {
             int bufferLength = largeNumRndCharsToRead;
@@ -241,25 +241,25 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, largeNumRndCharsToRead);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void BytesFollowedByCharsASCII()
         {
             VerifyBytesFollowedByChars(new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void BytesFollowedByCharsUTF8()
         {
             VerifyBytesFollowedByChars(new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void BytesFollowedByCharsUTF32()
         {
             VerifyBytesFollowedByChars(new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedData()
         {
             int bufferLength = 32 + 8;
@@ -269,7 +269,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, 32, ReadDataFromEnum.Buffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedData()
         {
             int bufferLength = 8;
@@ -279,7 +279,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, 32, ReadDataFromEnum.Buffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedAndNonBufferedData()
         {
             int bufferLength = 64 + 8;
@@ -289,7 +289,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, 32, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedAndNonBufferedData()
         {
             int bufferLength = 8;
@@ -299,7 +299,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(new char[bufferLength], offset, count, 32, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void GreedyRead()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -371,7 +371,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void Read_DataReceivedBeforeTimeout()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -424,7 +424,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void Read_ResizeBuffer()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -496,7 +496,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void Read_Timeout()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -551,7 +551,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void Read_Partial()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -596,7 +596,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(Read_char_int_int), nameof(HasLoopbackOrNullModem))]
         public void Read_SurrogateBoundary()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())

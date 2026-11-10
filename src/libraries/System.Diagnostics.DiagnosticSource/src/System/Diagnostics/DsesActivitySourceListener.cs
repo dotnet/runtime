@@ -75,20 +75,12 @@ internal sealed class DsesActivitySourceListener : IDisposable
 
                 SpecLookupKey key = new(currentActivitySourceSpec.SourceName, currentActivitySourceSpec.ActivityName);
 
-#if NETFRAMEWORK || NETSTANDARD2_0
-                if (specs.ContainsKey(key))
-                {
-                    LogIgnoredSpecRule(currentActivitySourceSpec.SourceName, currentActivitySourceSpec.ActivityName);
-                    continue;
-                }
-                specs[key] = currentActivitySourceSpec;
-#else
                 if (!specs.TryAdd(key, currentActivitySourceSpec))
                 {
                     LogIgnoredSpecRule(currentActivitySourceSpec.SourceName, currentActivitySourceSpec.ActivityName);
                     continue;
                 }
-#endif
+
                 allSources.Add(key.activitySourceName);
                 if (key.activityName != null)
                 {

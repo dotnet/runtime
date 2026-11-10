@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 namespace structinreg
 {
@@ -31,12 +32,6 @@ namespace structinreg
                     return ret;
                 }
 
-                ret = Program3.Main1();
-                if (ret != 100)
-                {
-                    return ret;
-                }
-
                 ret = Program4.Main1();
                 if (ret != 100)
                 {
@@ -48,6 +43,14 @@ namespace structinreg
                 Console.WriteLine(e.ToString());
             }
             return 100;
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsDynamicEntrypointSupported))]
+        [OuterLoop]
+        public static int TestPInvokeCallbacks()
+        {
+            return Program3.Main1();
         }
     }
 

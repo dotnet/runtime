@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(0, version);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(GeneralTests), nameof(SupportsDiffieHellman))]
         public static void DecodeRecipients3_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -323,7 +323,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             Assert.Equal<byte>(contentInfo.Content, ecms.ContentInfo.Content);
         }
 
-        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [ConditionalFact(typeof(GeneralTests), nameof(SupportsRsaOaepCerts))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void RsaOaepCertificate_NullParameters_Throws()
         {
@@ -336,21 +336,21 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             }
         }
 
-        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [ConditionalFact(typeof(GeneralTests), nameof(SupportsRsaOaepCerts))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void RoundTrip_RsaOaepCertificate_Sha1KeyParameters()
         {
             Assert_Certificate_Roundtrip(Certificates.RsaOaep2048_Sha1Parameters);
         }
 
-        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [ConditionalFact(typeof(GeneralTests), nameof(SupportsRsaOaepCerts))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void RoundTrip_RsaOaepCertificate_Sha256KeyParameters()
         {
             Assert_Certificate_Roundtrip(Certificates.RsaOaep2048_Sha256Parameters);
         }
 
-        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [ConditionalFact(typeof(GeneralTests), nameof(SupportsRsaOaepCerts))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void RoundTrip_RsaOaepCertificate_NoParameters()
         {

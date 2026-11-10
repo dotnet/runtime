@@ -5,6 +5,9 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
@@ -32,12 +35,6 @@
              Link="System\Text\StringBuilderTests.cs" />
     <Compile Include="..\System\Text\StringBuilderReplaceTests.cs"
              Link="System\Text\StringBuilderReplaceTests.cs" />
-    <Compile Include="..\System\Uri.CreateStringTests.cs"
-             Link="System\Uri.CreateStringTests.cs" />
-    <Compile Include="..\System\Uri.CreateUriTests.cs"
-             Link="System\Uri.CreateUriTests.cs" />
-    <Compile Include="..\System\Uri.MethodsTests.cs"
-             Link="System\Uri.MethodsTests.cs" />
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
              Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs"

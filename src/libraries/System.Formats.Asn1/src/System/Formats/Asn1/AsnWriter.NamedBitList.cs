@@ -144,7 +144,7 @@ namespace System.Formats.Asn1
 
         // T-REC-X.680-201508 sec 22
         // T-REC-X.690-201508 sec 8.6, 11.2.2
-        private void WriteNamedBitList(Asn1Tag? tag, ulong integralValue)
+        private unsafe void WriteNamedBitList(Asn1Tag? tag, ulong integralValue)
         {
             Span<byte> temp = stackalloc byte[sizeof(ulong)];
             // Reset to all zeros, since we're just going to or-in bits we need.

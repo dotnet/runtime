@@ -11,9 +11,8 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 // CoreCLR nibblemap with O(1) lookup time.
 //
-// Implementation very similar to NibbleMapLinearLookup, but with the addition of writing relative pointers
-// into the nibblemap whenever a code block completely covers a DWORD. This allows for O(1) lookup
-// with the cost of O(n) write time.
+// Relative pointers are written into the nibblemap whenever a code block completely covers a DWORD.
+// This allows for O(1) lookup with the cost of O(n) write time.
 //
 // Pointers are encoded using the top 28 bits of the DWORD normally, the bottom 4 bits of the pointer
 // are reduced to 2 bits due to 4 byte code offset and encoded in bits 28 .. 31 of the DWORD with values

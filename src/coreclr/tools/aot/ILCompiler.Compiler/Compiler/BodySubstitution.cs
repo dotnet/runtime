@@ -36,7 +36,7 @@ namespace ILCompiler
 
             if (_value == Throw)
             {
-                codestream.EmitCallThrowHelper(emit, method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved"));
+                codestream.EmitCallThrowHelper(emit, method.Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowFeatureBodyRemoved"u8));
             }
             else if (_value == null)
             {

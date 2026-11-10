@@ -3,12 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging.Abstractions;
+using System.Globalization;
 using Microsoft.Extensions.Logging.Generators.Tests.TestClasses;
 using Microsoft.Extensions.Logging.Generators.Tests.TestClasses.UsesConstraintInAnotherNamespace;
 using Xunit;
 using NamespaceForABC;
 using ConstraintInAnotherNamespace;
+using System.Tests;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
@@ -273,17 +274,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(7, logger.LastEventId.Id);
             Assert.Equal(1, logger.CallCount);
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/52527")]
-        public void MessageTests_SuppressWarning_WarnAsError_NoError()
-        {
-            // Diagnostics produced by source generators do not respect the /warnAsError or /noWarn compiler flags.
-            // These are handled fine by the logger generator and generate warnings. Unfortunately, the warning suppression is
-            // not being observed by the C# compiler at the moment, so having these here causes build warnings.
-#if false
-            var logger = new MockLogger();
 
             logger.Reset();
             MessageTestExtensions.M2(logger, "Foo", "Bar");
@@ -304,6 +294,29 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 new KeyValuePair<string, object?>("p1", "Foo"),
                 new KeyValuePair<string, object?>("p2", 42),
                 new KeyValuePair<string, object?>("{OriginalFormat}", string.Empty));
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/52527")]
+        public void MessageTests_SuppressWarning_WarnAsError_NoError()
+        {
+            // Diagnostics produced by source generators do not respect the /warnAsError or /noWarn compiler flags.
+            // M4 is handled fine by the logger generator and generates a warning. Unfortunately, the warning suppression is
+            // not being observed by the C# compiler at the moment, so having it here causes build warnings.
+#if false
+            var logger = new MockLogger();
+
+            logger.Reset();
+            MessageTestExtensions.M4(logger, "Foo", 42, 43);
+            Assert.Null(logger.LastException);
+            Assert.Equal("Foo", logger.LastFormattedString);
+            AssertLastState(logger,
+                new KeyValuePair<string, object?>("p1", "Foo"),
+                new KeyValuePair<string, object?>("p2", 42),
+                new KeyValuePair<string, object?>("p3", 43),
+                new KeyValuePair<string, object?>("{OriginalFormat}", "{p1}"));
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
 #endif
@@ -713,7 +726,24 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 new KeyValuePair<string, object?>("A1", 42),
                 new KeyValuePair<string, object?>("a2", 43),
                 new KeyValuePair<string, object?>("{OriginalFormat}", "M3 {a2} {A1}"));
+        }
 
+        [Fact]
+        public void TemplateTests_UsesInvariantCulture()
+        {
+            using ThreadCultureChange _ = new("fr-FR");
+
+            var logger = new MockLogger();
+
+            logger.Reset();
+            TemplateTestExtensions.M4(logger, 1.23);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M4 1.23", logger.LastFormattedString);
+
+            logger.Reset();
+            TemplateTestExtensions.M5(logger, 1.23, 4.56, 7.89, 10.11, 12.13, 14.15, 16.17);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M5 1.23 4.56 7.89 10.11 12.13 14.15 16.17", logger.LastFormattedString);
         }
 
         [Fact]

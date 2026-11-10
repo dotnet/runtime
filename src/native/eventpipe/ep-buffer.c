@@ -56,8 +56,9 @@ ep_buffer_free (EventPipeBuffer *buffer)
 {
 	ep_return_void_if_nok (buffer != NULL);
 
-	// We should never be deleting a buffer that a writer thread might still try to write to
-	EP_ASSERT (ep_rt_volatile_load_uint32_t (&buffer->state) == (uint32_t)EP_BUFFER_STATE_READ_ONLY);
+	// buffers are not guaranteed to be read-only at this point as allocation may have failed,
+	// a Listener EventPipe Session may not have finished reading all events by disable,
+	// or an EventPipe session was abruptly disconnected.
 
 	ep_rt_vfree (buffer->buffer, buffer->limit - buffer->buffer);
 	ep_rt_object_free (buffer);
@@ -190,8 +191,6 @@ ep_buffer_convert_to_read_only (EventPipeBuffer *buffer)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer->current_read_event == NULL);
-
-	ep_thread_requires_lock_held (buffer->writer_thread);
 
 	ep_rt_volatile_store_uint32_t (&buffer->state, (uint32_t)EP_BUFFER_STATE_READ_ONLY);
 

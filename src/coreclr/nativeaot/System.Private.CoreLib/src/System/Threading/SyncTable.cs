@@ -109,11 +109,12 @@ namespace System.Threading
                 using (s_lock.EnterScope())
                 {
                     // After acquiring the lock check whether another thread already assigned the sync entry
-                    if (ObjectHeader.GetSyncEntryIndex(*pHeader, out int syncIndex))
+                    if (ObjectHeader.HasSyncEntryIndex(*pHeader))
                     {
-                        return syncIndex;
+                        return ObjectHeader.GetSyncEntryIndex(pHeader);
                     }
 
+                    int syncIndex;
                     if (s_freeEntryList != 0)
                     {
                         // Grab a free entry from the list
@@ -274,7 +275,7 @@ namespace System.Threading
             Debug.Assert(s_lock.IsHeldByCurrentThread);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
 
-            s_entries[syncIndex].Lock.ResetForMonitor(threadId, recursionLevel);
+            s_entries[syncIndex].Lock.InitializeForMonitor(threadId, recursionLevel);
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -12,26 +13,12 @@ namespace System.Numerics
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
-        public static Plane AsPlane(this Vector4 value)
-        {
-#if MONO
-            return Unsafe.As<Vector4, Plane>(ref value);
-#else
-            return Unsafe.BitCast<Vector4, Plane>(value);
-#endif
-        }
+        public static Plane AsPlane(this Vector4 value) => Unsafe.BitCast<Vector4, Plane>(value);
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
-        public static Quaternion AsQuaternion(this Vector4 value)
-        {
-#if MONO
-            return Unsafe.As<Vector4, Quaternion>(ref value);
-#else
-            return Unsafe.BitCast<Vector4, Quaternion>(value);
-#endif
-        }
+        public static Quaternion AsQuaternion(this Vector4 value) => Unsafe.BitCast<Vector4, Quaternion>(value);
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector2" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>

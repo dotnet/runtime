@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace R2RDumpTests
 {
@@ -36,6 +37,9 @@ namespace R2RDumpTests
             return Path.GetFullPath(exe);
         }
 
+        [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test scans the entire System.Private.CoreLib and times out in GC stress runs; it functionally tests the R2R reader, not runtime stress.", RuntimeTestModes.AnyGCStress)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Process.Start is not supported on browser-wasm")]
         [Fact]
         [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
         public static void DumpCoreLib()
@@ -51,17 +55,15 @@ namespace R2RDumpTests
             Environment.SetEnvironmentVariable("DOTNET_GCName", String.Empty);
             string DotNetAbsolutePath = string.IsNullOrEmpty(TestDotNetCmdVar) ? FindExePath("dotnet") : TestDotNetCmdVar;
 
-            ProcessStartInfo processStartInfo = new ProcessStartInfo
+            // TODO, what flags do we like to test?
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(DotNetAbsolutePath,
+                ["exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"])
             {
-                UseShellExecute = false,
-                FileName = DotNetAbsolutePath,
-                // TODO, what flags do we like to test?
-                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"})
+                InheritedHandles = [],
             };
 
-            Process process = Process.Start(processStartInfo);
-            process.WaitForExit();
-            int exitCode = process.ExitCode;
+            ProcessExitStatus status = Process.Run(processStartInfo);
+            int exitCode = status.ExitCode;
             string outputContent = File.ReadAllText(OutputFile);
             File.Delete(OutputFile);
             // TODO, here is a point where we can add more validation to outputs

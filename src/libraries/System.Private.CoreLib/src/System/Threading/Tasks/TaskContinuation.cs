@@ -479,39 +479,52 @@ namespace System.Threading.Tasks
             }
             else
             {
-                // We permit inlining if the caller allows us to, and
-                // either we're on a thread pool thread (in which case we're fine running arbitrary code)
-                // or we're already on the target scheduler (in which case we'll just ask the scheduler
-                // whether it's ok to run here).  We include the IsThreadPoolThread check here, whereas
-                // we don't in AwaitTaskContinuation.Run, since here it expands what's allowed as opposed
-                // to in AwaitTaskContinuation.Run where it restricts what's allowed.
-                bool inlineIfPossible = canInlineContinuationTask &&
-                    (TaskScheduler.InternalCurrent == m_scheduler || Thread.CurrentThread.IsThreadPoolThread);
+                RunOrScheduleAction(m_action, m_scheduler, m_capturedContext, canInlineContinuationTask);
+            }
+        }
 
-                // Create the continuation task task. If we're allowed to inline, try to do so.
-                // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
-                Task task = CreateTask(static state =>
-                {
-                    try
-                    {
-                        ((Action)state!)();
-                    }
-                    catch (Exception exception)
-                    {
-                        Task.ThrowAsync(exception, targetContext: null);
-                    }
-                }, m_action, m_scheduler);
+        /// <summary>Inlines or schedules the action to run on the specified non-default scheduler.</summary>
+        /// <param name="action">The action to invoke. Must not be null.</param>
+        /// <param name="scheduler">The non-default scheduler with which to invoke the action. Must not be null and must not be the default scheduler.</param>
+        /// <param name="capturedContext">The ExecutionContext with which to run the action, or null to not flow execution context.</param>
+        /// <param name="allowInlining">true if inlining is permitted; otherwise, false.</param>
+        internal static void RunOrScheduleAction(Action action, TaskScheduler scheduler, ExecutionContext? capturedContext, bool allowInlining)
+        {
+            Debug.Assert(action != null);
+            Debug.Assert(scheduler != null && scheduler != TaskScheduler.Default);
 
-                if (inlineIfPossible)
+            // We permit inlining if the caller allows us to, and
+            // either we're on a thread pool thread (in which case we're fine running arbitrary code)
+            // or we're already on the target scheduler (in which case we'll just ask the scheduler
+            // whether it's ok to run here).  We include the IsThreadPoolThread check here, whereas
+            // we don't in AwaitTaskContinuation.Run, since here it expands what's allowed as opposed
+            // to in AwaitTaskContinuation.Run where it restricts what's allowed.
+            bool inlineIfPossible = allowInlining &&
+                (TaskScheduler.InternalCurrent == scheduler || Thread.CurrentThread.IsThreadPoolThread);
+
+            // Create the continuation task task. If we're allowed to inline, try to do so.
+            // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
+            Task task = CreateTask(static state =>
+            {
+                try
                 {
-                    InlineIfPossibleOrElseQueue(task, needsProtection: false);
+                    ((Action)state!)();
                 }
-                else
+                catch (Exception exception)
                 {
-                    // We need to run asynchronously, so just schedule the task.
-                    try { task.ScheduleAndStart(needsProtection: false); }
-                    catch (TaskSchedulerException) { } // No further action is necessary, as ScheduleAndStart already transitioned task to faulted
+                    Task.ThrowAsync(exception, targetContext: null);
                 }
+            }, action, scheduler, capturedContext);
+
+            if (inlineIfPossible)
+            {
+                InlineIfPossibleOrElseQueue(task, needsProtection: false);
+            }
+            else
+            {
+                // We need to run asynchronously, so just schedule the task.
+                try { task.ScheduleAndStart(needsProtection: false); }
+                catch (TaskSchedulerException) { } // No further action is necessary, as ScheduleAndStart already transitioned task to faulted
             }
         }
     }
@@ -520,7 +533,7 @@ namespace System.Threading.Tasks
     internal class AwaitTaskContinuation : TaskContinuation, IThreadPoolWorkItem
     {
         /// <summary>The ExecutionContext with which to run the continuation.</summary>
-        private readonly ExecutionContext? m_capturedContext;
+        protected readonly ExecutionContext? m_capturedContext;
         /// <summary>The action to invoke.</summary>
         protected readonly Action m_action;
 
@@ -543,8 +556,9 @@ namespace System.Threading.Tasks
         /// <param name="action">The action to run. Must not be null.</param>
         /// <param name="state">The state to pass to the action. Must not be null.</param>
         /// <param name="scheduler">The scheduler to target.</param>
+        /// <param name="capturedContext">The ExecutionContext with which to run the action, or null to not flow execution context.</param>
         /// <returns>The created task.</returns>
-        protected Task CreateTask(Action<object?> action, object? state, TaskScheduler scheduler)
+        protected static Task CreateTask(Action<object?> action, object? state, TaskScheduler scheduler, ExecutionContext? capturedContext)
         {
             Debug.Assert(action != null);
             Debug.Assert(scheduler != null);
@@ -553,7 +567,7 @@ namespace System.Threading.Tasks
                 action, state, null, default,
                 TaskCreationOptions.None, InternalTaskOptions.QueuedByRuntime, scheduler)
             {
-                CapturedContext = m_capturedContext
+                CapturedContext = capturedContext
             };
         }
 
@@ -768,23 +782,30 @@ namespace System.Threading.Tasks
             // If we're not allowed to run here, schedule the action
             if (!allowInlining || !IsValidLocationForInlining)
             {
-                // If logging is disabled, we can simply queue the box itself as a custom work
-                // item, and its work item execution will just invoke its MoveNext.  However, if
-                // logging is enabled, there is pre/post-work we need to do around logging to
-                // match what's done for other continuations, and that requires flowing additional
-                // information into the continuation, which we don't want to burden other cases of the
-                // box with... so, in that case we just delegate to the AwaitTaskContinuation-based
-                // path that already handles this, albeit at the expense of allocating the ATC
-                // object, and potentially forcing the box's delegate into existence, when logging
-                // is enabled.
-                if (TplEventSource.Log.IsEnabled())
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    UnsafeScheduleAction(box.MoveNextAction, prevCurrentTask);
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                    }
+
+                    // If logging is disabled, we can simply queue the box itself as a custom work
+                    // item, and its work item execution will just invoke its MoveNext.  However, if
+                    // logging is enabled, there is pre/post-work we need to do around logging to
+                    // match what's done for other continuations, and that requires flowing additional
+                    // information into the continuation, which we don't want to burden other cases of the
+                    // box with... so, in that case we just delegate to the AwaitTaskContinuation-based
+                    // path that already handles this, albeit at the expense of allocating the ATC
+                    // object, and potentially forcing the box's delegate into existence, when logging
+                    // is enabled.
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                    {
+                        UnsafeScheduleAction(box.MoveNextAction, prevCurrentTask);
+                        return;
+                    }
                 }
-                else
-                {
-                    ThreadPool.UnsafeQueueUserWorkItemInternal(box, preferLocal: true);
-                }
+
+                ThreadPool.UnsafeQueueUserWorkItemInternal(box, preferLocal: true);
                 return;
             }
 

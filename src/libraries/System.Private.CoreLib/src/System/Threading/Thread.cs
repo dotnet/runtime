@@ -6,9 +6,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -21,118 +21,11 @@ namespace System.Threading
         [ThreadStatic]
         private static Thread? t_currentThread;
 
-        // State associated with starting new thread
-        private sealed class StartHelper
-        {
-            internal int _maxStackSize;
-            internal Delegate _start;
-            internal object? _startArg;
-            internal CultureInfo? _culture;
-            internal CultureInfo? _uiCulture;
-            internal ExecutionContext? _executionContext;
-
-            internal StartHelper(Delegate start)
-            {
-                _start = start;
-            }
-
-            internal static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(Callback);
-
-            private static void Callback(object? state)
-            {
-                Debug.Assert(state != null);
-                ((StartHelper)state).RunWorker();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)] // avoid long-lived stack frame in many threads
-            internal void Run()
-            {
-                if (_executionContext != null && !_executionContext.IsDefault)
-                {
-                    ExecutionContext.RunInternal(_executionContext, s_threadStartContextCallback, this);
-                }
-                else
-                {
-                    RunWorker();
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)] // avoid long-lived stack frame in many threads
-            private void RunWorker()
-            {
-                InitializeCulture();
-
-                Delegate start = _start;
-                _start = null!;
-
-#if FEATURE_OBJCMARSHAL
-                if (AutoreleasePool.EnableAutoreleasePool)
-                    AutoreleasePool.CreateAutoreleasePool();
-#endif
-
-                try
-                {
-#if TARGET_OSX || NATIVEAOT
-                    // On other platforms, when the underlying native thread is created,
-                    // the thread name is set to the name of the managed thread by another thread.
-                    // However, on OS X and NativeAOT (across all OSes), only the thread itself can set its name.
-                    // Therefore, by this point the native thread is still unnamed as it has not started yet.
-                    Thread thread = Thread.CurrentThread;
-                    if (!string.IsNullOrEmpty(thread.Name))
-                    {
-                        // Name the underlying native thread to match the managed thread name.
-                        thread.ThreadNameChanged(thread.Name);
-                    }
-#endif
-                    if (start is ThreadStart threadStart)
-                    {
-                        threadStart();
-                    }
-                    else
-                    {
-                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
-
-                        object? startArg = _startArg;
-                        _startArg = null;
-
-                        parameterizedThreadStart(startArg);
-                    }
-                }
-                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
-                {
-                    // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
-                }
-
-#if FEATURE_OBJCMARSHAL
-                // There is no need to wrap this "clean up" code in a finally block since
-                // if an exception is thrown above, the process is going to terminate.
-                // Optimize for the most common case - no exceptions escape a thread.
-                if (AutoreleasePool.EnableAutoreleasePool)
-                    AutoreleasePool.DrainAutoreleasePool();
-#endif
-            }
-
-            private void InitializeCulture()
-            {
-                if (_culture != null)
-                {
-                    CultureInfo.CurrentCulture = _culture;
-                    _culture = null;
-                }
-
-                if (_uiCulture != null)
-                {
-                    CultureInfo.CurrentUICulture = _uiCulture;
-                    _uiCulture = null;
-                }
-            }
-        }
-
         public Thread(ThreadStart start)
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            _startHelper = new StartHelper(start);
+            InitializeStartHelper(start, maxStackSize: 0);
 
             Initialize();
         }
@@ -143,7 +36,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
+            InitializeStartHelper(start, maxStackSize);
 
             Initialize();
         }
@@ -152,7 +45,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            _startHelper = new StartHelper(start);
+            InitializeStartHelper(start, maxStackSize: 0);
 
             Initialize();
         }
@@ -163,26 +56,9 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
+            InitializeStartHelper(start, maxStackSize);
 
             Initialize();
-        }
-
-#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => true;
-#else
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
-#endif
-
-        internal static void ThrowIfNoThreadStart()
-        {
-            if (IsThreadStartSupported)
-                return;
-            throw new PlatformNotSupportedException();
         }
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
@@ -209,32 +85,6 @@ namespace System.Threading
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext)
-        {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
-            ThrowIfNoThreadStart();
-
-            StartHelper? startHelper = _startHelper;
-
-            // In the case of a null startHelper (second call to start on same thread)
-            // StartCore method will take care of the error reporting.
-            if (startHelper != null)
-            {
-                if (startHelper._start is ThreadStart)
-                {
-                    // We expect the thread to be setup with a ParameterizedThreadStart if this Start is called.
-                    throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
-                }
-
-                startHelper._startArg = parameter;
-                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
-            }
-
-            StartCore();
-        }
-
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
@@ -255,52 +105,23 @@ namespace System.Threading
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 
-        private void Start(bool captureContext)
+#if !MONO
+        public bool Join(int millisecondsTimeout)
         {
-            ThrowIfNoThreadStart();
-            StartHelper? startHelper = _startHelper;
-
-            // In the case of a null startHelper (second call to start on same thread)
-            // StartCore method will take care of the error reporting.
-            if (startHelper != null)
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
+            if ((ThreadState & ThreadState.Unstarted) != 0)
             {
-                startHelper._startArg = null;
-                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
+                throw new ThreadStateException(SR.ThreadState_NotStarted);
             }
-
-            StartCore();
+            return JoinInternal(millisecondsTimeout);
         }
+#endif
 
         private void RequireCurrentThread()
         {
             if (this != CurrentThread)
             {
                 throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
-            }
-        }
-
-        private void SetCultureOnUnstartedThread(CultureInfo value, bool uiCulture)
-        {
-            ArgumentNullException.ThrowIfNull(value);
-
-            StartHelper? startHelper = _startHelper;
-
-            // This check is best effort to catch common user errors only. It won't catch all posssible race
-            // conditions between setting culture on unstarted thread and starting the thread.
-            if ((ThreadState & ThreadState.Unstarted) == 0)
-            {
-                throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
-            }
-
-            Debug.Assert(startHelper != null);
-
-            if (uiCulture)
-            {
-                startHelper._uiCulture = value;
-            }
-            else
-            {
-                startHelper._culture = value;
             }
         }
 
@@ -381,15 +202,20 @@ namespace System.Threading
             SleepInternal(millisecondsTimeout);
         }
 
-#if !NATIVEAOT
-        /// <summary>Returns the operating system identifier for the current thread.</summary>
-        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
-#endif
-
 #if !MONO
         [Intrinsic]
         internal static void FastPollGC() => FastPollGC();
 #endif
+
+        internal static Thread CurrentThreadAssumedInitialized
+        {
+            get
+            {
+                Thread? thread = t_currentThread;
+                Debug.Assert(thread != null);
+                return thread;
+            }
+        }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
@@ -426,7 +252,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -438,7 +264,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;
@@ -576,7 +402,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
+        public static nint VolatileRead(ref nint address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [return: NotNullIfNotNull(nameof(address))]
@@ -603,7 +429,7 @@ namespace System.Threading
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
-        public static UIntPtr VolatileRead(ref UIntPtr address) => Volatile.Read(ref address);
+        public static nuint VolatileRead(ref nuint address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref byte address, byte value) => Volatile.Write(ref address, value);
@@ -621,7 +447,7 @@ namespace System.Threading
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nint address, nint value) => Volatile.Write(ref address, value);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
@@ -647,7 +473,7 @@ namespace System.Threading
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
-        public static void VolatileWrite(ref UIntPtr address, UIntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nuint address, nuint value) => Volatile.Write(ref address, value);
 
         /// <summary>
         /// Manages functionality required to support members of <see cref="Thread"/> dealing with thread-local data
@@ -741,7 +567,6 @@ namespace System.Threading
         [ThreadStatic]
         public static bool WarnOnBlockingWaitOnJSInteropThread;
 
-#pragma warning disable CS3001
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
 
@@ -761,8 +586,6 @@ namespace System.Threading
             }
         }
 
-#pragma warning restore CS3001
-
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
@@ -779,6 +602,10 @@ namespace System.Threading
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
                 WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
+        }
+#else
+        internal static unsafe void AssureBlockingPossible()
+        {
         }
 #endif
     }

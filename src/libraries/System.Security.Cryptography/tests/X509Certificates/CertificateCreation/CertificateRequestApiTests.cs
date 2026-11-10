@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Xunit;
@@ -510,6 +511,87 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 Assert.Throws<CryptographicException>(() => req.CreateSigningRequest());
                 Assert.Throws<CryptographicException>(() => req.CreateSigningRequest(gen));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void DeeplyNestedOtherRequestAttribute(bool invalid)
+        {
+            byte[] encoded = BuildAttributeValue();
+
+            if (invalid)
+            {
+                encoded[^2] = 0x10;
+            }
+
+            using (ECDsa key = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=Test",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.OtherRequestAttributes.Add(
+                    new AsnEncodedData(
+                        new Oid("1.2.840.113549.1.9.7", null),
+                        encoded));
+
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+
+                if (invalid)
+                {
+                    Assert.Throws<CryptographicException>(() => req.CreateSigningRequest());
+                    Assert.Throws<CryptographicException>(() => req.CreateSigningRequest(gen));
+                }
+                else
+                {
+                    req.CreateSigningRequest();
+                    req.CreateSigningRequest(gen);
+                }
+            }
+
+            static byte[] BuildAttributeValue()
+            {
+                const int TargetDepth = 7500;
+
+                // SEQUENCE-OF
+                //   SEQUENCE-OF x7500 deep
+                //      BOOLEAN FALSE
+                //   SEQUENCE-OF x7500 deep
+
+                // Each of the two really deep values would cause a StackOverflow, use two of them to ensure coverage
+                // of the deep validator queue reuse.
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 64 * 1024);
+
+                writer.PushSequence();
+
+                for (int i = 0; i < TargetDepth; i++)
+                {
+                    writer.PushSequence();
+                }
+
+                writer.WriteBoolean(false);
+
+                for (int i = 0; i < TargetDepth; i++)
+                {
+                    writer.PopSequence();
+                }
+
+                for (int i = 0; i < TargetDepth; i++)
+                {
+                    writer.PushSequence();
+                }
+
+                for (int i = 0; i < TargetDepth; i++)
+                {
+                    writer.PopSequence();
+                }
+
+                writer.PopSequence();
+                return writer.Encode();
             }
         }
 

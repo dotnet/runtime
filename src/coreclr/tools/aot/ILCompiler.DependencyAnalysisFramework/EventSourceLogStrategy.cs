@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace ILCompiler.DependencyAnalysisFramework
 {
     [EventSource(Name = "Microsoft-ILCompiler-DependencyGraph")]
-    internal sealed class GraphEventSource : EventSource
+    internal sealed partial class GraphEventSource : EventSource
     {
         public static class Keywords
         {

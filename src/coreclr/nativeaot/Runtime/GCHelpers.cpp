@@ -36,8 +36,8 @@
 
 #define RH_LARGE_OBJECT_SIZE 85000
 
-MethodTable g_FreeObjectEEType;
-GPTR_DECL(MethodTable, g_pFreeObjectEEType);
+MethodTable g_FreeObjectMethodTable;
+GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
 
 GPTR_IMPL(Thread, g_pFinalizerThread);
 
@@ -55,8 +55,8 @@ bool InitializeGC()
         return false;
 
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
-    g_FreeObjectEEType.InitializeAsGcFreeType();
-    g_pFreeObjectEEType = &g_FreeObjectEEType;
+    g_FreeObjectMethodTable.InitializeAsGcFreeType();
+    g_pFreeObjectMethodTable = &g_FreeObjectMethodTable;
 
 #ifdef FEATURE_SVR_GC
     g_heap_type = (g_pRhConfig->GetgcServer() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
@@ -88,6 +88,8 @@ bool InitializeGC()
     if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         return false;
 
+    g_pGlobalHandleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
+
 #ifdef TARGET_WINDOWS
     // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
     // And ensured that COM is initialized (must happen before allocating FLS slot).
@@ -111,7 +113,7 @@ void MethodTable::InitializeAsGcFreeType()
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
-EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
+EXTERN_C void QCALLTYPE RhCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -126,7 +128,7 @@ EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_
     pCurThread->EnablePreemptiveMode();
 }
 
-EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
+EXTERN_C int64_t QCALLTYPE RhGetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -142,7 +144,7 @@ EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
     return ret;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
+EXTERN_C int32_t QCALLTYPE RhStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -157,7 +159,7 @@ EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL has
     return result;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpEndNoGCRegion()
+EXTERN_C int32_t QCALLTYPE RhEndNoGCRegion()
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
@@ -198,13 +200,13 @@ FCIMPL1(int32_t, RhGetGeneration, OBJECTREF obj)
 }
 FCIMPLEND
 
-FCIMPL1(int64_t, RhGetGenerationSize, int32_t gen)
+FCIMPL1(uint64_t, RhGetGenerationSize, int32_t gen)
 {
-    return (int64_t)(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
+    return static_cast<uint64_t>(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
 }
 FCIMPLEND
 
-FCIMPL0(int64_t, RhGetLastGCPercentTimeInGC)
+FCIMPL0(int32_t, RhGetLastGCPercentTimeInGC)
 {
     return GCHeapUtilities::GetGCHeap()->GetLastGCPercentTimeInGC();
 }
@@ -367,19 +369,14 @@ public:
     uint32_t pauseTimePercent;
     uint8_t isCompaction;
     uint8_t isConcurrent;
-    RH_GC_GENERATION_INFO generationInfo0;
-    RH_GC_GENERATION_INFO generationInfo1;
-    RH_GC_GENERATION_INFO generationInfo2;
-    RH_GC_GENERATION_INFO generationInfo3;
-    RH_GC_GENERATION_INFO generationInfo4;
-    uint64_t pauseDuration0;
-    uint64_t pauseDuration1;
+    RH_GC_GENERATION_INFO generationInfo[5];
+    uint64_t pauseDurations[2];
 };
 
 FCIMPL2(void, RhGetMemoryInfo, RH_GH_MEMORY_INFO* pData, int kind)
 {
-    uint64_t* genInfoRaw = (uint64_t*)&(pData->generationInfo0);
-    uint64_t* pauseInfoRaw = (uint64_t*)&(pData->pauseDuration0);
+    uint64_t* genInfoRaw = (uint64_t*)&(pData->generationInfo[0]);
+    uint64_t* pauseInfoRaw = (uint64_t*)&(pData->pauseDurations[0]);
 
     return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
         &(pData->highMemLoadThresholdBytes),
@@ -405,7 +402,7 @@ FCIMPLEND
 
 // The MethodTable is remembered in some slow-path allocation paths. This value is used in event tracing.
 // It may statistically correlate with the most allocated type on the given stack/thread.
-DECLSPEC_THREAD
+static PLATFORM_THREAD_LOCAL
 MethodTable* tls_pLastAllocationEEType = NULL;
 
 MethodTable* GetLastAllocEEType()
@@ -443,14 +440,13 @@ EXTERN_C void QCALLTYPE RhEnumerateConfigurationValues(void* configurationContex
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
 
-FCIMPL1(void, RhRefreshMemoryLimit, GCHeapHardLimitInfo heapHardLimitInfo)
+EXTERN_C int QCALLTYPE RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
     g_gcHeapHardLimitInfoSpecified = true;
-    pHeap->RefreshMemoryLimit();
+    return pHeap->RefreshMemoryLimit();
 }
-FCIMPLEND
 
 EXTERN_C uint64_t QCALLTYPE RhGetGenerationBudget(int generation)
 {
@@ -458,10 +454,10 @@ EXTERN_C uint64_t QCALLTYPE RhGetGenerationBudget(int generation)
     return pHeap->GetGenerationBudget(generation);
 }
 
-EXTERN_C void QCALLTYPE RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
+EXTERN_C enable_no_gc_region_callback_status QCALLTYPE RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
-    pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
+    return pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
 EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
@@ -617,11 +613,11 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     if (pObject == NULL)
         return NULL;
 
-    pObject->set_EEType(pEEType);
+    pObject->SetMethodTable(pEEType);
     if (pEEType->HasComponentSize())
     {
         ASSERT(numElements == (uint32_t)numElements);
-        ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
+        ((Array*)pObject)->SetNumComponents((uint32_t)numElements);
     }
 
     if (isSampled)
@@ -655,10 +651,11 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 //  numElements     -  number of array elements
 //  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
+EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // The allocation fast path is an asm helper that runs in coop mode and handles most allocation cases.
     // The helper can also be tail-called. That is desirable for the fast path.
     //
@@ -684,6 +681,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numEl
     ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
 
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     pThread->SetDeferredTransitionFrame(pTransitionFrame);
 
@@ -751,7 +749,6 @@ EXTERN_C void* QCALLTYPE RhRegisterFrozenSegment(void* pSection, size_t allocSiz
     ASSERT(allocSize <= commitSize);
     ASSERT(commitSize <= reservedSize);
 
-#ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
 
     seginfo.pvMem = pSection;
@@ -761,9 +758,6 @@ EXTERN_C void* QCALLTYPE RhRegisterFrozenSegment(void* pSection, size_t allocSiz
     seginfo.ibReserved = reservedSize;
 
     return GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
-#else // FEATURE_BASICFREEZE
-    return NULL;
-#endif // FEATURE_BASICFREEZE
 }
 
 EXTERN_C void QCALLTYPE RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
@@ -787,31 +781,3 @@ FCIMPL1(uint32_t, RhGetGCDescSize, MethodTable* pMT)
 }
 FCIMPLEND
 
-#ifdef FEATURE_GC_STRESS
-
-// static
-EXTERN_C UInt32_BOOL g_fGcStressStarted;
-UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
-
-// static
-EXTERN_C void F_CALL_CONV RhpStressGc()
-{
-    // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the GC operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
-    if (g_fGcStressStarted && !ThreadStore::GetCurrentThread()->IsSuppressGcStressSet() && !ThreadStore::GetCurrentThread()->IsDoNotTriggerGcSet())
-    {
-        GCHeapUtilities::GetGCHeap()->GarbageCollect();
-    }
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
-}
-
-FCIMPL0(void, RhpInitializeGcStress)
-{
-    g_fGcStressStarted = UInt32_TRUE;
-}
-FCIMPLEND
-#endif // FEATURE_GC_STRESS

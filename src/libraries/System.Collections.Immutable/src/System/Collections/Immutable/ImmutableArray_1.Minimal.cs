@@ -39,8 +39,7 @@ namespace System.Collections.Immutable
         /// An empty (initialized) instance of <see cref="ImmutableArray{T}"/>.
         /// </summary>
 #pragma warning disable CA1825
-        // Array.Empty<T>() doesn't exist in all configurations
-        // Switching to Array.Empty also has a non-negligible impact on the working set memory
+        // Avoid the extra generic instantiation for Array.Empty<T>()
         public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
 #pragma warning restore CA1825
 
@@ -227,7 +226,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array!, destination, self.Length);
+            Array.Copy(self.array, destination, self.Length);
         }
 
         /// <summary>
@@ -239,7 +238,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array!, 0, destination, destinationIndex, self.Length);
+            Array.Copy(self.array, 0, destination, destinationIndex, self.Length);
         }
 
         /// <summary>
@@ -253,7 +252,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array!, sourceIndex, destination, destinationIndex, length);
+            Array.Copy(self.array, sourceIndex, destination, destinationIndex, length);
         }
 
         /// <summary>
@@ -282,7 +281,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            return new Enumerator(self.array!);
+            return new Enumerator(self.array);
         }
 
         /// <summary>
@@ -388,7 +387,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array!);
+            return EnumeratorObject.Create(self.array);
         }
 
         /// <summary>
@@ -400,12 +399,13 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array!);
+            return EnumeratorObject.Create(self.array);
         }
 
         /// <summary>
         /// Throws a null reference exception if the array field is null.
         /// </summary>
+        [MemberNotNull(nameof(array))]
         internal void ThrowNullRefIfNotInitialized()
         {
             // Force NullReferenceException if array is null by touching its Length.
@@ -427,9 +427,10 @@ namespace System.Collections.Immutable
         ///
         /// This is intended for explicitly implemented interface method and property implementations.
         /// </summary>
+        [MemberNotNull(nameof(array))]
         private void ThrowInvalidOperationIfNotInitialized()
         {
-            if (this.IsDefault)
+            if (this.array == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperationOnDefaultArray);
             }

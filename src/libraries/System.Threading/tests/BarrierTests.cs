@@ -50,12 +50,17 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void RunBarrierSignalAndWaitTests()
         {
             RunBarrierTest2_SignalAndWait(1, new TimeSpan(0, 0, 0, 0, -1), true, null);
             RunBarrierTest2_SignalAndWait(5, new TimeSpan(0, 0, 0, 0, 100), false, null);
             RunBarrierTest2_SignalAndWait(5, new TimeSpan(0), false, null);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static void RunBarrierSignalAndWaitParallelTests()
+        {
             RunBarrierTest3_SignalAndWait(3);
         }
 
@@ -150,7 +155,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => b.RemoveParticipants(2));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task RemovingWaitingParticipants()
         {
             Barrier b = new Barrier(4);
@@ -260,7 +265,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBarrierTest7a()
         {
             for (int j = 0; j < 100; j++)
@@ -291,7 +296,7 @@ namespace System.Threading.Tests
         /// Test the case when the post phase action throws an exception
         /// </summary>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBarrierTest8_PostPhaseException()
         {
             bool shouldThrow = true;
@@ -371,7 +376,7 @@ namespace System.Threading.Tests
             EnsurePostPhaseThrew(barrier);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void RunBarrierTest10a()
         {
@@ -399,7 +404,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBarrierTest10b()
         {
             // Regression test for Barrier race condition
@@ -420,7 +425,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBarrierTest10c()
         {
             for (int j = 0; j < 10; j++)

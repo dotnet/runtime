@@ -347,7 +347,7 @@ namespace System.Runtime.Serialization
             Collection<Type> knownTypes = new Collection<Type>();
             if (_dataContractSet.SerializationExtendedSurrogateProvider != null)
                 DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
-            DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject,
+            DataContractSerializer serializer = new DataContractSerializer(typeof(object),
                 SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes,
                 ignoreExtensionDataObject: false, preserveObjectReferences: true);
             serializer.WriteObject(xmlWriter, surrogateData);
@@ -536,15 +536,12 @@ namespace System.Runtime.Serialization
                 {
                     throw new InvalidDataContractException(SR.Format(SR.MissingSchemaType, typeQName, DataContract.GetClrTypeFullName(clrType)));
                 }
-                if (xsdType != null)
-                {
-                    xsdType.Annotation = GetSchemaAnnotation(
-                                           ExportSurrogateData(dataContract),
-                                           dataContract.IsValueType ?
-                                             GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema!) :
-                                             null
-                                         );
-                }
+                xsdType?.Annotation = GetSchemaAnnotation(
+                                        ExportSurrogateData(dataContract),
+                                        dataContract.IsValueType ?
+                                          GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema!) :
+                                          null
+                                      );
             }
         }
 
@@ -607,7 +604,7 @@ namespace System.Runtime.Serialization
         {
             xsdType = null;
             hasRoot = true;
-            object[] attrs = clrType.GetCustomAttributes(Globals.TypeOfXmlSchemaProviderAttribute, false);
+            object[] attrs = clrType.GetCustomAttributes(typeof(XmlSchemaProviderAttribute), false);
             if (attrs == null || attrs.Length == 0)
             {
                 xmlName = DataContract.GetDefaultXmlName(clrType);
@@ -633,8 +630,8 @@ namespace System.Runtime.Serialization
                 if (getMethod == null)
                     throw new InvalidDataContractException(SR.Format(SR.MissingGetSchemaMethod, DataContract.GetClrTypeFullName(clrType), methodName));
 
-                if (!(Globals.TypeOfXmlQualifiedName.IsAssignableFrom(getMethod.ReturnType)) && !(Globals.TypeOfXmlSchemaType.IsAssignableFrom(getMethod.ReturnType)))
-                    throw new InvalidDataContractException(SR.Format(SR.InvalidReturnTypeOnGetSchemaMethod, DataContract.GetClrTypeFullName(clrType), methodName, DataContract.GetClrTypeFullName(getMethod.ReturnType), DataContract.GetClrTypeFullName(Globals.TypeOfXmlQualifiedName), typeof(XmlSchemaType)));
+                if (!(typeof(XmlQualifiedName).IsAssignableFrom(getMethod.ReturnType)) && !(typeof(XmlSchemaType).IsAssignableFrom(getMethod.ReturnType)))
+                    throw new InvalidDataContractException(SR.Format(SR.InvalidReturnTypeOnGetSchemaMethod, DataContract.GetClrTypeFullName(clrType), methodName, DataContract.GetClrTypeFullName(getMethod.ReturnType), DataContract.GetClrTypeFullName(typeof(XmlQualifiedName)), typeof(XmlSchemaType)));
 
                 object? typeInfo = getMethod.Invoke(null, new object[] { schemas });
 
@@ -748,10 +745,10 @@ namespace System.Runtime.Serialization
         {
             xsdType = null;
             hasRoot = true;
-            if (type == Globals.TypeOfXmlElement || type == Globals.TypeOfXmlNodeArray)
+            if (type == typeof(XmlElement) || type == typeof(XmlNode[]))
             {
                 string? name;
-                if (type == Globals.TypeOfXmlElement)
+                if (type == typeof(XmlElement))
                 {
                     xsdType = CreateAnyElementType();
                     name = "XmlElement";
@@ -871,32 +868,15 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static XmlQualifiedName? s_anytypeQualifiedName;
-        internal static XmlQualifiedName AnytypeQualifiedName => s_anytypeQualifiedName ??= new XmlQualifiedName(Globals.AnyTypeLocalName, Globals.SchemaNamespace);
-
-        private static XmlQualifiedName? s_stringQualifiedName;
-        internal static XmlQualifiedName StringQualifiedName => s_stringQualifiedName ??= new XmlQualifiedName(Globals.StringLocalName, Globals.SchemaNamespace);
-
-        private static XmlQualifiedName? s_defaultEnumBaseTypeName;
-        internal static XmlQualifiedName DefaultEnumBaseTypeName => s_defaultEnumBaseTypeName ??= new XmlQualifiedName(Globals.IntLocalName, Globals.SchemaNamespace);
-
-        private static XmlQualifiedName? s_enumerationValueAnnotationName;
-        internal static XmlQualifiedName EnumerationValueAnnotationName => s_enumerationValueAnnotationName ??= new XmlQualifiedName(Globals.EnumerationValueLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_surrogateDataAnnotationName;
-        internal static XmlQualifiedName SurrogateDataAnnotationName => s_surrogateDataAnnotationName ??= new XmlQualifiedName(Globals.SurrogateDataLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_defaultValueAnnotation;
-        internal static XmlQualifiedName DefaultValueAnnotation => s_defaultValueAnnotation ??= new XmlQualifiedName(Globals.DefaultValueLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_actualTypeAnnotationName;
-        internal static XmlQualifiedName ActualTypeAnnotationName => s_actualTypeAnnotationName ??= new XmlQualifiedName(Globals.ActualTypeLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_isDictionaryAnnotationName;
-        internal static XmlQualifiedName IsDictionaryAnnotationName => s_isDictionaryAnnotationName ??= new XmlQualifiedName(Globals.IsDictionaryLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_isValueTypeName;
-        internal static XmlQualifiedName IsValueTypeName => s_isValueTypeName ??= new XmlQualifiedName(Globals.IsValueTypeLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName AnytypeQualifiedName => field ??= new XmlQualifiedName(Globals.AnyTypeLocalName, Globals.SchemaNamespace);
+        internal static XmlQualifiedName StringQualifiedName => field ??= new XmlQualifiedName(Globals.StringLocalName, Globals.SchemaNamespace);
+        internal static XmlQualifiedName DefaultEnumBaseTypeName => field ??= new XmlQualifiedName(Globals.IntLocalName, Globals.SchemaNamespace);
+        internal static XmlQualifiedName EnumerationValueAnnotationName => field ??= new XmlQualifiedName(Globals.EnumerationValueLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName SurrogateDataAnnotationName => field ??= new XmlQualifiedName(Globals.SurrogateDataLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName DefaultValueAnnotation => field ??= new XmlQualifiedName(Globals.DefaultValueLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName ActualTypeAnnotationName => field ??= new XmlQualifiedName(Globals.ActualTypeLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName IsDictionaryAnnotationName => field ??= new XmlQualifiedName(Globals.IsDictionaryLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName IsValueTypeName => field ??= new XmlQualifiedName(Globals.IsValueTypeLocalName, Globals.SerializationNamespace);
 
         // Property is not stored in a local because XmlSchemaAttribute is mutable.
         // The schema export process should not expose objects that may be modified later.

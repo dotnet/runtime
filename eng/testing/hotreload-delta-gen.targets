@@ -1,0 +1,84 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+
+<!--
+  Targets for generating hot reload deltas from a delta script.
+  This replaces the external Microsoft.DotNet.HotReload.Utils.Generator.BuildTool NuGet package.
+
+  Projects must define the DeltaScript property that specifies the (relative) path to the json script.
+  Deltas will be emitted next to the output assembly. Deltas will be copied when the current
+  project is referenced from other projects.
+-->
+<Project>
+
+  <PropertyGroup>
+    <DotNetTool Condition="'$(DotNetTool)' == ''">dotnet</DotNetTool>
+
+    <_HotReloadDeltaGeneratorToolDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'Microsoft.DotNet.HotReload.Utils.Generator.BuildTool', '$(Configuration)', '$(NetCoreAppToolCurrent)'))</_HotReloadDeltaGeneratorToolDir>
+
+    <_HotReloadDeltaGeneratorPath Condition="'$(_HotReloadDeltaGeneratorPath)' == ''">$(_HotReloadDeltaGeneratorToolDir)Microsoft.DotNet.HotReload.Utils.Generator.BuildTool.dll</_HotReloadDeltaGeneratorPath>
+
+    <_HotReloadDeltaGeneratorCommand>"$(DotNetTool)" "$(_HotReloadDeltaGeneratorPath)"</_HotReloadDeltaGeneratorCommand>
+
+    <_HotReloadDeltaGeneratorTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'Microsoft.DotNet.HotReload.Utils.Generator.Tasks', '$(Configuration)', '$(NetCoreAppToolCurrent)'))</_HotReloadDeltaGeneratorTasksDir>
+
+    <_HotReloadDeltaGeneratorTasksPath Condition="'$(_HotReloadDeltaGeneratorTasksPath)' == ''">$(_HotReloadDeltaGeneratorTasksDir)Microsoft.DotNet.HotReload.Utils.Generator.Tasks.dll</_HotReloadDeltaGeneratorTasksPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_HotReloadDeltaGeneratorDeltaScript Condition="'$(DeltaScript)' != ''">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(DeltaScript)'))</_HotReloadDeltaGeneratorDeltaScript>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_HotReloadDeltaGeneratorShouldRun Condition="'$(_HotReloadDeltaGeneratorShouldRun)' == '' and Exists('$(_HotReloadDeltaGeneratorDeltaScript)')">true</_HotReloadDeltaGeneratorShouldRun>
+    <_HotReloadDeltaGeneratorShouldRun Condition="'$(_HotReloadDeltaGeneratorShouldRun)' == ''">false</_HotReloadDeltaGeneratorShouldRun>
+  </PropertyGroup>
+
+  <UsingTask TaskName="HotReloadDeltaGeneratorComputeScriptOutputs" AssemblyFile="$(_HotReloadDeltaGeneratorTasksPath)" />
+
+  <!-- Doesn't actually run the delta generator, but just analyzes the script and figures out what output items it would produce.
+    Used for computing incremental inputs/outputs of HotReloadDeltaGeneratorGenerateDeltas, and for ContentForDeltaFileOutputNames
+  -->
+  <Target Name="HotReloadDeltaGeneratorComputeScriptInputsOutputs"
+      Condition="'$(_HotReloadDeltaGeneratorShouldRun)' == 'true'">
+    <HotReloadDeltaGeneratorComputeScriptOutputs BaseAssemblyName="$(TargetPath)" DeltaScript="$(_HotReloadDeltaGeneratorDeltaScript)">
+      <Output TaskParameter="DeltaOutputs" ItemName="_HotReloadDeltaGeneratorOutputs" />
+      <Output TaskParameter="DeltaSources" ItemName="_HotReloadDeltaGeneratorInputs" />
+    </HotReloadDeltaGeneratorComputeScriptOutputs>
+  </Target>
+
+  <!-- Invoke hotreload-delta-gen to apply the DeltaScript to the output assembly to
+       create the .dmeta, .dil and .dpdb files on the OutputPath -->
+  <Target Name="HotReloadDeltaGeneratorGenerateDeltas"
+      AfterTargets="Build"
+      DependsOnTargets="HotReloadDeltaGeneratorComputeScriptInputsOutputs"
+      Condition="'$(_HotReloadDeltaGeneratorShouldRun)' == 'true'"
+      Inputs="$(TargetPath); @(_HotReloadDeltaGeneratorInputs)"
+      Outputs="@(_HotReloadDeltaGeneratorOutputs)"
+      >
+    <PropertyGroup>
+      <_HotReloadDeltaGeneratorArgs>"-msbuild:$(MSBuildProjectFullPath)"</_HotReloadDeltaGeneratorArgs>
+      <_HotReloadDeltaGeneratorArgs>$(_HotReloadDeltaGeneratorArgs) "-script:$(_HotReloadDeltaGeneratorDeltaScript)"</_HotReloadDeltaGeneratorArgs>
+
+      <!-- This is a little bit delicate: we're invoking a design-time msbuild here, and we need it to come back with the same OutputPath as the current
+          run of msbuild.  If there are other properties that affect where the baseline assembly ends up, we need to pass those here too.
+      -->
+      <_HotReloadDeltaGeneratorArgs Condition="'$(Configuration)' != ''">$(_HotReloadDeltaGeneratorArgs) -p:Configuration=$(Configuration)</_HotReloadDeltaGeneratorArgs>
+      <_HotReloadDeltaGeneratorArgs Condition="'$(RuntimeIdentifier)' != ''">$(_HotReloadDeltaGeneratorArgs) -p:RuntimeIdentifier=$(RuntimeIdentifier)</_HotReloadDeltaGeneratorArgs>
+      <!-- escape hatch for any extra arguments -->
+      <_HotReloadDeltaGeneratorArgs Condition="'$(HotReloadDeltaGeneratorExtraArgs)' != ''">$(_HotReloadDeltaGeneratorArgs) $(HotReloadDeltaGeneratorExtraArgs)</_HotReloadDeltaGeneratorArgs>
+    </PropertyGroup>
+    <Exec Command="$(_HotReloadDeltaGeneratorCommand) $(_HotReloadDeltaGeneratorArgs)" />
+  </Target>
+
+  <Target Name="HotReloadDeltaGeneratorContentForOutputs"
+      BeforeTargets="AssignTargetPaths"
+      DependsOnTargets="HotReloadDeltaGeneratorComputeScriptInputsOutputs"
+      Condition="'$(_HotReloadDeltaGeneratorShouldRun)' == 'true' and '$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <Content Include="@(_HotReloadDeltaGeneratorOutputs)">
+        <CopyToOutputDirectory>always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
+
+</Project>

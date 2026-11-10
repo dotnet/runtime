@@ -9,20 +9,20 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeValue"/> node.
-	/// </summary>
-	internal sealed record RuntimeTypeHandleValue : SingleValue
-	{
-		public RuntimeTypeHandleValue (in TypeProxy representedType)
-		{
-			RepresentedType = representedType;
-		}
+    /// <summary>
+    /// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeValue"/> node.
+    /// </summary>
+    internal sealed record RuntimeTypeHandleValue : SingleValue
+    {
+        public RuntimeTypeHandleValue(in TypeProxy representedType)
+        {
+            RepresentedType = representedType;
+        }
 
-		public readonly TypeProxy RepresentedType;
+        public readonly TypeProxy RepresentedType;
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (RepresentedType);
-	}
+        public override string ToString() => this.ValueToString(RepresentedType);
+    }
 }

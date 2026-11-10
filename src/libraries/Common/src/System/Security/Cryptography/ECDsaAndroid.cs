@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
             // Return the three sizes that can be explicitly set (for backwards compatibility)
             public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
-            public override byte[] SignHash(byte[] hash)
+            public override unsafe byte[] SignHash(byte[] hash)
             {
                 ArgumentNullException.ThrowIfNull(hash);
 
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                     out bytesWritten);
             }
 
-            protected override bool TrySignHashCore(
+            protected override unsafe bool TrySignHashCore(
                 ReadOnlySpan<byte> hash,
                 Span<byte> destination,
                 DSASignatureFormat signatureFormat,
@@ -189,7 +189,7 @@ namespace System.Security.Cryptography
             public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
                 VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
-            protected override bool VerifyHashCore(
+            protected override unsafe bool VerifyHashCore(
                 ReadOnlySpan<byte> hash,
                 ReadOnlySpan<byte> signature,
                 DSASignatureFormat signatureFormat)

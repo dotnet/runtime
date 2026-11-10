@@ -11,6 +11,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static bool SupportsRsaSha1Signatures { get; } =
             System.Security.Cryptography.Tests.SignatureSupport.CanProduceSha1Signature(RSA.Create());
 
+        public static bool SupportsEcdsaSha1Signatures { get; } =
+            System.Security.Cryptography.Tests.SignatureSupport.CanProduceSha1Signature(ECDsa.Create());
+
         public static bool SupportsRsaMd5Signatures { get; } =
             System.Security.Cryptography.Tests.SignatureSupport.CanProduceMd5Signature(RSA.Create());
     }

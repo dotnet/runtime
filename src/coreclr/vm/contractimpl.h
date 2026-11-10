@@ -183,26 +183,26 @@ private:
     static const UINT_PTR INVALID_TOKEN      = 0x7FFFFFFF;
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #else //TARGET_64BIT
-    static const UINT_PTR MASK_SLOT_NUMBER   = UI64(0x000000000000FFFF);
+    static const UINT_PTR MASK_SLOT_NUMBER   = 0x000000000000FFFFULL;
 
     static const UINT_PTR SHIFT_TYPE_ID      = 0x20;
     static const UINT_PTR SHIFT_SLOT_NUMBER  = 0x0;
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 #ifdef FAT_DISPATCH_TOKENS
-    static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000003FFFFFFF);
-    static const UINT_PTR FAT_TOKEN_FLAG     = UI64(0x4000000000000000);
-    static const UINT_PTR DISPATCH_TOKEN_FLAG= UI64(0x8000000000000000);
+    static const UINT_PTR MASK_TYPE_ID       = 0x000000003FFFFFFFULL;
+    static const UINT_PTR FAT_TOKEN_FLAG     = 0x4000000000000000ULL;
+    static const UINT_PTR DISPATCH_TOKEN_FLAG= 0x8000000000000000ULL;
 #else
-    static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000007FFFFFFF);
-    static const UINT_PTR DISPATCH_TOKEN_FLAG= UI64(0x8000000000000000);
+    static const UINT_PTR MASK_TYPE_ID       = 0x000000007FFFFFFFULL;
+    static const UINT_PTR DISPATCH_TOKEN_FLAG= 0x8000000000000000ULL;
 #endif // FAT_DISPATCH_TOKENS
 #else // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifdef FAT_DISPATCH_TOKENS
-    static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000007FFFFFFF);
-    static const UINT_PTR FAT_TOKEN_FLAG     = UI64(0x8000000000000000);
+    static const UINT_PTR MASK_TYPE_ID       = 0x000000007FFFFFFFULL;
+    static const UINT_PTR FAT_TOKEN_FLAG     = 0x8000000000000000ULL;
 #else
-    static const UINT_PTR MASK_TYPE_ID       = UI64(0x00000000FFFFFFFF);
+    static const UINT_PTR MASK_TYPE_ID       = 0x00000000FFFFFFFFULL;
 #endif // FAT_DISPATCH_TOKENS
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
@@ -317,7 +317,8 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return typeID > MAX_TYPE_ID_SMALL
-#ifdef _DEBUG
+// WASM-TODO: fix fat tokens
+#if defined(_DEBUG) && !defined(TARGET_WASM)
             // Stress the overflow mechanism in debug builds.
             || ((typeID != TYPE_ID_THIS_CLASS) && ((typeID % 7) < 4))
 #endif
@@ -392,7 +393,7 @@ public:
     SIZE_T To_SIZE_T() const
     {
         WRAPPER_NO_CONTRACT;
-        static_assert_no_msg(sizeof(SIZE_T) == sizeof(UINT_PTR));
+        static_assert(sizeof(SIZE_T) == sizeof(UINT_PTR));
         return (SIZE_T) m_token;
     }
 
@@ -402,10 +403,14 @@ public:
         LIMITED_METHOD_CONTRACT;
         return !(m_token == INVALID_TOKEN);
     }
+
+    //------------------------------------------------------------------------
+    // Returns a hash of the token suitable for use in dispatch caches.
+    UINT16 GetHash() const;
 };  // struct DispatchToken
 
 // DispatchToken.m_token should be the only field of DispatchToken.
-static_assert_no_msg(sizeof(DispatchToken) == sizeof(UINT_PTR));
+static_assert(sizeof(DispatchToken) == sizeof(UINT_PTR));
 
 // ===========================================================================
 class TypeIDProvider
@@ -440,7 +445,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextID;
@@ -469,7 +473,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextFatID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextFatID;
@@ -514,7 +517,7 @@ public:
         : m_lock(CrstTypeIDMap, CrstFlags(CRST_REENTRANCY))
     {
         WRAPPER_NO_CONTRACT;
-        static_assert_no_msg(TypeIDProvider::INVALID_TYPE_ID == static_cast<UINT32>(INVALIDENTRY));
+        static_assert(TypeIDProvider::INVALID_TYPE_ID == static_cast<UINT32>(INVALIDENTRY));
     }
 
     //------------------------------------------------------------------------
@@ -877,6 +880,38 @@ protected:
     static const INT32 ENCODING_TARGET_SLOT_DELTA = 1;
 
 public:
+    // Class MethodImpl aliases precede the ordinary interface-dispatch encoding.
+    // Keeping slots rather than MethodDesc pointers makes this reusable across instantiations.
+    class ClassSlotIterator
+    {
+        Decoder m_decoder;
+        UINT32 m_remaining;
+
+    public:
+        ClassSlotIterator(DispatchMap* pMap)
+            : m_remaining(0)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+            if (pMap != nullptr)
+            {
+                m_decoder.Init(pMap->GetEncodedMapData());
+                if ((m_decoder.Next() & 1) != 0)
+                    m_remaining = m_decoder.Next();
+            }
+        }
+
+        bool Next(UINT32* pSource, UINT32* pTarget)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+            if (m_remaining == 0)
+                return false;
+            *pSource = m_decoder.Next();
+            *pTarget = m_decoder.Next();
+            m_remaining--;
+            return true;
+        }
+    };
+
     //------------------------------------------------------------------------
     // Need to make sure that you allocate GetObjectSize(pMap) bytes for any
     // instance of DispatchMap, as this constructor assumes that m_rgMap is
@@ -901,6 +936,16 @@ public:
 
     //------------------------------------------------------------------------
     UINT32 GetMapSize();
+
+    //------------------------------------------------------------------------
+    // Returns a pointer to the raw encoded mapping bytes. Used when reusing the
+    // encoded dispatch map of a generic type's typical instantiation for its
+    // non-typical instantiations (the encoding is instantiation-independent).
+    PTR_BYTE GetEncodedMapData()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<PTR_BYTE>(PTR_HOST_MEMBER_TADDR(DispatchMap, this, m_rgMap));
+    }
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tracing
@@ -128,12 +129,6 @@ namespace System.Diagnostics.Tracing
             }
 
             return EventProvider.WriteEventErrorCode.NoError;
-        }
-
-        // Get or set the per-thread activity ID.
-        internal override int ActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
-        {
-            return EventActivityIdControl(controlCode, ref activityId);
         }
 
         // Define an EventPipeEvent handle.

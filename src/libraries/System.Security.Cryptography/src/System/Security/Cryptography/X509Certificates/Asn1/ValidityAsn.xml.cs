@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, out ValidityAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -49,12 +49,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out ValidityAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, out ValidityAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out ValidityAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, out ValidityAsn decoded)
         {
             try
             {
@@ -66,10 +66,10 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out ValidityAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, out ValidityAsn decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
             System.Security.Cryptography.X509Certificates.Asn1.TimeAsn.Decode(ref sequenceReader, out decoded.NotBefore);
             System.Security.Cryptography.X509Certificates.Asn1.TimeAsn.Decode(ref sequenceReader, out decoded.NotAfter);

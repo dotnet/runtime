@@ -17,10 +17,11 @@ namespace System.Collections.Tests
         #region ISet<T> Helper Methods
         protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
 
         protected override bool ResetImplemented => true;
 
-        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear);
+        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorThrows & ~(ModifyOperation.Remove | ModifyOperation.Clear);
 
         protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
@@ -229,6 +230,16 @@ namespace System.Collections.Tests
             Assert.True(trimCapacity <= set.Capacity && set.Capacity < initialCapacity);
             Assert.Equal(initialCount, set.Count);
             Assert.Equal(clone, set);
+        }
+
+        [Theory]
+        [InlineData(132, 137)]
+        [InlineData(607, 613)]
+        public void HashSet_Generic_TrimExcess_UsesNearestValidPrime(int requestedCapacity, int expectedCapacity)
+        {
+            var set = new HashSet<T>(1000);
+            set.TrimExcess(requestedCapacity);
+            Assert.Equal(expectedCapacity, set.Capacity);
         }
 
         [Theory]
@@ -904,6 +915,50 @@ namespace System.Collections.Tests
 
                 Assert.True(equalityComparer.Equals(set.Comparer));
             }
+        }
+
+        #endregion
+
+        #region UnionWith
+
+        public static IEnumerable<object[]> UnionWith_HashSet_TestData()
+        {
+            foreach (int count in new[] { 0, 1, 75 })
+            {
+                foreach (bool destinationEmpty in new[] { true, false })
+                {
+                    foreach (bool sourceSparseFilled in new[] { true, false })
+                    {
+                        yield return new object[] { count, destinationEmpty, sourceSparseFilled };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(UnionWith_HashSet_TestData))]
+        public void HashSet_Generic_UnionWith_HashSet(int count, bool destinationEmpty, bool sourceSparseFilled)
+        {
+            HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
+
+            if (sourceSparseFilled)
+            {
+                List<T> sourceElements = source.ToList();
+                foreach (int i in NonSquares(count))
+                    source.Remove(sourceElements[i]);
+            }
+
+            HashSet<T> destination = destinationEmpty
+                ? new HashSet<T>(source.Comparer)
+                : (HashSet<T>)GenericISetFactory(1);
+
+            HashSet<T> expected = new HashSet<T>(destination, source.Comparer);
+            foreach (T item in source)
+                expected.Add(item);
+
+            destination.UnionWith(source);
+
+            Assert.True(expected.SetEquals(destination));
         }
 
         #endregion

@@ -428,8 +428,8 @@ namespace System.Text
                         bLastATR = false;
 
                         // we know we can't have any of these other modes
-                        Debug.Assert(bLastVirama == false, "[ISCIIEncoding.GetChars] Expected no bLastVirama in bLastATR mode");
-                        Debug.Assert(bLastDevenagariStressAbbr == false, "[ISCIIEncoding.GetChars] Expected no bLastDevenagariStressAbbr in bLastATR mode");
+                        Debug.Assert(!bLastVirama, "[ISCIIEncoding.GetChars] Expected no bLastVirama in bLastATR mode");
+                        Debug.Assert(!bLastDevenagariStressAbbr, "[ISCIIEncoding.GetChars] Expected no bLastDevenagariStressAbbr in bLastATR mode");
                         Debug.Assert(cLastCharForNextNukta == (char)0, "[ISCIIEncoding.GetChars] Expected no cLastCharForNextNukta in bLastATR mode");
                         Debug.Assert(cLastCharForNoNextNukta == (char)0, "[ISCIIEncoding.GetChars] Expected no cLastCharForNoNextNukta in bLastATR mode");
                         // Keep processing this byte
@@ -459,8 +459,8 @@ namespace System.Text
                         bLastVirama = false;
 
                         // We know we can't have any of these other modes
-                        Debug.Assert(bLastATR == false, "[ISCIIEncoding.GetChars] Expected no bLastATR in bLastVirama mode");
-                        Debug.Assert(bLastDevenagariStressAbbr == false, "[ISCIIEncoding.GetChars] Expected no bLastDevenagariStressAbbr in bLastVirama mode");
+                        Debug.Assert(!bLastATR, "[ISCIIEncoding.GetChars] Expected no bLastATR in bLastVirama mode");
+                        Debug.Assert(!bLastDevenagariStressAbbr, "[ISCIIEncoding.GetChars] Expected no bLastDevenagariStressAbbr in bLastVirama mode");
                         Debug.Assert(cLastCharForNextNukta == (char)0, "[ISCIIEncoding.GetChars] Expected no cLastCharForNextNukta in bLastVirama mode");
                         Debug.Assert(cLastCharForNoNextNukta == (char)0, "[ISCIIEncoding.GetChars] Expected no cLastCharForNoNextNukta in bLastVirama mode");
                     }
@@ -495,8 +495,8 @@ namespace System.Text
                         // (last character was added when mode was set)
                         bLastDevenagariStressAbbr = false;
 
-                        Debug.Assert(bLastATR == false, "[ISCIIEncoding.GetChars] Expected no bLastATR in bLastDevenagariStressAbbr mode");
-                        Debug.Assert(bLastVirama == false, "[ISCIIEncoding.GetChars] Expected no bLastVirama in bLastDevenagariStressAbbr mode");
+                        Debug.Assert(!bLastATR, "[ISCIIEncoding.GetChars] Expected no bLastATR in bLastDevenagariStressAbbr mode");
+                        Debug.Assert(!bLastVirama, "[ISCIIEncoding.GetChars] Expected no bLastVirama in bLastDevenagariStressAbbr mode");
                         Debug.Assert(cLastCharForNextNukta == (char)0, "[ISCIIEncoding.GetChars] Expected no cLastCharForNextNukta in bLastDevenagariStressAbbr mode");
                         Debug.Assert(cLastCharForNoNextNukta == (char)0, "[ISCIIEncoding.GetChars] Expected no cLastCharForNoNextNukta in bLastDevenagariStressAbbr mode");
                     }
@@ -525,9 +525,9 @@ namespace System.Text
                         // Keep processing this byte, turn off mode.
                         cLastCharForNextNukta = cLastCharForNoNextNukta = '\0';
 
-                        Debug.Assert(bLastATR == false, "[ISCIIEncoding.GetChars] Expected no bLastATR in cLastCharForNextNukta mode");
-                        Debug.Assert(bLastVirama == false, "[ISCIIEncoding.GetChars] Expected no bLastVirama in cLastCharForNextNukta mode");
-                        Debug.Assert(bLastDevenagariStressAbbr == false, "[ISCIIEncoding.GetChars] Expected no bLastDevenagariStressAbbr in cLastCharForNextNukta mode");
+                        Debug.Assert(!bLastATR, "[ISCIIEncoding.GetChars] Expected no bLastATR in cLastCharForNextNukta mode");
+                        Debug.Assert(!bLastVirama, "[ISCIIEncoding.GetChars] Expected no bLastVirama in cLastCharForNextNukta mode");
+                        Debug.Assert(!bLastDevenagariStressAbbr, "[ISCIIEncoding.GetChars] Expected no bLastDevenagariStressAbbr in cLastCharForNextNukta mode");
                     }
                 }
 

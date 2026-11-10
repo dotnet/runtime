@@ -19,10 +19,10 @@
 #include "dllimport.h"
 #include "clrvarargs.h"
 #include "sigbuilder.h"
-#include "olevariant.h"
 #include "configuration.h"
 #include "conditionalweaktable.h"
-#include "interoplibinterface_comwrappers.h"
+#include "interoplibinterface.h"
+#include "assemblynative.hpp"
 
 //
 // Retrieve structures from ID.
@@ -49,7 +49,7 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
         PRECONDITION(id <= m_cClasses);
@@ -127,7 +127,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
 
         PRECONDITION(id != METHOD__NIL);
         PRECONDITION(id <= m_cMethods);
@@ -186,7 +186,7 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
 
         PRECONDITION(id != FIELD__NIL);
         PRECONDITION(id <= m_cFields);
@@ -216,7 +216,6 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     {
         GC_NOTRIGGER;
         NOTHROW;
-        FORBID_FAULT;
         MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
@@ -252,7 +251,6 @@ Signature CoreLibBinder::GetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -282,7 +280,6 @@ Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -297,7 +294,6 @@ Signature CoreLibBinder::GetSignatureLocal(LPHARDCODEDMETASIG pHardcodedSig)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -431,6 +427,12 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
     callConv = *pSig++;
     pSigBuilder->AppendData(callConv);
 
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        unsigned genericArgCount = *pSig++;
+        pSigBuilder->AppendData(genericArgCount);
+    }
+
     if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_DEFAULT) {
         // arg count
         argCount = *pSig++;
@@ -440,12 +442,6 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
         if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
             THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
         argCount = 0;
-    }
-
-    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
-    {
-        unsigned genericArgCount = *pSig++;
-        pSigBuilder->AppendData(genericArgCount);
     }
 
     // <= because we want to include the return value or the field
@@ -463,7 +459,6 @@ const BYTE* CoreLibBinder::ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, co
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -505,7 +500,6 @@ void CoreLibBinder::TriggerGCUnderStress()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -621,18 +615,20 @@ void CoreLibBinder::Check()
                 // The same NameHandle must be used to retain the scope to look for the nested type.
                 NameHandle nameHandle(GetModule(), mdtBaseType);
 
-                SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
-                nameHandle.SetName(nameSpace, splitName.GetUTF8());
+                do
+                {
+                    SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
+                    nameHandle.SetName(nameSpace, splitName.GetUTF8());
 
-                // The side-effect of updating the scope in the NameHandle is the point of the call.
-                (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
+                    // Retain the resolved enclosing scope for the next nested type.
+                    (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
 
-                // Now load the nested type.
-                nameHandle.SetName("", nestedTypeMaybe + 1);
+                    name = nestedTypeMaybe + 1;
+                    nameSpace = "";
+                    nestedTypeMaybe = strchr(name, '+');
+                } while (nestedTypeMaybe != NULL);
 
-                // We don't support nested types in nested types.
-                _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
-
+                nameHandle.SetName("", name);
                 // We don't support nested types with explicit namespaces
                 _ASSERTE(strchr(nameHandle.GetName(), '.') == NULL);
                 pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();
@@ -1045,7 +1041,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1068,7 +1064,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1091,7 +1087,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1150,7 +1146,7 @@ void CoreLibBinder::CheckExtended()
             }
             minipal_log_print_error("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         MethodDesc *pMD = MemberLoader::FindMethod(type.AsMethodTable(), td);
         _ASSERTE(pMD);
@@ -1170,10 +1166,10 @@ void CoreLibBinder::CheckExtended()
             }
         }
         else
-        if (pMD->IsNDirect())
+        if (pMD->IsPInvoke())
         {
-            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-            NDirect::PopulateNDirectMethodDesc(pNMD);
+            PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
+            PInvoke::PopulatePInvokeMethodDesc(pNMD);
 
             if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
             {

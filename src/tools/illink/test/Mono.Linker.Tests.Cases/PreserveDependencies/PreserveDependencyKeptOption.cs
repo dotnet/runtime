@@ -4,28 +4,28 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies
 {
-	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
-	[SetupLinkerArgument ("--keep-dep-attributes", "true")]
-	[KeptTypeInAssembly ("FakeSystemAssembly.dll", typeof (PreserveDependencyAttribute))]
-	class PreserveDependencyKeptOption
-	{
-		public static void Main ()
-		{
-			B.Test ();
-		}
+    [SetupCompileBefore("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
+    [SetupLinkerArgument("--keep-dep-attributes", "true")]
+    [KeptTypeInAssembly("FakeSystemAssembly.dll", typeof(PreserveDependencyAttribute))]
+    class PreserveDependencyKeptOption
+    {
+        public static void Main()
+        {
+            B.Test();
+        }
 
-		class B
-		{
-			[Kept]
-			int field;
+        class B
+        {
+            [Kept]
+            int field;
 
-			[Kept]
-			[KeptAttributeAttribute (typeof (PreserveDependencyAttribute))]
+            [Kept]
+            [KeptAttributeAttribute(typeof(PreserveDependencyAttribute))]
 
-			[PreserveDependency ("field")]
-			public static void Test ()
-			{
-			}
-		}
-	}
+            [PreserveDependency("field")]
+            public static void Test()
+            {
+            }
+        }
+    }
 }

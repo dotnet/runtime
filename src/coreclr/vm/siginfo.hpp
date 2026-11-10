@@ -1,9 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// siginfo.hpp
-//
-
 
 #ifndef _H_SIGINFO
 #define _H_SIGINFO
@@ -17,7 +13,7 @@
 #include "threads.h"
 #include "corinfo.h"
 
-#include "eecontract.h"
+#include <contract.h>
 #include "typectxt.h"
 
 //---------------------------------------------------------------------------------------
@@ -253,7 +249,7 @@ public:
                                          BOOL dropGenericArgumentLevel = FALSE,
                                          const Substitution *pSubst = NULL,
                                          const ZapSig::Context *pZapSigContext = NULL,
-                                         MethodTable *pMTInterfaceMapOwner = NULL,
+                                         MethodTable* pMTInterfaceMapOwner = NULL,
                                          HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
                                          ) const;
 
@@ -297,6 +293,7 @@ public:
 // forward declarations needed for the friends declared in Signature
 struct FrameInfo;
 struct VASigCookie;
+struct AsyncMethodData;
 #if defined(DACCESS_COMPILE)
 class  DacDbiInterfaceImpl;
 #endif // DACCESS_COMPILE
@@ -353,9 +350,20 @@ public:
     DWORD           GetRawSigLen() const;
 
 private:
+    friend struct ::cdac_data<VASigCookie>;
+    friend struct ::cdac_data<AsyncMethodData>;
+    friend struct ::cdac_data<Signature>;
+
     PCCOR_SIGNATURE m_pSig;
     DWORD           m_cbSig;
 };  // class Signature
+
+template<>
+struct cdac_data<Signature>
+{
+    static constexpr size_t SignaturePointer = offsetof(Signature, m_pSig);
+    static constexpr size_t SignatureLength = offsetof(Signature, m_cbSig);
+};
 
 
 #ifdef _DEBUG
@@ -613,7 +621,7 @@ class MetaSig
         // Does not count the "this" argument (which is not reflected on the
         // sig.) 64-bit arguments are counted as one argument.
         //------------------------------------------------------------------------
-        UINT NumFixedArgs()
+        UINT NumFixedArgs() const
         {
             LIMITED_METHOD_DAC_CONTRACT;
             return m_nArgs;
@@ -698,7 +706,7 @@ class MetaSig
         //----------------------------------------------------------
         // Has a 'this' pointer?
         //----------------------------------------------------------
-        BOOL HasThis()
+        BOOL HasThis() const
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -746,7 +754,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is it an async call?
         //----------------------------------------------------------
-        BOOL IsAsyncCall()
+        bool IsAsyncCall()
         {
             LIMITED_METHOD_CONTRACT;
             return m_CallConv & CORINFO_CALLCONV_ASYNCCALL;
@@ -797,7 +805,6 @@ class MetaSig
             {
                 if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
                 if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-                if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
                 MODE_ANY;
                 SUPPORTS_DAC;
             }
@@ -822,10 +829,6 @@ class MetaSig
             }
         } // NextArgNormalized
 
-        // Tests if the return type is an object ref.  Loads types
-        // if needed (though it shouldn't really need to)
-        BOOL IsObjectRefReturnType();
-
         //------------------------------------------------------------------------
         // Compute element size from CorElementType and optional valuetype.
         //------------------------------------------------------------------------
@@ -845,16 +848,6 @@ class MetaSig
         //------------------------------------------------------------------
         VOID GcScanRoots(ArgDestination *pValue, promote_func *fn,
                          ScanContext* sc, promote_carefully_func *fnc = NULL);
-
-        //------------------------------------------------------------------
-        // Is the return type 64 bit?
-        //------------------------------------------------------------------
-        BOOL Is64BitReturn() const
-        {
-            WRAPPER_NO_CONTRACT;
-            CorElementType rt = GetReturnTypeNormalized();
-            return (rt == ELEMENT_TYPE_I8 || rt == ELEMENT_TYPE_U8 || rt == ELEMENT_TYPE_R8);
-        }
 
         //------------------------------------------------------------------
         // Is the return type floating point?
@@ -1096,19 +1089,6 @@ private:
                                              TokenPairList *pVisited);
 
 public:
-
-        //------------------------------------------------------------------
-        // Ensures that all the value types in the sig are loaded. This
-        // should be called on sig's that have value types before they
-        // are passed to Call(). This ensures that value classes will not
-        // be loaded during the operation to determine the size of the
-        // stack. Thus preventing the resulting GC hole.
-        //------------------------------------------------------------------
-        static void EnsureSigValueTypesLoaded(MethodDesc *pMD);
-
-        // this walks the sig and checks to see if all  types in the sig can be loaded
-        static void CheckSigTypesCanBeLoaded(MethodDesc *pMD);
-
         const SigTypeContext *GetSigTypeContext() const { LIMITED_METHOD_CONTRACT; return &m_typeContext; }
 
         // Disallow copy constructor.
@@ -1207,6 +1187,8 @@ BOOL CompareTypeLayout(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModu
 BOOL CompareTypeDefsForEquivalence(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModule2, TokenPairList *pVisited);
 BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule);
 BOOL IsTypeDefExternallyVisible(mdToken tk, Module *pModule, DWORD dwAttrs);
+
+CorInfoCallConvExtension GetUnmanagedCallConvExtension(MetaSig* pSig);
 
 void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, PTR_VOID pSrc);
 

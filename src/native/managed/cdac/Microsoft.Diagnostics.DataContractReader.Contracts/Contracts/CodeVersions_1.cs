@@ -4,12 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
+    // Initial value for EnC versions (matches native CorDB_DEFAULT_ENC_FUNCTION_VERSION).
+    private const ulong CorDBDefaultEnCVersion = 1;
+
     private readonly Target _target;
 
     public CodeVersions_1(Target target)
@@ -88,6 +92,32 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
     }
 
+    IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        if (!ilCodeVersionHandle.IsValid)
+            yield break;
+
+        if (!ilCodeVersionHandle.IsExplicit)
+        {
+            // if the ILCodeVersion is synthetic, then yield the synthetic NativeCodeVersion
+            NativeCodeVersionHandle provisionalHandle = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+            yield return provisionalHandle;
+        }
+
+        // Iterate through versioning state nodes and return the active one, matching any IL code version
+        Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
+        TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
+        IEnumerable<NativeCodeVersionHandle> nativeCodeVersions = FindNativeCodeVersionNodes(
+            rts,
+            md,
+            (codeVersion) => ilVersionId == codeVersion.ILVersionId);
+        foreach (NativeCodeVersionHandle nativeCodeVersion in nativeCodeVersions)
+        {
+            yield return nativeCodeVersion;
+        }
+    }
+
     NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointer ip)
     {
         // ExecutionManager::GetNativeCodeVersion(PCODE ip))
@@ -111,7 +141,9 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
         else
         {
-            TargetCodePointer startAddress = executionManager.GetStartAddress(info.Value);
+            TargetCodePointer startAddress = CodePointerUtils.CodePointerFromAddress(
+                executionManager.GetStartAddress(info.Value),
+                _target);
             return GetSpecificNativeCodeVersion(rts, md, startAddress);
         }
     }
@@ -123,14 +155,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         if (rts.IsDynamicMethod(md))
             return false;
         if (rts.IsCollectibleMethod(md))
-            return false;
-        TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle mt = rts.GetTypeHandle(mtAddr);
-        TargetPointer modAddr = rts.GetModule(mt);
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle mod = loader.GetModuleHandle(modAddr);
-        ModuleFlags modFlags = loader.GetFlags(mod);
-        if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
             return false;
         return true;
     }
@@ -176,11 +200,11 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
         TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
-        return FindFirstCodeVersion(rts, md, (codeVersion) =>
+        return FindNativeCodeVersionNodes(rts, md, (codeVersion) =>
         {
             return (ilVersionId == codeVersion.ILVersionId)
                 && ((NativeCodeVersionNodeFlags)codeVersion.Flags).HasFlag(NativeCodeVersionNodeFlags.IsActiveChild);
-        });
+        }).FirstOrDefault(NativeCodeVersionHandle.Invalid);
     }
 
     TargetPointer ICodeVersions.GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle)
@@ -200,8 +224,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             NativeCodeVersionNode codeVersionNode = AsNode(codeVersionHandle);
             if (codeVersionNode.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
             {
-                Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
-                return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+                return gcCoverageInfoAddr + (ulong)Data.GCCoverageInfo.GetSavedCodeOffset(_target);
             }
             return TargetPointer.Null;
         }
@@ -215,8 +238,14 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
     private NativeCodeVersionHandle GetSpecificNativeCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, TargetCodePointer startAddress)
     {
+        // Code-block start addresses are the code a method starts executing (for interpreted methods, the
+        // bytecode), while the MethodDesc native code slot / version node may hold an entry point (for
+        // interpreted methods, an InterpreterPrecode). Compare against the code start, as the native DAC does
+        // with GetInterpreterCodeFromEntryPointIfPresent(NativeCodeVersion::GetNativeCode()).
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+
         // initial stage of NativeCodeVersionIterator::Next() with a null m_ilCodeFilter
-        TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
+        TargetCodePointer firstNativeCode = eman.GetDiagnosticCodeStartFromEntryPoint(rts.GetNativeCode(md));
         if (firstNativeCode == startAddress)
         {
             NativeCodeVersionHandle first = NativeCodeVersionHandle.CreateSynthetic(md.Address);
@@ -224,18 +253,18 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
 
         // CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc, PCODE startAddress)
-        return FindFirstCodeVersion(rts, md, (codeVersion) =>
+        return FindNativeCodeVersionNodes(rts, md, (codeVersion) =>
         {
-            return codeVersion.MethodDesc == md.Address && codeVersion.NativeCode == startAddress;
-        });
+            return codeVersion.MethodDesc == md.Address && eman.GetDiagnosticCodeStartFromEntryPoint(codeVersion.NativeCode) == startAddress;
+        }).FirstOrDefault(NativeCodeVersionHandle.Invalid);
     }
 
-    private NativeCodeVersionHandle FindFirstCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, Func<Data.NativeCodeVersionNode, bool> predicate)
+    private IEnumerable<NativeCodeVersionHandle> FindNativeCodeVersionNodes(IRuntimeTypeSystem rts, MethodDescHandle md, Func<Data.NativeCodeVersionNode, bool> predicate)
     {
         // ImplicitCodeVersion stage of NativeCodeVersionIterator::Next()
         TargetPointer versioningStateAddr = rts.GetMethodDescVersioningState(md);
         if (versioningStateAddr == TargetPointer.Null)
-            return NativeCodeVersionHandle.Invalid;
+            yield break;
 
         Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
 
@@ -246,11 +275,11 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
             if (predicate(current))
             {
-                return NativeCodeVersionHandle.CreateExplicit(currentAddress);
+                yield return NativeCodeVersionHandle.CreateExplicit(currentAddress);
             }
             currentAddress = current.Next;
         }
-        return NativeCodeVersionHandle.Invalid;
+        yield break;
     }
 
     private enum ILCodeVersionKind
@@ -313,7 +342,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
         TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         module = rts.GetModule(typeHandle);
         methodDefToken = rts.GetMethodToken(md);
     }
@@ -324,9 +353,12 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         if (methodDefToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
             return TargetPointer.Null;
 
-        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
-        TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
+        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(
+            moduleHandle,
+            ModuleLookupMapKind.MethodDefToILCodeVersioningState,
+            methodDefToken,
+            out var _);
         return ilVersionStateAddress;
     }
 
@@ -359,5 +391,85 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
         ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
         return ilCodeVersionNode.VersionId;
+    }
+
+    TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+
+        TargetPointer ilAddress = default;
+        if (ilCodeVersionHandle.IsExplicit)
+        {
+            ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
+            ilAddress = ilCodeVersionNode.ILAddress;
+        }
+
+        if (ilAddress == TargetPointer.Null)
+        {
+            // Synthetic ILCodeVersion, get the IL from the module and method def
+            ILoader loader = _target.Contracts.Loader;
+            ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
+            ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
+        }
+
+        return ilAddress;
+    }
+
+    bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle iLCodeVersionHandle)
+    {
+        return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+    }
+
+    CodeVersionSource ICodeVersions.GetSource(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        // The synthetic (default) version has no backing node and has no explicit source.
+        if (!ilCodeVersionHandle.IsExplicit)
+            return CodeVersionSource.Unknown;
+        return (CodeVersionSource)AsNode(ilCodeVersionHandle).Source;
+    }
+
+    TargetNUInt ICodeVersions.GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        // The synthetic (default) version represents the original, unedited IL.
+        if (!ilCodeVersionHandle.IsExplicit)
+            return new TargetNUInt(CorDBDefaultEnCVersion);
+        return AsNode(ilCodeVersionHandle).EnCVersion;
+    }
+
+    bool ICodeVersions.TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries)
+    {
+        mapEntryCount = 0;
+        mapEntries = TargetPointer.Null;
+
+        // ILCodeVersion::GetInstrumentedILMap returns NULL for synthetic versions
+        if (!ilCodeVersionHandle.IsExplicit)
+        {
+            return false;
+        }
+
+        Data.InstrumentedILOffsetMapping mapping = AsNode(ilCodeVersionHandle).InstrumentedILMap;
+        mapEntryCount = mapping.Count;
+        mapEntries = mapping.Map;
+        return true;
+    }
+
+    OptimizationTier ICodeVersions.GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)
+    {
+        if (!codeVersionHandle.Valid)
+        {
+            throw new ArgumentException("Invalid NativeCodeVersionHandle");
+        }
+
+        if (codeVersionHandle.IsExplicit)
+        {
+            NativeCodeVersionNode nativeCodeVersionNode = _target.ProcessedData.GetOrAdd<NativeCodeVersionNode>(codeVersionHandle.CodeVersionNodeAddress);
+            return RuntimeTypeSystem_1.GetOptimizationTier(nativeCodeVersionNode.OptimizationTier);
+        }
+        else
+        {
+            IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(codeVersionHandle.MethodDescAddress);
+            OptimizationTier optimizationTier = rtsContract.GetMethodDescOptimizationTier(methodDescHandle);
+            return optimizationTier;
+        }
     }
 }

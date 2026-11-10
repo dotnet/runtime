@@ -203,12 +203,14 @@ public:
         return const_cast<StgGuidPool &>(m_GuidPool).IsValidCookie(nIndex);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     inline HRESULT SaveToStream(
         _In_ IStream *pStream) const
     {
         return const_cast<StgGuidPool &>(m_GuidPool).PersistToStream(pStream);
     }
+#endif
 
 public:
     //

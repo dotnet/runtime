@@ -1,0 +1,159 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace Microsoft.DotNet.ILAssembler;
+
+public enum DiagnosticSeverity
+{
+    Error,
+    Warning,
+    Info,
+    Hidden
+}
+
+public record Diagnostic(string Id, DiagnosticSeverity Severity, string Message, Location Location);
+
+/// <summary>
+/// Well-known diagnostic IDs for IL assembler diagnostics.
+/// </summary>
+public static class DiagnosticIds
+{
+    public const string Parser = "ILA0000";
+    public const string LiteralOutOfRange = "ILA0001";
+    public const string UnsealedValueType = "ILA0002";
+    public const string ThisOutsideClass = "ILA0003";
+    public const string BaseOutsideClass = "ILA0004";
+    public const string NoBaseType = "ILA0005";
+    public const string NesterOutsideNestedClass = "ILA0006";
+    public const string ModuleNotFound = "ILA0007";
+    public const string TypeNotFound = "ILA0008";
+    public const string MethodTypeParameterOutsideMethod = "ILA0009";
+    public const string TypeParameterOutsideType = "ILA0010";
+    public const string GenericParameterNotFound = "ILA0011";
+    public const string InvalidMetadataToken = "ILA0012";
+    public const string FileNotFound = "ILA0013";
+    public const string AssemblyNotFound = "ILA0014";
+    public const string ExportedTypeNotFound = "ILA0015";
+    public const string ByteArrayTooShort = "ILA0016";
+    public const string LabelNotFound = "ILA0017";
+    public const string ArgumentNotFound = "ILA0018";
+    public const string LocalNotFound = "ILA0019";
+    public const string TypedefNotFound = "ILA0020";
+    public const string AbstractMethodNotInAbstractType = "ILA0021";
+    public const string InvalidPInvokeSignature = "ILA0022";
+    public const string MissingInstanceCallConv = "ILA0023";
+    public const string DeprecatedNativeType = "ILA0024";
+    public const string DeprecatedCustomMarshaller = "ILA0025";
+    public const string UnsupportedSecurityDeclaration = "ILA0026";
+    public const string GenericParameterIndexOutOfRange = "ILA0027";
+    public const string UnknownGenericParameter = "ILA0028";
+    public const string ParameterIndexOutOfRange = "ILA0029";
+    public const string DuplicateMethod = "ILA0030";
+    public const string MissingExportedTypeImplementation = "ILA0031";
+    public const string KeyFileError = "ILA0032";
+    public const string TooManyGenericParameters = "ILA0033";
+    public const string DuplicateField = "ILA0034";
+    public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
+    public const string InvalidExportOrdinal = "ILA0036";
+    public const string ExportOrdinalRangeTooLarge = "ILA0037";
+    public const string InvalidVTableSlotCount = "ILA0038";
+    public const string InvalidVTableExport = "ILA0039";
+    public const string InsufficientVTableData = "ILA0040";
+    public const string UnsupportedNativeExportMachine = "ILA0041";
+    public const string InvalidVTableWidth = "ILA0042";
+    public const string InvalidVTableEntry = "ILA0043";
+    public const string DuplicateExportOrdinal = "ILA0044";
+    public const string UnsupportedVTableDeclaration = "ILA0045";
+    public const string InvalidOctalLiteral = "ILA0046";
+    public const string BranchOffsetOutOfRange = "ILA0047";
+    public const string InvalidExceptionRegion = "ILA0048";
+    public const string PseudoCustomAttributeInvalidTarget = "ILA0049";
+    public const string PseudoCustomAttributeInvalidValue = "ILA0050";
+    public const string PseudoCustomAttributeInvalidBlob = "ILA0051";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0052";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0053";
+    public const string LocalSlotInUse = "ILA0054";
+    public const string LocalSlotTypeConflict = "ILA0055";
+    public const string UndefinedLocalSlotType = "ILA0056";
+    public const string LocalSlotOutOfRange = "ILA0057";
+    public const string LocalScopeWithoutInstructions = "ILA0058";
+    public const string LocalNameDeclaredTwiceInScope = "ILA0059";
+    public const string LocalSlotNamedTwiceInScope = "ILA0060";
+    public const string InvalidSequencePoint = "ILA0061";
+    public const string DuplicateEntryPoint = "ILA0063";
+    public const string InstanceEntryPoint = "ILA0064";
+    public const string DuplicateExportedType = "ILA0065";
+}
+
+internal static class DiagnosticMessageTemplates
+{
+    public const string LiteralOutOfRange = "The value '{0}' is out of range";
+    public const string UnsealedValueType = "The value type '{0}' is unsealed.";
+    public const string ThisOutsideClass = "'.this' cannot be used outside of a class definition";
+    public const string BaseOutsideClass = "'.base' cannot be used outside of a class definition";
+    public const string NoBaseType = "Current type does not have a base type";
+    public const string NesterOutsideNestedClass = "'.nester' cannot be used outside of a nested class definition";
+    public const string ModuleNotFound = "Module '{0}' not found";
+    public const string TypeNotFound = "Type '{0}' not found";
+    public const string MethodTypeParameterOutsideMethod = "Method type parameter '!!{0}' cannot be used outside of a method definition";
+    public const string TypeParameterOutsideType = "Type parameter '!{0}' cannot be used outside of a type definition";
+    public const string GenericParameterNotFound = "Generic parameter '{0}' not found";
+    public const string InvalidMetadataToken = "Invalid or unresolved metadata token";
+    public const string FileNotFound = "File '{0}' not found";
+    public const string AssemblyNotFound = "Assembly '{0}' not found";
+    public const string ExportedTypeNotFound = "Exported type '{0}' not found";
+    public const string ByteArrayTooShort = "Byte array is too short for the specified data type";
+    public const string LabelNotFound = "Label '{0}' not found";
+    public const string ArgumentNotFound = "Argument '{0}' not found";
+    public const string LocalNotFound = "Local variable '{0}' not found";
+    public const string TypedefNotFound = "Typedef '{0}' not found";
+    public const string AbstractMethodNotInAbstractType = "Abstract method '{0}' cannot be declared in a non-abstract type";
+    public const string InvalidPInvokeSignature = "Invalid P/Invoke signature: module name is required";
+    public const string MissingInstanceCallConv = "Instance call convention required for method reference";
+    public const string DeprecatedNativeType = "Native type '{0}' is deprecated";
+    public const string DeprecatedCustomMarshaller = "The 4-string form of custom marshaller is deprecated";
+    public const string UnsupportedSecurityDeclaration = "Individual SecurityAttribute permissions are not supported; use PermissionSet instead";
+    public const string GenericParameterIndexOutOfRange = "Generic parameter index {0} is out of range";
+    public const string UnknownGenericParameter = "Unknown generic parameter '{0}'";
+    public const string ParameterIndexOutOfRange = "Parameter index {0} is out of range";
+    public const string DuplicateMethod = "Duplicate method definition";
+    public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
+    public const string TooManyGenericParameters = "Generic parameter count {0} exceeds the maximum of {1}";
+    public const string GenericParameterConstraintOwnerOutOfRange = "Generic parameter constraint owner index {0} exceeds the maximum encodable generic parameter index of {1}";
+    public const string InvalidExportOrdinal = "Export ordinal {0} must be positive";
+    public const string ExportOrdinalRangeTooLarge = "Export ordinal {0} is too far from base ordinal {1}; the export address table index must not exceed {2}";
+    public const string InvalidVTableSlotCount = "VTable fixup slot count {0} must be between 0 and {1}";
+    public const string InvalidVTableExport = "Export '{0}' does not have a valid VTable entry association";
+    public const string InsufficientVTableData = "Data label '{0}' has {1} bytes available, but its VTable fixup requires {2} bytes";
+    public const string UnsupportedNativeExportMachine = "Native exports are not supported for target machine '{0}'";
+    public const string InvalidVTableWidth = "VTable fixup width flags 0x{0:X} do not match target machine '{1}'; expected exactly '{2}'";
+    public const string InvalidVTableEntry = "Method '{0}' references invalid VTable entry {1}";
+    public const string InvalidVTableSlot = "Method '{0}' references invalid VTable slot {1}; VTable entry {2} contains {3} slots";
+    public const string DuplicateExportOrdinal = "Export '{0}' uses ordinal {1}, which is already assigned to a different VTable target";
+    public const string UnsupportedVTableDeclaration = "Raw .vtable declarations are not supported; use .vtfixup instead";
+    public const string InvalidOctalLiteral = "The value '{0}' is not a valid octal literal";
+    public const string BranchOffsetOutOfRange = "The offset {1} is too large for short branch instruction '{0}'; truncated";
+    public const string InvalidExceptionRegion = "Exception region bounds (try {0} to {1}, handler {2} to {3}) are invalid for a method with {4} bytes of code";
+    public const string InvalidFilterOffset = "Exception filter offset {0} is out of range for a method with {1} bytes of code";
+    public const string PseudoCustomAttributeInvalidTarget = "Custom attribute '{0}' cannot be applied to this target";
+    public const string PseudoCustomAttributeInvalidValue = "Custom attribute '{0}' has an invalid argument value";
+    public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
+    public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
+    public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
+    public const string LocalSlotInUse = "Local var slot {0} is in use";
+    public const string LocalSlotTypeConflict = "Local var slot {0}: type conflict";
+    public const string UndefinedLocalSlotType = "Undefined type of local var slot {0} in method {1}";
+    public const string LocalSlotOutOfRange = "Local var slot {0} is out of range; a slot index must be between 0 and {1}";
+    public const string LocalScopeWithoutInstructions = "Local var '{0}' is declared in a scope that has no instructions; a PDB local scope must not be empty";
+    public const string LocalNameDeclaredTwiceInScope = "Local var '{0}' is already declared in this scope";
+    public const string LocalSlotNamedTwiceInScope = "Local var '{0}': slot {1} is already named '{2}' in this scope";
+    public const string InvalidHiddenSequencePoint = "A hidden sequence point must have start and end lines 0xFEEFEE and columns 0,0";
+    public const string SequencePointLineOutOfRange = "Sequence point lines must be between 0 and 0x1fffffff";
+    public const string SequencePointColumnOutOfRange = "Sequence point columns must be between 0 and 0xffff";
+    public const string SequencePointReversedRange = "A sequence point must end after it starts";
+    public const string SequencePointLineDeltaOutOfRange = "The start line difference from the previous non-hidden sequence point must be between -0x10000000 and 0x0fffffff";
+    public const string DuplicateEntryPoint = "Multiple entry points declared";
+    public const string InstanceEntryPoint = "Entry point method must be static";
+    public const string DuplicateField = "Duplicate field definition '{0}'";
+    public const string DuplicateExportedType = "Duplicate exported type '{0}'";
+}

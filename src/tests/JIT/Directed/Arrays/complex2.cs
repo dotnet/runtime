@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_Arrays_complex2;
+
 using System;
 using Xunit;
 public struct Yak
@@ -23,6 +25,7 @@ public class Complex2_Array_Test
     {
         Console.Write(Odd_Variable.Length);
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

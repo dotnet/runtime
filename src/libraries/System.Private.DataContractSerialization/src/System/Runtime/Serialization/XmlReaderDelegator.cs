@@ -260,17 +260,17 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         return ReadContentAsBase64();
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                         return new object();
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         return ReadContentAsTimeSpan();
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         return ReadContentAsGuid();
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         return ReadContentAsUri();
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         return ReadContentAsQName();
                     break;
             }
@@ -315,17 +315,17 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         return new DataNode<byte[]>(ReadContentAsBase64());
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                         return new DataNode<object>(new object());
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         return new DataNode<TimeSpan>(ReadContentAsTimeSpan());
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         return new DataNode<Guid>(ReadContentAsGuid());
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         return new DataNode<Uri>(ReadContentAsUri());
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         return new DataNode<XmlQualifiedName>(ReadContentAsQName());
                     break;
             }
@@ -507,6 +507,86 @@ namespace System.Runtime.Serialization
                 ThrowConversionException(string.Empty, "DateTime");
 
             return reader.ReadContentAsDateTime();
+        }
+
+        internal virtual DateOnly ReadElementContentAsDateOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowNotAtElement();
+            string s = reader.ReadElementContentAsString();
+            try
+            {
+                return ParseDateOnly(s);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(DateOnly));
+                throw; // unreachable
+            }
+        }
+
+        internal virtual DateOnly ReadContentAsDateOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, nameof(DateOnly));
+            string s = reader.ReadContentAsString();
+            try
+            {
+                return ParseDateOnly(s);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(DateOnly));
+                throw; // unreachable
+            }
+        }
+
+        internal virtual TimeOnly ReadElementContentAsTimeOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowNotAtElement();
+
+            string s = reader.ReadElementContentAsString();
+
+            try
+            {
+                var dto = XmlConvert.ToDateTimeOffset(s);
+                return TimeOnly.FromTimeSpan(dto.TimeOfDay);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(TimeOnly));
+                throw; // unreachable
+            }
+        }
+
+        internal virtual TimeOnly ReadContentAsTimeOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, nameof(TimeOnly));
+
+            string s = reader.ReadContentAsString();
+            try
+            {
+                var dto = XmlConvert.ToDateTimeOffset(s);
+                return TimeOnly.FromTimeSpan(dto.TimeOfDay);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(TimeOnly));
+                throw; // unreachable
+            }
+        }
+
+        private static DateOnly ParseDateOnly(string s)
+        {
+            return DateOnly.ParseExact(s, "yyyy-MM-dd", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
+        private static TimeOnly ParseTimeOnly(string s)
+        {
+            // Strictly parse the expected TimeOnly format. No timezone/offset allowed.
+            return TimeOnly.ParseExact(s, "HH:mm:ss.FFFFFFF", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
         internal int ReadElementContentAsInt()

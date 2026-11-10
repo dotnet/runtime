@@ -5,7 +5,6 @@
   <Project Path="../../../tasks/WasmAppBuilder/WasmAppBuilder.csproj" />
   <Project Path="../../../tasks/WasmBuildTasks/WasmBuildTasks.csproj" />
   <Project Path="../../../tasks/WorkloadBuildTasks/WorkloadBuildTasks.csproj" />
-  <Project Path="../../wasi/Wasi.Build.Tests/Wasi.Build.Tests.csproj" />
   <Project Path="../host/WasmAppHost.csproj" />
   <Project Path="../symbolicator/WasmSymbolicator.csproj" />
   <Project Path="../Wasm.Build.Tests/Wasm.Build.Tests.csproj" />

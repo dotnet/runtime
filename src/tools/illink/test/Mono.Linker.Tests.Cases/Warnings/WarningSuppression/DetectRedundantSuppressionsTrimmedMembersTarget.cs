@@ -6,51 +6,52 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-[assembly: UnconditionalSuppressMessage ("Test", "IL2071",
-	Scope = "type",
-	Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithRedundantSuppression")]
-[assembly: UnconditionalSuppressMessage ("Test", "IL2071",
-	Scope = "member",
-	Target = "P:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithMembers.UnusedPropertyWithSuppression")]
-[assembly: UnconditionalSuppressMessage ("Test", "IL2071",
-	Scope = "member",
-	Target = "E:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithMembers.UnusedEventWithSuppression")]
-[assembly: UnconditionalSuppressMessage ("Test", "IL2071",
-	Scope = "member",
-	Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithMembers.UnusedMethodWithSuppression")]
+[assembly: UnconditionalSuppressMessage("Test", "IL2071",
+    Scope = "type",
+    Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithRedundantSuppression")]
+[assembly: UnconditionalSuppressMessage("Test", "IL2071",
+    Scope = "member",
+    Target = "P:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithMembers.UnusedPropertyWithSuppression")]
+[assembly: UnconditionalSuppressMessage("Test", "IL2071",
+    Scope = "member",
+    Target = "E:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithMembers.UnusedEventWithSuppression")]
+[assembly: UnconditionalSuppressMessage("Test", "IL2071",
+    Scope = "member",
+    Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.UnusedTypeWithMembers.UnusedMethodWithSuppression")]
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[ExpectedNoWarnings]
-	[SkipKeptItemsValidation]
-	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
-	class DetectRedundantSuppressionsTrimmedMembersTarget
-	{
-		[ExpectedWarning ("IL2072")]
-		static void Main ()
-		{
-			Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
-		}
+    [ExpectedNoWarnings]
+    [SkipKeptItemsValidation]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
+    class DetectRedundantSuppressionsTrimmedMembersTarget
+    {
+        [ExpectedWarning("IL2072")]
+        static void Main()
+        {
+            Expression.Call(TriggerUnrecognizedPattern(), "", Type.EmptyTypes);
+        }
 
-		public static Type TriggerUnrecognizedPattern ()
-		{
-			return typeof (DetectRedundantSuppressionsTrimmedMembersTarget);
-		}
-	}
+        public static Type TriggerUnrecognizedPattern()
+        {
+            return typeof(DetectRedundantSuppressionsTrimmedMembersTarget);
+        }
+    }
 
-	class UnusedTypeWithRedundantSuppression
-	{
-	}
+    class UnusedTypeWithRedundantSuppression
+    {
+    }
 
-	class UnusedTypeWithMembers
-	{
-		int UnusedPropertyWithSuppression { get; set; }
+    class UnusedTypeWithMembers
+    {
+        int UnusedPropertyWithSuppression { get; set; }
 
-		event EventHandler<EventArgs> UnusedEventWithSuppression {
-			add { }
-			remove { }
-		}
+        event EventHandler<EventArgs> UnusedEventWithSuppression
+        {
+            add { }
+            remove { }
+        }
 
-		void UnusedMethodWithSuppression () { }
-	}
+        void UnusedMethodWithSuppression() { }
+    }
 }

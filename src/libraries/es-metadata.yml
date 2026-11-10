@@ -1,0 +1,8 @@
+schemaVersion: 0.0.1
+isProduction: true
+accountableOwners:
+  service: 7a9b52f6-7805-416c-9390-343168c0cdb3
+routing:
+  defaultAreaPath:
+    org: devdiv
+    path: DevDiv\NET Libraries

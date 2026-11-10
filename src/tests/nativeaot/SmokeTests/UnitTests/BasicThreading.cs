@@ -450,9 +450,19 @@ class ThreadTest
 
     private static void TestIsBackgroundProperty()
     {
+        // Mobile app hosts may invoke managed Main on a background thread.
+        if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsIOS() &&
+            !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst())
+        {
+            Assert.False(Thread.CurrentThread.IsBackground);
+        }
+
         // Thread created using Thread.Start
         var t_event = new AutoResetEvent(false);
-        var t = new Thread(() => t_event.WaitOne());
+        var t = new Thread(() => {
+            Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
+            t_event.WaitOne();
+        });
 
         t.Start();
         s_startedThreads.Add(t);
@@ -473,9 +483,6 @@ class ThreadTest
         Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
         ExpectException<ThreadStateException>(() => Console.WriteLine(stoppedResurrected.IsBackground),
             "Expected ThreadStateException for stoppedResurrected.IsBackground");
-
-        // Main thread
-        Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
 
         ExpectPassed(nameof(TestIsBackgroundProperty), 6);
     }

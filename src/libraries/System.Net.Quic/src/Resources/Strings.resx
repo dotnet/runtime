@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -226,6 +226,9 @@
   <data name="net_auth_tls_alert" xml:space="preserve">
     <value>Authentication failed because the remote party sent a TLS alert: '{0}'.</value>
   </data>
+  <data name="net_writecompleted_invalidcall" xml:space="preserve">
+    <value>This method may not be called when writing side was already completed.</value>
+  </data>
   <!-- Referenced in shared IPEndPointExtensions.cs -->
   <data name="net_InvalidAddressFamily" xml:space="preserve">
     <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
@@ -240,4 +243,3 @@
     <value>Authentication failed because the platform does not support ephemeral keys.</value>
   </data>
 </root>
-

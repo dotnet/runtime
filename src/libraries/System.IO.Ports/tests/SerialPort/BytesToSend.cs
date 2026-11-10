@@ -28,7 +28,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(BytesToWrite_Property), nameof(HasOneSerialPort))]
         public void BytesToWrite_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -44,28 +44,28 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(BytesToWrite_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void BytesToWrite_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying BytesToWrite with Write(byte[] buffer, int offset, int count)");
             VerifyBytesToWrite(Write_byte_int_int, s_DEFAULT_NUM_RND_BYTES, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(BytesToWrite_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void BytesToWrite_Write_char_int_int()
         {
             Debug.WriteLine("Verifying BytesToWrite with Write(char[] buffer, int offset, int count)");
             VerifyBytesToWrite(Write_char_int_int, s_DEFAULT_NUM_RND_BYTES, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(BytesToWrite_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void BytesToWrite_Write_str()
         {
             Debug.WriteLine("Verifying BytesToWrite with WriteChar()");
             VerifyBytesToWrite(Write_str, 1, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(BytesToWrite_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void BytesToWrite_WriteLine()
         {
             Debug.WriteLine("Verifying BytesToWrite with WriteLine()");

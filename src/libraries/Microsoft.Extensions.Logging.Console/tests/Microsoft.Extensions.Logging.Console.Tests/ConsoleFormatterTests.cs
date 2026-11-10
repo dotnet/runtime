@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             return new SetupDisposeHelper(logger, sink, errorSink, levelAsString, writesPerMsg, consoleLoggerProcessor);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ConsoleLoggerOptions_TimeStampFormat_IsReloaded()
         {
             // Arrange
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatterNames))]
         public void InvalidLogLevel_Throws(string formatterName)
         {
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => logger.Log((LogLevel)8, 0, _state, null, _defaultFormatter));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
         public void NoMessageOrException_Noop(string formatterName, LogLevel level)
         {
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(0, sink.Writes.Count);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
         public void Log_LogsCorrectTimestamp(string formatterName, LogLevel level)
         {
@@ -182,11 +182,97 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void NullFormatterName_Throws()
         {
             // Arrange
             Assert.Throws<ArgumentNullException>(() => new NullNameConsoleFormatter());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [MemberData(nameof(NonJsonFormatterNames))]
+        public void Log_DangerousControlCharacters_AreSanitized(string formatterName)
+        {
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Disabled },
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // ESC and BS are C0 controls, DEL is U+007F and CSI is a C1 control (U+009B).
+            logger.LogInformation("Payload: {Value}", "prefix\u001b[31mtext\u0008\u007f\u009bend\r\n\tsuffix");
+
+            string output = GetMessage(sink.Writes);
+            Assert.DoesNotContain('\u001b', output);
+            Assert.DoesNotContain('\u0008', output);
+            Assert.DoesNotContain('\u007f', output);
+            Assert.DoesNotContain('\u009b', output);
+            Assert.Contains("\\u001B", output);
+            Assert.Contains("\\u0008", output);
+            Assert.Contains("\\u007F", output);
+            Assert.Contains("\\u009B", output);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [MemberData(nameof(NonJsonFormatterNames))]
+        public void Log_FormatCharacters_AreNotEscaped(string formatterName)
+        {
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Disabled },
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Bidirectional overrides and zero-width characters are spoofing/confusion-class, not terminal
+            // escape-sequence vectors, so the console sanitizer intentionally leaves them untouched.
+            logger.LogInformation("Payload: {Value}", "prefix\u202e\u200bsuffix");
+
+            string output = GetMessage(sink.Writes);
+            Assert.Contains('\u202e', output);
+            Assert.Contains('\u200b', output);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [MemberData(nameof(NonJsonFormatterNames))]
+        public void Log_SafeWhitespace_IsNotEscaped(string formatterName)
+        {
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Disabled },
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            logger.LogInformation("Line1\nLine2\tIndented");
+
+            string output = GetMessage(sink.Writes);
+            Assert.DoesNotContain("\\u000A", output);
+            Assert.DoesNotContain("\\u0009", output);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(ConsoleFormatterNames.Json)]
+        public void Log_Json_ControlAndFormatCharacters_EscapedByWriter(string formatterName)
+        {
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions(),
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            logger.LogInformation("Payload: {Value}", "prefix\u001b[31mtext\u0008\u202Esuffix");
+
+            string output = GetMessage(sink.Writes);
+            Assert.DoesNotContain('\u001b', output);
+            Assert.DoesNotContain('\u0008', output);
+            Assert.DoesNotContain('\u202E', output);
         }
 
         private class NullNameConsoleFormatter : ConsoleFormatter
@@ -222,6 +308,17 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 data.Add(ConsoleFormatterNames.Simple);
                 data.Add(ConsoleFormatterNames.Systemd);
                 data.Add(ConsoleFormatterNames.Json);
+                return data;
+            }
+        }
+
+        public static TheoryData<string> NonJsonFormatterNames
+        {
+            get
+            {
+                var data = new TheoryData<string>();
+                data.Add(ConsoleFormatterNames.Simple);
+                data.Add(ConsoleFormatterNames.Systemd);
                 return data;
             }
         }

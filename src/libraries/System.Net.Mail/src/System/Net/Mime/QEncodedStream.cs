@@ -39,7 +39,6 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         ];
 
-        private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
         private readonly QEncoder _encoder;
 
@@ -49,7 +48,7 @@ namespace System.Net.Mime
             _encoder = new QEncoder(_writeState);
         }
 
-        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
+        private ReadStateInfo ReadState => field ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState => _writeState;
 
@@ -62,122 +61,122 @@ namespace System.Net.Mime
             base.Close();
         }
 
-        public unsafe int DecodeBytes(Span<byte> buffer)
+        public int DecodeBytes(Span<byte> buffer)
         {
-            fixed (byte* pBuffer = buffer)
+            if (buffer.IsEmpty)
             {
-                byte* start = pBuffer;
-                byte* source = start;
-                byte* dest = start;
-                byte* end = start + buffer.Length;
+                return 0;
+            }
 
-                // if the last read ended in a partially decoded
-                // sequence, pick up where we left off.
-                if (ReadState.IsEscaped)
+            int source = 0;
+            int destination = 0;
+
+            // if the last read ended in a partially decoded
+            // sequence, pick up where we left off.
+            if (ReadState.IsEscaped)
+            {
+                // this will be -1 if the previous read ended
+                // with an escape character.
+                if (ReadState.Byte == -1)
                 {
-                    // this will be -1 if the previous read ended
-                    // with an escape character.
-                    if (ReadState.Byte == -1)
+                    // if we only read one byte from the underlying
+                    // stream, we'll need to save the byte and
+                    // ask for more.
+                    if (buffer.Length == 1)
                     {
-                        // if we only read one byte from the underlying
-                        // stream, we'll need to save the byte and
-                        // ask for more.
-                        if (buffer.Length == 1)
-                        {
-                            ReadState.Byte = *source;
-                            return 0;
-                        }
-
-                        // '=\r\n' means a soft (aka. invisible) CRLF sequence...
-                        if (source[0] != '\r' || source[1] != '\n')
-                        {
-                            byte b1 = HexDecodeMap[source[0]];
-                            byte b2 = HexDecodeMap[source[1]];
-                            if (b1 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
-                            if (b2 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
-
-                            *dest++ = (byte)((b1 << 4) + b2);
-                        }
-
-                        source += 2;
+                        ReadState.Byte = buffer[source];
+                        return 0;
                     }
-                    else
+
+                    // '=\r\n' means a soft (aka. invisible) CRLF sequence...
+                    if (buffer[source] != '\r' || buffer[source + 1] != '\n')
                     {
-                        // '=\r\n' means a soft (aka. invisible) CRLF sequence...
-                        if (ReadState.Byte != '\r' || *source != '\n')
-                        {
-                            byte b1 = HexDecodeMap[ReadState.Byte];
-                            byte b2 = HexDecodeMap[*source];
-                            if (b1 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
-                            if (b2 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
-                            *dest++ = (byte)((b1 << 4) + b2);
-                        }
+                        byte b1 = HexDecodeMap[buffer[source]];
+                        byte b2 = HexDecodeMap[buffer[source + 1]];
+                        if (b1 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
+                        if (b2 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 1]));
+
+                        buffer[destination++] = (byte)((b1 << 4) + b2);
+                    }
+
+                    source += 2;
+                }
+                else
+                {
+                    // '=\r\n' means a soft (aka. invisible) CRLF sequence...
+                    if (ReadState.Byte != '\r' || buffer[source] != '\n')
+                    {
+                        byte b1 = HexDecodeMap[ReadState.Byte];
+                        byte b2 = HexDecodeMap[buffer[source]];
+                        if (b1 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)ReadState.Byte));
+                        if (b2 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
+                        buffer[destination++] = (byte)((b1 << 4) + b2);
+                    }
+                    source++;
+                }
+                // reset state for next read.
+                ReadState.IsEscaped = false;
+                ReadState.Byte = -1;
+            }
+
+            // Here's where most of the decoding takes place.
+            // We'll loop around until we've inspected all the
+            // bytes read.
+            while (source < buffer.Length)
+            {
+                // if the source is not an escape character, then
+                // just copy as-is.
+                if (buffer[source] != '=')
+                {
+                    if (buffer[source] == '_')
+                    {
+                        buffer[destination++] = (byte)' ';
                         source++;
                     }
-                    // reset state for next read.
-                    ReadState.IsEscaped = false;
-                    ReadState.Byte = -1;
-                }
-
-                // Here's where most of the decoding takes place.
-                // We'll loop around until we've inspected all the
-                // bytes read.
-                while (source < end)
-                {
-                    // if the source is not an escape character, then
-                    // just copy as-is.
-                    if (*source != '=')
-                    {
-                        if (*source == '_')
-                        {
-                            *dest++ = (byte)' ';
-                            source++;
-                        }
-                        else
-                        {
-                            *dest++ = *source++;
-                        }
-                    }
                     else
                     {
-                        // determine where we are relative to the end
-                        // of the data.  If we don't have enough data to
-                        // decode the escape sequence, save off what we
-                        // have and continue the decoding in the next
-                        // read.  Otherwise, decode the data and copy
-                        // into dest.
-                        switch (end - source)
-                        {
-                            case 2:
-                                ReadState.Byte = source[1];
-                                goto case 1;
-                            case 1:
-                                ReadState.IsEscaped = true;
-                                goto EndWhile;
-                            default:
-                                if (source[1] != '\r' || source[2] != '\n')
-                                {
-                                    byte b1 = HexDecodeMap[source[1]];
-                                    byte b2 = HexDecodeMap[source[2]];
-                                    if (b1 == 255)
-                                        throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
-                                    if (b2 == 255)
-                                        throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
-
-                                    *dest++ = (byte)((b1 << 4) + b2);
-                                }
-                                source += 3;
-                                break;
-                        }
+                        buffer[destination++] = buffer[source++];
                     }
                 }
-            EndWhile:
-                return (int)(dest - start);
+                else
+                {
+                    // determine where we are relative to the end
+                    // of the data.  If we don't have enough data to
+                    // decode the escape sequence, save off what we
+                    // have and continue the decoding in the next
+                    // read.  Otherwise, decode the data and copy
+                    // into dest.
+                    switch (buffer.Length - source)
+                    {
+                        case 2:
+                            ReadState.Byte = buffer[source + 1];
+                            goto case 1;
+                        case 1:
+                            ReadState.IsEscaped = true;
+                            goto EndWhile;
+                        default:
+                            if (buffer[source + 1] != '\r' || buffer[source + 2] != '\n')
+                            {
+                                byte b1 = HexDecodeMap[buffer[source + 1]];
+                                byte b2 = HexDecodeMap[buffer[source + 2]];
+                                if (b1 == 255)
+                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 1]));
+                                if (b2 == 255)
+                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 2]));
+
+                                buffer[destination++] = (byte)((b1 << 4) + b2);
+                            }
+                            source += 3;
+                            break;
+                    }
+                }
             }
+        EndWhile:
+            return destination;
         }
 
         public int EncodeBytes(ReadOnlySpan<byte> buffer) => _encoder.EncodeBytes(buffer, true, true);

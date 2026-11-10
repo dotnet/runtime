@@ -29,14 +29,14 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
         private readonly string _prefix;
         private readonly string _normalizedPrefix;
+        private readonly Func<string, string> _transformation;
 
         /// <summary>
         /// Initializes a new instance.
         /// </summary>
         public EnvironmentVariablesConfigurationProvider()
+            : this(null, null)
         {
-            _prefix = string.Empty;
-            _normalizedPrefix = string.Empty;
         }
 
         /// <summary>
@@ -44,8 +44,20 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// </summary>
         /// <param name="prefix">A prefix used to filter the environment variables.</param>
         public EnvironmentVariablesConfigurationProvider(string? prefix)
+            : this(prefix, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance with the specified prefix and variable name transformation.
+        /// </summary>
+        /// <param name="prefix">A prefix used to filter the environment variables.</param>
+        /// <param name="variableNameTransformation">A function that transforms environment variable names.
+        /// When <see langword="null"/>, <see cref="EnvironmentVariablesConfigurationSource.DefaultTransformation"/> is used.</param>
+        public EnvironmentVariablesConfigurationProvider(string? prefix, Func<string, string>? variableNameTransformation)
         {
             _prefix = prefix ?? string.Empty;
+            _transformation = variableNameTransformation ?? EnvironmentVariablesConfigurationSource.DefaultTransformation;
             _normalizedPrefix = Normalize(_prefix);
         }
 
@@ -159,6 +171,16 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             }
         }
 
-        private static string Normalize(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);
+        private string Normalize(string key)
+        {
+            string? transformed = _transformation(key);
+
+            if (transformed is null)
+            {
+                throw new InvalidOperationException($"The variable name transformation returned null for environment variable name '{key}'.");
+            }
+
+            return transformed;
+        }
     }
 }

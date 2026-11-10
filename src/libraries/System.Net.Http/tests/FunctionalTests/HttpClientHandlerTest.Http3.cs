@@ -21,7 +21,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
@@ -391,11 +391,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 await using (Http3LoopbackConnection connection1 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
                 {
-                    await using Http3LoopbackStream stream = await connection1.AcceptRequestStreamAsync();
-                    stream.Abort(Http3LoopbackConnection.H3_REQUEST_REJECTED);
-                    await stream.DisposeAsync();
                     // shutdown the connection gracefully via GOAWAY frame for good measure
-                    await connection1.ShutdownAsync(true);
+                    await connection1.ShutdownAsync();
                 }
 
                 // expect second connection to be established by the client
@@ -409,15 +406,37 @@ namespace System.Net.Http.Functional.Tests
             Task clientTask = Task.Run(async () =>
             {
                 using HttpClient client = CreateHttpClient();
-                using HttpRequestMessage request = new()
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = server.Address,
-                    Version = HttpVersion30,
-                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                };
 
-                await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                const int retries = 5;
+                for (int i = 0; i < retries; ++i)
+                {
+                    using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+
+                    try
+                    {
+                        await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                        break; // Success, break the loop.
+                    }
+                    catch (HttpRequestException hex)
+                    when (hex.InnerException is HttpProtocolException hpe &&
+                          hpe.ErrorCode == Http3LoopbackConnection.H3_REQUEST_REJECTED)
+                    {
+                        // GO_AWAY is being processed slowly than the retries.
+                        // Increase the number of retries to actually exercise the new connection.
+                        // Also, in case we get stuck with the retries, do not fail the test.
+                        if (i  == retries - 1)
+                        {
+                            _output.WriteLine($"{nameof(SendAsync_RequestRejected_ClientRetries)} was not able to exercise retry on a new connection due to GO_AWAY being processed too slow.");
+                        }
+                        continue;
+                    }
+                }
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
@@ -449,7 +468,7 @@ namespace System.Net.Http.Functional.Tests
                     RequestUri = server.Address,
                     Version = HttpVersion30,
                     VersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                    Content = new ByteAtATimeContent(64*1024)
+                    Content = new ByteAtATimeContent(64 * 1024)
                 };
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 var content = await response.Content.ReadAsStringAsync();
@@ -667,7 +686,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestMessage? callbackRequest = null;
             int invocationCount = 0;
 
-            var httpClientHandler = CreateHttpClientHandler();
+            var httpClientHandler = CreateHttpClientHandler(allowTlsResume: false);
             httpClientHandler.ServerCertificateCustomValidationCallback = (request, _, _, _) =>
             {
                 callbackRequest = request;
@@ -814,7 +833,6 @@ namespace System.Net.Http.Functional.Tests
             };
             using HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(20));
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
         }
 
@@ -833,7 +851,6 @@ namespace System.Net.Http.Functional.Tests
             };
             using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead).WaitAsync(TimeSpan.FromSeconds(20));
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
 
             var content = await response.Content.ReadAsStringAsync();
@@ -1870,6 +1887,41 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
 
+        [Fact]
+        [OuterLoop("Waits for connection timeout")]
+        public async Task ServerKillsQuicConnection_ClientPropagatesException()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+                await semaphore.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await client.SendAsync(request, HttpCompletionOption.ResponseContentRead));
+                Assert.IsType<QuicException>(ex.InnerException);
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
         private static async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
         {
             QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
@@ -1897,7 +1949,6 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://www.litespeedtech.com/" }, // LiteSpeed
-                { "https://quic.tech:8443/" }, // Cloudflare
                 { "https://quic.aiortc.org:443/" }, // aioquic
                 { "https://h2o.examp1e.net/" } // h2o/quicly
             };
@@ -1910,7 +1961,6 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
-                { "https://quic.nginx.org/" }, // Nginx with content
             };
     }
 

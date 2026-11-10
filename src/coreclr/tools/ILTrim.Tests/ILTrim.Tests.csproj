@@ -1,0 +1,96 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <DefineConstants>$(DefineConstants);ILTRIM</DefineConstants>
+
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64;x86</Platforms>
+    <!-- Suppress analyzer warnings in old prototype code -->
+    <NoWarn>$(NoWarn);CS8602;CS8604</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
+    <ProjectReference Include="../ILTrim.Core/ILTrim.Core.csproj" />
+    <ProjectReference Include="../aot/ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj">
+      <Aliases>TypeSystem</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases/**/*.csproj" />
+    <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
+    <ProjectReference Include="../ILVerification/ILVerification.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ITryResolve.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/TypeNameResolver.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ModuleDefinitionExtensions.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/MemberReferenceExtensions.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/MethodDefinitionExtensions.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/MethodReferenceExtensions.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/TypeReferenceExtensions.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools/aot/ILCompiler.Trimming.Tests/Extensions/CecilExtensions.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools/aot/ILCompiler.Trimming.Tests/Extensions/NiceIO.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools/aot/ILCompiler.Trimming.Tests/TestCasesRunner/AssemblyQualifiedToken.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools/aot/ILCompiler.Trimming.Tests/TestCasesRunner/TrimmingTestLogger.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools/aot/ILCompiler.Trimming.Tests/TestCasesRunner/NameUtils.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools/aot/ILCompiler.Trimming.Tests/TestCasesRunner/ResultChecker.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCases/TestCase.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCases/TestDatabase.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseCollector.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseCompilationMetadataProvider.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseLinkerOptions.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseMetadataProvider.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TrimmingArgumentBuilder.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/ILCompiler.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseCompiler.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/ResultChecker.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/AssemblyChecker.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/ILVerification/*.cs" />
+    <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Text/ValueStringBuilder.cs" />
+    <Content Include="ILTrimExpectedFailures.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.RuntimeBinDirectory">
+      <Value>$(RuntimeBinDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackDirectory">
+      <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.Configuration">
+      <Value>$(Configuration)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILToolsDir">
+      <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
+      <Value>$(ArtifactsBinDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFramework">
+      <Value>$(TargetFramework)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFrameworkMoniker">
+      <Value>$(TargetFrameworkMoniker)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFrameworkMonikerDisplayName">
+      <Value>$(TargetFrameworkMonikerDisplayName)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
+      <Value>$(ToolsProjectRoot)illink/test/</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ExpectationsDir">
+      <Value>$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases.Expectations/</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILLinkSharedDir">
+      <Value>$(ToolsProjectRoot)illink/src/ILLink.Shared/</Value>
+    </RuntimeHostConfigurationOption>
+  </ItemGroup>
+
+  <Import Project="$(ToolsProjectRoot)illink\test\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems" Label="Shared" />
+
+</Project>

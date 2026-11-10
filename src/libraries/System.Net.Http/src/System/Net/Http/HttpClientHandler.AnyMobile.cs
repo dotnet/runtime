@@ -43,13 +43,14 @@ namespace System.Net.Http
 
                         // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
                         // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
+                        // Since HttpClientHandler.Proxy is unsupported on most platforms, don't bother passing it to telemetry handlers.
                         if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                         {
-                            handler = new MetricsHandler(handler, _nativeMeterFactory, out _);
+                            handler = new MetricsHandler(handler, _nativeMeterFactory, proxy: null, out _);
                         }
                         if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
                         {
-                            handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                            handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current, proxy: null);
                         }
 
                         // Ensure a single handler is used for all requests.
@@ -431,16 +432,22 @@ namespace System.Net.Http
                     switch (value)
                     {
                         case ClientCertificateOption.Manual:
+#if !TARGET_WASI // System.Net.Security isn't supported on WASI
                             ThrowForModifiedManagedSslOptionsIfStarted();
-                            _clientCertificateOptions = value;
                             _socketHandler!.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates)!;
+#endif
+                            _clientCertificateOptions = value;
                             break;
 
                         case ClientCertificateOption.Automatic:
+#if TARGET_WASI
+                            throw new PlatformNotSupportedException(); // System.Net.Security isn't supported on WASI
+#else
                             ThrowForModifiedManagedSslOptionsIfStarted();
-                            _clientCertificateOptions = value;
                             _socketHandler!.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
+                            _clientCertificateOptions = value;
                             break;
+#endif
 
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value));
@@ -754,14 +761,10 @@ namespace System.Net.Http
             }
         }
 
-        //
-        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
-        // API compat will fail until this is fixed
-        //
-        //[UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -776,12 +779,11 @@ namespace System.Net.Http
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
-        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
-            s_dangerousAcceptAnyServerCertificateValidator ??
-            Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-            s_dangerousAcceptAnyServerCertificateValidator;
+            field ??
+            Interlocked.CompareExchange(ref field, delegate { return true; }, null) ??
+            field;
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {
@@ -793,6 +795,10 @@ namespace System.Net.Http
         [FeatureSwitchDefinition("System.Net.Http.UseNativeHttpHandler")]
         private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.UseNativeHttpHandler",
+#if TARGET_WASI
+                true);
+#else
                 false);
+#endif
     }
 }

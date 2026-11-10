@@ -230,10 +230,7 @@ namespace System.Text.Json.Nodes
 
         private static void DetachParent(JsonNode? item)
         {
-            if (item != null)
-            {
-                item.Parent = null;
-            }
+            item?.Parent = null;
         }
     }
 }

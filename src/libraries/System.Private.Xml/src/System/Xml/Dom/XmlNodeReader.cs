@@ -544,7 +544,7 @@ namespace System.Xml
                         return GetDocumentTypeAttr(attributeIndex);
                     }
             }
-            throw new ArgumentOutOfRangeException(nameof(attributeIndex)); //for other senario, AttributeCount is 0, i has to be out of range
+            throw new ArgumentOutOfRangeException(nameof(attributeIndex)); //for other scenario, AttributeCount is 0, i has to be out of range
         }
 
         public void LogMove(int level)
@@ -1090,7 +1090,7 @@ namespace System.Xml
                 if (nextSibling == null)
                 {
                     XmlNode? parentNode = _curNode.ParentNode;
-                    //Check if its parent is entity ref node is sufficient, because in this senario, ent ref node can't have more than 1 level of children that are not other ent ref nodes
+                    //Check if its parent is entity ref node is sufficient, because in this scenario, ent ref node can't have more than 1 level of children that are not other ent ref nodes
                     if (parentNode != null && parentNode.NodeType == XmlNodeType.EntityReference)
                     {
                         //come back from ent ref node

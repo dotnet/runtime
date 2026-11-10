@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -423,12 +424,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // RFC 6066 forbids IP literals.
             // IDN mapping is handled by MsQuic.
-            string sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
+            string? sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host;
 
-            IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(sni);
-            try
+            unsafe
             {
-                unsafe
+                byte* targetHostPtr = !string.IsNullOrEmpty(sni) ? Utf8StringMarshaller.ConvertToUnmanaged(sni) : null;
+                try
                 {
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
                         _handle,
@@ -438,10 +439,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
                         (ushort)port),
                         "ConnectionStart failed");
                 }
-            }
-            finally
-            {
-                Marshal.FreeCoTaskMem(targetHostPtr);
+                finally
+                {
+                    if (targetHostPtr != null)
+                    {
+                        Utf8StringMarshaller.Free(targetHostPtr);
+                    }
+                }
             }
         }
 
@@ -776,7 +780,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         };
 
 #pragma warning disable CS3016
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
     private static unsafe int NativeCallback(QUIC_HANDLE* connection, void* context, QUIC_CONNECTION_EVENT* connectionEvent)
     {

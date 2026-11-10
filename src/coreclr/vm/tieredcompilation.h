@@ -1,9 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ===========================================================================
-// File: TieredCompilation.h
-//
-// ===========================================================================
 
 // Exceptions (OOM)
 // - On foreground threads, exceptions are propagated unless they can be handled without any compromise
@@ -37,6 +33,8 @@ public:
 public:
     static NativeCodeVersion::OptimizationTier GetInitialOptimizationTier(PTR_MethodDesc pMethodDesc);
 
+    bool IsTieringDelayActive();
+
 #ifdef FEATURE_TIERED_COMPILATION
 
 public:
@@ -66,7 +64,6 @@ private:
     bool TryDeactivateTieringDelay();
 
 public:
-    bool IsTieringDelayActive();
     void AsyncCompleteCallCounting();
 
 private:
@@ -76,13 +73,12 @@ private:
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
     HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
-    
+
     NativeCodeVersion GetNextMethodToOptimize();
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
 public:
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
-    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
 
 #ifndef DACCESS_COMPILE
 public:
@@ -127,7 +123,9 @@ private:
 #endif // !DACCESS_COMPILE
 
 private:
-    SList<SListElem<NativeCodeVersion>> m_methodsToOptimize;
+    typedef SListTail<SListElem<NativeCodeVersion>> OptimizationQueue;
+
+    OptimizationQueue m_methodsToOptimize;
     UINT32 m_countOfMethodsToOptimize;
     UINT32 m_countOfNewMethodsCalledDuringDelay;
     SArray<MethodDesc*>* m_methodsPendingCountingForTier1;

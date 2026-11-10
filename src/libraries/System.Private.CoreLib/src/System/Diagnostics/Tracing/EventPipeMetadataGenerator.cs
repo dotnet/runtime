@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 
@@ -90,7 +91,7 @@ namespace System.Diagnostics.Tracing
                 // type NullTypeInfo which is serialized as nothing.
                 if ((parameters.Length == 1) && (parameters[0].ParameterType == typeof(EmptyStruct)))
                 {
-                    parameters = Array.Empty<EventParameterInfo>();
+                    parameters = [];
                 }
 
                 // Increase the metadataLength for parameters.
@@ -121,7 +122,7 @@ namespace System.Diagnostics.Tracing
                         if (!parameter.GetMetadataLengthV2(out pMetadataLength))
                         {
                             // We ran in to an unsupported type, return empty event metadata
-                            parameters = Array.Empty<EventParameterInfo>();
+                            parameters = [];
                             v1MetadataLength = defaultV1MetadataLength;
                             v2MetadataLength = 0;
                             hasV2ParameterTypes = false;
@@ -169,7 +170,7 @@ namespace System.Diagnostics.Tracing
                             if (!parameter.GenerateMetadata(pMetadata, ref offset, totalMetadataLength))
                             {
                                 // If we fail to generate metadata for any parameter, we should return the "default" metadata without any parameters
-                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, Array.Empty<EventParameterInfo>());
+                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, []);
                             }
                         }
                     }
@@ -199,7 +200,7 @@ namespace System.Diagnostics.Tracing
                             if (!parameter.GenerateMetadataV2(pMetadata, ref offset, totalMetadataLength))
                             {
                                 // If we fail to generate metadata for any parameter, we should return the "default" metadata without any parameters
-                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, Array.Empty<EventParameterInfo>());
+                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, []);
                             }
                         }
                     }

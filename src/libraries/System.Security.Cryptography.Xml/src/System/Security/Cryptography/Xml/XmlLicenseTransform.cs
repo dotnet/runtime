@@ -87,6 +87,17 @@ namespace System.Security.Cryptography.Xml
                         streamReader = new StreamReader(decryptedContent);
                         string clearContent = streamReader.ReadToEnd();
 
+                        long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                        bool allowDtdProcessing = LocalAppContextSwitches.CryptoXmlAllowDtdProcessing;
+                        if (maxDepth > 0 || !allowDtdProcessing)
+                        {
+                            Utils.ValidateInputXmlMaxDepth(
+                                encryptedGrantList[i]!.ParentNode!,
+                                clearContent,
+                                maxDepth,
+                                allowDtdProcessing);
+                        }
+
                         // red flag
                         encryptedGrantList[i]!.ParentNode!.InnerXml = clearContent;
                     }
@@ -117,6 +128,12 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
 
             return GetOutput();
+        }
+
+        internal override void ClearState()
+        {
+            _license = null;
+            _namespaceManager = null;
         }
 
         // License transform has no inner XML elements

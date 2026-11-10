@@ -31,7 +31,6 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.Null:
                     return null;
                 default:
-                    Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedArray(reader.TokenType);
             }
         }
@@ -64,6 +63,8 @@ namespace System.Text.Json.Serialization.Converters
             ThrowHelper.ThrowJsonException();
             return null;
         }
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.Array;
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };
     }

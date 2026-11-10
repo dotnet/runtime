@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_intrinsic_interlocked_regalloc2;
+
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
@@ -62,6 +64,7 @@ public class IntrinsicTest
         return fail;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

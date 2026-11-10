@@ -53,7 +53,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             Assert.Throws<ArgumentException>(() => new GroupPrincipal(context, null));
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestCurrentUser()
         {
             using (PrincipalContext context = DomainContext)
@@ -64,7 +64,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer), nameof(IsDomainJoinedClient))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer), nameof(IsDomainJoinedClient))]
         public void TestCurrentUserContext()
         {
             using (PrincipalContext context = DomainContext)
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestCurrentUserUsingSearchFilter()
         {
             using (PrincipalContext context = DomainContext)
@@ -87,7 +87,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestGuestsGroup()
         {
             using (PrincipalContext context = DomainContext)
@@ -99,7 +99,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestAddingUser()
         {
             UserData u1 = UserData.GenerateUserData("CoreFxUser1");
@@ -138,7 +138,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestAddingGroup()
         {
             GroupData gd1 = GroupData.GenerateGroupData("CoreFXGroup1");
@@ -177,7 +177,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestAddingUserToAGroup()
         {
             UserData u1 = UserData.GenerateUserData("CoreFxUser4");
@@ -225,7 +225,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestDeleteUserAndGroup()
         {
             UserData u1 = UserData.GenerateUserData("CoreFxUser5");
@@ -267,7 +267,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestNegativeCases()
         {
             UserData u1 = UserData.GenerateUserData("CoreFxUser6");
@@ -316,7 +316,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestInvalidSaves()
         {
             UserData u1 = UserData.GenerateUserData("CoreFxUser9");
@@ -337,7 +337,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestComputerContext()
         {
             using (PrincipalContext context = DomainContext)
@@ -365,14 +365,14 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestComputerNegativeCases()
         {
             using var context = DomainContext;
 
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestUpdateUserAndGroupData()
         {
             UserData u1 = UserData.GenerateUserData("CoreFxUser7");
@@ -407,7 +407,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestCredentials()
         {
             UserData u1 = UserData.GenerateUserData("CoreFxUser8");
@@ -432,7 +432,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestCustomUserAttributes()
         {
             var userData = CustomUserData.GenerateUserData("CustomCoreFxUser1");
@@ -464,7 +464,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(AccountManagementTests), nameof(IsActiveDirectoryServer))]
         public void TestMultiValueCustomAttributes()
         {
             var userData = CustomUserData.GenerateUserData("CustomCoreFxUser2");

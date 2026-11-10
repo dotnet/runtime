@@ -11,10 +11,10 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(attributeType);
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
-                && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute))
+                && attributeType != typeof(Attribute) && attributeType != typeof(RuntimeCustomAttribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
-            object[] attrs = CustomAttribute.GetCustomAttributes(element, attributeType, inherit);
+            object[] attrs = RuntimeCustomAttribute.GetCustomAttributes(element, attributeType, inherit);
             if (attrs == null || attrs.Length == 0)
                 return null;
             Attribute match = (Attribute)attrs[0];
@@ -32,30 +32,30 @@ namespace System
         public static Attribute? GetCustomAttribute(ParameterInfo element, Type attributeType) => GetAttr(element, attributeType, true);
         public static Attribute? GetCustomAttribute(ParameterInfo element, Type attributeType, bool inherit) => GetAttr(element, attributeType, inherit);
 
-        public static Attribute[] GetCustomAttributes(Assembly element) => (Attribute[])CustomAttribute.GetCustomAttributes(element, true);
-        public static Attribute[] GetCustomAttributes(Assembly element, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes(element, inherit);
-        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
-        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
-        public static Attribute[] GetCustomAttributes(MemberInfo element) => (Attribute[])CustomAttribute.GetCustomAttributes(element, true);
-        public static Attribute[] GetCustomAttributes(MemberInfo element, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes(element, inherit);
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
-        public static Attribute[] GetCustomAttributes(Module element) => (Attribute[])CustomAttribute.GetCustomAttributes(element, true);
-        public static Attribute[] GetCustomAttributes(Module element, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes(element, inherit);
-        public static Attribute[] GetCustomAttributes(Module element, Type attributeType) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
-        public static Attribute[] GetCustomAttributes(Module element, Type attributeType, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
-        public static Attribute[] GetCustomAttributes(ParameterInfo element) => (Attribute[])CustomAttribute.GetCustomAttributes(element, true);
-        public static Attribute[] GetCustomAttributes(ParameterInfo element, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes(element, inherit);
-        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
-        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType, bool inherit) => (Attribute[])CustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
+        public static Attribute[] GetCustomAttributes(Assembly element) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, true);
+        public static Attribute[] GetCustomAttributes(Assembly element, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, inherit);
+        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
+        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
+        public static Attribute[] GetCustomAttributes(MemberInfo element) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, true);
+        public static Attribute[] GetCustomAttributes(MemberInfo element, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, inherit);
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
+        public static Attribute[] GetCustomAttributes(Module element) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, true);
+        public static Attribute[] GetCustomAttributes(Module element, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, inherit);
+        public static Attribute[] GetCustomAttributes(Module element, Type attributeType) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
+        public static Attribute[] GetCustomAttributes(Module element, Type attributeType, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
+        public static Attribute[] GetCustomAttributes(ParameterInfo element) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, true);
+        public static Attribute[] GetCustomAttributes(ParameterInfo element, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes(element, inherit);
+        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, true);
+        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType, bool inherit) => (Attribute[])RuntimeCustomAttribute.GetCustomAttributes((ICustomAttributeProvider)element, attributeType, inherit);
 
-        public static bool IsDefined(Assembly element, Type attributeType) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
-        public static bool IsDefined(Assembly element, Type attributeType, bool inherit) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
-        public static bool IsDefined(MemberInfo element, Type attributeType) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
-        public static bool IsDefined(MemberInfo element, Type attributeType, bool inherit) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
-        public static bool IsDefined(Module element, Type attributeType) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
-        public static bool IsDefined(Module element, Type attributeType, bool inherit) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
-        public static bool IsDefined(ParameterInfo element, Type attributeType) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
-        public static bool IsDefined(ParameterInfo element, Type attributeType, bool inherit) => CustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
+        public static bool IsDefined(Assembly element, Type attributeType) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
+        public static bool IsDefined(Assembly element, Type attributeType, bool inherit) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
+        public static bool IsDefined(MemberInfo element, Type attributeType) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
+        public static bool IsDefined(MemberInfo element, Type attributeType, bool inherit) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
+        public static bool IsDefined(Module element, Type attributeType) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
+        public static bool IsDefined(Module element, Type attributeType, bool inherit) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
+        public static bool IsDefined(ParameterInfo element, Type attributeType) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, true);
+        public static bool IsDefined(ParameterInfo element, Type attributeType, bool inherit) => RuntimeCustomAttribute.IsDefined((ICustomAttributeProvider)element, attributeType, inherit);
     }
 }

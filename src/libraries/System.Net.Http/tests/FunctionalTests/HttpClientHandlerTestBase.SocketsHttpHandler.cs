@@ -15,7 +15,10 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static async Task<Stream> DefaultConnectCallback(EndPoint endPoint, CancellationToken cancellationToken)
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            // WASI doesn't support dual-mode sockets, so match the endpoint's address family there.
+            Socket socket = PlatformDetection.IsWasi && endPoint is IPEndPoint ipEndPoint ?
+                new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true } :
+                new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             try
             {
                 await socket.ConnectAsync(endPoint, cancellationToken);
@@ -30,13 +33,14 @@ namespace System.Net.Http.Functional.Tests
 
         protected static bool IsWinHttpHandler => false;
 
-        public static bool IsQuicSupported
+        public static bool IsHttp3Supported
         {
             get
             {
                 try
                 {
-                    return QuicConnection.IsSupported;
+                    return QuicConnection.IsSupported
+                        && (bool)Type.GetType("System.Net.Http.GlobalHttpSettings+SocketsHttpHandler, System.Net.Http").GetProperty("AllowHttp3").GetValue(null);
                 }
                 catch (System.PlatformNotSupportedException)
                 {
@@ -45,16 +49,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true)
+        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true, bool allowTlsResume = true)
         {
             useVersion ??= HttpVersion.Version11;
 
             HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
-            // Browser doesn't support ServerCertificateCustomValidationCallback
-            if (allowAllCertificates && PlatformDetection.IsNotBrowser)
+            if (allowAllCertificates && PlatformDetection.IsTlsSupported)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            }
+
+            // Native mobile handlers do not use SslStream or expose its resumption setting.
+            if (!allowTlsResume && PlatformDetection.IsTlsSupported &&
+                GetUnderlyingSocketsHttpHandler(handler) is SocketsHttpHandler socketsHandler)
+            {
+                socketsHandler.SslOptions.AllowTlsResume = false;
             }
 
             return handler;
@@ -63,15 +73,18 @@ namespace System.Net.Http.Functional.Tests
         protected static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates)
             => TestHelper.CreateSocketsHttpHandler(allowAllCertificates);
 
-        protected Http3LoopbackServer CreateHttp3LoopbackServer(Http3Options options = default)
+        protected static Http3LoopbackServer CreateHttp3LoopbackServer(Http3Options options = default)
         {
             return new Http3LoopbackServer(options);
         }
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
 
-        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
-            CreateHttpClientHandler(Version.Parse(useVersionString));
+        protected HttpClientHandler CreateHttpClientHandler(bool allowTlsResume) =>
+            CreateHttpClientHandler(UseVersion, allowTlsResume: allowTlsResume);
+
+        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString, bool allowTlsResume = true) =>
+            CreateHttpClientHandler(Version.Parse(useVersionString), allowTlsResume: allowTlsResume);
 
         protected static SocketsHttpHandler GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {

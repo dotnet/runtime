@@ -23,6 +23,15 @@ internal struct NativeCodeVersionHandle
 ```
 
 ```csharp
+public enum CodeVersionSource : uint
+{
+    Unknown,
+    ReJIT,
+    EnC,
+}
+```
+
+```csharp
 // Return a handle to the active version of the IL code for a given method descriptor
 public virtual ILCodeVersionHandle GetActiveILCodeVersion(TargetPointer methodDesc);
 // Return a handle to the IL code version representing the given native code version
@@ -30,6 +39,8 @@ public virtual ILCodeVersionHandle GetILCodeVersion(NativeCodeVersionHandle code
 // Return all of the IL code versions for a given method descriptor
 public virtual IEnumerable<ILCodeVersionHandle> GetILCodeVersions(TargetPointer methodDesc);
 
+// Return all of the Native code versions for a given ILCodeVersion
+public virtual IEnumerable<NativeCodeVersionHandle> GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle);
 // Return a handle to the version of the native code that includes the given instruction pointer
 public virtual NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip);
 // Return a handle to the active version of the native code for a given method descriptor and IL code version. The IL code version and method descriptor must represent the same method
@@ -43,7 +54,27 @@ public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersi
 
 // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
 public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle);
+
+// Gets the IL address given a code version
+public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle);
+
+// Determines whether an IL code version has default IL
+public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle);
+
+// Gets the instrumented IL offset mapping for an IL code version, if any.
+// Returns false when the version has no instrumented map.
+public virtual bool TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries);
+
+// Gets the optimization tier for a native code version
+public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
+
+// Gets what produced an IL code version (ReJIT, EnC, or Unknown for the default version)
+public virtual CodeVersionSource GetSource(ILCodeVersionHandle ilCodeVersionHandle);
+
+// Gets the EnC version number of an IL code version
+public virtual TargetNUInt GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle);
 ```
+
 ### Extension Methods
 ```csharp
 // Return a handle to the active version of the native code for a given method descriptor
@@ -54,25 +85,48 @@ public static NativeCodeVersionHandle GetActiveNativeCodeVersion(this ICodeVersi
 
 See [code versioning](../features/code-versioning.md) for a general overview and the definitions of *synthetic* and *explicit* nodes.
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| MethodDescVersioningState | Flags | `MethodDescVersioningStateFlags` flags, see below |
-| MethodDescVersioningState | NativeCodeVersionNode | code version node of this method desc, if active |
-| NativeCodeVersionNode | Next | pointer to the next native code version |
-| NativeCodeVersionNode | MethodDesc | indicates a synthetic native code version node |
-| NativeCodeVersionNode | NativeCode | indicates an explicit native code version node |
-| NativeCodeVersionNode | Flags | `NativeCodeVersionNodeFlags` flags, see below |
-| NativeCodeVersionNode | VersionId | Version ID corresponding to the parent IL code version |
-| NativeCodeVersionNode | GCCoverageInfo | GCStress debug info, if supported |
-| ILCodeVersioningState | FirstVersionNode | pointer to the first `ILCodeVersionNode` |
-| ILCodeVersioningState | ActiveVersionKind | an `ILCodeVersionKind` value indicating which fields of the active version are value |
-| ILCodeVersioningState | ActiveVersionNode | if the active version is explicit, the NativeCodeVersionNode for the active version |
-| ILCodeVersioningState | ActiveVersionModule | if the active version is synthetic or unknown, the pointer to the Module that defines the method |
-| ILCodeVersioningState | ActiveVersionMethodDef | if the active version is synthetic or unknown, the MethodDef token for the method |
-| ILCodeVersionNode | VersionId | Version ID of the node |
-| ILCodeVersionNode | Next | Pointer to the next `ILCodeVersionNode`|
-| GCCoverageInfo | SavedCode | Pointer to the GCCover saved code copy, if supported |
+<!-- BEGIN GENERATED: usage contract=CodeVersions version=c1 -->
+### Data descriptors used
+
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `GCCoverageInfo` | `SavedCode` | `pointer` | Pointer to the GCCover saved code copy, if supported |
+| `ILCodeVersioningState` | `ActiveVersionKind` | `uint32` | an ILCodeVersionKind value indicating which fields of the active version are value |
+| `ILCodeVersioningState` | `ActiveVersionMethodDef` | `uint32` | if the active version is synthetic or unknown, the MethodDef token for the method |
+| `ILCodeVersioningState` | `ActiveVersionModule` | `pointer` | if the active version is synthetic or unknown, the pointer to the Module that defines the method |
+| `ILCodeVersioningState` | `ActiveVersionNode` | `pointer` | if the active version is explicit, the NativeCodeVersionNode for the active version |
+| `ILCodeVersioningState` | `FirstVersionNode` | `pointer` | pointer to the first ILCodeVersionNode |
+| `ILCodeVersionNode` | `EnCVersion` | `nuint` | for an EnC version, the EnC (edit) version number this node corresponds to |
+| `ILCodeVersionNode` | `ILAddress` | `pointer` | Address of IL corresponding to ILCodeVersionNode |
+| `ILCodeVersionNode` | `InstrumentedILMap` | `InstrumentedILOffsetMapping` | Embedded InstrumentedILOffsetMapping describing the instrumented IL offset mapping |
+| `ILCodeVersionNode` | `Next` | `pointer` | Pointer to the next ILCodeVersionNode |
+| `ILCodeVersionNode` | `Source` | `uint32` | a CodeVersionSource value indicating what produced this version (ReJIT, EnC, or unknown) |
+| `ILCodeVersionNode` | `VersionId` | `nuint` | Unique IL code version ID of the IL code version node (used as a ReJIT ID when Source is ReJIT) |
+| `InstrumentedILOffsetMapping` | `Count` | `uint32` | Number of instrumented IL offset map entries |
+| `InstrumentedILOffsetMapping` | `Map` | `pointer` | Pointer to the array of instrumented IL offset map entries |
+| `MethodDescVersioningState` | `Flags` | `uint8` | MethodDescVersioningStateFlags flags, see below |
+| `MethodDescVersioningState` | `NativeCodeVersionNode` | `pointer` | code version node of this method desc, if active |
+| `NativeCodeVersionNode` | `Flags` | `uint32` | NativeCodeVersionNodeFlags flags, see below |
+| `NativeCodeVersionNode` | `GCCoverageInfo` | `pointer` | GCStress debug info, if supported |
+| `NativeCodeVersionNode` | `ILVersionId` | `nuint` | ReJIT ID of the IL code version that is the parent of this native code version |
+| `NativeCodeVersionNode` | `MethodDesc` | `pointer` | indicates a synthetic native code version node |
+| `NativeCodeVersionNode` | `NativeCode` | `CodePointer` | indicates an explicit native code version node |
+| `NativeCodeVersionNode` | `Next` | `pointer` | pointer to the next native code version |
+| `NativeCodeVersionNode` | `OptimizationTier` | `uint32` | The optimization tier of this native code version |
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `ExecutionManager` |
+| `Loader` |
+| `PlatformMetadata` |
+| `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=CodeVersions version=c1 -->
 
 The flag indicates that the default version of the code for a method desc is active:
 ```csharp
@@ -100,14 +154,65 @@ private enum ILCodeVersionKind
 }
 ```
 
-Global variables used: *none*
+### Contract Constants:
 
-Contracts used:
-| Contract Name |
-| --- |
-| ExecutionManager |
-| Loader |
-| RuntimeTypeSystem |
+| Constant Name | Value | Description |
+| --- | --- | --- |
+| `CorDB_DEFAULT_ENC_FUNCTION_VERSION` | 1 | The EnC version number of the original (unedited) IL. The synthetic default IL code version, and any version not produced by EnC, is treated as having this version. |
+
+Implementation of CodeVersionHandles
+
+```csharp
+private readonly struct ILCodeVersionHandle
+{
+    public readonly TargetPointer Module;
+    public readonly uint MethodDefinition;
+    public readonly TargetPointer ILCodeVersionNode;
+    private ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
+    {
+        Module = module;
+        MethodDefinition = methodDef;
+        ILCodeVersionNode = ilCodeVersionNodeAddress;
+    }
+
+    // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
+    public static ILCodeVersionHandle CreateExplicit(TargetPointer ilCodeVersionNodeAddress) =>
+        // create handle from node address
+    public static ILCodeVersionHandle CreateSynthetic(TargetPointer module, uint methodDef) =>
+        // create handle from module and methodDef
+
+    public static ILCodeVersionHandle Invalid { get; } = // everything is null
+
+    public bool IsValid => // either module or node addr is non nulls
+
+    public bool IsExplicit => ILCodeVersionNode != TargetPointer.Null;
+}
+```
+
+```csharp
+private readonly struct NativeCodeVersionHandle
+{
+    public readonly TargetPointer MethodDescAddress;
+    public readonly TargetPointer CodeVersionNodeAddress;
+    private NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
+    {
+        MethodDescAddress = methodDescAddress;
+        CodeVersionNodeAddress = codeVersionNodeAddress;
+    }
+
+    // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
+    public static NativeCodeVersionHandle CreateExplicit(TargetPointer codeVersionNodeAddress) =>
+        // create handle from node address
+    public static NativeCodeVersionHandle CreateSynthetic(TargetPointer methodDescAddress) =>
+        // create handle from method desc
+
+    public static NativeCodeVersionHandle Invalid { get; } = // all is null
+
+    public bool Valid => // either method desc or node address is non null
+
+    public bool IsExplicit => CodeVersionNodeAddress != TargetPointer.Null;
+}
+```
 
 ### Finding active ILCodeVersion for a method
 ```csharp
@@ -132,9 +237,12 @@ IEnumerable<ILCodeVersionHandle> ICodeVersions.GetILCodeVersions(TargetPointer m
     // CodeVersionManager::GetILCodeVersions
     GetModuleAndMethodDesc(methodDesc, out TargetPointer module, out uint methodDefToken);
 
-    ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
-    TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-    TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+    ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
+    TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(
+        moduleHandle,
+        ModuleLookupMapKind.MethodDefToILCodeVersioningState,
+        methodDefToken,
+        out var _);
 
     // always add the synthetic version
     yield return new ILCodeVersionHandle(module, methodDefToken, TargetPointer.Null);
@@ -186,25 +294,29 @@ NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointe
 NativeCodeVersionHandle GetSpecificNativeCodeVersion(MethodDescHandle md, TargetCodePointer startAddress)
 {
     // "Initial" stage of NativeCodeVersionIterator::Next() with a null m_ilCodeFilter
-    TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
+    // Interpreted methods store an InterpreterPrecode in the native code slot, while code-block start
+    // addresses are the bytecode start; compare against the diagnostic code start
+    // (native: GetInterpreterCodeFromEntryPointIfPresent(NativeCodeVersion::GetNativeCode())).
+    TargetCodePointer firstNativeCode = target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(rts.GetNativeCode(md));
     if (firstNativeCode == startAddress)
     {
         NativeCodeVersionHandle first = NativeCodeVersionHandle.OfSynthetic(md.Address);
         return first;
     }
 
-    return FindFirstCodeVersion(rts, md, (codeVersion) =>
+    return FindNativeCodeVersionNodes(rts, md, (codeVersion) =>
     {
-        return codeVersion.MethodDesc == md.Address && codeVersion.NativeCode == startAddress;
-    });
+        return codeVersion.MethodDesc == md.Address
+            && target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(codeVersion.NativeCode) == startAddress;
+    }).FirstOrDefault(NativeCodeVersionHandle.Invalid);
 }
 
-NativeCodeVersionHandle FindFirstCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, Func<Data.NativeCodeVersionNode, bool> predicate)
+IEnumerable<NativeCodeVersionHandle> FindNativeCodeVersionNodes(IRuntimeTypeSystem rts, MethodDescHandle md, Func<Data.NativeCodeVersionNode, bool> predicate)
 {
     // ImplicitCodeVersion stage of NativeCodeVersionIterator::Next()
     TargetPointer versioningStateAddr = rts.GetMethodDescVersioningState(md);
     if (versioningStateAddr == TargetPointer.Null)
-        return NativeCodeVersionHandle.Invalid;
+        yield break;
 
     Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
 
@@ -215,13 +327,44 @@ NativeCodeVersionHandle FindFirstCodeVersion(IRuntimeTypeSystem rts, MethodDescH
         Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
         if (predicate(current))
         {
-            return NativeCodeVersionHandle.OfExplicit(currentAddress);
+            yield return NativeCodeVersionHandle.OfExplicit(currentAddress);
         }
         currentAddress = current.Next;
     }
-    return NativeCodeVersionHandle.Invalid;
+    yield break;
 }
 ```
+
+### Finding all of the native code versions of an ILCodeVersion for a method descriptor
+
+```csharp
+IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsValid)
+        yield break;
+
+    if (!ilCodeVersionHandle.IsExplicit)
+    {
+        // if the ILCodeVersion is synthetic, then yield the synthetic NativeCodeVersion
+        NativeCodeVersionHandle provisionalHandle = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+        yield return provisionalHandle;
+    }
+
+    // Iterate through versioning state nodes and return the active one, matching any IL code version
+    Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
+    TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
+    IEnumerable<NativeCodeVersionHandle> nativeCodeVersions = FindNativeCodeVersionNodes(
+        rts,
+        md,
+        (codeVersion) => ilVersionId == codeVersion.ILVersionId);
+    foreach (NativeCodeVersionHandle nativeCodeVersion in nativeCodeVersions)
+    {
+        yield return nativeCodeVersion;
+    }
+}
+```
+
 
 ### Finding the active native code version of an ILCodeVersion for a method descriptor
 ```csharp
@@ -243,14 +386,6 @@ bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddr
         return false;
     if (rts.IsCollectibleMethod(md))
         return false;
-    TargetPointer mtAddr = rts.GetMethodTable(md);
-    TypeHandle mt = rts.GetTypeHandle(mtAddr);
-    TargetPointer modAddr = rts.GetModule(mt);
-    ILoader loader = _target.Contracts.Loader;
-    ModuleHandle mod = loader.GetModuleHandle(modAddr);
-    ModuleFlags modFlags = loader.GetFlags(mod);
-    if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
-        return false;
     return true;
 }
 ```
@@ -262,3 +397,77 @@ public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVer
 
 1. If `codeVersionHandle` is synthetic, use the `IRuntimeTypeSystem` to find the GCStressCodeCopy.
 2. If `codeVersionHandle` is explicit, read the `NativeCodeVersionNode` for the `GCCoverageInfo` pointer. This value only exists in some builds. If the value doesn't exist or is a nullptr, return `TargetPointer.Null`. Otherwise return the `SavedCode` pointer from the `GCCoverageInfo` struct.
+
+### Finding IL address for method
+```csharp
+TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, TargetPointer methodDescPtr)
+{
+    TargetPointer ilAddress = default;
+    if (ilCodeVersionHandle.IsExplicit)
+    {
+        ilAddress = target.ReadPointer(ilCodeVersionHandle.ILCodeVersionNode + /* ILCodeVersionNode::ILAddress offset */)
+    }
+
+    // For the default code version we always fetch the globally stored default IL for a method
+    // See src/coreclr/vm/codeversion.cpp for more detailed implementation comments.
+
+    if (ilAddress == TargetPointer.Null)
+    {
+        // Synthetic ILCodeVersion, get the IL from the module and method def
+
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
+        ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
+    }
+
+    return ilAddress;
+}
+```
+
+### Do we have default IL
+```csharp
+bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    return ilCodeVersionHandle.IsExplicit ? AsNode(ilCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+}
+```
+
+### Getting what produced an IL code version
+
+```csharp
+CodeVersionSource ICodeVersions.GetSource(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsExplicit)
+        return CodeVersionSource.Unknown;
+    return // node Source
+}
+```
+
+### Getting the EnC version of an IL code version
+
+```csharp
+TargetNUInt ICodeVersions.GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsExplicit)
+        return new TargetNUInt(CorDB_DEFAULT_ENC_FUNCTION_VERSION);
+    return AsNode(ilCodeVersionHandle).EnCVersion;
+}
+```
+
+### Getting the instrumented IL offset mapping
+```csharp
+bool ICodeVersions.TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries)
+{
+    mapEntryCount = 0;
+    mapEntries = TargetPointer.Null;
+
+    // Synthetic IL code versions have no backing node and therefore no instrumented map.
+    if (!ilCodeVersionHandle.IsExplicit)
+        return false;
+
+    TargetPointer mappingAddress = ilCodeVersionHandle.ILCodeVersionNode + /* ILCodeVersionNode::InstrumentedILMap offset */;
+    mapEntryCount = target.Read<uint>(mappingAddress + /* InstrumentedILOffsetMapping::Count offset */);
+    mapEntries = target.ReadPointer(mappingAddress + /* InstrumentedILOffsetMapping::Map offset */);
+    return true;
+}
+```

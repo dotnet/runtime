@@ -22,14 +22,6 @@ namespace Internal.TypeSystem
             }
         }
 
-
-        protected override bool ComputeIsNonSharableMethod()
-        {
-            return !IsCanonicalMethod(CanonicalFormKind.Any) &&
-                        this == GetCanonMethodTarget(CanonicalFormKind.Specific);
-        }
-
-
         /// <summary>
         /// Does this method need a dictionary?
         /// </summary>
@@ -62,6 +54,22 @@ namespace Internal.TypeSystem
             get
             {
                 return _methodDef.UnboxingStub;
+            }
+        }
+
+        public override bool AsyncVariant
+        {
+            get
+            {
+                return _methodDef.AsyncVariant;
+            }
+        }
+
+        public override bool ReturnDroppingAsyncThunk
+        {
+            get
+            {
+                return _methodDef.ReturnDroppingAsyncThunk;
             }
         }
 

@@ -10,7 +10,6 @@ namespace System.Runtime.Caching
     {
         private DateTimeOffset _absExpiry;
         private TimeSpan _sldExpiry;
-        private Collection<ChangeMonitor> _changeMonitors;
         private CacheItemPriority _priority;
         private CacheEntryRemovedCallback _removedCallback;
         private CacheEntryUpdateCallback _updateCallback;
@@ -21,7 +20,7 @@ namespace System.Runtime.Caching
             set { _absExpiry = value; }
         }
 
-        public Collection<ChangeMonitor> ChangeMonitors => _changeMonitors ??= new Collection<ChangeMonitor>();
+        public Collection<ChangeMonitor> ChangeMonitors => field ??= new Collection<ChangeMonitor>();
 
         public CacheItemPriority Priority
         {

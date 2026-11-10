@@ -31,6 +31,22 @@ namespace System.Text.RegularExpressions
         // Neither of these would motivate such an addition now, but the API exists.
 
         /// <summary>Specifies that a pattern-matching operation should not time out.</summary>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Regex(string, RegexOptions, TimeSpan)"/> constructor and a number of static matching
+        /// methods use the <see cref="InfiniteMatchTimeout"/> constant to indicate that the attempt to find a
+        /// pattern match should not time out.
+        /// </para>
+        /// <para>
+        /// Setting the regular expression engine's time-out value to <see cref="InfiniteMatchTimeout"/> can
+        /// cause regular expressions that rely on excessive backtracking to appear to stop responding when
+        /// processing text that nearly matches the regular expression pattern. If you disable time-outs, you
+        /// should ensure that your regular expression does not rely on excessive backtracking and that it
+        /// handles text that nearly matches the regular expression pattern. For more information about handling
+        /// backtracking, see
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions">Backtracking</see>.
+        /// </para>
+        /// </remarks>
         public static readonly TimeSpan InfiniteMatchTimeout = Timeout.InfiniteTimeSpan;
 
         /// <summary>
@@ -43,19 +59,40 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         internal static readonly TimeSpan s_defaultMatchTimeout = InitDefaultMatchTimeout();
 
-        /// <summary>Timeout for the execution of this <see cref="Regex"/>.</summary>
+        /// <summary>
+        /// The maximum amount of time that can elapse in a pattern-matching operation before the operation
+        /// times out.
+        /// </summary>
         protected internal TimeSpan internalMatchTimeout;
 
-        /// <summary>Gets the timeout interval of the current instance.</summary>
+        /// <summary>Gets the time-out interval of the current instance.</summary>
+        /// <value>
+        /// The maximum time interval that can elapse in a pattern-matching operation before a
+        /// <see cref="RegexMatchTimeoutException"/> is thrown, or <see cref="InfiniteMatchTimeout"/> if
+        /// time-outs are disabled.
+        /// </value>
         /// <remarks>
-        /// The <see cref="MatchTimeout"/> property defines the approximate maximum time interval for a <see cref="Regex"/> instance to execute a single matching
-        /// operation before the operation times out. The regular expression engine throws a <see cref="RegexMatchTimeoutException"/> exception during
-        /// its next timing check after the timeout interval has elapsed. This prevents the regular expression engine from processing input strings
-        /// that require excessive backtracking. The backtracking implementations guarantee that no more than O(N) work (N == length of the input)
-        /// will be performed between timeout checks, though may check more frequently. This enables the implementations to use mechanisms like
-        /// <see cref="string.IndexOf(char)"/> to search the input. Timeouts are considered optional for non-backtracking implementations
-        /// (<see cref="RegexOptions.NonBacktracking"/>), as the purpose of the timeout is to thwart excessive backtracking. Such implementations
-        /// may incur up to O(N * M) operations (N == length of the input, M == length of the pattern) as part of processing input.
+        /// <para>
+        /// The <see cref="MatchTimeout"/> property defines the approximate maximum time interval for a
+        /// <see cref="Regex"/> instance to execute a single matching operation before the operation times out.
+        /// The regular expression engine throws a <see cref="RegexMatchTimeoutException"/> exception during
+        /// its next timing check after the time-out interval has elapsed. This prevents the regular expression
+        /// engine from processing input strings that require excessive backtracking. For more information, see
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions">Backtracking</see>
+        /// and
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/best-practices">Best Practices for Regular Expressions</see>.
+        /// </para>
+        /// <para>
+        /// This property is read-only. You can set its value explicitly for an individual <see cref="Regex"/>
+        /// object by calling the <see cref="Regex(string, RegexOptions, TimeSpan)"/> constructor; and you can
+        /// set its value for all <see cref="Regex"/> matching operations in an application domain by calling
+        /// the <see cref="AppDomain.SetData(string, object?)"/> method and providing a <see cref="TimeSpan"/>
+        /// value for the "REGEX_DEFAULT_MATCH_TIMEOUT" property.
+        /// </para>
+        /// <para>
+        /// If you do not explicitly set a time-out interval, the default value
+        /// <see cref="InfiniteMatchTimeout"/> is used, and matching operations do not time out.
+        /// </para>
         /// </remarks>
         public TimeSpan MatchTimeout => internalMatchTimeout;
 

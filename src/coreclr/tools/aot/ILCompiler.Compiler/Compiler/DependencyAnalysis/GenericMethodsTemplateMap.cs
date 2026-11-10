@@ -7,15 +7,15 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Hashtable of all generic method templates used by the TypeLoader at runtime
     /// </summary>
-    public sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public GenericMethodsTemplateMap(ExternalReferencesTableNode externalReferences)
@@ -28,7 +28,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__GenericMethodsTemplateMap"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -48,7 +47,6 @@ namespace ILCompiler.DependencyAnalysis
             VertexHashtable hashtable = new VertexHashtable();
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
-
 
             foreach (var methodEntryNode in factory.MetadataManager.GetTemplateMethodEntries())
             {
@@ -72,17 +70,14 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeWriter.Save();
 
-            _size = streamBytes.Length;
-
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetTemplateMethodDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddTemplateMethodDependencies(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             if (!IsEligibleToBeATemplate(method))
                 return;
 
-            dependencies ??= new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodEntry(method), "Template Method Entry"));
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodLayout(method), "Template Method Layout"));
         }

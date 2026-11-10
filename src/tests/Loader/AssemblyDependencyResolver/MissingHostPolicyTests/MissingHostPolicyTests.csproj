@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <!-- Needed for NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- AssemblyDependencyResolver throws PlatformNotSupportedException on WebAssembly, which has no host policy. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
     <!-- AssemblyDependencyResolver is not supported -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
@@ -10,6 +12,6 @@
     <Compile Include="InvalidHostingTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

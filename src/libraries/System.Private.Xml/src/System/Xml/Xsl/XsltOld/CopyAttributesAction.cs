@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
                 switch (frame.State)
                 {
                     case Initialized:
-                        if (!frame.Node!.HasAttributes || frame.Node.MoveToFirstAttribute() == false)
+                        if (!frame.Node!.HasAttributes || !frame.Node.MoveToFirstAttribute())
                         {
                             frame.Finished();
                             break;
@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.XsltOld
                         Debug.Assert(frame.State == BeginEvent);
                         Debug.Assert(frame.Node!.NodeType == XPathNodeType.Attribute);
 
-                        if (SendBeginEvent(processor, frame.Node) == false)
+                        if (!SendBeginEvent(processor, frame.Node))
                         {
                             // This one wasn't output
                             break;
@@ -57,7 +57,7 @@ namespace System.Xml.Xsl.XsltOld
                         Debug.Assert(frame.State == TextEvent);
                         Debug.Assert(frame.Node!.NodeType == XPathNodeType.Attribute);
 
-                        if (SendTextEvent(processor, frame.Node) == false)
+                        if (!SendTextEvent(processor, frame.Node))
                         {
                             // This one wasn't output
                             break;
@@ -69,7 +69,7 @@ namespace System.Xml.Xsl.XsltOld
                         Debug.Assert(frame.State == EndEvent);
                         Debug.Assert(frame.Node!.NodeType == XPathNodeType.Attribute);
 
-                        if (SendEndEvent(processor, frame.Node) == false)
+                        if (!SendEndEvent(processor, frame.Node))
                         {
                             // This one wasn't output
                             break;

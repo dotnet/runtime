@@ -7,7 +7,7 @@ namespace System.Configuration
 {
     internal static class ConfigurationManagerInternalFactory
     {
-        private static volatile IConfigurationManagerInternal s_instance;
+        private static IConfigurationManagerInternal s_instance;
 
         internal static IConfigurationManagerInternal Instance => s_instance ??= new ConfigurationManagerInternal();
     }

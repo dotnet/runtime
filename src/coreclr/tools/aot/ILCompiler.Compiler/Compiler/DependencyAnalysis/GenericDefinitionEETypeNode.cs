@@ -7,6 +7,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => false;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
 
         public override ISymbolNode NodeForLinkage(NodeFactory factory)
         {
@@ -38,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             // Generic array enumerators use special variance rules recognized by the runtime
             // Runtime casting logic relies on all interface types implemented on arrays
             // to have the variant flag set.
-            if (_type == factory.ArrayOfTEnumeratorType || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+            if (_type == factory.TypeSystemContext.ArrayOfTEnumeratorType || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
 
             if (_type.IsByRefLike)
@@ -69,12 +70,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
-            return factory.ConstructedTypeSymbol(_type).Marked;
+            return factory.MetadataTypeSymbol(_type).Marked;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            return new DependencyList();
         }
 
         public override int ClassCode => -287423988;
@@ -93,21 +93,20 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
-            return factory.SerializedConstructedRuntimeTypeObject(_type);
+            return factory.SerializedMetadataRuntimeTypeObject(_type);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " reflection visible";
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            var dependencyList = new DependencyList();
+            if (_type.IsInterface)
+                sink.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
 
-            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "Reflection invisible type for a visible type");
+            sink.Add(factory.NecessaryTypeSymbol(_type), "Reflection invisible type for a visible type");
 
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
-
-            return dependencyList;
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(sink, factory, _type);
         }
 
         public override int ClassCode => 983279111;

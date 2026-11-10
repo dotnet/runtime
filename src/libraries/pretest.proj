@@ -16,16 +16,32 @@
   <ItemGroup>
     <ExternalsProject Include="externals.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+    <BrowserHostProject Include="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+                        Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == '')" />
+    <ProjectReference Include="@(BrowserHostProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+
+    <!-- Task for building the PlatformManifest and the sfx deps.json -->
+    <ProjectReference Include="$(RepoTasksDir)installer.tasks\installer.tasks.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
+
+    <!-- Hot reload delta generator tool, used by ApplyUpdate test projects -->
+    <ProjectReference Include="$(ToolsProjectRoot)hotreload-delta-gen\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool.csproj" />
+    <ProjectReference Include="$(ToolsProjectRoot)hotreload-delta-gen\Microsoft.DotNet.HotReload.Utils.Generator.Tasks\Microsoft.DotNet.HotReload.Utils.Generator.Tasks.csproj" />
+
+    <!-- HelixTestTasks for batched WASM library tests on Helix -->
+    <ProjectReference Include="$(RepoTasksDir)HelixTestTasks\HelixTestTasks.csproj" Condition="'$(TargetOS)' == 'browser'" />
 
     <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'"/>
     <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'android'" />
-    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'Mono'" />
-    <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
+    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')" />
+    <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'browser'" />
 
     <!-- needed to test workloads for wasm -->
     <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj"
                       Pack="true"
                       Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'Mono'" />
+    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
+                      Pack="true"
+                      Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'CoreCLR'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
@@ -34,10 +50,18 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets"
-          Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true' and '$(RuntimeFlavor)' == 'Mono'" />
+          Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets"
           Condition="'$(TargetOS)' == 'wasi' and '$(ContinuousIntegrationBuild)' == 'true'" />
+
+  <Target Name="BuildBrowserHost"
+          BeforeTargets="BuildExternalsProject"
+          Condition="'@(BrowserHostProject)' != ''">
+    <MSBuild Projects="@(BrowserHostProject)"
+             Targets="Build"
+             Properties="$(TraversalGlobalProperties);Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration)" />
+  </Target>
 
   <Target Name="BuildExternalsProject"
           BeforeTargets="Build">
@@ -67,7 +91,7 @@
   </Target>
 
   <!-- Generate the runtime pack's PlatformManifest -->
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)" Runtime="NET" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateFileVersionPropsRuntimePack"
           DependsOnTargets="GetSharedFrameworkRuntimeFiles"
           AfterTargets="BuildExternalsProject"
@@ -98,7 +122,7 @@
   </Target>
 
   <!-- Generate the shared framework's deps.json -->
-  <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)" Runtime="NET" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateTestSharedFrameworkAssets"
           AfterTargets="BuildExternalsProject"
           Inputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)*.*"
@@ -136,7 +160,6 @@
   </Target>
 
   <!-- Generate the runtime pack's RuntimeList.xml -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)" Condition="'$(DotNetSharedFrameworkTaskFile)' != ''" />
   <Target Name="GenerateRuntimeListFile"
           DependsOnTargets="GetRuntimePackFiles"
           AfterTargets="BuildExternalsProject"

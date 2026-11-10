@@ -34,8 +34,6 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
@@ -61,13 +59,27 @@ namespace System.Text.Json.Serialization.Converters
 
                 foreach (ParameterInfo parameter in parameters)
                 {
+                    // Skip out parameters — they don't receive values from JSON
+                    // and may reference unsupported types (e.g. Task).
+                    if (parameter.IsOut)
+                    {
+                        continue;
+                    }
+
                     // Every argument must be of supported type.
-                    JsonTypeInfo.ValidateType(parameter.ParameterType);
+                    // For byref parameters (in/ref), validate the underlying element type.
+                    Type parameterType = parameter.ParameterType;
+                    if (parameterType.IsByRef)
+                    {
+                        parameterType = parameterType.GetElementType()!;
+                    }
+
+                    JsonTypeInfo.ValidateType(parameterType);
                 }
 
                 if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold)
                 {
-                    Type placeHolderType = JsonTypeInfo.ObjectType;
+                    Type placeHolderType = typeof(object);
                     Type[] typeArguments = new Type[JsonConstants.UnboxedParameterCountThreshold + 1];
 
                     typeArguments[0] = typeToConvert;
@@ -75,7 +87,24 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (i < parameterCount)
                         {
-                            typeArguments[i + 1] = parameters[i].ParameterType;
+                            // out parameters use placeholder type — they aren't deserialized
+                            // and may reference types that can't be used as generic arguments.
+                            if (parameters[i].IsOut)
+                            {
+                                typeArguments[i + 1] = placeHolderType;
+                            }
+                            else
+                            {
+                                // For byref parameters (in/ref), use the underlying element type
+                                // since byref types cannot be used as generic type arguments.
+                                Type parameterType = parameters[i].ParameterType;
+                                if (parameterType.IsByRef)
+                                {
+                                    parameterType = parameterType.GetElementType()!;
+                                }
+
+                                typeArguments[i + 1] = parameterType;
+                            }
                         }
                         else
                         {
@@ -88,7 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    converterType = typeof(LargeObjectWithParameterizedConstructorConverterWithReflection<>).MakeGenericType(typeToConvert);
+                    converterType = typeof(LargeObjectWithParameterizedConstructorConverter<>).MakeGenericType(typeToConvert);
                 }
             }
 

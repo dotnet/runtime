@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
@@ -16,20 +15,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                unsafe
-                {
-                    fixed (byte* pin = rawData)
-                    {
-                        using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                        {
-                            // Permit trailing data after the PKCS12.
-                            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
-                            PfxAsn.Decode(ref reader, manager.Memory, out _);
-                        }
-
-                        return true;
-                    }
-                }
+                // Permit trailing data after the PKCS12.
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
+                ValuePfxAsn.Decode(ref reader, out _);
+                return true;
             }
             catch (CryptographicException)
             {
@@ -42,24 +31,14 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                unsafe
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
+                ValueContentInfoAsn.Decode(ref reader, out ValueContentInfoAsn contentInfo);
+
+                switch (contentInfo.ContentType)
                 {
-                    fixed (byte* pin = rawData)
-                    {
-                        using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                        {
-                            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
-
-                            ContentInfoAsn.Decode(ref reader, manager.Memory, out ContentInfoAsn contentInfo);
-
-                            switch (contentInfo.ContentType)
-                            {
-                                case Oids.Pkcs7Signed:
-                                case Oids.Pkcs7SignedEnveloped:
-                                    return true;
-                            }
-                        }
-                    }
+                    case Oids.Pkcs7Signed:
+                    case Oids.Pkcs7SignedEnveloped:
+                        return true;
                 }
             }
             catch (CryptographicException)

@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("trademark")]
-        public void Ctor_String(string trademark)
+        public void Ctor_String(string? trademark)
         {
             var attribute = new AssemblyTrademarkAttribute(trademark);
             Assert.Equal(trademark, attribute.Trademark);

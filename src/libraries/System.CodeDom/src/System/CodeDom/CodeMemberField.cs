@@ -5,8 +5,6 @@ namespace System.CodeDom
 {
     public class CodeMemberField : CodeTypeMember
     {
-        private CodeTypeReference _type;
-
         public CodeMemberField() { }
 
         public CodeMemberField(CodeTypeReference type, string name)
@@ -29,8 +27,8 @@ namespace System.CodeDom
 
         public CodeTypeReference Type
         {
-            get => _type ??= new CodeTypeReference("");
-            set => _type = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
 
         public CodeExpression InitExpression { get; set; }

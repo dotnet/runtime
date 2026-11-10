@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using Xunit;
 
@@ -47,7 +48,32 @@ namespace Microsoft.Extensions.Http.Logging
                 "unsecureHeader2: value2" + Environment.NewLine +
                 "secureHeader2: *" + Environment.NewLine,
                 result);
+
+            // Redaction is applied to the structured values, not just to the formatted string.
+            Assert.Equal("secureHeader1", httpHeadersLogValue[0].Key);
+            Assert.Equal("*", httpHeadersLogValue[0].Value);
+            Assert.Equal("secureHeader2", httpHeadersLogValue[3].Key);
+            Assert.Equal("*", httpHeadersLogValue[3].Value);
         }
+
+#if NET
+        [Fact]
+        public void HttpHeadersLogValue_DoesNotValidateHeaderValues()
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com");
+            request.Headers.TryAddWithoutValidation("Accept", "application/vnd.example+json;version=1");
+
+            var httpHeadersLogValue = new HttpHeadersLogValue(HttpHeadersLogValue.Kind.Request, request.Headers, contentHeaders: null, _ => false);
+
+            Assert.Equal(
+                "Request Headers:" + Environment.NewLine +
+                "Accept: application/vnd.example+json;version=1" + Environment.NewLine,
+                httpHeadersLogValue.ToString());
+
+            Assert.True(request.Headers.NonValidated.TryGetValues("Accept", out HeaderStringValues values));
+            Assert.Equal("application/vnd.example+json;version=1", Assert.Single(values));
+        }
+#endif
 
         private class TestHttpHeaders : HttpHeaders { }
     }

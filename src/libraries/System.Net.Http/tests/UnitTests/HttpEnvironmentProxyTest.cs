@@ -137,15 +137,24 @@ namespace System.Net.Http.Tests
         [InlineData("[::1]", "[::1]", "80", null, null)]
         [InlineData("domain\\foo:PLACEHOLDER@1.1.1.1", "1.1.1.1", "80", "foo", "PLACEHOLDER")]
         [InlineData("domain%5Cfoo:PLACEHOLDER@1.1.1.1", "1.1.1.1", "80", "foo", "PLACEHOLDER")]
+        [InlineData("placeholder@1.2.3.4/foo", "1.2.3.4", "80", "placeholder", "")]
+        [InlineData("placeholder@1.2.3?.4", "1.2.0.3", "80", "placeholder", "")]
+        [InlineData("placeholder:@1.2.3.4/foo:", "1.2.3.4", "80", "placeholder", "")]
         [InlineData("HTTP://ABC.COM/", "abc.com", "80", null, null)]
         [InlineData("http://10.30.62.64:7890/", "10.30.62.64", "7890", null, null)]
+        [InlineData("http://1.2.3.4/foo", "1.2.3.4", "80", null, null)]
+        [InlineData("http://1.2.3.4/foo:", "1.2.3.4", "80", null, null)]
+        [InlineData("http://1.2.3.4?foo", "1.2.3.4", "80", null, null)]
         [InlineData("http://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("socks4://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("socks4a://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("socks5://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
+        [InlineData("socks5h://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("https://1.1.1.5:3005", "1.1.1.5", "3005", null, null)]
         [InlineData("https://1.1.1.5", "1.1.1.5", "443", null, null)]
-        public async Task HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user, string _password)
+        // Everything before the last '@' is considered as user info (unlike regular Uri parsing).
+        [InlineData("https://host1:123@foo/@host2/path", "host2", "443", "host1", "123@foo/")]
+        public async Task HttpProxy_Uri_Parsing(string _input, string _host, string _port, string? _user, string? _password)
         {
             await RemoteExecutor.Invoke((input, host, port, user, password) =>
             {
@@ -252,6 +261,37 @@ namespace System.Net.Http.Tests
                 Assert.True(p.IsBypassed(new Uri("http://test.com")));
                 Assert.False(p.IsBypassed(new Uri("http://1test.com")));
                 Assert.True(p.IsBypassed(new Uri("http://www.test.com")));
+            }).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task HttpProxy_CidrExceptions_Match()
+        {
+            await RemoteExecutor.Invoke(() =>
+            {
+                IWebProxy p;
+
+                Environment.SetEnvironmentVariable("no_proxy", "127.0.0.0/8,2001:db8::/32,192.168.1.0/24,.test.com,foo.com,invalid/cidr");
+                Environment.SetEnvironmentVariable("all_proxy", "http://foo:PLACEHOLDER@1.1.1.1:3000");
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
+                Assert.NotNull(p);
+
+                Assert.True(p.IsBypassed(fooHttp));
+                Assert.True(p.IsBypassed(fooHttps));
+                Assert.True(p.IsBypassed(new Uri("http://test.com")));
+                Assert.False(p.IsBypassed(new Uri("http://1test.com")));
+
+                Assert.True(p.IsBypassed(new Uri("http://127.0.0.1")));
+                Assert.True(p.IsBypassed(new Uri("http://127.1.1.1")));
+                Assert.True(p.IsBypassed(new Uri("http://127.1.1.1:8080")));
+                Assert.True(p.IsBypassed(new Uri("http://[::ffff:127.0.0.1]")));
+                Assert.False(p.IsBypassed(new Uri("http://128.0.0.1")));
+
+                Assert.True(p.IsBypassed(new Uri("http://192.168.1.1")));
+                Assert.False(p.IsBypassed(new Uri("http://192.168.2.1")));
+
+                Assert.True(p.IsBypassed(new Uri("http://[2001:db8:ffff:ffff:ffff:ffff:ffff:ffff]")));
+                Assert.False(p.IsBypassed(new Uri("http://[2001:db9:0000:0000:0000:0000:0000:0000]")));
             }).DisposeAsync();
         }
 

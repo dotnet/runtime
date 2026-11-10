@@ -12,6 +12,7 @@
 ===========================================================*/
 
 #include "common.h"
+#include <minipal/time.h>
 
 #include <stdlib.h>
 
@@ -62,18 +63,16 @@ namespace
 {
     void DefineEmitScope(GUID iid, void** ppEmit)
     {
-        CONTRACT_VOID
+        CONTRACTL
         {
             PRECONDITION(CheckPointer(ppEmit));
-            POSTCONDITION(CheckPointer(*ppEmit));
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM(););
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        SafeComHolder<IMetaDataDispenserEx> pDispenser;
+        ReleaseHolderAnyMode<IMetaDataDispenserEx> pDispenser;
 
         // Get the Dispenser interface.
         CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void**)&pDispenser);
@@ -99,7 +98,7 @@ namespace
 
         IfFailThrow(pDispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, iid, (IUnknown**)ppEmit));
 
-        RETURN;
+        return;
     }
 }
 
@@ -129,6 +128,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}
+    , m_isLoaded{false}
     , m_isTerminated{false}
     , m_level{FILE_LOAD_CREATE}
     , m_notifyFlags{NOT_NOTIFIED}
@@ -204,12 +204,11 @@ void Assembly::Init(AllocMemTracker *pamTracker)
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
         //Cannot fail after this point.
 
         InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 
-        return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
+        return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW expires
     }
 }
 
@@ -219,7 +218,6 @@ Assembly::~Assembly()
     {
         NOTHROW;
         GC_TRIGGERS;
-        DISABLED(FORBID_FAULT); //Must clean up some profiler stuff
     }
     CONTRACTL_END
 
@@ -278,7 +276,6 @@ void Assembly::StartUnload()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackAssemblyLoads())
@@ -329,9 +326,12 @@ Assembly * Assembly::Create(
         PRECONDITION(pLoaderAllocator != NULL);
         PRECONDITION(pLoaderAllocator->IsCollectible() || pLoaderAllocator == SystemDomain::GetGlobalLoaderAllocator());
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
-    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
+    // Validate the assembly about to be created is suitable for execution.
+    pPEAssembly->ValidateForExecution();
+
+    NewHolder<Assembly> pAssembly{ new Assembly(pPEAssembly, pLoaderAllocator) };
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -360,27 +360,25 @@ Assembly * Assembly::Create(
     }
     EX_END_HOOK;
 #endif
-    pAssembly.SuppressRelease();
-
-    return pAssembly;
+    return pAssembly.Detach();
 } // Assembly::Create
 
 Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive)
 {
     // WARNING: not backout clean
-    CONTRACT(Assembly *)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    // This must be before creation of the AllocMemTracker so that the destructor for the AllocMemTracker happens before the destructor for pLoaderAllocator.
+    // This must be before creation of the AllocMemTracker so that the destructor for the AllocMemTracker happens before the destructor for loaderAllocatorHolder.
     // That is necessary as the allocation of Assembly objects and other related details is done on top of heaps located in
     // the loader allocator objects.
-    NewHolder<LoaderAllocator> pLoaderAllocator;
+    NewHolder<LoaderAllocator> loaderAllocatorHolder;
+    LoaderAllocator* pLoaderAllocator = NULL;
 
     AllocMemTracker amTracker;
     AllocMemTracker *pamTracker = &amTracker;
@@ -395,18 +393,18 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
 
     // Set up the assembly manifest metadata
-    // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
+    // When we create dynamic assembly, we always use a working copy of IMDInternalEmit
     // to store temporary runtime assembly information. This is to preserve the invariant that
     // an assembly must have a PEAssembly with proper metadata.
-    // This working copy of IMetaDataAssemblyEmit will store every AssemblyRef as a simple name
+    // This working copy of IMDInternalEmit will store every AssemblyRef as a simple name
     // reference as we must have an instance of Assembly(can be dynamic assembly) before we can
     // add such a reference. Also because the referenced assembly if dynamic strong name, it may
     // not be ready to be hashed!
 
-    SafeComHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
+    ReleaseHolderAnyMode<IMDInternalEmit> pAssemblyEmit;
     DefineEmitScope(
-        IID_IMetaDataAssemblyEmit,
-        &pAssemblyEmit);
+        IID_IMDInternalEmit,
+        (void**)&pAssemblyEmit);
 
     // Now create a dynamic PE file out of the name & metadata
     PEAssemblyHolder pPEAssembly;
@@ -431,15 +429,11 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         IfFailThrow(pAssemblyEmit->DefineAssembly(pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, hashAlgorithm,
                                                    pAssemblyNameParts->_pName, &assemData, pAssemblyNameParts->_flags,
                                                    &ma));
-        pPEAssembly = PEAssembly::Create(pAssemblyEmit);
-
-        // Set it as the fallback load context binder for the dynamic assembly being created
-        pPEAssembly->SetFallbackBinder(pBinder);
+        pPEAssembly = PEAssembly::Create(pAssemblyEmit, pBinder);
     }
 
     AppDomain* pDomain = ::GetAppDomain();
 
-    NewHolder<DomainAssembly> pDomainAssembly;
     Assembly* pAssem;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
@@ -456,6 +450,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
             AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
+            loaderAllocatorHolder = pCollectibleLoaderAllocator;
             pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
@@ -478,20 +473,14 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
             pLoaderAllocator = pBinderLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderLoaderAllocator;
         }
 
-        if (!createdNewAssemblyLoaderAllocator)
-        {
-            pLoaderAllocator.SuppressRelease();
-        }
-
-        // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
-        pAssem = pDomainAssembly->GetAssembly();
+        // Create the assembly
+        pAssem = Assembly::Create(pPEAssembly, pamTracker, pLoaderAllocator);
         pAssem->m_isDynamic = true;
         if (pAssem->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
             // and won't be deleted in case of a concurrent load from the same ALC
-            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddDomainAssembly(pDomainAssembly);
+            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddAssembly(pAssem);
         }
     }
 
@@ -511,20 +500,19 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         // Finish loading process
         // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
         pAssem->Begin();
+        pAssem->BeforeTypeLoad();
         pAssem->DeliverSyncEvents();
         pAssem->DeliverAsyncEvents();
         pAssem->FinishLoad();
         pAssem->ClearLoading();
-        pAssem->m_level = FILE_ACTIVE;
+        pAssem->SetLoadLevel(FILE_ACTIVE);
     }
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
-        FAULT_FORBID();
 
         // Cannot fail after this point
 
-        pDomainAssembly.SuppressRelease();
         pamTracker->SuppressRelease();
 
         // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
@@ -532,7 +520,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         {
             // Atomically transfer ownership to the managed heap
             pLoaderAllocator->ActivateManagedTracking();
-            pLoaderAllocator.SuppressRelease();
+            loaderAllocatorHolder.Detach();
         }
 
         // Set the assembly module to be tenured now that we know it won't be deleted
@@ -540,33 +528,10 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         pRetVal = pAssem;
     }
 
-    RETURN pRetVal;
+    return pRetVal;
 } // Assembly::CreateDynamic
 
-
-
-void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(pDomainAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GetModule()->SetDomainAssembly(pDomainAssembly);
-
-} // Assembly::SetDomainAssembly
-
 #endif // #ifndef DACCESS_COMPILE
-
-DomainAssembly *Assembly::GetDomainAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetModule()->GetDomainAssembly();
-}
 
 PTR_LoaderHeap Assembly::GetLowFrequencyHeap()
 {
@@ -583,28 +548,19 @@ PTR_LoaderHeap Assembly::GetHighFrequencyHeap()
 }
 
 
-PTR_LoaderHeap Assembly::GetStubHeap()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetLoaderAllocator()->GetStubHeap();
-}
-
 Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                                            Loader::LoadFlag loadFlag,
                                            mdTypeDef mdNested,
                                            mdTypeDef* pCL)
 {
-    CONTRACT(Module *)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, loadFlag==Loader::Load ? NULL_NOT_OK : NULL_OK));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     mdToken mdLinkRef;
     mdToken mdBinding;
@@ -624,7 +580,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
     {
         if (loadFlag != Loader::Load)
         {
-            RETURN NULL;
+            return NULL;
         }
         else
         {
@@ -663,9 +619,9 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             }
 
             if (pAssembly)
-                RETURN pAssembly->GetModule();
+                return pAssembly->GetModule();
             else
-                RETURN NULL;
+                return NULL;
 
         }
 
@@ -685,7 +641,9 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             return pModule;
 #else
             if (pModule != NULL)
-                RETURN pModule;
+                {
+                    return pModule;
+                }
 
             if(loadFlag==Loader::SafeLookup)
                 return NULL;
@@ -705,7 +663,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
         if (mdNested != mdTypeDefNil)
             mdBinding = mdNested;
 
-        RETURN FindModuleByExportedType(mdLinkRef, loadFlag, mdBinding, pCL);
+        return FindModuleByExportedType(mdLinkRef, loadFlag, mdBinding, pCL);
 
     default:
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_TOKEN_TYPE);
@@ -721,21 +679,19 @@ Module * Assembly::FindModuleByTypeRef(
     Loader::LoadFlag loadFlag,
     BOOL *           pfNoResolutionScope)
 {
-    CONTRACT(Module *)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
 
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(tkType) == mdtTypeRef);
         PRECONDITION(CheckPointer(pfNoResolutionScope));
-        POSTCONDITION( CheckPointer(RETVAL, loadFlag==Loader::Load ? NULL_NOT_OK : NULL_OK) );
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     // WARNING! Correctness of the type forwarder detection algorithm in code:ClassLoader::ResolveTokenToTypeDefThrowing
     // relies on this function not performing any form of type forwarding itself.
@@ -778,7 +734,7 @@ Module * Assembly::FindModuleByTypeRef(
                     // The ModuleBase scenarios should never need this
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 }
-                RETURN(static_cast<Module*>(pModule));
+                return static_cast<Module*>(pModule);
             }
             iter++;
         }
@@ -807,7 +763,7 @@ Module * Assembly::FindModuleByTypeRef(
             // Type is in the referencing module.
             GCX_NOTRIGGER();
             CANNOTTHROWCOMPLUSEXCEPTION();
-            RETURN( static_cast<Module*>(pModule) );
+            return static_cast<Module*>(pModule);
         }
 
         case mdtModuleRef:
@@ -817,24 +773,26 @@ Module * Assembly::FindModuleByTypeRef(
                 // Either we're not supposed to load, or we're doing a GC or stackwalk
                 // in which case we shouldn't need to load.  So just look up the module
                 // and return what we find.
-                RETURN(pModule->LookupModule(tkType));
+                Module* pLoadedModule = pModule->LookupModule(tkType);
+                _ASSERTE_ALL_BUILDS(pLoadedModule != NULL || loadFlag != Loader::Load);
+                return pLoadedModule;
             }
 
 #ifndef DACCESS_COMPILE
             if (loadFlag == Loader::Load)
             {
                 Module* pActualModule = pModule->LoadModule(tkType);
-                RETURN(pActualModule);
+                return pActualModule;
             }
             else
             {
-                RETURN NULL;
+                return NULL;
             }
 
 #else //DACCESS_COMPILE
             _ASSERTE(loadFlag!=Loader::Load);
             DacNotImpl();
-            RETURN NULL;
+            return NULL;
 #endif //DACCESS_COMPILE
         }
         break;
@@ -860,25 +818,25 @@ Module * Assembly::FindModuleByTypeRef(
 
             if (pAssembly != NULL)
             {
-                RETURN pAssembly->m_pModule;
+                return pAssembly->m_pModule;
             }
 
 #ifdef DACCESS_COMPILE
-            RETURN NULL;
+            return NULL;
 #else
             if (loadFlag != Loader::Load)
             {
-                RETURN NULL;
+                return NULL;
             }
 
             pAssembly = pModule->LoadAssembly(tkType);
             if (pAssembly == NULL)
             {
-                RETURN NULL;
+                return NULL;
             }
             else
             {
-                RETURN pAssembly->m_pModule;
+                return pAssembly->m_pModule;
             }
 #endif //!DACCESS_COMPILE
         }
@@ -921,20 +879,19 @@ void Assembly::CacheFriendAssemblyInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
     if (m_pFriendAssemblyDescriptor == NULL)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies{ FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly()) };
         _ASSERTE(pFriendAssemblies != NULL);
 
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
 
         if (m_pFriendAssemblyDescriptor == NULL)
         {
-            m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
+            m_pFriendAssemblyDescriptor = pFriendAssemblies.Detach();
         }
     }
 } // void Assembly::CacheFriendAssemblyInfo()
@@ -945,7 +902,6 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -962,7 +918,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
 
     while (true)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies{ FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly()) };
         FriendAssemblyDescriptor* pFriendAssemblyDescriptorNextLoop = NULL;
 
         {
@@ -973,7 +929,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
                 if (m_pFriendAssemblyDescriptor != NULL)
                     m_pFriendAssemblyDescriptor->Release();
 
-                m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
+                m_pFriendAssemblyDescriptor = pFriendAssemblies.Detach();
                 return;
             }
             else
@@ -1001,25 +957,11 @@ ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
 
 //*****************************************************************************
 // Is the given assembly a friend of this assembly?
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD)
+bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
@@ -1079,8 +1021,8 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
 
 enum CorEntryPointType
 {
-    EntryManagedMain,                   // void main(String[])
-    EntryCrtMain                        // unsigned main(void)
+    EntryManagedMain,                   // void/int/uint Main(string[])
+    EntryCrtMain,                       // void/int/uint Main(void)
 };
 
 void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
@@ -1090,7 +1032,6 @@ void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1114,7 +1055,6 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
 
         PRECONDITION(CheckPointer(pType));
     }
@@ -1175,50 +1115,70 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
 struct Param
 {
     MethodDesc *pFD;
-    short numSkipArgs;
     INT32 *piRetVal;
     PTRARRAYREF *stringArgs;
     CorEntryPointType EntryType;
     DWORD cCommandArgs;
     LPWSTR *wzArgs;
+    bool captureException;
 } param;
+
+#if defined(TARGET_BROWSER)
+extern "C" void SystemJS_ResolveMainPromise(int exitCode);
+#endif // TARGET_BROWSER
 
 static void RunMainInternal(Param* pParam)
 {
-    MethodDescCallSite  threadStart(pParam->pFD);
-
     PTRARRAYREF StrArgArray = NULL;
     GCPROTECT_BEGIN(StrArgArray);
 
-    // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain) {
-        if (pParam->stringArgs == NULL) {
-            // Allocate a COM Array object with enough slots for cCommandArgs - 1
-            StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
+    StrArgArray = *pParam->stringArgs;
 
-            // Create Stringrefs for each of the args
-            for (DWORD arg = pParam->numSkipArgs; arg < pParam->cCommandArgs; arg++) {
-                STRINGREF sref = StringObject::NewString(pParam->wzArgs[arg]);
-                StrArgArray->SetAt(arg - pParam->numSkipArgs, (OBJECTREF) sref);
-            }
-        }
-        else
-            StrArgArray = *pParam->stringArgs;
+    pParam->pFD->EnsureActive();
+    PCODE entryPoint;
+    {
+        GCX_PREEMP();
+        entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
     }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // The entry point is invoked from R2R-compiled code (Environment.CallEntryPoint performs an
+    // indirect call through this address), so it must resolve to real code (native R2R or a
+    // correctly-typed interpreter thunk) rather than an uninitialized portable entry point.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-    ARG_SLOT stackVar = ObjToArgSlot(StrArgArray);
+    BOOL hasReturnValue = !pParam->pFD->IsVoid();
+    PTRARRAYREF* pArgument = (pParam->EntryType == EntryManagedMain) ? &StrArgArray : NULL;
+    INT32* pReturnValue = hasReturnValue ? pParam->piRetVal : NULL;
 
-    if (pParam->pFD->IsVoid())
+    if (!hasReturnValue)
     {
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
-        threadStart.Call(&stackVar);
     }
-    else
+
+    if (g_pEnvironmentCallEntryPointMethodDesc == nullptr)
     {
-        *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
+        g_pEnvironmentCallEntryPointMethodDesc = CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
+    }
+
+    UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
+    callEntryPoint.InvokeThrowing(
+        static_cast<INT_PTR>(entryPoint),
+        pArgument,
+        pReturnValue,
+        CLR_BOOL_ARG(pParam->captureException));
+
+    if (hasReturnValue)
+    {
         SetLatchedExitCode(*pParam->piRetVal);
     }
+
+#if defined(TARGET_BROWSER)
+    // if the managed main was async, the first call to SystemJS_ResolveMainPromise will be ignored
+    // and the second call will come from AsyncHelpers.HandleAsyncEntryPoint
+    SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
 
     GCPROTECT_END();
 
@@ -1227,9 +1187,9 @@ static void RunMainInternal(Param* pParam)
 
 /* static */
 HRESULT RunMain(MethodDesc *pFD ,
-                short numSkipArgs,
                 INT32 *piRetVal,
-                PTRARRAYREF *stringArgs /*=NULL*/)
+                PTRARRAYREF *stringArgs,
+                bool captureException)
 {
     STATIC_CONTRACT_THROWS;
     _ASSERTE(piRetVal);
@@ -1272,12 +1232,12 @@ HRESULT RunMain(MethodDesc *pFD ,
     Param param;
 
     param.pFD = pFD;
-    param.numSkipArgs = numSkipArgs;
     param.piRetVal = piRetVal;
     param.stringArgs = stringArgs;
     param.EntryType = EntryType;
     param.cCommandArgs = cCommandArgs;
     param.wzArgs = wzArgs;
+    param.captureException = captureException;
 
     EX_TRY_NOCATCH(Param *, pParam, &param)
     {
@@ -1305,7 +1265,6 @@ static void RunMainPost()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(GetThreadNULLOk()));
     }
     CONTRACTL_END
@@ -1322,7 +1281,7 @@ static void RunMainPost()
     //
     if (dwSecondsToSleep != 0)
     {
-        ClrSleepEx(dwSecondsToSleep * 1000, FALSE);
+        minipal_sleep(dwSecondsToSleep * 1000);
     }
 }
 
@@ -1333,19 +1292,14 @@ void RunManagedStartup()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
-    MethodDescCallSite managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
-
-    ARG_SLOT args[1];
-    args[0] = PtrToArgSlot(s_wszDiagnosticStartupHookPaths);
-
-    managedStartup.Call(args);
+    UnmanagedCallersOnlyCaller managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
+    managedStartup.InvokeThrowing(s_wszDiagnosticStartupHookPaths);
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool captureException)
 {
     CONTRACTL
     {
@@ -1354,7 +1308,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
         GC_TRIGGERS;
         MODE_ANY;
         ENTRY_POINT;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1409,7 +1362,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             RunManagedStartup();
 
-            hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+            hr = RunMain(pMeth, &iRetVal, stringArgs, captureException);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
         }
@@ -1420,8 +1373,9 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     //to decide when the process should get torn down.  So, don't call it from
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
-        if (waitForOtherThreads)
-            RunMainPost();
+#if !defined(TARGET_BROWSER)
+        RunMainPost();
+#endif // !TARGET_BROWSER
     }
     else {
         StackSString displayName;
@@ -1436,23 +1390,23 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
 MethodDesc* Assembly::GetEntryPoint()
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
 
         // Can return NULL if no entry point.
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pEntryPoint)
-        RETURN m_pEntryPoint;
+        {
+            return m_pEntryPoint;
+        }
 
     mdToken mdEntry = m_pPEAssembly->GetEntryPointToken();
     if (IsNilToken(mdEntry))
-        RETURN NULL;
+        return NULL;
 
     Module *pModule = NULL;
     switch(TypeFromToken(mdEntry)) {
@@ -1473,7 +1427,7 @@ MethodDesc* Assembly::GetEntryPoint()
 
     // May be unmanaged entrypoint
     if (!pModule)
-        RETURN NULL;
+        return NULL;
 
     // We need to get its properties and the class token for this MethodDef token.
     mdToken mdParent;
@@ -1501,6 +1455,7 @@ MethodDesc* Assembly::GetEntryPoint()
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
 
+    MethodTable * pInitialMT;
     if (mdParent != COR_GLOBAL_PARENT_TOKEN) {
         GCX_COOP();
         // This code needs a class init frame, because without it, the
@@ -1508,7 +1463,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // type handle (ie, loading an assembly) is the first line of a program.
         DebuggerClassInitMarkFrame __dcimf;
 
-        MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
+        pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
                                                                        ClassLoader::FailIfUninstDefOrRef).GetMethodTable();
 
@@ -1520,8 +1475,7 @@ MethodDesc* Assembly::GetEntryPoint()
     {
         m_pEntryPoint = pModule->FindMethod(mdEntry);
     }
-
-    RETURN m_pEntryPoint;
+    return m_pEntryPoint;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1531,14 +1485,13 @@ MethodDesc* Assembly::GetEntryPoint()
 //
 OBJECTREF Assembly::GetExposedObject()
 {
-    CONTRACT(OBJECTREF)
+    CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
 
@@ -1595,7 +1548,7 @@ OBJECTREF Assembly::GetExposedObject()
             return NULL;
     }
 
-    RETURN pLoaderAllocator->GetHandleValue(m_hExposedObject);
+    return pLoaderAllocator->GetHandleValue(m_hExposedObject);
 }
 
 OBJECTREF Assembly::GetExposedObjectIfExists()
@@ -1630,7 +1583,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1652,7 +1605,6 @@ ITypeLib* Assembly::GetTypeLib()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1669,7 +1621,6 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pNew));
     }
     CONTRACTL_END
@@ -1690,21 +1641,15 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
 // Add an assembly to the assemblyref list. pAssemEmitter specifies where
 // the AssemblyRef is emitted to.
 //***********************************************************
-mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter)
+mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMDInternalEmit *pAssemEmitter)
 {
-    CONTRACT(mdAssemblyRef)
+    CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(refedAssembly));
         PRECONDITION(CheckPointer(pAssemEmitter, NULL_NOT_OK));
-        POSTCONDITION(!IsNilToken(RETVAL));
-        POSTCONDITION(TypeFromToken(RETVAL) == mdtAssemblyRef);
     }
-    CONTRACT_END;
-
-    SafeComHolder<IMetaDataAssemblyEmit> emitHolder;
+    CONTRACTL_END;
 
     AssemblySpec spec;
     spec.InitializeSpec(refedAssembly->GetPEAssembly());
@@ -1720,7 +1665,9 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     mdAssemblyRef ar;
     IfFailThrow(spec.EmitToken(pAssemEmitter, &ar));
 
-    RETURN ar;
+    _ASSERTE(!IsNilToken(ar));
+    _ASSERTE(TypeFromToken(ar) == mdtAssemblyRef);
+    return ar;
 }   // Assembly::AddAssemblyRef
 
 //***********************************************************
@@ -1733,8 +1680,8 @@ void Assembly::AddType(
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -1759,8 +1706,8 @@ void Assembly::AddExportedType(mdExportedType cl)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -1913,21 +1860,6 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-    else
-    {
-        if (m_pClassLoader.IsValid())
-        {
-            m_pClassLoader->EnumMemoryRegions(flags);
-        }
-        if (m_pModule.IsValid())
-        {
-            m_pModule->EnumMemoryRegions(flags, true);
-        }
-        if (m_pPEAssembly.IsValid())
-        {
-            m_pPEAssembly->EnumMemoryRegions(flags);
-        }
-    }
 }
 
 #else // DACCESS_COMPILE
@@ -1936,13 +1868,13 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #include <optsmallperfcritical.h>
 void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     TRIGGERSGC ();
     if (IsLoading())
@@ -1962,8 +1894,6 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
     }
     else
         ThrowIfError(targetLevel);
-
-    RETURN;
 }
 
 #include <optdefault.h>
@@ -1997,35 +1927,34 @@ CHECK Assembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 
 void Assembly::RequireLoadLevel(FileLoadLevel targetLevel)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (GetLoadLevel() < targetLevel)
     {
         ThrowIfError(targetLevel);
         ThrowHR(MSEE_E_ASSEMBLYLOADINPROGRESS); // @todo: better exception
     }
-
-    RETURN;
 }
 
 void Assembly::SetError(Exception *ex)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(!IsError());
         PRECONDITION(ex != NULL);
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        POSTCONDITION(IsError());
+        MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     m_pError = ex->DomainBoundClone();
 
@@ -2038,6 +1967,7 @@ void Assembly::SetError(Exception *ex)
             SetProfilerNotified();
 
 #ifdef PROFILING_SUPPORTED
+            GCX_PREEMP();
             // Only send errors for non-shared assemblies; other assemblies might be successfully completed
             // in another app domain later.
             m_pModule->NotifyProfilerLoadFinished(ex->GetHR());
@@ -2045,26 +1975,24 @@ void Assembly::SetError(Exception *ex)
         }
     }
 
-    RETURN;
+    _ASSERTE(IsError());
 }
 
 void Assembly::ThrowIfError(FileLoadLevel targetLevel)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         MODE_ANY;
         THROWS;
         GC_TRIGGERS;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_level < targetLevel && m_pError != NULL)
     {
         PAL_CPP_THROW(Exception*, m_pError->DomainBoundClone());
     }
-
-    RETURN;
 }
 
 CHECK Assembly::CheckNoError(FileLoadLevel targetLevel)
@@ -2124,20 +2052,22 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         BeforeTypeLoad();
         break;
 
-    case FILE_LOAD_EAGER_FIXUPS:
-        EagerFixups();
-        break;
-
     case FILE_LOAD_DELIVER_EVENTS:
         DeliverSyncEvents();
         break;
 
+#ifdef FEATURE_IJW
     case FILE_LOAD_VTABLE_FIXUPS:
         VtableFixups();
         break;
+#endif // FEATURE_IJW
 
     case FILE_LOADED:
         FinishLoad();
+        break;
+
+    case FILE_LOAD_EAGER_FIXUPS:
+        EagerFixups();
         break;
 
     case FILE_ACTIVE:
@@ -2173,29 +2103,22 @@ void Assembly::BeforeTypeLoad()
     }
     CONTRACTL_END;
 
-#ifdef PROFILING_SUPPORTED
     // After this point, it is possible to load types.
     // We need to notify the profiler now because the profiler may need to inject methods into
     // the module, and to do so reliably, it must have the chance to do so before
     // any types are loaded from the module.
-    //
-    // In the past we only allowed injecting types/methods on non-NGEN images so notifying here
-    // worked ok, but for NGEN images this is pretty ugly. Rejitting often occurs in this callback,
-    // but then during fixup the results of LoadedMethodDesc iterator would change and we would
-    // need to re-iterate everything. Aside from Rejit other code often wasn't designed to handle
-    // running before Fixup. A concrete example VS recently hit, calling GetClassLayout using
-    // a MethodTable which doesn't need restore but its parent pointer isn't fixed up yet.
-    // We've already set the rules so that profilers can't modify the member list of types in NGEN images
-    // so it doesn't matter if types are pre-loaded. We only need the guarantee that code for the
-    // loaded types won't execute yet. For NGEN images we deliver the load notification in
-    // FILE_LOAD_DELIVER_EVENTS.
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetModule()->NotifyProfilerLoadFinished(S_OK);
-    }
+    _ASSERTE(!IsProfilerNotified());
 
-#endif
+    // This flag also marks the assembly as available to code versioning enumerators.
+    SetProfilerNotified();
+
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+    GetModule()->CaptureInitialTypeCounts();
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
+
+#ifdef PROFILING_SUPPORTED
+    GetModule()->NotifyProfilerLoadFinished(S_OK);
+#endif // PROFILING_SUPPORTED
 }
 
 void Assembly::EagerFixups()
@@ -2211,12 +2134,14 @@ void Assembly::EagerFixups()
 #endif // FEATURE_READYTORUN
 }
 
+#ifdef FEATURE_IJW
 void Assembly::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
     GetModule()->FixupVTables();
 }
+#endif // FEATURE_IJW
 
 void Assembly::FinishLoad()
 {
@@ -2228,7 +2153,7 @@ void Assembly::FinishLoad()
     CONTRACTL_END;
 
     // Must set this a bit prematurely for the DAC stuff to work
-    m_level = FILE_LOADED;
+    SetLoadLevel(FILE_LOADED);
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
@@ -2236,13 +2161,13 @@ void Assembly::FinishLoad()
 
 void Assembly::Activate()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(IsLoaded());
         STANDARD_VM_CHECK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // We cannot execute any code in this assembly until we know what exception plan it is on.
     // At the point of an exception's stack-crawl it is too late because we cannot tolerate a GC.
@@ -2276,8 +2201,6 @@ void Assembly::Activate()
         m_pModule->GetReadyToRunInfo()->RegisterUnrelatedR2RModule();
     }
 #endif
-
-    RETURN;
 }
 
 void Assembly::Begin()
@@ -2286,9 +2209,9 @@ void Assembly::Begin()
 
     {
         AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-        AppDomain::GetCurrentDomain()->AddAssembly(GetDomainAssembly());
+        AppDomain::GetCurrentDomain()->AddAssembly(this);
     }
-    // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
+    // Make it possible to find this Assembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();
 }
 
@@ -2350,14 +2273,6 @@ void Assembly::DeliverSyncEvents()
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
 
-#ifdef PROFILING_SUPPORTED
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetModule()->NotifyProfilerLoadFinished(S_OK);
-    }
-#endif
-
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
     if (!IsDebuggerNotified())
@@ -2365,7 +2280,7 @@ void Assembly::DeliverSyncEvents()
         SetShouldNotifyDebugger();
 
         // Still work to do even if no debugger is attached.
-        NotifyDebuggerLoad(ATTACH_ASSEMBLY_LOAD, FALSE);
+        NotifyDebuggerLoad(ATTACH_MODULE_LOAD, FALSE);
 
     }
 #endif // DEBUGGING_SUPPORTED
@@ -2379,7 +2294,6 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
         THROWS;
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2388,7 +2302,7 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
     IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
     return (DebuggerAssemblyControlFlags)dacfFlags;
 #else // !DEBUGGING_SUPPORTED
-    return 0;
+    return DACF_NONE;
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2403,7 +2317,6 @@ HRESULT Assembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pdwFlags));
     }
     CONTRACTL_END;
@@ -2488,24 +2401,15 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     }
 
     // There is still work we need to do even when no debugger is attached.
-    if (flags & ATTACH_ASSEMBLY_LOAD)
-    {
-        if (ShouldNotifyDebugger())
-        {
-            g_pDebugInterface->LoadAssembly(GetDomainAssembly());
-        }
-        result = TRUE;
-    }
-
-    if(this->ShouldNotifyDebugger())
+    if(this->ShouldNotifyDebugger() && !(flags & ATTACH_MODULE_LOAD))
     {
         result = result ||
-            this->GetModule()->NotifyDebuggerLoad(GetDomainAssembly(), flags, attaching);
+            this->GetModule()->NotifyDebuggerLoad(this, flags, attaching);
     }
 
     if( ShouldNotifyDebugger())
     {
-           result |= m_pModule->NotifyDebuggerLoad(GetDomainAssembly(), ATTACH_MODULE_LOAD, attaching);
+           result |= m_pModule->NotifyDebuggerLoad(this, ATTACH_MODULE_LOAD, attaching);
            SetDebuggerNotified();
     }
 
@@ -2523,7 +2427,7 @@ void Assembly::NotifyDebuggerUnload()
     // a previous load event (such as if debugger attached after the modules was loaded).
     this->GetModule()->NotifyDebuggerUnload();
 
-    g_pDebugInterface->UnloadAssembly(GetDomainAssembly());
+    g_pDebugInterface->UnloadAssembly(this);
 }
 
 FriendAssemblyDescriptor::FriendAssemblyDescriptor()
@@ -2568,7 +2472,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
     }
     CONTRACTL_END
 
-    ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
+    ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies{ new FriendAssemblyDescriptor };
 
     // We're going to do this twice, once for InternalsVisibleTo and once for IgnoresAccessChecks
     IMDInternalImport* pImport = pAssembly->GetMDImport();
@@ -2627,12 +2531,22 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;
             pFriendAssemblyName = new FriendAssemblyName_t;
-            hr = pFriendAssemblyName->InitNoThrow(displayName);
-
-            if (SUCCEEDED(hr))
+            EX_TRY
             {
-                hr = pFriendAssemblyName->CheckFriendAssemblyName();
+                pFriendAssemblyName->Init(displayName);
             }
+            EX_HOOK
+            {
+                // Preserve the underlying reason the friend assembly name could not be
+                // parsed (e.g. a malformed identity string) as the inner exception, while
+                // reporting the assembly that declared the invalid friend.
+                Exception *pInnerException = GET_EXCEPTION();
+                if (!pInnerException->IsTransient())
+                    EEFileLoadException::Throw(pAssembly, pInnerException->GetHR(), pInnerException);
+            }
+            EX_END_HOOK
+
+            hr = pFriendAssemblyName->CheckFriendAssemblyName();
 
             if (FAILED(hr))
             {
@@ -2642,7 +2556,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             if (count == 1)
             {
                 pFriendAssemblies->AddSubjectAssembly(pFriendAssemblyName);
-                pFriendAssemblyName.SuppressRelease();
+                pFriendAssemblyName.Detach();
                 // Below checks are unnecessary for IgnoresAccessChecks
                 continue;
             }
@@ -2652,7 +2566,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
 
             pFriendAssemblies->AddFriendAssembly(pFriendAssemblyName);
 
-            pFriendAssemblyName.SuppressRelease();
+            pFriendAssemblyName.Detach();
         }
     }
 

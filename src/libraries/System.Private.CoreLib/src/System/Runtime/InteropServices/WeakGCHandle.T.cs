@@ -53,12 +53,13 @@ namespace System.Runtime.InteropServices
             IntPtr handle = _handle;
             GCHandle.CheckUninitialized(handle);
             // Skip the type check to provide lowest overhead.
-            T? obj = Unsafe.As<T?>(GCHandle.InternalGet(handle));
+            T? obj = Unsafe.As<T>(GCHandle.InternalGet(handle));
             target = obj;
             return obj != null;
         }
 
         /// <summary>Sets the object this handle represents.</summary>
+        /// <param name="target">The object to assign to this handle.</param>
         /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         public readonly void SetTarget(T target)
         {
@@ -76,7 +77,7 @@ namespace System.Runtime.InteropServices
         /// <para>This method doesn't validate the provided handle value. The caller must ensure the validity of the handle.</para>
         /// <para>
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
-        /// interchangable with <see cref="GCHandle"/>.
+        /// interchangeable with <see cref="GCHandle"/>.
         /// </para>
         /// </remarks>
         public static WeakGCHandle<T> FromIntPtr(IntPtr value) => new WeakGCHandle<T>(value);
@@ -88,7 +89,7 @@ namespace System.Runtime.InteropServices
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="WeakGCHandle{T}"/> object.</returns>
         /// <remarks>
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
-        /// interchangable with <see cref="GCHandle"/>.
+        /// interchangeable with <see cref="GCHandle"/>.
         /// </remarks>
         public static IntPtr ToIntPtr(WeakGCHandle<T> value) => value._handle;
 

@@ -125,6 +125,22 @@ namespace System.Buffers.Text
                 return false;
             }
 
+            // Per ISO 8601 (Date and time — Representations for information interchange), 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (hour == 24)
+            {
+                if (minute != 0 || second != 0 || fraction != 0)
+                {
+                    value = default;
+                    return false;
+                }
+
+                hour = 0;
+                isEndOfDay = true;
+            }
+
             if (((uint)hour) > 23)
             {
                 value = default;
@@ -152,6 +168,18 @@ namespace System.Buffers.Text
             int totalSeconds = (hour * 3600) + (minute * 60) + second;
             ticks += totalSeconds * TimeSpan.TicksPerSecond;
             ticks += fraction;
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                ticks += TimeSpan.TicksPerDay;
+                if ((ulong)ticks > DateTime.MaxTicks)
+                {
+                    value = default;
+                    return false;
+                }
+            }
+
             value = new DateTime(ticks: ticks, kind: kind);
             return true;
         }

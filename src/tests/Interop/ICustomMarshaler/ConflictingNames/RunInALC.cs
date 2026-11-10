@@ -6,12 +6,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using TestLibrary;
 using Xunit;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
 public class RunInALC
 {
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
     public static int TestEntryPoint()
     {
         try

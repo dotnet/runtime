@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "IsWellKnownSid", SetLastError = true)]
         internal static partial int IsWellKnownSid(
             byte[] sid,

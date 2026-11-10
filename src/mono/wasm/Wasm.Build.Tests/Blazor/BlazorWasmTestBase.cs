@@ -23,12 +23,21 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected readonly PublishOptions _defaultBlazorPublishOptions;
     private readonly BuildOptions _defaultBlazorBuildOptions;
 
-    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
+    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, string? targetFramework = null)
+                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, targetFramework ?? DefaultTargetFrameworkForBlazor))
     {
+        string blazorTargetFramework = targetFramework ?? DefaultTargetFrameworkForBlazor;
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
-        _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
-        _defaultBlazorBuildOptions = _defaultBuildOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
+        _defaultBlazorPublishOptions = _defaultPublishOptions with
+        {
+            ExtraMSBuildArgs = _blazorExtraMSBuildArgs,
+            TargetFramework = blazorTargetFramework
+        };
+        _defaultBlazorBuildOptions = _defaultBuildOptions with
+        {
+            ExtraMSBuildArgs = _blazorExtraMSBuildArgs,
+            TargetFramework = blazorTargetFramework
+        };
     }
 
     private Dictionary<string, string> blazorHomePageReplacements = new Dictionary<string, string>
@@ -49,35 +58,55 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 """ }
         };
 
+    private const int InteractionTimeoutMs = 60_000;
+
     private Func<RunOptions, IPage, Task>? _executeAfterLoaded = async (runOptions, page) =>
         {
             if (runOptions is BlazorRunOptions bro && bro.CheckCounter)
             {
-                await page.Locator("text=Counter").ClickAsync();
-                var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                // Wait for the Counter nav link to be visible, then use an extended click
+                // timeout so Playwright can wait for the element to become stable before
+                // clicking. On slow CI machines (Windows Docker containers), Blazor's
+                // layout reflows can otherwise trigger flaky TimeoutExceptions.
+                var counterLink = page.Locator("text=Counter");
+                await counterLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = InteractionTimeoutMs });
+                await counterLink.ClickAsync(new() { Timeout = InteractionTimeoutMs });
+
+                var status = page.Locator("p[role='status']");
+                await status.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = InteractionTimeoutMs });
+                var txt = await status.InnerHTMLAsync();
                 Assert.Equal("Current count: 0", txt);
 
-                await page.Locator("text=\"Click me\"").ClickAsync();
-                await Task.Delay(300);
-                txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-                Assert.Equal("Current count: 1", txt);
+                var clickMe = page.Locator("text=\"Click me\"");
+                await clickMe.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = InteractionTimeoutMs });
+                await clickMe.ClickAsync(new() { Timeout = InteractionTimeoutMs });
+
+                // Wait for the counter to reflect the click instead of a fixed delay
+                await page.WaitForFunctionAsync(
+                    """selector => document.querySelector(selector)?.textContent?.trim() === 'Current count: 1'""",
+                    "p[role='status']",
+                    new() { Timeout = InteractionTimeoutMs });
             }
         };
 
     protected void UpdateHomePage() =>
         UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
-    public void InitBlazorWasmProjectDir(string id, string? targetFramework = null)
+    public void InitBlazorWasmProjectDir(string id)
     {
-        targetFramework ??= DefaultTargetFrameworkForBlazor;
         InitPaths(id);
         if (Directory.Exists(_projectDir))
             Directory.Delete(_projectDir, recursive: true);
         Directory.CreateDirectory(_projectDir);
 
+        // Create an empty global.json so the SDK resolver doesn't walk up
+        // to the repo root's global.json which may contain relative "paths"
+        // entries that don't apply in the test directory.
+        File.WriteAllText(Path.Combine(_projectDir, "global.json"), "{}");
+
         File.WriteAllText(Path.Combine(_projectDir, "nuget.config"),
                             GetNuGetConfigWithLocalPackagesPath(
-                                        GetNuGetConfigPathFor(targetFramework),
+                                        GetNuGetConfigPath(),
                                         s_buildEnv.BuiltNuGetsPath));
 
         File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
@@ -198,7 +227,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     public override async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions) =>
         await base.RunForBuildWithDotnetRun(runOptions with {
             ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded,
-            ServerEnvironment = GetServerEnvironmentForBuild(runOptions.ServerEnvironment)
+            ServerEnvironment = GetServerEnvironment(runOptions.ServerEnvironment)
         });
 
     public override async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
@@ -206,10 +235,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
         });
 
-    private Dictionary<string, string>? GetServerEnvironmentForBuild(Dictionary<string, string>? originalServerEnv)
+    protected static Dictionary<string, string> GetServerEnvironment(Dictionary<string, string>? originalServerEnv)
     {
         var serverEnvironment = new Dictionary<string, string>();
-        if (originalServerEnv != null)
+        if (originalServerEnv is not null)
         {
             foreach (var kvp in originalServerEnv)
             {
@@ -217,7 +246,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             }
         }
         // avoid "System.IO.IOException: address already in use"
-        serverEnvironment.Add("ASPNETCORE_URLS", "http://127.0.0.1:0");
+        serverEnvironment.TryAdd("ASPNETCORE_URLS", "http://127.0.0.1:0");
         return serverEnvironment;
     }
 

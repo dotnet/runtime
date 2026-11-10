@@ -11,26 +11,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
     // Describes the import type of a Reflection-based import definition
     internal sealed class ImportType
     {
-        private static readonly Type LazyOfTType = typeof(Lazy<>);
-        private static readonly Type LazyOfTMType = typeof(Lazy<,>);
-        private static readonly Type ExportFactoryOfTType = typeof(ExportFactory<>);
-
         private readonly Type _type;
         private readonly bool _isAssignableCollectionType;
         private Type _contractType;
         private Func<Export, object>? _castSingleValue;
         private readonly bool _isOpenGeneric;
 
-        [ThreadStatic]
-        internal static Dictionary<Type, Func<Export, object>?>? _castSingleValueCache;
-
-        private static Dictionary<Type, Func<Export, object>?> CastSingleValueCache
-        {
-            get
-            {
-                return _castSingleValueCache ??= new Dictionary<Type, Func<Export, object>?>();
-            }
-        }
+        [field: ThreadStatic]
+        private static Dictionary<Type, Func<Export, object>?> CastSingleValueCache => field ??= new();
 
         public ImportType(Type type, ImportCardinality cardinality)
         {
@@ -157,14 +145,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private static bool IsLazyGenericType(Type genericType)
         {
-            return (genericType == LazyOfTType) || (genericType == LazyOfTMType);
+            return (genericType == typeof(Lazy<>)) || (genericType == typeof(Lazy<,>));
         }
 
         private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, out Func<Export, object>? castFunction)
         {
             castFunction = null;
 
-            if (genericType == LazyOfTType)
+            if (genericType == typeof(Lazy<>))
             {
                 if (!isOpenGeneric)
                 {
@@ -173,7 +161,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 return true;
             }
 
-            if (genericType == LazyOfTMType)
+            if (genericType == typeof(Lazy<,>))
             {
                 if (!isOpenGeneric)
                 {
@@ -182,7 +170,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 return true;
             }
 
-            if (genericType != null && IsDescendentOf(genericType, ExportFactoryOfTType))
+            if (genericType != null && IsDescendentOf(genericType, typeof(ExportFactory<>)))
             {
                 if (arguments.Length == 1)
                 {

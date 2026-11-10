@@ -72,22 +72,22 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 //
 // inline function to access/modify the CONTEXT
 //
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context) {
+inline LPVOID CORDbgGetIP(T_CONTEXT *context) {
     LIMITED_METHOD_CONTRACT;
 
     return (LPVOID)(size_t)(context->Eip);
 }
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID eip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Eip = (UINT32)(size_t)eip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->Esp);
+    return (CORDB_ADDRESS)(context->Esp);
 }
 
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID esp) {
@@ -108,14 +108,12 @@ inline LPVOID CORDbgGetFP(DT_CONTEXT* context)
     return (LPVOID)(UINT_PTR)context->Ebp;
 }
 
-// compare the EIP, ESP, and EBP
 inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT * pCtx2)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     if ((pCtx1->Eip == pCtx2->Eip) &&
-        (pCtx1->Esp == pCtx2->Esp) &&
-        (pCtx1->Ebp == pCtx2->Ebp))
+        (pCtx1->Esp == pCtx2->Esp))
     {
         return TRUE;
     }
@@ -165,7 +163,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -180,14 +178,14 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 }
 
 // Set the hardware trace flag.
-inline void SetSSFlag(DT_CONTEXT *context)
+inline void SetSSFlag(T_CONTEXT *context)
 {
     _ASSERTE(context != NULL);
     context->EFlags |= 0x100;
 }
 
 // Unset the hardware trace flag.
-inline void UnsetSSFlag(DT_CONTEXT *context)
+inline void UnsetSSFlag(T_CONTEXT *context)
 {
     SUPPORTS_DAC;
     _ASSERTE(context != NULL);
@@ -195,7 +193,7 @@ inline void UnsetSSFlag(DT_CONTEXT *context)
 }
 
 // return true if the hardware trace flag applied.
-inline bool IsSSFlagEnabled(DT_CONTEXT * context)
+inline bool IsSSFlagEnabled(T_CONTEXT * context)
 {
     _ASSERTE(context != NULL);
     return (context->EFlags & 0x100) != 0;

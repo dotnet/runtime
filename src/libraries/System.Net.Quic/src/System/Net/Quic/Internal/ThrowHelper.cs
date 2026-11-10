@@ -200,11 +200,11 @@ internal static class ThrowHelper
         }
     }
 
-    public static void ValidateTimeSpan(string argumentName, TimeSpan value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    public static void ValidateTimeSpan(string argumentName, TimeSpan value)
     {
         if (value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan)
         {
-            throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_timeout_use_gt_zero, propertyName));
+            throw new ArgumentOutOfRangeException(argumentName, value, SR.net_quic_timeout_use_gt_zero);
         }
     }
 

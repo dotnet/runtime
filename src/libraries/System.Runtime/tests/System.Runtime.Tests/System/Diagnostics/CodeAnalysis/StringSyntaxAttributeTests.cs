@@ -8,9 +8,12 @@ namespace System.Diagnostics.CodeAnalysis.Tests
     public sealed class StringSyntaxAttributeTests
     {
         [Theory]
+        [InlineData(StringSyntaxAttribute.CSharp)]
         [InlineData(StringSyntaxAttribute.DateTimeFormat)]
+        [InlineData(StringSyntaxAttribute.FSharp)]
         [InlineData(StringSyntaxAttribute.Json)]
         [InlineData(StringSyntaxAttribute.Regex)]
+        [InlineData(StringSyntaxAttribute.VisualBasic)]
         public void Ctor_Roundtrips(string syntax)
         {
             var attribute = new StringSyntaxAttribute(syntax);

@@ -61,6 +61,7 @@ target_link_libraries(
     %ProjectName%
     PRIVATE
     "-framework Foundation"
+    "-framework Network"
     "-framework Security"
     "-framework CryptoKit"
     "-framework UIKit"

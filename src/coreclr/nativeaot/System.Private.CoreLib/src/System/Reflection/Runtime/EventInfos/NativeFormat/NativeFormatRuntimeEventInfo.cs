@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Runtime.CompilerServices;
@@ -93,13 +91,9 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes);
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _event.CustomAttributes;
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
@@ -133,7 +127,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
 
         public sealed override int GetHashCode()
         {
-            return _eventHandle.GetHashCode();
+            return HashCode.Combine(_eventHandle, ContextTypeInfo, ReflectedType);
         }
 
         public sealed override Type EventHandlerType

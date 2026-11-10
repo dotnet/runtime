@@ -8,6 +8,9 @@
     <Compile Include="harness-helpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="revcomp-input25.txt" />
     <EmbeddedResource Include="revcomp-input25000.txt" />
   </ItemGroup>

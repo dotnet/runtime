@@ -66,19 +66,46 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileOptions.None)]
         [InlineData(FileOptions.Asynchronous)]
-        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation(FileOptions options)
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForRegularFiles(FileOptions options)
         {
             using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal((options & FileOptions.Asynchronous) != 0, handle.IsAsync);
+                Assert.Equal((options & FileOptions.Asynchronous) != 0 && IsAsyncIoSupportedForRegularFiles, handle.IsAsync);
 
                 // the following code exercises the code path where we don't know FileOptions used for opening the handle
                 // and instead we ask the OS about it
-                if (OperatingSystem.IsWindows()) // async file handles are a Windows concept
+                if (IsAsyncIoSupportedForRegularFiles)
                 {
                     SafeFileHandle createdFromIntPtr = new SafeFileHandle(handle.DangerousGetHandle(), ownsHandle: false);
                     Assert.Equal((options & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForPipes(bool useAsync)
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: useAsync, asyncWrite: useAsync);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                Verify(readHandle, useAsync);
+                Verify(writeHandle, useAsync);
+            }
+
+            static void Verify(SafeFileHandle fileHandle, bool useAsyncIO)
+            {
+                Assert.Equal(useAsyncIO, fileHandle.IsAsync);
+                Assert.Equal(FileHandleType.Pipe, fileHandle.Type);
+
+                // The following code exercises the code path where the information is fetched from OS.
+                using SafeFileHandle createdFromIntPtr = new(fileHandle.DangerousGetHandle(), ownsHandle: false);
+                Assert.Equal(useAsyncIO, createdFromIntPtr.IsAsync);
+                Assert.Equal(FileHandleType.Pipe, createdFromIntPtr.Type);
             }
         }
 

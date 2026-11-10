@@ -11,7 +11,7 @@
 /*
  *  Include Files
  */
-#include "eecontract.h"
+#include <contract.h>
 #include "argslot.h"
 #include "vars.hpp"
 #include "cor.h"
@@ -33,7 +33,6 @@
  *  Forward declarations
  */
 class   AppDomain;
-class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
@@ -49,7 +48,6 @@ class   MethodNameHash;
 class   MethodTable;
 class   Module;
 class   Object;
-class   Stub;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;
@@ -361,7 +359,7 @@ private:
             if (pVtable[slot] != NULL && pVtableMD[slot] == NULL)
                 pVtableMD[slot] = pParentMethodTable->GetMethodDescForSlot(slot);
             _ASSERTE((pVtable[slot] == NULL) ||
-                (MethodTable::GetMethodDescForSlotAddress(pVtable[slot]) == pVtableMD[slot]));
+                (NonVirtualEntry2MethodDesc(pVtable[slot]) == pVtableMD[slot]));
             return pVtableMD[slot];
         }
 #endif // DACCESS_COMPILE

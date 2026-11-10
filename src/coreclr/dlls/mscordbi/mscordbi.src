@@ -4,7 +4,7 @@
 LIBRARY         mscordbi
 
 EXPORTS
-    // COM-instantiation - for CorPublish
+    // COM-instantiation
     DllGetClassObjectInternal private
 
     // In-proc (Whidbey-style) creation path from the shim - CDIFV and it's replacement
@@ -25,5 +25,4 @@ EXPORTS
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     DllGetClassObject private
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
-
 

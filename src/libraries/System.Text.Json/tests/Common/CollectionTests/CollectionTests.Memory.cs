@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -57,7 +59,7 @@ namespace System.Text.Json.Serialization.Tests
             memoryOfIntClass.Memory = new int[] { 1, 2, 3 };
 
             string json = await Serializer.SerializeWrapper(memoryOfIntClass);
-            Assert.Equal(@"{""Memory"":[1,2,3]}", json);
+            Assert.Equal("""{"Memory":[1,2,3]}""", json);
         }
 
         [Fact]
@@ -67,13 +69,13 @@ namespace System.Text.Json.Serialization.Tests
             memoryOfIntClass.ReadOnlyMemory = new int[] { 1, 2, 3 };
 
             string json = await Serializer.SerializeWrapper(memoryOfIntClass);
-            Assert.Equal(@"{""ReadOnlyMemory"":[1,2,3]}", json);
+            Assert.Equal("""{"ReadOnlyMemory":[1,2,3]}""", json);
         }
 
         [Fact]
         public async Task DeserializeMemoryOfTClassAsync()
         {
-            string json = @"{""Memory"":[1,2,3]}";
+            string json = """{"Memory":[1,2,3]}""";
             MemoryOfTClass<int> memoryOfIntClass = await Serializer.DeserializeWrapper<MemoryOfTClass<int>>(json);
             AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }.AsSpan(), memoryOfIntClass.Memory.Span);
         }
@@ -81,7 +83,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeReadOnlyMemoryOfTClassAsync()
         {
-            string json = @"{""ReadOnlyMemory"":[1,2,3]}";
+            string json = """{"ReadOnlyMemory":[1,2,3]}""";
             ReadOnlyMemoryOfTClass<int> memoryOfIntClass = await Serializer.DeserializeWrapper<ReadOnlyMemoryOfTClass<int>>(json);
             AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }, memoryOfIntClass.ReadOnlyMemory.Span);
         }
@@ -126,16 +128,50 @@ namespace System.Text.Json.Serialization.Tests
             memoryOfByteClass.Memory = s_testData;
 
             string json = await Serializer.SerializeWrapper(memoryOfByteClass);
-            Assert.Equal(@"{""Memory"":""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==""}", json);
+            Assert.Equal("""{"Memory":"VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ=="}""", json);
         }
 
         [Fact]
         public async Task DeserializeMemoryByteClassAsync()
         {
-            string json = @"{""Memory"":""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==""}";
+            string json = """{"Memory":"VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ=="}""";
 
             MemoryOfTClass<byte> memoryOfByteClass = await Serializer.DeserializeWrapper<MemoryOfTClass<byte>>(json);
             AssertExtensions.SequenceEqual<byte>(s_testData.AsSpan(), memoryOfByteClass.Memory.Span);
+        }
+
+        [Fact]
+        public async Task DeserializeReadOnlyMemoryFromStreamWithManyNulls()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/118346
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            // Create an array of ~200 null elements to force resumptions with smallest buffer size
+            string json = $"[{string.Join(",", Enumerable.Repeat("null", 200))}]";
+            using var stream = new Utf8MemoryStream(json);
+            ReadOnlyMemory<string?> result = await StreamingSerializer.DeserializeWrapper<ReadOnlyMemory<string?>>(stream);
+
+            Assert.Equal(200, result.Length);
+        }
+
+        [Fact]
+        public async Task DeserializeMemoryFromStreamWithManyNulls()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/118346
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            // Create an array of ~200 null elements to force resumptions with smallest buffer size
+            string json = $"[{string.Join(",", Enumerable.Repeat("null", 200))}]";
+            using var stream = new Utf8MemoryStream(json);
+            Memory<string?> result = await StreamingSerializer.DeserializeWrapper<Memory<string?>>(stream);
+
+            Assert.Equal(200, result.Length);
         }
     }
 }

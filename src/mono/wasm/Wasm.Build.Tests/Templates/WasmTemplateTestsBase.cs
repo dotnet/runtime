@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,17 +22,20 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
-    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false";
+    private readonly string _extraBuildArgsBuild = "-p:WasmEnableHotReload=false";
+    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
-    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+
+    private static bool s_wasmTemplatesInstalled;
+    private static readonly object s_wasmTemplatesLock = new();
 
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
         _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
-        _defaultBuildOptions = new BuildOptions();
+        _defaultBuildOptions = new BuildOptions(ExtraMSBuildArgs: _extraBuildArgsBuild);
     }
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
@@ -71,14 +76,34 @@ public class WasmTemplateTestsBase : BuildTestBase
         (string projectName, string logPath, string nugetDir) =
             InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
-        if (addFrameworkArg)
-            extraArgs += $" -f {DefaultTargetFramework}";
+        if (addFrameworkArg) {
+            var defaultTarget = template switch
+            {
+                Template.BlazorWasm => DefaultTargetFrameworkForBlazorTemplate,
+                _ => DefaultTargetFramework,
+            };
+
+            extraArgs += $" -f {defaultTarget}";
+        }
+
+        EnsureWasmTemplatesInstalled();
+
+        // [diag] Log DOTNET_CLI_HOME inherited by the `dotnet new <template>` invocation.
+        // The template engine reads installed templates from this location; if it differs
+        // from the DOTNET_CLI_HOME used by EnsureWasmTemplatesInstalled, the template
+        // won't be found.
+        string inheritedCliHome = Environment.GetEnvironmentVariable("DOTNET_CLI_HOME") ?? "<unset>";
+        string envVarsCliHome = s_buildEnv.EnvVars.TryGetValue("DOTNET_CLI_HOME", out string? evCliHome) ? evCliHome : "<unset-in-EnvVars>";
+        _testOutput.WriteLine($"[diag] DOTNET_CLI_HOME inherited by `dotnet new {template.ToString().ToLower()}`: '{inheritedCliHome}' (buildEnv.EnvVars: '{envVarsCliHome}')");
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
+
+        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
 
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
@@ -104,16 +129,171 @@ public class WasmTemplateTestsBase : BuildTestBase
             _projectDir = Path.Combine(_projectDir, asset.RunnableProjectSubPath);
         }
         string projectFilePath = Path.Combine(_projectDir, $"{asset.Name}.csproj");
+
+        if (EnvironmentVariables.UseJavascriptBundler)
+        {
+            extraProperties +=
+            """
+                <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
+                <WasmFingerprintAssets>false</WasmFingerprintAssets>
+                <CompressionEnabled>false</CompressionEnabled>
+            """;
+        }
+
+        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        AddWasmOptProjectProperties(ref extraProperties);
+
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
 
-    private void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
+    protected void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
     {
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
+    }
+
+    protected static void AddWasmOptProjectProperties(ref string extraProperties)
+    {
+        if (EnvironmentVariables.UseWasmOpt)
+            extraProperties += "<WasmRunWasmOpt>true</WasmRunWasmOpt>";
+    }
+
+    protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    {
+        if (!s_buildEnv.IsCoreClrRuntime)
+            return;
+
+        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
+
+        extraProperties +=
+        """
+            <UseMonoRuntime>false</UseMonoRuntime>
+        """;
+        foreach (string targetFramework in new[] { DefaultTargetFramework, DefaultTargetFrameworkForBlazorTemplate }.Distinct())
+        {
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                         Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                  <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
+                  <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownCoreClrWebAssemblyPacks_{{targetFramework.Replace('.', '_')}}" BeforeTargets="ProcessFrameworkReferences"
+                        Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+                        <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</Crossgen2PackVersion>
+                    </KnownCrossgen2Pack>
+                    </ItemGroup>
+                </Target>
+            """;
+        }
+    }
+
+    /// <summary>
+    /// Installs the WASM browser template from the built nugets path
+    /// using <c>dotnet new install</c> if needed. This is a no-op when
+    /// the workload is already installed (templates come with the workload).
+    /// </summary>
+    private void EnsureWasmTemplatesInstalled()
+    {
+        if (s_buildEnv.IsWorkload)
+            return;
+
+        if (s_wasmTemplatesInstalled)
+            return;
+
+        lock (s_wasmTemplatesLock)
+        {
+            if (s_wasmTemplatesInstalled)
+                return;
+
+            string? templateNupkg = Directory.GetFiles(s_buildEnv.BuiltNuGetsPath, "Microsoft.NET.Runtime.WebAssembly.Templates.*.nupkg")
+                .Where(f => !f.EndsWith(".symbols.nupkg", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
+
+            if (templateNupkg is null)
+                throw new InvalidOperationException(
+                    $"Could not find WebAssembly template nupkg in '{s_buildEnv.BuiltNuGetsPath}'");
+
+            _testOutput.WriteLine($"[templates] Installing WASM templates from {templateNupkg} using {s_buildEnv.DotNet}");
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = s_buildEnv.DotNet,
+                Arguments = $"new install \"{templateNupkg}\" --force",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            // Use the inherited DOTNET_CLI_HOME if set (Helix workitems set this to a
+            // writable workitem path); otherwise fall back to TmpPath. Aligning with
+            // the inherited value ensures `dotnet new install` and the subsequent
+            // `dotnet new <template>` invocation share the same template cache —
+            // those `dotnet new <template>` calls (via DotNetCommand with
+            // useDefaultArgs:false) inherit DOTNET_CLI_HOME from the test process.
+            string? inheritedCliHome = Environment.GetEnvironmentVariable("DOTNET_CLI_HOME");
+            string dotnetCliHome = !string.IsNullOrWhiteSpace(inheritedCliHome)
+                ? inheritedCliHome
+                : Path.Combine(BuildEnvironment.TmpPath, ".dotnet-cli-home");
+            Directory.CreateDirectory(dotnetCliHome);
+            _testOutput.WriteLine($"[diag] DOTNET_CLI_HOME used by EnsureWasmTemplatesInstalled: '{dotnetCliHome}' (process inherited: '{inheritedCliHome ?? "<unset>"}')");
+
+            // Use the same isolated environment as the rest of the test suite
+            // (DOTNET_ROOT/DOTNET_INSTALL_DIR/PATH/NUGET_PACKAGES overrides), so
+            // `dotnet new install` picks up the harness's SDK and NuGet config.
+            foreach (var kvp in s_buildEnv.EnvVars)
+                psi.Environment[kvp.Key] = kvp.Value;
+            psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+            psi.Environment["DOTNET_CLI_HOME"] = dotnetCliHome;
+
+            using var process = Process.Start(psi)
+                ?? throw new InvalidOperationException("Failed to start 'dotnet new install' process");
+
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
+            const int processTimeoutMilliseconds = 120_000;
+            if (!process.WaitForExit(processTimeoutMilliseconds))
+            {
+                try
+                {
+                    if (!process.HasExited)
+                        process.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                process.WaitForExit();
+
+                string timedOutStdout = stdoutTask.GetAwaiter().GetResult();
+                string timedOutStderr = stderrTask.GetAwaiter().GetResult();
+
+                throw new InvalidOperationException(
+                    $"'dotnet new install' timed out after {processTimeoutMilliseconds} ms.\nStdout: {timedOutStdout}\nStderr: {timedOutStderr}");
+            }
+
+            string stdout = stdoutTask.GetAwaiter().GetResult();
+            string stderr = stderrTask.GetAwaiter().GetResult();
+
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException(
+                    $"'dotnet new install' failed with exit code {process.ExitCode}.\nStdout: {stdout}\nStderr: {stderr}");
+
+            _testOutput.WriteLine($"[templates] WASM template install completed successfully");
+            s_wasmTemplatesInstalled = true;
+        }
     }
 
     public virtual (string projectDir, string buildOutput) PublishProject(
@@ -150,7 +330,13 @@ public class WasmTemplateTestsBase : BuildTestBase
         BuildOptions buildOptions,
         bool? isNativeBuild = null,
         bool? wasmFingerprintDotnetJs = null) =>
-        BuildProjectCore(info, configuration, buildOptions, isNativeBuild, wasmFingerprintDotnetJs);
+        BuildProjectCore(
+            info,
+            configuration,
+            buildOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsBuild} {buildOptions.ExtraMSBuildArgs}" },
+            isNativeBuild,
+            wasmFingerprintDotnetJs
+        );
 
     private (string projectDir, string buildOutput) BuildProjectCore(
         ProjectInfo info,
@@ -169,12 +355,6 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        if (buildOptions.BootConfigFileName != null)
-        {
-            // Omit implicit default
-            buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
-        }
-
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
         if (buildOptions.UseCache)
@@ -184,6 +364,23 @@ public class WasmTemplateTestsBase : BuildTestBase
         {
             res.EnsureFailed();
             return (_projectDir, res.Output);
+        }
+
+        if (EnvironmentVariables.UseJavascriptBundler && buildOptions.IsPublish)
+        {
+            string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: true), ".."));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "package.json"), Path.Combine(publicWwwrootDir, "package.json"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "rollup.config.mjs"), Path.Combine(publicWwwrootDir, "rollup.config.mjs"));
+
+            string npmPath = s_isWindows ? @"C:\Program Files\nodejs\npm.cmd" : "/bin/npm";
+            ToolCommand npmCommand = new ToolCommand(npmPath, _testOutput).WithWorkingDirectory(publicWwwrootDir);
+            npmCommand.Execute("install").EnsureSuccessful();
+            npmCommand.Execute("run build").EnsureSuccessful();
+
+            string publicDir = Path.Combine(publicWwwrootDir, "public");
+            File.Copy(Path.Combine(publicWwwrootDir, "index.html"), Path.Combine(publicDir, "index.html"));
+
+            buildOptions = buildOptions with { AssertAppBundle = false };
         }
 
         if (buildOptions.AssertAppBundle)
@@ -208,7 +405,9 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void UpdateFile(string pathRelativeToProjectDir, Dictionary<string, string> replacements)
     {
         var path = Path.Combine(_projectDir, pathRelativeToProjectDir);
-        string text = File.ReadAllText(path);
+        // Normalize line endings so that replacement anchors containing '\n' match regardless of
+        // whether the file was checked out with LF or CRLF (e.g. on Windows).
+        string text = File.ReadAllText(path).Replace("\r\n", "\n");
         foreach (var replacement in replacements)
         {
             text = StringReplaceWithAssert(text, replacement.Key, replacement.Value);
@@ -237,7 +436,21 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    /// <summary>
+    /// Replaces the project's wwwroot/main.js with a minimal version that just calls
+    /// runMainAndExit, without any JS interop calls (no setModuleImports / getAssemblyExports).
+    /// This is needed for tests whose managed program does not use JS interop, because on
+    /// CoreCLR-Wasm the trimmer drops System.Runtime.InteropServices.JavaScript when nothing
+    /// roots it, causing the template main.js to fail at startup with
+    /// Arg_TargetInvocationException out of JSHostImplementation.BindAssemblyExports.
+    /// </summary>
+    protected void ReplaceMainJsWithMinimalRunMain()
+    {
+        string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "minimal_main.js"), mainJsPath, overwrite: true);
+    }
+
+    protected void UpdateBrowserMainJs(string? targetFramework = null, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -248,16 +461,20 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                    : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    ? $".withConfig({{ forwardConsole: {forwardConsole.ToString().ToLowerInvariant()}, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }}).create()"
+                    : ".withConfig({ appendElementOnExit: true, logExitCode: true }).create()"
             );
 
-        // dotnet.run() is used instead of runMain() in net9.0+
-        if (targetFrameworkVersion.Major >= 9)
+        if (targetFrameworkVersion.Major >= 11)
+        {
+            // runMainAndExit() is used instead of runMain() in net11.0+
+            updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "runMainAndExit()");
+        }
+        else if (targetFrameworkVersion.Major >= 9)
+        {
+            // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
-
-        updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
-
+        }
 
         File.WriteAllText(mainJsPath, updatedMainJsContent);
     }
@@ -270,20 +487,30 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.WebServer });
 
-    private async Task<RunResult> BrowserRun(RunOptions runOptions) => runOptions.Host switch
+    private async Task<RunResult> BrowserRun(RunOptions runOptions)
     {
-        RunHost.DotnetRun =>
-                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
+        if (EnvironmentVariables.UseJavascriptBundler)
+        {
+            runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
+        }
 
-        RunHost.WebServer =>
-                await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                    string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
-                        Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
-                        runOptions.CustomBundleDir,
-                     runOptions),
+        EnsureXHarnessAvailable();
 
-        _ => throw new NotImplementedException(runOptions.Host.ToString())
-    };
+        return runOptions.Host switch
+        {
+            RunHost.DotnetRun =>
+                    await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
+
+            RunHost.WebServer =>
+                    await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                        string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
+                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
+                            runOptions.CustomBundleDir,
+                         runOptions),
+
+            _ => throw new NotImplementedException(runOptions.Host.ToString())
+        };
+    }
 
     private async Task<RunResult> BrowserRunTest(string runArgs,
                                     string workingDirectory,
@@ -298,6 +525,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
         ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
+        return await BrowserRun(cmd, runArgs, runOptions);
+    }
+
+    protected async Task<RunResult> BrowserRun(ToolCommand cmd, string runArgs, RunOptions runOptions)
+    {
         var query = runOptions.BrowserQueryString ?? new NameValueCollection();
         if (runOptions.AOT)
         {
@@ -324,7 +556,20 @@ public class WasmTemplateTestsBase : BuildTestBase
             modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });
+
+        if (runOptions is BlazorRunOptions)
+        {
+            // DOMContentLoaded fires as soon as the initial HTML is parsed,
+            // but Blazor WebAssembly still needs to download the runtime,
+            // assemblies, and render the component tree. Wait for actual
+            // Blazor content to appear before interacting with the page.
+            // The ".page" class comes from MainLayout.razor and is only
+            // present after Blazor has rendered (client-side apps) or is
+            // included in the initial server-rendered HTML (Blazor Web apps).
+            _testOutput.WriteLine("Waiting for Blazor to finish rendering");
+            await page.Locator(".page").WaitForAsync(new() { Timeout = 1 * 60 * 1000 });
+        }
 
         if (runOptions.ExecuteAfterLoaded is not null)
         {
@@ -385,11 +630,11 @@ public class WasmTemplateTestsBase : BuildTestBase
     public string GetObjDir(Configuration config, string? framework = null, string? projectDir = null) =>
         _provider.GetObjDir(config, framework ?? DefaultTargetFramework, projectDir);
 
-    public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
-        _provider.GetBuildPaths(config, forPublish);
+    public BuildPaths GetBuildPaths(Configuration config, bool forPublish, string? projectDir = null) =>
+        _provider.GetBuildPaths(config, forPublish, projectDir);
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged) =>
-        _provider.GetFilesTable(projectName, isAOT, paths, unchanged);
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null) =>
+        _provider.GetFilesTable(projectName, isAOT, paths, unchanged, bootConfigDir);
 
     public IDictionary<string, FileStat> StatFiles(IDictionary<string, (string fullPath, bool unchanged)> fullpaths) =>
         _provider.StatFiles(fullpaths);

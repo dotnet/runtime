@@ -40,7 +40,8 @@ namespace System.Net.Http
                 // we register for change notifications so we can react to changes during lifetime.
                 if (Interop.Advapi32.RegNotifyChangeKeyValue(_internetSettingsRegistry.Handle, true, RegistrationFlags, _waitHandle.SafeWaitHandle, true) == 0)
                 {
-                    _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(_waitHandle, RegistryChangeNotificationCallback, this, -1, false);
+                    // The shared proxy must not retain the initializing request's ExecutionContext.
+                    _registeredWaitHandle = ThreadPool.UnsafeRegisterWaitForSingleObject(_waitHandle, RegistryChangeNotificationCallback, this, -1, false);
                 }
             }
 
@@ -119,11 +120,11 @@ namespace System.Net.Http
                     {
                         // Strip leading spaces and scheme if any.
                         while (idx < proxyHelper.ProxyBypass.Length && proxyHelper.ProxyBypass[idx] == ' ') { idx += 1; };
-                        if (string.Compare(proxyHelper.ProxyBypass, idx, "http://", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (proxyHelper.ProxyBypass.AsSpan(idx).StartsWith("http://", StringComparison.OrdinalIgnoreCase))
                         {
                             idx += 7;
                         }
-                        else if (string.Compare(proxyHelper.ProxyBypass, idx, "https://", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                        else if (proxyHelper.ProxyBypass.AsSpan(idx).StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                         {
                             idx += 8;
                         }
@@ -142,7 +143,7 @@ namespace System.Net.Http
                             // Empty string.
                             tmp = null;
                         }
-                        else if (string.Compare(proxyHelper.ProxyBypass, start, "<local>", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
+                        else if (proxyHelper.ProxyBypass.AsSpan(start).StartsWith("<local>", StringComparison.OrdinalIgnoreCase))
                         {
                             bypassLocal = true;
                             tmp = null;

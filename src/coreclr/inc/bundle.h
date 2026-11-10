@@ -11,7 +11,7 @@
 #define _BUNDLE_H_
 
 #include <sstring.h>
-#include "coreclrhost.h"
+#include <coreclrhost.h>
 
 class Bundle;
 

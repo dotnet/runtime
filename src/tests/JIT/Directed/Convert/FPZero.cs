@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+namespace JitTest_Directed_Convert_FPZero;
+
 /*
  * Assertion prop was not taking into account the fact that +0.0 and -0.0 compare equal but are not the same value.
  * Just need to turn of assertion prop for all floating point because equality doesn't mean the same...
@@ -17,6 +19,7 @@ using Xunit;
 
 public class MyClass
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

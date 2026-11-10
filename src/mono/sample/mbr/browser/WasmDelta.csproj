@@ -31,14 +31,10 @@
   <Target Name="PrepareDeltasForWasmApp" DependsOnTargets="Build;CompileDiff;ComputeDeltaFileOutputNames">
     <ItemGroup>
       <WasmFilesToIncludeInFileSystem Include="@(_DeltaFileForPublish)">
-        <TargetPath>\%(_DeltaFileForPublish.Filename)%(_DeltaFileForPublish.Extension)</TargetPath>
+        <TargetPath>%(_DeltaFileForPublish.Filename)%(_DeltaFileForPublish.Extension)</TargetPath>
       </WasmFilesToIncludeInFileSystem>
     </ItemGroup>
   </Target>
-
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs"/>

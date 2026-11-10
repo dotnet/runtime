@@ -388,6 +388,7 @@ namespace System.IO.Strategies
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadAsyncSlowPath(Task semaphoreLockTask, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
@@ -671,6 +672,7 @@ namespace System.IO.Strategies
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask WriteAsyncSlowPath(Task semaphoreLockTask, ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
@@ -1026,15 +1028,12 @@ namespace System.IO.Strategies
             if (_buffer is null)
             {
                 AllocateBuffer();
-            }
-        }
 
-        // TODO https://github.com/dotnet/roslyn/issues/47896: should be local function in EnsureBufferAllocated above.
-        [MemberNotNull(nameof(_buffer))]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void AllocateBuffer()
-        {
-            Interlocked.CompareExchange(ref _buffer, GC.AllocateUninitializedArray<byte>(_bufferSize), null);
+                [MemberNotNull(nameof(_buffer))]
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                void AllocateBuffer() =>
+                    Interlocked.CompareExchange(ref _buffer, GC.AllocateUninitializedArray<byte>(_bufferSize), null);
+            }
         }
 
         [Conditional("DEBUG")]

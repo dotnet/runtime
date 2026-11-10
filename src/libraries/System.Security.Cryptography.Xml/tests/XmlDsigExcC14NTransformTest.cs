@@ -19,6 +19,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Resolvers;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -339,6 +340,61 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(ExcC14NSpecExample6Output, res);
         }
 
+#if NET
+        [Fact]
+        public void ExcC14N_AttributeLimit_DefaultBoundary_RendersUpToLimitThenThrows()
+        {
+            TestHelpers.ExecuteTransform(BuildUtilizedPrefixes(512), new XmlDsigExcC14NTransform());
+
+            Assert.Throws<CryptographicException>(
+                () => TestHelpers.ExecuteTransform(BuildUtilizedPrefixes(513), new XmlDsigExcC14NTransform()));
+
+            static string BuildUtilizedPrefixes(int count)
+            {
+                StringBuilder element = new StringBuilder("<doc");
+                for (int i = 0; i < count; i++)
+                {
+                    element.Append(FormattableString.Invariant($" xmlns:p{i:D4}=\"urn:{i}\""));
+                }
+                for (int i = 0; i < count; i++)
+                {
+                    element.Append(FormattableString.Invariant($" p{i:D4}:a=\"{i}\""));
+                }
+
+                return element.Append("></doc>").ToString();
+            }
+        }
+
+        [Fact]
+        public void ExcC14N_NamespaceLimit_InclusivePrefixList_RendersUpToLimitThenThrows()
+        {
+            Execute(512);
+
+            Assert.Throws<CryptographicException>(() => Execute(513));
+
+            static void Execute(int count)
+            {
+                StringBuilder element = new StringBuilder("<doc");
+                StringBuilder prefixes = new StringBuilder();
+                for (int i = 0; i < count; i++)
+                {
+                    element.Append(FormattableString.Invariant($" xmlns:p{i:D4}=\"urn:{i}\""));
+
+                    if (prefixes.Length > 0)
+                    {
+                        prefixes.Append(' ');
+                    }
+
+                    prefixes.Append(FormattableString.Invariant($"p{i:D4}"));
+                }
+
+                element.Append("></doc>");
+
+                TestHelpers.ExecuteTransform(element.ToString(), new XmlDsigExcC14NTransform(prefixes.ToString()));
+            }
+        }
+#endif
+
         private string ExecuteXmlDSigExcC14NTransform(string InputXml, XmlResolver resolver = null)
         {
             XmlDocument doc = new XmlDocument();
@@ -543,6 +599,218 @@ namespace System.Security.Cryptography.Xml.Tests
         public void GetDigestedOutput_Null()
         {
             Assert.Throws<NullReferenceException>(() => new XmlDsigExcC14NTransform().GetDigestedOutput(null));
+        }
+
+#if NET
+        [Theory]
+        [InlineData(64, false)]   // at the default limit - should pass
+        [InlineData(65, true)]    // one over the default limit - should fail
+        [InlineData(1000, true)]  // way over - should fail
+        public void GetOutput_DepthLimit(int depth, bool shouldThrow)
+        {
+            XmlDocument doc = CreateDeepXmlDocument(depth);
+            XmlDsigExcC14NTransform transform = new XmlDsigExcC14NTransform();
+            transform.LoadInput(doc);
+
+            if (shouldThrow)
+            {
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => transform.GetOutput());
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+            }
+            else
+            {
+                Stream s = (Stream)transform.GetOutput();
+                Assert.NotNull(s);
+            }
+        }
+
+        [Theory]
+        [InlineData(64, false)]   // at the default limit - should pass
+        [InlineData(65, true)]    // one over the default limit - should fail
+        [InlineData(1000, true)]  // way over - should fail
+        public void GetDigestedOutput_DepthLimit(int depth, bool shouldThrow)
+        {
+            XmlDocument doc = CreateDeepXmlDocument(depth);
+            XmlDsigExcC14NTransform transform = new XmlDsigExcC14NTransform();
+            transform.LoadInput(doc);
+            using SHA256 hash = SHA256.Create();
+
+            if (shouldThrow)
+            {
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => transform.GetDigestedOutput(hash));
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+            }
+            else
+            {
+                byte[] result = transform.GetDigestedOutput(hash);
+                Assert.NotNull(result);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetOutput_CustomDepthLimit_BoundaryAccuracy()
+        {
+            // Verify the limit is exact: depth 100 passes with limit 100, depth 101 fails.
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData("System.Security.Cryptography.Xml.DangerousMaxRecursionDepth", 100);
+
+                XmlDocument passDoc = CreateDeepXmlDocument(100);
+                XmlDsigExcC14NTransform passTransform = new XmlDsigExcC14NTransform();
+                passTransform.LoadInput(passDoc);
+                Stream s = (Stream)passTransform.GetOutput(); // Should not throw
+                Assert.NotNull(s);
+
+                XmlDocument failDoc = CreateDeepXmlDocument(101);
+                XmlDsigExcC14NTransform failTransform = new XmlDsigExcC14NTransform();
+                failTransform.LoadInput(failDoc);
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => failTransform.GetOutput());
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+            }).Dispose();
+        }
+
+        private static XmlDocument CreateDeepXmlDocument(int depth)
+        {
+            MemoryStream ms = new();
+            using (XmlWriter xw = XmlWriter.Create(ms))
+            {
+                xw.WriteStartDocument();
+                xw.WriteStartElement("Root");
+                for (int i = 0; i < depth; i++)
+                {
+                    xw.WriteStartElement("a");
+                }
+                for (int i = 0; i < depth; i++)
+                {
+                    xw.WriteEndElement();
+                }
+                xw.WriteEndElement();
+                xw.WriteEndDocument();
+            }
+            ms.Position = 0;
+            XmlDocument doc = new XmlDocument();
+            doc.PreserveWhitespace = true;
+            doc.Load(ms);
+            return doc;
+        }
+
+        private const int DeepInputDepth = 100000;
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DeepStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                byte[] payload = Encoding.UTF8.GetBytes(BuildDeepXml(DeepInputDepth));
+                Assert.Throws<CryptographicException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(payload);
+                    XmlDsigExcC14NTransform transform = new XmlDsigExcC14NTransform();
+                    transform.LoadInput(ms);
+                    transform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        private static string BuildDeepXml(int depth)
+        {
+            StringBuilder sb = new StringBuilder(depth * 7 + 1);
+            for (int i = 0; i < depth; i++)
+                sb.Append("<a>");
+            sb.Append('x');
+            for (int i = 0; i < depth; i++)
+                sb.Append("</a>");
+            return sb.ToString();
+        }
+
+        private const string DtdPayload = "<!DOCTYPE r []><r>x</r>";
+        private const string CryptoXmlAllowDtdProcessingAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing";
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.Throws<XmlException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                    XmlDsigExcC14NTransform transform = new XmlDsigExcC14NTransform();
+                    transform.LoadInput(ms);
+                    transform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_WithOptIn_Succeeds()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
+                using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                XmlDsigExcC14NTransform transform = new XmlDsigExcC14NTransform();
+                transform.LoadInput(ms);
+                Assert.NotNull(transform.GetOutput());
+            }).Dispose();
+        }
+#endif
+
+        [Fact]
+        public static void ExclusiveC14n_DoesNotCoverNamespacePrefixUsedOnlyInAttributeValue()
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                string one = SignAndDigest(rsa, QNameAttributeDocument("urn:one"), new XmlDsigExcC14NTransform(), out XmlDocument signed);
+                string two = SignAndDigest(rsa, QNameAttributeDocument("urn:two"), new XmlDsigExcC14NTransform(), out _);
+                string inclusiveOne = SignAndDigest(rsa, QNameAttributeDocument("urn:one"), new XmlDsigC14NTransform(), out _);
+                string inclusiveTwo = SignAndDigest(rsa, QNameAttributeDocument("urn:two"), new XmlDsigC14NTransform(), out _);
+
+                XmlDocument rebound = LoadPreservingWhitespace(signed.OuterXml.Replace("urn:one", "urn:two"));
+
+                Assert.Equal(one, two);
+                Assert.NotEqual(inclusiveOne, inclusiveTwo);
+                Assert.True(VerifyReboundSignature(rebound, rsa));
+                Assert.Equal("{urn:two}T", ResolveQName((XmlElement)rebound.GetElementsByTagName("data")[0], "type", "http://www.w3.org/2001/XMLSchema-instance"));
+            }
+        }
+
+        private static string QNameAttributeDocument(string uri) =>
+            "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+            "<data Id=\"d1\" xmlns:a=\"" + uri + "\" xsi:type=\"a:T\">value</data></root>";
+
+        private static string SignAndDigest(RSA rsa, string xml, Transform transform, out XmlDocument doc)
+        {
+            doc = LoadPreservingWhitespace(xml);
+            SignedXml signedXml = new SignedXml(doc) { SigningKey = rsa };
+            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
+            Reference reference = new Reference("#d1") { DigestMethod = SignedXml.XmlDsigSHA256Url };
+            reference.AddTransform(transform);
+            signedXml.AddReference(reference);
+            signedXml.ComputeSignature();
+            doc.DocumentElement.AppendChild(doc.ImportNode(signedXml.GetXml(), true));
+            return doc.GetElementsByTagName("DigestValue", SignedXml.XmlDsigNamespaceUrl)[0].InnerText;
+        }
+
+        private static bool VerifyReboundSignature(XmlDocument doc, RSA rsa)
+        {
+            SignedXml signedXml = new SignedXml(doc);
+            signedXml.LoadXml((XmlElement)doc.GetElementsByTagName("Signature", SignedXml.XmlDsigNamespaceUrl)[0]);
+            return signedXml.CheckSignature(rsa);
+        }
+
+        private static string ResolveQName(XmlElement element, string localName, string namespaceUri)
+        {
+            string value = element.GetAttribute(localName, namespaceUri);
+            int colon = value.IndexOf(':');
+            string prefix = value.Substring(0, colon);
+            return "{" + element.GetNamespaceOfPrefix(prefix) + "}" + value.Substring(colon + 1);
+        }
+
+        private static XmlDocument LoadPreservingWhitespace(string xml)
+        {
+            XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
+            doc.LoadXml(xml);
+            return doc;
         }
     }
 }

@@ -16,6 +16,19 @@ namespace System.IO.Compression
         private int _bufferOffset;
         private int _bufferCount;
         private bool _nonEmptyInput;
+        private volatile bool _decompressionFinished;
+
+        /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and decompression options, and optionally leaves the stream open.</summary>
+        /// <param name="stream">The stream from which data to decompress is read.</param>
+        /// <param name="decompressionOptions">The Brotli options for fine tuning the decompression stream.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="decompressionOptions"/> is <see langword="null" />.</exception>
+        public BrotliStream(Stream stream, BrotliDecompressionOptions decompressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Decompress, leaveOpen)
+        {
+            ArgumentNullException.ThrowIfNull(decompressionOptions);
+
+            _decoder.SetMaxWindowLog2(decompressionOptions.MaxWindowLog2);
+        }
 
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
         /// <param name="buffer">The array used to store decompressed bytes.</param>
@@ -61,7 +74,9 @@ namespace System.IO.Compression
             EnsureNotDisposed();
 
             int bytesWritten;
-            while (!TryDecompress(buffer, out bytesWritten))
+            OperationStatus lastResult;
+
+            while (!TryDecompress(buffer, out bytesWritten, out lastResult))
             {
                 int bytesRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
                 if (bytesRead <= 0)
@@ -78,6 +93,13 @@ namespace System.IO.Compression
                 {
                     ThrowInvalidStream();
                 }
+            }
+
+            // When decompression finishes, rewind the stream to the exact end of compressed data
+            if (bytesWritten == 0 && lastResult == OperationStatus.Done && !_decompressionFinished && _stream.CanSeek)
+            {
+                TryRewindStream(_stream);
+                _decompressionFinished = true;
             }
 
             return bytesWritten;
@@ -149,7 +171,9 @@ namespace System.IO.Compression
                 try
                 {
                     int bytesWritten;
-                    while (!TryDecompress(buffer.Span, out bytesWritten))
+                    OperationStatus lastResult;
+
+                    while (!TryDecompress(buffer.Span, out bytesWritten, out lastResult))
                     {
                         int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
                         if (bytesRead <= 0)
@@ -168,6 +192,13 @@ namespace System.IO.Compression
                         }
                     }
 
+                    // When decompression finishes, rewind the stream to the exact end of compressed data
+                    if (bytesWritten == 0 && lastResult == OperationStatus.Done && !_decompressionFinished && _stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
+                        _decompressionFinished = true;
+                    }
+
                     return bytesWritten;
                 }
                 finally
@@ -180,11 +211,12 @@ namespace System.IO.Compression
         /// <summary>Tries to decode available data into the destination buffer.</summary>
         /// <param name="destination">The destination buffer for the decompressed data.</param>
         /// <param name="bytesWritten">The number of bytes written to destination.</param>
+        /// <param name="lastResult">The result of the last decompress operation.</param>
         /// <returns>true if the caller should consider the read operation completed; otherwise, false.</returns>
-        private bool TryDecompress(Span<byte> destination, out int bytesWritten)
+        private bool TryDecompress(Span<byte> destination, out int bytesWritten, out OperationStatus lastResult)
         {
             // Decompress any data we may have in our buffer.
-            OperationStatus lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
+            lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
             if (lastResult == OperationStatus.InvalidData)
             {
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);

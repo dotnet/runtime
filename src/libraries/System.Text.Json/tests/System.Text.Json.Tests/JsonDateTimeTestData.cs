@@ -14,6 +14,8 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"0997-07-16\"", "0997-07-16" };
             yield return new object[] { "\"1997-07-16\"", "1997-07-16" };
             yield return new object[] { "\"1997-07-16T19:20\"", "1997-07-16T19:20" };
+            // Per ISO 8601, 24:00 represents end of a calendar day (same instant as next day's 00:00)
+            yield return new object[] { "\"1997-07-16T24:00\"", "1997-07-17T00:00" };
             yield return new object[] { "\"1997-07-16T19:20:30\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.45\"", "1997-07-16T19:20:30.45" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555\"", "1997-07-16T19:20:30.4555555" };
@@ -139,8 +141,8 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19: 20:30\"" };
             yield return new object[] { "\"1997-07-16 19:20:30\"" };
             yield return new object[] { "\"1997-07-16T19:2030\"" };
-            // 24:00 is not supported per ISO 8601-1:2019
-            yield return new object[] { "\"1997-07-16T24:00\"" };
+            // 24:00 with non-zero minutes is invalid
+            yield return new object[] { "\"1997-07-16T24:01\"" };
 
             // Invalid YYYY-MM-DDThh:mm:ss
             yield return new object[] { "\"1997-07-16T19:20a\"" };

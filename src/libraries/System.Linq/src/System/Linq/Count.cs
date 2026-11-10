@@ -20,7 +20,7 @@ namespace System.Linq
                 return collectionoft.Count;
             }
 
-            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
+            if (source is Iterator<TSource> iterator)
             {
                 return iterator.GetCount(onlyIfCheap: false);
             }
@@ -113,7 +113,7 @@ namespace System.Linq
                 return true;
             }
 
-            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
+            if (source is Iterator<TSource> iterator)
             {
                 int c = iterator.GetCount(onlyIfCheap: true);
                 if (c >= 0)

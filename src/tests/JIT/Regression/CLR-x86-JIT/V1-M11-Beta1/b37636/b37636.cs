@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b37636
 {
     using System;
 
@@ -11,6 +11,7 @@ namespace Test
     {
         static float[] m_af = new float[2];
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

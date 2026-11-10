@@ -22,7 +22,7 @@
 #if defined(FEATURE_METADATA_IN_VM)
 
 LOADEDMODULES * LOADEDMODULES::s_pLoadedModules = NULL;
-UTSemReadWrite * LOADEDMODULES::m_pSemReadWrite = NULL;
+minipal_rwlock * LOADEDMODULES::m_pReadWriteLock = NULL;
 
 //---------------------------------------------------------------------------------------
 //
@@ -37,27 +37,29 @@ LOADEDMODULES::InitializeStatics()
     {
         // Initialize global read-write lock
         {
-            NewHolder<UTSemReadWrite> pSemReadWrite = new (nothrow) UTSemReadWrite();
-            IfNullGo(pSemReadWrite);
-            IfFailGo(pSemReadWrite->Init());
+            minipal_rwlock *pReadWriteLock = NULL;
+            IfFailGo(CreateMDReadWriteLock(&pReadWriteLock));
 
-            if (InterlockedCompareExchangeT<UTSemReadWrite *>(&m_pSemReadWrite, pSemReadWrite, NULL) == NULL)
+            if (InterlockedCompareExchangeT<minipal_rwlock *>(&m_pReadWriteLock, pReadWriteLock, NULL) == NULL)
             {   // We won the initialization race
-                pSemReadWrite.SuppressRelease();
+                pReadWriteLock = NULL;
             }
+
+            DestroyMDReadWriteLock(pReadWriteLock);
         }
 
         // Initialize the global instance
         {
-            NewHolder<LOADEDMODULES> pLoadedModules = new (nothrow) LOADEDMODULES();
+            NewHolder<LOADEDMODULES> pLoadedModules(new (nothrow) LOADEDMODULES());
             IfNullGo(pLoadedModules);
 
             {
-                LOCKWRITE();
+                CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
+                IfFailGo(lockHolder.LockWrite());
 
                 if (VolatileLoad(&s_pLoadedModules) == NULL)
                 {
-                    VolatileStore(&s_pLoadedModules, pLoadedModules.Extract());
+                    VolatileStore(&s_pLoadedModules, pLoadedModules.Detach());
                 }
             }
         }
@@ -78,7 +80,8 @@ HRESULT LOADEDMODULES::AddModuleToLoadedList(RegMeta * pRegMeta)
     IfFailGo(InitializeStatics());
 
     {
-        LOCKWRITE();
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
+        IfFailGo(lockHolder.LockWrite());
 
         ppRegMeta = s_pLoadedModules->Append();
         IfNullGo(ppRegMeta);
@@ -110,7 +113,8 @@ BOOL LOADEDMODULES::RemoveModuleFromLoadedList(RegMeta * pRegMeta)
     IfFailGo(InitializeStatics());
 
     {
-        LOCKWRITE();
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
+        IfFailGo(lockHolder.LockWrite());
 
         // Search for this module in list of loaded modules.
         int count = s_pLoadedModules->Count();
@@ -174,7 +178,8 @@ BOOL LOADEDMODULES::IsEntryInList(
     IfFailGo(InitializeStatics());
 
     {
-        LOCKREAD();
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
+        IfFailGo(lockHolder.LockRead());
 
         // Loop through each loaded modules
         int count = s_pLoadedModules->Count();
@@ -219,7 +224,8 @@ LOADEDMODULES::ResolveTypeRefWithLoadedModules(
     IfFailGo(InitializeStatics());
 
     {
-        LOCKREAD();
+        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(NULL));
+        IfFailGo(lockHolder.LockRead());
 
         // Get the Nesting hierarchy.
         IfFailGo(ImportHelper::GetNesterHierarchy(
@@ -236,11 +242,11 @@ LOADEDMODULES::ResolveTypeRefWithLoadedModules(
 
             {
                 // Do not lock the TypeRef RegMeta (again), as it is already locked for read by the caller.
-                // The code:UTSemReadWrite will block ReadLock even for thread holding already the read lock if
-                // some other thread is waiting for WriteLock on the same lock. That would cause dead-lock if we
-                // try to lock for read again here.
-                CMDSemReadWrite cSemRegMeta((pRegMeta == pTypeRefRegMeta) ? NULL : pRegMeta->GetReaderWriterLock());
-                IfFailGo(cSemRegMeta.LockRead());
+                // The read-write lock may block a recursive read acquisition while a writer is waiting.
+                CMDReadWriteLock regMetaLock(
+                    (pRegMeta == pTypeRefRegMeta) ? NULL : pRegMeta->GetReaderWriterLock()
+                    COMMA_INDEBUG(pRegMeta->GetMiniMd()));
+                IfFailGo(regMetaLock.LockRead());
 
                 hr = ImportHelper::FindNestedTypeDef(
                     pRegMeta->GetMiniMd(),

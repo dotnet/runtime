@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Repeated caller-sink reports, rejection paths, and lifecycle isolation. -->
+  <PropertyGroup>
+    <AssemblyName>Android.Device_Emulator.InProcCrashReport.OnDemand.Test</AssemblyName>
+    <MainLibraryFileName>Android.Device_Emulator.InProcCrashReport.OnDemand.Test.dll</MainLibraryFileName>
+    <DefineConstants>$(DefineConstants);INPROC_SCENARIO_ONDEMAND</DefineConstants>
+  </PropertyGroup>
+
+  <Import Project="../Shared/InProcCrashReport.Common.props" />
+</Project>

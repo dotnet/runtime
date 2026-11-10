@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Xunit;
@@ -13,6 +14,25 @@ namespace System.Text.Json.Serialization.Tests
     {
         private static readonly JsonSerializerOptions s_serializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
         private static readonly JsonSerializerSettings s_newtonsoftSerializerSettingsPreserve = new JsonSerializerSettings { PreserveReferencesHandling = PreserveReferencesHandling.All, ReferenceLoopHandling = ReferenceLoopHandling.Serialize };
+
+        // Asserts that the serializer output matches the Newtonsoft.Json reference-preservation baseline.
+        // The Newtonsoft.Json baseline is reflection-based (its APIs are annotated RequiresUnreferencedCode
+        // and RequiresDynamicCode), so it is only exercised when dynamic code is supported. The runtime guard
+        // makes the call unreachable under Native AOT (where PlatformDetection.IsReflectionEmitSupported is
+        // false), while still running the baseline in the non-AOT source generator configuration. The trim/AOT
+        // analyzers cannot see through the guard, so the warnings are suppressed here.
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            Justification = "The Newtonsoft.Json baseline only runs when dynamic code is supported, guarded by PlatformDetection.IsReflectionEmitSupported.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+            Justification = "The Newtonsoft.Json baseline only runs when dynamic code is supported, guarded by PlatformDetection.IsReflectionEmitSupported.")]
+        private static void AssertOutputEqualsNewtonsoft(object value, string actual)
+        {
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                string expected = JsonConvert.SerializeObject(value, s_newtonsoftSerializerSettingsPreserve);
+                Assert.Equal(expected, actual);
+            }
+        }
 
         public class Employee
         {
@@ -52,10 +72,9 @@ namespace System.Text.Json.Serialization.Tests
 
             angela.ExtensionData = extensionData;
 
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
 
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
         }
 
         #region struct tests
@@ -133,7 +152,7 @@ namespace System.Text.Json.Serialization.Tests
                 ["$string"] = "Hello world"
             };
             string json = await Serializer.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world""}", json);
+            Assert.Equal("""{"$id":"1","\u0024string":"Hello world"}""", json);
 
             //$ Key in dictionary holding complex type.
             dictionary = new Dictionary<string, object>
@@ -141,7 +160,7 @@ namespace System.Text.Json.Serialization.Tests
                 ["$object"] = new ClassWithExtensionData { Hello = "World" }
             };
             json = await Serializer.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
+            Assert.Equal("""{"$id":"1","\u0024object":{"$id":"2","Hello":"World"}}""", json);
 
             //$ Key in ExtensionData dictionary
             var poco = new ClassWithExtensionData
@@ -156,7 +175,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
             json = await Serializer.SerializeWrapper(poco, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
+            Assert.Equal("""{"$id":"1","\u0024string":"Hello world","\u0024object":{"$id":"2","Hello":"World"}}""", json);
 
             //TODO:
             //Extend the scenarios to also cover CLR and F# properties with a leading $.
@@ -217,7 +236,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = await Serializer.SerializeWrapper(list, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$ref"":""2""}]}", json);
+            Assert.Equal("""{"$id":"1","$values":[{"$id":"2"},{"$ref":"2"}]}""", json);
 
             List<ClassIncorrectHashCode> listCopy = await Serializer.DeserializeWrapper<List<ClassIncorrectHashCode>>(json, s_serializerOptionsPreserve);
             // Make sure that our DefaultReferenceResolver calls the ReferenceEqualityComparer that implements RuntimeHelpers.GetHashCode, and never object.GetHashCode,

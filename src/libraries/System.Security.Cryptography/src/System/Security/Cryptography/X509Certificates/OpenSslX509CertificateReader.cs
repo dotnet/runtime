@@ -858,7 +858,7 @@ namespace System.Security.Cryptography.X509Certificates
             return duplicate;
         }
 
-        internal static DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
+        internal static unsafe DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
         {
             byte[] bytes = Interop.Crypto.GetAsn1StringBytes(validityDatePtr);
 

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <TypeMapEntryAssembly>TypeMapLib5</TypeMapEntryAssembly>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
+    <IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
+                                    Value="$(TypeMapEntryAssembly)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="TypeMapEntryAssemblyApp.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="TypeMapLib5.csproj" />
+    <ProjectReference Include="TypeMapLib1.csproj" />
+  </ItemGroup>
+</Project>

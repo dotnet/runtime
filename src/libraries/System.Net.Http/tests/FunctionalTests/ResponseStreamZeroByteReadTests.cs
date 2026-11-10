@@ -81,6 +81,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "ConnectCallback is not supported on Wasi")]
         public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
@@ -181,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class Http3ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
     {
         public Http3ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
@@ -197,6 +198,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Read is not supported on Wasi")]
         public async Task ZeroByteRead_BlocksUntilDataIsAvailable(bool async)
         {
             var zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

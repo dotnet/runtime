@@ -21,14 +21,12 @@ namespace System.Xml.Serialization
     public class XmlSchemas : CollectionBase, IEnumerable<XmlSchema>
     {
         private XmlSchemaSet? _schemaSet;
-        private Hashtable? _references;
         private SchemaObjectCache? _cache; // cached schema top-level items
         private bool _shareTypes;
-        private Hashtable? _mergedSchemas;
         internal Hashtable delayedSchemas = new Hashtable();
         private bool _isCompiled;
-        private static volatile XmlSchema? s_xsd;
-        private static volatile XmlSchema? s_xml;
+        private static XmlSchema? s_xsd;
+        private static XmlSchema? s_xml;
 
         public XmlSchema this[int index]
         {
@@ -57,9 +55,9 @@ namespace System.Xml.Serialization
 
         internal SchemaObjectCache Cache => _cache ??= new SchemaObjectCache();
 
-        internal Hashtable MergedSchemas => _mergedSchemas ??= new Hashtable();
+        internal Hashtable MergedSchemas => field ??= new Hashtable();
 
-        internal Hashtable References => _references ??= new Hashtable();
+        internal Hashtable References => field ??= new Hashtable();
 
         internal XmlSchemaSet SchemaSet
         {

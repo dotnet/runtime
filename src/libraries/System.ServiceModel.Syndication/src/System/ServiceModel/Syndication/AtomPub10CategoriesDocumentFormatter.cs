@@ -11,15 +11,19 @@ namespace System.ServiceModel.Syndication
     [XmlRoot(ElementName = App10Constants.Categories, Namespace = App10Constants.Namespace)]
     public class AtomPub10CategoriesDocumentFormatter : CategoriesDocumentFormatter, IXmlSerializable
     {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private readonly Type _inlineDocumentType;
         private readonly int _maxExtensionSize;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private readonly Type _referencedDocumentType;
 
         public AtomPub10CategoriesDocumentFormatter() : this(typeof(InlineCategoriesDocument), typeof(ReferencedCategoriesDocument))
         {
         }
 
-        public AtomPub10CategoriesDocumentFormatter(Type inlineDocumentType, Type referencedDocumentType) : base()
+        public AtomPub10CategoriesDocumentFormatter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type inlineDocumentType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type referencedDocumentType) : base()
         {
             ArgumentNullException.ThrowIfNull(inlineDocumentType);
             if (!typeof(InlineCategoriesDocument).IsAssignableFrom(inlineDocumentType))

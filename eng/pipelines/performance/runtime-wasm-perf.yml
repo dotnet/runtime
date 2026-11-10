@@ -7,7 +7,10 @@ trigger: none
 pr:
   branches:
     include:
-    - main
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
   paths:
     include:
     - eng/pipelines/performance/*
@@ -35,6 +38,7 @@ extends:
           runtimeRepoAlias: self
           performanceRepoAlias: performance
           runProfile: 'v8'
+          runMono: false
           jobParameters:
             onlySanityCheck: true
           #downloadSpecificBuild:

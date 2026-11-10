@@ -43,11 +43,5 @@ namespace System.Security.Cryptography
                 Key = key,
             };
         }
-
-        internal static bool AllowsOnlyEncryptedExport(CngKey key)
-        {
-            const CngExportPolicies Exportable = CngExportPolicies.AllowPlaintextExport | CngExportPolicies.AllowExport;
-            return (key.ExportPolicy & Exportable) == CngExportPolicies.AllowExport;
-        }
     }
 }

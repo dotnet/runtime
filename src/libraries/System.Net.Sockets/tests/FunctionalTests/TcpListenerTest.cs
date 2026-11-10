@@ -101,7 +101,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Pending_TrueWhenWaitingRequest()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -120,7 +120,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<InvalidOperationException>(() => listener.Pending());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Accept_Invalid_Throws()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -281,7 +281,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(listener.ExclusiveAddressUse);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void EndAcceptSocket_WhenStopped_ThrowsObjectDisposedException()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -296,7 +296,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.EndAcceptSocket(iar));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void EndAcceptTcpClient_WhenStopped_ThrowsObjectDisposedException()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);

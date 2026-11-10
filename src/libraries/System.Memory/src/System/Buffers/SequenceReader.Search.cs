@@ -610,7 +610,7 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = CurrentSpanIndex; i < CurrentSpan.Length && values.IndexOf(CurrentSpan[i]) != -1; i++)
+                for (i = CurrentSpanIndex; i < CurrentSpan.Length && values.Contains(CurrentSpan[i]); i++)
                 {
                 }
 

@@ -94,8 +94,7 @@ namespace System.Runtime.Serialization
 
         private Type _delegateType = null!; // initialized in BeginMethod
 
-        private static Module? s_serializationModule;
-        private static Module SerializationModule => s_serializationModule ??= typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
+        private static Module SerializationModule => field ??= typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
 
         private DynamicMethod _dynamicMethod = null!; // initialized in BeginMethod
 
@@ -320,9 +319,9 @@ namespace System.Runtime.Serialization
                 typeCode == TypeCode.DateTime || typeCode == TypeCode.Decimal)
             {
                 LoadDefaultValue(type);
-                ConvertValue(type, Globals.TypeOfObject);
+                ConvertValue(type, typeof(object));
                 Load(value);
-                ConvertValue(type, Globals.TypeOfObject);
+                ConvertValue(type, typeof(object));
                 Call(ObjectEquals);
                 IfNot();
             }
@@ -543,7 +542,7 @@ namespace System.Runtime.Serialization
         internal void StoreArrayElement(object obj, object arrayIndex, object value)
         {
             Type arrayType = GetVariableType(obj);
-            if (arrayType == Globals.TypeOfArray)
+            if (arrayType == typeof(Array))
             {
                 Call(obj, ArraySetValue, value, arrayIndex);
             }
@@ -1304,7 +1303,7 @@ namespace System.Runtime.Serialization
 
         internal void ToString(Type type)
         {
-            if (type != Globals.TypeOfString)
+            if (type != typeof(string))
             {
                 if (type.IsValueType)
                 {

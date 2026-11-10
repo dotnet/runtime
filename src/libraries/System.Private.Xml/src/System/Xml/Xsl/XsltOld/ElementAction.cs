@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (compiler.Recurse())
             {
-                Debug.Assert(_empty == false);
+                Debug.Assert(!_empty);
                 CompileTemplate(compiler);
                 compiler.ToParent();
             }
@@ -122,7 +122,7 @@ namespace System.Xml.Xsl.XsltOld
                 case NameDone:
                     {
                         PrefixQName qname = frame.CalculatedName!;
-                        if (processor.BeginEvent(XPathNodeType.Element, qname.Prefix, qname.Name, qname.Namespace, _empty) == false)
+                        if (!processor.BeginEvent(XPathNodeType.Element, qname.Prefix, qname.Name, qname.Namespace, _empty))
                         {
                             // Come back later
                             frame.State = NameDone;
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.XsltOld
                         }
                     }
                 case ProcessingChildren:
-                    if (processor.EndEvent(XPathNodeType.Element) == false)
+                    if (!processor.EndEvent(XPathNodeType.Element))
                     {
                         frame.State = ProcessingChildren;
                         break;

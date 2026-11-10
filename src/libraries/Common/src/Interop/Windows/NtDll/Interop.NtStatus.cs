@@ -17,6 +17,7 @@ internal static partial class Interop
         internal const uint STATUS_FILE_NOT_FOUND         = 0xC000000F;
         internal const uint STATUS_NO_MEMORY              = 0xC0000017;
         internal const uint STATUS_ACCESS_DENIED          = 0xC0000022;
+        internal const uint STATUS_OBJECT_NAME_INVALID    = 0xC0000033;
         internal const uint STATUS_OBJECT_NAME_NOT_FOUND  = 0xC0000034;
         internal const uint STATUS_QUOTA_EXCEEDED         = 0xC0000044;
         internal const uint STATUS_ACCOUNT_RESTRICTION    = 0xC000006E;

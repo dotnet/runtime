@@ -78,7 +78,7 @@ namespace JIT.HardwareIntrinsics.X86
                 var testStruct = new TestStruct();
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
 
                 return testStruct;
             }
@@ -92,7 +92,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int Op1ElementCount = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
 
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
 
@@ -105,7 +105,7 @@ namespace JIT.HardwareIntrinsics.X86
             Succeeded = true;
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
             _dataTable = new SimdScalarUnaryOpTest__DataTable<{Op1BaseType}>(_data, LargestVectorSize);
@@ -228,7 +228,7 @@ namespace JIT.HardwareIntrinsics.X86
         private void ValidateResult(void* firstOp, {RetBaseType} result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
             ValidateResult(inArray, result, method);
         }
 

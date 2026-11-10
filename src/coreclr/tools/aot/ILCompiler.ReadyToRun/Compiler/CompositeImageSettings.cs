@@ -10,5 +10,6 @@ namespace ILCompiler
     {
         public ImmutableArray<byte> PublicKey;
         public Version AssemblyVersion;
+        public string ReadyToRunHeaderSymbolName;
     }
 }

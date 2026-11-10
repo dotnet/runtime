@@ -22,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
                 (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1"));
         }
 
-        [ConditionalTheory(nameof(IsSelectedSitesTestEnabled))]
+        [ConditionalTheory(typeof(HttpClient_SelectedSites_Test), nameof(IsSelectedSitesTestEnabled))]
         [Trait("SelectedSites", "true")]
         [MemberData(nameof(GetSelectedSites))]
         public async Task RetrieveSite_Succeeds(string site)
@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
             throw new Exception("Not expected to reach here");
         }
 
-        [ConditionalTheory(nameof(IsSelectedSitesTestEnabled))]
+        [ConditionalTheory(typeof(HttpClient_SelectedSites_Test), nameof(IsSelectedSitesTestEnabled))]
         [Trait("SiteInvestigation", "true")]
         [InlineData("http://microsoft.com")]
         public async Task RetrieveSite_Debug_Helper(string site)

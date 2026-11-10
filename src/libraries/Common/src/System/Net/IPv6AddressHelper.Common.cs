@@ -95,7 +95,7 @@ namespace System.Net
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal static unsafe bool IsValidStrict<TChar>(TChar* name, int start, int end)
+        internal static bool IsValidStrict<TChar>(ReadOnlySpan<TChar> name)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -109,6 +109,8 @@ namespace System.Net
             bool expectingNumber = true;
             // Start position of the previous component
             int lastSequence = 1;
+            int start = 0;
+            int end = name.Length;
 
             bool needsClosingBracket = false;
 
@@ -244,15 +246,15 @@ namespace System.Net
                                 return false;
                             }
 
-                            i = end;
-                            if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
+                            if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence, end - lastSequence), out int seqEnd, true, false, false))
                             {
                                 return false;
                             }
+                            i = lastSequence + seqEnd;
+
                             // An IPv4 address takes 2 slots in an IPv6 address. One was just counted meeting the '.'
                             ++sequenceCount;
                             lastSequence = i - sequenceLength;
-                            sequenceLength = 0;
                             haveIPv4Address = true;
                             --i;            // it will be incremented back on the next loop
                             break;

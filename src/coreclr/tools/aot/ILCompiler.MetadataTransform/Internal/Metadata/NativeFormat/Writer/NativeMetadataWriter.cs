@@ -10,6 +10,7 @@ using ConditionalAttribute = System.Diagnostics.ConditionalAttribute;
 using Internal.LowLevelLinq;
 using Internal.NativeFormat;
 using Graph = Internal.Metadata.NativeFormat.Writer.AdjacencyGraph;
+using System.Runtime.InteropServices;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {
@@ -335,8 +336,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             _visitor = new RecordVisitor();
 
-            _visitor.Run(ScopeDefinitions.AsEnumerable());
-            _visitor.Run(AdditionalRootRecords.AsEnumerable());
+            _visitor.Run(ScopeDefinitions);
+            _visitor.Run(AdditionalRootRecords);
 
             IEnumerable<MetadataRecord> records = _visitor.Graph.Vertices.Where(v => v != _visitor.MetaSourceVertex);
 
@@ -350,6 +351,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             foreach (var rec in records)
             {
                 section.Place(rec);
+            }
+
+            foreach (var rec in records)
+            {
+                rec.PlaceHashtables(section);
             }
 
             writer.Save(stream);
@@ -439,7 +445,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             {
                 foreach (var elem in dst)
                     Log(elem);
-                return dst.ToList();
+                return dst;
             }
 
             private bool _notFirst;           // The first child should not have a space before it.  This tracks this
@@ -533,6 +539,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal abstract void Visit(IRecordVisitor visitor);
 
+        internal virtual void PlaceHashtables(Section section)
+        {
+        }
+
         public override string ToString()
         {
             return "[@TODO:" + this.GetType().ToString() + "]";
@@ -549,20 +559,13 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
-    public interface ICustomAttributeMetadataRecord
-    {
-        IList<CustomAttribute> GetCustomAttributes();
-    }
-
-    public abstract partial class Blob : MetadataRecord
-    {
-    }
-
     /// <summary>
     /// Supplements generated class with convenient coversion operators
     /// </summary>
     public partial class ConstantStringValue
     {
+        public override string ToString() => Value is null ? "null" : $"\"{Value}\"";
+
         public static explicit operator string(ConstantStringValue value)
         {
             if (value == null)
@@ -575,6 +578,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             return new ConstantStringValue() { Value = value };
         }
+    }
+
+    public partial class ConstantStringArray
+    {
+        public override string ToString() => "(String[]) {" + string.Join(", ", Value) + "}";
+    }
+
+    public partial class Constant
+    {
+        public override string ToString() => TypeCode.ToString();
     }
 
     public partial class ScopeDefinition
@@ -624,15 +637,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceDefinition;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-            }
             return str;
         }
     }
@@ -659,25 +663,21 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceReference;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-                else
-                {
-                    //str = ParentScopeOrNamespace.ToString() + " : " + str;
-                }
-            }
             return str;
         }
     }
 
     public partial class TypeDefinition
     {
+        internal int GetLookupHashCode()
+        {
+            Debug.Assert(NamespaceOrEnclosingType is NamespaceDefinition);
+            NamespaceDefinition namespaceDefinition = (NamespaceDefinition)NamespaceOrEnclosingType;
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((namespaceDefinition.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
             return ToString(false);
@@ -685,16 +685,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString(bool includeHandleValue)
         {
             string str;
-            if (this.EnclosingType != null)
+            if (this.NamespaceOrEnclosingType is TypeDefinition enclosingType)
             {
-                str = this.EnclosingType.ToString(false) + "+" + Name.Value;
+                str = enclosingType.ToString(false) + "+" + Name.Value;
                 if (includeHandleValue)
                     str += string.Format(" ({0:x})", Handle._value);
                 return str;
             }
-            else if (this.NamespaceDefinition != null && this.NamespaceDefinition.Name != null)
+            else if (this.NamespaceOrEnclosingType is NamespaceDefinition namespaceDefinition && namespaceDefinition.Name != null)
             {
-                str = this.NamespaceDefinition.ToString(false) + "." + Name.Value;
+                str = namespaceDefinition.ToString(false) + "." + Name.Value;
                 if (includeHandleValue)
                     str += string.Format(" ({0:x})", Handle._value);
                 return str;
@@ -715,10 +715,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString(bool includeHandleValue)
         {
             string s = "";
-            if (ParentNamespaceOrType is NamespaceReference)
-                s += ParentNamespaceOrType.ToString(false) + ".";
-            if (ParentNamespaceOrType is TypeReference)
-                s += ParentNamespaceOrType.ToString(false) + "+";
+            if (NamespaceOrEnclosingType is NamespaceReference)
+                s += NamespaceOrEnclosingType.ToString(false) + ".";
+            if (NamespaceOrEnclosingType is TypeReference)
+                s += NamespaceOrEnclosingType.ToString(false) + "+";
             s += TypeName.Value;
             if (includeHandleValue)
                 s += string.Format(" ({0:x})", Handle._value);
@@ -728,9 +728,16 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public partial class TypeForwarder
     {
+        internal int GetLookupHashCode()
+        {
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((Namespace.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
-            return this.Name.Value + " -> " + this.Scope.Name.Value;
+            return this.Name.Value + " -> " + this.Namespace.Scope.Name.Value;
         }
     }
 
@@ -738,7 +745,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return Kind.FlagsToString() + " " + Name.Value + "(" + Number.ToString() + ")";
+            return Kind.ToString() + " " + Name.Value + "(" + Number.ToString() + ")";
         }
     }
 
@@ -810,7 +817,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString())) + ">";
+            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments) + ">";
         }
     }
 
@@ -830,7 +837,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             return Method.ToString()
                 + "(Arguments: "
                 + "<"
-                + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString()))
+                + string.Join(", ", this.GenericTypeArguments)
                 + ">";
         }
     }
@@ -847,19 +854,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string str = Constructor.ToString();
-            str += "(" + string.Join(", ", FixedArguments.Select(fa => fa.ToString()))
-                + string.Join(", ", NamedArguments.Select(na => na.ToString())) + ")";
-            str += "(ctor: " + Constructor.Handle.ToString();
-            return str;
-        }
-    }
-
-    public partial class NamedArgument
-    {
-        public override string ToString()
-        {
-            return Name + " = " + Value.ToString();
+            return Constructor.ToString();
         }
     }
 
@@ -945,7 +940,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string flags = Flags.FlagsToString();
+            string flags = Flags.ToString();
             return string.Format("{0}{1} (Seq:{2}) {3}",
                 flags,
                 Name.ToString(),
@@ -964,145 +959,39 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public static class EnumHelpers
     {
-        public static string FlagsToString<T>(this T value) where T : struct, Enum, IConvertible
+        public static string FlagsToString(this SignatureCallingConvention value)
         {
-            var flags = Enum.GetValues<T>().Where(
-                eVal => (((IConvertible)eVal).ToInt32(null) != 0) && ((((IConvertible)value).ToInt32(null) & ((IConvertible)eVal).ToInt32(null)) == ((IConvertible)eVal).ToInt32(null)));
-            if (flags.Count() == 0)
-                return "";
-            else
-                return "[" + string.Join(" | ", flags.Select(Enum.GetName<T>)) + "] ";
+            var values = new List<string>();
+            if ((value & SignatureCallingConvention.HasThis) == SignatureCallingConvention.HasThis)
+            {
+                values.Add(nameof(SignatureCallingConvention.HasThis));
+                value &= ~SignatureCallingConvention.HasThis;
+            }
+            if ((value & SignatureCallingConvention.ExplicitThis) == SignatureCallingConvention.ExplicitThis)
+            {
+                values.Add(nameof(SignatureCallingConvention.ExplicitThis));
+                value &= ~SignatureCallingConvention.ExplicitThis;
+            }
+            if ((value & SignatureCallingConvention.UnmanagedCallingConventionMask) != default)
+            {
+                values.Add((value & SignatureCallingConvention.UnmanagedCallingConventionMask).ToString());
+                value &= ~SignatureCallingConvention.UnmanagedCallingConventionMask;
+            }
+            if (value != default)
+            {
+                values.Add(value.ToString());
+            }
+            return values.Count == 0 ? "" : "[" + string.Join(" | ", values) + "] ";
         }
     }
 
-    public static class ListExtensions
-    {
-        public static T FirstOrDefault<T>(this List<T> list)
-        {
-            if (list.Count != 0)
-                return list[0];
-            return default(T);
-        }
-        public static T First<T>(this List<T> list) where T : class
-        {
-            if (list.Count != 0)
-                return list[0];
-            return null;
-        }
-    }
-
-    public static partial class DictionaryExtensions
-    {
-        internal static T FirstOrDefault<T>(this Dictionary<string, T> dict)
-        {
-            if (dict.Count != 0)
-                foreach (var value in dict.Values)
-                    return value;
-            return default(T);
-        }
-        internal static T First<T>(this Dictionary<string, T> dict) where T : class
-        {
-            if (dict.Count != 0)
-                foreach (var value in dict.Values)
-                    return value;
-            return null;
-        }
-
-        internal static IEnumerable<T> AsSingleEnumerable<T>(this T value)
-        {
-            yield return value;
-        }
-    }
-
-    public static partial class SignatureHelpers
-    {
-        public static SZArraySignature AsSZArray(this MetadataRecord record)
-        {
-            return new SZArraySignature() { ElementType = record };
-        }
-    }
-
-    // SequenceEquals on IEnumerable is painfully slow and allocates memory.
+    // SequenceEqual on IEnumerable is painfully slow and allocates memory.
     public static class SequenceExtensions
     {
         public static bool SequenceEqual<T>(this List<T> first, List<T> second)
         {
-            return first.SequenceEqual(second, null);
-        }
-
-        public static bool SequenceEqual<T>(this List<T> first, List<T> second, IEqualityComparer<T> comparer)
-        {
-            if (first.Count != second.Count)
-            {
-                return false;
-            }
-
-            comparer ??= EqualityComparer<T>.Default;
-
-            for (int i = 0; i < first.Count; i++)
-            {
-                if (!comparer.Equals(first[i], second[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        public static bool SequenceEqual<T>(this T[] first, T[] second)
-        {
-            return first.SequenceEqual(second, null);
-        }
-
-        public static bool SequenceEqual<T>(this T[] first, T[] second, IEqualityComparer<T> comparer)
-        {
-            if (first.Length != second.Length)
-            {
-                return false;
-            }
-
-            comparer ??= EqualityComparer<T>.Default;
-
-            for (int i = 0; i < first.Length; i++)
-            {
-                if (!comparer.Equals(first[i], second[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return CollectionsMarshal.AsSpan(first).SequenceEqual(CollectionsMarshal.AsSpan(second), comparer: null);
         }
     }
 
-    // Distinguishes positive and negative zeros for float and double values
-    public static class CustomComparer
-    {
-        public static unsafe bool Equals(float x, float y)
-        {
-            return *(int*)&x == *(int*)&y;
-        }
-
-        public static bool Equals(double x, double y)
-        {
-            return BitConverter.DoubleToInt64Bits(x) == BitConverter.DoubleToInt64Bits(y);
-        }
-    }
-
-    public sealed class SingleComparer : IEqualityComparer<float>
-    {
-        public static readonly SingleComparer Instance = new SingleComparer();
-
-        public bool Equals(float x, float y) => CustomComparer.Equals(x, y);
-        public int GetHashCode(float obj) => obj.GetHashCode();
-    }
-
-    public sealed class DoubleComparer : IEqualityComparer<double>
-    {
-        public static readonly DoubleComparer Instance = new DoubleComparer();
-
-        public bool Equals(double x, double y) => CustomComparer.Equals(x, y);
-        public int GetHashCode(double obj) => obj.GetHashCode();
-    }
 }

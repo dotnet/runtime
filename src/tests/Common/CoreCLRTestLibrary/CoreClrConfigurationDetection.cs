@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -23,8 +24,23 @@ public static class CoreClrConfigurationDetection
     public static bool IsTieredCompilation => string.Equals(GetEnvironmentVariableValue("TieredCompilation", "1"), "1", StringComparison.InvariantCulture);
     public static bool IsHeapVerify => string.Equals(GetEnvironmentVariableValue("HeapVerify"), "1", StringComparison.InvariantCulture);
 
+    public static bool IsCoreClrInterpreter
+    {
+        get
+        {
+            // Without a JIT (e.g. WebAssembly, Apple mobile), code that isn't precompiled runs in the interpreter.
+            if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
+                return true;
+            if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
+                return true;
+            if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))
+                return true;
+            return false;
+        }
+    }
+
     public static bool IsGCStress => !string.Equals(GetEnvironmentVariableValue("GCStress"), "0", StringComparison.InvariantCulture);
-    
+
     public static bool IsAnyJitStress => IsJitStress || IsJitStressRegs || IsJitMinOpts || IsTailCallStress;
 
     public static bool IsAnyJitOptimizationStress => IsAnyJitStress || IsTieredCompilation;

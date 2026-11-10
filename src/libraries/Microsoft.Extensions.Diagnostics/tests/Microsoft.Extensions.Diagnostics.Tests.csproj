@@ -16,12 +16,18 @@
     <Compile Include="..\src\Metrics\Configuration\MetricsConfigureOptions.cs" />
     <Compile Include="..\src\Metrics\DebugConsoleMetricListener.cs" />
     <Compile Include="..\src\Metrics\ListenerSubscription.cs" />
+    <Compile Include="..\src\Tracing\Configuration\TracingConfigureOptions.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Extensions.Diagnostics.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\ExceptionPolyfills.cs" Link="Common\Polyfills\ExceptionPolyfills.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
   </ItemGroup>
 
 </Project>

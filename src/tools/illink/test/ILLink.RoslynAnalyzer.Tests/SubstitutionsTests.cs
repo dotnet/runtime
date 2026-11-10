@@ -4,14 +4,14 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed partial class SubstitutionsTests : LinkerTestBase
-	{
-		protected override string TestSuiteName => "Substitutions";
+    public sealed partial class SubstitutionsTests : LinkerTestBase
+    {
+        protected override string TestSuiteName => "Substitutions";
 
-		[Fact]
-		public Task FeatureGuardSubstitutions ()
-		{
-			return RunTest ();
-		}
-	}
+        [Fact]
+        public Task FeatureGuardSubstitutions()
+        {
+            return RunTest();
+        }
+    }
 }

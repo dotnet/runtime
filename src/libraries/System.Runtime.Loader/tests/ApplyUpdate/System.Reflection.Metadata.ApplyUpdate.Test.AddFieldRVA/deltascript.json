@@ -1,6 +1,8 @@
 {
-    "changes": [
-        {"document": "AddFieldRVA.cs", "update": "AddFieldRVA_v1.cs"},
-    ]
+  "changes": [
+    {
+      "document": "AddFieldRVA.cs",
+      "update": "AddFieldRVA_v1.cs"
+    }
+  ]
 }
-

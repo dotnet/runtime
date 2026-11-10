@@ -1,68 +1,120 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Generics
 {
-	public class VariantCasting
-	{
-		[Kept]
-		interface IVariant<
-			[KeptGenericParamAttributes (GenericParameterAttributes.Covariant)]
-			out T
-		> { }
+    public class VariantCasting
+    {
+        [Kept]
+        interface IVariant<
+            [KeptGenericParamAttributes(GenericParameterAttributes.Covariant)]
+        out T
+        >
+        { }
 
-		[Kept]
-		interface IFoo { }
+        [Kept]
+        interface IFoo { }
 
-		[Kept]
-		[KeptInterface (typeof (IFoo))]
-		class Foo : IFoo
-		{
-			// Even though Foo is never allocated (as seen from the removal of the constructor),
-			// we need to make sure trimming tools keep its interface list because it's relevant
-			// for variant casting.
-			public Foo () { }
-		}
+        [Kept]
+        [KeptInterface(typeof(IFoo))]
+        class Foo : IFoo
+        {
+            // Even though Foo is never allocated (as seen from the removal of the constructor),
+            // we need to make sure trimming tools keep its interface list because it's relevant
+            // for variant casting.
+            public Foo() { }
+        }
 
-		[Kept]
-		class Base
-		{
-			// Removed
-			public Base () { }
-		}
+        [Kept]
+        class Base
+        {
+            // Removed
+            public Base() { }
+        }
 
-		[Kept]
-		[KeptBaseType (typeof (Base))]
-		class Derived : Base
-		{
-			// Even though Derived is never allocated (as seen from the removal of the constructor),
-			// we need to make sure trimming tools keep its base types because it's relevant
-			// for variant casting.
-			public Derived () { }
-		}
+        [Kept]
+        [KeptBaseType(typeof(Base))]
+        class Derived : Base
+        {
+            // Even though Derived is never allocated (as seen from the removal of the constructor),
+            // we need to make sure trimming tools keep its base types because it's relevant
+            // for variant casting.
+            public Derived() { }
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IVariant<>))]
-		class Interesting<T> : IVariant<T>
-		{
-			[Kept]
-			public Interesting () { }
-		}
+        [Kept]
+        [KeptInterface(typeof(IVariant<>))]
+        class Interesting<T> : IVariant<T>
+        {
+            [Kept]
+            public Interesting() { }
+        }
 
-		[Kept]
-		[KeptBaseType (typeof (Interesting<>), "T")]
-		class Boring<T> : Interesting<T>
-		{
-			[Kept]
-			public Boring () { }
-		}
+        [Kept]
+        [KeptBaseType(typeof(Interesting<>), "T")]
+        class Boring<T> : Interesting<T>
+        {
+            [Kept]
+            public Boring() { }
+        }
 
-		public static void Main ()
-		{
-			// These casts need to succeed after trimming
-			IVariant<IFoo> foos = (IVariant<IFoo>) (object) new Boring<Foo> ();
-			IVariant<Base> bases = (IVariant<Base>) (object) new Boring<Derived> ();
-		}
-	}
+        [Kept]
+        interface IInner
+        {
+            [Kept(By = Tool.Trimmer)] // NativeAOT removes interface methods that no constructed type implements
+            void InnerMethod();
+        }
+
+        [Kept]
+        [KeptInterface(typeof(IInner))]
+        interface IOuter<T> : IInner
+        {
+            [Kept(By = Tool.Trimmer)]
+            void OuterMethod();
+        }
+
+        interface IUnused<T> : IOuter<T>
+        {
+        }
+
+        [Kept(By = Tool.Trimmer)] // NativeAOT does not need the metadata of an unconstructed base type
+        [KeptInterface(typeof(IOuter<>), "T", By = Tool.Trimmer)]
+        [KeptInterface(typeof(IInner), By = Tool.Trimmer)]
+        abstract class UninstantiatedBaseWithInterfaces<T> : IOuter<T>
+        {
+            [Kept(By = Tool.Trimmer)]
+            public void OuterMethod() { }
+
+            [Kept(By = Tool.Trimmer)]
+            void IInner.InnerMethod() { }
+        }
+
+        // Only reachable through typeof. The interfaces of the base type must be kept together with the ones on this type.
+        [Kept]
+        [KeptBaseType(typeof(UninstantiatedBaseWithInterfaces<>), "T")]
+        [KeptInterface(typeof(IOuter<>), "T")]
+        [KeptInterface(typeof(IInner))]
+        class UninstantiatedDerivedWithInterfaces<T> : UninstantiatedBaseWithInterfaces<T>, IUnused<T>
+        {
+        }
+
+        [Kept]
+        static void UseInterfaceMethods(IOuter<int> outer)
+        {
+            outer.OuterMethod();
+            ((IInner)outer).InnerMethod();
+        }
+
+        public static void Main()
+        {
+            // These casts need to succeed after trimming
+            IVariant<IFoo> foos = (IVariant<IFoo>)(object)new Boring<Foo>();
+            IVariant<Base> bases = (IVariant<Base>)(object)new Boring<Derived>();
+
+            Type type = typeof(UninstantiatedDerivedWithInterfaces<>);
+            UseInterfaceMethods(null);
+        }
+    }
 }

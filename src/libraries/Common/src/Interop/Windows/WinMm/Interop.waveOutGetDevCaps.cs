@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.InteropServices.Marshalling;
@@ -34,12 +35,18 @@ internal static partial class Interop
                 public static Native ConvertToUnmanaged(WAVEOUTCAPS managed) => new(managed);
                 public static WAVEOUTCAPS ConvertToManaged(Native native) => native.ToManaged();
 
-                internal unsafe struct Native
+                internal struct Native
                 {
                     private ushort wMid;
                     private ushort wPid;
                     private uint vDriverVersion;
-                    internal fixed char szPname[szPnameLength];
+                    internal PnameBuffer szPname;
+
+                    [InlineArray(szPnameLength)]
+                    internal struct PnameBuffer
+                    {
+                        private char _element0;
+                    }
                     private uint dwFormats;
                     private ushort wChannels;
                     private ushort wReserved1;
@@ -50,7 +57,7 @@ internal static partial class Interop
                         wMid = managed.wMid;
                         wPid = managed.wPid;
                         vDriverVersion = managed.vDriverVersion;
-                        Span<char> szPnameSpan = MemoryMarshal.CreateSpan(ref szPname[0], szPnameLength);
+                        Span<char> szPnameSpan = szPname;
                         szPnameSpan.Clear();
                         managed.szPname?.CopyTo(szPnameSpan);
                         dwFormats = managed.dwFormats;
@@ -65,7 +72,7 @@ internal static partial class Interop
                             wMid = wMid,
                             wPid = wPid,
                             vDriverVersion = vDriverVersion,
-                            szPname = MemoryMarshal.CreateReadOnlySpan(ref szPname[0], szPnameLength).ToString(),
+                            szPname = ((ReadOnlySpan<char>)szPname).ToString(),
                             dwFormats = dwFormats,
                             wChannels = wChannels,
                             wReserved1 = wReserved1,
@@ -88,6 +95,7 @@ internal static partial class Interop
         /// information about the capabilities of the device.</param>
         /// <param name="cbwoc">Size, in bytes, of the WAVEOUTCAPS structure.</param>
         /// <returns>MMSYSERR</returns>
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.WinMM, EntryPoint = "waveOutGetDevCapsW")]
         internal static partial MMSYSERR waveOutGetDevCaps(IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);
     }

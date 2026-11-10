@@ -9,15 +9,15 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 using Internal.Runtime;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a map between reflection metadata and generated method bodies.
     /// </summary>
-    public sealed class InterfaceGenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class InterfaceGenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, HashSet<object>> _interfaceGvmSlots;
         private Dictionary<object, Dictionary<TypeDesc, HashSet<int>>> _interfaceImpls;
@@ -33,7 +33,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__interface_gvm_table"u8);
         }
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -47,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
         /// </summary>
-        public static void GetGenericVirtualMethodImplementationDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod)
+        public static void AddGenericVirtualMethodImplementationDependencies(DependencySink dependencies, NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod)
         {
             Debug.Assert(callingMethod.OwningType.IsInterface);
 
@@ -55,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
             TypeDesc openImplementationType = implementationType.GetTypeDefinition();
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openCallingMethod);
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openCallingMethod);
 
             // Implementation could be null if this is a default interface method reabstraction or diamond. We need to record those.
             if (implementationMethod != null)
@@ -63,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
                 dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(openImplementationMethod.OwningType), "interface gvm table implementation method owning type"));
 
-                factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openImplementationMethod);
+                factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openImplementationMethod);
             }
 
             if (!openImplementationType.IsInterface)
@@ -223,8 +222,6 @@ namespace ILCompiler.DependencyAnalysis
             _interfaceGvmSlots = null;
 
             byte[] streamBytes = nativeFormatWriter.Save();
-
-            _size = streamBytes.Length;
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

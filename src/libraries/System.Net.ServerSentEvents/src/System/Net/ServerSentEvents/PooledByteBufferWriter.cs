@@ -28,7 +28,7 @@ namespace System.Net.ServerSentEvents
         public ReadOnlyMemory<byte> WrittenMemory => _buffer.ActiveMemory;
         public int Capacity => _buffer.Capacity;
         public int WrittenCount => _buffer.ActiveLength;
-        public void Reset() => _buffer.Discard(_buffer.ActiveLength);
+        public void Reset() => _buffer.DiscardAll();
         public void Dispose() => _buffer.Dispose();
     }
 }

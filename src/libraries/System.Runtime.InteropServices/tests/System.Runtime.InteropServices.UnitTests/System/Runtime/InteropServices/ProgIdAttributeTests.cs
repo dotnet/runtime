@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(null)]
         [InlineData("ProgId")]
-        public void Ctor_ProgId(string progId)
+        public void Ctor_ProgId(string? progId)
         {
             var attribute = new ProgIdAttribute(progId);
             Assert.Equal(progId, attribute.Value);

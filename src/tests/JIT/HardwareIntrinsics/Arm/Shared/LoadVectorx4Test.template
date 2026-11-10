@@ -15,7 +15,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace {Namespace}
 {
     public static partial class Program
     {
@@ -73,11 +73,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
             public DataTable({Op1BaseType}[] outArray1, {Op1BaseType}[] outArray2, {Op1BaseType}[] outArray3, {Op1BaseType}[] outArray4, {Op1BaseType}[] inArray, int alignment)
             {
-                int sizeOfInArray = inArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfOutArray1 = outArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfOutArray2 = outArray2.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfOutArray3 = outArray3.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfOutArray4 = outArray4.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfInArray = inArray.Length * sizeof({Op1BaseType});
+                int sizeOfOutArray1 = outArray1.Length * sizeof({Op1BaseType});
+                int sizeOfOutArray2 = outArray2.Length * sizeof({Op1BaseType});
+                int sizeOfOutArray3 = outArray3.Length * sizeof({Op1BaseType});
+                int sizeOfOutArray4 = outArray4.Length * sizeof({Op1BaseType});
                 if ((alignment != 16 && alignment != 8) || (alignment * 4) < sizeOfInArray || (alignment * 2) < sizeOfOutArray1 || (alignment * 2) < sizeOfOutArray2 || (alignment * 2) < sizeOfOutArray3 || (alignment * 2) < sizeOfOutArray4)
                 {
                     throw new ArgumentException("Invalid value of alignment");
@@ -144,7 +144,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int OpElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int OpElementCount = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
         private static readonly int DestElementCount = OpElementCount * 4;
 
         private static {Op1BaseType}[] _data = new {Op1BaseType}[DestElementCount];
@@ -257,11 +257,11 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] outArray3 = new {Op1BaseType}[OpElementCount];
             {Op1BaseType}[] outArray4 = new {Op1BaseType}[OpElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() * 4);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray1[0]), ref Unsafe.AsRef<byte>(result1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray2[0]), ref Unsafe.AsRef<byte>(result2), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray3[0]), ref Unsafe.AsRef<byte>(result3), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray4[0]), ref Unsafe.AsRef<byte>(result4), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)sizeof({Op1VectorType}<{Op1BaseType}>) * 4);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray1[0]), ref Unsafe.AsRef<byte>(result1), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray2[0]), ref Unsafe.AsRef<byte>(result2), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray3[0]), ref Unsafe.AsRef<byte>(result3), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray4[0]), ref Unsafe.AsRef<byte>(result4), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
             
             ValidateResult(inArray, outArray1, outArray2, outArray3, outArray4, method);
         }
@@ -274,7 +274,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] outArray3 = new {Op1BaseType}[OpElementCount];            
             {Op1BaseType}[] outArray4 = new {Op1BaseType}[OpElementCount];            
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() * 4);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)sizeof({Op1VectorType}<{Op1BaseType}>) * 4);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray1[0]), result1);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray2[0]), result2);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray3[0]), result3);

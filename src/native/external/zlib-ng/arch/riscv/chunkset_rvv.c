@@ -92,7 +92,7 @@ static inline uint8_t* CHUNKCOPY(uint8_t *out, uint8_t const *from, unsigned len
     from += align;
     len -= align;
     ptrdiff_t dist = out - from;
-    if (dist >= len) {
+    if (dist < 0 || dist >= len) {
         memcpy(out, from, len);
         out += len;
         from += len;

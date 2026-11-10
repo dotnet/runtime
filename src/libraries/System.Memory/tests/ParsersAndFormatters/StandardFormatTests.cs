@@ -23,7 +23,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("x99", 'x', StandardFormat.MaxPrecision)]
         [InlineData(null, default(char), default(byte))]
         [InlineData("", default(char), default(byte))]
-        public static void StandardFormatParseString(string formatString, char expectedSymbol, byte expectedPrecision)
+        public static void StandardFormatParseString(string? formatString, char expectedSymbol, byte expectedPrecision)
         {
             StandardFormat format = StandardFormat.Parse(formatString);
             Assert.Equal(expectedSymbol, format.Symbol);
@@ -63,7 +63,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("G$", default(char), default(byte), false)]
         [InlineData("Ga", default(char), default(byte), false)]
         [InlineData("G100", default(char), default(byte), false)]
-        public static void StandardFormatTryParse(string formatString, char expectedSymbol, byte expectedPrecision, bool expectedResult)
+        public static void StandardFormatTryParse(string? formatString, char expectedSymbol, byte expectedPrecision, bool expectedResult)
         {
             bool result = StandardFormat.TryParse(formatString, out StandardFormat format);
             Assert.Equal(expectedSymbol, format.Symbol);

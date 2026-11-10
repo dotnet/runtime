@@ -77,9 +77,7 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
+
             return ObjWait(millisecondsTimeout, obj);
         }
 
@@ -126,6 +124,13 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
             if (!ObjectHeader.HasOwner(obj))
                 throw new SynchronizationLockException();
+
+#if !FEATURE_MULTITHREADING
+            if (millisecondsTimeout == Timeout.Infinite)
+                throw new PlatformNotSupportedException();
+#elif FEATURE_WASM_MANAGED_THREADS
+            RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout);
+#endif
 
             bool sendWaitEvents =
                 millisecondsTimeout != 0 &&

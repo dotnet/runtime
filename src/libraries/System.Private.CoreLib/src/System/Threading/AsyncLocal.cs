@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -452,13 +454,10 @@ namespace System.Threading
                 }
 
                 // Otherwise, upgrade to a many map.
-                var many = new ManyElementAsyncLocalValueMap(MaxMultiElements + 1);
-                foreach (KeyValuePair<IAsyncLocal, object?> pair in _keyValues)
-                {
-                    many[pair.Key] = pair.Value;
-                }
-                many[key] = value;
-                return many;
+                var manyValues = new KeyValuePair<IAsyncLocal, object?>[MaxMultiElements + 1];
+                Array.Copy(_keyValues, manyValues, _keyValues.Length);
+                manyValues[^1] = KeyValuePair.Create(key, value);
+                return new ManyElementAsyncLocalValueMap(manyValues);
             }
 
             public bool TryGetValue(IAsyncLocal key, out object? value)
@@ -477,69 +476,115 @@ namespace System.Threading
         }
 
         /// <summary>Instance with any number of key/value pairs.</summary>
-        private sealed class ManyElementAsyncLocalValueMap : Dictionary<IAsyncLocal, object?>, IAsyncLocalValueMap
+        private sealed class ManyElementAsyncLocalValueMap : IAsyncLocalValueMap
         {
-            public ManyElementAsyncLocalValueMap(int capacity) : base(capacity) { }
+            private readonly KeyValuePair<IAsyncLocal, object?>[] _keyValues;
+            private readonly int[] _buckets;
+            private readonly int[] _next;
+
+            public ManyElementAsyncLocalValueMap(KeyValuePair<IAsyncLocal, object?>[] keyValues)
+            {
+                Debug.Assert(keyValues.Length > MultiElementAsyncLocalValueMap.MaxMultiElements);
+                _keyValues = keyValues;
+
+                int capacity = (int)BitOperations.RoundUpToPowerOf2(
+                    (uint)Math.Min(keyValues.Length + ((long)keyValues.Length >> 1), 1 << 30));
+
+                _buckets = new int[capacity];
+                _next = new int[keyValues.Length];
+                for (int i = 0; i < keyValues.Length; i++)
+                {
+                    int bucket = GetBucket(keyValues[i].Key, _buckets.Length);
+                    _next[i] = _buckets[bucket] - 1;
+                    _buckets[bucket] = i + 1;
+                }
+            }
+
+            private ManyElementAsyncLocalValueMap(
+                KeyValuePair<IAsyncLocal, object?>[] keyValues,
+                int[] buckets,
+                int[] next)
+            {
+                _keyValues = keyValues;
+                _buckets = buckets;
+                _next = next;
+            }
 
             public IAsyncLocalValueMap Set(IAsyncLocal key, object? value, bool treatNullValueAsNonexistent)
             {
-                int count = Count;
-                bool containsKey = ContainsKey(key);
+                int index = FindEntry(key);
 
-                // If the value being set exists, create a new many map, copy all of the elements from this one,
-                // and then store the new key/value pair into it.  This is the most common case.
                 if (value is not null || !treatNullValueAsNonexistent)
                 {
-                    var map = new ManyElementAsyncLocalValueMap(count + (containsKey ? 0 : 1));
-                    foreach (KeyValuePair<IAsyncLocal, object?> pair in this)
+                    if (index >= 0)
                     {
-                        map[pair.Key] = pair.Value;
+                        // Updating an existing value is the most common case. The immutable lookup arrays can be
+                        // shared because the keys haven't changed, so only clone the key/value pairs.
+                        KeyValuePair<IAsyncLocal, object?>[] updatedValues = _keyValues.AsSpan().ToArray();
+                        updatedValues[index] = KeyValuePair.Create(key, value);
+                        return new ManyElementAsyncLocalValueMap(updatedValues, _buckets, _next);
                     }
-                    map[key] = value;
-                    return map;
+
+                    var newValues = new KeyValuePair<IAsyncLocal, object?>[_keyValues.Length + 1];
+                    Array.Copy(_keyValues, newValues, _keyValues.Length);
+                    newValues[^1] = KeyValuePair.Create(key, value);
+                    return new ManyElementAsyncLocalValueMap(newValues);
                 }
 
-                // Otherwise, the value is null and a null value may be treated as nonexistent. We can downgrade to a smaller
-                // map rather than storing null.
-
-                // If the key is contained in this map, we're going to create a new map that's one pair smaller.
-                if (containsKey)
+                if (index >= 0)
                 {
                     // If the new count would be within range of a multi map instead of a many map,
                     // downgrade to the multi map, which uses less memory and is faster to access.
                     // Otherwise, just create a new many map that's missing this key.
-                    if (count == MultiElementAsyncLocalValueMap.MaxMultiElements + 1)
+                    if (_keyValues.Length == MultiElementAsyncLocalValueMap.MaxMultiElements + 1)
                     {
                         var newValues = new KeyValuePair<IAsyncLocal, object?>[MultiElementAsyncLocalValueMap.MaxMultiElements];
-                        int index = 0;
-                        foreach (KeyValuePair<IAsyncLocal, object?> pair in this)
-                        {
-                            if (!ReferenceEquals(key, pair.Key))
-                            {
-                                newValues[index++] = pair;
-                            }
-                        }
-                        Debug.Assert(index == MultiElementAsyncLocalValueMap.MaxMultiElements);
+                        _keyValues.AsSpan(0, index).CopyTo(newValues);
+                        _keyValues.AsSpan(index + 1).CopyTo(newValues.AsSpan(index));
                         return new MultiElementAsyncLocalValueMap(newValues);
                     }
-                    else
-                    {
-                        var map = new ManyElementAsyncLocalValueMap(count - 1);
-                        foreach (KeyValuePair<IAsyncLocal, object?> pair in this)
-                        {
-                            if (!ReferenceEquals(key, pair.Key))
-                            {
-                                map[pair.Key] = pair.Value;
-                            }
-                        }
-                        Debug.Assert(map.Count == count - 1);
-                        return map;
-                    }
+
+                    var remainingValues = new KeyValuePair<IAsyncLocal, object?>[_keyValues.Length - 1];
+                    _keyValues.AsSpan(0, index).CopyTo(remainingValues);
+                    _keyValues.AsSpan(index + 1).CopyTo(remainingValues.AsSpan(index));
+                    return new ManyElementAsyncLocalValueMap(remainingValues);
                 }
 
                 // We were storing null and a null value may be treated as nonexistent, but the key wasn't in the map, so
                 // there's nothing to change.  Just return this instance.
                 return this;
+            }
+
+            public bool TryGetValue(IAsyncLocal key, out object? value)
+            {
+                int index = FindEntry(key);
+                if (index >= 0)
+                {
+                    value = _keyValues[index].Value;
+                    return true;
+                }
+
+                value = null;
+                return false;
+            }
+
+            private int FindEntry(IAsyncLocal key)
+            {
+                int bucket = GetBucket(key, _buckets.Length);
+                for (int index = _buckets[bucket] - 1; index >= 0; index = _next[index])
+                {
+                    if (ReferenceEquals(key, _keyValues[index].Key))
+                    {
+                        return index;
+                    }
+                }
+                return -1;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static int GetBucket(IAsyncLocal key, int bucketCount)
+            {
+                return RuntimeHelpers.GetHashCode(key) & (bucketCount - 1);
             }
         }
     }

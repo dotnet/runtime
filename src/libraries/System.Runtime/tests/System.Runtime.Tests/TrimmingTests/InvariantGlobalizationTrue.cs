@@ -11,9 +11,30 @@ using System.Runtime.CompilerServices;
 /// </summary>
 class Program
 {
+    private static string Str1 = "aaaaBBBB";
+    private static string Str2 = "ccccDDDD";
+    private static string Str3;
+
     static int Main(string[] args)
     {
         const BindingFlags allStatics = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
+        Str3 = Str1.ToLowerInvariant() + Str2.ToUpperInvariant();
+
+        Type textInfo = GetCoreLibType("System.Globalization.TextInfo");
+        if (textInfo != null)
+        {
+            string[] methodsShouldBeGone = ["NlsChangeCase", "ChangeCaseCore", "ChangeCaseNative", "IcuChangeCase"];
+
+            foreach (MethodInfo method in textInfo.GetMethods(BindingFlags.Instance | allStatics))
+            {
+                if (methodsShouldBeGone.Contains(method.Name))
+                {
+                    Console.WriteLine($"Member '{method.Name}' was not trimmed from GlobalizationMode, but should have been.");
+                    return -2;
+                }
+            }
+        }
 
         try
         {
@@ -40,7 +61,7 @@ class Program
 
             return 100;
         }
-        
+
         // Ensure the internal GlobalizationMode class is trimmed correctly.
         Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
 

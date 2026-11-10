@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using Xunit;
 internal interface ITest1
 {
@@ -68,6 +69,52 @@ public class C : ITest5
     public virtual int f9() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); if (this.GetHashCode() != _code) return 999; else return 18; }
 }
 
+public class GenericBase<T>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int GetValue(T value) => 20;
+}
+
+public sealed class GenericDerived<T> : GenericBase<T>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override int GetValue(T value) => 21;
+}
+
+public struct IndirectArgument
+{
+    public nint First;
+    public nint Second;
+}
+
+public class CallingConventionBase
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int TransformPointer(nint value) => (int)value + 22;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int TransformStruct(IndirectArgument value) => (int)(value.First + value.Second);
+}
+
+public sealed class CallingConventionDerived : CallingConventionBase
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override int TransformPointer(nint value) => (int)value + 23;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override int TransformStruct(IndirectArgument value) => (int)(value.First * value.Second);
+}
+
+public class RuntimeContextToStringBase
+{
+    public override string ToString() => "base";
+}
+
+public sealed class RuntimeContextToStringDerived : RuntimeContextToStringBase
+{
+    public override string ToString() => "derived";
+}
+
 public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDerived2, IDerived
 {
     private int _code;
@@ -95,6 +142,25 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
 
     new public int f8() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); if (this.GetHashCode() != _code) return 999; else return 17; }
     override public int f9() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); if (this.GetHashCode() != _code) return 999; else return 19; }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallF9(C instance) => instance.f9();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallGeneric(GenericBase<string> instance) => instance.GetValue("value");
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallRuntimeContext<T>(GenericBase<T> instance, T value) => instance.GetValue(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string CallConstrainedRuntimeContext<T>(T instance) where T : class => instance.ToString();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallPointer(CallingConventionBase instance) => instance.TransformPointer(1);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallStruct(CallingConventionBase instance) =>
+        instance.TransformStruct(new IndirectArgument { First = 2, Second = 3 });
 
     [Fact]
     public static int TestEntryPoint()
@@ -174,6 +240,79 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         C c = new C();
         ITest5 ic = c;
         ITest5 it = t;
+
+        if (CallF9(c) != 18)
+        {
+            Console.WriteLine("CallF9(c)!=18");
+            return 1;
+        }
+
+        if (CallF9(t) != 19)
+        {
+            Console.WriteLine("CallF9(t)!=19");
+            return 1;
+        }
+
+        if (CallGeneric(new GenericBase<string>()) != 20)
+        {
+            Console.WriteLine("CallGeneric(new GenericBase<string>())!=20");
+            return 1;
+        }
+
+        if (CallGeneric(new GenericDerived<string>()) != 21)
+        {
+            Console.WriteLine("CallGeneric(new GenericDerived<string>())!=21");
+            return 1;
+        }
+
+        if (CallRuntimeContext(new GenericBase<string>(), "value") != 20)
+        {
+            Console.WriteLine("CallRuntimeContext(new GenericBase<string>(), \"value\")!=20");
+            return 1;
+        }
+
+        if (CallRuntimeContext(new GenericDerived<string>(), "value") != 21)
+        {
+            Console.WriteLine("CallRuntimeContext(new GenericDerived<string>(), \"value\")!=21");
+            return 1;
+        }
+
+        if (CallConstrainedRuntimeContext(new RuntimeContextToStringBase()) != "base")
+        {
+            Console.WriteLine("CallConstrainedRuntimeContext(new RuntimeContextToStringBase())!=\"base\"");
+            return 1;
+        }
+
+        if (CallConstrainedRuntimeContext(new RuntimeContextToStringDerived()) != "derived")
+        {
+            Console.WriteLine("CallConstrainedRuntimeContext(new RuntimeContextToStringDerived())!=\"derived\"");
+            return 1;
+        }
+
+        if (CallPointer(new CallingConventionBase()) != 23)
+        {
+            Console.WriteLine("CallPointer(new CallingConventionBase())!=23");
+            return 1;
+        }
+
+        if (CallPointer(new CallingConventionDerived()) != 24)
+        {
+            Console.WriteLine("CallPointer(new CallingConventionDerived())!=24");
+            return 1;
+        }
+
+        if (CallStruct(new CallingConventionBase()) != 5)
+        {
+            Console.WriteLine("CallStruct(new CallingConventionBase())!=5");
+            return 1;
+        }
+
+        if (CallStruct(new CallingConventionDerived()) != 6)
+        {
+            Console.WriteLine("CallStruct(new CallingConventionDerived())!=6");
+            return 1;
+        }
+
         if (c.f8() != 16)
         {
             Console.WriteLine("c.f8()!=16");
@@ -223,11 +362,4 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         return 100;
     }
 }
-
-
-
-
-
-
-
 

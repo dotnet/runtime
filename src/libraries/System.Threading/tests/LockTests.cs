@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -67,6 +68,47 @@ namespace System.Threading.Tests
             Assert.False(lockObj.IsHeldByCurrentThread);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void TryEnterOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout)
+        {
+            Lock lockObj = new();
+            using ManualResetEventSlim entered = new(false);
+            using ManualResetEventSlim release = new(false);
+            Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
+            {
+                using (lockObj.EnterScope())
+                {
+                    entered.Set();
+                    release.CheckedWait();
+                }
+            });
+            thread.IsBackground = true;
+            thread.Start();
+            try
+            {
+                entered.CheckedWait();
+                ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+                {
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    Assert.False(lockObj.TryEnter(millisecondsTimeout));
+                    Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                    stopwatch.Restart();
+                    Assert.False(lockObj.TryEnter(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                    Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                    Assert.Throws<PlatformNotSupportedException>(() => lockObj.Enter());
+                });
+            }
+            finally
+            {
+                release.Set();
+                waitForThread();
+            }
+            Assert.True(lockObj.TryEnter(0));
+            lockObj.Exit();
+        }
+
         // Attempts to overflow the recursion count of a newly-created lock.
         [Fact]
         public static void DeepRecursion()
@@ -106,7 +148,7 @@ namespace System.Threading.Tests
             Assert.False(lockObj.IsHeldByCurrentThread);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void IsHeldByCurrentThread_WhenHeldBySomeoneElse()
         {
             Lock lockObj = new();
@@ -137,7 +179,7 @@ namespace System.Threading.Tests
             default(Lock.Scope).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
         {
             Lock lockObj = new();
@@ -194,7 +236,7 @@ namespace System.Threading.Tests
                 () => lockObj.TryEnter(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Enter_HasToWait()
         {
             Lock lockObj = new();
@@ -296,7 +338,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Enter_HasToWait_LockContentionCountTest()
         {
             long initialLockContentionCount = Monitor.LockContentionCount;
@@ -304,7 +346,7 @@ namespace System.Threading.Tests
             Assert.True(Monitor.LockContentionCount - initialLockContentionCount >= 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void InterruptWaitTest()

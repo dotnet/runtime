@@ -8,6 +8,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class CorrectException : Exception
 {
@@ -15,6 +16,7 @@ public class CorrectException : Exception
 
 public class CCC
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint() => ClassCallingCctor<object>.Test();
 }

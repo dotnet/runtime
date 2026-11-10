@@ -169,7 +169,7 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
     *ppFunctions = 0;
     *pnEntries   = 0;
 
-    DWORD_PTR  pHp = JitMan + (DWORD_PTR)offsetof(FakeEEJitManager, m_pCodeHeap);
+    DWORD_PTR  pHp = JitMan + (DWORD_PTR)offsetof(FakeEEJitManager, m_pAllCodeHeaps);
 
     move(pHp, pHp);
 

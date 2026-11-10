@@ -49,8 +49,9 @@ namespace System.Net.Http
 
                 response.Dispose();
 
-                // Clear the authorization header.
+                // Clear the authorization headers.
                 request.Headers.Authorization = null;
+                request.Headers.ProxyAuthorization = null;
 
                 if (HttpTelemetry.Log.IsEnabled())
                 {
@@ -136,6 +137,17 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled())
                 {
                     TraceError($"Insecure https to http redirect from '{requestUri}' to '{location}' blocked.", response.RequestMessage!.GetHashCode());
+                }
+
+                return null;
+            }
+
+            // Disallow automatic redirection to unsupported schemes
+            if (!HttpUtilities.IsSupportedScheme(location.Scheme))
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    TraceError($"Redirect from '{requestUri}' to '{location}' blocked due to unsupported scheme '{location.Scheme}'.", response.RequestMessage!.GetHashCode());
                 }
 
                 return null;

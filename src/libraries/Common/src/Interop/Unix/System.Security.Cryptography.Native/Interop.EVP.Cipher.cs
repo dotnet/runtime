@@ -258,6 +258,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes128Ccm")]
         internal static partial IntPtr EvpAes128Ccm();
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes128Wrap")]
+        internal static partial IntPtr EvpAes128Wrap();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes128WrapPad")]
+        internal static partial IntPtr EvpAes128WrapPad();
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes192Ecb")]
         internal static partial IntPtr EvpAes192Ecb();
 
@@ -276,6 +282,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes192Ccm")]
         internal static partial IntPtr EvpAes192Ccm();
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes192Wrap")]
+        internal static partial IntPtr EvpAes192Wrap();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes192WrapPad")]
+        internal static partial IntPtr EvpAes192WrapPad();
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes256Ecb")]
         internal static partial IntPtr EvpAes256Ecb();
 
@@ -293,6 +305,12 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes256Ccm")]
         internal static partial IntPtr EvpAes256Ccm();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes256Wrap")]
+        internal static partial IntPtr EvpAes256Wrap();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpAes256WrapPad")]
+        internal static partial IntPtr EvpAes256WrapPad();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDesCbc")]
         internal static partial IntPtr EvpDesCbc();

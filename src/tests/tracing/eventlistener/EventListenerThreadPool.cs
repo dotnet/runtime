@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
+using TestLibrary;
 using Xunit;
 
 namespace Tracing.Tests
@@ -63,7 +64,9 @@ namespace Tracing.Tests
 
     public class EventListenerThreadPool
     {
-        [Fact]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static int TestEntryPoint()
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
@@ -103,15 +106,12 @@ namespace Tracing.Tests
 
                 WaitHandle.WaitAll(waitEvents, TimeSpan.FromMinutes(1));
 
-                if (!TestLibrary.Utilities.IsNativeAot)
+                listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(1));
+                if (listener.TPWorkerThreadWaitCount == 0)
                 {
-                    listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(1));
-                    if (listener.TPWorkerThreadWaitCount == 0)
-                    {
-                        Console.WriteLine("Test Failed: Did not see the expected event.");
-                        Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
-                        return -1;
-                    }
+                    Console.WriteLine("Test Failed: Did not see the expected event.");
+                    Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
+                    return -1;
                 }
 
                 if (!(listener.TPIOPack >= listener.TPIOPackGoal &&

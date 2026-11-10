@@ -24,7 +24,7 @@ namespace ILCompiler
             _method = method;
         }
 
-        public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
+        protected override bool ContainsMethodBodyCore(MethodDesc method, bool unboxingStub)
         {
             return (method == _method) || (method == _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }

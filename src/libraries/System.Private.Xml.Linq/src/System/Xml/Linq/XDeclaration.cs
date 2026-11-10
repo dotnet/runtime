@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using StringBuilder = System.Text.StringBuilder;
 
 namespace System.Xml.Linq
@@ -63,6 +64,15 @@ namespace System.Xml.Linq
             _encoding = r.GetAttribute("encoding");
             _standalone = r.GetAttribute("standalone");
             r.Read();
+        }
+
+        internal static async Task<XDeclaration> CreateAsync(XmlReader r)
+        {
+            string? version = r.GetAttribute("version");
+            string? encoding = r.GetAttribute("encoding");
+            string? standalone = r.GetAttribute("standalone");
+            await r.ReadAsync().ConfigureAwait(false);
+            return new XDeclaration(version, encoding, standalone);
         }
 
         /// <summary>

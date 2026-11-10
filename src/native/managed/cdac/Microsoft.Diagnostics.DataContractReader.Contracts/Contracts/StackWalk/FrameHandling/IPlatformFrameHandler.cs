@@ -18,4 +18,5 @@ internal interface IPlatformFrameHandler
     void HandleResumableFrame(Data.ResumableFrame frame);
     void HandleFaultingExceptionFrame(Data.FaultingExceptionFrame frame);
     void HandleHijackFrame(Data.HijackFrame frame);
+    void HandleTailCallFrame(Data.TailCallFrame frame);
 }

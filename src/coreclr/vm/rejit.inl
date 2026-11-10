@@ -22,24 +22,31 @@ inline void ReJitManager::InitStatic()
 
 static BOOL RejitOnAttachEnabled()
 {
-    LIMITED_METHOD_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
 
-    static ConfigDWORD rejitOnAttachEnabled;
-    return rejitOnAttachEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0;
+#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
+    return (&g_profControlBlock)->fRejitOnAttachEnabled;
+#else
+    return FALSE;
+#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
 }
 
 // static
 inline BOOL ReJitManager::IsReJITEnabled()
 {
-    LIMITED_METHOD_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
 
+#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
     static bool profilerStartupRejit = CORProfilerEnableRejit() != FALSE;
     return  profilerStartupRejit || RejitOnAttachEnabled();
+#else
+    return FALSE;
+#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
 }
 
 inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
 {
-    LIMITED_METHOD_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
     return RejitOnAttachEnabled();
 }
 

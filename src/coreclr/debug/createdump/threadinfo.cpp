@@ -7,10 +7,6 @@
 #define THUMB_CODE 1
 #endif
 
-#ifndef __GLIBC__
-typedef int __ptrace_request;
-#endif
-
 extern CrashInfo* g_crashInfo;
 
 // Helper for UnwindNativeFrames
@@ -20,9 +16,6 @@ GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
 #if defined(__x86_64__)
     *ip = pContext->Rip;
     *sp = pContext->Rsp;
-#elif defined(__i386__)
-    *ip = pContext->Eip;
-    *sp = pContext->Esp;
 #elif defined(__aarch64__)
     *ip = pContext->Pc;
     *sp = pContext->Sp;
@@ -51,6 +44,8 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
     uint64_t previousSp = 0;
     uint64_t previousIp = 0;
     int ipMatchCount = 0;
+    bool isSignalFrame = false;
+    bool crossedSignalTrampoline = false;
 
     // For each native frame, add a page around the IP and any unwind info not already
     // added in VisitProgramHeader (Linux) and VisitSection (MacOS) to the dump.
@@ -69,9 +64,18 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
             sp++;
         }
 #endif
-        if (ip == 0 || sp <= previousSp) {
+        // When a signal handler uses SA_ONSTACK (alternate signal stack), the SP can legitimately
+        // decrease when unwinding crosses the signal trampoline back to the original thread stack.
+        // Allow the SP decrease if the current frame is a signal trampoline (detected by the
+        // previous unwind call) and we haven't already crossed one (limit to one crossing to
+        // bound corruption damage).
+        if (ip == 0 || sp == 0 || (sp <= previousSp && (!isSignalFrame || crossedSignalTrampoline))) {
             TRACE_VERBOSE("Unwind: sp not increasing or ip == 0 sp %p ip %p\n", (void*)sp, (void*)ip);
             break;
+        }
+        if (sp < previousSp)
+        {
+            crossedSignalTrampoline = true;
         }
         // Break out of the endless loop if the IP matches over a 1000 times. This is a fallback
         // behavior of libunwind when the module the IP is in doesn't have unwind info and for
@@ -104,7 +108,8 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
 
         // Unwind the native frame adding all the memory accessed to the core dump via the read memory adapter.
         ULONG64 functionStart;
-        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter)) {
+        isSignalFrame = false;
+        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter, &isSignalFrame)) {
             TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
             break;
         }
@@ -186,10 +191,10 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
                     {
-                        ArrayHolder<WCHAR> typeName = new WCHAR[MAX_LONGPATH + 1];
-                        if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName.GetPtr())))
+                        WStringHolder typeName(new WCHAR[MAX_LONGPATH + 1]);
+                        if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName)))
                         {
-                            m_exceptionType = ConvertString(typeName.GetPtr());
+                            m_exceptionType = ConvertString(typeName);
                             TRACE("Unwind: exception type %s\n", m_exceptionType.c_str());
                         }
                     }
@@ -261,7 +266,7 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
                 {
                     TRACE("Unwind: GetTokenAndScope sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
                 }
-                if (FAILED(pMethod->GetILOffsetsByAddress(ip, 1, NULL, &ilOffset)))
+                if (FAILED(pMethod->GetILOffsetsByAddress(ip, 1, nullptr, &ilOffset)))
                 {
                     TRACE("Unwind: GetILOffsetsByAddress sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
                 }
@@ -287,7 +292,8 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
     }
 
     // Add managed stack frame for the crash info notes
-    StackFrame frame(moduleAddress, ip, sp, pMethod.Detach(), nativeOffset, token, ilOffset);
+    StackFrame frame(moduleAddress, ip, sp, pMethod, nativeOffset, token, ilOffset);
+    pMethod.Detach();
     AddStackFrame(frame);
 }
 
@@ -382,7 +388,7 @@ ThreadInfo::GetThreadStack()
 
             if (g_diagnostics)
             {
-                TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, size);
+                TRACE("Thread %04x stack found in other mapping (size %08zx): ", Tid(), size);
                 region->Trace();
             }
         }
@@ -390,12 +396,12 @@ ThreadInfo::GetThreadStack()
     }
     else
     {
-        TRACE("Thread %04x null stack pointer\n", m_tid);
+        TRACE("Thread %04x null stack pointer\n", Tid());
     }
 }
 
 bool
 ThreadInfo::IsCrashThread() const
 {
-    return m_tid == m_crashInfo.CrashThread();
+    return Tid() == m_crashInfo.CrashThread();
 }

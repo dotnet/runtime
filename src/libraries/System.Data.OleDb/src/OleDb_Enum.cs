@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Data.OleDb
 {
@@ -148,8 +149,7 @@ namespace System.Data.OleDb
         private static readonly NativeDBType D_LongVarBinary = new NativeDBType(0xff, -1, false, true, OleDbType.LongVarBinary, NativeDBType.BYTES, S_LONGVARBINARY, typeof(byte[]), NativeDBType.BYTES, DbType.Binary); // 19
         private static readonly NativeDBType D_LongVarChar = new NativeDBType(0xff, -1, false, true, OleDbType.LongVarChar, NativeDBType.STR, S_LONGVARCHAR, typeof(string), NativeDBType.WSTR/*STR*/, DbType.AnsiString); // 20 - (ansi pointer)
         private static readonly NativeDBType D_Numeric = new NativeDBType(28, 19, true, false, OleDbType.Numeric, NativeDBType.NUMERIC, S_NUMERIC, typeof(decimal), NativeDBType.NUMERIC, DbType.Decimal); // 21 - (tagDB_Numeric)
-        private static readonly unsafe NativeDBType D_PropVariant = new NativeDBType(0xff, sizeof(PROPVARIANT),
-                                                                                                             true, false, OleDbType.PropVariant, NativeDBType.PROPVARIANT, S_PROPVARIANT, typeof(object), NativeDBType.VARIANT, DbType.Object); // 22
+        private static readonly unsafe NativeDBType D_PropVariant = new NativeDBType(0xff, sizeof(ComVariant), true, false, OleDbType.PropVariant, NativeDBType.PROPVARIANT, S_PROPVARIANT, typeof(object), NativeDBType.VARIANT, DbType.Object); // 22
         private static readonly NativeDBType D_Single = new NativeDBType(7, 4, true, false, OleDbType.Single, NativeDBType.R4, S_R4, typeof(float), NativeDBType.R4, DbType.Single); // 23 - single
         private static readonly NativeDBType D_Double = new NativeDBType(15, 8, true, false, OleDbType.Double, NativeDBType.R8, S_R8, typeof(double), NativeDBType.R8, DbType.Double); // 24 - double
         private static readonly NativeDBType D_UnsignedTinyInt = new NativeDBType(3, 1, true, false, OleDbType.UnsignedTinyInt, NativeDBType.UI1, S_UI1, typeof(byte), NativeDBType.UI1, DbType.Byte); // 25 - byte7

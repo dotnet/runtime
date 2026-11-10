@@ -1,0 +1,57 @@
+<Project>
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.templating\$(MicrosoftDotNetBuildTasksTemplatingVersion)\build\Microsoft.DotNet.Build.Tasks.Templating.props" />
+
+  <PropertyGroup>
+    <!-- Defined in Packaging.targets, but we need this before targets are imported -->
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+    <MinOSForArch>win7</MinOSForArch>
+    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
+    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
+    <PackagePlatform>AnyCPU</PackagePlatform>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- build the transport package which includes product and symbols in addition to standard packages
+    This is a legacy setting as we tend to use symbol packages for symbol indexing and we don't use
+    transport packages to flow dependencies anymore -->
+    <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
+  </PropertyGroup>
+
+  <Import Project="package-rids.props" />
+
+  <!-- _packageTargetOSGroup is used to control the runtime package imports, don't import runtime package targets for
+       an unsupported OS Group -->
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' != '' and '$(_isSupportedOSGroup)' == 'true'">
+    <!-- Android will use Linux package definitions -->
+    <_packageTargetOSGroup>$(_derivedPackageTargetOSGroup)</_packageTargetOSGroup>
+    <_packageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == 'android'">linux</_packageTargetOSGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <OutputPath>$(PackageOutputPath)</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsLineupPackage)' == 'true'">
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeRuntimeJson>true</IncludeRuntimeJson>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_project Include="@(BuildRID)">
+      <Platform Condition="'%(Platform)' == ''">amd64</Platform>
+      <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform)</AdditionalProperties>
+    </_project>
+
+    <_buildRidProjects Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
+    <!-- Only include rid projects for a builds file, not for a lineup package -->
+    <Project Condition="'$(IsLineupPackage)' != 'true'" Include="@(_buildRidProjects)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsLineupPackage)' == 'true'">
+    <!-- Include project references for a lineup package to generate the runtime.json file -->
+    <ProjectReference Include="@(_buildRidProjects)" />
+  </ItemGroup>
+</Project>

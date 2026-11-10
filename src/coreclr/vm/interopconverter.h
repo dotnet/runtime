@@ -60,7 +60,7 @@ struct ObjFromComIP
 
     static flags FromItfMarshalInfoFlags(DWORD dwFlags)
     {
-        static_assert_no_msg(((DWORD)CLASS_IS_HINT)         == ((DWORD)ItfMarshalInfo::ITF_MARSHAL_CLASS_IS_HINT));
+        static_assert(((DWORD)CLASS_IS_HINT)         == ((DWORD)ItfMarshalInfo::ITF_MARSHAL_CLASS_IS_HINT));
 
         DWORD dwResult = (dwFlags &
                             (ItfMarshalInfo::ITF_MARSHAL_CLASS_IS_HINT));

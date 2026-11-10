@@ -15,6 +15,8 @@ namespace ILCompiler.Metadata
 {
     internal partial class Transform<TPolicy>
     {
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018;
+
         internal EntityMap<Cts.TypeDesc, MetadataRecord> _types =
             new EntityMap<Cts.TypeDesc, MetadataRecord>(EqualityComparer<Cts.TypeDesc>.Default);
 
@@ -193,16 +195,16 @@ namespace ILCompiler.Metadata
 
             parentReferenceRecord = new TypeReference
             {
-                TypeName = HandleString(containingType.Name),
+                TypeName = HandleString(containingType.GetName()),
             };
 
             if (containingType.ContainingType != null)
             {
-                parentReferenceRecord.ParentNamespaceOrType = GetNestedReferenceParent(containingType);
+                parentReferenceRecord.NamespaceOrEnclosingType = GetNestedReferenceParent(containingType);
             }
             else
             {
-                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.Namespace);
+                parentReferenceRecord.NamespaceOrEnclosingType = HandleNamespaceReference(containingType.Module, containingType.GetNamespace());
             }
 
             return parentReferenceRecord;
@@ -214,14 +216,14 @@ namespace ILCompiler.Metadata
 
             if (entity.ContainingType != null)
             {
-                record.ParentNamespaceOrType = GetNestedReferenceParent(entity);
+                record.NamespaceOrEnclosingType = GetNestedReferenceParent(entity);
             }
             else
             {
-                record.ParentNamespaceOrType = HandleNamespaceReference(entity.Module, entity.Namespace);
+                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
             }
 
-            record.TypeName = HandleString(entity.Name);
+            record.TypeName = HandleString(entity.GetName());
         }
 
         private void InitializeTypeDef(Cts.MetadataType entity, TypeDefinition record)
@@ -232,30 +234,26 @@ namespace ILCompiler.Metadata
             if (containingType != null)
             {
                 var enclosingType = (TypeDefinition)HandleType(containingType);
-                record.EnclosingType = enclosingType;
+                record.NamespaceOrEnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
-
-                var namespaceDefinition =
-                    HandleNamespaceDefinition(containingType.Module, entity.ContainingType.Namespace);
-                record.NamespaceDefinition = namespaceDefinition;
             }
             else
             {
-                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.Namespace);
-                record.NamespaceDefinition = namespaceDefinition;
+                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.GetNamespace());
+                record.NamespaceOrEnclosingType = namespaceDefinition;
 
                 if (entity.IsModuleType)
                 {
-                    // These don't get added to the global namespace.
+                    // These don't get added to the scope's type definitions.
                     // Instead, they have a dedicated field on the scope record.
                 }
                 else
                 {
-                    namespaceDefinition.TypeDefinitions.Add(record);
+                    HandleScopeDefinition(entity.Module).TypeDefinitions.Add(record);
                 }
             }
 
-            record.Name = HandleString(entity.Name);
+            record.Name = HandleString(entity.GetName());
 
             Cts.ClassLayoutMetadata layoutMetadata = entity.GetClassLayout();
             record.Size = checked((uint)layoutMetadata.Size);
@@ -334,14 +332,14 @@ namespace ILCompiler.Metadata
 
                 foreach (var e in ecmaRecord.GetEvents())
                 {
-                    Event evt = HandleEvent(ecmaEntity.EcmaModule, e);
+                    Event evt = HandleEvent(ecmaEntity.Module, e);
                     if (evt != null)
                         record.Events.Add(evt);
                 }
 
                 foreach (var property in ecmaRecord.GetProperties())
                 {
-                    Property prop = HandleProperty(ecmaEntity.EcmaModule, property);
+                    Property prop = HandleProperty(ecmaEntity.Module, property);
                     if (prop != null)
                         record.Properties.Add(prop);
                 }
@@ -349,21 +347,21 @@ namespace ILCompiler.Metadata
                 Ecma.CustomAttributeHandleCollection customAttributes = ecmaRecord.GetCustomAttributes();
                 if (customAttributes.Count > 0)
                 {
-                    record.CustomAttributes = HandleCustomAttributes(ecmaEntity.EcmaModule, customAttributes);
+                    record.CustomAttributes = HandleCustomAttributes(ecmaEntity.Module, customAttributes);
                 }
 
                 /* COMPLETENESS
                 foreach (var miHandle in ecmaRecord.GetMethodImplementations())
                 {
-                    Ecma.MetadataReader reader = ecmaEntity.EcmaModule.MetadataReader;
+                    Ecma.MetadataReader reader = ecmaEntity.Module.MetadataReader;
 
                     Ecma.MethodImplementation miDef = reader.GetMethodImplementation(miHandle);
 
-                    Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodBody);
+                    Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.Module.GetObject(miDef.MethodBody);
                     if (_policy.IsBlocked(methodBody))
                         continue;
 
-                    Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodDeclaration);
+                    Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.Module.GetObject(miDef.MethodDeclaration);
                     if (_policy.IsBlocked(methodDecl.GetTypicalMethodDefinition()))
                         continue;
 
@@ -538,6 +536,8 @@ namespace ILCompiler.Metadata
                     result |= TypeAttributes.ExplicitLayout;
                 if (type.IsSequentialLayout)
                     result |= TypeAttributes.SequentialLayout;
+                if (type.IsExtendedLayout)
+                    result |= TypeAttributesExtendedLayout;
                 if (type.IsInterface)
                     result |= TypeAttributes.Interface;
                 if (type.IsSealed)

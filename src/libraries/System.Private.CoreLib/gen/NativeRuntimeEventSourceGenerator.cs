@@ -415,10 +415,15 @@ namespace Generators
 
         private static readonly List<string> manuallyHandledEventSymbols =
         [
-            // Some threading events are defined manually in NativeRuntimeEventSource.Threading.cs
+            // Some events are defined manually in NativeRuntimeEventSource.Events[.NativeSinks].cs
             "ThreadPool",
             "Contention",
-            "WaitHandle"
+            "WaitHandle",
+            "IncreaseMemoryPressure",
+            "DecreaseMemoryPressure",
+
+            // Exception event defined manually in NativeRuntimeEventSource.Exceptions.NativeSinks.cs
+            "ExceptionThrown_V1",
         ];
     }
 }

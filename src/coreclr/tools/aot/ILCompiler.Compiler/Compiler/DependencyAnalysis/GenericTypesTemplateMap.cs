@@ -7,15 +7,15 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Hashtable of all generic type templates used by the TypeLoader at runtime
     /// </summary>
-    public sealed class GenericTypesTemplateMap : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericTypesTemplateMap : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public GenericTypesTemplateMap(ExternalReferencesTableNode externalReferences)
@@ -28,7 +28,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__GenericTypesTemplateMap"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -67,19 +66,16 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeWriter.Save();
 
-            _size = streamBytes.Length;
-
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetTemplateTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public static void AddTemplateTypeDependencies(IDependencySink dependencies, NodeFactory factory, TypeDesc type)
         {
             TypeDesc templateType = ConvertArrayOfTToRegularArray(factory, type);
 
             if (!IsEligibleToHaveATemplate(templateType))
                 return;
 
-            dependencies ??= new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(templateType), "Template type"));
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout"));
         }

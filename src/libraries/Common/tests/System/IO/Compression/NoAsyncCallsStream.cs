@@ -13,9 +13,6 @@ internal sealed class NoAsyncCallsStream : Stream
 
     public NoAsyncCallsStream(Stream stream) => _s = stream;
 
-    // Allows temporarily disabling the current stream's sync API usage restriction.
-    public bool IsRestrictionEnabled { get; set; }
-
     public override bool CanRead => _s.CanRead;
     public override bool CanSeek => _s.CanSeek;
     public override bool CanTimeout => _s.CanTimeout;
@@ -47,18 +44,11 @@ internal sealed class NoAsyncCallsStream : Stream
     public override void WriteByte(byte value) => _s.WriteByte(value);
 
     // Async
-    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.CopyToAsync(destination, bufferSize, cancellationToken);
-    public override ValueTask DisposeAsync() =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.DisposeAsync();
-    public override Task FlushAsync(CancellationToken cancellationToken) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.FlushAsync();
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.ReadAsync(buffer, offset, count, cancellationToken);
-    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.ReadAsync(buffer, cancellationToken);
-    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.WriteAsync(buffer, offset, count, cancellationToken);
-    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.WriteAsync(buffer, cancellationToken);
+    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => throw new InvalidOperationException();
+    public override ValueTask DisposeAsync() => throw new InvalidOperationException();
+    public override Task FlushAsync(CancellationToken cancellationToken) => throw new InvalidOperationException();
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new InvalidOperationException();
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new InvalidOperationException();
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
 }

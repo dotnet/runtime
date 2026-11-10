@@ -9,8 +9,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
-#pragma warning disable SA1648 // TODO: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3595
-
 namespace System.Net
 {
     /// <summary>
@@ -52,26 +50,11 @@ namespace System.Net
                 ThrowArgumentOutOfRangeException();
             }
 
-            if (HasNonZeroBitsAfterNetworkPrefix(baseAddress, prefixLength))
-            {
-                ThrowInvalidBaseAddressException();
-            }
-
-            _baseAddress = baseAddress;
+            _baseAddress = ClearNonZeroBitsAfterNetworkPrefix(baseAddress, prefixLength);
             PrefixLength = prefixLength;
 
             [DoesNotReturn]
             static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException(nameof(prefixLength));
-
-            [DoesNotReturn]
-            static void ThrowInvalidBaseAddressException() => throw new ArgumentException(SR.net_bad_ip_network_invalid_baseaddress, nameof(baseAddress));
-        }
-
-        // Non-validating ctor
-        private IPNetwork(IPAddress baseAddress, int prefixLength, bool _)
-        {
-            _baseAddress = baseAddress;
-            PrefixLength = prefixLength;
         }
 
         /// <summary>
@@ -95,7 +78,7 @@ namespace System.Net
                 return true;
             }
 
-            if (address.AddressFamily == AddressFamily.InterNetwork || address.IsIPv4MappedToIPv6)
+            if (BaseAddress.AddressFamily == AddressFamily.InterNetwork)
             {
                 uint mask = uint.MaxValue << (32 - PrefixLength);
                 if (BitConverter.IsLittleEndian)
@@ -175,7 +158,7 @@ namespace System.Net
         /// </summary>
         /// <param name="s">A <see cref="string"/> that defines an IP network in CIDR notation.</param>
         /// <param name="result">When the method returns, contains an <see cref="IPNetwork"/> instance if the conversion succeeds.</param>
-        /// <returns><see langword="true"/> if the conversion was succesful; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(string? s, out IPNetwork result)
         {
             if (s == null)
@@ -203,11 +186,10 @@ namespace System.Net
 
                 if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
                     int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
-                    prefixLength <= GetMaxPrefixLength(address) &&
-                    !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
+                    prefixLength <= GetMaxPrefixLength(address))
                 {
                     Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
-                    result = new IPNetwork(address, prefixLength, false);
+                    result = new IPNetwork(address, prefixLength);
                     return true;
                 }
             }
@@ -232,11 +214,10 @@ namespace System.Net
 
                 if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
                     int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
-                    prefixLength <= GetMaxPrefixLength(address) &&
-                    !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
+                    prefixLength <= GetMaxPrefixLength(address))
                 {
                     Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
-                    result = new IPNetwork(address, prefixLength, false);
+                    result = new IPNetwork(address, prefixLength);
                     return true;
                 }
             }
@@ -247,28 +228,40 @@ namespace System.Net
 
         private static int GetMaxPrefixLength(IPAddress baseAddress) => baseAddress.AddressFamily == AddressFamily.InterNetwork ? 32 : 128;
 
-        private static bool HasNonZeroBitsAfterNetworkPrefix(IPAddress baseAddress, int prefixLength)
+        private static IPAddress ClearNonZeroBitsAfterNetworkPrefix(IPAddress baseAddress, int prefixLength)
         {
             if (baseAddress.AddressFamily == AddressFamily.InterNetwork)
             {
-                // The cast to long ensures that the mask becomes 0 for the case where 'prefixLength == 0'.
-                uint mask = (uint)((long)uint.MaxValue << (32 - prefixLength));
+                // Bitwise shift works only for lower 5-bits count operands.
+                if (prefixLength == 0)
+                {
+                    // Corresponds to 0.0.0.0
+                    return IPAddress.Any;
+                }
+
+                uint mask = uint.MaxValue << (32 - prefixLength);
                 if (BitConverter.IsLittleEndian)
                 {
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                return (baseAddress.PrivateAddress & mask) != baseAddress.PrivateAddress;
+                uint newAddress = baseAddress.PrivateAddress & mask;
+                return newAddress == baseAddress.PrivateAddress
+                    ? baseAddress
+                    : new IPAddress(newAddress);
             }
             else
             {
+                // Bitwise shift works only for lower 7-bits count operands.
+                if (prefixLength == 0)
+                {
+                    // Corresponds to [::]
+                    return IPAddress.IPv6Any;
+                }
+
                 UInt128 value = default;
                 baseAddress.TryWriteBytes(MemoryMarshal.AsBytes(new Span<UInt128>(ref value)), out int bytesWritten);
                 Debug.Assert(bytesWritten == IPAddressParserStatics.IPv6AddressBytes);
-                if (prefixLength == 0)
-                {
-                    return value != UInt128.Zero;
-                }
 
                 UInt128 mask = UInt128.MaxValue << (128 - prefixLength);
                 if (BitConverter.IsLittleEndian)
@@ -276,7 +269,10 @@ namespace System.Net
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                return (value & mask) != value;
+                UInt128 newAddress = value & mask;
+                return newAddress == value
+                    ? baseAddress
+                    : new IPAddress(MemoryMarshal.AsBytes(new Span<UInt128>(ref newAddress)));
             }
         }
 
@@ -292,7 +288,7 @@ namespace System.Net
         /// </summary>
         /// <param name="destination">The destination span of characters.</param>
         /// <param name="charsWritten">When this method returns, contains the number of characters that were written to <paramref name="destination"/>.</param>
-        /// <returns><see langword="true"/> if the formatting was succesful; otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise <see langword="false"/>.</returns>
         public bool TryFormat(Span<char> destination, out int charsWritten) =>
             destination.TryWrite(CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out charsWritten);
 
@@ -301,7 +297,7 @@ namespace System.Net
         /// </summary>
         /// <param name="utf8Destination">The destination span of UTF-8 bytes.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="utf8Destination"/>.</param>
-        /// <returns><see langword="true"/> if the formatting was succesful; otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise <see langword="false"/>.</returns>
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
             Utf8.TryWrite(utf8Destination, CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out bytesWritten);
 

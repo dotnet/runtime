@@ -20,29 +20,31 @@ namespace System
     {
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDIN_FILENO, FileAccess.Read,
+            return new UnixConsoleStream(OpenStandardInputHandle(), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDOUT_FILENO, FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDERR_FILENO, FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
 
-        public static Encoding InputEncoding
-        {
-            get { return GetConsoleEncoding(); }
-        }
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(0);
 
-        public static Encoding OutputEncoding
-        {
-            get { return GetConsoleEncoding(); }
-        }
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(1);
+
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(2);
+
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd) => new SafeFileHandle(fd, ownsHandle: false);
+
+        public static Encoding InputEncoding => Encoding.Default;
+
+        public static Encoding OutputEncoding => Encoding.Default;
 
         internal static TextReader GetOrCreateReader()
         {
@@ -180,16 +182,6 @@ namespace System
         public static (int Left, int Top) GetCursorPosition()
         {
             throw new PlatformNotSupportedException();
-        }
-
-        /// <summary>Creates an encoding from the current environment.</summary>
-        /// <returns>The encoding.</returns>
-        private static Encoding GetConsoleEncoding()
-        {
-            Encoding? enc = EncodingHelper.GetEncodingFromCharset();
-            return enc != null ?
-                enc.RemovePreamble() :
-                Encoding.Default;
         }
 
 #pragma warning disable IDE0060

@@ -24,7 +24,7 @@ namespace System.IO.Tests
             InlineData("dir/file.t", "exe", "dir/file.exe"),
             InlineData("dir/file.exe", "t", "dir/file.t"),
             InlineData("dir/file", "exe", "dir/file.exe")]
-        public void ChangeExtension(string path, string newExtension, string expected)
+        public void ChangeExtension(string? path, string? newExtension, string? expected)
         {
             if (expected != null)
                 expected = expected.Replace('/', Path.DirectorySeparatorChar);

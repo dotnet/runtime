@@ -47,6 +47,11 @@ public:
 #else
     static const bool Is64Bit = false;
 #endif
+#ifdef TARGET_WASM
+    static const bool IsWasm = true;
+#else
+    static const bool IsWasm = false;
+#endif
 #ifdef TARGET_ARM
     static const bool IsX86 = false;
     static const bool IsX64 = false;

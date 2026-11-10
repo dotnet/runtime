@@ -18,7 +18,6 @@
 #include "daccess.h"
 #include "stressLog.h"
 #include "holder.h"
-#include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -96,10 +95,10 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    g_pStressLog = &theLog;
+    bool success = minipal_mutex_init(&theLog.lock);
+    _ASSERTE(success);
 
-    theLog.pLock = new (nothrow) CrstStatic();
-    theLog.pLock->Init(CrstStressLog);
+    g_pStressLog = &theLog;
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
         maxBytesPerThread = STRESSLOG_CHUNK_SIZE;
@@ -118,7 +117,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     theLog.tickFrequency = getTickFrequency();
 
-    PalGetSystemTimeAsFileTime (&theLog.startTime);
+    theLog.startTime = minipal_get_system_time();
     theLog.startTimeStamp = getTimeStamp();
 
     theLog.moduleOffset = (size_t)hMod; // HMODULES are base addresses.
@@ -146,8 +145,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
         return NULL;
     }
 
-    CrstHolder holder(theLog.pLock);
-
+    minipal::MutexHolder holder(theLog.lock);
     msgs = CreateThreadStressLogHelper(pThread);
 
     return msgs;
@@ -578,4 +576,3 @@ void StressLog::EnumStressLogMemRanges(/*STRESSLOGMEMRANGECALLBACK*/void* slmrcb
 #endif // !DACCESS_COMPILE
 
 #endif // STRESS_LOG
-

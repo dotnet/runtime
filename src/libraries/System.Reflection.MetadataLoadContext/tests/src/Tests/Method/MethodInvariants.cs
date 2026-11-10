@@ -106,7 +106,12 @@ namespace System.Reflection.Tests
             Assert.False(c.IsConstructedGenericMethod());
             Assert.False(c.IsGenericMethod);
 
+#if NET
+            Assert.Empty(c.GetGenericArguments());
+#else
+            // On .NET Framework, ConstructorInfo.GetGenericArguments() throws NotSupportedException.
             Assert.Throws<NotSupportedException>(() => c.GetGenericArguments());
+#endif
         }
 
         private static void TestMethodInfoCommonInvariants(this MethodInfo m)

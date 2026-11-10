@@ -316,12 +316,14 @@ typedef struct
 	// FIXME: ptr_u32
 	dn_simdhash_ptr_ptr_t *data_hash;
 	GSList *imethod_items;
+	GSList *headers_to_free;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	// FIXME: ptr_u32
 	dn_simdhash_ptr_ptr_t *patchsite_hash;
 #endif
 	int *clause_indexes;
 	int *clause_vars;
+	gboolean *clause_has_patchpoint;
 	gboolean gen_seq_points;
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
@@ -339,6 +341,7 @@ typedef struct
 	GPtrArray *relocs;
 	gboolean verbose_level;
 	GArray *line_numbers;
+	int total_il_size;
 	gboolean prof_coverage;
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;

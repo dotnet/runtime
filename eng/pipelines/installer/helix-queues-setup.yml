@@ -1,43 +1,43 @@
 parameters:
-  jobTemplate: ''
-  variables: []
+  archType: ''
+  condition: always()
+  creator: ''
+  includeAllPlatforms: false
+  isExtraPlatformsBuild: false
   osGroup: ''
   osSubgroup: ''
-  archType: ''
-  container: ''
-  pool: ''
   platform: ''
-  shouldContinueOnError: false
-  jobParameters: {}
+  useHelixMonitor: false
 
-jobs:
-- template: ${{ parameters.jobTemplate }}
+steps:
+- template: /eng/pipelines/installer/helix.yml
   parameters:
-    variables: ${{ parameters.variables }}
+    archType: ${{ parameters.archType }}
+    condition: ${{ parameters.condition }}
+    creator: ${{ parameters.creator }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    archType: ${{ parameters.archType }}
-    container: ${{ parameters.container }}
-    pool: ${{ parameters.pool }}
-    platform: ${{ parameters.platform }}
-    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    useHelixMonitor: ${{ parameters.useHelixMonitor }}
+
+    # IMPORTANT: Select public/internal queue aliases explicitly. Runtime macros expand too late
+    # for helix.yml to strip the .Open suffix at template expansion time for internal runs.
     helixQueues:
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
-      - (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+      - (Debian.13.Arm32.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:f7d83180733d5291b9386f6e0e2085c1d0b05821b4a57c4cf98ccd734b5691ff
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
-      - (Ubuntu.2504.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.04-helix-arm64v8
+      - (Ubuntu.2604.Arm64.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:16ddcffcded58b622095c9529f6770dab88b5361adc01483af49fe3d2549cc91
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
-      - (Alpine.321.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
+      - (Alpine.324.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:09277d0f64e4617351b29dd8e9231e7276e94c29957f8a2877abcaf07ebe504d
 
     # Linux musl arm64
-    - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
-      - (Alpine.321.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm64v8
+    - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.isExtraPlatformsBuild, true), eq(parameters.includeAllPlatforms, true))) }}:
+      - (Alpine.324.Arm64.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:f5bdef79f14700d391972cf9adce3c0fd08977dc03e5afae63fcf57f574192d6
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
@@ -45,11 +45,17 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - osx.13.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - $(helix_macos_arm64)
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - $(helix_macos_arm64_latest_internal)
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
-      - OSX.1200.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - $(helix_macos_x64)
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - $(helix_macos_x64_latest_internal)
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
@@ -62,5 +68,3 @@ jobs:
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
       - Windows.11.Arm64.Open
-
-    ${{ insert }}: ${{ parameters.jobParameters }}

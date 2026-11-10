@@ -257,20 +257,6 @@ uint32_t GCEvent::Wait(uint32_t timeout, bool alertable)
 
 bool GCEvent::CreateAutoEventNoThrow(bool initialState)
 {
-    // This implementation of GCEvent makes no distinction between
-    // host-aware and non-host-aware events (since there will be no host).
-    return CreateOSAutoEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateManualEventNoThrow(bool initialState)
-{
-    // This implementation of GCEvent makes no distinction between
-    // host-aware and non-host-aware events (since there will be no host).
-    return CreateOSManualEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
-{
     assert(m_impl == nullptr);
     GCEvent::Impl* event(new (nothrow) GCEvent::Impl(false, initialState));
     if (!event)
@@ -288,7 +274,7 @@ bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
     return true;
 }
 
-bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
+bool GCEvent::CreateManualEventNoThrow(bool initialState)
 {
     assert(m_impl == nullptr);
     GCEvent::Impl* event(new (nothrow) GCEvent::Impl(true, initialState));

@@ -57,6 +57,9 @@ namespace System.Runtime.CompilerServices
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
 
+        // The number of elements in the sentinel table (see _sentinelTable).
+        private const int SENTINEL_TABLE_SIZE = 2;
+
         // The fields of this structure are known to coreclr, so if they are updated, you must also update object.h
 
         // The actual storage.
@@ -74,7 +77,7 @@ namespace System.Runtime.CompilerServices
         // creates a new cache instance
         public GenericCache(int initialCacheSize, int maxCacheSize)
         {
-            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > 1);
+            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > SENTINEL_TABLE_SIZE);
             Debug.Assert(BitOperations.PopCount((uint)maxCacheSize) == 1 && maxCacheSize >= initialCacheSize);
 
             _initialCacheSize = initialCacheSize;
@@ -83,14 +86,14 @@ namespace System.Runtime.CompilerServices
             // A trivial 2-elements table used for "flushing" the cache.
             // Nothing is ever stored in such a small table and identity of the sentinel is not important.
             // It is required that we are able to allocate this, we may need this in OOM cases.
-            _sentinelTable = CreateCacheTable(2, throwOnFail: true)!;
+            _sentinelTable = CreateCacheTable(SENTINEL_TABLE_SIZE, throwOnFail: true)!;
 
             _table =
 #if !DEBUG
             // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
             CreateCacheTable(initialCacheSize) ??
 #endif
-            _sentinelTable!;
+            _sentinelTable;
             _lastFlushSize = initialCacheSize;
         }
 
@@ -139,11 +142,18 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsSentinel(Entry[] table)
+        {
+            // The sentinel is the only table with SENTINEL_TABLE_SIZE elements.
+            // NOTE: the actual array is one element longer, since element 0 is used for aux data.
+            return table.Length == SENTINEL_TABLE_SIZE + 1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGet(TKey key, out TValue? value)
         {
-            // table is always initialized and is not null.
-            Entry[] table = _table!;
-            int hash = key!.GetHashCode();
+            Entry[] table = _table;
+            int hash = key.GetHashCode();
             int index = HashToBucket(table, hash);
             for (int i = 0; i < BUCKET_SIZE;)
             {
@@ -241,15 +251,15 @@ namespace System.Runtime.CompilerServices
         internal void TrySet(TKey key, TValue value)
         {
             int bucket;
-            int hash = key!.GetHashCode();
+            int hash = key.GetHashCode();
             Entry[] table;
 
             do
             {
                 table = _table;
-                if (table.Length == 2)
+                if (IsSentinel(table))
                 {
-                    // 2-element table is used as a sentinel.
+                    // sentinel table is used to indicate that
                     // we did not allocate a real table yet or have flushed it.
                     // try replacing the table, but do not insert anything.
                     MaybeReplaceCacheWithLarger(_lastFlushSize);
@@ -323,7 +333,7 @@ namespace System.Runtime.CompilerServices
             // reread tableData after TryGrow.
             table = _table;
 
-            if (table.Length == 2)
+            if (IsSentinel(table))
             {
                 // do not insert into a sentinel.
                 return;
@@ -384,7 +394,7 @@ namespace System.Runtime.CompilerServices
             // with the writing of the table
             _lastFlushSize = lastSize;
             // flushing is just replacing the table with a sentinel.
-            _table = _sentinelTable!;
+            _table = _sentinelTable;
         }
 
         private bool MaybeReplaceCacheWithLarger(int size)

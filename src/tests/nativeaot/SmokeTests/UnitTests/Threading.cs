@@ -954,7 +954,7 @@ internal static class ThreadPoolTests
     public static void ThreadPoolCanPickUpOneJobWhenThreadIsAvailable()
     {
         ManualResetEvent e0 = new ManualResetEvent(false);
-        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(Environment.ProcessorCount == 1);
         AutoResetEvent testJobCompleted = new AutoResetEvent(false);
         int count = 0;
 
@@ -978,7 +978,7 @@ internal static class ThreadPoolTests
     public static void ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable()
     {
         ManualResetEvent e0 = new ManualResetEvent(false);
-        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(Environment.ProcessorCount == 1);
         AutoResetEvent testJobCompleted = new AutoResetEvent(false);
         int count = 0;
 
@@ -1059,7 +1059,7 @@ internal static class ThreadPoolTests
     public static void RunJobsAfterThreadTimeout()
     {
         ManualResetEvent e0 = new ManualResetEvent(false);
-        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(Environment.ProcessorCount == 1);
         AutoResetEvent testJobCompleted = new AutoResetEvent(false);
         int count = 0;
 

@@ -100,6 +100,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PublicKey { get { throw null; } }
         public System.Version Version { get { throw null; } }
+        public System.Reflection.Metadata.AssemblyNameInfo GetAssemblyNameInfo() { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
         public System.Reflection.Metadata.DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes() { throw null; }
     }
@@ -180,6 +181,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PublicKeyOrToken { get { throw null; } }
         public System.Version Version { get { throw null; } }
+        public System.Reflection.Metadata.AssemblyNameInfo GetAssemblyNameInfo() { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     public readonly partial struct AssemblyReferenceHandle : System.IEquatable<System.Reflection.Metadata.AssemblyReferenceHandle>
@@ -2440,6 +2442,7 @@ namespace System.Reflection.Metadata
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
         public string Namespace { get { throw null; } }
+        public static System.Reflection.Metadata.TypeName CreateSimpleTypeName(string metadataName, System.Reflection.Metadata.TypeName? declaringType = null, System.Reflection.Metadata.AssemblyNameInfo? assemblyInfo = null) { throw null; }
         public int GetArrayRank() { throw null; }
         public System.Reflection.Metadata.TypeName GetElementType() { throw null; }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> GetGenericArguments() { throw null; }

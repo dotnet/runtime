@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.NETCore.Platforms
 {
@@ -23,15 +23,13 @@ namespace Microsoft.NETCore.Platforms
 
         public override bool Execute()
         {
-            JToken json;
-
-            using (StreamReader streamReader = File.OpenText(InputFile!))
-            using (JsonTextReader jsonReader = new JsonTextReader(streamReader))
+            JsonNode? json;
+            using (FileStream stream = File.OpenRead(InputFile!))
             {
-                json = JObject.ReadFrom(jsonReader);
+                json = JsonNode.Parse(stream);
             }
 
-            JObject runtimes = (JObject)json["runtimes"]!;
+            JsonObject runtimes = json!["runtimes"]!.AsObject();
             foreach (ITaskItem rid in AdditionalRuntimeIdentifiers!)
             {
                 // Skip the RID if it's already in the graph
@@ -41,12 +39,12 @@ namespace Microsoft.NETCore.Platforms
                 }
 
                 string[] importedRids = rid.GetMetadata("Imports").Split(';');
-                runtimes.Add(rid.ItemSpec, new JObject(new JProperty("#import", new JArray(importedRids))));
+                runtimes.Add(rid.ItemSpec, new JsonObject { ["#import"] = new JsonArray([.. importedRids]) });
             }
 
-            using StreamWriter streamWriter = File.CreateText(OutputFile!);
-            using JsonTextWriter jsonWriter = new(streamWriter) { Formatting = Formatting.Indented };
-            json.WriteTo(jsonWriter);
+            using FileStream streamWriter = File.Create(OutputFile!);
+            using Utf8JsonWriter jsonWriter = new(streamWriter, new JsonWriterOptions { Indented = true });
+            json!.WriteTo(jsonWriter);
 
             return true;
         }

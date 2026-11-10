@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.Internal.SrgsParser;
@@ -22,6 +23,10 @@ namespace System.Speech.Internal.SrgsCompiler
         // Preprocess CFG header file
         internal struct CfgHeader
         {
+            public CfgHeader(CfgRule[] rules)
+            {
+                this.rules = rules;
+            }
             internal Guid FormatId;
 
             internal Guid GrammarGUID;
@@ -32,19 +37,19 @@ namespace System.Speech.Internal.SrgsCompiler
 
             internal int cArcsInLargestState;
 
-            internal StringBlob pszWords;
+            internal StringBlob? pszWords;
 
-            internal StringBlob pszSymbols;
+            internal StringBlob? pszSymbols;
 
             internal CfgRule[] rules;
 
-            internal CfgArc[] arcs;
+            internal CfgArc[]? arcs;
 
-            internal float[] weights;
+            internal float[]? weights;
 
-            internal CfgSemanticTag[] tags;
+            internal CfgSemanticTag[]? tags;
 
-            internal CfgScriptRef[] scripts;
+            internal CfgScriptRef[]? scripts;
 
             internal uint ulRootRuleIndex;
 
@@ -52,7 +57,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             internal GrammarType GrammarMode;
 
-            internal string BasePath;
+            internal string? BasePath;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -218,13 +223,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal class CfgProperty
         {
-            internal string _pszName;
+            internal string? _pszName;
 
             internal uint _ulId;
 #pragma warning disable 0618 // VarEnum is obsolete
             internal VarEnum _comType;
 #pragma warning restore 0618
-            internal object _comValue;
+            internal object? _comValue;
         }
 
         #endregion
@@ -236,7 +241,7 @@ namespace System.Speech.Internal.SrgsCompiler
         //
         internal static CfgHeader ConvertCfgHeader(StreamMarshaler streamHelper)
         {
-            CfgSerializedHeader cfgSerializedHeader = null;
+            CfgSerializedHeader cfgSerializedHeader;
             return ConvertCfgHeader(streamHelper, true, true, out cfgSerializedHeader);
         }
 
@@ -248,7 +253,9 @@ namespace System.Speech.Internal.SrgsCompiler
             //  Because in 64-bit code, pointers != sizeof(ULONG) we copy each member explicitly.
             //
 
-            CfgHeader header = new();
+            CfgRule[] rules = Load<CfgRule>(streamHelper, cfgSerializedHeader.pRules, cfgSerializedHeader.cRules);
+
+            CfgHeader header = new(rules);
             header.FormatId = cfgSerializedHeader.FormatId;
             header.GrammarGUID = cfgSerializedHeader.GrammarGUID;
             header.langId = cfgSerializedHeader.LangID;
@@ -256,7 +263,6 @@ namespace System.Speech.Internal.SrgsCompiler
             header.cArcsInLargestState = cfgSerializedHeader.cArcsInLargestState;
 
             // read all the common fields
-            header.rules = Load<CfgRule>(streamHelper, cfgSerializedHeader.pRules, cfgSerializedHeader.cRules);
 
             if (includeAllGrammarData || loadSymbols)
             {
@@ -308,7 +314,7 @@ namespace System.Speech.Internal.SrgsCompiler
         //
         //  This helper converts a serialized CFG grammar header into an in-memory header
         //
-        internal static ScriptRef[] LoadScriptRefs(StreamMarshaler streamHelper, CfgSerializedHeader pFH)
+        internal static ScriptRef[]? LoadScriptRefs(StreamMarshaler streamHelper, CfgSerializedHeader pFH)
         {
             //
             //  Because in 64-bit code, pointers != sizeof(ULONG) we copy each member explicitly.
@@ -342,7 +348,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return scripts;
         }
 
-        internal static ScriptRef[] LoadIL(Stream stream)
+        internal static ScriptRef[]? LoadIL(Stream stream)
         {
             using (StreamMarshaler streamHelper = new(stream))
             {
@@ -354,10 +360,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal static bool LoadIL(Stream stream, out byte[] assemblyContent, out byte[] assemblyDebugSymbols, out ScriptRef[] scripts)
+        internal static bool LoadIL(Stream stream, [NotNullWhen(true)] out byte[]? assemblyContent, out byte[]? assemblyDebugSymbols, [NotNullWhen(true)] out ScriptRef[]? scripts)
         {
             assemblyContent = assemblyDebugSymbols = null;
-            scripts = null;
 
             using (StreamMarshaler streamHelper = new(stream))
             {
@@ -434,6 +439,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 if (includeAllGrammarData)
                 {
+                    System.Diagnostics.Debug.Assert(header.tags != null, "Including all grammar data should have populated the tags field");
+                    System.Diagnostics.Debug.Assert(header.arcs != null, "Including all grammar data should have populated the arcs field");
                     //Validate the SPCFGSEMANTICTAG array pointed to by tags
                     //We use header for easy array access
                     //The first arc is dummy, so the start and end arcindex for semantic tag won't be zero
@@ -499,9 +506,10 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         private static T[] Load<T>(StreamMarshaler streamHelper, uint iPos, int c)
+            where T : struct
         {
 
-            T[] t = null;
+            T[]? t = null;
 
             t = new T[c];
 

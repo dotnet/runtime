@@ -3,6 +3,7 @@ project(PALTESTSUITE)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
+include_directories(${RUNTIME_DIR})
 
 # All test will link against these libraries:
 # pthread and m are part of the Android C library (bionic),
@@ -13,6 +14,7 @@ if(NOT CLR_CMAKE_TARGET_ANDROID)
 endif()
 
 list(APPEND COMMON_TEST_LIBRARIES coreclrpal)
+list(APPEND COMMON_TEST_LIBRARIES coreclrminipal)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
@@ -36,38 +38,6 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  #composite/object_management/event/nonshared/event.cpp
-  #composite/object_management/event/nonshared/main.cpp
-  #composite/object_management/event/shared/event.cpp
-  #composite/object_management/event/shared/main.cpp
-  #composite/object_management/mutex/nonshared/main.cpp
-  #composite/object_management/mutex/nonshared/mutex.cpp
-  #composite/object_management/mutex/shared/main.cpp
-  #composite/object_management/mutex/shared/mutex.cpp
-  #composite/object_management/semaphore/nonshared/main.cpp
-  #composite/object_management/semaphore/nonshared/semaphore.cpp
-  #composite/object_management/semaphore/shared/main.cpp
-  #composite/object_management/semaphore/shared/semaphore.cpp
-  #composite/wfmo/main.cpp
-  #composite/wfmo/mutex.cpp
-  c_runtime/atof/test1/test1.cpp
-  c_runtime/atoi/test1/test1.cpp
-  c_runtime/isalnum/test1/test1.cpp
-  c_runtime/isalpha/test1/test1.cpp
-  c_runtime/isdigit/test1/test1.cpp
-  c_runtime/isprint/test1/isprint.cpp
-  c_runtime/isprint/test2/test2.cpp
-  c_runtime/isspace/test1/test1.cpp
-  c_runtime/iswdigit/test1/test1.cpp
-  #c_runtime/iswprint/test1/test1.cpp
-  c_runtime/iswspace/test1/test1.cpp
-  c_runtime/iswupper/test1/test1.cpp
-  c_runtime/isxdigit/test1/test1.cpp
-  c_runtime/llabs/test1/test1.cpp
-  c_runtime/memchr/test1/test1.cpp
-  c_runtime/memcmp/test1/test1.cpp
-  c_runtime/memmove/test1/test1.cpp
-  c_runtime/memset/test1/test1.cpp
   c_runtime/sscanf_s/test1/test1.cpp
   c_runtime/sscanf_s/test10/test10.cpp
   c_runtime/sscanf_s/test11/test11.cpp
@@ -85,46 +55,6 @@ add_executable_clr(paltests
   c_runtime/sscanf_s/test7/test7.cpp
   c_runtime/sscanf_s/test8/test8.cpp
   c_runtime/sscanf_s/test9/test9.cpp
-  c_runtime/strcat/test1/test1.cpp
-  c_runtime/strchr/test1/test1.cpp
-  c_runtime/strcmp/test1/test1.cpp
-  c_runtime/strcpy/test1/test1.cpp
-  c_runtime/strlen/test1/test1.cpp
-  c_runtime/strncat/test1/test1.cpp
-  c_runtime/strncmp/test1/test1.cpp
-  c_runtime/strncpy/test1/test1.cpp
-  c_runtime/strpbrk/test1/test1.cpp
-  c_runtime/strrchr/test1/test1.cpp
-  c_runtime/strstr/test1/test1.cpp
-  c_runtime/tolower/test1/test1.cpp
-  c_runtime/toupper/test1/test1.cpp
-  c_runtime/towlower/test1/test1.cpp
-  c_runtime/towupper/test1/test1.cpp
-  c_runtime/wcscat/test1/test1.cpp
-  c_runtime/wcschr/test1/test1.cpp
-  c_runtime/wcscmp/test1/test1.cpp
-  c_runtime/wcscpy/test1/test1.cpp
-  c_runtime/wcslen/test1/test1.cpp
-  c_runtime/wcsncmp/test1/test1.cpp
-  c_runtime/wcsncpy/test1/test1.cpp
-  c_runtime/wcspbrk/test1/test1.cpp
-  c_runtime/wcsrchr/test1/test1.cpp
-  c_runtime/wcsstr/test1/test1.cpp
-  c_runtime/wcstod/test1/test1.cpp
-  c_runtime/wcstod/test2/test2.cpp
-  c_runtime/wcstoul/test1/test1.cpp
-  c_runtime/wcstoul/test2/test2.cpp
-  c_runtime/wcstoul/test3/test3.cpp
-  c_runtime/wcstoul/test4/test4.cpp
-  c_runtime/wcstoul/test5/test5.cpp
-  c_runtime/wcstoul/test6/test6.cpp
-  c_runtime/_alloca/test1/test1.cpp
-  c_runtime/_putenv/test1/test1.cpp
-  c_runtime/_putenv/test2/test2.cpp
-  c_runtime/_putenv/test3/test3.cpp
-  c_runtime/_putenv/test4/test4.cpp
-  c_runtime/_rotl/test1/test1.cpp
-  c_runtime/_rotr/test1/test1.cpp
   c_runtime/_vsnprintf_s/test1/test1.cpp
   c_runtime/_vsnprintf_s/test10/test10.cpp
   c_runtime/_vsnprintf_s/test11/test11.cpp
@@ -141,27 +71,9 @@ add_executable_clr(paltests
   c_runtime/_vsnprintf_s/test6/test6.cpp
   c_runtime/_vsnprintf_s/test8/test8.cpp
   c_runtime/_vsnprintf_s/test9/test9.cpp
-  c_runtime/_wcsicmp/test1/test1.cpp
   c_runtime/_wcslwr_s/test1/test1.cpp
-  c_runtime/_wcsnicmp/test1/test1.cpp
-  c_runtime/_wfopen/test1/test1.cpp
-  c_runtime/_wfopen/test2/test2.cpp
-  c_runtime/_wfopen/test3/test3.cpp
-  c_runtime/_wfopen/test4/test4.cpp
-  c_runtime/_wfopen/test5/test5.cpp
-  c_runtime/_wfopen/test6/test6.cpp
-  c_runtime/_wfopen/test7/test7.cpp
-  c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
-  debug_api/OutputDebugStringA/test1/helper.cpp
-  debug_api/OutputDebugStringA/test1/test1.cpp
   debug_api/OutputDebugStringW/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test1/helper.cpp
-  #debug_api/WriteProcessMemory/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test3/helper.cpp
-  #debug_api/WriteProcessMemory/test3/test3.cpp
-  #debug_api/WriteProcessMemory/test4/helper.cpp
-  #debug_api/WriteProcessMemory/test4/test4.cpp
   #exception_handling/pal_except/test1/test1.cpp
   #exception_handling/pal_except/test2/test2.cpp
   #exception_handling/pal_except/test3/test3.cpp
@@ -185,16 +97,6 @@ add_executable_clr(paltests
   exception_handling/RaiseException/test1/test1.cpp
   exception_handling/RaiseException/test2/test2.cpp
   exception_handling/RaiseException/test3/test.cpp
-  filemapping_memmgt/CreateFileMappingW/CreateFileMapping_neg1/CreateFileMapping_neg.cpp
-  filemapping_memmgt/CreateFileMappingW/test1/CreateFileMappingW.cpp
-  #filemapping_memmgt/CreateFileMappingW/test2/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test3/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test4/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test5/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test6/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test7/createfilemapping.cpp
-  filemapping_memmgt/CreateFileMappingW/test8/createfilemapping.cpp
-  filemapping_memmgt/CreateFileMappingW/test9/createfilemapping.cpp
 #  filemapping_memmgt/FreeLibrary/test1/dlltest.cpp
   filemapping_memmgt/FreeLibrary/test1/FreeLibrary.cpp
   filemapping_memmgt/FreeLibrary/test2/test2.cpp
@@ -206,113 +108,12 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
-  filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
-  filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
-  filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
-  filemapping_memmgt/MapViewOfFile/test5/mapviewoffile.cpp
-  filemapping_memmgt/MapViewOfFile/test6/mapviewoffile.cpp
   filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/ProbeMemory_neg.cpp
   filemapping_memmgt/ProbeMemory/test1/ProbeMemory.cpp
-  filemapping_memmgt/UnmapViewOfFile/test1/UnmapViewOfFile.cpp
-  filemapping_memmgt/UnmapViewOfFile/test2/unmapviewoffile.cpp
-  filemapping_memmgt/VirtualAlloc/test1/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test10/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test11/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test12/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test13/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test14/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test15/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test16/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test17/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test18/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test19/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test2/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test20/virtualalloc.cpp
-  filemapping_memmgt/VirtualAlloc/test21/virtualalloc.cpp
-  filemapping_memmgt/VirtualAlloc/test22/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test3/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test4/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test5/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test6/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test7/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test8/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test9/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualFree/test1/VirtualFree.cpp
-  filemapping_memmgt/VirtualFree/test2/VirtualFree.cpp
-  filemapping_memmgt/VirtualFree/test3/VirtualFree.cpp
-  filemapping_memmgt/VirtualProtect/test1/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test2/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test3/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test4/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test6/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test7/VirtualProtect.cpp
-  filemapping_memmgt/VirtualQuery/test1/VirtualQuery.cpp
-  file_io/CreateFileA/test1/CreateFileA.cpp
-  file_io/CreateFileW/test1/CreateFileW.cpp
-  file_io/errorpathnotfound/test1/test1.cpp
-  file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
-  file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
-  file_io/GetFileSize/test1/GetFileSize.cpp
-  file_io/GetFileSizeEx/test1/GetFileSizeEx.cpp
-  file_io/GetFullPathNameA/test1/GetFullPathNameA.cpp
-  file_io/GetFullPathNameA/test2/test2.cpp
-  file_io/GetFullPathNameA/test3/test3.cpp
-  file_io/GetFullPathNameA/test4/test4.cpp
-  file_io/GetFullPathNameW/test1/GetFullPathNameW.cpp
-  file_io/GetFullPathNameW/test2/test2.cpp
-  file_io/GetFullPathNameW/test3/test3.cpp
-  file_io/GetFullPathNameW/test4/test4.cpp
-  file_io/GetStdHandle/test1/GetStdHandle.cpp
-  file_io/GetStdHandle/test2/GetStdHandle.cpp
-  file_io/GetSystemTime/test1/test.cpp
-  file_io/GetSystemTimeAsFileTime/test1/GetSystemTimeAsFileTime.cpp
-  file_io/gettemppatha/test1/gettemppatha.cpp
-  file_io/GetTempPathW/test1/GetTempPathW.cpp
-  file_io/ReadFile/test1/ReadFile.cpp
-  file_io/ReadFile/test2/ReadFile.cpp
-  file_io/ReadFile/test3/ReadFile.cpp
-  file_io/ReadFile/test4/readfile.cpp
-  file_io/SearchPathW/test1/SearchPathW.cpp
-  file_io/SetFilePointer/test1/SetFilePointer.cpp
-  file_io/SetFilePointer/test2/SetFilePointer.cpp
-  file_io/SetFilePointer/test3/SetFilePointer.cpp
-  file_io/SetFilePointer/test4/SetFilePointer.cpp
-  file_io/SetFilePointer/test5/SetFilePointer.cpp
-  file_io/SetFilePointer/test6/SetFilePointer.cpp
-  file_io/SetFilePointer/test7/SetFilePointer.cpp
-  file_io/WriteFile/test1/WriteFile.cpp
-  file_io/WriteFile/test2/WriteFile.cpp
-  file_io/WriteFile/test3/WriteFile.cpp
-  file_io/WriteFile/test4/writefile.cpp
-  file_io/WriteFile/test5/writefile.cpp
-  loader/LoadLibraryA/test1/LoadLibraryA.cpp
-  loader/LoadLibraryA/test2/LoadLibraryA.cpp
-  loader/LoadLibraryA/test3/loadlibrarya.cpp
-  loader/LoadLibraryA/test5/loadlibrarya.cpp
-  #loader/LoadLibraryA/test6/dlltest.cpp
-  #loader/LoadLibraryA/test6/loadlibrarya.cpp
-  loader/LoadLibraryA/test7/LoadLibraryA.cpp
-  #loader/LoadLibraryA/test8/dlltest.cpp
-  #loader/LoadLibraryA/test8/loadlibrarya.cpp
   loader/LoadLibraryW/test1/LoadLibraryW.cpp
   loader/LoadLibraryW/test2/loadlibraryw.cpp
   loader/LoadLibraryW/test3/loadlibraryw.cpp
   loader/LoadLibraryW/test5/loadlibraryw.cpp
-  #locale_info/CompareStringA/test1/test1.cpp
-  #locale_info/CompareStringW/test1/test1.cpp
-  #locale_info/GetLocaleInfoW/test1/test1.cpp
-  #locale_info/GetLocaleInfoW/test2/test2.cpp
-  locale_info/MultiByteToWideChar/test1/test1.cpp
-  locale_info/MultiByteToWideChar/test2/test2.cpp
-  locale_info/MultiByteToWideChar/test3/test3.cpp
-  locale_info/MultiByteToWideChar/test4/test4.cpp
-  locale_info/WideCharToMultiByte/test1/test1.cpp
-  locale_info/WideCharToMultiByte/test2/test2.cpp
-  locale_info/WideCharToMultiByte/test3/test3.cpp
-  locale_info/WideCharToMultiByte/test4/test4.cpp
-  locale_info/WideCharToMultiByte/test5/test5.cpp
-  miscellaneous/CloseHandle/test1/test.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp
   miscellaneous/FormatMessageW/test1/test.cpp
@@ -323,7 +124,6 @@ add_executable_clr(paltests
   miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
-  miscellaneous/GetCommandLineW/test1/test.cpp
   miscellaneous/GetEnvironmentStringsW/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test2/test.cpp
@@ -356,11 +156,6 @@ add_executable_clr(paltests
   miscellaneous/InterlockedIncrement/test2/test.cpp
   miscellaneous/InterlockedIncrement64/test1/test.cpp
   miscellaneous/InterlockedIncrement64/test2/test.cpp
-  #miscellaneous/IsBadCodePtr/test1/test1.cpp
-  #miscellaneous/IsBadReadPtr/test1/test.cpp
-  #miscellaneous/IsBadWritePtr/test1/test.cpp
-  #miscellaneous/IsBadWritePtr/test2/test2.cpp
-  #miscellaneous/IsBadWritePtr/test3/test3.cpp
   miscellaneous/SetEnvironmentVariableA/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test2/test2.cpp
   miscellaneous/SetEnvironmentVariableA/test3/test3.cpp
@@ -372,33 +167,11 @@ add_executable_clr(paltests
   miscellaneous/SetLastError/test1/test.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
-#  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp
-#  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
-  threading/CreateEventW/test1/test1.cpp
-  threading/CreateEventW/test2/test2.cpp
-  threading/CreateEventW/test3/test3.cpp
-  threading/CreateMutexW_ReleaseMutex/test1/CreateMutexW.cpp
-  threading/CreateMutexW_ReleaseMutex/test2/CreateMutexW.cpp
-  threading/CreateProcessW/test1/childProcess.cpp
-  threading/CreateProcessW/test1/parentProcess.cpp
-  threading/CreateProcessW/test2/childprocess.cpp
-  threading/CreateProcessW/test2/parentprocess.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
-  threading/DuplicateHandle/test1/test1.cpp
-  threading/DuplicateHandle/test10/test10.cpp
-  threading/DuplicateHandle/test11/childprocess.cpp
-  threading/DuplicateHandle/test11/test11.cpp
-  threading/DuplicateHandle/test12/test12.cpp
-  threading/DuplicateHandle/test2/test2.cpp
-  threading/DuplicateHandle/test3/test3.cpp
-  threading/DuplicateHandle/test4/test4.cpp
   threading/DuplicateHandle/test7/test7.cpp
   threading/DuplicateHandle/test8/test8.cpp
 #  threading/DuplicateHandle/test9/test9.cpp
@@ -406,70 +179,17 @@ add_executable_clr(paltests
   threading/ExitProcess/test2/test2.cpp
   threading/ExitProcess/test3/test3.cpp
   threading/ExitThread/test1/test1.cpp
-  threading/ExitThread/test2/childprocess.cpp
-  threading/ExitThread/test2/test2.cpp
   threading/GetCurrentProcess/test1/process.cpp
   threading/GetCurrentProcessId/test1/processId.cpp
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
   threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/GetExitCodeProcess/test1/childProcess.cpp
-  threading/GetExitCodeProcess/test1/test1.cpp
-  threading/NamedMutex/test1/namedmutex.cpp
-  threading/NamedMutex/test1/nopal.cpp
-  threading/OpenEventW/test1/test1.cpp
-  threading/OpenEventW/test2/test2.cpp
-  threading/OpenEventW/test3/childprocess.cpp
-  threading/OpenEventW/test3/test3.cpp
-  threading/OpenEventW/test4/test4.cpp
-  threading/OpenEventW/test5/test5.cpp
-  threading/OpenProcess/test1/childProcess.cpp
-  threading/OpenProcess/test1/test1.cpp
   threading/QueryThreadCycleTime/test1/test1.cpp
-  threading/QueueUserAPC/test1/test1.cpp
-  threading/QueueUserAPC/test2/test2.cpp
-  threading/QueueUserAPC/test3/test3.cpp
-  threading/QueueUserAPC/test4/test4.cpp
-  threading/QueueUserAPC/test5/test5.cpp
-  threading/QueueUserAPC/test6/test6.cpp
-  threading/QueueUserAPC/test7/test7.cpp
-  threading/ReleaseMutex/test3/ReleaseMutex.cpp
-  threading/releasesemaphore/test1/test.cpp
-  threading/ResetEvent/test1/test1.cpp
-  threading/ResetEvent/test2/test2.cpp
-  threading/ResetEvent/test3/test3.cpp
-  threading/ResetEvent/test4/test4.cpp
   threading/ResumeThread/test1/test1.cpp
-  threading/SetEvent/test1/test1.cpp
-  threading/SetEvent/test2/test2.cpp
-  threading/SetEvent/test3/test3.cpp
-  threading/SetEvent/test4/test4.cpp
-  threading/SignalObjectAndWait/SignalObjectAndWaitTest.cpp
-  threading/Sleep/test1/Sleep.cpp
-  threading/Sleep/test2/sleep.cpp
-  threading/SleepEx/test1/test1.cpp
-  threading/SleepEx/test2/test2.cpp
+  threading/RuntimeEvent/test1/test1.cpp
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
-  threading/WaitForMultipleObjects/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test2/test2.cpp
-  threading/WaitForMultipleObjectsEx/test3/test3.cpp
-  threading/WaitForMultipleObjectsEx/test4/test4.cpp
-  threading/WaitForMultipleObjectsEx/test5/helper.cpp
-  threading/WaitForMultipleObjectsEx/test5/test5.cpp
-  threading/WaitForMultipleObjectsEx/test6/child6.cpp
-  threading/WaitForMultipleObjectsEx/test6/test6.cpp
-  threading/WaitForSingleObject/test1/test1.cpp
-  threading/WaitForSingleObject/WFSOExMutexTest/WFSOExMutexTest.cpp
-  threading/WaitForSingleObject/WFSOExSemaphoreTest/WFSOExSemaphoreTest.cpp
-  threading/WaitForSingleObject/WFSOExThreadTest/WFSOExThreadTest.cpp
-  threading/WaitForSingleObject/WFSOMutexTest/WFSOMutexTest.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/ChildProcess.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/WFSOProcessTest.cpp
-  threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
-  threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
 )
 
@@ -479,6 +199,14 @@ target_link_libraries(paltests
   PUBLIC
   ${COMMON_TEST_LIBRARIES}
 )
+
+if(CLR_CMAKE_TARGET_OPENBSD)
+  # A few PAL tests (e.g. VirtualAlloc/VirtualProtect) deliberately request simultaneous
+  # W+X (PAGE_EXECUTE_READWRITE) mappings to exercise the PAL API. OpenBSD rejects those
+  # unless the binary carries the PT_OPENBSD_WXNEEDED note and runs from a wxallowed mount.
+  # The runtime itself never needs this (it uses W^X double-mapping), so scope it here.
+  target_link_options(paltests PRIVATE "-Wl,-z,wxneeded")
+endif(CLR_CMAKE_TARGET_OPENBSD)
 
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)

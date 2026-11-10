@@ -25,6 +25,22 @@ namespace ILCompiler.ObjectWriter
 
         public void OpBReg(int register, int offset = 0) => OpBDwarfReg(DwarfRegNum(_architecture, register), offset);
 
+        // Emit a stack-slot location described by a base register and offset. If the base
+        // register is the "ambient SP" pseudo-register (REGNUM_AMBIENT_SP), emit a
+        // CFA-relative expression instead of routing the pseudo-register through
+        // DwarfRegNum (which has no valid DWARF number for it).
+        public void OpStackLocation(int baseRegister, int offset = 0)
+        {
+            if (baseRegister == AmbientSpRegNum(_architecture))
+            {
+                OpCallFrameCfa(offset);
+            }
+            else
+            {
+                OpBReg(baseRegister, offset);
+            }
+        }
+
         public void OpDwarfReg(int register)
         {
             if (register <= 31)
@@ -53,6 +69,38 @@ namespace ILCompiler.ObjectWriter
         }
 
         public void OpDeref() => OpCode(DW_OP_deref);
+
+        // Emits a location relative to the Canonical Frame Address (CFA). This is used
+        // for stack slots whose base register is the "ambient SP" pseudo-register
+        // (REGNUM_AMBIENT_SP), which represents the caller's stack pointer rather than
+        // a physical register.
+        public void OpCallFrameCfa(int offset = 0)
+        {
+            OpCode(DW_OP_call_frame_cfa);
+            if (offset != 0)
+            {
+                OpCode(DW_OP_consts);
+                AppendSLEB128(offset);
+                OpCode(DW_OP_plus);
+            }
+        }
+
+        // Returns the RegNum value used for the "ambient SP" pseudo-register on the
+        // given architecture. It is defined as REGNUM_COUNT + 1 in ICorDebugInfo::RegNum
+        // and must match DBG_TARGET_REGNUM_AMBIENT_SP in debug/inc/DbgIPCEvents.h.
+        private static int AmbientSpRegNum(TargetArchitecture architecture)
+        {
+            return architecture switch
+            {
+                TargetArchitecture.X86 => (int)RegNumX86.REGNUM_COUNT + 1,
+                TargetArchitecture.X64 => (int)RegNumAmd64.REGNUM_COUNT + 1,
+                TargetArchitecture.ARM64 => 66, // 33 int registers + 32 V registers, +1
+                TargetArchitecture.ARM => 17,   // 16 int registers (R0-R12, SP, LR, PC), +1
+                TargetArchitecture.LoongArch64 => 34, // 33 int registers, +1
+                TargetArchitecture.RiscV64 => 34,     // 33 int registers, +1
+                _ => -1
+            };
+        }
 
         public void OpPiece(uint size = 0)
         {
@@ -104,6 +152,23 @@ namespace ILCompiler.ObjectWriter
             REGNUM_R13,
             REGNUM_R14,
             REGNUM_R15,
+            REGNUM_FP_FIRST,
+            REGNUM_XMM0 = REGNUM_FP_FIRST,
+            REGNUM_XMM1,
+            REGNUM_XMM2,
+            REGNUM_XMM3,
+            REGNUM_XMM4,
+            REGNUM_XMM5,
+            REGNUM_XMM6,
+            REGNUM_XMM7,
+            REGNUM_XMM8,
+            REGNUM_XMM9,
+            REGNUM_XMM10,
+            REGNUM_XMM11,
+            REGNUM_XMM12,
+            REGNUM_XMM13,
+            REGNUM_XMM14,
+            REGNUM_XMM15,
             REGNUM_COUNT,
             REGNUM_SP = REGNUM_RSP,
             REGNUM_FP = REGNUM_RBP
@@ -114,16 +179,20 @@ namespace ILCompiler.ObjectWriter
             switch (architecture)
             {
                 case TargetArchitecture.ARM64:
-                    // Normal registers are directly mapped
-                    if (regNum >= 33)
-                        regNum = regNum - 33 + 64; // FP
-                    return regNum;
+                    // Integer registers map to DWARF 0-32, FP V registers to 64+
+                    return regNum switch
+                    {
+                        >= 33 and <= 64 => regNum - 33 + 64, // V0-V31 → DWARF 64-95
+                        _ => regNum                            // X0-PC → DWARF 0-32
+                    };
 
                 case TargetArchitecture.ARM:
-                    // Normal registers are directly mapped
-                    if (regNum >= 16)
-                        regNum = ((regNum - 16) / 2) + 256; // FP
-                    return regNum;
+                    // Integer registers map directly, FP D registers to DWARF 256+
+                    return regNum switch
+                    {
+                        >= 16 => ((regNum - 16) / 2) + 256, // D0-D7 → DWARF 256+
+                        _ => regNum                           // R0-PC → DWARF 0-15
+                    };
 
                 case TargetArchitecture.X64:
                     return (RegNumAmd64)regNum switch
@@ -144,7 +213,23 @@ namespace ILCompiler.ObjectWriter
                         RegNumAmd64.REGNUM_R13 => 13,
                         RegNumAmd64.REGNUM_R14 => 14,
                         RegNumAmd64.REGNUM_R15 => 15,
-                        _ => regNum - (int)RegNumAmd64.REGNUM_COUNT + 17 // FP registers
+                        RegNumAmd64.REGNUM_XMM0 => 17,
+                        RegNumAmd64.REGNUM_XMM1 => 18,
+                        RegNumAmd64.REGNUM_XMM2 => 19,
+                        RegNumAmd64.REGNUM_XMM3 => 20,
+                        RegNumAmd64.REGNUM_XMM4 => 21,
+                        RegNumAmd64.REGNUM_XMM5 => 22,
+                        RegNumAmd64.REGNUM_XMM6 => 23,
+                        RegNumAmd64.REGNUM_XMM7 => 24,
+                        RegNumAmd64.REGNUM_XMM8 => 25,
+                        RegNumAmd64.REGNUM_XMM9 => 26,
+                        RegNumAmd64.REGNUM_XMM10 => 27,
+                        RegNumAmd64.REGNUM_XMM11 => 28,
+                        RegNumAmd64.REGNUM_XMM12 => 29,
+                        RegNumAmd64.REGNUM_XMM13 => 30,
+                        RegNumAmd64.REGNUM_XMM14 => 31,
+                        RegNumAmd64.REGNUM_XMM15 => 32,
+                        _ => throw new NotSupportedException($"Unsupported AMD64 register {regNum}")
                     };
 
                 case TargetArchitecture.X86:
@@ -158,7 +243,7 @@ namespace ILCompiler.ObjectWriter
                         RegNumX86.REGNUM_EBP => 5,
                         RegNumX86.REGNUM_ESI => 6,
                         RegNumX86.REGNUM_EDI => 7,
-                        _ => regNum - (int)RegNumX86.REGNUM_COUNT + 32 // FP registers
+                        _ => throw new NotSupportedException($"Unsupported x86 register {regNum}")
                     };
 
                 case TargetArchitecture.LoongArch64:

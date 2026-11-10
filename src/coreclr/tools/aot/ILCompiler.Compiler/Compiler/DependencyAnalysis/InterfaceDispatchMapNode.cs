@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -47,17 +48,14 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            var result = new DependencyList();
-
             // VTable slots of implemented interfaces are consulted during emission
             foreach (TypeDesc runtimeInterface in _type.RuntimeInterfaces)
             {
-                result.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
+                sink.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
             }
 
-            return result;
         }
 
         /// <summary>
@@ -140,6 +138,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType declType = _type.GetClosestDefType();
             TypeDesc declTypeDefinition = declType.GetTypeDefinition();
+            TypeDesc declTypeBaseDefinition = declTypeDefinition.BaseType?.GetTypeDefinition();
             DefType[] declTypeRuntimeInterfaces = declType.RuntimeInterfaces;
             DefType[] declTypeDefinitionRuntimeInterfaces = declTypeDefinition.RuntimeInterfaces;
 
@@ -226,6 +225,13 @@ namespace ILCompiler.DependencyAnalysis
                         int? implSlot = null;
 
                         DefaultInterfaceMethodResolution result = declTypeDefinition.ResolveInterfaceMethodToDefaultImplementationOnType(declMethod, out implMethod);
+                        if (result != DefaultInterfaceMethodResolution.None && declTypeBaseDefinition != null)
+                        {
+                            DefaultInterfaceMethodResolution baseResult = declTypeBaseDefinition.ResolveInterfaceMethodToDefaultImplementationOnType(declMethod, out MethodDesc baseImplMethod);
+                            if (baseResult == result && implMethod == baseImplMethod)
+                                result = DefaultInterfaceMethodResolution.None;
+                        }
+
                         DefType providingInterfaceDefinitionType = null;
                         if (result == DefaultInterfaceMethodResolution.DefaultImplementation)
                         {

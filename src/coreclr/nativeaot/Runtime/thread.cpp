@@ -4,6 +4,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandleutilities.h"
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -36,9 +37,14 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacSignPtr(void* ptr, void* sp);
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
-    minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_lowres_ticks());
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_hires_ticks());
 }
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
@@ -82,6 +88,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
     // restored after the wait operation;
     int32_t lastErrorOnEntry = PalGetLastError();
 
+    // Mark that this thread is trapped for suspension.
+    // Used by the sample profiler to determine this thread was in managed code.
+    SetState(TSF_SuspensionTrapped);
+
     do
     {
         // set preemptive mode
@@ -91,12 +101,17 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         ClearState(TSF_Redirected);
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+        // make sure this is cleared - in case a signal is lost or somehow we did not act on it
+        SetActivationPending(false);
+
         GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 
         // must be in cooperative mode when checking the trap flag
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
     }
     while (ThreadStore::IsTrapThreadsRequested());
+
+    ClearState(TSF_SuspensionTrapped);
 
     // Restore the saved error
     PalSetLastError(lastErrorOnEntry);
@@ -149,9 +164,7 @@ void Thread::ResetCachedTransitionFrame()
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
-#if !defined(HOST_WASM)
     ASSERT(m_pDeferredTransitionFrame != NULL);
-#endif
 
     // set preemptive mode
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
@@ -192,73 +205,6 @@ void Thread::SetDeferredTransitionFrameForNativeHelperThread()
 }
 #endif // !DACCESS_COMPILE
 
-//
-// This is used by the EH system to find the place where execution left managed code when an exception leaks out of a
-// pinvoke and we need to FailFast via the appropriate class library.
-//
-// May only be used from the same thread and while in preemptive mode with an active pinvoke on the stack.
-//
-#ifndef DACCESS_COMPILE
-void * Thread::GetCurrentThreadPInvokeReturnAddress()
-{
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-    ASSERT(!IsCurrentThreadInCooperativeMode());
-    return ((PInvokeTransitionFrame*)m_pTransitionFrame)->m_RIP;
-}
-#endif // !DACCESS_COMPILE
-
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
-void Thread::SetRandomSeed(uint32_t seed)
-{
-    ASSERT(!IsStateSet(TSF_IsRandSeedSet));
-    m_uRand = seed;
-    SetState(TSF_IsRandSeedSet);
-}
-
-// Generates pseudo random numbers in the range [0, 2^31)
-// using only multiplication and addition
-uint32_t Thread::NextRand()
-{
-    // Uses Carta's algorithm for Park-Miller's PRNG:
-    // x_{k+1} = 16807 * x_{k} mod (2^31-1)
-
-    uint32_t hi,lo;
-
-    // (high word of seed) * 16807 - at most 31 bits
-    hi = 16807 * (m_uRand >> 16);
-    // (low word of seed) * 16807 - at most 31 bits
-    lo = 16807 * (m_uRand & 0xFFFF);
-
-    // Proof that below operations (multiplication and addition only)
-    // are equivalent to the original formula:
-    //    x_{k+1} = 16807 * x_{k} mod (2^31-1)
-    // We denote hi2 as the low 15 bits in hi,
-    //       and hi1 as the remaining 16 bits in hi:
-    // (hi                 * 2^16 + lo) mod (2^31-1) =
-    // ((hi1 * 2^15 + hi2) * 2^16 + lo) mod (2^31-1) =
-    // ( hi1 * 2^31 + hi2 * 2^16  + lo) mod (2^31-1) =
-    // ( hi1 * (2^31-1) + hi1 + hi2 * 2^16 + lo) mod (2^31-1) =
-    // ( hi2 * 2^16 + hi1 + lo ) mod (2^31-1)
-
-    // lo + (hi2 * 2^16)
-    lo += (hi & 0x7FFF) << 16;
-    // lo + (hi2 * 2^16) + hi1
-    lo += (hi >> 15);
-    // modulo (2^31-1)
-    if (lo > 0x7fffFFFF)
-        lo -= 0x7fffFFFF;
-
-    m_uRand = lo;
-
-    return m_uRand;
-}
-
-bool Thread::IsRandInited()
-{
-    return IsStateSet(TSF_IsRandSeedSet);
-}
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
-
 PTR_ExInfo Thread::GetCurExInfo()
 {
     ValidateExInfoStack();
@@ -273,10 +219,9 @@ PTR_ExInfo Thread::GetCurExInfo()
 
 void Thread::Construct()
 {
-#ifndef USE_PORTABLE_HELPERS
-    C_ASSERT(OFFSETOF__Thread__m_pTransitionFrame ==
-             (offsetof(Thread, m_pTransitionFrame)));
-#endif // USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
+    static_assert(OFFSETOF__Thread__m_pTransitionFrame == (offsetof(Thread, m_pTransitionFrame)));
+#endif // FEATURE_PORTABLE_HELPERS
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
@@ -318,8 +263,6 @@ void Thread::Construct()
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
-    ASSERT(m_threadAbortException == NULL);
-
 #ifdef FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_redirectionContextBuffer == NULL);
 #endif //FEATURE_SUSPEND_REDIRECTION
@@ -347,7 +290,7 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-uint64_t Thread::GetPalThreadIdForLogging()
+uint64_t Thread::GetOSThreadId()
 {
     return m_threadId;
 }
@@ -400,27 +343,12 @@ void Thread::Destroy()
     ASSERT(m_pGCFrameRegistrations == NULL);
 }
 
-#ifdef HOST_WASM
-extern OBJECTREF * t_pShadowStackTop;
-extern OBJECTREF * t_pShadowStackBottom;
-
-void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
-{
-    // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
-    EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
-}
-#endif
-
 void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData)
 {
     this->CrossThreadUnhijack();
 
-#ifdef HOST_WASM
-    GcScanWasmShadowStack(pfnEnumCallback, pvCallbackData);
-#else
     StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
-#endif
 }
 
 #endif // !DACCESS_COMPILE
@@ -474,6 +402,12 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             EnumGcRef(pHijackedReturnValue, returnKind, pfnEnumCallback, pvCallbackData);
         }
     }
+
+    PTR_OBJECTREF pHijackedAsyncContinuation = NULL;
+    if (frameIterator.GetHijackedAsyncContinuation(&pHijackedAsyncContinuation))
+    {
+        EnumGcRef(pHijackedAsyncContinuation, GCRK_Object, pfnEnumCallback, pvCallbackData);
+    }
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -487,6 +421,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
 
+#ifndef FEATURE_PORTABLE_HELPERS
             if (pTransitionFrame == INTERRUPTED_THREAD_MARKER)
             {
                 GetInterruptedContext()->ForEachPossibleObjectRef
@@ -497,6 +432,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                     }
                 );
             }
+#endif // !FEATURE_PORTABLE_HELPERS
 
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;
@@ -575,10 +511,6 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                 pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
         }
     }
-
-    // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
-    PTR_OBJECTREF pThreadAbortExceptionObj = dac_cast<PTR_OBJECTREF>(&m_threadAbortException);
-    EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
 }
 
 #ifndef DACCESS_COMPILE
@@ -586,18 +518,11 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 #ifdef FEATURE_HIJACK
 
 EXTERN_C void RhpGcProbeHijack();
-EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
-        return true;
-#ifdef FEATURE_GC_STRESS
-    if (&RhpGcStressHijack == address)
-        return true;
-#endif // FEATURE_GC_STRESS
-    return false;
+    return PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address;
 }
 
 void Thread::Hijack()
@@ -624,7 +549,7 @@ void Thread::Hijack()
     PalHijack(this);
 }
 
-void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack)
+void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack, bool doInlineSuspend)
 {
     // If we are no longer trying to suspend, no need to do anything.
     // This is just an optimization. It is ok to race with the setting the trap flag here.
@@ -693,9 +618,8 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
         ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
 #endif
 
-        // if we are not given a thread to hijack
         // perform in-line wait on the current thread
-        if (pThreadToHijack == NULL)
+        if (doInlineSuspend)
         {
             ASSERT(pThread->m_interruptedContext == NULL);
             pThread->InlineSuspend(pThreadContext);
@@ -713,66 +637,6 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
     pThread->HijackReturnAddress(
         pThreadContext,
         PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
-}
-
-#ifdef FEATURE_GC_STRESS
-// This is a helper called from RhpHijackForGcStress which will place a GC Stress
-// hijack on this thread's call stack. This is never called from another thread.
-// static
-void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    // don't hijack for GC stress if we're in a "no GC stress" region
-    if (pCurrentThread->IsSuppressGcStressSet())
-        return;
-
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-
-    uintptr_t ip = pSuspendCtx->GetIp();
-
-    bool bForceGC = g_pRhConfig->GetGcStressThrottleMode() == 0;
-    // we enable collecting statistics by callsite even for stochastic-only
-    // stress mode. this will force a stack walk, but it's worthwhile for
-    // collecting data (we only actually need the IP when
-    // (g_pRhConfig->GetGcStressThrottleMode() & 1) != 0)
-    if (!bForceGC)
-    {
-        StackFrameIterator sfi(pCurrentThread, pSuspendCtx);
-        if (sfi.IsValid())
-        {
-            pCurrentThread->Unhijack();
-            sfi.CalculateCurrentMethodState();
-            // unwind to method below the one whose epilog set up the hijack
-            sfi.Next();
-            if (sfi.IsValid())
-            {
-                ip = sfi.GetRegisterSet()->GetIP();
-            }
-        }
-    }
-    if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
-    {
-        pCurrentThread->HijackReturnAddress(pSuspendCtx, &RhpGcStressHijack);
-    }
-}
-#endif // FEATURE_GC_STRESS
-
-// This function is called from a thread to place a return hijack onto its own stack for GC stress cases
-// via Thread::HijackForGcStress above. The only constraint on the suspension is that the
-// stack be crawlable enough to yield the location of the return address.
-void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction)
-{
-    if (IsDoNotTriggerGcSet())
-        return;
-
-    StackFrameIterator frameIterator(this, pSuspendCtx);
-    if (!frameIterator.IsValid())
-    {
-        return;
-    }
-
-    HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
 }
 
 // This function is called in one of two scenarios:
@@ -793,11 +657,14 @@ void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHij
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
     void** ppvRetAddrLocation;
+    uintptr_t spForPacSign = 0;
 
     frameIterator->CalculateCurrentMethodState();
+
     if (frameIterator->GetCodeManager()->GetReturnAddressHijackInfo(frameIterator->GetMethodInfo(),
         frameIterator->GetRegisterSet(),
-        &ppvRetAddrLocation))
+        &ppvRetAddrLocation,
+        &spForPacSign))
     {
         ASSERT(ppvRetAddrLocation != NULL);
 
@@ -809,21 +676,37 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
+
         ASSERT(pvRetAddr != NULL);
+
+#if defined(TARGET_ARM64)
+        ASSERT(StackFrameIterator::IsValidReturnAddress(PacStripPtr(pvRetAddr)));
+#else
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
+#endif // TARGET_ARM64
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
+#if defined(TARGET_ARM64)
+        m_pSpForPacSign = (void*)spForPacSign;
+#endif // TARGET_ARM64
 #if defined(TARGET_X86)
-        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(
-            frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(),
-                                                                frameIterator->GetRegisterSet()));
+        bool isAsync = false;
+        GCRefKind retKind = frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet(), &isAsync);
+        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retKind, isAsync);
 #endif
 
-        *ppvRetAddrLocation = (void*)pfnHijackFunction;
+        void* pvHijackedAddr = (void*)pfnHijackFunction;
+#if defined(TARGET_ARM64)
+        if (spForPacSign != 0)
+        {
+            pvHijackedAddr = PacSignPtr(pvHijackedAddr, (void*)spForPacSign);
+        }
+#endif // TARGET_ARM64
+        *ppvRetAddrLocation = pvHijackedAddr;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
-            GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
+            GetOSThreadId(), frameIterator->GetRegisterSet()->GetIP());
     }
 }
 #endif // FEATURE_HIJACK
@@ -877,7 +760,7 @@ bool Thread::Redirect()
     redirectionContext->SetIp(origIP);
 
     STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
-        GetPalThreadIdForLogging(), origIP);
+        GetOSThreadId(), origIP);
 
     return true;
 }
@@ -943,6 +826,9 @@ void Thread::UnhijackWorker()
     if (m_pvHijackedReturnAddress == NULL)
     {
         ASSERT(m_ppvHijackedReturnAddressLocation == NULL);
+#if defined(TARGET_ARM64)
+        ASSERT(m_pSpForPacSign == NULL);
+#endif // TARGET_ARM64
         return;
     }
 
@@ -953,6 +839,9 @@ void Thread::UnhijackWorker()
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
     m_pvHijackedReturnAddress           = NULL;
+#if defined(TARGET_ARM64)
+    m_pSpForPacSign                     = NULL;
+#endif // TARGET_ARM64
 #ifdef TARGET_X86
     m_uHijackedReturnValueFlags         = 0;
 #endif
@@ -985,47 +874,6 @@ void Thread::ClearState(ThreadStateFlags flags)
     PalInterlockedAnd(&m_ThreadStateFlags, ~flags);
 }
 
-bool Thread::IsSuppressGcStressSet()
-{
-    return IsStateSet(TSF_SuppressGcStress);
-}
-
-void Thread::SetSuppressGcStress()
-{
-    ASSERT(!IsStateSet(TSF_SuppressGcStress));
-    SetState(TSF_SuppressGcStress);
-}
-
-void Thread::ClearSuppressGcStress()
-{
-    ASSERT(IsStateSet(TSF_SuppressGcStress));
-    ClearState(TSF_SuppressGcStress);
-}
-
-#endif //!DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_GC_STRESS
-#ifdef HOST_X86 // the others are implemented in assembly code to avoid trashing the argument registers
-EXTERN_C void FASTCALL RhpSuppressGcStress()
-{
-    ThreadStore::GetCurrentThread()->SetSuppressGcStress();
-}
-#endif // HOST_X86
-
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
-{
-    ThreadStore::GetCurrentThread()->ClearSuppressGcStress();
-}
-#else
-EXTERN_C void FASTCALL RhpSuppressGcStress()
-{
-}
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
-{
-}
-#endif // FEATURE_GC_STRESS
-
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
@@ -1039,7 +887,9 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+#ifndef FEATURE_PORTABLE_HELPERS
     ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
+#endif // !FEATURE_PORTABLE_HELPERS
 
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
@@ -1054,6 +904,23 @@ void Thread::PushExInfo(ExInfo * pExInfo)
     pExInfo->m_pPrevExInfo = m_pExInfoStackHead;
     m_pExInfoStackHead = pExInfo;
 }
+
+void Thread::PopExInfo(ExInfo* pExInfo, uintptr_t resumeSP)
+{
+    ValidateExInfoPop(pExInfo, reinterpret_cast<void*>(resumeSP));
+    do
+    {
+        pExInfo = pExInfo->m_pPrevExInfo;
+    }
+    while (pExInfo != nullptr && reinterpret_cast<uintptr_t>(pExInfo) < resumeSP);
+    m_pExInfoStackHead = pExInfo;
+}
+
+FCIMPL2(void, RhpPopExInfo, ExInfo* pExInfo, uintptr_t resumeSP)
+{
+    ThreadStore::GetCurrentThread()->PopExInfo(pExInfo, resumeSP);
+}
+FCIMPLEND
 
 void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 {
@@ -1160,6 +1027,23 @@ bool Thread::CheckPendingRedirect(PCODE eip)
 
 #endif // TARGET_X86
 
+void Thread::SetInterrupted(bool isInterrupted)
+{
+    if (isInterrupted)
+    {
+        SetState(TSF_Interrupted);
+    }
+    else
+    {
+        ClearState(TSF_Interrupted);
+    }
+}
+
+bool Thread::CheckInterrupted()
+{
+    return IsStateSet(TSF_Interrupted);
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1188,8 +1072,21 @@ EXTERN_C uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, 
 }
 #endif // TARGET_UNIX
 
+#ifdef TARGET_UNIX
+bool InitGSCookie();
+#endif
+
 EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
 {
+#ifdef TARGET_UNIX
+    // In a DLL, GSCookies are read before reverse p/invoke transition (and runtime initialization) so we need to initialize them earlier than runtime.
+    if (!InitGSCookie())
+    {
+        PalPrintFatalError("\nFatal error. .NET runtime failed to initialize.\n");
+        RhFailFast();
+    }
+#endif
+
     g_RuntimeInitializationCallback = fPtr;
 }
 
@@ -1232,7 +1129,7 @@ void Thread::EnsureRuntimeInitialized()
 {
     while (PalInterlockedCompareExchangePointer((void *volatile *)&g_RuntimeInitializingThread, this, NULL) != NULL)
     {
-        PalSleep(1);
+        minipal_sleep(1);
     }
 
     if (g_RuntimeInitializationCallback != NULL)
@@ -1249,23 +1146,6 @@ void Thread::EnsureRuntimeInitialized()
     PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
 }
 
-Object * Thread::GetThreadAbortException()
-{
-    return m_threadAbortException;
-}
-
-void Thread::SetThreadAbortException(Object *exception)
-{
-    m_threadAbortException = exception;
-}
-
-FCIMPL0(Object *, RhpGetThreadAbortException)
-{
-    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
-    return pCurThread->GetThreadAbortException();
-}
-FCIMPLEND
-
 Object** Thread::GetThreadStaticStorage()
 {
     return &m_pThreadLocalStatics;
@@ -1275,6 +1155,49 @@ FCIMPL0(Object**, RhGetThreadStaticStorage)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
+}
+FCIMPLEND
+
+#ifdef TARGET_UNIX
+#define NEWTHREAD_RETURN_TYPE size_t
+#else
+#define NEWTHREAD_RETURN_TYPE uint32_t
+#endif
+
+static NEWTHREAD_RETURN_TYPE RhThreadEntryPoint(void* pContext)
+{
+    // We will attach the thread early so that when the managed thread entrypoint
+    // starts running and performs its reverse p/invoke transition, the thread is
+    // already attached.
+    //
+    // This avoids potential deadlocks with module initializers that may be running
+    // as part of runtime initialization (in non-EXE scenario) and creating new
+    // threads. When RhThreadEntryPoint runs, the runtime must already be initialized
+    // enough to be able to run managed code so we don't need to wait for it to
+    // finish.
+
+    ThreadStore::AttachCurrentThread();
+
+    Thread * pThread = ThreadStore::GetCurrentThread();
+    pThread->SetDeferredTransitionFrameForNativeHelperThread();
+    pThread->DisablePreemptiveMode();
+
+    Object * pThreadObject = ObjectFromHandle((OBJECTHANDLE)pContext);
+    MethodTable* pMT = pThreadObject->GetMethodTable();
+
+    pThread->EnablePreemptiveMode();
+
+    NEWTHREAD_RETURN_TYPE (*pFn)(void*) = (NEWTHREAD_RETURN_TYPE (*)(void*))
+        pMT->GetTypeManagerPtr()
+        ->AsTypeManager()
+        ->GetClasslibFunction(ClasslibFunctionId::ThreadEntryPoint);
+
+    return pFn(pContext);
+}
+
+FCIMPL0(void*, RhGetThreadEntryPointAddress)
+{
+    return (void*)&RhThreadEntryPoint;
 }
 FCIMPLEND
 
@@ -1299,23 +1222,48 @@ FCIMPL2(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typ
 }
 FCIMPLEND
 
-// This is function is used to quickly query a value that can uniquely identify a thread
-FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
+FCIMPL0(size_t, RhGetDefaultStackSize)
 {
-#ifndef TARGET_UNIX
-    return PalNtCurrentTeb();
-#else
-    return (uint8_t*)ThreadStore::RawGetCurrentThread();
-#endif // TARGET_UNIX
+    return GetDefaultStackSizeSetting();
 }
 FCIMPLEND
 
-// This function is used to get the OS thread identifier for the current thread.
-FCIMPL0(uint64_t, RhCurrentOSThreadId)
+#ifdef TARGET_WINDOWS
+// Native APC callback for Thread.Interrupt
+// This callback sets the interrupt flag on the current thread
+static VOID CALLBACK InterruptApcCallback(ULONG_PTR /* parameter */)
 {
-    return PalGetCurrentOSThreadId();
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (!pCurrentThread->IsInitialized())
+    {
+        // If the thread was interrupted before it was started
+        // the thread won't have been initialized.
+        // Attach the thread here if it's the first time we're seeing it.
+        ThreadStore::AttachCurrentThread();
+    }
+
+    pCurrentThread->SetInterrupted(true);
+}
+
+// Function to get the address of the interrupt APC callback
+FCIMPL0(void*, RhGetInterruptApcCallback)
+{
+    return (void*)InterruptApcCallback;
 }
 FCIMPLEND
+
+FCIMPL0(FC_BOOL_RET, RhCheckAndClearPendingInterrupt)
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (pCurrentThread->CheckInterrupted())
+    {
+        pCurrentThread->SetInterrupted(false);
+        FC_RETURN_BOOL(true);
+    }
+    FC_RETURN_BOOL(false);
+}
+FCIMPLEND
+#endif // TARGET_WINDOWS
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
@@ -1345,23 +1293,23 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASM)
 
-FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvoke, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvokeReturn, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);
 }
 FCIMPLEND
 
-#endif //USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS && !HOST_WASM
 
 #endif // !DACCESS_COMPILE
 

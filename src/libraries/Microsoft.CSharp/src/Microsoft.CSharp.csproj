@@ -13,7 +13,7 @@
     <DefineConstants Condition="'$(EnableComBinder)' == 'true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)' == 'true'">true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);LEGACY_GETRESOURCESTRING_USER</DefineConstants>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>
@@ -239,22 +239,22 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArray.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantBuilder.cs" />
 
-    <Reference Include="System.Reflection.Emit" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
-    <Reference Include="System.Reflection.Primitives" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit\src\System.Reflection.Emit.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.ILGeneration\src\System.Reflection.Emit.ILGeneration.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.Lightweight\src\System.Reflection.Emit.Lightweight.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Primitives\src\System.Reflection.Primitives.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.Expressions\src\System.Linq.Expressions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\src\System.ObjectModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>

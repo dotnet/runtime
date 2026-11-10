@@ -29,13 +29,13 @@ namespace System.Diagnostics.Tracing
         public const byte OutTypeChainFlag = 128;
         public const EventTags EventTagsMask = (EventTags)0xfffffff;
 
-        public static readonly TraceLoggingDataType IntPtrType = IntPtr.Size == 8
+        public static TraceLoggingDataType IntPtrType => IntPtr.Size == 8
             ? TraceLoggingDataType.Int64
             : TraceLoggingDataType.Int32;
-        public static readonly TraceLoggingDataType UIntPtrType = IntPtr.Size == 8
+        public static TraceLoggingDataType UIntPtrType => IntPtr.Size == 8
             ? TraceLoggingDataType.UInt64
             : TraceLoggingDataType.UInt32;
-        public static readonly TraceLoggingDataType HexIntPtrType = IntPtr.Size == 8
+        public static TraceLoggingDataType HexIntPtrType => IntPtr.Size == 8
             ? TraceLoggingDataType.HexInt64
             : TraceLoggingDataType.HexInt32;
 
@@ -116,10 +116,7 @@ namespace System.Diagnostics.Tracing
                 current |= (byte)(more ? 0x80 : 0x00);
                 tagsLeft <<= 7;
 
-                if (metadata != null)
-                {
-                    metadata[pos] = current;
-                }
+                metadata?[pos] = current;
                 pos++;
             }
             while (more);
@@ -166,7 +163,7 @@ namespace System.Diagnostics.Tracing
 
         public static void CheckName(string? name)
         {
-            if (name != null && 0 <= name.IndexOf('\0'))
+            if (name != null && name.Contains('\0'))
             {
                 throw new ArgumentOutOfRangeException(nameof(name));
             }

@@ -148,12 +148,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(128)]
         public static void ValidCFBFeedbackSizes(int feedbackSize)
         {
-            // Windows 7 only supports CFB8.
-            if (feedbackSize != 8 && PlatformDetection.IsWindows7)
-            {
-                return;
-            }
-
             using (Aes aes = AesFactory.Create())
             {
                 aes.GenerateKey();
@@ -497,7 +491,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                         {
                             one = enc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                         }
-                       
+
                         iv = aes.IV;
                     }
                     else

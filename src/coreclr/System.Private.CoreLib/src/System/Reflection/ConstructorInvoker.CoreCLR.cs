@@ -5,17 +5,15 @@ namespace System.Reflection
 {
     public partial class ConstructorInvoker
     {
-        private readonly Signature? _signature;
+        private IntrinsicInvokeHelper.InvokeState _invokeState;
 
         internal unsafe ConstructorInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
         {
-            _signature = constructor.Signature;
-            _invokeFunc_RefArgs = InterpretedInvoke;
+            _invokeFunc_RefArgs = InvokeWithSharedThunk;
         }
 
-        private unsafe object? InterpretedInvoke(object? obj, IntPtr* args)
-        {
-            return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
-        }
+        private unsafe object? InvokeWithSharedThunk(object? obj, IntPtr* args) =>
+            IntrinsicInvokeHelper.Invoke(ref _invokeState, ref _strategy, ref _invokeFunc_RefArgs,
+                _method, _argTypes, obj, args, backwardsCompat: false);
     }
 }

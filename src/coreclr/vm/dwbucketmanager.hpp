@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
+// ============================================================================
 // FILE: dwbucketmanager.hpp
 //
 // This file contains the manager types for differents types of Watson buckets
 // and various helper types.
-//
-
-//
-
-//
 // ============================================================================
 
 #ifndef DWBUCKETMANAGER_HPP
@@ -302,7 +298,6 @@ private:
     // misc helper functions
     DWORD GetILOffset();
     bool GetFileVersionInfoForModule(Module* pModule, USHORT& major, USHORT& minor, USHORT& build, USHORT& revision);
-    bool IsCodeContractsFrame(MethodDesc* pMD);
     OBJECTREF GetRealExceptionObject();
     WCHAR* GetParamBufferForIndex(BucketParameterIndex paramIndex);
     void LogParam(_In_z_ LPCWSTR paramValue, BucketParameterIndex paramIndex);
@@ -326,7 +321,6 @@ protected:
     void GetExceptionName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void GetPackageMoniker(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void GetPRAID(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
-    void GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
 
 public:
     BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException);
@@ -526,7 +520,7 @@ void BaseBucketParamsManager::GetAppTimeStamp(_Out_writes_(maxLength) WCHAR* tar
     {
         wcsncpy_s(targetParam, maxLength, W("missing"), _TRUNCATE);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
@@ -551,12 +545,13 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
         // Get the assembly name, and determine its length, including terminating NULL.
         Assembly* pAssembly = pModule->GetAssembly();
         LPCUTF8 utf8AssemblyName = pAssembly->GetSimpleName();
-        const int assemblyNameLength = MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, NULL, 0);
+        const size_t utf8AssemblyNameLength = strlen(utf8AssemblyName) + 1;
+        const size_t assemblyNameLength = minipal_get_length_utf8_to_utf16(utf8AssemblyName, utf8AssemblyNameLength, 0);
 
         // Allocate a buffer and convert assembly name - multi-module assemblies are no longer supported.
-        int fullNameLength = assemblyNameLength;
+        size_t fullNameLength = assemblyNameLength;
         WCHAR *fullName = reinterpret_cast< WCHAR* >(_alloca(sizeof(WCHAR)*(fullNameLength)));
-        MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, fullNameLength);
+        minipal_convert_utf8_to_utf16(utf8AssemblyName, utf8AssemblyNameLength, (CHAR16_T*)fullName, fullNameLength, 0);
 
         if (!failed)
         {
@@ -661,7 +656,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* 
         {
             failed = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     if (!pModule || failed)
@@ -768,7 +763,7 @@ void BaseBucketParamsManager::GetExceptionName(_Out_writes_(maxLength) WCHAR* ta
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 
         _ASSERTE(pExceptionName);
@@ -810,31 +805,6 @@ void BaseBucketParamsManager::GetPRAID(_Out_writes_(maxLength) WCHAR* targetPara
     _ASSERTE(!"PRAID support NYI for CoreCLR");
 }
 
-void BaseBucketParamsManager::GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD ilOffset = GetILOffset();
-
-    if (ilOffset == MAXDWORD)
-        ilOffset = 0;
-
-    if (m_pFaultingMD)
-        ilOffset += m_pFaultingMD->GetRVA();
-
-    _snwprintf_s(targetParam,
-                maxLength,
-                _TRUNCATE,
-                W("%x"),
-                ilOffset);
-}
-
 // helper functions
 
 DWORD BaseBucketParamsManager::GetILOffset()
@@ -873,7 +843,7 @@ DWORD BaseBucketParamsManager::GetILOffset()
         {
             // Swallow the exception, and just use MAXDWORD.
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return ilOffset;
@@ -909,40 +879,6 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
     }
 
     return succeeded;
-}
-
-// attempts to determine if the specified MethodDesc is one of the code contracts methods.
-// this is defined as any method on the System.Diagnostics.Contracts.__ContractsRuntime type.
-bool BaseBucketParamsManager::IsCodeContractsFrame(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(pMD != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!pMD)
-        return false;
-
-    MethodTable* pMT = pMD->GetMethodTable();
-    LPCUTF8 pszNamespace = NULL;
-    LPCUTF8 pszName = NULL;
-    pszName = pMT->GetFullyQualifiedNameInfo(&pszNamespace);
-
-    if (!pszName || !pszNamespace)
-        return false;
-
-    LPCUTF8 pszContractsNamespace = "System.Diagnostics.Contracts";
-    LPCUTF8 pszContractsRuntimeType = "__ContractsRuntime";
-
-    if (strcmp(pszNamespace, pszContractsNamespace) == 0 &&
-        strcmp(pszName, pszContractsRuntimeType) == 0)
-        return true;
-
-    return false;
 }
 
 // gets the "real" exception object.  it might be m_pException or the exception object on the thread

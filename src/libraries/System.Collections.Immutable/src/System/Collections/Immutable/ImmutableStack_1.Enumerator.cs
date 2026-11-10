@@ -44,12 +44,10 @@ namespace System.Collections.Immutable
                 {
                     if (_remainingStack == null || _remainingStack.IsEmpty)
                     {
-                        throw new InvalidOperationException();
+                        ThrowHelper.ThrowInvalidOperationException();
                     }
-                    else
-                    {
-                        return _remainingStack.Peek();
-                    }
+
+                    return _remainingStack.Peek();
                 }
             }
 
@@ -113,12 +111,10 @@ namespace System.Collections.Immutable
                     this.ThrowIfDisposed();
                     if (_remainingStack == null || _remainingStack.IsEmpty)
                     {
-                        throw new InvalidOperationException();
+                        ThrowHelper.ThrowInvalidOperationException();
                     }
-                    else
-                    {
-                        return _remainingStack.Peek();
-                    }
+
+                    return _remainingStack.Peek();
                 }
             }
 

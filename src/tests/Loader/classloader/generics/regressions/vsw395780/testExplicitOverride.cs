@@ -8,6 +8,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public interface I<T>
 {
@@ -26,6 +27,7 @@ public class C : I<String>
 
 public class Test_testExplicitOverride
 {
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

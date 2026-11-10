@@ -6,9 +6,16 @@
 #include "../Common/pal_safecrt.h"
 #include <assert.h>
 #include <dirent.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "openssl.h"
+
+#ifndef NAME_MAX
+#error "NAME_MAX is not defined"
+#endif
 
 c_static_assert(PAL_X509_V_OK == X509_V_OK);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT);
@@ -121,12 +128,6 @@ void CryptoNative_X509Destroy(X509* a)
     }
 }
 
-X509* CryptoNative_X509Duplicate(X509* x509)
-{
-    ERR_clear_error();
-    return X509_dup(x509);
-}
-
 X509* CryptoNative_PemReadX509FromBio(BIO* bio)
 {
     ERR_clear_error();
@@ -145,13 +146,13 @@ ASN1_INTEGER* CryptoNative_X509GetSerialNumber(X509* x509)
     return X509_get_serialNumber(x509);
 }
 
-X509_NAME* CryptoNative_X509GetIssuerName(X509* x509)
+const X509_NAME* CryptoNative_X509GetIssuerName(X509* x509)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_get_issuer_name(x509);
 }
 
-X509_NAME* CryptoNative_X509GetSubjectName(X509* x509)
+const X509_NAME* CryptoNative_X509GetSubjectName(X509* x509)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_get_subject_name(x509);
@@ -175,19 +176,19 @@ int32_t CryptoNative_X509GetExtCount(X509* x)
     return X509_get_ext_count(x);
 }
 
-X509_EXTENSION* CryptoNative_X509GetExt(X509* x, int32_t loc)
+const X509_EXTENSION* CryptoNative_X509GetExt(X509* x, int32_t loc)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_get_ext(x, loc);
 }
 
-ASN1_OBJECT* CryptoNative_X509ExtensionGetOid(X509_EXTENSION* x)
+const ASN1_OBJECT* CryptoNative_X509ExtensionGetOid(X509_EXTENSION* x)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_EXTENSION_get_object(x);
 }
 
-ASN1_OCTET_STRING* CryptoNative_X509ExtensionGetData(X509_EXTENSION* x)
+const ASN1_OCTET_STRING* CryptoNative_X509ExtensionGetData(X509_EXTENSION* x)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_EXTENSION_get_data(x);
@@ -199,7 +200,7 @@ int32_t CryptoNative_X509ExtensionGetCritical(X509_EXTENSION* x)
     return X509_EXTENSION_get_critical(x);
 }
 
-ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
+const ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
 {
     ERR_clear_error();
 
@@ -215,7 +216,7 @@ ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
         return NULL;
     }
 
-    X509_EXTENSION* ext = X509_get_ext(x, idx);
+    OSSL4CONST X509_EXTENSION* ext = X509_get_ext(x, idx);
 
     if (ext == NULL)
     {
@@ -445,15 +446,18 @@ static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmp
         return NULL;
     }
 
-    struct dirent* ent = NULL;
     size_t storePathLen = strlen(storePath);
 
     // d_name is a fixed length char[], not a char*.
+    // The traditional declaration (eg. SunOS) is d_name[1]
+    // so we can't assume sizeof(ent->d_name) will work,
+    // so just use NAME_MAX which is the POSIX way.
     // Leave one byte for '\0' and one for '/'
-    size_t allocSize = storePathLen + sizeof(ent->d_name) + 2;
+    size_t allocSize = storePathLen + NAME_MAX + 2;
     char* tmp = (char*)calloc(allocSize, sizeof(char));
     if (!tmp)
     {
+        closedir(trustDir);
         *pathTmp = NULL;
         *nextFileWrite = NULL;
         return NULL;
@@ -479,10 +483,16 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
 
     while ((next = readdir(dir)) != NULL)
     {
-        size_t len = strnlen(next->d_name, sizeof(next->d_name));
+        size_t len = strnlen(next->d_name, NAME_MAX);
 
         if (len > 4 && 0 == strncasecmp(".pfx", next->d_name + len - 4, 4))
         {
+            if (len >= remaining)
+            {
+                // Filename too long for buffer, skip it
+                continue;
+            }
+
             memcpy_s(nextFileWrite, remaining, next->d_name, len);
             // if d_name was full-length it might not have a trailing null.
             nextFileWrite[len] = 0;
@@ -611,7 +621,7 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
     if (storeDir != NULL)
     {
         X509* cert;
-        X509Stack* tmpStack = sk_X509_new_null();
+        X509Stack* tmpStack = CryptoNative_NewX509Stack();
 
         if (tmpStack == NULL)
         {
@@ -756,7 +766,7 @@ int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx
         X509* last = sk_X509_value(chain, errorDepth);
 
         // If the last element is in the trust store we need to build a new trust store.
-        if (X509_STORE_CTX_get1_issuer(&root, storeCtx, last))
+        if (X509_STORE_CTX_get1_issuer(&root, storeCtx, last) == 1)
         {
             if (root == last)
             {
@@ -952,7 +962,7 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
             nonceCheck = 1;
         }
 
-        if (nonceCheck == 1 && OCSP_basic_verify(basicResp, untrusted, store, OCSP_TRUSTOTHER))
+        if (nonceCheck == 1 && OCSP_basic_verify(basicResp, untrusted, store, OCSP_TRUSTOTHER) == 1)
         {
             ASN1_GENERALIZEDTIME* thisupd = NULL;
             ASN1_GENERALIZEDTIME* nextupd = NULL;
@@ -961,7 +971,7 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
             {
                 time_t currentTime = time(NULL);
                 int nextUpdComparison = 0;
-#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
                 // If openssl uses 32-bit time_t and the current time doesn't fit in 32 bits,
                 // skip checking the status/nextupd, and fall through to return PAL_X509_V_ERR_UNABLE_TO_GET_CRL.
                 if (!g_libSslUses32BitTime || (currentTime >= INT_MIN && currentTime <= INT_MAX))
@@ -1126,7 +1136,9 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
 
     if (bio != NULL)
     {
-        resp = d2i_OCSP_RESPONSE_bio(bio, NULL);
+        // OpenSSL 4.1 defines d2i_OCSP_RESPONSE_bio and i2d_OCSP_RESPONSE_bio in terms of
+        // ASN1_item_d2i_bio, ASN1_item_i2d_bio and OCSP_RESPONSE_it, which are not in the shim.
+        resp = ASN1_d2i_bio_of(OCSP_RESPONSE, OCSP_RESPONSE_new, d2i_OCSP_RESPONSE, bio, NULL);
         BIO_free(bio);
     }
 
@@ -1250,7 +1262,8 @@ static int32_t X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, X509* subject, X509
             {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
-                if (i2d_OCSP_RESPONSE_bio(bio, resp))
+#pragma clang diagnostic ignored "-Wimplicit-void-ptr-cast"
+                if (ASN1_i2d_bio_of(OCSP_RESPONSE, i2d_OCSP_RESPONSE, bio, resp))
 #pragma clang diagnostic pop
                 {
                     clearErr = 0;
@@ -1333,7 +1346,7 @@ int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len,
 
     if (store != NULL)
     {
-        bag = sk_X509_new_null();
+        bag = CryptoNative_NewX509Stack();
     }
 
     if (bag != NULL)

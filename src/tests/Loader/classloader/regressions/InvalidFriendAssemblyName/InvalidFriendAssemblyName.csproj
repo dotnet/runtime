@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This test relies on runtime compilation access checks to parse the invalid friend assembly name.
+         Crossgen2 does not implement these checks, and any checks would fail at build time, not run time. -->
+    <R2RIncompatible>true</R2RIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InvalidFriendAssemblyName.cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

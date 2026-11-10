@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-        public static void StoppedWithException(this ILogger logger, Exception? ex)
+        public static void StoppedWithException(this ILogger logger, Exception ex)
         {
             if (logger.IsEnabled(LogLevel.Debug))
             {

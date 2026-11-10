@@ -206,7 +206,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
 
             // Write <item> body and footer.
-            Type previousElementType = null;
+            Type? previousElementType = null;
 
             foreach (SrgsElement element in _elements)
             {

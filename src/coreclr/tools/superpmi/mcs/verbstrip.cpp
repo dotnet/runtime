@@ -33,11 +33,10 @@ int verbStrip::DoWork(
         return -1;
     }
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileOut == INVALID_HANDLE_VALUE)
+    FILE* hFileOut = fopen(nameOfOutput, "wb");
+    if (hFileOut == nullptr)
     {
-        LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
+        LogError("Failed to open input 1 '%s'. errno=%d", nameOfOutput, errno);
         return -1;
     }
 
@@ -64,21 +63,16 @@ int verbStrip::DoWork(
             st1->Start();
         }
 
-        if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, !stripCR, &mc))
             return -1;
 
-        if (stripCR)
-        {
-            delete mc->cr;
-            mc->cr = new CompileResult();
-        }
         mc->saveToFile(hFileOut);
         savedCount++;
         delete mc;
     }
-    if (CloseHandle(hFileOut) == 0)
+    if (fclose(hFileOut) != 0)
     {
-        LogError("2nd CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("2nd fclose failed. errno=%d", errno);
         return -1;
     }
     LogInfo("Loaded %d, Saved %d", loadedCount, savedCount);
@@ -100,11 +94,10 @@ int verbStrip::DoWorkTheOldWay(
     bool write;
     int  index = 0; // Can't use MethodContextIterator indexing, since we want the opposite of that.
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileOut == INVALID_HANDLE_VALUE)
+    FILE* hFileOut = fopen(nameOfOutput, "wb");
+    if (hFileOut == nullptr)
     {
-        LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
+        LogError("Failed to open input 1 '%s'. errno=%d", nameOfOutput, errno);
         return -1;
     }
 
@@ -134,9 +127,9 @@ int verbStrip::DoWorkTheOldWay(
         }
     }
 
-    if (CloseHandle(hFileOut) == 0)
+    if (fclose(hFileOut) != 0)
     {
-        LogError("2nd CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("2nd fclose failed. errno=%d", errno);
         return -1;
     }
 

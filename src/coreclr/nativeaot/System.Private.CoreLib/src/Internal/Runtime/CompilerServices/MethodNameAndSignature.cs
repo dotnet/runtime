@@ -26,6 +26,15 @@ namespace Internal.Runtime.CompilerServices
             return Reader.GetString(method.Name);
         }
 
+        public ReadOnlySpan<byte> Name
+        {
+            get
+            {
+                Method method = Reader.GetMethod(Handle);
+                return Reader.ReadStringAsBytes(method.Name);
+            }
+        }
+
         public override bool Equals(object? compare)
         {
             if (compare == null)
@@ -44,6 +53,19 @@ namespace Internal.Runtime.CompilerServices
 
             return thisMethod.Signature.Equals(otherMethod.Signature)
                 && thisMethod.Name.Equals(otherMethod.Name);
+        }
+
+        public bool ReturnTypeHasInstantiation
+        {
+            get
+            {
+                Method method = Reader.GetMethod(Handle);
+                Handle returnType = method.Signature.GetMethodSignature(Reader).ReturnType;
+                if (returnType.HandleType != HandleType.TypeSpecification)
+                    return false;
+                Handle inner = returnType.ToTypeSpecificationHandle(Reader).GetTypeSpecification(Reader).Signature;
+                return inner.HandleType == HandleType.TypeInstantiationSignature;
+            }
         }
 
         public override int GetHashCode()

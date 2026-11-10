@@ -137,7 +137,7 @@ namespace System.Net.Test.Common
                 Stream stream = null;
 #if TARGET_BROWSER
                 closableWrapper = new SocketWrapper(_listenSocket);
-                stream = new WebSocketStream(_listenSocket, ownsSocket: true);
+                stream = WebSocketStream.Create(_listenSocket, WebSocketMessageType.Binary, ownsWebSocket: true);
 #else
                 var socket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
                 closableWrapper = new SocketWrapper(socket);
@@ -155,7 +155,10 @@ namespace System.Net.Test.Common
             }
             catch (Exception)
             {
-                closableWrapper?.Close();
+                if (closableWrapper is not null)
+                {
+                    await closableWrapper.CloseAsync().ConfigureAwait(false);
+                }
                 throw;
             }
         }
@@ -428,6 +431,7 @@ namespace System.Net.Test.Common
 
         public class Options : GenericLoopbackOptions
         {
+            public bool AllowTlsResume { get; set; } = true;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
@@ -477,25 +481,35 @@ namespace System.Net.Test.Common
                 if (httpOptions.UseSsl)
                 {
                     var sslStream = new SslStream(stream, false, delegate { return true; });
+                    try
+                    {
 #if !NETFRAMEWORK
-                    SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
-                    {
-                        EnabledSslProtocols = httpOptions.SslProtocols,
-                        ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
-                        ClientCertificateRequired = true,
-                    };
+                        SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
+                        {
+                            AllowTlsResume = httpOptions.AllowTlsResume,
+                            EnabledSslProtocols = httpOptions.SslProtocols,
+                            ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
+                            ClientCertificateRequired = true,
+                        };
 
-                    await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
+                        await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
 #else
-                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: httpOptions.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
+                        using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
+                        {
+                            await sslStream.AuthenticateAsServerAsync(
+                                cert,
+                                clientCertificateRequired: true, // allowed but not required
+                                enabledSslProtocols: httpOptions.SslProtocols,
+                                checkCertificateRevocation: false).ConfigureAwait(false);
+                        }
 #endif
+                    }
+                    catch
+                    {
+                        sslStream.Dispose();
+                        throw;
+                    }
+
                     stream = sslStream;
                 }
 
@@ -579,25 +593,20 @@ namespace System.Net.Test.Common
             {
                 byte[] buffer = new byte[BufferSize];
                 int offset = 0;
-                int totalLength = 0;
                 int bytesRead;
 
                 do
                 {
                     bytesRead = await ReadAsync(buffer, offset, buffer.Length - offset).ConfigureAwait(false);
-                    totalLength += bytesRead;
                     offset += bytesRead;
 
-                    if (bytesRead == buffer.Length)
+                    if (offset == buffer.Length)
                     {
-                        byte[] newBuffer = new byte[buffer.Length + BufferSize];
-                        buffer.CopyTo(newBuffer, 0);
-                        offset = buffer.Length;
-                        buffer = newBuffer;
+                        Array.Resize(ref buffer, buffer.Length * 2);
                     }
                 } while (bytesRead > 0);
 
-                return System.Text.Encoding.ASCII.GetString(buffer, 0, totalLength);
+                return System.Text.Encoding.ASCII.GetString(buffer, 0, offset);
             }
 
             public string ReadLine()
@@ -628,17 +637,16 @@ namespace System.Net.Test.Common
                         // In either case, read more.
                         if (_readEnd + 2 > _readBuffer.Length)
                         {
-                            // We no longer have space to read CRLF. Allocate new buffer and start over.
-                            byte[] newBuffer = new byte[_readBuffer.Length + BufferSize];
+                            // We no longer have space to read CRLF. Compact and/or grow the buffer.
                             int dataLength = _readEnd - _readStart;
                             if (dataLength > 0)
                             {
-                                Array.Copy(_readBuffer, _readStart, newBuffer, 0, dataLength);
-                                _readStart = 0;
-                                _readEnd = dataLength;
-                                _readBuffer = newBuffer;
-                                startSearch = dataLength;
+                                Array.Copy(_readBuffer, _readStart, _readBuffer, 0, dataLength);
                             }
+                            _readStart = 0;
+                            _readEnd = dataLength;
+                            startSearch = dataLength;
+                            Array.Resize(ref _readBuffer, _readBuffer.Length * 2);
                         }
 
                         int bytesRead = await _stream.ReadAsync(_readBuffer, _readEnd, _readBuffer.Length - _readEnd).ConfigureAwait(false);
@@ -679,7 +687,10 @@ namespace System.Net.Test.Common
                     // This seems to help avoid connection reset issues caused by buffered data
                     // that has not been sent/acked when the graceful shutdown timeout expires.
                     // This may throw if the socket was already closed, so eat any exception.
-                    _socket?.Shutdown(SocketShutdown.Send);
+                    if (_socket is not null)
+                    {
+                        await _socket.ShutdownAsync(SocketShutdown.Send).ConfigureAwait(false);
+                    }
                 }
                 catch (Exception) { }
 
@@ -812,19 +823,16 @@ namespace System.Net.Test.Common
                     int offset = line.IndexOf(':');
                     string name = line.Substring(0, offset);
                     string value = line.Substring(offset + 1).TrimStart();
-                    requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes));
+                    requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes, rawValueStart: offset + 1));
                 }
 
-                if (requestData.Method != "GET")
+                if (requestData.GetHeaderValueCount("Content-Length") != 0)
                 {
-                    if (requestData.GetHeaderValueCount("Content-Length") != 0)
-                    {
-                        _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
-                    }
-                    else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
-                    {
-                        _contentLength = -1;
-                    }
+                    _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
+                }
+                else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
+                {
+                    _contentLength = -1;
                 }
 
                 if (readBody)
@@ -858,6 +866,7 @@ namespace System.Net.Test.Common
                 else if (_contentLength < 0)
                 {
                     // Chunked Encoding
+                    int length = 0;
                     while (true)
                     {
                         string chunkHeader = await ReadLineAsync().ConfigureAwait(false);
@@ -872,18 +881,20 @@ namespace System.Net.Test.Common
                         byte[] chunk = new byte[chunkLength];
                         await ReadBlockAsync(chunk, 0, chunkLength).ConfigureAwait(false);
                         await ReadLineAsync().ConfigureAwait(false);
-                        if (buffer == null)
+                        if (buffer is null)
                         {
                             buffer = chunk;
+                            length = chunkLength;
                         }
                         else
                         {
-                            byte[] newBuffer = new byte[buffer.Length + chunkLength];
-
-                            buffer.CopyTo(newBuffer, 0);
-                            chunk.CopyTo(newBuffer, buffer.Length);
-                            buffer = newBuffer;
+                            length = GenericLoopbackConnection.AppendToBuffer(ref buffer, length, chunk);
                         }
+                    }
+
+                    if (buffer is not null)
+                    {
+                        Array.Resize(ref buffer, length);
                     }
                 }
 
@@ -979,9 +990,21 @@ namespace System.Net.Test.Common
                 return headerString;
             }
 
-            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+            private string GetTrailerString(IList<HttpHeaderData> trailers)
             {
-                string headerString = GetResponseHeaderString(statusCode, headers);
+                StringBuilder bld = new StringBuilder();
+                bld.Append("0\r\n");
+                foreach (HttpHeaderData headerData in trailers)
+                {
+                    bld.Append($"{headerData.Name}: {headerData.Value}\r\n");
+                }
+                bld.Append("\r\n");
+                return bld.ToString();
+            }
+
+            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false)
+            {
+                string headerString = isTrailingHeader ? GetTrailerString(headers) : GetResponseHeaderString(statusCode, headers);
                 await SendResponseAsync(headerString).ConfigureAwait(false);
             }
 
@@ -1133,6 +1156,11 @@ namespace System.Net.Test.Common
 
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
         {
+            if (options is LoopbackServer.Options { } loopbackOptions)
+            {
+                return loopbackOptions;
+            }
+
             LoopbackServer.Options newOptions = new LoopbackServer.Options();
             if (options != null)
             {

@@ -53,7 +53,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        ///     The defaut constructor. Creates the perf counter object
+        ///     The default constructor. Creates the perf counter object
         /// </summary>
         public PerformanceCounter()
         {
@@ -271,7 +271,7 @@ namespace System.Diagnostics
             {
                 if (value != _isReadOnly)
                 {
-                    if (value == false)
+                    if (!value)
                     {
                         VerifyWriteableCounterAllowed();
                     }

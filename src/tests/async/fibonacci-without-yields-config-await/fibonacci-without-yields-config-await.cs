@@ -7,19 +7,17 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
-
 public class Async2FibonacciWithYields
 {
     const int iterations = 3;
     const bool doYields = false;
 
     [Fact]
-    public static void Test()
+    public static async Task Test()
     {
         long allocated = GC.GetTotalAllocatedBytes(precise: true);
 
-        AsyncEntry().GetAwaiter().GetResult();
+        await AsyncEntry();
 
         allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
         System.Console.WriteLine("allocated: " + allocated);
@@ -30,7 +28,7 @@ public class Async2FibonacciWithYields
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            int result = AsyncHelpers.Await(Fib(30).ConfigureAwait(false));
+            int result = AsyncHelpers.Await(Fib(TestLibrary.Utilities.IsCoreClrInterpreter ? 5 : 30).ConfigureAwait(false));
             sw.Stop();
 
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");

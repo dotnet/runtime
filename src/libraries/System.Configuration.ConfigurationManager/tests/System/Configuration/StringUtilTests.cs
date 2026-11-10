@@ -20,7 +20,7 @@ namespace System.ConfigurationTests
             InlineData(@"A", @"a", false),
             InlineData(@"a", @"a", true)
             ]
-        public void EqualsOrBothNullOrEmpty(string s1, string s2, bool expected)
+        public void EqualsOrBothNullOrEmpty(string? s1, string? s2, bool expected)
         {
             Assert.Equal(expected, StringUtil.EqualsOrBothNullOrEmpty(s1, s2));
         }
@@ -37,7 +37,7 @@ namespace System.ConfigurationTests
             InlineData(@"A", @"a", true),
             InlineData(@"a", @"a", true)
             ]
-        public void EqualsIgnoreCase(string s1, string s2, bool expected)
+        public void EqualsIgnoreCase(string? s1, string? s2, bool expected)
         {
             Assert.Equal(expected, StringUtil.EqualsIgnoreCase(s1, s2));
         }
@@ -58,7 +58,7 @@ namespace System.ConfigurationTests
             InlineData(@"abba", @"abba", true),
             InlineData(@"ABBA", @"abba", false)
             ]
-        public void StartsWithOrdinal(string s1, string s2, bool expected)
+        public void StartsWithOrdinal(string? s1, string? s2, bool expected)
         {
             Assert.Equal(expected, StringUtil.StartsWithOrdinal(s1, s2));
         }
@@ -79,7 +79,7 @@ namespace System.ConfigurationTests
             InlineData(@"abba", @"abba", true),
             InlineData(@"ABBA", @"abba", true)
             ]
-        public void StartsWithOrdinalIgnoreCase(string s1, string s2, bool expected)
+        public void StartsWithOrdinalIgnoreCase(string? s1, string? s2, bool expected)
         {
             Assert.Equal(expected, StringUtil.StartsWithOrdinalIgnoreCase(s1, s2));
         }

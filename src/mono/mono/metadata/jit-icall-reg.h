@@ -162,7 +162,7 @@ MONO_JIT_ICALL (mono_break) \
 MONO_JIT_ICALL (mono_byvalarray_to_byte_array) \
 MONO_JIT_ICALL (mono_chkstk_win64) \
 MONO_JIT_ICALL (mono_ckfinite) \
-MONO_JIT_ICALL (mono_class_interface_match) \
+MONO_JIT_ICALL (mono_class_interface_match_compressed) \
 MONO_JIT_ICALL (mono_class_static_field_address) \
 MONO_JIT_ICALL (mono_compile_method_icall) \
 MONO_JIT_ICALL (mono_context_get_icall) \
@@ -203,6 +203,7 @@ MONO_JIT_ICALL (mono_get_native_calli_wrapper) \
 MONO_JIT_ICALL (mono_get_special_static_data) \
 MONO_JIT_ICALL (mono_gsharedvt_constrained_call) \
 MONO_JIT_ICALL (mono_gsharedvt_value_copy) \
+MONO_JIT_ICALL (mono_helper_box_nullable) \
 MONO_JIT_ICALL (mono_helper_compile_generic_method) \
 MONO_JIT_ICALL (mono_helper_ldstr) \
 MONO_JIT_ICALL (mono_helper_ldstr_mscorlib) \
@@ -299,7 +300,6 @@ MONO_JIT_ICALL (mono_throw_platform_not_supported) \
 MONO_JIT_ICALL (mono_throw_invalid_program) \
 MONO_JIT_ICALL (mono_throw_type_load) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
-MONO_JIT_ICALL (mono_trace_samplepoint_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_trace_tail_method) \
 MONO_JIT_ICALL (mono_upgrade_remote_class_wrapper) \

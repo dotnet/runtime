@@ -1,7 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
 
 #ifndef TARGET_ARM
 #error Should only include "cGenCpu.h" for ARM builds
@@ -16,10 +14,7 @@
 #define DATA_ALIGNMENT 4
 
 #define DISPATCH_STUB_FIRST_WORD 0xf8d0
-#define DISPATCH_STUB_THIRD_WORD 0xb420
 #define RESOLVE_STUB_FIRST_WORD 0xf8d0
-#define RESOLVE_STUB_THIRD_WORD 0xb460
-#define LOOKUP_STUB_FIRST_WORD 0xf8df
 
 #define ENUM_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(R4) \
@@ -60,17 +55,13 @@ EXTERN_C void checkStack(void);
 
 //**********************************************************************
 
-#define COMMETHOD_PREPAD                        12   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-
 #define STACK_ALIGN_SIZE                        4
+#define CALL_STACK_ALIGN_SIZE                   8
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
-
-EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
-EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -84,8 +75,7 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         32  // bytes (maximum HFA size is 4 doubles)
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4   // bytes
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1   // Calling convention has separate floating-point argument registers
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
@@ -237,7 +227,7 @@ inline PCODE GetLR(const T_CONTEXT * context) {
     return PCODE(context->Lr);
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -285,54 +275,7 @@ inline void ClearITState(T_CONTEXT *context) {
 }
 
 //------------------------------------------------------------------------
-inline void emitUnconditionalBranchThumb(LPBYTE pBuffer, int16_t offset)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    uint16_t *pInstr = (uint16_t *) pBuffer;
-
-    // offset from -2KB to +2KB
-    _ASSERTE (offset >= - MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB && offset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
-
-    if (offset >= 0)
-    {
-        offset = offset >> 1;
-    }
-    else
-    {
-        offset = ((MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB + offset) >> 1) | 0x400;
-    }
-
-    *pInstr = 0xE000 | offset;
-}
-
-//------------------------------------------------------------------------
-inline int16_t decodeUnconditionalBranchThumb(LPBYTE pBuffer)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    uint16_t *pInstr = (uint16_t *) pBuffer;
-
-    int16_t offset = (~0xE000) & (*pInstr);
-
-    if ((offset & 0x400) == 0)
-    {
-        offset = offset << 1;
-    }
-    else
-    {
-        offset = (~0x400) & offset;
-        offset = (offset << 1) - MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB;
-    }
-
-    // offset from -2KB to +2KB
-    _ASSERTE (offset >= - MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB && offset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
-
-    return offset;
-}
-
-//------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -347,36 +290,15 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + sizeof(DWORD));
-}
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    return decodeJump(pBuffer);
 }
 
 //----------------------------------------------------------------------
@@ -510,71 +432,6 @@ class StubLinkerCPU : public StubLinker
 {
 public:
     static void Init();
-
-    void ThumbEmitProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
-    {
-        _ASSERTE(!m_fProlog);
-
-        // Record the parameters of this prolog so that we can generate a matching epilog and unwind info.
-        DescribeProlog(cCalleeSavedRegs, cbStackFrame, fPushArgRegs);
-
-        // Trivial prologs (which is all that we support initially) consist of between one and three
-        // instructions.
-
-        // 1) Push argument registers. This is all or nothing (if we push, we push R0-R3).
-        if (fPushArgRegs)
-        {
-            // push {r0-r3}
-            ThumbEmitPush(ThumbReg(0).Mask() | ThumbReg(1).Mask() | ThumbReg(2).Mask() | ThumbReg(3).Mask());
-        }
-
-        // 2) Push callee saved registers. We always start pushing at R4, and only saved consecutive registers
-        //    from there (max is R11). Additionally we always assume LR is saved for these types of prolog.
-        // push {r4-rX,lr}
-        WORD wRegisters = thumbRegLr.Mask();
-        for (unsigned int i = 4; i < (4 + cCalleeSavedRegs); i++)
-            wRegisters |= ThumbReg(i).Mask();
-        ThumbEmitPush(wRegisters);
-
-        // 3) Reserve space on the stack for the rest of the frame.
-        if (cbStackFrame)
-        {
-            // sub sp, #cbStackFrame
-            ThumbEmitSubSp(cbStackFrame);
-        }
-    }
-
-    void ThumbEmitEpilog()
-    {
-        // Generate an epilog matching a prolog generated by ThumbEmitProlog.
-        _ASSERTE(m_fProlog);
-
-        // If additional stack space for a frame was allocated remove it now.
-        if (m_cbStackFrame)
-        {
-            // add sp, #m_cbStackFrame
-            ThumbEmitAddSp(m_cbStackFrame);
-        }
-
-        // Pop callee saved registers (we always have at least LR). If no argument registers were saved then
-        // we can restore LR back into PC and we're done. Otherwise LR needs to be restored into LR.
-        // pop {r4-rX,lr|pc}
-        WORD wRegisters = m_fPushArgRegs ? thumbRegLr.Mask() : thumbRegPc.Mask();
-        for (unsigned int i = 4; i < (4 + m_cCalleeSavedRegs); i++)
-            wRegisters |= ThumbReg(i).Mask();
-        ThumbEmitPop(wRegisters);
-
-        if (!m_fPushArgRegs)
-            return;
-
-        // We pushed the argument registers. These aren't restored, but we need to reclaim the stack space.
-        // add sp, #16
-        ThumbEmitAddSp(16);
-
-        // Return. The return address has been restored into LR at this point.
-        // bx lr
-        ThumbEmitJumpRegister(thumbRegLr);
-    }
 
     void ThumbEmitMovConstant(ThumbReg dest, int constant)
     {

@@ -384,13 +384,13 @@ namespace System.Reflection.Emit
         public override int GetHashCode() => base.GetHashCode();
 
         public override bool IsDefined(Type attributeType, bool inherit) =>
-            CustomAttribute.IsDefined(this, attributeType, inherit);
+            RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
 
-        public override object[] GetCustomAttributes(bool inherit) => CustomAttribute.GetCustomAttributes(this, inherit);
+        public override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, inherit);
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
-            CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
-        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
+        public override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttribute.GetCustomAttributesData(this);
     }
 }

@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- NativeExports dependency makes this project platform-specific -->
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ReferencesNativeExports>true</ReferencesNativeExports>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -15,7 +17,7 @@
   <ItemGroup>
     <EnabledGenerators Include="ComInterfaceGenerator" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
+    <Compile Include="..\Common\ComInterfaces\**\*.cs" Link="ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
   </ItemGroup>
 
   <ItemGroup>

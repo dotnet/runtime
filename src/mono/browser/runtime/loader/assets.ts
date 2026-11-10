@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
-import { BootModule, type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
+import { type Asset, type AssemblyAsset, type BootModule, type AssetBehaviors, type AssetEntry, type LoadingResource, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
@@ -27,7 +27,6 @@ const worker_empty_prefix = "          -    ";
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-threads": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
@@ -94,23 +93,18 @@ export function shouldLoadIcuAsset (asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function convert_single_asset (assetsCollection: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
-    const keys = Object.keys(resource || {});
-    mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
+function convert_single_asset (assetsCollection: AssetEntryInternal[], resource: Asset[] | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
+    resource ??= [];
+    mono_assert(resource.length == 1, `Expect to have one ${behavior} asset in resources`);
 
-    const name = keys[0];
+    const assetEntry = resource[0] as AssetEntryInternal;
+    assetEntry.behavior = behavior;
 
-    const asset = {
-        name,
-        hash: resource![name],
-        behavior,
-    };
-
-    set_single_asset(asset);
+    set_single_asset(assetEntry);
 
     // so that we can use it on the worker too
-    assetsCollection.push(asset);
-    return asset;
+    assetsCollection.push(assetEntry);
+    return assetEntry;
 }
 
 function set_single_asset (asset: AssetEntryInternal) {
@@ -191,6 +185,17 @@ export async function mono_download_assets (): Promise<void> {
 
         const instantiate = async (downloadPromise: Promise<AssetEntryInternal>) => {
             const asset = await downloadPromise;
+            const headersOnly = skipBufferByAssetTypes[asset.behavior];
+
+            if (headersOnly) {
+                if (asset.behavior === "symbols") {
+                    await runtimeHelpers.instantiate_symbols_asset(asset);
+                    cleanupAsset(asset);
+                }
+                ++loaderHelpers.actual_downloaded_assets_count;
+                return;
+            }
+
             if (asset.buffer) {
                 if (!skipInstantiateByAssetTypes[asset.behavior]) {
                     mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
@@ -203,27 +208,16 @@ export async function mono_download_assets (): Promise<void> {
                     // wait till after onRuntimeInitialized
 
                     await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                    await runtimeHelpers.afterInstantiateWasm.promise;
                     runtimeHelpers.instantiate_asset(asset, url, data);
                 }
             } else {
-                const headersOnly = skipBufferByAssetTypes[asset.behavior];
-                if (!headersOnly) {
-                    mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                    if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                        loaderHelpers.expected_downloaded_assets_count--;
-                    }
-                    if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                        loaderHelpers.expected_instantiated_assets_count--;
-                    }
-                } else {
-                    if (asset.behavior === "symbols") {
-                        await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    }
-
-                    if (skipBufferByAssetTypes[asset.behavior]) {
-                        ++loaderHelpers.actual_downloaded_assets_count;
-                    }
+                mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
+                if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    loaderHelpers.expected_downloaded_assets_count--;
+                }
+                if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    loaderHelpers.expected_instantiated_assets_count--;
                 }
             }
         };
@@ -299,132 +293,93 @@ export function prepareAssets () {
         mono_assert(resources.wasmNative, "resources.wasmNative must be defined");
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
-        mono_assert(!WasmEnableThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (resources.jsModuleDiagnostics) {
             convert_single_asset(modulesAssets, resources.jsModuleDiagnostics, "js-module-diagnostics");
         }
-        if (WasmEnableThreads) {
-            convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
-        }
 
-        const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
-            if (resources.fingerprinting && (asset.behavior == "assembly" || asset.behavior == "pdb" || asset.behavior == "resource")) {
-                asset.virtualPath = getNonFingerprintedAssetName(asset.name);
-            }
+        const addAsset = (asset: Asset, behavior: AssetBehaviors, isCore: boolean) => {
+            const assetEntry = asset as AssetEntryInternal;
+            assetEntry.behavior = behavior;
             if (isCore) {
-                asset.isCore = true;
-                coreAssetsToLoad.push(asset);
+                assetEntry.isCore = true;
+                coreAssetsToLoad.push(assetEntry);
             } else {
-                assetsToLoad.push(asset);
+                assetsToLoad.push(assetEntry);
             }
         };
 
         if (resources.coreAssembly) {
-            for (const name in resources.coreAssembly) {
-                addAsset({
-                    name,
-                    hash: resources.coreAssembly[name],
-                    behavior: "assembly"
-                }, true);
+            for (let i = 0; i < resources.coreAssembly.length; i++) {
+                const asset = resources.coreAssembly[i];
+                addAsset(asset, "assembly", true);
             }
         }
 
         if (resources.assembly) {
-            for (const name in resources.assembly) {
-                addAsset({
-                    name,
-                    hash: resources.assembly[name],
-                    behavior: "assembly"
-                }, !resources.coreAssembly); // if there are no core assemblies, then all assemblies are core
+            for (let i = 0; i < resources.assembly.length; i++) {
+                const asset = resources.assembly[i];
+                addAsset(asset, "assembly", !resources.coreAssembly);
             }
         }
 
 
         if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
             if (resources.corePdb) {
-                for (const name in resources.corePdb) {
-                    addAsset({
-                        name,
-                        hash: resources.corePdb[name],
-                        behavior: "pdb"
-                    }, true);
+                for (let i = 0; i < resources.corePdb.length; i++) {
+                    const asset = resources.corePdb[i];
+                    addAsset(asset, "pdb", true);
                 }
             }
 
             if (resources.pdb) {
-                for (const name in resources.pdb) {
-                    addAsset({
-                        name,
-                        hash: resources.pdb[name],
-                        behavior: "pdb"
-                    }, !resources.corePdb); // if there are no core pdbs, then all pdbs are core
+                for (let i = 0; i < resources.pdb.length; i++) {
+                    const asset = resources.pdb[i];
+                    addAsset(asset, "pdb", !resources.corePdb);
                 }
             }
         }
 
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
-                for (const name in resources.satelliteResources[culture]) {
-                    addAsset({
-                        name,
-                        hash: resources.satelliteResources[culture][name],
-                        behavior: "resource",
-                        culture
-                    }, !resources.coreAssembly);
+                for (let i = 0; i < resources.satelliteResources[culture].length; i++) {
+                    const asset = resources.satelliteResources[culture][i] as AssemblyAsset & AssetEntryInternal;
+                    asset.culture = culture;
+                    addAsset(asset, "resource", !resources.coreAssembly);
                 }
             }
         }
 
         if (resources.coreVfs) {
-            for (const virtualPath in resources.coreVfs) {
-                for (const name in resources.coreVfs[virtualPath]) {
-                    addAsset({
-                        name,
-                        hash: resources.coreVfs[virtualPath][name],
-                        behavior: "vfs",
-                        virtualPath
-                    }, true);
-                }
+            for (let i = 0; i < resources.coreVfs.length; i++) {
+                const asset = resources.coreVfs[i];
+                addAsset(asset, "vfs", true);
             }
         }
 
         if (resources.vfs) {
-            for (const virtualPath in resources.vfs) {
-                for (const name in resources.vfs[virtualPath]) {
-                    addAsset({
-                        name,
-                        hash: resources.vfs[virtualPath][name],
-                        behavior: "vfs",
-                        virtualPath
-                    }, !resources.coreVfs);
-                }
+            for (let i = 0; i < resources.vfs.length; i++) {
+                const asset = resources.vfs[i];
+                addAsset(asset, "vfs", !resources.coreVfs);
             }
         }
 
         const icuDataResourceName = getIcuResourceName(config);
         if (icuDataResourceName && resources.icu) {
-            for (const name in resources.icu) {
-                if (name === icuDataResourceName) {
-                    assetsToLoad.push({
-                        name,
-                        hash: resources.icu[name],
-                        behavior: "icu",
-                        loadRemote: true
-                    });
+            for (let i = 0; i < resources.icu.length; i++) {
+                const asset = resources.icu[i];
+                if (asset.name === icuDataResourceName) {
+                    addAsset(asset, "icu", false);
                 }
             }
         }
 
         if (resources.wasmSymbols) {
-            for (const name in resources.wasmSymbols) {
-                coreAssetsToLoad.push({
-                    name,
-                    hash: resources.wasmSymbols[name],
-                    behavior: "symbols"
-                });
+            for (let i = 0; i < resources.wasmSymbols.length; i++) {
+                const asset = resources.wasmSymbols[i];
+                addAsset(asset, "symbols", false);
             }
         }
     }
@@ -439,7 +394,7 @@ export function prepareAssets () {
                     name: configUrl,
                     behavior: "vfs",
                     // TODO what should be the virtualPath ?
-                    noCache: true,
+                    cache: "no-cache",
                     useCredentials: true
                 });
             }
@@ -448,15 +403,6 @@ export function prepareAssets () {
     }
 
     config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
-}
-
-export function getNonFingerprintedAssetName (assetName: string) {
-    const fingerprinting = loaderHelpers.config.resources?.fingerprinting;
-    if (fingerprinting && fingerprinting[assetName]) {
-        return fingerprinting[assetName];
-    }
-
-    return assetName;
 }
 
 export function prepareAssetsWorker () {
@@ -502,9 +448,14 @@ export async function start_asset_download (asset: AssetEntryInternal): Promise<
             // we will not re-try with local file
             throw err;
         }
-        if (err && err.status == 404) {
+        const retryWithCacheReload = asset.cache === "force-cache";
+        if (err && err.status == 404 && !retryWithCacheReload) {
             // we will not re-try with 404
             throw err;
+        }
+        if (retryWithCacheReload) {
+            // A cached failure is not authoritative, even for an otherwise terminal status.
+            asset.cache = "reload";
         }
         asset.pendingDownloadInternal = undefined;
         // second attempt only after all first attempts are queued
@@ -513,6 +464,9 @@ export async function start_asset_download (asset: AssetEntryInternal): Promise<
             mono_log_debug(() => `Retrying download '${asset.name}'`);
             return await start_asset_download_with_throttle(asset);
         } catch (err) {
+            if (retryWithCacheReload && err instanceof Error && "status" in err && err.status === 404) {
+                throw err;
+            }
             asset.pendingDownloadInternal = undefined;
             // third attempt after small delay
             await delay(100);
@@ -539,11 +493,20 @@ async function start_asset_download_with_throttle (asset: AssetEntryInternal): P
         if (!response) {
             return asset;
         }
+        const checkEmpty = (asset.cache === "force-cache" || asset.cache === "reload") &&
+            asset.behavior !== "vfs" && asset.behavior !== "symbols";
+        if (checkEmpty && response.headers.get("Content-Length") === "0") {
+            throw new Error(`Failed to load resource '${asset.name}': empty response`);
+        }
         const skipBuffer = skipBufferByAssetTypes[asset.behavior];
         if (skipBuffer) {
             return asset;
         }
-        asset.buffer = await response.arrayBuffer();
+        const buffer = await response.arrayBuffer();
+        if (checkEmpty && buffer.byteLength === 0) {
+            throw new Error(`Failed to load resource '${asset.name}': empty response`);
+        }
+        asset.buffer = buffer;
         ++loaderHelpers.actual_downloaded_assets_count;
         return asset;
     } finally {
@@ -577,9 +540,7 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
                 ok: true,
                 arrayBuffer: () => buffer,
                 json: () => JSON.parse(new TextDecoder("utf-8").decode(buffer)),
-                text: () => {
-                    throw new Error("NotImplementedException");
-                },
+                text: () => new TextDecoder("utf-8").decode(buffer),
                 headers: {
                     get: () => undefined,
                 }
@@ -668,7 +629,7 @@ export function appendUniqueQuery (attemptUrl: string, behavior: AssetBehaviors)
     return attemptUrl;
 }
 
-let resourcesLoaded = 0;
+const resourcesLoaded = new Set<string>();
 const totalResources = new Set<string>();
 
 function download_resource (asset: AssetEntryInternal): LoadingResource {
@@ -678,14 +639,17 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
         const response = { name: asset.name, url: asset.resolvedUrl, response: fetchResponse };
 
         totalResources.add(asset.name!);
-        response.response.then(() => {
+        response.response = response.response.then((res) => {
+            if (resourcesLoaded.has(asset.name!)) {
+                return res;
+            }
             if (asset.behavior == "assembly") {
                 loaderHelpers.loadedAssemblies.push(asset.name);
             }
 
-            resourcesLoaded++;
-            if (loaderHelpers.onDownloadResourceProgress)
-                loaderHelpers.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
+            loaderHelpers.callbacks.downloadResourceProgress?.(resourcesLoaded.size + 1, totalResources.size);
+            resourcesLoaded.add(asset.name!);
+            return res;
         });
         return response;
     } catch (err) {
@@ -721,12 +685,16 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     }
 
     const fetchOptions: RequestInit = {};
-    if (!loaderHelpers.config.disableNoCacheFetch) {
-        // FIXME: "no-cache" is how blazor works in Net7, but this prevents caching on HTTP level
-        // if we would like to get rid of our own cache and only use HTTP cache, we need to remove this
+
+    if (asset.cache) {
+        // If the asset definition specifies a cache mode, use it.
+        fetchOptions.cache = asset.cache;
+    } else if (!loaderHelpers.config.disableNoCacheFetch) {
+        // Otherwise, for backwards compatibility use "no-cache" setting unless disabled by the user.
         // https://github.com/dotnet/runtime/issues/74815
         fetchOptions.cache = "no-cache";
     }
+
     if (asset.useCredentials) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
@@ -751,8 +719,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "dotnetwasm": "dotnetwasm",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
-    "js-module-runtime": "dotnetjs",
-    "js-module-threads": "dotnetjs"
+    "js-module-runtime": "dotnetjs"
 };
 
 function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
@@ -824,11 +791,10 @@ export async function streamingCompileWasm () {
 
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
-    const jsModuleWorker = resolve_single_asset_path("js-module-threads");
     const loadingWorkers = [];
     for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
         const workerNumber = loaderHelpers.workerNextNumber++;
-        const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
+        const worker: Partial<PThreadWorker> = new Worker(loaderHelpers.scriptUrl, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
             type: "module",
         });
@@ -840,6 +806,9 @@ export function preloadWorkers () {
             threadPrefix: worker_empty_prefix,
             threadName: "emscripten-pool",
         } as any;
+        worker.queue = [];
+        worker.handler = (ev) => worker.queue!.push(ev);
+        worker.addEventListener!("message", worker.handler);
         loadingWorkers.push(worker as any);
     }
     loaderHelpers.loadingWorkers.promise_control.resolve(loadingWorkers);

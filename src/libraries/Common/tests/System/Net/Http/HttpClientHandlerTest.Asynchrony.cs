@@ -22,11 +22,11 @@ namespace System.Net.Http.Functional.Tests
             from contentMode in Enum.GetValues(typeof(LoopbackServer.ContentMode)).Cast<LoopbackServer.ContentMode>()
             select new object[] { responseHeadersRead, contentMode };
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(ResponseHeadersRead_SynchronizationContextNotUsedByHandler_MemberData))]
         public async Task ResponseHeadersRead_SynchronizationContextNotUsedByHandler(bool responseHeadersRead, LoopbackServer.ContentMode contentMode)
         {
-            if (IsWinHttpHandler && (PlatformDetection.IsWindows7 || PlatformDetection.IsWindows8x))
+            if (IsWinHttpHandler && PlatformDetection.IsWindows8x)
             {   // [ActiveIssue("https://github.com/dotnet/runtime/issues/54034")]
                 return;
             }

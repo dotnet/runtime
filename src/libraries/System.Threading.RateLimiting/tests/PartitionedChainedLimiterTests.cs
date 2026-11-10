@@ -1409,5 +1409,79 @@ namespace System.Threading.RateLimiting.Tests
             Assert.True(lease.TryGetMetadata("3", out obj));
             Assert.IsType<List<int>>(obj);
         }
+
+        [Fact]
+        public void DisposeDoesNotDisposeInnerLimiters()
+        {
+            var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ =>
+                    new ConcurrencyLimiterOptions
+                    {
+                        PermitLimit = 1,
+                        QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                        QueueLimit = 0
+                    });
+            });
+            var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ =>
+                    new ConcurrencyLimiterOptions
+                    {
+                        PermitLimit = 1,
+                        QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                        QueueLimit = 0
+                    });
+            });
+            var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
+
+            chainedLimiter.Dispose();
+
+            // Inner limiters should still be usable after chained limiter is disposed
+            using var lease1 = limiter1.AttemptAcquire("");
+            Assert.True(lease1.IsAcquired);
+            using var lease2 = limiter2.AttemptAcquire("");
+            Assert.True(lease2.IsAcquired);
+
+            limiter1.Dispose();
+            limiter2.Dispose();
+        }
+
+        [Fact]
+        public async Task DisposeAsyncDoesNotDisposeInnerLimiters()
+        {
+            var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ =>
+                    new ConcurrencyLimiterOptions
+                    {
+                        PermitLimit = 1,
+                        QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                        QueueLimit = 0
+                    });
+            });
+            var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ =>
+                    new ConcurrencyLimiterOptions
+                    {
+                        PermitLimit = 1,
+                        QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                        QueueLimit = 0
+                    });
+            });
+            var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
+
+            await chainedLimiter.DisposeAsync();
+
+            // Inner limiters should still be usable after chained limiter is disposed
+            using var lease1 = limiter1.AttemptAcquire("");
+            Assert.True(lease1.IsAcquired);
+            using var lease2 = limiter2.AttemptAcquire("");
+            Assert.True(lease2.IsAcquired);
+
+            await limiter1.DisposeAsync();
+            await limiter2.DisposeAsync();
+        }
     }
 }

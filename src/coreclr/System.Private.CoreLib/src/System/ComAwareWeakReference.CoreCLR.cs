@@ -9,6 +9,7 @@ namespace System
 {
     internal sealed partial class ComAwareWeakReference
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWeakRefToObject")]
         private static partial void ComWeakRefToObject(IntPtr pComWeakRef, ObjectHandleOnStack retRcw);
 
@@ -38,6 +39,7 @@ namespace System
 #endif // FEATURE_COMINTEROP
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
         private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw);
 

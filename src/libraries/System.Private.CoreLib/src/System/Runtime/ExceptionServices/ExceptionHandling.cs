@@ -5,7 +5,10 @@ using System.Threading;
 
 namespace System.Runtime.ExceptionServices
 {
-    public static class ExceptionHandling
+    /// <summary>
+    /// Provides helpers for exception handling, such as configuring and raising global unhandled exception handlers.
+    /// </summary>
+    public static partial class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
 
@@ -17,11 +20,12 @@ namespace System.Runtime.ExceptionServices
         /// <summary>
         /// Sets a handler for unhandled exceptions.
         /// </summary>
-        /// <exception cref="ArgumentNullException">If handler is null</exception>
-        /// <exception cref="InvalidOperationException">If a handler is already set</exception>
+        /// <param name="handler">A callback that will be invoked for unhandled exceptions. Return <see langword="true"/> if the exception was handled; otherwise <see langword="false"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="handler" /> is null.</exception>
+        /// <exception cref="InvalidOperationException">A handler is already set.</exception>
         /// <remarks>
-        /// The handler will be called when an unhandled exception occurs.
-        /// The handler should return true if the exception was handled, or false if it was not.
+        /// The handler is called when an unhandled exception occurs.
+        /// The handler should return <see langword="true" /> if the exception was handled, or <see langword="false" /> if it was not.
         /// If the handler returns false, the exception will continue to propagate as unhandled.
         ///
         /// The intent of this handler is to allow the user to handle unhandled exceptions
@@ -40,6 +44,25 @@ namespace System.Runtime.ExceptionServices
         }
 
         /// <summary>
+        /// Gets the exception that is currently in flight on the current thread, if any.
+        /// </summary>
+        /// <returns>
+        /// The exception that is currently in flight on the current thread, or <see langword="null"/> if there is no such exception.
+        /// </returns>
+        /// <remarks>
+        /// An exception is in flight from the point where it is thrown until it is caught without being rethrown.
+        /// This method returns the exception while its exception filters and its finally, fault, and catch handlers run.
+        ///
+        /// If another exception is thrown and caught while an exception is in flight, the nested exception
+        /// is returned while its catch handler runs, and the original exception is returned again once the
+        /// nested catch handler completes.
+        ///
+        /// The returned value is a point-in-time answer. This method is intended for diagnostic purposes, such as
+        /// logging the exception that caused a finally block to run.
+        /// </remarks>
+        public static partial Exception? GetCurrentException();
+
+        /// <summary>
         /// Raises the <see cref="AppDomain.UnhandledException"/> event.
         /// </summary>
         /// <param name="exception">Exception to pass to event handlers.</param>
@@ -47,7 +70,11 @@ namespace System.Runtime.ExceptionServices
         /// This method will raise the <see cref="AppDomain.UnhandledException"/>
         /// event and then return.
         ///
-        /// It will not raise the the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
+        /// It will not raise the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
+        ///
+        /// This API is thread safe and can be called from multiple threads. However, only one thread
+        /// will trigger the event handlers, while other threads will wait indefinitely without raising
+        /// the event.
         /// </remarks>
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception)
         {

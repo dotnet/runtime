@@ -8,222 +8,249 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Framework;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Mono.Linker.Steps;
 
 namespace ILLink.Tasks.Tests
 {
-	public class MockTask : ILLink
-	{
+    public class MockTask : ILLink
+    {
 
-		public List<(MessageImportance Importance, string Line)> Messages { get; } = new List<(MessageImportance Importance, string Line)> ();
+        public List<(MessageImportance Importance, string Line)> Messages { get; } = new List<(MessageImportance Importance, string Line)>();
 
-		public MockTask ()
-		{
-			// Ensure that [Required] members are non-null
-			AssemblyPaths = Array.Empty<ITaskItem> ();
-			RootAssemblyNames = Array.Empty<ITaskItem> ();
-			ILLinkPath = Path.Combine (Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location), "illink.dll");
-		}
+        public string GetResponseFileCommands() => GenerateResponseFileCommands();
 
-		public MockDriver CreateDriver ()
-		{
-			using (var responseFileText = new StringReader (GenerateResponseFileCommands ())) {
-				var arguments = new Queue<string> ();
-				Driver.ParseResponseFile (responseFileText, arguments);
-				return new MockDriver (arguments);
-			}
-		}
+        public bool TryGetCacheKey(string pathToTool, out string key)
+        {
+            // Match the normalization ToolTask.Execute applies before calling ExecuteTool.
+            string commandLine = GenerateCommandLineCommands();
+            commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
+            object[] arguments = {
+                pathToTool,
+                AdjustCommandsForOperatingSystem(GenerateResponseFileCommands()),
+                AdjustCommandsForOperatingSystem(commandLine)
+            };
+            var invocation = (InvocationDescription)typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
+            key = string.Empty;
+            return invocation is not null && InvocationCache.TryComputeKey(Log, "ILLink", invocation, out key);
+        }
 
-		public static string[] OptimizationNames {
-			get {
-				var fieldInfo = typeof (ILLink).GetField ("_optimizationNames", BindingFlags.NonPublic | BindingFlags.Static);
-				return (string[]) fieldInfo.GetValue (null);
-			}
-		}
+        public MockTask()
+        {
+            // Ensure that [Required] members are non-null
+            AssemblyPaths = Array.Empty<ITaskItem>();
+            RootAssemblyNames = Array.Empty<ITaskItem>();
+            ILLinkPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "illink.dll");
+        }
 
-		public void SetOptimization (string optimization, bool enabled)
-		{
-			var property = typeof (ILLink).GetProperty (optimization);
-			property.GetSetMethod ().Invoke (this, new object[] { enabled });
-		}
+        public MockDriver CreateDriver()
+        {
+            using (var responseFileText = new StringReader(GenerateResponseFileCommands()))
+            {
+                var arguments = new Queue<string>();
+                Driver.ParseResponseFile(responseFileText, arguments);
+                return new MockDriver(arguments);
+            }
+        }
 
-		static readonly string[] nonOptimizationBooleanProperties = new string[] {
-			"DumpDependencies",
-			"RemoveSymbols",
-			"PreserveSymbolPaths",
-			"TreatWarningsAsErrors",
-			"SingleWarn"
-		};
+        public static string[] OptimizationNames
+        {
+            get
+            {
+                var fieldInfo = typeof(ILLink).GetField("_optimizationNames", BindingFlags.NonPublic | BindingFlags.Static);
+                return (string[])fieldInfo.GetValue(null);
+            }
+        }
 
-		public static IEnumerable<string> GetOptimizationPropertyNames ()
-		{
-			foreach (var property in typeof (ILLink).GetProperties (BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)) {
-				if (property.PropertyType != typeof (bool))
-					continue;
-				if (nonOptimizationBooleanProperties.Contains (property.Name))
-					continue;
-				yield return property.Name;
-			}
-		}
+        public void SetOptimization(string optimization, bool enabled)
+        {
+            var property = typeof(ILLink).GetProperty(optimization);
+            property.GetSetMethod().Invoke(this, new object[] { enabled });
+        }
 
-		protected override void LogEventsFromTextOutput (string singleLine, MessageImportance messageImportance) => Messages.Add ((messageImportance, singleLine));
-	}
+        static readonly string[] nonOptimizationBooleanProperties = new string[] {
+            "DumpDependencies",
+            "RemoveSymbols",
+            "PreserveSymbolPaths",
+            "TreatWarningsAsErrors",
+            "SingleWarn"
+        };
 
-	public class MockBuildEngine : IBuildEngine
-	{
-		public void LogErrorEvent (BuildErrorEventArgs e) { }
-		public void LogWarningEvent (BuildWarningEventArgs e) { }
-		public void LogMessageEvent (BuildMessageEventArgs e) { }
-		public void LogCustomEvent (CustomBuildEventArgs e) { }
-		public bool BuildProjectFile (string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => false;
-		public bool ContinueOnError => false;
-		public int LineNumberOfTaskNode => 0;
-		public int ColumnNumberOfTaskNode => 0;
-		public string ProjectFileOfTaskNode => null;
-	}
+        public static IEnumerable<string> GetOptimizationPropertyNames()
+        {
+            foreach (var property in typeof(ILLink).GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (property.PropertyType != typeof(bool))
+                    continue;
+                if (nonOptimizationBooleanProperties.Contains(property.Name))
+                    continue;
+                yield return property.Name;
+            }
+        }
 
-	public class MockDriver : Driver
-	{
-		public class CustomLogger : Mono.Linker.ILogger
-		{
-			public List<MessageContainer> Messages = new List<MessageContainer> ();
+        protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance) => Messages.Add((messageImportance, singleLine));
+    }
 
-			public void LogMessage (MessageContainer message)
-			{
-				Messages.Add (message);
-			}
-		}
+    public class MockBuildEngine : IBuildEngine
+    {
+        public List<BuildErrorEventArgs> Errors { get; } = new List<BuildErrorEventArgs>();
+        public List<BuildMessageEventArgs> Messages { get; } = new();
 
-		public MockDriver (Queue<string> arguments) : base (arguments)
-		{
-			// Always set up the context early on.
-			Logger = new CustomLogger ();
-			SetupContext (Logger);
-		}
+        public void LogErrorEvent(BuildErrorEventArgs e) => Errors.Add(e);
+        public void LogWarningEvent(BuildWarningEventArgs e) { }
+        public void LogMessageEvent(BuildMessageEventArgs e) => Messages.Add(e);
+        public void LogCustomEvent(CustomBuildEventArgs e) { }
+        public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => false;
+        public bool ContinueOnError => false;
+        public int LineNumberOfTaskNode => 0;
+        public int ColumnNumberOfTaskNode => 0;
+        public string ProjectFileOfTaskNode => null;
+    }
 
-		public new LinkContext Context => base.Context;
+    public class MockDriver : Driver
+    {
+        public class CustomLogger : Mono.Linker.ILogger
+        {
+            public List<MessageContainer> Messages = new List<MessageContainer>();
 
-		public CustomLogger Logger { get; private set; }
+            public void LogMessage(MessageContainer message)
+            {
+                Messages.Add(message);
+            }
+        }
 
-		public IEnumerable<string> GetRootAssemblies ()
-		{
-			foreach (var step in Context.Pipeline.GetSteps ()) {
-				if (!(step is RootAssemblyInput))
-					continue;
+        public MockDriver(Queue<string> arguments) : base(arguments)
+        {
+            // Always set up the context early on.
+            Logger = new CustomLogger();
+            SetupContext(Logger);
+        }
 
-				var assemblyName = (string) typeof (RootAssemblyInput).GetField ("fileName", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (step);
-				if (assemblyName == null)
-					continue;
+        public new LinkContext Context => base.Context;
 
-				yield return assemblyName;
-			}
-		}
+        public CustomLogger Logger { get; private set; }
 
-		public IEnumerable<string> GetRootDescriptors ()
-		{
-			foreach (var step in Context.Pipeline.GetSteps ()) {
-				if (!(step is ResolveFromXmlStep))
-					continue;
+        public IEnumerable<string> GetRootAssemblies()
+        {
+            foreach (var step in Context.Pipeline.GetSteps())
+            {
+                if (!(step is RootAssemblyInput))
+                    continue;
 
-				var descriptor = (string) typeof (ResolveFromXmlStep).GetField ("_xmlDocumentLocation", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (step);
+                var assemblyName = (string)typeof(RootAssemblyInput).GetField("assemblyName", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(step);
+                if (assemblyName == null)
+                    continue;
 
-				yield return descriptor;
-			}
-		}
+                yield return assemblyName;
+            }
+        }
 
-		public IEnumerable<string> GetReferenceAssemblies ()
-		{
-			return (IEnumerable<string>) typeof (AssemblyResolver).GetField ("_references", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (Context.Resolver);
-		}
+        public IEnumerable<string> GetRootDescriptors()
+        {
+            foreach (var step in Context.Pipeline.GetSteps())
+            {
+                if (!(step is ResolveFromXmlStep))
+                    continue;
 
-		protected override void AddResolveFromXmlStep (Pipeline pipeline, string file)
-		{
-			// Don't try to load an xml file - just pretend it exists.
-			pipeline.PrependStep (new ResolveFromXmlStep (documentStream: null, file));
-		}
+                var descriptor = (string)typeof(ResolveFromXmlStep).GetField("_xmlDocumentLocation", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(step);
 
-		protected override void AddXmlDependencyRecorder (LinkContext context, string file)
-		{
-			// Don't try to open the output file for writing - just pretend it exists.
-			Context.Tracer.AddRecorder (MockXmlDependencyRecorder.Singleton);
-		}
+                yield return descriptor;
+            }
+        }
 
-		protected override void AddDgmlDependencyRecorder (LinkContext context, string file)
-		{
-			// Don't try to open the output file for writing - just pretend it exists.
-			Context.Tracer.AddRecorder (MockDgmlDependencyRecorder.Singleton);
-		}
+        public IEnumerable<string> GetReferenceAssemblies()
+        {
+            return (IEnumerable<string>)typeof(AssemblyResolver).GetField("_references", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Context.Resolver);
+        }
 
-		public IEnumerable<IDependencyRecorder> GetDependencyRecorders ()
-		{
-			return (IEnumerable<IDependencyRecorder>) typeof (Tracer).GetField ("recorders", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (Context.Tracer);
-		}
+        protected override void AddResolveFromXmlStep(Pipeline pipeline, string file)
+        {
+            // Don't try to load an xml file - just pretend it exists.
+            pipeline.PrependStep(new ResolveFromXmlStep(documentStream: null, file));
+        }
 
-		public new bool GetOptimizationName (string optimization, out CodeOptimizations codeOptimizations)
-		{
-			return base.GetOptimizationName (optimization, out codeOptimizations);
-		}
+        protected override void AddXmlDependencyRecorder(LinkContext context, string file)
+        {
+            // Don't try to open the output file for writing - just pretend it exists.
+            Context.Tracer.AddRecorder(MockXmlDependencyRecorder.Singleton);
+        }
 
-		public CodeOptimizations GetDefaultOptimizations ()
-		{
-			return Context.Optimizations.Global;
-		}
+        protected override void AddDgmlDependencyRecorder(LinkContext context, string file)
+        {
+            // Don't try to open the output file for writing - just pretend it exists.
+            Context.Tracer.AddRecorder(MockDgmlDependencyRecorder.Singleton);
+        }
 
-		public Dictionary<string, string> GetCustomData ()
-		{
-			var field = typeof (LinkContext).GetField ("_parameters", BindingFlags.NonPublic | BindingFlags.Instance);
-			return (Dictionary<string, string>) field.GetValue (Context);
-		}
+        public IEnumerable<IDependencyRecorder> GetDependencyRecorders()
+        {
+            return (IEnumerable<IDependencyRecorder>)typeof(Tracer).GetField("recorders", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Context.Tracer);
+        }
 
-		protected override List<BaseStep> CreateDefaultResolvers ()
-		{
-			return new List<BaseStep> () {
-				new RootAssemblyInput (null, AssemblyRootMode.EntryPoint)
-			};
-		}
-	}
+        public new bool GetOptimizationName(string optimization, out CodeOptimizations codeOptimizations)
+        {
+            return base.GetOptimizationName(optimization, out codeOptimizations);
+        }
 
-	public class MockXmlDependencyRecorder : IDependencyRecorder
-	{
-		public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder ();
-		public void RecordDependency (object source, object arget, bool marked) { }
-		public void RecordDependency (object target, in DependencyInfo reason, bool marked) { }
-		public void FinishRecording () { }
-	}
+        public CodeOptimizations GetDefaultOptimizations()
+        {
+            return Context.Optimizations.Global;
+        }
 
-	public class MockDgmlDependencyRecorder : IDependencyRecorder
-	{
-		public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder ();
-		public void RecordDependency (object source, object arget, bool marked) { }
-		public void RecordDependency (object target, in DependencyInfo reason, bool marked) { }
-		public void FinishRecording () { }
-	}
+        public Dictionary<string, string> GetCustomData()
+        {
+            var field = typeof(LinkContext).GetField("_parameters", BindingFlags.NonPublic | BindingFlags.Instance);
+            return (Dictionary<string, string>)field.GetValue(Context);
+        }
 
-	public class MockCustomStep : IStep
-	{
-		public void Process (LinkContext context) { }
-	}
+        protected override List<BaseStep> CreateDefaultResolvers()
+        {
+            return new List<BaseStep>() {
+                new RootAssemblyInput(null, AssemblyRootMode.EntryPoint)
+            };
+        }
+    }
 
-	public class MockCustomStep2 : MockCustomStep { }
+    public class MockXmlDependencyRecorder : IDependencyRecorder
+    {
+        public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder();
+        public void RecordDependency(object source, object arget, bool marked) { }
+        public void RecordDependency(object target, in DependencyInfo reason, bool marked) { }
+        public void FinishRecording() { }
+    }
 
-	public class MockCustomStep3 : MockCustomStep { }
+    public class MockDgmlDependencyRecorder : IDependencyRecorder
+    {
+        public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder();
+        public void RecordDependency(object source, object arget, bool marked) { }
+        public void RecordDependency(object target, in DependencyInfo reason, bool marked) { }
+        public void FinishRecording() { }
+    }
 
-	public class MockCustomStep4 : MockCustomStep { }
+    public class MockCustomStep : IStep
+    {
+        public void Process(LinkContext context) { }
+    }
 
-	public class MockCustomStep5 : MockCustomStep { }
+    public class MockCustomStep2 : MockCustomStep { }
 
-	public class MockCustomStep6 : MockCustomStep { }
+    public class MockCustomStep3 : MockCustomStep { }
 
-	public class MockMarkHandler : IMarkHandler
-	{
-		public void Initialize (LinkContext context, MarkContext markContext) { }
-	}
+    public class MockCustomStep4 : MockCustomStep { }
 
-	public class MockMarkHandler2 : MockMarkHandler { }
+    public class MockCustomStep5 : MockCustomStep { }
 
-	public class MockMarkHandler3 : MockMarkHandler { }
+    public class MockCustomStep6 : MockCustomStep { }
 
-	public class MockMarkHandler4 : MockMarkHandler { }
+    public class MockMarkHandler : IMarkHandler
+    {
+        public void Initialize(LinkContext context, MarkContext markContext) { }
+    }
+
+    public class MockMarkHandler2 : MockMarkHandler { }
+
+    public class MockMarkHandler3 : MockMarkHandler { }
+
+    public class MockMarkHandler4 : MockMarkHandler { }
 
 }

@@ -188,9 +188,10 @@ namespace SuperPMICollection
             }
 
             Console.WriteLine("Running: " + program + " " + arguments);
-            Process p = Process.Start(program, arguments);
-            p.WaitForExit();
-            return p.ExitCode;
+            return Process.Run(new ProcessStartInfo(program, arguments)
+            {
+                InheritedHandles = [],
+            }).ExitCode;
         }
 
         // Run a single test from the coreclr test binary drop.
@@ -697,8 +698,9 @@ namespace SuperPMICollection
             // If someone already has one of the COMPlus_JitName/DOTNET_JitName/COMPlus_JitPath/DOTNET_JitPath variables set,
             // We don't want to override that. Perhaps someone is already doing a SuperPMI collection and invokes this
             // program as part of a full test path in which this program exists.
+            // This test is also incompatible with the RunCrossGen2 infra, so skip in that case too.
 
-            string[] checkVars = { "COMPlus_JitName", "DOTNET_JitName", "COMPlus_JitPath", "DOTNET_JitPath" };
+            string[] checkVars = { "COMPlus_JitName", "DOTNET_JitName", "COMPlus_JitPath", "DOTNET_JitPath", "RunCrossGen2" };
             foreach (string varName in checkVars)
             {
                 string envVar = System.Environment.GetEnvironmentVariable(varName);

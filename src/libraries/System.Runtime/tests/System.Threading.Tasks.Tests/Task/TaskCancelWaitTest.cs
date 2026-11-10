@@ -258,25 +258,25 @@ namespace System.Threading.Tasks.Tests.CancelWait
             if (current.Parent == null)
             {
                 if (!ti.CancellationToken.IsCancellationRequested)
-                    Assert.Fail(string.Format("Root task must be cancel-requested"));
+                    Assert.Fail("Root task must be cancel-requested");
                 else if (_countdownEvent.IsSet && ti.Task.IsCanceled)
-                    Assert.Fail(string.Format("Root task should not be cancelled when the whole tree has been created"));
+                    Assert.Fail("Root task should not be cancelled when the whole tree has been created");
             }
             else if (current.Parent.CancelChildren)
             {
                 // need to make sure the parent task at least called .Cancel() on the child
                 if (!ti.CancellationToken.IsCancellationRequested)
-                    Assert.Fail(string.Format("Task which has been explicitly cancel-requested either by parent must have CancellationRequested set as true"));
+                    Assert.Fail("Task which has been explicitly cancel-requested either by parent must have CancellationRequested set as true");
             }
             else if (ti.IsRespectParentCancellation)
             {
                 if (ti.CancellationToken.IsCancellationRequested != current.Parent.CancellationToken.IsCancellationRequested)
-                    Assert.Fail(string.Format("Task with RespectParentCancellationcontract is broken"));
+                    Assert.Fail("Task with RespectParentCancellationcontract is broken");
             }
             else
             {
                 if (ti.CancellationToken.IsCancellationRequested || ti.Task.IsCanceled)
-                    Assert.Fail(string.Format("Inner non-directly canceled task which opts out RespectParentCancellationshould not be cancelled"));
+                    Assert.Fail("Inner non-directly canceled task which opts out RespectParentCancellationshould not be cancelled");
             }
 
             // verify IsCanceled indicate successfully dequeued based on the observing that
@@ -303,7 +303,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                     if ((ti.Option & TaskCreationOptions.AttachedToParent) != 0
                         && !ti.Task.IsCompleted)
                     {
-                        Assert.Fail(string.Format("Inner attached task must complete"));
+                        Assert.Fail("Inner attached task must complete");
                     }
                 }
             }
@@ -365,7 +365,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                 {
                     //this means that the task was not scheduled - it was cancelled or it is still in the queue
                     //-42 = UNINITIALED_RESULT
-                    Assert.Fail(string.Format("Result must remain uninitialized for unstarted task"));
+                    Assert.Fail("Result must remain uninitialized for unstarted task");
                 }
                 else if (ti.Task.IsCompleted)
                 {

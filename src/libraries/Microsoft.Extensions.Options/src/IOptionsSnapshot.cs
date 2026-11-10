@@ -9,6 +9,14 @@ namespace Microsoft.Extensions.Options
     /// Used to access the value of <typeparamref name="TOptions"/> for the lifetime of a request.
     /// </summary>
     /// <typeparam name="TOptions">Options type.</typeparam>
+    /// <remarks>
+    /// The default implementation, <see cref="OptionsManager{TOptions}"/>, has a separate options cache in each
+    /// scope. Startup validation does not populate this cache, and the default implementation creates and validates
+    /// options synchronously. Validators with a usable synchronous <see cref="IValidateOptions{TOptions}.Validate"/>
+    /// implementation continue to work. Validators that require asynchronous validation fail through their
+    /// synchronous validation result because the default implementation cannot execute or await
+    /// <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/>.
+    /// </remarks>
     public interface IOptionsSnapshot<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] out TOptions> :
         IOptions<TOptions>
         where TOptions : class

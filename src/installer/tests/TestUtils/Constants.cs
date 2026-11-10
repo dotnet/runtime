@@ -9,18 +9,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         public const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
 
-        public static class ApplyPatchesSetting
-        {
-            public const string RuntimeConfigPropertyName = "applyPatches";
-        }
-
-        public static class RollForwardOnNoCandidateFxSetting
-        {
-            public const string RuntimeConfigPropertyName = "rollForwardOnNoCandidateFx";
-            public const string CommandLineArgument = "--roll-forward-on-no-candidate-fx";
-            public const string EnvironmentVariable = "DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX";
-        }
-
         public static class RollForwardSetting
         {
             public const string RuntimeConfigPropertyName = "rollForward";
@@ -33,6 +21,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string LatestMinor = "LatestMinor";
             public const string LatestMajor = "LatestMajor";
             public const string Disable = "Disable";
+        }
+
+        public static class DisableRuntimeVersions
+        {
+            public const string EnvironmentVariable = "DOTNET_DISABLE_RUNTIME_VERSIONS";
         }
 
         public static class FxVersion
@@ -96,16 +89,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string EnvironmentVariable = "DOTNET_RUNTIME_ID";
         }
 
-        public static class MultilevelLookup
-        {
-            public const string EnvironmentVariable = "DOTNET_MULTILEVEL_LOOKUP";
-        }
-
         public static class HostTracing
         {
-            public const string TraceLevelEnvironmentVariable = "COREHOST_TRACE";
-            public const string TraceFileEnvironmentVariable = "COREHOST_TRACEFILE";
-            public const string VerbosityEnvironmentVariable = "COREHOST_TRACE_VERBOSITY";
+            public const string TraceLevelEnvironmentVariable = "DOTNET_HOST_TRACE";
+            public const string TraceFileEnvironmentVariable = "DOTNET_HOST_TRACEFILE";
+            public const string VerbosityEnvironmentVariable = "DOTNET_HOST_TRACE_VERBOSITY";
         }
 
         public static class DotnetRoot
@@ -128,6 +116,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const int AppArgNotRunnable = unchecked((int)0x80008094);
             public const int AppHostExeNotBoundFailure = unchecked((int)0x80008095);
             public const int FrameworkMissingFailure = unchecked((int)0x80008096);
+            public const int SdkResolveFailure = unchecked((int)0x8000809b);
             public const int FrameworkCompatFailure = unchecked((int)0x8000809c);
             public const int BundleExtractionFailure = unchecked((int)0x8000809f);
 

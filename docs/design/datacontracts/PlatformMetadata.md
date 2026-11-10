@@ -9,33 +9,41 @@ This contract exposes properties that describe the target platform
     {
         // Set if the target process is executing on arm32
         HasArm32ThumbBit = 0x1,
-        // Set if arm64e pointer authentication is used in the target process
-        HasArm64PtrAuth = 0x2,
     }
     // Returns a pointer to a structure describing platform-specific precode stubs properties
     TargetPointer GetPrecodeMachineDescriptor();
 
     // Returns flags describing the behavior of code pointers
     CodePointerFlags GetCodePointerFlags();
+
+    // Returns bits to clear from pointer-authenticated return addresses
+    ulong GetPointerAuthenticationMask();
 ```
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| PlatformMetadata | PrecodeMachineDescriptor | precode stub-related platform specific properties |
-| PlatformMetadata | CodePointerFlags | fields describing the behavior of target code pointers |
+`PointerAuthenticationMask` is optional; if absent, the mask is zero and return addresses are left unchanged.
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| PlatformMetadata | pointer | address of the `PlatformMetadata` data |
+<!-- BEGIN GENERATED: usage contract=PlatformMetadata version=c1 -->
+### Data descriptors used
 
-Contracts used:
-| Contract Name |
-| --- |
-| *none* |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `PlatformMetadata` | `CodePointerFlags` | `uint8` | fields describing the behavior of target code pointers |
+| `PlatformMetadata` | `PointerAuthenticationMask` | `uint64` | Bits to clear from pointer-authenticated return addresses |
+| `PlatformMetadata` | `PrecodeMachineDescriptor` | `pointer` | precode stub-related platform specific properties |
+
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `PlatformMetadata` | `pointer` | address of the PlatformMetadata data |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=PlatformMetadata version=c1 -->
+
 
 ```csharp
 TargetPointer GetPrecodeMachineDescriptor()

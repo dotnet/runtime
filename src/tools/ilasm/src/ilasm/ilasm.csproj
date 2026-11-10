@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
+
+  <PropertyGroup>
+    <RuntimeIdentifier>$(PortableTargetRid)</RuntimeIdentifier>
+    <PublishDir>$(CoreclrRuntimeBinDir)managed-ilasm</PublishDir>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <AotOrSingleFile>true</AotOrSingleFile>
+    <HostBundleIdentifier>com.microsoft.dotnet.ilasm</HostBundleIdentifier>
+    <HostBundleName>ilasm</HostBundleName>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
+  </PropertyGroup>
+
+  <Import Project="ilasm.props" />
+  <Import Project="$(CoreClrProjectRoot)tools\aot\NativeAotToolRuntimeSettings.props" />
+
+</Project>

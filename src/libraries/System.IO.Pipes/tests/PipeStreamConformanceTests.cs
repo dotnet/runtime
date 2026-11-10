@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -171,7 +172,7 @@ namespace System.IO.Pipes.Tests
 
             if (writeable is NamedPipeServerStream server)
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.In, false, true, ((NamedPipeClientStream)readable).SafePipeHandle))
+                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.In, false, ((NamedPipeClientStream)readable).SafePipeHandle))
                 {
                     if (OperatingSystem.IsWindows())
                     {
@@ -186,7 +187,7 @@ namespace System.IO.Pipes.Tests
             }
             else
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.Out, false, true, ((NamedPipeClientStream)writeable).SafePipeHandle))
+                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.Out, false, ((NamedPipeClientStream)writeable).SafePipeHandle))
                 {
                     Task clientTask = client.WriteAsync(msg1, 0, msg1.Length);
                     int receivedLength = readable.Read(received1, 0, msg1.Length);
@@ -779,6 +780,29 @@ namespace System.IO.Pipes.Tests
             var server = new AnonymousPipeServerStream(PipeDirection.Out);
             var client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle);
             return (server, client);
+        }
+    }
+
+    public class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe : AnonymousPipeStreamConformanceTests
+    {
+        protected override (AnonymousPipeServerStream Server, AnonymousPipeClientStream Client) CreateServerAndClientStreams()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+
+            SafePipeHandle readPipeHandle = TransferOwnershipToPipeHandle(readHandle);
+            SafePipeHandle writePipeHandle = TransferOwnershipToPipeHandle(writeHandle);
+
+            AnonymousPipeServerStream server = new(PipeDirection.Out, serverSafePipeHandle: writePipeHandle, clientSafePipeHandle: readPipeHandle);
+            AnonymousPipeClientStream client = new(PipeDirection.In, server.ClientSafePipeHandle);
+            return (server, client);
+        }
+
+        private static SafePipeHandle TransferOwnershipToPipeHandle(SafeFileHandle handle)
+        {
+            SafePipeHandle pipeHandle = new(handle.DangerousGetHandle(), ownsHandle: true);
+            handle.SetHandleAsInvalid();
+            handle.Dispose();
+            return pipeHandle;
         }
     }
 

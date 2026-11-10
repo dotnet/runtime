@@ -26,7 +26,6 @@ public record PublishOptions : MSBuildOptions
         bool WarnAsError                                            = true,
         RuntimeVariant RuntimeType                                  = RuntimeVariant.SingleThreaded,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-        string? BootConfigFileName                                  = null,
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
         bool BuildOnlyAfterPublish                                  = true,
@@ -46,7 +45,6 @@ public record PublishOptions : MSBuildOptions
         WarnAsError,
         RuntimeType,
         ExtraBuildEnvironmentVariables,
-        BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
         EnableDiagnostics

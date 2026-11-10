@@ -277,7 +277,7 @@ namespace Microsoft.Extensions.Hosting
         private void InitializeAppConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
-                .SetBasePath(_hostingEnvironment!.ContentRootPath)
+                .SetFileProvider(_hostingEnvironment!.ContentRootFileProvider)
                 .AddConfiguration(_hostConfiguration!, shouldDisposeConfiguration: true);
 
             foreach (Action<HostBuilderContext, IConfigurationBuilder> buildAction in _configureAppConfigActions)

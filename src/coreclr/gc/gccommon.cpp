@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gc.h"
+#include <minipal/utf8.h>
 
 IGCHeapInternal* g_theGCHeap;
 IGCHandleManager* g_theGCHandleManager;
@@ -131,7 +132,16 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
     const char* suffix = is_config ? ".config.log" : ".log";
     //_snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s.%d%s", temp_logfile_name.Get(), pid, suffix);
     _snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s%s", temp_logfile_name.Get(), suffix);
+#ifdef TARGET_WINDOWS
+    // Config strings are UTF-8; fopen would interpret them as the ANSI code page.
+    size_t nameLen = strlen(logfile_name) + 1;
+    size_t wlen = minipal_get_length_utf8_to_utf16(logfile_name, nameLen, 0);
+    WCHAR* wpath = (WCHAR*)_alloca(wlen * sizeof(WCHAR));
+    minipal_convert_utf8_to_utf16(logfile_name, nameLen, (CHAR16_T*)wpath, wlen, 0);
+    logFile = _wfopen(wpath, L"wb");
+#else
     logFile = fopen(logfile_name, "wb");
+#endif
 
     if (logFile == NULL)
     {
@@ -280,5 +290,16 @@ void log_init_error_to_host (const char* format, ...)
     _vsnprintf_s (error_buf, ARRAY_SIZE (error_buf), _TRUNCATE, format, args);
     GCToEEInterface::LogErrorToHost (error_buf);
     va_end (args);
+}
+
+static double g_QPFus = 0.0;
+
+uint64_t GetHighPrecisionTimeStamp()
+{
+    if (g_QPFus == 0.0)
+    {
+        g_QPFus = 1000.0 * 1000.0 / (double)minipal_hires_tick_frequency();
+    }
+    return (uint64_t)((double)minipal_hires_ticks() * g_QPFus);
 }
 #endif // !DACCESS_COMPILE

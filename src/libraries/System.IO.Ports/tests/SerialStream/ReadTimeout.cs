@@ -36,7 +36,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_DefaultValue()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -50,42 +50,42 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_AfterClose()
         {
             Debug.WriteLine("Verifying setting ReadTimeout after the SerialPort was closed");
             VerifyException(2048, null, typeof(ObjectDisposedException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue ReadTimeout");
             VerifyException(int.MinValue, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_NEG2()
         {
             Debug.WriteLine("Verifying -2 ReadTimeout");
             VerifyException(-2, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying default ReadTimeout with Read(byte[] buffer, int offset, int count)");
             VerifyDefaultTimeout(Read_byte_int_int);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_ReadByte()
         {
             Debug.WriteLine("Verifying default ReadTimeout with ReadByte()");
             VerifyDefaultTimeout(ReadByte);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying infinite ReadTimeout with Read(byte[] buffer, int offset, int count)");
@@ -93,14 +93,14 @@ namespace System.IO.Ports.Tests
             VerifyLongTimeout(Read_byte_int_int, -1);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_ReadByte()
         {
             Debug.WriteLine("Verifying infinite ReadTimeout with ReadByte()");
             VerifyLongTimeout(ReadByte, -1);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Int32MaxValue_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying Int32.MaxValue ReadTimeout with Read(byte[] buffer, int offset, int count)");
@@ -108,7 +108,7 @@ namespace System.IO.Ports.Tests
             VerifyLongTimeout(Read_byte_int_int, int.MaxValue - 1);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Int32MaxValue_ReadByte()
         {
             Debug.WriteLine("Verifying Int32.MaxValue ReadTimeout with ReadByte()");
@@ -116,7 +116,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_750_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying 750 ReadTimeout with Read(byte[] buffer, int offset, int count)");
@@ -124,7 +124,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_750_ReadByte()
         {
             Debug.WriteLine("Verifying 750 ReadTimeout with ReadByte()");
@@ -132,7 +132,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void SuccessiveReadTimeoutNoData_Read_byte_int_int()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -159,7 +159,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasNullModem))]
         public void SuccessiveReadTimeoutSomeData_Read_byte_int_int()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -196,7 +196,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void SuccessiveReadTimeoutNoData_ReadByte()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -213,7 +213,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasNullModem))]
         public void SuccessiveReadTimeoutSomeData_ReadByte()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -251,7 +251,7 @@ namespace System.IO.Ports.Tests
 
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying 0 ReadTimeout with Read(byte[] buffer, int offset, int count)");
@@ -260,14 +260,14 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadByte()
         {
             Debug.WriteLine("Verifying 0 ReadTimeout with ReadByte()");
             Verify0Timeout(ReadByte);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasNullModem))]
         public void ReadTimeout_0_1ByteAvailable_Read_byte_int_int()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -296,7 +296,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_ReadTimeout_Property), nameof(HasNullModem))]
         public void ReadTimeout_0_1ByteAvailable_ReadByte()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

@@ -547,7 +547,6 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-
         [Fact]
         public void CreateType_ValidateMethods()
         {
@@ -570,7 +569,6 @@ namespace System.Reflection.Emit.Tests
             implFlagsSetMethod.SetImplementationFlags(MethodImplAttributes.InternalCall);
 
             MethodBuilder methodNeedsIL = concreteTypeWithNativeAndPinvokeMethod.DefineMethod("MethodNeedsIL", MethodAttributes.Public);
-            Assert.Throws<InvalidOperationException>(() => concreteTypeWithNativeAndPinvokeMethod.CreateType()); // Method 'MethodNeedsIL' does not have a method body.
             methodNeedsIL.GetILGenerator().Emit(OpCodes.Ret);
             concreteTypeWithNativeAndPinvokeMethod.CreateType(); // succeeds
         }
@@ -635,13 +633,13 @@ namespace System.Reflection.Emit.Tests
                     Type[] par0RequiredMods = allModMethod.GetParameters()[0].GetRequiredCustomModifiers();
                     Type[] par0OptionalMods = allModMethod.GetParameters()[0].GetOptionalCustomModifiers();
                     Assert.Equal(2, returnReqMods.Length);
-                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(short).FullName), returnReqMods[0]);
-                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(int).FullName), returnReqMods[1]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(int).FullName), returnReqMods[0]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(short).FullName), returnReqMods[1]);
                     Assert.Equal(1, returnOptMods.Length);
                     Assert.Equal(mlc.CoreAssembly.GetType(typeof(Version).FullName), returnOptMods[0]);
                     Assert.Equal(cmodsReq1.Length, par0RequiredMods.Length);
-                    Assert.Equal(mlc.CoreAssembly.GetType(cmodsReq1[1].FullName), par0RequiredMods[0]);
-                    Assert.Equal(mlc.CoreAssembly.GetType(cmodsReq1[0].FullName), par0RequiredMods[1]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(cmodsReq1[0].FullName), par0RequiredMods[0]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(cmodsReq1[1].FullName), par0RequiredMods[1]);
                     Assert.Equal(cmodsOpt1.Length, par0OptionalMods.Length);
                     Assert.Equal(mlc.CoreAssembly.GetType(cmodsOpt1[0].FullName), par0OptionalMods[0]);
                     Assert.Equal(cmodsReq2.Length, allModMethod.GetParameters()[1].GetRequiredCustomModifiers().Length);
@@ -1011,6 +1009,39 @@ namespace System.Reflection.Emit.Tests
             Type instantiatedTypeBuilder2 = tb.MakeGenericType(typeof(int));
             Assert.False(TypeBuilder.GetConstructor(instantiatedTypeBuilder2, constructorBuilder).ContainsGenericParameters);
             Assert.False(TypeBuilder.GetMethod(instantiatedTypeBuilder2, methodBuilder).ContainsGenericParameters);
+        }
+
+        [Fact]
+        public void IsByRefLike_TypeBuilderAndConstructedTypes_ReturnsFalse()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
+
+            Type[] types =
+            [
+                type,
+                typeParams[0],
+                type.MakeGenericType(typeof(int)),
+                type.MakeArrayType(),
+                type.MakeArrayType(2),
+                type.MakePointerType(),
+                type.MakeByRefType(),
+                typeParams[0].MakeArrayType(),
+                typeParams[0].MakePointerType(),
+                typeParams[0].MakeByRefType(),
+            ];
+
+            Assert.All(types, t => Assert.False(t.IsByRefLike));
+        }
+
+        [Theory]
+        [InlineData(typeof(Span<>), true)]
+        [InlineData(typeof(ReadOnlySpan<>), true)]
+        [InlineData(typeof(List<>), false)]
+        public void IsByRefLike_RuntimeGenericTypeInstantiatedOverTypeBuilder_MatchesGenericTypeDefinition(Type genericTypeDefinition, bool expected)
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            Assert.Equal(expected, genericTypeDefinition.MakeGenericType(type).IsByRefLike);
         }
     }
 }

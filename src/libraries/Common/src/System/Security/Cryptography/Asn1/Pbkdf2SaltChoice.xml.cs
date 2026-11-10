@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct Pbkdf2SaltChoice
-    {
-        internal ReadOnlyMemory<byte>? Specified;
-        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn? OtherSource;
-
 #if DEBUG
-        static Pbkdf2SaltChoice()
+    file static class ValidatePbkdf2SaltChoice
+    {
+        static ValidatePbkdf2SaltChoice()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,27 +27,68 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(Asn1Tag.PrimitiveOctetString, "Specified");
             ensureUniqueTag(Asn1Tag.Sequence, "OtherSource");
         }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValuePbkdf2SaltChoice
+    {
+
+        internal ReadOnlySpan<byte> Specified
+        {
+            get;
+            set
+            {
+                HasSpecified = true;
+                field = value;
+            }
+        }
+
+        internal bool HasSpecified { get; private set; }
+
+        internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn OtherSource
+        {
+            get;
+            set
+            {
+                HasOtherSource = true;
+                field = value;
+            }
+        }
+
+        internal bool HasOtherSource { get; private set; }
+
+#if DEBUG
+        static ValuePbkdf2SaltChoice()
+        {
+            ValidatePbkdf2SaltChoice.Validate();
+        }
 #endif
 
         internal readonly void Encode(AsnWriter writer)
         {
             bool wroteValue = false;
 
-            if (Specified.HasValue)
+            if (HasSpecified)
             {
                 if (wroteValue)
                     throw new CryptographicException();
 
-                writer.WriteOctetString(Specified.Value.Span);
+                writer.WriteOctetString(Specified);
                 wroteValue = true;
             }
 
-            if (OtherSource.HasValue)
+            if (HasOtherSource)
             {
                 if (wroteValue)
                     throw new CryptographicException();
 
-                OtherSource.Value.Encode(writer);
+                OtherSource.Encode(writer);
                 wroteValue = true;
             }
 
@@ -61,15 +98,14 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static Pbkdf2SaltChoice Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePbkdf2SaltChoice decoded)
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, encoded, out Pbkdf2SaltChoice decoded);
+                DecodeCore(ref reader, out decoded);
                 reader.ThrowIfNotEmpty();
-                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -77,11 +113,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out Pbkdf2SaltChoice decoded)
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValuePbkdf2SaltChoice decoded)
         {
             try
             {
-                DecodeCore(ref reader, rebind, out decoded);
+                DecodeCore(ref reader, out decoded);
             }
             catch (AsnContentException e)
             {
@@ -89,12 +125,10 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out Pbkdf2SaltChoice decoded)
+        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValuePbkdf2SaltChoice decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            ReadOnlySpan<byte> rebindSpan = rebind.Span;
-            int offset;
             ReadOnlySpan<byte> tmpSpan;
 
             if (tag.HasSameClassAndValue(Asn1Tag.PrimitiveOctetString))
@@ -102,20 +136,22 @@ namespace System.Security.Cryptography.Asn1
 
                 if (reader.TryReadPrimitiveOctetString(out tmpSpan))
                 {
-                    decoded.Specified = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+                    decoded.Specified = tmpSpan;
                 }
                 else
                 {
                     decoded.Specified = reader.ReadOctetString();
                 }
 
+                decoded.HasSpecified = true;
             }
             else if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn tmpOtherSource;
-                System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out tmpOtherSource);
+                System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn tmpOtherSource;
+                System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref reader, out tmpOtherSource);
                 decoded.OtherSource = tmpOtherSource;
 
+                decoded.HasOtherSource = true;
             }
             else
             {

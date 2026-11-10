@@ -240,8 +240,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
                 ret = 1;
 #ifdef RES_FILE_DUMP_ENABLED
 
-                _wfopen_s(&pF,wzFileName,L"wb");
-                if(pF)
+                if(fopen_lp(&pF,wzFileName,L"wb") == 0)
                 {
                     // Dump them to pF
                     // Write dummy header

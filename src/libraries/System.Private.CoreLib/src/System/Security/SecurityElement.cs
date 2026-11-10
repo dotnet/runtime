@@ -340,8 +340,6 @@ namespace System.Security
 
         private static string GetUnescapeSequence(string str, int index, out int newIndex)
         {
-            int maxCompareLength = str.Length - index;
-
             int iMax = s_escapeStringPairs.Length;
             Debug.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
 
@@ -350,9 +348,7 @@ namespace System.Security
                 string strEscSeq = s_escapeStringPairs[i];
                 string strEscValue = s_escapeStringPairs[i + 1];
 
-                int length = strEscValue.Length;
-
-                if (length <= maxCompareLength && string.Compare(strEscValue, 0, str, index, length, StringComparison.Ordinal) == 0)
+                if (str.AsSpan(index).StartsWith(strEscValue, StringComparison.Ordinal))
                 {
                     newIndex = index + strEscValue.Length;
                     return strEscSeq;

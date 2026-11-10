@@ -423,7 +423,7 @@ namespace System.Runtime.Serialization
                 }
                 if (classContract == null)
                 {
-                    DataContract objectContract = PrimitiveDataContract.GetPrimitiveDataContract(Globals.TypeOfObject)!;
+                    DataContract objectContract = PrimitiveDataContract.GetPrimitiveDataContract(typeof(object))!;
                     if (reader.IsStartElement(objectContract.TopLevelElementName!, objectContract.TopLevelElementNamespace!))
                         return true;
                 }
@@ -471,8 +471,7 @@ namespace System.Runtime.Serialization
         }
 
 #pragma warning disable SYSLIB0050 // IFormatterConverter is obsolete
-        private static IFormatterConverter? s_formatterConverter;
-        internal static IFormatterConverter FormatterConverter => s_formatterConverter ??= new FormatterConverter();
+        internal static IFormatterConverter FormatterConverter => field ??= new FormatterConverter();
 #pragma warning restore SYSLIB0050
     }
 }

@@ -76,6 +76,9 @@ internal static class ReflectionTest
         Test105034Regression.Run();
         TestMethodsNeededFromNativeLayout.Run();
         TestFieldAndParamMetadata.Run();
+        TestActivationWithoutConstructor.Run();
+        TestNestedMakeGeneric.Run();
+        Test121093Regression.Run();
 
         //
         // Mostly functionality tests
@@ -96,8 +99,43 @@ internal static class ReflectionTest
         TestEntryPoint.Run();
         TestGenericAttributesOnEnum.Run();
         TestLdtokenWithSignaturesDifferingInModifiers.Run();
+        TestActivatingThingsInSignature.Run();
+        TestArrayInitialize.Run();
+        TestDelegateInvokeFromEvent.Run();
+        TestFrozenRuntimeTypes.Run();
 
         return 100;
+    }
+
+    class TestFrozenRuntimeTypes
+    {
+        public static void Run()
+        {
+            const int MaxRank = 32;
+            Type[] types = new Type[MaxRank * MaxRank];
+            for (int outerRank = 1; outerRank <= MaxRank; outerRank++)
+            {
+                for (int innerRank = 1; innerRank <= MaxRank; innerRank++)
+                {
+                    Type type = typeof(TestFrozenRuntimeTypes).MakeArrayType(innerRank).MakeArrayType(outerRank);
+                    types[(outerRank - 1) * MaxRank + innerRank - 1] = type;
+                }
+            }
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+            for (int outerRank = 1; outerRank <= MaxRank; outerRank++)
+            {
+                for (int innerRank = 1; innerRank <= MaxRank; innerRank++)
+                {
+                    Type type = types[(outerRank - 1) * MaxRank + innerRank - 1];
+                    Assert.Equal(outerRank, type.GetArrayRank());
+                    Assert.Equal(innerRank, type.GetElementType().GetArrayRank());
+                    Assert.Same(typeof(TestFrozenRuntimeTypes), type.GetElementType().GetElementType());
+                    Assert.Same(typeof(TestFrozenRuntimeTypes).MakeArrayType(innerRank).MakeArrayType(outerRank), type);
+                }
+            }
+        }
     }
 
     class TestReflectionInvoke
@@ -854,6 +892,89 @@ internal static class ReflectionTest
             Type parameterType = typeof(TestFieldAndParamMetadata).GetMethod(nameof(TheMethod)).GetParameters()[0].ParameterType;
             if (parameterType.Name != nameof(ParameterType))
                 throw new Exception();
+        }
+    }
+
+    class TestActivationWithoutConstructor
+    {
+        public static void Run()
+        {
+            {
+                object o = Activator.CreateInstance(typeof(StructForCreateInstanceDirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceDirect<>)))
+                    throw new Exception();
+            }
+
+            {
+                object o = CreateInstance(typeof(StructForCreateInstanceIndirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceIndirect<>)))
+                    throw new Exception();
+
+                static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type t)
+                    => Activator.CreateInstance(t);
+            }
+
+            {
+                object o = RuntimeHelpers.GetUninitializedObject(typeof(StructForGetUninitializedObject<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForGetUninitializedObject<>)))
+                    throw new Exception();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetTheType() => typeof(Atom);
+        }
+
+        class Atom;
+
+        struct StructForCreateInstanceDirect<T> where T : class;
+        struct StructForCreateInstanceIndirect<T> where T : class;
+        struct StructForGetUninitializedObject<T> where T : class;
+    }
+
+    class TestNestedMakeGeneric
+    {
+        class Outie<T> where T : class;
+        class Innie<T> where T : class;
+        class Atom;
+
+        public static void Run()
+        {
+            Type inner = typeof(Innie<>).MakeGenericType(GetAtom());
+            Type outer = typeof(Outie<>).MakeGenericType(inner);
+
+            Console.WriteLine(Activator.CreateInstance(outer));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+        }
+    }
+
+    class Test121093Regression
+    {
+        public static void Run()
+        {
+            // Expose 'ReflectedMethod'
+            typeof(Test121093Regression).GetMethod("ReflectedMethod", BindingFlags.Static | BindingFlags.NonPublic);
+            ReflectedMethod<string>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void ReflectedMethod<T>()
+        {
+            NonReflectedGenericMethod<T>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void NonReflectedGenericMethod<T>()
+        {
+            string s = Environment.StackTrace;
+
+            if (!s.Contains(nameof(ReflectedMethod)) || !s.Contains(nameof(NonReflectedGenericMethod)))
+            {
+                Console.WriteLine(s);
+                Console.WriteLine("------------");
+                throw new Exception();
+            }
         }
     }
 
@@ -2233,25 +2354,41 @@ internal static class ReflectionTest
         abstract class Base
         {
             public virtual void VirtualMethod() { }
+            public virtual void VirtualMethodShared<T>() { }
+            public virtual void VirtualMethodUnshared<T>() { }
             public abstract void AbstractMethod();
+            public abstract void AbstractMethodShared<T>();
+            public abstract void AbstractMethodUnshared<T>();
         }
 
         class Derived : Base, IBar
         {
             public override void AbstractMethod() { }
+            public override void AbstractMethodShared<T>() { }
+            public override void AbstractMethodUnshared<T>() { }
             public override void VirtualMethod() { }
+            public override void VirtualMethodShared<T>() { }
+            public override void VirtualMethodUnshared<T>() { }
             void IFoo.InterfaceMethod() { }
+            void IFoo.InterfaceMethodShared<T>() { }
+            void IFoo.InterfaceMethodUnshared<T>() { }
         }
 
         interface IFoo
         {
             void InterfaceMethod();
+            void InterfaceMethodShared<T>();
+            void InterfaceMethodUnshared<T>();
             void DefaultInterfaceMethod() { }
+            void DefaultInterfaceMethodShared<T>() { }
+            void DefaultInterfaceMethodUnshared<T>() { }
         }
 
         interface IBar : IFoo
         {
             void IFoo.DefaultInterfaceMethod() { }
+            void IFoo.DefaultInterfaceMethodShared<T>() { }
+            void IFoo.DefaultInterfaceMethodUnshared<T>() { }
         }
 
         static Base s_baseInstance = new Derived();
@@ -2265,16 +2402,48 @@ internal static class ReflectionTest
             if (abstractMethod.GetMethodInfo().Name != nameof(Derived.AbstractMethod))
                 throw new Exception();
 
+            Action abstractMethodShared = s_baseInstance.AbstractMethodShared<object>;
+            if (abstractMethodShared.GetMethodInfo().Name != nameof(Derived.AbstractMethodShared))
+                throw new Exception();
+
+            Action abstractMethodUnshared = s_baseInstance.AbstractMethodUnshared<int>;
+            if (abstractMethodUnshared.GetMethodInfo().Name != nameof(Derived.AbstractMethodUnshared))
+                throw new Exception();
+
             Action virtualMethod = s_baseInstance.VirtualMethod;
             if (virtualMethod.GetMethodInfo().Name != nameof(Derived.VirtualMethod))
+                throw new Exception();
+
+            Action virtualMethodShared = s_baseInstance.VirtualMethodShared<object>;
+            if (virtualMethodShared.GetMethodInfo().Name != nameof(Derived.VirtualMethodShared))
+                throw new Exception();
+
+            Action virtualMethodUnshared = s_baseInstance.VirtualMethodUnshared<int>;
+            if (virtualMethodUnshared.GetMethodInfo().Name != nameof(Derived.VirtualMethodUnshared))
                 throw new Exception();
 
             Action interfaceMethod = s_ifooInstance.InterfaceMethod;
             if (!interfaceMethod.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethod"))
                 throw new Exception();
 
+            Action interfaceMethodShared = s_ifooInstance.InterfaceMethodShared<object>;
+            if (!interfaceMethodShared.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethodShared"))
+                throw new Exception();
+
+            Action interfaceMethodUnshared = s_ifooInstance.InterfaceMethodUnshared<int>;
+            if (!interfaceMethodUnshared.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethodUnshared"))
+                throw new Exception();
+
             Action defaultMethod = s_ifooInstance.DefaultInterfaceMethod;
             if (!defaultMethod.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethod"))
+                throw new Exception();
+
+            Action defaultMethodShared = s_ifooInstance.DefaultInterfaceMethodShared<object>;
+            if (!defaultMethodShared.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethodShared"))
+                throw new Exception();
+
+            Action defaultMethodUnshared = s_ifooInstance.DefaultInterfaceMethodUnshared<int>;
+            if (!defaultMethodUnshared.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethodUnshared"))
                 throw new Exception();
         }
     }
@@ -2915,6 +3084,81 @@ internal static class ReflectionTest
 
             Expression<CdeclDelegate> cdecl = x => Method(x);
             if (cdecl.Compile()(null) != "Cdecl")
+                throw new Exception();
+        }
+    }
+
+    class TestActivatingThingsInSignature
+    {
+        public static unsafe void Run()
+        {
+            var mi = typeof(TestActivatingThingsInSignature).GetMethod(nameof(MethodWithThingsInSignature));
+            var p = mi.GetParameters();
+
+            var d = typeof(TestActivatingThingsInSignature).GetMethod(nameof(Run)).CreateDelegate(p[0].ParameterType);
+            Console.WriteLine(d.ToString());
+
+            Span<byte> storage = stackalloc byte[sizeof(MyStruct)];
+            var s = RuntimeHelpers.Box(ref MemoryMarshal.GetReference(storage), p[1].ParameterType.TypeHandle);
+            Console.WriteLine(s.ToString());
+
+            var a = Array.CreateInstanceFromArrayType(p[2].ParameterType, 0);
+            Console.WriteLine(a.ToString());
+        }
+
+        public void MethodWithThingsInSignature(MyDelegate d, MyStruct s, MyArrayElementStruct[] a) { }
+
+        public delegate void MyDelegate();
+
+        public struct MyStruct;
+
+        public struct MyArrayElementStruct;
+    }
+
+    class TestArrayInitialize
+    {
+        static int s_constructorCallCount = 0;
+
+        public struct ValueTypeWithConstructor
+        {
+            public ValueTypeWithConstructor()
+            {
+                s_constructorCallCount++;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Array AllocateArray() => new ValueTypeWithConstructor[3];
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestArrayInitialize));
+
+            s_constructorCallCount = 0;
+
+            // Create an array and call Initialize
+            var array = AllocateArray();
+            array.Initialize();
+
+            // Verify that the constructor was called for each element
+            if (s_constructorCallCount != 3)
+                throw new Exception($"Expected constructor to be called 3 times, but was called {s_constructorCallCount} times");
+        }
+    }
+
+    class TestDelegateInvokeFromEvent
+    {
+        class MyClass
+        {
+            public event EventHandler<int> MyEvent { add { } remove { } }
+        }
+
+        static EventInfo s_eventInfo = typeof(MyClass).GetEvent("MyEvent");
+
+        public static unsafe void Run()
+        {
+            var invokeMethod = s_eventInfo.EventHandlerType.GetMethod("Invoke");
+            if (invokeMethod.Name != "Invoke")
                 throw new Exception();
         }
     }

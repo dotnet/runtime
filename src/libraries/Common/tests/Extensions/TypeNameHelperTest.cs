@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Internal
             Assert.Equal(expected, TypeNameHelper.GetTypeDisplayName(type, fullName));
         }
 
-        public static TheoryData GetTypeDisplayName_IncludesGenericParameterNamesWhenOptionIsSetData =>
+        public static TheoryData<Type, string> GetTypeDisplayName_IncludesGenericParameterNamesWhenOptionIsSetData =>
             new TheoryData<Type, string>
             {
                 {  typeof(B<>),"Microsoft.Extensions.Internal.TypeNameHelperTest+B<T>" },
@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.Internal
             Assert.Equal(expected, actual);
         }
 
-        public static TheoryData GetTypeDisplayName_WithoutFullName_IncludesGenericParameterNamesWhenOptionIsSetData =>
+        public static TheoryData<Type, string> GetTypeDisplayName_WithoutFullName_IncludesGenericParameterNamesWhenOptionIsSetData =>
             new TheoryData<Type, string>
             {
                 {  typeof(B<>),"B<T>" },

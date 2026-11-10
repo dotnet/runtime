@@ -15,18 +15,25 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     abort_unless(buff != NULL, "The 'buff' parameter must be a valid pointer");
 
     JNIEnv* env = GetJNIEnv();
-    jobject randObj = (*env)->NewObject(env, g_randClass, g_randCtor);
-    abort_unless(randObj != NULL,"Unable to create an instance of java/security/SecureRandom");
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, randObj, buffArray);
 
-    jbyteArray buffArray = make_java_byte_array(env, len);
-    (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);
-    (*env)->CallVoidMethod(env, randObj, g_randNextBytesMethod, buffArray);
-    (*env)->GetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);
+    loc[randObj] = (*env)->NewObject(env, g_randClass, g_randCtor);
+    abort_unless(loc[randObj] != NULL,"Unable to create an instance of java/security/SecureRandom");
 
-    (*env)->DeleteLocalRef(env, buffArray);
-    (*env)->DeleteLocalRef(env, randObj);
+    loc[buffArray] = make_java_byte_array(env, len);
+    (*env)->SetByteArrayRegion(env, loc[buffArray], 0, len, (jbyte*)buff);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[randObj], g_randNextBytesMethod, loc[buffArray]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->GetByteArrayRegion(env, loc[buffArray], 0, len, (jbyte*)buff);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = SUCCESS;
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+cleanup:
+    RELEASE_LOCALS(loc, env);
+
+    return ret;
 }
 
 jobject AndroidCryptoNative_CreateKeyPair(JNIEnv* env, jobject publicKey, jobject privateKey)

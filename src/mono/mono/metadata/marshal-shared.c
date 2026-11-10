@@ -774,8 +774,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 
 	if (klass != mono_class_try_get_safehandle_class ()) {
 		if (mono_class_is_auto_layout (klass)) {
+			char *type_name = mono_type_full_name (m_class_get_byval_arg (klass));
 			char *msg = g_strdup_printf ("Type %s which is passed to unmanaged code must have a StructLayout attribute.",
-										 mono_type_full_name (m_class_get_byval_arg (klass)));
+										 type_name);
+			g_free (type_name);
 			mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 			return;
 		}
@@ -862,8 +864,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (ftype)) {
+					char *type_name = mono_type_full_name (ftype);
 					char *msg = g_strdup_printf ("Generic type %s cannot be marshaled as field in a struct.",
-						mono_type_full_name (ftype));
+						type_name);
+					g_free (type_name);
 					mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 					break;
 				}
@@ -903,8 +907,18 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				mono_mb_emit_stloc (mb, 1);
 				break;
 			}
-			case MONO_TYPE_OBJECT: {
-				char *msg = g_strdup_printf ("COM support was disabled at compilation time.");
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_ARRAY: {
+				char *klass_name = mono_type_full_name (m_class_get_byval_arg (klass));
+				char *field_type_name = mono_type_full_name (ftype);
+				char *msg = g_strdup_printf ("Type %s with field type %s cannot be marshaled as an unmanaged struct field.",
+					klass_name,
+					field_type_name);
+				g_free (klass_name);
+				g_free (field_type_name);
 				mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 				break;
 			}
@@ -1077,6 +1091,15 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
+		// Validate that the source array has the expected marshalling size
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		mono_mb_emit_byte (mb, CEE_LDLEN);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+		guint32 length_ok = mono_mb_emit_branch (mb, CEE_BGE_UN);
+		mono_mb_emit_exception (mb, "ArgumentException", g_strdup ("Array length must be at least the SizeConst value."));
+		mono_mb_patch_branch (mb, length_ok);
+
 		if (m_class_is_blittable (eklass)) {
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_ldloc (mb, 0);
@@ -1115,8 +1138,7 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 			/* Loop header */
 			label2 = mono_mb_get_label (mb);
 			mono_mb_emit_ldloc (mb, index_var);
-			mono_mb_emit_ldloc (mb, array_var);
-			mono_mb_emit_byte (mb, CEE_LDLEN);
+			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
 			label3 = mono_mb_emit_branch (mb, CEE_BGE);
 
 			/* Set src */

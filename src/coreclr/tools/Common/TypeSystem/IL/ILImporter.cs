@@ -107,6 +107,17 @@ namespace Internal.IL
             return basicBlock;
         }
 
+        private void CreateFallthroughBasicBlock()
+        {
+            // A conditional branch or switch that is the last instruction falls through the end of the method.
+            // ReportFallthroughAtEndOfMethod does not return: the import pass would otherwise index the
+            // basic block array with this offset.
+            if (_currentOffset < _basicBlocks.Length)
+                CreateBasicBlock(_currentOffset);
+            else
+                ReportFallthroughAtEndOfMethod();
+        }
+
         private void FindJumpTargets()
         {
             _currentOffset = 0;
@@ -212,7 +223,7 @@ namespace Internal.IL
                                 CreateBasicBlock(target);
                             else
                                 ReportInvalidBranchTarget(target);
-                            CreateBasicBlock(_currentOffset);
+                            CreateFallthroughBasicBlock();
                         }
                         break;
                     case ILOpcode.br:
@@ -245,7 +256,7 @@ namespace Internal.IL
                                 CreateBasicBlock(target);
                             else
                                 ReportInvalidBranchTarget(target);
-                            CreateBasicBlock(_currentOffset);
+                            CreateFallthroughBasicBlock();
                         }
                         break;
                     case ILOpcode.switch_:
@@ -261,7 +272,7 @@ namespace Internal.IL
                                 else
                                     ReportInvalidBranchTarget(target);
                             }
-                            CreateBasicBlock(_currentOffset);
+                            CreateFallthroughBasicBlock();
                         }
                         break;
                     default:
@@ -276,9 +287,32 @@ namespace Internal.IL
             {
                 var r = _exceptionRegions[i];
 
+                bool hasOutOfRangeBounds =
+                    (uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.TryLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.TryOffset;
+
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
+                    hasOutOfRangeBounds |=
+                        (uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length ||
+                        (uint)r.ILRegion.FilterOffset >= (uint)r.ILRegion.HandlerOffset;
+                }
+
+                hasOutOfRangeBounds |=
+                    (uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.HandlerLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.HandlerOffset;
+
+                if (hasOutOfRangeBounds)
+                {
+                    ReportInvalidExceptionRegion();
+                    continue;
+                }
+
                 CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
                     CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
+                }
                 CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
             }
         }

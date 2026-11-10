@@ -33,8 +33,7 @@ internal sealed partial class BinaryFormattedObject
     };
     private readonly Options _options;
 
-    private ITypeResolver? _typeResolver;
-    private ITypeResolver TypeResolver => _typeResolver ??= new DefaultTypeResolver(_options);
+    private ITypeResolver TypeResolver => field ??= new DefaultTypeResolver(_options);
 
     /// <summary>
     ///  Creates <see cref="BinaryFormattedObject"/> by parsing <paramref name="stream"/>.

@@ -38,6 +38,27 @@ internal sealed partial class ZipGenericExtraField
             await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    public static async Task WriteAllBlocksExcludingTagAsync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (fields != null)
+        {
+            foreach (ZipGenericExtraField field in fields)
+            {
+                if (field.Tag != excludeTag)
+                {
+                    await field.WriteBlockAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        if (!trailingExtraFieldData.IsEmpty)
+        {
+            await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
+        }
+    }
 }
 
 internal sealed partial class Zip64ExtraField
@@ -147,9 +168,8 @@ internal readonly partial struct ZipLocalFileHeader
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockBytes = new byte[FieldLengths.Signature];
-        long currPosition = stream.Position;
         int bytesRead = await stream.ReadAtLeastAsync(blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-        if (!TrySkipBlockCore(stream, blockBytes, bytesRead, currPosition))
+        if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
         {
             return false;
         }
@@ -190,23 +210,20 @@ internal sealed partial class ZipCentralDirectoryFileHeader
             // Data needs to come from two sources, and we must thus copy data into a single address space.
             else
             {
-                if (dynamicHeaderSize > StackAllocationThreshold)
-                {
-                    arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
-                }
-
-                byte[] collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? new byte[dynamicHeaderSize] : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize).ToArray();
+                arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
+                Memory<byte> collatedHeader = arrayPoolBuffer.AsMemory(0, dynamicHeaderSize);
 
                 buffer[FieldLocations.DynamicData..].CopyTo(collatedHeader);
 
-                Debug.Assert(bytesToRead == collatedHeader[remainingBufferLength..].Length);
-                int realBytesRead = await furtherReads.ReadAtLeastAsync(collatedHeader.AsMemory(remainingBufferLength..), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                Debug.Assert(bytesToRead == collatedHeader.Length - remainingBufferLength);
+                int realBytesRead = await furtherReads.ReadAtLeastAsync(collatedHeader.Slice(remainingBufferLength), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
                 if (realBytesRead != bytesToRead)
                 {
                     return (false, bytesRead, null);
                 }
-                dynamicHeader = collatedHeader;
+
+                dynamicHeader = collatedHeader.Span;
             }
 
             TryReadBlockFinalize(header, dynamicHeader, dynamicHeaderSize, uncompressedSizeSmall, compressedSizeSmall, diskNumberStartSmall, relativeOffsetOfLocalHeaderSmall, saveExtraFieldsAndComments, ref bytesRead, out Zip64ExtraField zip64);
@@ -249,12 +266,12 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
 
         if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))
         {
-            // // We shouldn't get here becasue we found the eocd block using the signature finder
+            // We shouldn't get here because we found the EOCD block using the signature finder
             throw new InvalidDataException(SR.EOCDNotFound);
         }
         else if (readComment)
         {
-            stream.ReadExactly(eocdBlock._archiveComment);
+            await stream.ReadExactlyAsync(eocdBlock._archiveComment, cancellationToken).ConfigureAwait(false);
         }
         return eocdBlock;
     }

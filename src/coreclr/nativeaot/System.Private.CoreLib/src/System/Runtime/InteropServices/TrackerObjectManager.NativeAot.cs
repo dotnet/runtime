@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices
 
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
@@ -183,10 +183,11 @@ namespace System.Runtime.InteropServices
         {
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
-                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.Target))
+                    nativeObjectWrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) &&
+                    !RuntimeImports.RhIsPromoted(proxyTarget))
                 {
                     // Notify the wrapper it was not promoted and is being collected.
                     BeforeWrapperFinalized(nativeObjectWrapper.TrackerObject);
@@ -196,6 +197,7 @@ namespace System.Runtime.InteropServices
     }
 
     // Callback implementation of IFindReferenceTargetsCallback
+    [EagerStaticClassConstruction]
     internal static unsafe class FindReferenceTargetsCallback
     {
         // Define an on-stack compatible COM instance to avoid allocating
@@ -204,9 +206,9 @@ namespace System.Runtime.InteropServices
         internal ref struct Instance
         {
             private readonly IntPtr _vtable; // First field is IUnknown based vtable.
-            public GCHandle RootObject;
+            public WeakGCHandle<object> RootObject;
 
-            public Instance(GCHandle handle)
+            public Instance(WeakGCHandle<object> handle)
             {
                 _vtable = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
                 RootObject = handle;
@@ -239,7 +241,11 @@ namespace System.Runtime.InteropServices
                 return HResults.E_POINTER;
             }
 
-            object sourceObject = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.Target!;
+            _ = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.TryGetTarget(out object? sourceObject);
+
+            // The callback is only ever set up with the handle of an RCW that was alive at the time, and
+            // that RCW keeps its wrapper alive, so the handle is expected to still have its target here
+            Debug.Assert(sourceObject is not null);
 
             if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {
@@ -252,7 +258,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Notify the runtime a reference path was found.
-            return TrackerObjectManager.AddReferencePath(sourceObject, targetObject) ? HResults.S_OK : HResults.S_FALSE;
+            return TrackerObjectManager.AddReferencePath(sourceObject!, targetObject) ? HResults.S_OK : HResults.S_FALSE;
         }
 
         internal struct ReferenceTargetsVftbl

@@ -12,30 +12,32 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[ExpectedNoWarnings]
-	[SkipKeptItemsValidation]
-	[Define ("DEBUG")]
-	public class InterpolatedStringDataFlow
-	{
-		public static void Main ()
-		{
-			TestInterpolatedStringHandler ();
-			TestUnknownInterpolatedString ();
-		}
+    [ExpectedNoWarnings]
+    [SkipKeptItemsValidation]
+    [Define("DEBUG")]
+    public class InterpolatedStringDataFlow
+    {
+        public static void Main()
+        {
+            TestInterpolatedStringHandler();
+            TestUnknownInterpolatedString();
+        }
 
-		static void TestInterpolatedStringHandler (bool b = true) {
-			// Creates a control-flow graph for the analyzer that has an
-			// IFlowCaptureReferenceOperation that represents a capture
-			// because it is used as an out param (so has IsInitialization = true).
-			// See https://github.com/dotnet/roslyn/issues/57484 for context.
-			// This test ensures the analyzer has coverage for cases
-			// where IsInitialization = true.
-			Debug.Assert (b, $"Debug interpolated string handler {b}");
-		}
+        static void TestInterpolatedStringHandler(bool b = true)
+        {
+            // Creates a control-flow graph for the analyzer that has an
+            // IFlowCaptureReferenceOperation that represents a capture
+            // because it is used as an out param (so has IsInitialization = true).
+            // See https://github.com/dotnet/roslyn/issues/57484 for context.
+            // This test ensures the analyzer has coverage for cases
+            // where IsInitialization = true.
+            Debug.Assert(b, $"Debug interpolated string handler {b}");
+        }
 
-		[ExpectedWarning ("IL2057")]
-		static void TestUnknownInterpolatedString (string input = "test") {
-			Type.GetType ($"{input}");
-		}
-	}
+        [ExpectedWarning("IL2057")]
+        static void TestUnknownInterpolatedString(string input = "test")
+        {
+            Type.GetType($"{input}");
+        }
+    }
 }

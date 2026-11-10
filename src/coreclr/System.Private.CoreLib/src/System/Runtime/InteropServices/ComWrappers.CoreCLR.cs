@@ -5,6 +5,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -65,13 +66,30 @@ namespace System.Runtime.InteropServices
             return -1; // See TryInvokeICustomQueryInterfaceResult
         }
 
-        internal static IntPtr GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object obj)
+        [UnmanagedCallersOnly]
+        private static unsafe int CallICustomQueryInterface(ManagedObjectWrapperHolder* pHolder, Guid* pIid, IntPtr* ppObject, Exception* pException)
         {
             try
             {
-                return s_globalInstanceForMarshalling is null
-                    ? IntPtr.Zero
-                    : s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.TrackerSupport);
+                return CallICustomQueryInterface(*pHolder, ref *pIid, out *ppObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return -1; // See TryInvokeICustomQueryInterfaceResult.FailedToInvoke
+            }
+        }
+
+        internal static IntPtr GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object obj)
+        {
+            if (s_globalInstanceForMarshalling == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            try
+            {
+                return ComInterfaceForObject(obj);
             }
             catch (ArgumentException)
             {
@@ -81,17 +99,48 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static object? GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, CreateObjectFlags flags)
+        [UnmanagedCallersOnly]
+        private static unsafe void GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object* pObj, IntPtr* pResult, Exception* pException)
         {
             try
             {
-                return s_globalInstanceForMarshalling?.GetOrCreateObjectForComInstance(comObject, flags);
+                *pResult = GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(*pObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        internal static object? GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, CreateObjectFlags flags)
+        {
+            if (s_globalInstanceForMarshalling == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return ComObjectForInterface(comObject, flags);
             }
             catch (ArgumentNullException)
             {
                 // We've failed to create a managed object for the COM instance.
                 // Fallback to built-in COM.
                 return null;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, int flags, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(comObject, (CreateObjectFlags)flags);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 
@@ -113,6 +162,7 @@ namespace System.Runtime.InteropServices
 
         internal sealed partial class ManagedObjectWrapperHolder
         {
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterIsRootedCallback")]
             private static partial void RegisterIsRootedCallback();
 
@@ -121,6 +171,7 @@ namespace System.Runtime.InteropServices
                 return AllocateRefCountedHandle(ObjectHandleOnStack.Create(ref holder));
             }
 
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_AllocateRefCountedHandle")]
             private static partial IntPtr AllocateRefCountedHandle(ObjectHandleOnStack obj);
         }

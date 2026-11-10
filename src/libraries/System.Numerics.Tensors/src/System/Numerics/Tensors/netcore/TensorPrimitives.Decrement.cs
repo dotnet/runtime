@@ -18,8 +18,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Decrement<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IDecrementOperators<T> =>
+            where T : IDecrementOperators<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, DecrementOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, DecrementOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Decrement(x)</summary>
         private readonly struct DecrementOperator<T> : IUnaryOperator<T, T>

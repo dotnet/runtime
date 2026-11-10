@@ -82,7 +82,7 @@ namespace System.Xml.Linq.Tests
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/><B/></A>", "xml", "http://www.w3.org/XML/1998/namespace")]
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/><B/></A>", "xmlns", "http://www.w3.org/2000/xmlns/")]
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'><X:Sub xmlns:X='xx'/></p:C><B/></A>", "X", null)]
-        public void NamespaceForPrefix(string xml, string prefix, string ns)
+        public void NamespaceForPrefix(string xml, string prefix, string? ns)
         {
             XNamespace NS = ns == null ? null : XNamespace.Get(ns);
             XElement e = XElement.Parse(xml);
@@ -97,7 +97,7 @@ namespace System.Xml.Linq.Tests
         [Theory]
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'><X:Sub xmlns:X='xx'/></p:C><B/></A>", null, typeof(ArgumentNullException))]
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'><X:Sub xmlns:X='xx'/></p:C><B/></A>", "", typeof(ArgumentException))]
-        public void NamespaceForPrefixNull(string xml, string prefix, Type expectedException)
+        public void NamespaceForPrefixNull(string xml, string? prefix, Type expectedException)
         {
             XElement e = XElement.Parse(xml);
             Assert.Throws(expectedException, () => (e.FirstNode as XElement).GetNamespaceOfPrefix(prefix));
@@ -155,7 +155,7 @@ namespace System.Xml.Linq.Tests
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/><B/></A>", "xml", "http://www.w3.org/XML/1998/namespace")]
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/><B/></A>", "xmlns", "http://www.w3.org/2000/xmlns/")]
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'><X:Sub xmlns:X='xx'/></p:C><B/></A>", null, "nonexisting")]
-        public void PrefixOfNamespace(string xml, string prefix, string ns)
+        public void PrefixOfNamespace(string xml, string? prefix, string ns)
         {
             XElement e = XElement.Parse(xml);
             string pref = (e.FirstNode as XElement).GetPrefixOfNamespace(XNamespace.Get(ns));
@@ -164,7 +164,7 @@ namespace System.Xml.Linq.Tests
 
         [Theory]
         [InlineData("<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'><X:Sub xmlns:X='xx'/></p:C><B/></A>", null)]
-        public void PrefixOfNamespaceNull(string xml, string ns)
+        public void PrefixOfNamespaceNull(string xml, string? ns)
         {
             XElement e = XElement.Parse(xml);
             Assert.Throws<ArgumentNullException>(() => (e.FirstNode as XElement).GetPrefixOfNamespace(ns));

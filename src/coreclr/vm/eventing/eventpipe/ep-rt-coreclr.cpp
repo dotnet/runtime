@@ -6,9 +6,14 @@
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-session.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 #include "threadsuspend.h"
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 CrstStatic _ep_rt_coreclr_config_lock;
@@ -49,17 +54,40 @@ stack_walk_callback (
 
 	// Get the IP.
 	UINT_PTR control_pc = (UINT_PTR)frame->GetRegisterSet ()->ControlPC;
+	
+	if (!frame->IsFrameless() && frame->GetFrame()->GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame) {
+		// At the PrestubMethodFrame, the ControlPC is not valid. Since the eventpipe stackwalk is actually only based on the ip, skip this frame.
+		return SWA_CONTINUE;
+	}
 	if (control_pc == 0) {
+#ifdef DEBUG
 		if (ep_stack_contents_get_length (stack_contents) == 0) {
 			// This happens for pinvoke stubs on the top of the stack.
-			return SWA_CONTINUE;
 		}
+		else {
+			EP_ASSERT (!"Unexpected null ControlPC in stack walk callback");
+		}
+#endif
+		// With FUNCTIONSONLY flag, we may hit frames without a meaningful control_pc, but with a valid MethodDesc.
+		// There is no point in reporting those frames as ep_stack_contents_append doesn't actually record the function
+		// in a Frame in release builds, it only records the control_pc.
+		return SWA_CONTINUE;
 	}
 
 	EP_ASSERT (control_pc != 0);
 
+	MethodDesc *method = frame->GetFunction ();
+#ifdef FEATURE_MULTITHREADING
+	if (ep_stack_contents_is_empty (stack_contents) &&
+		(method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC) ||
+		 method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC_WORKER))) {
+		// Omit leading polling transitions, preserving the caller and the event.
+		return SWA_CONTINUE;
+	}
+#endif // FEATURE_MULTITHREADING
+
 	// Add the IP to the captured stack.
-	ep_stack_contents_append (stack_contents, control_pc, frame->GetFunction ());
+	ep_stack_contents_append (stack_contents, control_pc, method);
 
 	// Continue the stack walk.
 	return SWA_CONTINUE;
@@ -114,10 +142,9 @@ walk_managed_stack_for_threads (
 
 		// Walk the stack and write it out as an event.
 		if (ep_rt_coreclr_walk_managed_stack_for_thread (target_thread, current_stack_contents) && !ep_stack_contents_is_empty (current_stack_contents)) {
-			// Set the payload.  If the GC mode on suspension > 0, then the thread was in cooperative mode.
-			// Even though there are some cases where this is not managed code, we assume it is managed code here.
-			// If the GC mode on suspension == 0 then the thread was in preemptive mode, which we qualify as external here.
-			uint32_t payload_data = target_thread->GetGCModeOnSuspension () ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+			// Set the payload. If the thread is trapped for suspension, it was in cooperative mode (managed code).
+			// Otherwise, it was in preemptive mode (external code).
+			uint32_t payload_data = target_thread->HasThreadState (Thread::TS_SuspensionTrapped) ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
 			// Write the sample.
 			ep_write_sample_profile_event (
@@ -128,9 +155,6 @@ walk_managed_stack_for_threads (
 				(uint8_t *)&payload_data,
 				sizeof (payload_data));
 		}
-
-		// Reset the GC mode.
-		target_thread->ClearGCModeOnSuspension ();
 	}
 
 	ep_stack_contents_fini (current_stack_contents);
@@ -155,9 +179,91 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	walk_managed_stack_for_threads (sampling_thread, sampling_event);
 
 	// Resume managed execution.
-	ThreadSuspend::RestartEE (FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+	ThreadSuspend::RestartEE (true /* SuspendSucceeded */);
 
 	return;
 }
+
+void
+ep_rt_coreclr_session_stopping (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+#if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
+	// The EventPipe session_stopping helper has bound this thread to the stopping session as its rundown
+	// session, so ep_event_is_enabled_for_current_thread tests that session's mask and the events emitted by
+	// the flush route only to it (dotnet-pgo drops a method once data arrives after its final chunk, so a
+	// single destination is required).
+	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
+	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
+		ep_event_is_enabled_for_current_thread (EventPipeEventJitInstrumentationDataVerbose))
+	{
+		EX_TRY
+		{
+			PgoManager::LogInstrumentationData ();
+		}
+		EX_CATCH { }
+		EX_END_CATCH
+	}
+#endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
+}
+
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+// WASI has no host event loop to schedule EventPipe jobs (session streaming, diagnostic server) on,
+// so they are kept on this list and run by the managed WasiEventLoop (WasiEventPipeJobs.cs).
+// A job returns non-zero when it is done; otherwise it stays queued and runs again on the next pump.
+// Single-threaded by construction, so no locking.
+struct WasiEventPipeJob
+{
+	size_t (*Callback)(void *data);
+	void *Data;
+	WasiEventPipeJob *Next;
+};
+
+static WasiEventPipeJob *s_wasiJobsHead = nullptr;
+static WasiEventPipeJob *s_wasiJobsTail = nullptr;
+
+static void WasiAppendJob(WasiEventPipeJob *job)
+{
+	job->Next = nullptr;
+	if (s_wasiJobsTail != nullptr)
+		s_wasiJobsTail->Next = job;
+	else
+		s_wasiJobsHead = job;
+	s_wasiJobsTail = job;
+}
+
+bool ep_rt_coreclr_wasi_queue_job (size_t (*cb)(void *data), void *data)
+{
+	_ASSERTE (cb != nullptr);
+	WasiEventPipeJob *job = new (nothrow) WasiEventPipeJob();
+	if (job == nullptr)
+		return false;
+
+	job->Callback = cb;
+	job->Data = data;
+	WasiAppendJob (job);
+	return true;
+}
+
+bool ep_rt_coreclr_wasi_run_jobs (void)
+{
+	// Detach the current list so jobs queued while running are picked up on the next pump.
+	WasiEventPipeJob *job = s_wasiJobsHead;
+	s_wasiJobsHead = nullptr;
+	s_wasiJobsTail = nullptr;
+
+	while (job != nullptr)
+	{
+		WasiEventPipeJob *next = job->Next;
+		if (job->Callback (job->Data) != 0)
+			delete job;
+		else
+			WasiAppendJob (job);
+		job = next;
+	}
+
+	return s_wasiJobsHead != nullptr;
+}
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 
 #endif /* ENABLE_PERFTRACING */

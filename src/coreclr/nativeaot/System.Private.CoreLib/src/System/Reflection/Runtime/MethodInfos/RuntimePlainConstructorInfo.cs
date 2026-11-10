@@ -7,9 +7,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -59,13 +59,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return _common.TrueCustomAttributes;
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => _common.GetMetadataReader();
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _common.GetCustomAttributeHandles();
 
         public sealed override Type DeclaringType
         {
@@ -125,6 +121,11 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.HasSameMetadataDefinitionAs(otherConstructor._common);
         }
 
+        internal bool HasSameMetadataDefinitionAs(TRuntimeMethodCommon other)
+        {
+            return _common.HasSameMetadataDefinitionAs(other);
+        }
+
         public sealed override bool Equals(object obj)
         {
             if (!(obj is RuntimePlainConstructorInfo<TRuntimeMethodCommon> other))
@@ -148,7 +149,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _lazyParameters ??= RuntimeMethodHelpers.GetRuntimeParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out _);
+                return _lazyParameters ??= RuntimeParameterInfo.GetParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>());
             }
         }
 

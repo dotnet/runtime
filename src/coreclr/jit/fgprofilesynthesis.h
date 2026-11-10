@@ -21,8 +21,6 @@ enum class ProfileSynthesisOption
     RepairLikelihoods,
     BlendLikelihoods,
     ResetAndSynthesize,
-    ReverseLikelihoods,
-    RandomLikelihoods,
 };
 
 //------------------------------------------------------------------------
@@ -36,6 +34,8 @@ public:
         ProfileSynthesis p(compiler);
         p.Run(option);
     }
+
+    static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler* compiler);
 
     static constexpr weight_t epsilon = 0.001;
 
@@ -91,8 +91,6 @@ private:
     void RepairLikelihoods();
     void BlendLikelihoods();
     void ClearLikelihoods();
-    void ReverseLikelihoods();
-    void RandomizeLikelihoods();
 
     void ComputeCyclicProbabilities();
     void ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop);

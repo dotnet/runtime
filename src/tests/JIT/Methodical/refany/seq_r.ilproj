@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Test uses varargs -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
@@ -10,5 +8,8 @@
   <ItemGroup>
     <Compile Include="seq_r.il" />
     <Compile Include="seq.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

@@ -14,7 +14,13 @@
 
 #define SPECIAL_THREADINFO_SIGNATURE "THREADINFO"
 
+#if defined(HOST_ARM64) || defined(__arm64__) || defined(__aarch64__)
+// Apple Silicon (arm64) macOS user-space VM is 47 bits. lldb's core reader
+// rejects segments above 0x7FFF_FFFF_FFFF, so use a 47-bit-valid address.
+const uint64_t SpecialThreadInfoAddress = 0x00007ffffff00000;
+#else
 const uint64_t SpecialThreadInfoAddress = 0x7fffffff00000000;
+#endif
 
 struct SpecialThreadInfoHeader
 {

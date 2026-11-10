@@ -7,6 +7,7 @@
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitzed jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
@@ -14,6 +15,9 @@
       <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
     <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="main.cs" />

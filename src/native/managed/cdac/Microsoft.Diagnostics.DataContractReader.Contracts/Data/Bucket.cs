@@ -3,27 +3,39 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Bucket : IData<Bucket>
+[CdacType(nameof(DataType.Bucket))]
+internal sealed partial class Bucket : IData<Bucket>
 {
-    static Bucket IData<Bucket>.Create(Target target, TargetPointer address)
-        => new Bucket(target, address);
+    [CustomInit(nameof(InitKeys))] public partial TargetPointer[] Keys { get; }
+    [CustomInit(nameof(InitValues))] public partial TargetPointer[] Values { get; }
 
-    public Bucket(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(Keys), "pointer")]
+    private partial TargetPointer[] InitKeys(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Bucket);
         ulong keysStart = address + (ulong)type.Fields[nameof(Keys)].Offset;
-        ulong valuesStart = address + (ulong)type.Fields[nameof(Values)].Offset;
-
         uint numSlots = target.ReadGlobal<uint>(Constants.Globals.HashMapSlotsPerBucket);
-        Keys = new TargetPointer[numSlots];
-        Values = new TargetPointer[numSlots];
+        TargetPointer[] keys = new TargetPointer[numSlots];
         for (int i = 0; i < numSlots; i++)
         {
-            Keys[i] = target.ReadPointer(keysStart + (ulong)(i * target.PointerSize));
-            Values[i] = target.ReadPointer(valuesStart + (ulong)(i * target.PointerSize));
+            keys[i] = target.ReadPointer(keysStart + (ulong)(i * target.PointerSize));
         }
+
+        return keys;
     }
 
-    public TargetPointer[] Keys { get; }
-    public TargetPointer[] Values { get; }
+    [DataDescriptorDependency(nameof(Values), "pointer")]
+    private partial TargetPointer[] InitValues(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Bucket);
+        ulong valuesStart = address + (ulong)type.Fields[nameof(Values)].Offset;
+        uint numSlots = target.ReadGlobal<uint>(Constants.Globals.HashMapSlotsPerBucket);
+        TargetPointer[] values = new TargetPointer[numSlots];
+        for (int i = 0; i < numSlots; i++)
+        {
+            values[i] = target.ReadPointer(valuesStart + (ulong)(i * target.PointerSize));
+        }
+
+        return values;
+    }
 }

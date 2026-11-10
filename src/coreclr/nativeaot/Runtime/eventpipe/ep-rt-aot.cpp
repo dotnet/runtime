@@ -25,6 +25,8 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "eventtrace_context.h"
+#include "eventtracebase.h"
+#include "thread.inl"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -50,7 +52,7 @@ ep_rt_aot_walk_managed_stack_for_thread (
     EP_ASSERT (thread != NULL);
     EP_ASSERT (stack_contents != NULL);
 
-    StackFrameIterator frameIterator(thread, thread->GetTransitionFrameForSampling()); 
+    StackFrameIterator frameIterator(thread, thread->GetTransitionFrameForSampling());
 
     while (frameIterator.IsValid())
     {
@@ -75,7 +77,19 @@ bool
 ep_rt_aot_providers_validate_all_disabled (void)
 {
     return !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
-        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
+}
+
+void
+ep_rt_aot_provider_config_init (
+    EventPipeProviderConfiguration *provider_config)
+{
+    if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (uint8_t) ep_provider_config_get_logging_level (provider_config);
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
+    }
 }
 
 void
@@ -109,9 +123,11 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 
         // Walk the stack and write it out as an event.
         if (ep_rt_aot_walk_managed_stack_for_thread (target_thread, current_stack_contents) && !ep_stack_contents_is_empty (current_stack_contents)) {
-            // Set the payload.
-            // TODO: We can actually detect whether we are in managed or external code but does it matter?!
-            uint32_t payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+            // Set the payload. If the thread is trapped for suspension, it was in cooperative mode
+            // (managed code). Otherwise, it was in preemptive mode (external code).
+            uint32_t payload_data = target_thread->IsSuspensionTrapped()
+                ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED
+                : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
             // Write the sample.
             ep_write_sample_profile_event (
@@ -194,6 +210,12 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
     return entrypoint_assembly_name;
 }
 
+void
+ep_rt_aot_execute_rundown (dn_vector_ptr_t* execution_checkpoints)
+{
+    ETW::EnumerationLog::EndRundown();
+}
+
 const ep_char8_t *
 ep_rt_aot_diagnostics_command_line_get (void)
 {
@@ -223,11 +245,7 @@ ep_rt_aot_diagnostics_command_line_get (void)
 
 namespace
 {
-    #ifdef TARGET_UNIX
-    __thread EventPipeThreadHolder* eventpipe_tls_instance;
-    #else
-    thread_local EventPipeThreadHolder* eventpipe_tls_instance;
-    #endif
+    PLATFORM_THREAD_LOCAL EventPipeThreadHolder* eventpipe_tls_instance;
 
     void free_thread_holder ()
     {
@@ -316,6 +334,12 @@ ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) {
     return (currentValue - 1);
 }
 
+int64_t
+ep_rt_aot_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value) {
+    STATIC_CONTRACT_NOTHROW;
+    return static_cast<int64_t>(PalInterlockedCompareExchange64 ((volatile int64_t *)target, (int64_t)value, (int64_t)expected));
+}
+
 size_t
 ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) {
     STATIC_CONTRACT_NOTHROW;
@@ -384,7 +408,7 @@ ep_rt_aot_wait_event_wait (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    return wait_event->event->Wait (timeout, alertable);
+    return wait_event->event->Wait (timeout, alertable, false);
 }
 
 bool
@@ -459,7 +483,7 @@ void
 ep_rt_aot_thread_sleep (uint64_t ns)
 {
     STATIC_CONTRACT_NOTHROW;
-    PalSleep(static_cast<uint32_t>(ns/1000000));
+    minipal_sleep(static_cast<uint32_t>(ns/1000000));
 }
 
 uint32_t
@@ -498,10 +522,7 @@ int64_t
 ep_rt_aot_system_timestamp_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    FILETIME value;
-    PalGetSystemTimeAsFileTime (&value);
-    return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+    return minipal_get_system_time();
 }
 
 int32_t
@@ -606,7 +627,7 @@ ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
     // EventPipe library will intialize using thread, EventPipeBufferManager instances and will maintain these on the EventPipe library side
 
     spin_lock->lock = new (nothrow) CrstStatic ();
-    spin_lock->lock->InitNoThrow (CrstType::CrstEventPipe);
+    spin_lock->lock->Init (CrstType::CrstEventPipe);
 }
 
 void
@@ -771,7 +792,7 @@ void ep_rt_aot_init (void)
     extern CrstStatic _ep_rt_aot_config_lock;
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
-    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+    _ep_rt_aot_config_lock_handle.lock->Init (CrstType::CrstEventPipeConfig);
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)
@@ -866,7 +887,7 @@ ep_rt_thread_handle_t ep_rt_aot_setup_thread (void)
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
-    return (ep_rt_thread_id_t)thread_handle->GetPalThreadIdForLogging();
+    return (ep_rt_thread_id_t)thread_handle->GetOSThreadId();
 }
 
 #ifdef EP_CHECKED_BUILD

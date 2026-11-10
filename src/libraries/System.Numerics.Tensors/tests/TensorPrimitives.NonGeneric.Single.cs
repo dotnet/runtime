@@ -106,10 +106,7 @@ namespace System.Numerics.Tensors.Tests
 
         protected override void AssertEqualTolerance(float expected, float actual, float? tolerance = null)
         {
-            if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
-            {
-                throw EqualException.ForMismatchedValues(expected, actual);
-            }
+            Helpers.AssertEqualWithTolerance(expected, actual, tolerance);
         }
 
         protected override IEnumerable<float> GetSpecialValues()

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -22,25 +23,33 @@ namespace System.Reflection
     //
     internal sealed partial class LoaderAllocatorScout
     {
+        private const long EstimatedMemoryPressure = 30_000;
+
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
 
+        internal LoaderAllocatorScout()
+        {
+            GC.AddMemoryPressure(EstimatedMemoryPressure);
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool Destroy(IntPtr nativeLoaderAllocator);
 
         ~LoaderAllocatorScout()
         {
-            if (m_nativeLoaderAllocator == IntPtr.Zero)
-                return;
-
             // Destroy returns false if the managed LoaderAllocator is still alive.
-            if (!Destroy(m_nativeLoaderAllocator))
+            if (m_nativeLoaderAllocator != IntPtr.Zero && !Destroy(m_nativeLoaderAllocator))
             {
                 // Somebody might have been holding a reference on us via weak handle.
                 // We will keep trying. It will be hopefully released eventually.
                 GC.ReRegisterForFinalize(this);
+                return;
             }
+
+            GC.RemoveMemoryPressure(EstimatedMemoryPressure);
         }
     }
 
@@ -52,6 +61,19 @@ namespace System.Reflection
             // m_slotsUsed = 0;
 
             m_scout = new LoaderAllocatorScout();
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Create(object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new LoaderAllocator();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
 #pragma warning disable CA1823, 414, 169

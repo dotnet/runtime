@@ -52,7 +52,7 @@ namespace System
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, ObjectType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object), inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -62,7 +62,7 @@ namespace System
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
@@ -90,7 +90,26 @@ namespace System
                 members = GetMember(defaultMemberName);
             }
 
-            return members ?? Array.Empty<MemberInfo>();
+            return members ?? [];
+        }
+
+        private static bool IsFullNameRoundtripCompatible(RuntimeType runtimeType)
+        {
+            // We exclude the types that contain generic parameters because their names cannot be round-tripped.
+            // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be round-tripped.
+            // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
+            // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
+            // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
+            Type rootElementType = runtimeType.GetRootElementType();
+            if (!rootElementType.IsGenericTypeDefinition && rootElementType.ContainsGenericParameters)
+                return false;
+
+            // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
+            // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
+            if (rootElementType.IsFunctionPointer)
+                return false;
+
+            return true;
         }
 
         public override Type? GetElementType() => RuntimeTypeHandle.GetElementType(this);
@@ -165,8 +184,6 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
-        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
-
         internal RuntimeModule GetRuntimeModule() => RuntimeTypeHandle.GetModule(this);
 
         protected override TypeCode GetTypeCodeImpl()
@@ -195,7 +212,7 @@ namespace System
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
 
         public override bool IsEnumDefined(object value)
@@ -217,7 +234,7 @@ namespace System
             }
 
             // If a string is passed in, search the enum names with it.
-            if (valueType == StringType)
+            if (valueType == typeof(string))
                 return Array.IndexOf(Enum.GetNamesNoCopy(this), (string)value) >= 0;
 
             // If an enum or integer value is passed in
@@ -278,7 +295,7 @@ namespace System
                 if (c.IsSubclassOf(this))
                     return true;
 
-                if (IsInterface)
+                if (IsActualInterface)
                 {
                     return c.ImplementInterface(this);
                 }
@@ -663,11 +680,11 @@ namespace System
                 }
 
                 finalists ??= [finalist];
-                providedArgs ??= Array.Empty<object>();
+                providedArgs ??= [];
                 object? state = null;
                 MethodBase? invokeMethod = null;
 
-                try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs!, modifiers, culture, namedParams, out state); }
+                try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs, modifiers, culture, namedParams, out state); }
                 catch (MissingMethodException) { }
 
                 if (invokeMethod == null)
@@ -692,20 +709,20 @@ namespace System
         // `class G3<T,U> where T:U where U:Stream`: typeof(G3<,>).GetGenericArguments()[0].BaseType is Object (!)
         private RuntimeType? GetBaseType()
         {
-            if (IsInterface)
+            if (IsActualInterface)
                 return null;
 
             if (RuntimeTypeHandle.IsGenericVariable(this))
             {
                 Type[] constraints = GetGenericParameterConstraints();
 
-                RuntimeType baseType = ObjectType;
+                RuntimeType baseType = (RuntimeType)typeof(object);
 
                 for (int i = 0; i < constraints.Length; i++)
                 {
                     RuntimeType constraint = (RuntimeType)constraints[i];
 
-                    if (constraint.IsInterface)
+                    if (constraint.IsActualInterface)
                         continue;
 
                     if (constraint.IsGenericParameter)
@@ -720,11 +737,11 @@ namespace System
                     baseType = constraint;
                 }
 
-                if (baseType == ObjectType)
+                if (baseType == typeof(object))
                 {
                     GenericParameterAttributes special = GenericParameterAttributes;
                     if ((special & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
-                        baseType = ValueType;
+                        baseType = (RuntimeType)typeof(ValueType);
                 }
 
                 return baseType;

@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="Crc32.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

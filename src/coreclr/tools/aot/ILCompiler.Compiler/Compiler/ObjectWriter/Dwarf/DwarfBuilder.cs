@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using static ILCompiler.ObjectWriter.DwarfNative;
@@ -16,9 +17,9 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfBuilder : ITypesDebugInfoWriter
     {
-        private record struct SectionInfo(string SectionSymbolName, ulong Size);
+        private record struct SectionInfo(Utf8String SectionSymbolName, ulong Size);
         private record struct MemberFunctionTypeInfo(MemberFunctionTypeDescriptor MemberDescriptor, uint[] ArgumentTypes, bool IsStatic);
-        public delegate (string SectionSymbolName, long Address) ResolveStaticVariable(string name);
+        public delegate (Utf8String SectionSymbolName, long Address) ResolveStaticVariable(Utf8String name);
 
         private readonly NameMangler _nameMangler;
         private readonly TargetArchitecture _architecture;
@@ -92,6 +93,12 @@ namespace ILCompiler.ObjectWriter
                     _codeRelocType = RelocType.IMAGE_REL_BASED_DIR64;
                     break;
 
+                case TargetArchitecture.Wasm32:
+                    _targetPointerSize = 4;
+                    _frameRegister = -1; // Wasm frame-base expressions are not emitted yet.
+                    _codeRelocType = RelocType.IMAGE_REL_BASED_HIGHLOW;
+                    break;
+
                 default:
                     throw new NotSupportedException("Unsupported architecture");
             }
@@ -99,6 +106,7 @@ namespace ILCompiler.ObjectWriter
 
         public TargetArchitecture TargetArchitecture => _architecture;
         public byte TargetPointerSize => _targetPointerSize;
+        public bool UseDwarf5 => _useDwarf5;
         public int FrameRegister => _frameRegister;
 
         public uint ResolveOffset(uint typeIndex) => typeIndex == 0 ? 0u : _dwarfTypeOffsets[typeIndex - 1];
@@ -132,6 +140,9 @@ namespace ILCompiler.ObjectWriter
             SectionWriter rangeSectionWriter,
             ResolveStaticVariable resolveStaticVariable)
         {
+            byte[] locListSizeBuffer = _useDwarf5 ? WriteListTableHeader(locSectionWriter) : null;
+            byte[] rangeListSizeBuffer = _useDwarf5 ? WriteListTableHeader(rangeSectionWriter) : null;
+
             // Length
             byte[] sizeBuffer = new byte[sizeof(uint)];
             infoSectionWriter.EmitData(sizeBuffer);
@@ -142,12 +153,12 @@ namespace ILCompiler.ObjectWriter
                 // Unit type, Address Size
                 infoSectionWriter.Write([DW_UT_compile, _targetPointerSize]);
                 // Abbrev offset
-                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_abbrev", 0);
+                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_abbrev"u8), 0);
             }
             else
             {
                 // Abbrev offset
-                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_abbrev", 0);
+                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_abbrev"u8), 0);
                 // Address Size
                 infoSectionWriter.Write([_targetPointerSize]);
             }
@@ -161,7 +172,7 @@ namespace ILCompiler.ObjectWriter
                 this,
                 _codeRelocType))
             {
-                dwarfInfoWriter.WriteStartDIE(DwarfAbbrev.CompileUnit);
+                dwarfInfoWriter.WriteStartDIE(_useDwarf5 ? DwarfAbbrev.CompileUnitDwarf5 : DwarfAbbrev.CompileUnit);
 
                 // DW_AT_producer
                 dwarfInfoWriter.WriteStringReference("NetRuntime");
@@ -182,6 +193,11 @@ namespace ILCompiler.ObjectWriter
                 dwarfInfoWriter.WriteEndRangeList();
                 // DW_AT_stmt_list
                 dwarfInfoWriter.WriteLineReference(0);
+                if (_useDwarf5)
+                {
+                    // DW_AT_addr_base
+                    dwarfInfoWriter.WriteAddressTableReference(AddressTableHeaderSize);
+                }
 
                 _dwarfTypeOffsets = new uint[_dwarfTypes.Count];
 
@@ -200,8 +216,8 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (DwarfStaticVariableInfo staticField in _staticFields)
                 {
-                    (string sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
-                    if (sectionSymbolName is not null)
+                    (Utf8String sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
+                    if (!sectionSymbolName.IsNull)
                     {
                         staticField.Dump(dwarfInfoWriter, sectionSymbolName, address);
                     }
@@ -215,6 +231,43 @@ namespace ILCompiler.ObjectWriter
 
             // Update the size
             BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(infoSectionWriter.Position - sizeof(uint)));
+
+            if (_useDwarf5)
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(locListSizeBuffer, (uint)(locSectionWriter.Position - sizeof(uint)));
+                BinaryPrimitives.WriteUInt32LittleEndian(rangeListSizeBuffer, (uint)(rangeSectionWriter.Position - sizeof(uint)));
+            }
+        }
+
+        // unit_length, version, address_size, segment_selector_size
+        private const int AddressTableHeaderSize = sizeof(uint) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
+
+        /// <summary>
+        /// Writes an empty DWARF 5 .debug_addr table so that DW_AT_addr_base can reference it.
+        /// </summary>
+        /// <remarks>
+        /// Nothing in this unit uses DW_FORM_addrx, but tools that rewrite the debug info
+        /// (such as dsymutil) may emit indexed address forms and rely on DW_AT_addr_base.
+        /// </remarks>
+        public void WriteAddressTable(SectionWriter addrSectionWriter)
+        {
+            Debug.Assert(_useDwarf5);
+            Debug.Assert(addrSectionWriter.Position == 0);
+            addrSectionWriter.WriteLittleEndian<uint>(AddressTableHeaderSize - sizeof(uint));
+            addrSectionWriter.WriteLittleEndian<ushort>(5);
+            addrSectionWriter.Write([_targetPointerSize, 0]);
+        }
+
+        private byte[] WriteListTableHeader(SectionWriter writer)
+        {
+            // DWARF 5 list tables have a common header: https://dwarfstd.org/doc/DWARF5.pdf.
+            Debug.Assert(writer.Position == 0);
+            byte[] sizeBuffer = new byte[sizeof(uint)];
+            writer.EmitData(sizeBuffer);
+            writer.WriteLittleEndian<ushort>(5);
+            writer.Write([_targetPointerSize, 0]);
+            writer.WriteLittleEndian<uint>(0); // No offset table; lists use DW_FORM_sec_offset.
+            return sizeBuffer;
         }
 
         private void WriteLineInfoTable(SectionWriter lineSectionWriter)
@@ -241,7 +294,7 @@ namespace ILCompiler.ObjectWriter
             // Version
             arangeSectionWriter.WriteLittleEndian<ushort>(2);
             // Debug Info Offset
-            arangeSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", 0);
+            arangeSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_info"u8), 0);
             // Address size, Segment selector size
             arangeSectionWriter.Write([_targetPointerSize, 0]);
             // Ranges have to be aligned
@@ -332,7 +385,7 @@ namespace ILCompiler.ObjectWriter
             {
                 FieldTypeIndex = GetPrimitiveTypeIndex(TypeFlags.Int32),
                 Offset = fieldOffset,
-                Name = "m_NumComponents",
+                Name = new Utf8String("m_NumComponents"u8),
             });
             fieldOffset += _targetPointerSize;
 
@@ -342,7 +395,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     FieldTypeIndex = GetSimpleArrayTypeIndex(GetPrimitiveTypeIndex(TypeFlags.Int32), arrayDescriptor.Rank),
                     Offset = fieldOffset,
-                    Name = "m_Bounds",
+                    Name = new Utf8String("m_Bounds"u8),
                 });
                 fieldOffset += 2u * 4u * (ulong)arrayDescriptor.Rank;
             }
@@ -351,7 +404,7 @@ namespace ILCompiler.ObjectWriter
             {
                 FieldTypeIndex = GetSimpleArrayTypeIndex(arrayDescriptor.ElementType, 0),
                 Offset = fieldOffset,
-                Name = "m_Data",
+                Name = new Utf8String("m_Data"u8),
             });
 
             // We currently don't encode the size of the variable length data. The DWARF5
@@ -422,14 +475,14 @@ namespace ILCompiler.ObjectWriter
             return (uint)_memberFunctions.Count;
         }
 
-        public string GetMangledName(TypeDesc type)
+        public Utf8String GetMangledName(TypeDesc type)
         {
             return _nameMangler.GetMangledTypeName(type);
         }
 
         public void EmitSubprogramInfo(
-            string methodName,
-            string sectionSymbolName,
+            Utf8String methodName,
+            Utf8String sectionSymbolName,
             long methodAddress,
             int methodPCLength,
             uint methodTypeIndex,
@@ -455,9 +508,10 @@ namespace ILCompiler.ObjectWriter
 
         public void EmitLineInfo(
             int sectionIndex,
-            string sectionSymbolName,
+            Utf8String sectionSymbolName,
             long methodAddress,
-            IEnumerable<NativeSequencePoint> sequencePoints)
+            IEnumerable<NativeSequencePoint> sequencePoints,
+            long? endAddress = null)
         {
             DwarfLineSequenceWriter lineSequence;
 
@@ -465,7 +519,7 @@ namespace ILCompiler.ObjectWriter
             // base address relocated properly.
             if (!_lineSequences.TryGetValue(sectionIndex, out lineSequence))
             {
-                lineSequence = new DwarfLineSequenceWriter(sectionSymbolName, _minimumInstructionLength);
+                lineSequence = new DwarfLineSequenceWriter(sectionSymbolName, _minimumInstructionLength, endAddress);
                 _lineSequences.Add(sectionIndex, lineSequence);
             }
 
@@ -492,7 +546,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void EmitSectionInfo(string sectionSymbolName, ulong size)
+        public void EmitSectionInfo(Utf8String sectionSymbolName, ulong size)
         {
             _sections.Add(new SectionInfo(sectionSymbolName, size));
         }

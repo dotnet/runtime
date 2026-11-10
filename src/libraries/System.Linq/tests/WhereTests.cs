@@ -892,14 +892,14 @@ namespace System.Linq.Tests
         public void SingleElementPredicateFalse()
         {
             int[] source = [3];
-            Assert.Empty(source.Where(IsEven));
+            Assert.DoesNotContain(source, IsEven);
         }
 
         [Fact]
         public void PredicateFalseForAll()
         {
             int[] source = [9, 7, 15, 3, 27];
-            Assert.Empty(source.Where(IsEven));
+            Assert.DoesNotContain(source, IsEven);
         }
 
         [Fact]
@@ -1162,6 +1162,31 @@ namespace System.Linq.Tests
             {
                 yield return random.Next(int.MinValue, int.MaxValue);
             }
+        }
+
+        [Fact]
+        public void Where_SourceIsIList_EnumeratorDisposedOnComplete()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            foreach (int item in source.Where(i => i % 2 == 0))
+            {
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
+        }
+
+        [Fact]
+        public void Where_SourceIsIList_EnumeratorDisposedOnExplicitDispose()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            using (var enumerator = source.Where(i => i % 2 == 0).GetEnumerator())
+            {
+                enumerator.MoveNext();
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
         }
     }
 }

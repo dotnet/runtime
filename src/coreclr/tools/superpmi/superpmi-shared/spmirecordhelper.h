@@ -97,7 +97,7 @@ public:
     static Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(
         const CORINFO_LOOKUP_KIND* pGenericLookupKind);
 
-    static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
+    static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(const Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
 
     static Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(
         const CORINFO_CONST_LOOKUP* pLookup);
@@ -107,11 +107,11 @@ public:
     static Agnostic_CORINFO_RUNTIME_LOOKUP StoreAgnostic_CORINFO_RUNTIME_LOOKUP(
         CORINFO_RUNTIME_LOOKUP* pLookup);
 
-    static CORINFO_RUNTIME_LOOKUP RestoreCORINFO_RUNTIME_LOOKUP(Agnostic_CORINFO_RUNTIME_LOOKUP& Lookup);
+    static CORINFO_RUNTIME_LOOKUP RestoreCORINFO_RUNTIME_LOOKUP(const Agnostic_CORINFO_RUNTIME_LOOKUP& lookup);
 
     static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup);
 
-    static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup);
+    static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& agnosticLookup);
 
     static Agnostic_CORINFO_TYPE_LAYOUT_NODE StoreAgnostic_CORINFO_TYPE_LAYOUT_NODE(const CORINFO_TYPE_LAYOUT_NODE& node);
     static CORINFO_TYPE_LAYOUT_NODE RestoreCORINFO_TYPE_LAYOUT_NODE(const Agnostic_CORINFO_TYPE_LAYOUT_NODE& node);
@@ -449,20 +449,16 @@ inline Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgnostic_CORINFO_LO
     {
         genericLookupKind.needsRuntimeLookup = (DWORD)pGenericLookupKind->needsRuntimeLookup;
         genericLookupKind.runtimeLookupKind  = (DWORD)pGenericLookupKind->runtimeLookupKind;
-        genericLookupKind.runtimeLookupFlags = pGenericLookupKind->runtimeLookupFlags;
     }
-    // We don't store result->runtimeLookupArgs, which is opaque data. Ok?
     return genericLookupKind;
 }
 
 inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
-    Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
+    const Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
 {
     CORINFO_LOOKUP_KIND genericLookupKind;
     genericLookupKind.needsRuntimeLookup = lookupKind.needsRuntimeLookup != 0;
     genericLookupKind.runtimeLookupKind  = (CORINFO_RUNTIME_LOOKUP_KIND)lookupKind.runtimeLookupKind;
-    genericLookupKind.runtimeLookupFlags = lookupKind.runtimeLookupFlags;
-    genericLookupKind.runtimeLookupArgs  = nullptr; // We don't store this opaque data. Ok?
     return genericLookupKind;
 }
 
@@ -499,11 +495,12 @@ inline Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_
     runtimeLookup.indirectSecondOffset = (DWORD)pLookup->indirectSecondOffset;
     for (int i = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (DWORDLONG)pLookup->offsets[i];
+    runtimeLookup.helperEntryPoint = StoreAgnostic_CORINFO_CONST_LOOKUP(&pLookup->helperEntryPoint);
     return runtimeLookup;
 }
 
 inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
-    Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
+    const Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
 {
     CORINFO_RUNTIME_LOOKUP runtimeLookup;
     runtimeLookup.signature            = (LPVOID)lookup.signature;
@@ -515,6 +512,7 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     runtimeLookup.indirectSecondOffset = lookup.indirectSecondOffset != 0;
     for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (size_t)lookup.offsets[i];
+    runtimeLookup.helperEntryPoint = RestoreCORINFO_CONST_LOOKUP(lookup.helperEntryPoint);
     return runtimeLookup;
 }
 
@@ -534,7 +532,7 @@ inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(C
     return lookup;
 }
 
-inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup)
+inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& agnosticLookup)
 {
     CORINFO_LOOKUP lookup;
     ZeroMemory(&lookup, sizeof(lookup));

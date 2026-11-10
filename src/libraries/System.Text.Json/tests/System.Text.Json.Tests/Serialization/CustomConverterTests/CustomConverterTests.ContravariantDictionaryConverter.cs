@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomDictionaryConverterContravariant()
         {
-            const string Json = @"{""Key1"":1,""Key2"":2}";
+            const string Json = """{"Key1":1,"Key2":2}""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new ContravariantDictionaryConverter(10));
@@ -92,7 +92,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ClassHavingDictionaryFieldWhichUsingCustomConverterTest()
         {
-            const string Json = @"{""MyInt"":32,""MyDictionary"":{""Key1"":1,""Key2"":2},""MyString"":""Hello""}";
+            const string Json = """{"MyInt":32,"MyDictionary":{"Key1":1,"Key2":2},"MyString":"Hello"}""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new ContravariantDictionaryConverter(10));

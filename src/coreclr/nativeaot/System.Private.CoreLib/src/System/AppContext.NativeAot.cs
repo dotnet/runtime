@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Runtime;
-using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace System
@@ -27,8 +26,6 @@ namespace System
 
         [RuntimeExport("OnFirstChanceException")]
         internal static void OnFirstChanceException(object e)
-        {
-            FirstChanceException?.Invoke(/* AppDomain */ null, new FirstChanceExceptionEventArgs((Exception)e));
-        }
+            => OnFirstChanceException((Exception)e, sender: null);
     }
 }

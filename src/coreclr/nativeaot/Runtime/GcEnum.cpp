@@ -26,9 +26,14 @@ static void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, ScanFunc* fnGcE
     //
     assert(flags & GC_CALL_INTERIOR);
 
-    // If the object reference points into the stack, we
-    // must not promote it, the GC cannot handle these.
-    if (pSc->thread_under_crawl->IsWithinStackBounds(*obj))
+    // Note that the base is at a higher address than the limit, since the stack
+    // grows downwards.
+    // To check whether the object is in the stack or not, we also need to check the sc->stack_limit.
+    // The reason is that on Unix, the stack size can be unlimited. In such case, the system can
+    // shrink the current reserved stack space. That causes the real limit of the stack to move up and
+    // the range can be reused for other purposes. But the sc->stack_limit is stable during the scan.
+    // Even on Windows, we care just about the stack above the stack_limit.
+    if (pSc->thread_under_crawl->IsWithinStackBounds(*obj) && ((uintptr_t)*obj >= pSc->stack_limit))
         return;
 
     fnGcEnumRef(obj, pSc, flags);
@@ -72,13 +77,22 @@ static void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, ScanFunc* fnGcEnu
     //
     assert((flags & ~(GC_CALL_INTERIOR | GC_CALL_PINNED)) == 0);
 
-    // for interior pointers, we optimize the case in which
-    //  it points into the current threads stack area
-    //
-    if (flags & GC_CALL_INTERIOR)
+    if ((flags & GC_CALL_PINNED) && !pSc->promotion)
+    {
+        // Do nothing. This is the relocate phase, for something that was pinned. It does not need
+        // to be relocated.
+    }
+    else if (flags & GC_CALL_INTERIOR)
+    {
+        // for interior pointers, we optimize the case in which
+        //  it points into the current threads stack area
+        //
         PromoteCarefully(ppObj, flags, fnGcEnumRef, pSc);
+    }
     else
+    {
         fnGcEnumRef(ppObj, pSc, flags);
+    }
 }
 
 void EnumGcRef(PTR_OBJECTREF pRef, GCRefKind kind, ScanFunc* fnGcEnumRef, ScanContext* pSc)

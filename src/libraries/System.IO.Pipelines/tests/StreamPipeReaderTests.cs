@@ -67,7 +67,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CanReadMultipleTimes(bool useZeroByteReads)
@@ -151,10 +151,14 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task ReadAsyncAfterReceivingCompletedReadResultDoesNotThrow()
         {
-            var stream = new ThrowAfterZeroByteReadStream();
+            byte[] helloBytes = "Hello World"u8.ToArray();
+            var stream = new MemoryStream(helloBytes);
             PipeReader reader = PipeReader.Create(stream);
             ReadResult readResult = await reader.ReadAsync();
-            Assert.True(readResult.Buffer.IsEmpty);
+            Assert.Equal(helloBytes.Length, readResult.Buffer.Length);
+            reader.AdvanceTo(readResult.Buffer.End);
+
+            readResult = await reader.ReadAsync();
             Assert.True(readResult.IsCompleted);
             reader.AdvanceTo(readResult.Buffer.End);
 
@@ -166,12 +170,38 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task ReadAsyncAfterReceivingCompletedReadResultAndResettingStreamPositionWorks()
+        {
+            byte[] helloBytes = "Hello World"u8.ToArray();
+            var stream = new MemoryStream(helloBytes);
+            PipeReader reader = PipeReader.Create(stream);
+            ReadResult readResult = await reader.ReadAsync();
+            Assert.Equal(helloBytes, readResult.Buffer.ToArray());
+            Assert.False(readResult.IsCompleted);
+            reader.AdvanceTo(readResult.Buffer.End);
+
+            readResult = await reader.ReadAsync();
+            Assert.True(readResult.IsCompleted);
+
+            // Reset the stream position to the beginning
+            stream.Position = 0;
+
+            readResult = await reader.ReadAsync();
+            Assert.Equal(helloBytes, readResult.Buffer.ToArray());
+            Assert.False(readResult.IsCompleted);
+            reader.AdvanceTo(readResult.Buffer.End);
+
+            readResult = await reader.ReadAsync();
+            Assert.True(readResult.IsCompleted);
+            reader.Complete();
+        }
+
+        [Fact]
         public async Task BufferingDataPastEndOfStreamCanBeReadAgain()
         {
             byte[] helloBytes = "Hello World"u8.ToArray();
-            var stream = new ThrowAfterZeroByteReadStream(helloBytes);
+            var stream = new MemoryStream(helloBytes);
             PipeReader reader = PipeReader.Create(stream);
-
 
             ReadResult readResult = await reader.ReadAsync();
             ReadOnlySequence<byte> buffer = readResult.Buffer;
@@ -248,7 +278,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadCanBeCancelledViaProvidedCancellationToken()
         {
             var stream = new CancelledReadsStream();
@@ -269,7 +299,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAsync(bool useZeroByteReads)
@@ -288,7 +318,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAtLeastAsync(bool useZeroByteReads)
@@ -541,6 +571,22 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task AdvanceWithPositionFromDifferentReaderThrows()
+        {
+            PipeReader reader1 = PipeReader.Create(new MemoryStream(new byte[10]));
+            PipeReader reader2 = PipeReader.Create(new MemoryStream(new byte[1000]));
+
+            _ = await reader1.ReadAsync();
+            ReadResult result2 = await reader2.ReadAsync();
+
+            SequencePosition posFrom2 = result2.Buffer.End;
+            Assert.Throws<InvalidOperationException>(() => reader1.AdvanceTo(posFrom2));
+
+            reader1.Complete();
+            reader2.Complete();
+        }
+
+        [Fact]
         public void NullStreamThrows()
         {
             Assert.Throws<ArgumentNullException>(() => PipeReader.Create(null));
@@ -665,50 +711,6 @@ namespace System.IO.Pipelines.Tests
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new OperationCanceledException();
-            }
-#endif
-        }
-
-        private class ThrowAfterZeroByteReadStream : MemoryStream
-        {
-            public ThrowAfterZeroByteReadStream()
-            {
-
-            }
-
-            public ThrowAfterZeroByteReadStream(byte[] buffer) : base(buffer)
-            {
-
-            }
-
-            private bool _throwOnNextCallToRead;
-            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                if (_throwOnNextCallToRead)
-                {
-                    throw new Exception();
-                }
-                var bytes = await base.ReadAsync(buffer, offset, count, cancellationToken);
-                if (bytes == 0)
-                {
-                    _throwOnNextCallToRead = true;
-                }
-                return bytes;
-            }
-
-#if NET
-            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
-            {
-                if (_throwOnNextCallToRead)
-                {
-                    throw new Exception();
-                }
-                var bytes = await base.ReadAsync(destination, cancellationToken);
-                if (bytes == 0)
-                {
-                    _throwOnNextCallToRead = true;
-                }
-                return bytes;
             }
 #endif
         }

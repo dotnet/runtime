@@ -49,6 +49,7 @@ namespace Internal.Runtime
     internal static class DispatchMapCodePointerFlags
     {
         public const int RequiresInstantiatingThunkFlag = 2;
+        public const int RequiresInstantiatingThunkFlagWasm = unchecked((int)0x80000000);
     }
 
     internal static class SpecialGVMInterfaceEntry
@@ -64,14 +65,6 @@ namespace Internal.Runtime
         public const ushort ContextFromFirstInterface = 2;
     }
 
-    internal enum RuntimeHelperKind
-    {
-        AllocateObject,
-        IsInst,
-        CastClass,
-        AllocateArray,
-    }
-
     /// <summary>
     /// Constants that describe the bits of the Flags field of MethodFixupCell.
     /// </summary>
@@ -84,5 +77,16 @@ namespace Internal.Runtime
         // Uses the same bit as IsObjectiveCMessageSendMask since we never have
         // TARGET_X86 and FEATURE_OBJCMARSHAL used at the same time.
         public const int IsStdcall = 0x8;
+    }
+
+    internal static class GvmDispatchCellFlags
+    {
+        public const int IsAsyncVariant = unchecked((int)0x80000000);
+    }
+
+    internal static class GenericMethodsHashtableConstants
+    {
+        public const int IsAsyncVariant = unchecked((int)0x80000000);
+        public const int IsReturnDroppingAsyncThunk = unchecked((int)0x40000000);
     }
 }

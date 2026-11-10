@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENCPU.H -
 //
 // Various helper routines for generating AMD64 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
-
 
 #ifndef TARGET_AMD64
 #error Should only include "AMD64\cgencpu.h" for AMD64 builds
@@ -31,11 +29,6 @@ class Module;
 struct VASigCookie;
 class ComCallMethodDesc;
 
-
-#define COMMETHOD_PREPAD                        16   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   -10  // the offset of the call target address inside the prestub
-
 #define STACK_ALIGN_SIZE                        16
 
 #define JUMP_ALLOCATE_SIZE                      12   // # bytes to allocate for a 64-bit jump instruction
@@ -43,7 +36,7 @@ class ComCallMethodDesc;
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
@@ -58,14 +51,11 @@ class ComCallMethodDesc;
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16   // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16   // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes
-#define CALLDESCR_ARGREGS                       1    // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1    // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1    // Calling convention has separate floating-point argument registers
 #else
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8    // bytes
-#define COM_STUBS_SEPARATE_FP_LOCATIONS
-#define CALLDESCR_REGTYPEMAP                    1
 #endif
 
 #define INSTRFMT_K64SMALL
@@ -92,39 +82,6 @@ class ComCallMethodDesc;
             ((X86Reg)(((int)extended_reg) & X86_REGISTER_MASK))
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
-
-// Why is the return value ARG_SLOT? On 64-bit systems, that is 64-bits
-// and much bigger than necessary for R4, requiring explicit downcasts.
-inline
-ARG_SLOT FPSpillToR4(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(DWORD*)pSpillSlot;
-}
-
-inline
-ARG_SLOT FPSpillToR8(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(SIZE_T*)pSpillSlot;
-}
-
-inline
-void     R4ToFPSpill(void* pSpillSlot, DWORD  srcFloatAsDWORD)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = (SIZE_T)srcFloatAsDWORD;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
-
-inline
-void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = srcDoubleAsSIZE_T;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
-
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
@@ -490,60 +447,29 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 #endif
 }
 
-extern "C" TADDR GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
-// Emits:
-//  mov r10, pv1
-//  mov rax, pTarget
-//  jmp rax
-void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget);
+// true when the APX jmpabs instruction is available; set by EEJitManager::SetCpuInfo() at startup. A DAC global.
+GVAL_DECL(bool, g_isJmpAbsAvailable);
 
+inline bool IsJmpAbsAvailable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return g_isJmpAbsAvailable;
+}
 
-// Get Rel32 destination, emit jumpStub if necessary
+// Get Rel32 destination, emit jumpStub if necessary. Returns 0 if allocation within range fails.
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
-    LoaderAllocator *pLoaderAllocator = NULL, bool throwOnOutOfMemoryWithinRange = true);
+    LoaderAllocator *pLoaderAllocator = NULL);
 
-// Get Rel32 destination, emit jumpStub if necessary into a preallocated location
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, PCODE jumpStubAddrRW, bool emitJump);
+void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
+// Emits raw 11-byte jmpabs instruction
+// Caller must ensure IsJmpAbsAvailable() == true.
+void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
-void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
-
-BOOL isJumpRel32(PCODE pCode);
-PCODE decodeJump32(PCODE pCode);
-
-BOOL isJumpRel64(PCODE pCode);
-PCODE decodeJump64(PCODE pCode);
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-inline PCODE decodeBackToBackJump(PCODE pCode)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    if (isJumpRel32(pCode))
-        return decodeJump32(pCode);
-    else
-    if (isJumpRel64(pCode))
-        return decodeJump64(pCode);
-    else
-        return (PCODE)0;
-}
-
-extern "C" void setFPReturn(int fpSize, INT64 retVal);
-extern "C" void getFPReturn(int fpSize, INT64 *retval);
+bool isBackToBackJump(PCODE pCode);
+PCODE decodeBackToBackJump(PCODE pCode);
 
 struct HijackArgs
 {
@@ -580,14 +506,6 @@ struct HijackArgs
     };
 };
 
-#ifndef DACCESS_COMPILE
-
-DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
-                               PT_RUNTIME_FUNCTION   pFunctionEntry,
-                               int                 offsetNum = 1);
-
-#endif // DACCESS_COMPILE
-
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.
 // We call ClrFlushInstructionCache whenever we create or modify code in the heap.
@@ -606,13 +524,5 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
     }
     return TRUE;
 }
-
-//
-// JIT HELPER ALIASING FOR PORTABILITY.
-//
-// Create alias for optimized implementations of helpers provided on this platform
-//
-#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
-#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 #endif // __cgencpu_h__

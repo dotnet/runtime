@@ -151,7 +151,7 @@ namespace System.ComponentModel.Design.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("NoSuchName")]
-        public void Indexer_InvalidName_ReturnsNull(string name)
+        public void Indexer_InvalidName_ReturnsNull(string? name)
         {
             var service = new TestDesignerOptionService();
             service.DoCreateOptionCollection(service.Options, "Name", "Value");
@@ -258,7 +258,7 @@ namespace System.ComponentModel.Design.Tests
         [Theory]
         [InlineData("Value")]
         [InlineData(null)]
-        public void DesignerOptionConverterGetProperties_InvalidValue_ReturnsEmpty(object value)
+        public void DesignerOptionConverterGetProperties_InvalidValue_ReturnsEmpty(object? value)
         {
             TypeConverter converter = TypeDescriptor.GetConverter(typeof(DesignerOptionService.DesignerOptionCollection));
             Assert.Empty(converter.GetProperties(value));

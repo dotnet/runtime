@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Caching.Memory
         ///
         /// See https://github.com/dotnet/runtime/issues/61032.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void CompactLastAccessedRaceCondition()
         {
             const int numEntries = 100;

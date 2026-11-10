@@ -10,6 +10,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 
@@ -21,7 +22,7 @@
 
 // Class static member variables
 CQuickArrayList<ProfilerDetachInfo> ProfilingAPIDetach::s_profilerDetachInfos;
-CLREvent                            ProfilingAPIDetach::s_eventDetachWorkAvailable;
+CLREventStatic                      ProfilingAPIDetach::s_eventDetachWorkAvailable;
 Volatile<BOOL>                      ProfilingAPIDetach::s_profilerDetachThreadCreated;
 
 // ---------------------------------------------------------------------------------------
@@ -90,8 +91,9 @@ HRESULT ProfilingAPIDetach::Initialize()
                 // For exceptions that give us useless hr's, just use E_FAIL
                 hr = E_FAIL;
             }
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions)
+        EX_END_CATCH
 
         if (FAILED(hr))
         {
@@ -258,12 +260,9 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
     {
         ProfilingAPIUtility::LogProfInfo(IDS_PROF_DETACH_INITIATED);
     }
-    EX_CATCH
-    {
-        // Oh well, rest of detach succeeded, so we should still return success to the
-        // profiler.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    // Oh well, rest of detach succeeded, so we should still return success to the
+    // profiler.
+    EX_SWALLOW_NONTERMINAL
 
     return S_OK;
 }
@@ -292,7 +291,7 @@ void ProfilingAPIDetach::ExecuteEvacuationLoop()
         // Wait until there's a profiler to detach (or until this thread should "wake up"
         // for some other reason, such as exiting due to an unsuccessful startup-load of a
         // profiler).
-        DWORD dwRet = s_eventDetachWorkAvailable.Wait(INFINITE, FALSE /* alertable */);
+        DWORD dwRet = s_eventDetachWorkAvailable.Wait(INFINITE, FALSE /* alertable */, false);
         if (dwRet != WAIT_OBJECT_0)
         {
             // The wait ended due to a failure or a reason other than the event getting
@@ -451,7 +450,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     // At this point it's safe to cast ui64SleepMilliseconds down to a DWORD since we
     // know it's between s_dwMinSleepMs & s_dwMaxSleepMs
     _ASSERTE(ui64SleepMilliseconds <= 0xFFFFffff);
-    ClrSleepEx((DWORD) ui64SleepMilliseconds, FALSE /* alertable */);
+    minipal_sleep((DWORD)ui64SleepMilliseconds);
 }
 
 
@@ -569,8 +568,9 @@ DWORD WINAPI ProfilingAPIDetach::ProfilingAPIDetachThreadStart(LPVOID)
     EX_CATCH
     {
         _ASSERTE(!"Unhandled exception on profiling API detach thread");
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     LOG((
         LF_CORPROF,

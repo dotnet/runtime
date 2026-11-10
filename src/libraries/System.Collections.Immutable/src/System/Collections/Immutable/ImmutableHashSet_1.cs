@@ -736,26 +736,91 @@ namespace System.Collections.Immutable
             return false;
         }
 
-        /// <summary>
-        /// Performs the set operation on a given data structure.
-        /// </summary>
         private static bool SetEquals(IEnumerable<T> other, MutationInput origin)
         {
             Requires.NotNull(other, nameof(other));
 
+            switch (other)
+            {
+                case ImmutableHashSet<T> otherAsImmutableHashSet:
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsImmutableHashSet.KeyComparer))
+                    {
+                        if (otherAsImmutableHashSet.Count != origin.Count)
+                        {
+                            return false;
+                        }
+                        return SetEqualsWithImmutableHashset(otherAsImmutableHashSet, origin);
+                    }
+
+                    if (otherAsImmutableHashSet.Count < origin.Count)
+                    {
+                        return false;
+                    }
+                    break;
+
+                case HashSet<T> otherAsHashset:
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsHashset.Comparer))
+                    {
+                        if (otherAsHashset.Count != origin.Count)
+                        {
+                            return false;
+                        }
+                        return SetEqualsWithHashset(otherAsHashset, origin);
+                    }
+
+                    if (otherAsHashset.Count < origin.Count)
+                    {
+                        return false;
+                    }
+                    break;
+
+                case ICollection<T> otherAsICollectionGeneric:
+                    // We check for < instead of != because other is not guaranteed to be a set, it could be a collection with duplicates.
+                    if (otherAsICollectionGeneric.Count < origin.Count)
+                    {
+                        return false;
+                    }
+                    break;
+            }
+
             var otherSet = new HashSet<T>(other, origin.EqualityComparer);
-            if (origin.Count != otherSet.Count)
+            if (otherSet.Count != origin.Count)
             {
                 return false;
             }
 
-            foreach (T item in otherSet)
+            return SetEqualsWithHashset(otherSet, origin);
+        }
+
+        private static bool SetEqualsWithImmutableHashset(ImmutableHashSet<T> other, MutationInput origin)
+        {
+            Requires.NotNull(other, nameof(other));
+
+            using var e = new ImmutableHashSet<T>.Enumerator(origin.Root);
+            while (e.MoveNext())
             {
-                if (!Contains(item, origin))
+                if (!other.Contains(e.Current))
                 {
                     return false;
                 }
             }
+
+            return true;
+        }
+
+        private static bool SetEqualsWithHashset(HashSet<T> other, MutationInput origin)
+        {
+            Requires.NotNull(other, nameof(other));
+
+            using var e = new ImmutableHashSet<T>.Enumerator(origin.Root);
+            while (e.MoveNext())
+            {
+                if (!other.Contains(e.Current))
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 

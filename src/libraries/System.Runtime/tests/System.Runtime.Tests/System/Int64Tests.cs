@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 using Xunit;
@@ -53,7 +54,7 @@ namespace System.Tests
         [InlineData((long)-234, (long)234, -1)]
         [InlineData((long)-234, (long)-432, 1)]
         [InlineData((long)234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(long i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(long i, object? value, int expected)
         {
             if (value is long longValue)
             {
@@ -82,7 +83,7 @@ namespace System.Tests
         [InlineData((long)789, null, false)]
         [InlineData((long)789, "789", false)]
         [InlineData((long)789, 789, false)]
-        public static void EqualsTest(long i1, object obj, bool expected)
+        public static void EqualsTest(long i1, object? obj, bool expected)
         {
             if (obj is long)
             {
@@ -303,8 +304,7 @@ namespace System.Tests
             foreach (object[] objs in Int32Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
-                    (((NumberStyles)objs[1] & NumberStyles.AllowBinarySpecifier) != 0 || // TODO https://github.com/dotnet/runtime/issues/83619: Remove once BigInteger supports binary parsing
-                     !BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
+                    (!BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
                      (bi >= long.MinValue && bi <= long.MaxValue)))
                 {
                     continue;
@@ -489,6 +489,103 @@ namespace System.Tests
             // CLDR data for Swedish culture has negative sign U+2212. This test ensure parsing with the hyphen with such cultures will succeed.
             CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
             Assert.Equal(-15868, long.Parse("-15868", NumberStyles.Number, ci));
+        }
+
+        public static IEnumerable<object[]> TryParsePartial_TestData()
+        {
+            // Basic integer parsing with trailing invalid characters
+            yield return new object[] { "123abc", NumberStyles.Integer, null, 123L, 3 };
+            yield return new object[] { "456xyz", NumberStyles.Integer, null, 456L, 3 };
+            yield return new object[] { "789!", NumberStyles.Integer, null, 789L, 3 };
+
+            // With leading whitespace
+            yield return new object[] { "  123abc", NumberStyles.Integer, null, 123L, 5 };
+
+            // With signs
+            yield return new object[] { "+123abc", NumberStyles.Integer, null, 123L, 4 };
+            yield return new object[] { "-456xyz", NumberStyles.Integer, null, -456L, 4 };
+
+            // HexNumber with trailing invalid characters
+            yield return new object[] { "ABCxyz", NumberStyles.HexNumber, null, 0xABCL, 3 };
+            yield return new object[] { "FFGHxyz", NumberStyles.HexNumber, null, 0xFFL, 2 };
+
+            // BinaryNumber with trailing invalid characters
+            yield return new object[] { "101abc", NumberStyles.BinaryNumber, null, 0b101L, 3 };
+            yield return new object[] { "1112", NumberStyles.BinaryNumber, null, 0b111L, 3 };
+
+            // Max and min values with trailing characters
+            yield return new object[] { "9223372036854775807abc", NumberStyles.Integer, null, 9223372036854775807L, 19 };
+            yield return new object[] { "-9223372036854775808xyz", NumberStyles.Integer, null, -9223372036854775808L, 20 };
+
+            // Valid number without trailing characters
+            yield return new object[] { "123", NumberStyles.Integer, null, 123L, 3 };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, long expectedValue, int expectedCharsConsumed)
+        {
+            long result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.True(NumberBaseHelper<long>.TryParsePartial(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.True(NumberBaseHelper<long>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(NumberBaseHelper<long>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            // For ASCII characters, bytes consumed should equal chars consumed
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
+        {
+            // Empty string
+            yield return new object[] { "", NumberStyles.Integer, null };
+
+            // Only invalid characters (no valid number)
+            yield return new object[] { "abc", NumberStyles.Integer, null };
+
+            // Overflow
+            yield return new object[] { "9223372036854775808abc", NumberStyles.Integer, null };
+            yield return new object[] { "-9223372036854775809xyz", NumberStyles.Integer, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            long result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.False(NumberBaseHelper<long>.TryParsePartial(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.False(NumberBaseHelper<long>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(NumberBaseHelper<long>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }

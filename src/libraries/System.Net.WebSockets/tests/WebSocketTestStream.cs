@@ -86,6 +86,12 @@ namespace System.Net.WebSockets.Tests
         /// </summary>
         public bool IgnoreCancellationToken { get; set; }
 
+        /// <summary>
+        /// If set, causes FlushAsync to return a synchronously-faulted Task with this exception.
+        /// Used to exercise sync-completion-faulted code paths in the WebSocket send flow.
+        /// </summary>
+        public Exception? FlushException { get; set; }
+
         public override bool CanRead => true;
 
         public override bool CanSeek => false;
@@ -225,6 +231,15 @@ namespace System.Net.WebSockets.Tests
         }
 
         public override void Flush() { }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (FlushException is not null)
+            {
+                return Task.FromException(FlushException);
+            }
+            return base.FlushAsync(cancellationToken);
+        }
 
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 

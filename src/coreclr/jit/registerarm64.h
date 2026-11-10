@@ -121,6 +121,7 @@ REGDEF(P15,  15+PBASE, PMASK(15),  "p15",  "na")
 
 REGDEF(SP,    0+NBASE, 0x0000,    "sp",  "wsp?")
 REGDEF(FFR,   1+NBASE, 0x0000,    "ffr",  "na")
+
 // This must be last!
 REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 
@@ -189,6 +190,7 @@ REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 #define REG_LR JITREG_LR
 #undef REG_ZR
 #define REG_ZR JITREG_ZR
+
 #undef REG_R16
 #define REG_R16 JITREG_R16
 #undef REG_R17
@@ -199,6 +201,7 @@ REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 #define REG_R29 JITREG_R29
 #undef REG_R30
 #define REG_R30 JITREG_R30
+
 #undef REG_V0
 #define REG_V0 JITREG_V0
 #undef REG_V1
@@ -263,6 +266,7 @@ REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 #define REG_V30 JITREG_V30
 #undef REG_V31
 #define REG_V31 JITREG_V31
+
 #undef REG_P0
 #define REG_P0 JITREG_P0
 #undef REG_P1
@@ -295,17 +299,21 @@ REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 #define REG_P14 JITREG_P14
 #undef REG_P15
 #define REG_P15 JITREG_P15
+
 #undef REG_SP
 #define REG_SP JITREG_SP
 #undef REG_FFR
 #define REG_FFR JITREG_FFR
+
 #undef REG_STK
 #define REG_STK JITREG_STK
 
 /*****************************************************************************/
 #undef  RMASK
-#undef  VMASK
 #undef  VBASE
+#undef  VMASK
+#undef  PBASE
+#undef  PMASK
 #undef  NBASE
 #undef  REGDEF
 #undef  REGALIAS

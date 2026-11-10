@@ -22,6 +22,8 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
             return (provider, () => { });
         }
 
+        protected override bool SupportNullValues => false;
+
         private void SectionToArgs(List<string> args, string sectionName, TestSection section)
         {
             foreach (var tuple in section.Values.SelectMany(e => e.Value.Expand(e.Key)))

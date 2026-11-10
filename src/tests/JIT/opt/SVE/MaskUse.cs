@@ -51,7 +51,7 @@ public class ChangeMaskUse
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMask1()
     {
-        Vector<ulong> mask1 = Sve.CreateWhileLessThanMask64Bit(2, 9); // Create local mask
+        Vector<ulong> mask1 = Sve.CreateWhileLessThanMaskUInt64(2, 9); // Create local mask
         Vector<ulong> vec1  = Vector.Create<ulong>(5);
         Vector<ulong> vec2  = Sve.Compact(mask1, vec1); // Use as mask
         Consume(vec2);

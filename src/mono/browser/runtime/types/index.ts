@@ -6,11 +6,10 @@ import type { EmscriptenModule, NativePointer } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
+     * @deprecated This method is no longer supported and will be removed in a future version.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -61,6 +60,18 @@ export interface DotnetHostBuilder {
      */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after each resource finishes downloading.
+     */
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
+    /**
+     * Adds a callback that is invoked after the runtime configuration is loaded.
+     * Callbacks run in registration order, awaiting each callback before invoking the next.
+     * If a callback throws or rejects, subsequent callbacks are not invoked and startup fails.
+     * Callbacks registered during invocation are not included in the current invocation.
+     * Passing undefined has no effect.
+     */
+    withConfigLoaded(callback?: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -75,14 +86,27 @@ export interface DotnetHostBuilder {
     create(): Promise<RuntimeAPI>;
 
     /**
+     * @deprecated use runMain() or runMainAndExit() instead.
+     */
+    run(): Promise<number>;
+
+    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
-     * - dotnet.withApplicationArguments(["A", "B", "C"])
+     * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
      */
-    run(): Promise<number>;
+
+    runMainAndExit (): Promise<number>;
+    /**
+     * Runs the Main() method of the application and keeps the runtime alive.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments("A", "B", "C")
+     * - dotnet.withApplicationArgumentsFromQuery()
+     */
+    runMain (): Promise<number>;
 }
 
 // when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
@@ -174,10 +198,7 @@ export type MonoConfig = {
      */
     applicationCulture?: string,
 
-    /**
-     * definition of assets to load along with the runtime.
-     */
-    resources?: ResourceGroups;
+    resources?: Assets,
 
     /**
      * appsettings files to load to VFS
@@ -203,31 +224,101 @@ export type MonoConfig = {
 
 export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
-export interface ResourceGroups {
+export interface Assets {
     hash?: string;
-    fingerprinting?: { [name: string]: string },
-    coreAssembly?: ResourceList; // nullable only temporarily
-    assembly?: ResourceList; // nullable only temporarily
-    lazyAssembly?: ResourceList; // nullable only temporarily
-    corePdb?: ResourceList;
-    pdb?: ResourceList;
+    coreAssembly?: AssemblyAsset[]; // nullable only temporarily
+    assembly?: AssemblyAsset[]; // nullable only temporarily
+    lazyAssembly?: AssemblyAsset[]; // nullable only temporarily
+    corePdb?: PdbAsset[];
+    pdb?: PdbAsset[];
 
-    jsModuleWorker?: ResourceList;
-    jsModuleDiagnostics?: ResourceList;
-    jsModuleNative: ResourceList;
-    jsModuleRuntime: ResourceList;
-    wasmSymbols?: ResourceList;
-    wasmNative: ResourceList;
-    icu?: ResourceList;
+    jsModuleDiagnostics?: JsAsset[];
+    jsModuleNative: JsAsset[];
+    jsModuleRuntime: JsAsset[];
 
-    satelliteResources?: { [cultureName: string]: ResourceList };
+    wasmSymbols?: SymbolsAsset[];
+    wasmNative: WasmAsset[];
+    icu?: IcuAsset[];
 
-    modulesAfterConfigLoaded?: ResourceList,
-    modulesAfterRuntimeReady?: ResourceList
+    satelliteResources?: { [cultureName: string]: AssemblyAsset[] };
+
+    modulesAfterConfigLoaded?: JsAsset[],
+    modulesAfterRuntimeReady?: JsAsset[]
 
     extensions?: ResourceExtensions
-    coreVfs?: { [virtualPath: string]: ResourceList };
-    vfs?: { [virtualPath: string]: ResourceList };
+    coreVfs?: VfsAsset[];
+    vfs?: VfsAsset[];
+}
+
+export type Asset = {
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * If true, the runtime startup would not fail if the asset download was not successful.
+     */
+    isOptional?: boolean
+    /**
+     * If provided, runtime doesn't have to fetch the data.
+     * Runtime would set the buffer to null after instantiation to free the memory.
+     */
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>,
+    /**
+     * It's metadata + fetch-like Promise<Response>
+     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
+     */
+    pendingDownload?: LoadingResource
+}
+
+export type WasmAsset = Asset & {
+    name: string;
+    hash?: string | null | "";
+    cache?: RequestCache;
+}
+
+export type AssemblyAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
+    cache?: RequestCache;
+}
+
+export type PdbAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
+    cache?: RequestCache;
+}
+
+export type JsAsset = Asset & {
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>,
+
+    name?: string; // actually URL
+}
+
+export type SymbolsAsset = Asset & {
+    name: string; // actually URL
+    hash?: string | null | "";
+    cache?: RequestCache;
+}
+
+export type VfsAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
+    cache?: RequestCache;
+}
+
+export type IcuAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 /**
@@ -321,10 +412,6 @@ export type SingleAssetBehaviors =
      */
     | "js-module-dotnet"
     /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
-    /**
      * The javascript module for diagnostic server and client.
      */
     | "js-module-diagnostics"
@@ -396,11 +483,6 @@ export const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: MonoConfig,
-    configSrc?: string,
-    onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
-    onDotnetReady?: () => void | Promise<void>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>
@@ -430,9 +512,7 @@ export type RunAPIType = {
      */
     exit: (code: number, reason?: any) => void;
     /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
+     * @deprecated use withEnvironmentVariable() on the host builder instead.
      */
     setEnvironmentVariable: (name: string, value: string) => void;
     /**
@@ -627,7 +707,7 @@ export type DiagnosticsAPIType = {
 export type DiagnosticCommandProviderV2 = {
     keywords: [ number, number ],
     logLevel: number,
-    provider_name: string,
+    providerName: string,
     arguments: string|null
 }
 

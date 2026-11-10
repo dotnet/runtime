@@ -308,30 +308,6 @@ inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax,
     return ReadInstrumentationSchema(pByte, cbDataMax, [pInstrumentationSchemaCount](const ICorJitInfo::PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
 }
 
-inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
-{
-    size_t iSchema = 0;
-    return ReadInstrumentationSchema(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema)
-    {
-        if (iSchema >= cSchemas)
-            return false;
-
-        if (schema.InstrumentationKind != schemaTable[iSchema].InstrumentationKind)
-            return false;
-
-        if (schema.ILOffset != schemaTable[iSchema].ILOffset)
-            return false;
-
-        if (schema.Count != schemaTable[iSchema].Count)
-            return false;
-
-        if (schema.Other != schemaTable[iSchema].Other)
-            return false;
-
-        return true;
-    });
-}
-
 inline void LayoutPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema& prevSchema, ICorJitInfo::PgoInstrumentationSchema* currentSchema)
 {
     size_t instrumentationSize = InstrumentationKindToSize(currentSchema->InstrumentationKind);
@@ -364,10 +340,9 @@ bool ReadInstrumentationSchemaWithLayout(const uint8_t *pByte, size_t cbDataMax,
 }
 
 
-// Return true if schemaTable entries are a subset of the schema described by pByte, with matching entries in the same order.
-// Also updates offset of the matching entries in schemaTable to those of the pByte schema.
+// Return number of initial matching schema entries from the pByteSchema and schemaTable.
 //
-inline bool CheckIfPgoSchemaIsCompatibleAndSetOffsets(const uint8_t *pByte, size_t cbDataMax, ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
+inline size_t CheckIfPgoSchemaIsCompatibleAndSetOffsets(const uint8_t *pByte, size_t cbDataMax, ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
 {
     size_t nMatched = 0;
     size_t initialOffset = cbDataMax;
@@ -383,13 +358,17 @@ inline bool CheckIfPgoSchemaIsCompatibleAndSetOffsets(const uint8_t *pByte, size
             schemaTable[nMatched].Offset = schema.Offset;
             nMatched++;
         }
+        else
+        {
+            return false;
+        }
 
         return true;
     };
 
     ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, handler);
 
-    return (nMatched == cSchemas);
+    return nMatched;
 }
 
 inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchemas)

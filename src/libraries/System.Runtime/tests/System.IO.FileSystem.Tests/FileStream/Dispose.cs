@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.IO.Tests
@@ -95,7 +96,7 @@ namespace System.IO.Tests
 
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
-        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(FileStream_Dispose), nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
         {
             RemoteExecutor.Invoke(() =>
@@ -169,7 +170,7 @@ namespace System.IO.Tests
             Assert.False(disposeInvoked, "Expected finalizer to have been suppressed");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void Finalizer_CallsVirtualDispose_FalseArg()
         {
             bool disposeInvoked = false;
@@ -345,24 +346,24 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBuffer()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, useAsync: false));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromPath()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, FileOptions.None));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromSafeFileHandle()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(
                     File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None),
                     FileAccess.Write, bufferSize: 4096, isAsync: false));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromIntPtr()
              => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(
@@ -370,19 +371,19 @@ namespace System.IO.Tests
                     FileAccess.Write,
                     ownsHandle: true));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromPath()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithoutFinalizer(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, FileOptions.None));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromSafeFileHandle()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithoutFinalizer(
                     File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None),
                     FileAccess.Write, bufferSize: 4096, isAsync: false));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromIntPtr()
              => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithoutFinalizer(
@@ -486,7 +487,9 @@ namespace System.IO.Tests
             GC.Collect();
             Assert.False(weakReference.IsAlive);
 
-            // separate method to avoid JIT lifetime-extension issues
+            // Must not be inlined: the JIT can keep the FileStream and its strategy reachable (for example in GC spill
+            // temps, which are reported as live for the whole method) until the frame that inlined this method returns.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static async Task<WeakReference> EnsureFileStreamIsNotRooted(Func<FileStream> factory, bool useAsync)
             {
                 FileStream fs = factory();

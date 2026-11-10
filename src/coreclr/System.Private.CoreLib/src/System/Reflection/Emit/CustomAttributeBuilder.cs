@@ -32,21 +32,21 @@ namespace System.Reflection.Emit
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs) :
-            this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), Array.Empty<FieldInfo>(), Array.Empty<object>())
+            this(con, constructorArgs, [], [], [], [])
         {
         }
 
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues) :
-            this(con, constructorArgs, namedProperties, propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>())
+            this(con, constructorArgs, namedProperties, propertyValues, [], [])
         {
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, FieldInfo[] namedFields, object?[] fieldValues) :
-            this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), namedFields, fieldValues)
+            this(con, constructorArgs, [], [], namedFields, fieldValues)
         {
         }
 

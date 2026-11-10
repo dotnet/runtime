@@ -7,21 +7,22 @@
 #include <errno.h>
 #include <sal.h>
 #include "config.h"
+#include "PalCreateDump.h"
 #include <pthread.h>
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #if HAVE_PRCTL_H
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #endif
+#ifndef HOST_WASM
 #include <sys/wait.h>
+#endif
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -51,14 +52,13 @@
 #include <minipal/thread.h>
 #include <generatedumpflags.h>
 
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
 // of entries if every createdump option/argument is passed.
 #define MAX_ARGV_ENTRIES 32 
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
-char* g_ppidarg  = nullptr;
 
 const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
 const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
@@ -129,7 +129,7 @@ BuildCreateDumpCommandLine(
     int dumpType,
     uint32_t flags)
 {
-    if (g_szCreateDumpPath == nullptr || g_ppidarg == nullptr)
+    if (g_szCreateDumpPath == nullptr)
     {
         return false;
     }
@@ -188,13 +188,9 @@ BuildCreateDumpCommandLine(
     }
 
     argv[argc++] = "--nativeaot";
-    argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
 
-    if (argc >= MAX_ARGV_ENTRIES)
-    {
-        return false;
-    }
+    assert(argc < MAX_ARGV_ENTRIES);
     return true;
 }
 
@@ -213,8 +209,8 @@ CreateCrashDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
-    int pipe_descs[2];
-    if (pipe(pipe_descs) == -1)
+    int pipe_descs[4];
+    if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
     {
         if (errorMessageBuffer != nullptr)
         {
@@ -222,9 +218,12 @@ CreateCrashDump(
         }
         return false;
     }
-    // [0] is read end, [1] is write end
-    int parent_pipe = pipe_descs[0];
-    int child_pipe = pipe_descs[1];
+    // from parent (write) to child (read), used to signal prctl(PR_SET_PTRACER, childpid) is done
+    int child_read_pipe = pipe_descs[0];
+    int parent_write_pipe = pipe_descs[1];
+    // from child (write) to parent (read), used to capture createdump's stderr
+    int parent_read_pipe = pipe_descs[2];
+    int child_write_pipe = pipe_descs[3];
 
     // Fork the core dump child process.
     pid_t childpid = fork();
@@ -236,29 +235,53 @@ CreateCrashDump(
         {
             snprintf(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
         }
-        close(pipe_descs[0]);
-        close(pipe_descs[1]);
+        for (int i = 0; i < 4; i++)
+        {
+            close(pipe_descs[i]);
+        }
         return false;
     }
     else if (childpid == 0)
     {
-        // Close the read end of the pipe, the child doesn't need it
-        close(parent_pipe);
+        close(parent_read_pipe);
+        close(parent_write_pipe);
+
+        // Wait for prctl(PR_SET_PTRACER, childpid) in parent
+        char buffer;
+        int bytesRead;
+        while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
+        close(child_read_pipe);
+
+        if (bytesRead != 1)
+        {
+            fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
+            close(child_write_pipe);
+            _exit(EXIT_FAILURE);
+        }
 
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_pipe, STDERR_FILENO);
+            dup2(child_write_pipe, STDERR_FILENO);
         }
         // Execute the createdump program
         if (execv(argv[0], (char* const *)argv) == -1)
         {
-            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
-            exit(-1);
+            if (errno == ENOENT)
+            {
+                fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", argv[0]);
+            }
+            else
+            {
+                fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            }
+            _exit(EXIT_FAILURE);
         }
     }
     else
     {
+        close(child_read_pipe);
+        close(child_write_pipe);
 #if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Gives the child process permission to use /proc/<pid>/mem and ptrace
         if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
@@ -270,7 +293,21 @@ CreateCrashDump(
 #endif
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-        close(child_pipe);
+        // Signal child that prctl(PR_SET_PTRACER, childpid) is done
+        int bytesWritten;
+        while((bytesWritten = write(parent_write_pipe, "S", 1)) < 0 && errno == EINTR);
+        close(parent_write_pipe);
+
+        if (bytesWritten != 1)
+        {
+            fprintf(stderr, "Problem writing to createdump parent_write_pipe: %s (%d)\n", strerror(errno), errno);
+            close(parent_read_pipe);
+            if (errorMessageBuffer != nullptr)
+            {
+                errorMessageBuffer[0] = 0;
+            }
+            return false;
+        }
 
         // Read createdump's stderr messages (if any)
         if (errorMessageBuffer != nullptr)
@@ -278,7 +315,7 @@ CreateCrashDump(
             // Read createdump's stderr
             int bytesRead = 0;
             int count = 0;
-            while ((count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
+            while ((count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
             {
                 bytesRead += count;
             }
@@ -288,7 +325,7 @@ CreateCrashDump(
                 fputs(errorMessageBuffer, stderr);
             }
         }
-        close(parent_pipe);
+        close(parent_read_pipe);
 
         // Parent waits until the child process is done
         int wstatus = 0;
@@ -310,7 +347,20 @@ CreateCrashDump(
     return true;
 }
 
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
+
+// Helper function to prevent compiler from optimizing away a variable
+#if defined(__llvm__)
+__attribute__((noinline, optnone))
+#else
+__attribute__((noinline, optimize("O0")))
+#endif
+static void DoNotOptimize(const void* p)
+{
+    // This function takes the address of a variable to ensure
+    // it's preserved and available in crash dumps
+    (void)p;
+}
 
 /*++
 Function:
@@ -321,14 +371,18 @@ Function:
 Parameters:
     signal - POSIX signal number or 0
     siginfo - signal info or nullptr
+    context - signal context or nullptr
     exceptionRecord - address of exception record or nullptr
 
 (no return value)
 --*/
 void
-PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecord)
+PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void* exceptionRecord)
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     // If enabled, launch the create minidump utility and wait until it completes
     if (g_argvCreateDump[0] != nullptr)
     {
@@ -414,19 +468,19 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecor
         free(signalAddressArg);
         free(exceptionRecordArg);
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 
 void
 PalCreateCrashDumpIfEnabled()
 {
-    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr);
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, nullptr);
 }
 
 void
 PalCreateCrashDumpIfEnabled(void* pExceptionRecord)
 {
-    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, pExceptionRecord);
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, pExceptionRecord);
 }
 
 /*++
@@ -458,7 +512,7 @@ PalGenerateCoreDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     const char* argvCreateDump[MAX_ARGV_ENTRIES];
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -476,7 +530,7 @@ PalGenerateCoreDump(
     return result;
 #else
     return false;
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 
 /*++
@@ -495,7 +549,7 @@ Return
 bool
 PalCreateDumpInitialize()
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     bool enabled = false;
     RhConfig::Environment::TryGetBooleanValue("DbgEnableMiniDump", &enabled);
     if (enabled)
@@ -546,51 +600,66 @@ PalCreateDumpInitialize()
         }
 
         // Build the createdump program path for the command line
-        Dl_info info;
-        if (dladdr((void*)&PalCreateDumpInitialize, &info) == 0)
-        {
-            return false;
-        }
         const char* DumpGeneratorName = "createdump";
-        int programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
-        char* program = (char*)malloc(programLen);
-        if (program == nullptr)
+        char* dumpToolPath = nullptr;
+        char* program = nullptr;
+        
+        // Check if user provided a custom path to createdump tool directory
+        if (RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath))
         {
-            return false;
-        }
-        strncpy(program, info.dli_fname, programLen);
-        char *last = strrchr(program, '/');
-        if (last != nullptr)
-        {
-            *(last + 1) = '\0';
+            // Use the provided directory path and concatenate with "createdump"
+            size_t dumpToolPathLen = strlen(dumpToolPath);
+            bool needsSlash = dumpToolPathLen > 0 && dumpToolPath[dumpToolPathLen - 1] != '/';
+            int programLen = dumpToolPathLen + (needsSlash ? 1 : 0) + strlen(DumpGeneratorName) + 1;
+            program = (char*)malloc(programLen);
+            if (program == nullptr)
+            {
+                free(dumpToolPath);
+                return false;
+            }
+            strncpy(program, dumpToolPath, programLen);
+            if (needsSlash)
+            {
+                strncat(program, "/", programLen);
+            }
+            strncat(program, DumpGeneratorName, programLen);
+            free(dumpToolPath);
         }
         else
         {
-            program[0] = '\0';
+            // Default behavior: derive path from current library location
+            Dl_info info;
+            if (dladdr((void*)&PalCreateDumpInitialize, &info) == 0)
+            {
+                return false;
+            }
+            int programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
+            program = (char*)malloc(programLen);
+            if (program == nullptr)
+            {
+                return false;
+            }
+            strncpy(program, info.dli_fname, programLen);
+            char *last = strrchr(program, '/');
+            if (last != nullptr)
+            {
+                *(last + 1) = '\0';
+            }
+            else
+            {
+                program[0] = '\0';
+            }
+            strncat(program, DumpGeneratorName, programLen);
         }
-        strncat(program, DumpGeneratorName, programLen);
 
-        struct stat fileData;
-        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
-        {
-            fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
-            return true;
-        }
         g_szCreateDumpPath = program;
-
-        // Format the app pid for the createdump command line
-        g_ppidarg = FormatInt(getpid());
-        if (g_ppidarg == nullptr)
-        {
-            return false;
-        }
 
         if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags))
         {
             return false;
         }
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
     return true;
 }

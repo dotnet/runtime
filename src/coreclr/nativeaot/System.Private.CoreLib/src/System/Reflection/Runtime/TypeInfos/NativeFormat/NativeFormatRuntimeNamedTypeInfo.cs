@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Text;
 
@@ -31,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // not be the canonical scope representing the assembly. We need to look up the assembly
                 // by name to ensure we get the right one.
 
-                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
 
                 return RuntimeAssemblyInfo.GetRuntimeAssembly(runtimeAssemblyName);
@@ -50,7 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Otherwise fall back to attributes
                 foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "CompilerServices"], "IsByRefLikeAttribute"))
+                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
                         return true;
                 }
                 return false;
@@ -68,18 +67,29 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Following age-old CLR tradition, we search for the custom attribute using a name-based search. Since this makes it harder
                 // to be sure we won't run into custom attribute constructors that comply with the GuidAttribute(String) signature,
                 // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
-                if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "InteropServices"], "GuidAttribute"))
+                if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
                     CustomAttribute ca = cah.GetCustomAttribute(_reader);
-                    HandleCollection.Enumerator fahEnumerator = ca.FixedArguments.GetEnumerator();
-                    if (!fahEnumerator.MoveNext())
+                    MethodSignature signature = ca.Constructor.HandleType == HandleType.QualifiedMethod
+                        ? ca.Constructor.ToQualifiedMethodHandle(_reader).GetQualifiedMethod(_reader)
+                            .Method.GetMethod(_reader).Signature.GetMethodSignature(_reader)
+                        : ca.Constructor.ToMemberReferenceHandle(_reader).GetMemberReference(_reader)
+                            .Signature.ParseMethodSignature(_reader);
+                    if (signature.Parameters.Count != 1)
                         continue;
-                    Handle guidStringArgumentHandle = fahEnumerator.Current;
-                    if (fahEnumerator.MoveNext())
+
+                    HandleCollection.Enumerator parameters = signature.Parameters.GetEnumerator();
+                    parameters.MoveNext();
+                    if (parameters.Current.Resolve(_reader, default).ToType() != typeof(string))
                         continue;
-                    if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
+
+                    BlobReader blob = new BlobReader(ca.Blob.AsSpan());
+                    ConstantStringValueHandle constantStringValueHandle = blob.ReadStringHandle();
+                    if (constantStringValueHandle.IsNil)
                         continue;
-                    return new Guid(guidStringArgumentHandle.ToConstantStringValueHandle(_reader).GetString(_reader));
+
+                    // Parse a 'Guid' directly from the encoded UTF8 buffer, instead of round-tripping through a 'string'
+                    return Guid.Parse(_reader.ReadStringAsBytes(constantStringValueHandle));
                 }
             }
             return null;
@@ -103,7 +113,13 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return NamespaceChain.NameSpace.EscapeTypeNameIdentifier();
+                string ns = _lazyNamespace;
+                if (ns is null)
+                {
+                    ns = NamespaceDefinition.Name.GetStringOrNull(_reader).EscapeTypeNameIdentifier() ?? string.Empty;
+                    _lazyNamespace = ns;
+                }
+                return ns.Length == 0 ? null : ns;
             }
         }
 
@@ -163,10 +179,10 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             get
             {
                 RuntimeTypeInfo? declaringType = null;
-                TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
-                if (!enclosingTypeDefHandle.IsNil)
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                if (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
                 {
-                    declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
+                    declaringType = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).ResolveTypeDefinition(_reader);
                 }
                 return declaringType;
             }
@@ -176,8 +192,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                NamespaceChain namespaceChain = NamespaceChain;
-                ScopeDefinitionHandle scopeDefinitionHandle = namespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 return scopeDefinitionHandle.ToRuntimeAssemblyName(_reader).FullName;
             }
         }
@@ -193,7 +208,63 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _typeDefinition.CustomAttributes;
+
+        public sealed override Type? GetNullableUnderlyingType()
+        {
+            return (this.ToType() == typeof(Nullable<>)) ? RuntimeGenericTypeParameters[0].ToType() : null;
+        }
+
+        internal sealed override void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
+        {
+            Debug.Assert(IsActualEnum);
+
+            // Count the number of static fields. The single instance field may or may not have metadata,
+            // so using `_typeDefinition.Fields.Count - 1` is not reliable.
+            int staticFieldCount = 0;
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                    staticFieldCount++;
+            }
+
+            unsortedNames = new string[staticFieldCount];
+            unsortedValues = new object[staticFieldCount];
+
+            int i = 0;
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                {
+                    unsortedNames[i] = field.Name.GetString(_reader);
+                    Constant constant = field.DefaultValue.GetConstant(_reader);
+                    BlobReader blob = new BlobReader(constant.Blob.AsSpan());
+                    unsortedValues[i] = constant.TypeCode switch
+                    {
+                        ConstantTypeCode.SByte or ConstantTypeCode.Byte => (object)blob.ReadByte(),
+                        ConstantTypeCode.Int16 or ConstantTypeCode.UInt16 => blob.ReadUInt16(),
+                        ConstantTypeCode.Int32 or ConstantTypeCode.UInt32 => blob.ReadUInt32(),
+                        ConstantTypeCode.Int64 or ConstantTypeCode.UInt64 => blob.ReadUInt64(),
+                        _ => throw new BadImageFormatException(),
+                    };
+                    i++;
+                }
+            }
+
+            isFlags = false;
+            foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
+            {
+                if (cah.IsCustomAttributeOfType(_reader, "System", "FlagsAttribute"))
+                {
+                    isFlags = true;
+                    break;
+                }
+            }
+        }
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
@@ -307,14 +378,21 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly TypeDefinition _typeDefinition;
 
-        private NamespaceChain NamespaceChain
+        private NamespaceDefinition NamespaceDefinition
         {
             get
             {
-                return _lazyNamespaceChain ??= new NamespaceChain(_reader, _typeDefinition.NamespaceDefinition);
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
+                {
+                    TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
+                    namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
+                }
+
+                return namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader).GetNamespaceDefinition(_reader);
             }
         }
 
-        private volatile NamespaceChain _lazyNamespaceChain;
+        private volatile string _lazyNamespace;
     }
 }

@@ -209,26 +209,18 @@ namespace System.Data.Common
             }
         }
 
-        // only StackOverflowException & ThreadAbortException are sealed classes
-        private static readonly Type StackOverflowType = typeof(StackOverflowException);
-        private static readonly Type OutOfMemoryType = typeof(OutOfMemoryException);
-        private static readonly Type ThreadAbortType = typeof(ThreadAbortException);
-        private static readonly Type NullReferenceType = typeof(NullReferenceException);
-        private static readonly Type AccessViolationType = typeof(AccessViolationException);
-        private static readonly Type SecurityType = typeof(SecurityException);
-
         internal static bool IsCatchableExceptionType(Exception e)
         {
             // a 'catchable' exception is defined by what it is not.
             Debug.Assert(e != null, "Unexpected null exception!");
             Type type = e.GetType();
 
-            return ((type != StackOverflowType) &&
-                     (type != OutOfMemoryType) &&
-                     (type != ThreadAbortType) &&
-                     (type != NullReferenceType) &&
-                     (type != AccessViolationType) &&
-                     !SecurityType.IsAssignableFrom(type));
+            return ((type != typeof(StackOverflowException)) &&
+                     (type != typeof(OutOfMemoryException)) &&
+                     (type != typeof(ThreadAbortException)) &&
+                     (type != typeof(NullReferenceException)) &&
+                     (type != typeof(AccessViolationException)) &&
+                     !typeof(SecurityException).IsAssignableFrom(type));
         }
 
         internal static bool IsCatchableOrSecurityExceptionType(Exception e)
@@ -243,11 +235,11 @@ namespace System.Data.Common
             Debug.Assert(e != null, "Unexpected null exception!");
             Type type = e.GetType();
 
-            return ((type != StackOverflowType) &&
-                     (type != OutOfMemoryType) &&
-                     (type != ThreadAbortType) &&
-                     (type != NullReferenceType) &&
-                     (type != AccessViolationType));
+            return ((type != typeof(StackOverflowException)) &&
+                     (type != typeof(OutOfMemoryException)) &&
+                     (type != typeof(ThreadAbortException)) &&
+                     (type != typeof(NullReferenceException)) &&
+                     (type != typeof(AccessViolationException)));
         }
 
         // Invalid Enumeration
@@ -986,13 +978,13 @@ namespace System.Data.Common
         internal static string BuildQuotedString(string quotePrefix, string quoteSuffix, string unQuotedString)
         {
             StringBuilder resultString = new StringBuilder();
-            if (ADP.IsEmpty(quotePrefix) == false)
+            if (!ADP.IsEmpty(quotePrefix))
             {
                 resultString.Append(quotePrefix);
             }
 
             // Assuming that the suffix is escaped by doubling it. i.e. foo"bar becomes "foo""bar".
-            if (ADP.IsEmpty(quoteSuffix) == false)
+            if (!ADP.IsEmpty(quoteSuffix))
             {
                 resultString.Append(unQuotedString.Replace(quoteSuffix, quoteSuffix + quoteSuffix));
                 resultString.Append(quoteSuffix);
@@ -1014,7 +1006,7 @@ namespace System.Data.Common
 
             foreach (char currentChar in unescapedString)
             {
-                if (specialCharacters.IndexOf(currentChar) >= 0)
+                if (specialCharacters.Contains(currentChar))
                 {
                     escapedString.Append('\\');
                 }
@@ -1228,7 +1220,7 @@ namespace System.Data.Common
             // is the prefix present?
             if (prefixLength > 0)
             {
-                if (quotedString.StartsWith(quotePrefix!, StringComparison.Ordinal) == false)
+                if (!quotedString.StartsWith(quotePrefix!, StringComparison.Ordinal))
                 {
                     unquotedString = quotedString;
                     return false;
@@ -1238,7 +1230,7 @@ namespace System.Data.Common
             // is the suffix present?
             if (suffixLength > 0)
             {
-                if (quotedString.EndsWith(quoteSuffix!, StringComparison.Ordinal) == false)
+                if (!quotedString.EndsWith(quoteSuffix!, StringComparison.Ordinal))
                 {
                     unquotedString = quotedString;
                     return false;

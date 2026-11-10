@@ -21,8 +21,6 @@ typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 #define PRD_TYPE                               DWORD_PTR
 #endif
 
-typedef M128A FPRegister64;
-
 // From section 1.1 of AMD64 Programmers Manual Vol 3.
 #define MAX_INSTRUCTION_LENGTH                 15
 
@@ -70,7 +68,23 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_AMD64_R12,
     REGISTER_AMD64_R13,
     REGISTER_AMD64_R14,
-    REGISTER_AMD64_R15
+    REGISTER_AMD64_R15,
+    REGISTER_AMD64_XMM0,
+    REGISTER_AMD64_XMM1,
+    REGISTER_AMD64_XMM2,
+    REGISTER_AMD64_XMM3,
+    REGISTER_AMD64_XMM4,
+    REGISTER_AMD64_XMM5,
+    REGISTER_AMD64_XMM6,
+    REGISTER_AMD64_XMM7,
+    REGISTER_AMD64_XMM8,
+    REGISTER_AMD64_XMM9,
+    REGISTER_AMD64_XMM10,
+    REGISTER_AMD64_XMM11,
+    REGISTER_AMD64_XMM12,
+    REGISTER_AMD64_XMM13,
+    REGISTER_AMD64_XMM14,
+    REGISTER_AMD64_XMM15
 };
 
 //
@@ -88,7 +102,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 //
 // inline function to access/modify the CONTEXT
 //
-inline LPVOID CORDbgGetIP(DT_CONTEXT* context)
+inline LPVOID CORDbgGetIP(T_CONTEXT* context)
 {
     CONTRACTL
     {
@@ -102,7 +116,7 @@ inline LPVOID CORDbgGetIP(DT_CONTEXT* context)
     return (LPVOID) context->Rip;
 }
 
-inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip)
+inline void CORDbgSetIP(T_CONTEXT* context, LPVOID rip)
 {
     CONTRACTL
     {
@@ -116,7 +130,7 @@ inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip)
     context->Rip = (DWORD64) rip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context)
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context)
 {
     CONTRACTL
     {
@@ -127,7 +141,7 @@ inline LPVOID CORDbgGetSP(const DT_CONTEXT * context)
     }
     CONTRACTL_END;
 
-    return (LPVOID)context->Rsp;
+    return (CORDB_ADDRESS)context->Rsp;
 }
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID rsp)
 {
@@ -147,14 +161,12 @@ inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID rsp)
 #define CORDbgSetFP(context, rbp)
 #define CORDbgGetFP(context) 0
 
-// compare the RIP, RSP, and RBP
 inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT * pCtx2)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     if ((pCtx1->Rip == pCtx2->Rip) &&
-        (pCtx1->Rsp == pCtx2->Rsp) &&
-        (pCtx1->Rbp == pCtx2->Rbp))
+        (pCtx1->Rsp == pCtx2->Rsp))
     {
         return TRUE;
     }
@@ -205,7 +217,7 @@ inline void CORDbgSetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address,
 }
 
 
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -219,19 +231,19 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE *address)
     return *address == CORDbg_BREAK_INSTRUCTION;
 }
 
-inline void SetSSFlag(DT_CONTEXT *pContext)
+inline void SetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->EFlags |= 0x100;
 }
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext)
+inline void UnsetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->EFlags &= ~0x100;
 }
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * context)
+inline bool IsSSFlagEnabled(T_CONTEXT * context)
 {
     _ASSERTE(context != NULL);
     return (context->EFlags & 0x100) != 0;

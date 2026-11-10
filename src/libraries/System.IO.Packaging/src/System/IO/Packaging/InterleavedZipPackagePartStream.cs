@@ -231,14 +231,7 @@ namespace System.IO.Packaging
             CheckClosed();
 
             // Check argument and stream capabilities.
-#if NET
             ArgumentOutOfRangeException.ThrowIfNegative(newLength);
-#else
-            if (newLength < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(newLength));
-            }
-#endif
             if (!CanWrite)
             {
                 throw new NotSupportedException(SR.StreamDoesNotSupportWrite);
@@ -477,7 +470,6 @@ namespace System.IO.Packaging
             get
             {
                 CheckClosed();
-                Debug.Assert(CanSeek);
 
                 long length = 0;
                 for (int pieceNumber = 0; pieceNumber < _dir.GetNumberOfPieces(); ++pieceNumber)

@@ -46,7 +46,6 @@ namespace System.Globalization.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/111501")]
         public void CurrentCulture_Default_Is_Specific()
         {
             // On OSX-like platforms, the current culture taken from default system culture should be specific.
@@ -149,7 +148,7 @@ namespace System.Globalization.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("")]
         [InlineData(null)]
-        public void CurrentCulture_DefaultWithNoLang(string langEnvVar)
+        public void CurrentCulture_DefaultWithNoLang(string? langEnvVar)
         {
             var psi = new ProcessStartInfo();
             TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);

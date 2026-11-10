@@ -110,5 +110,11 @@ namespace System
                 return _value == new IntPtr(0);
             }
         }
+
+        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+        internal static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromMethodTable(MethodTable* pMT)
+        {
+            return new RuntimeTypeHandle(pMT);
+        }
     }
 }

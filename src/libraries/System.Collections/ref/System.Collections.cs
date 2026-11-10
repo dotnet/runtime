@@ -7,35 +7,6 @@
 #if !BUILDING_CORELIB_REFERENCE
 namespace System.Collections
 {
-    public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
-    {
-        public BitArray(bool[] values) { }
-        public BitArray(byte[] bytes) { }
-        public BitArray(System.Collections.BitArray bits) { }
-        public BitArray(int length) { }
-        public BitArray(int length, bool defaultValue) { }
-        public BitArray(int[] values) { }
-        public int Count { get { throw null; } }
-        public bool IsReadOnly { get { throw null; } }
-        public bool IsSynchronized { get { throw null; } }
-        public bool this[int index] { get { throw null; } set { } }
-        public int Length { get { throw null; } set { } }
-        public object SyncRoot { get { throw null; } }
-        public System.Collections.BitArray And(System.Collections.BitArray value) { throw null; }
-        public object Clone() { throw null; }
-        public void CopyTo(System.Array array, int index) { }
-        public bool Get(int index) { throw null; }
-        public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public bool HasAllSet() { throw null; }
-        public bool HasAnySet() { throw null; }
-        public System.Collections.BitArray LeftShift(int count) { throw null; }
-        public System.Collections.BitArray Not() { throw null; }
-        public System.Collections.BitArray Or(System.Collections.BitArray value) { throw null; }
-        public System.Collections.BitArray RightShift(int count) { throw null; }
-        public void Set(int index, bool value) { }
-        public void SetAll(bool value) { }
-        public System.Collections.BitArray Xor(System.Collections.BitArray value) { throw null; }
-    }
     public static partial class StructuralComparisons
     {
         public static System.Collections.IComparer StructuralComparer { get { throw null; } }
@@ -584,6 +555,42 @@ namespace System.Collections.Generic
     }
 }
 #endif // !BUILDING_CORELIB_REFERENCE
+namespace System.Collections
+{
+    public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
+    {
+        public BitArray(bool[] values) { }
+        public BitArray(byte[] bytes) { }
+        public BitArray(System.Collections.BitArray bits) { }
+        public BitArray(int length) { }
+        public BitArray(int length, bool defaultValue) { }
+        public BitArray(int[] values) { }
+        public BitArray(System.ReadOnlySpan<bool> values) { }
+        public BitArray(System.ReadOnlySpan<byte> bytes) { }
+        public BitArray(System.ReadOnlySpan<int> values) { }
+        public int Count { get { throw null; } }
+        public bool IsReadOnly { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public bool this[int index] { get { throw null; } set { } }
+        public int Length { get { throw null; } set { } }
+        public object SyncRoot { get { throw null; } }
+        public System.Collections.BitArray And(System.Collections.BitArray value) { throw null; }
+        public object Clone() { throw null; }
+        public void CopyTo(System.Array array, int index) { }
+        public bool Get(int index) { throw null; }
+        public System.Collections.IEnumerator GetEnumerator() { throw null; }
+        public bool HasAllSet() { throw null; }
+        public bool HasAnySet() { throw null; }
+        public System.Collections.BitArray LeftShift(int count) { throw null; }
+        public System.Collections.BitArray Not() { throw null; }
+        public System.Collections.BitArray Or(System.Collections.BitArray value) { throw null; }
+        public int PopCount() { throw null; }
+        public System.Collections.BitArray RightShift(int count) { throw null; }
+        public void Set(int index, bool value) { }
+        public void SetAll(bool value) { }
+        public System.Collections.BitArray Xor(System.Collections.BitArray value) { throw null; }
+    }
+}
 namespace System.Collections.Generic
 {
     public static partial class CollectionExtensions
@@ -752,6 +759,7 @@ namespace System.Collections.Generic
     {
         protected EqualityComparer() { }
         public static System.Collections.Generic.EqualityComparer<T> Create(System.Func<T?, T?, bool> equals, System.Func<T, int>? getHashCode = null) { throw null; }
+        public static System.Collections.Generic.EqualityComparer<T> Create<TKey>(System.Func<T?, TKey?> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? keyComparer = null) { throw null; }
         public static System.Collections.Generic.EqualityComparer<T> Default { get { throw null; } }
         public abstract bool Equals(T? x, T? y);
         public abstract int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);

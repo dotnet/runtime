@@ -80,5 +80,3 @@ namespace System.Tests.Types
         }
     }
 }
-
-

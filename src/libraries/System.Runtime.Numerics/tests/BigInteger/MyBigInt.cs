@@ -660,7 +660,7 @@ namespace System.Numerics.Tests
 
             if (fill == byte.MaxValue)
             {
-                while (bytes1.Count % 4 != 0)
+                while (bytes1.Count % nint.Size != 0)
                 {
                     bytes1.Add(fill);
                 }
@@ -688,7 +688,7 @@ namespace System.Numerics.Tests
             }
             bytes1 = temp;
 
-            if (fill == byte.MaxValue && bytes1.Count % 4 == 1)
+            if (fill == byte.MaxValue && bytes1.Count % nint.Size == 1)
             {
                 bytes1.RemoveAt(bytes1.Count - 1);
             }

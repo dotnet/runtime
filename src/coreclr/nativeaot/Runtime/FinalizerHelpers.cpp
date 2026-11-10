@@ -27,14 +27,68 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
-static HANDLE g_lowMemoryNotification = NULL;
-
 #ifdef TARGET_WINDOWS
+static CLREventStatic g_lowMemoryNotification;
 static bool g_ComAndFlsInitSucceeded = false;
 #endif
 
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
+#ifndef FEATURE_MULTITHREADING
+EXTERN_C void QCALLTYPE ProcessFinalizersWorkerIteration();
+#endif // !FEATURE_MULTITHREADING
+
+#if !defined(FEATURE_MULTITHREADING) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
+#ifdef TARGET_BROWSER
+EXTERN_C void SystemJS_ScheduleFinalization();
+#endif // TARGET_BROWSER
+
+#ifdef TARGET_WASI
+EXTERN_C void WasiFinalizer_Schedule();
+#endif // TARGET_WASI
+
+static void RunFinalizerIterationOnCurrentThread()
+{
+    ProcessFinalizersWorkerIteration();
+}
+
+#ifdef TARGET_BROWSER
+EXTERN_C void SystemJS_ExecuteFinalizationCallback()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#else // TARGET_WASI
+EXTERN_C void QCALLTYPE WasiFinalizer_RunWorker()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#endif // TARGET_BROWSER
+#endif // !FEATURE_MULTITHREADING && (TARGET_BROWSER || TARGET_WASI)
+
+#ifdef TARGET_WASI
+#ifdef FEATURE_WASM_MANAGED_THREADS
+#error "TARGET_WASI finalization requires a single-threaded runtime."
+#endif // FEATURE_WASM_MANAGED_THREADS
+
+static Volatile<bool> s_finalizationPending = false;
+
+EXTERN_C void WasiFinalizer_Schedule()
+{
+    // Called inside the GC; managed callbacks, allocations, and locks are not safe here.
+    s_finalizationPending = true;
+}
+
+EXTERN_C UInt32_BOOL QCALLTYPE WasiFinalizer_TryClearPending()
+{
+    bool pending = s_finalizationPending;
+    if (pending)
+        s_finalizationPending = false;
+
+    return pending ? TRUE : FALSE;
+}
+#endif // TARGET_WASI
+
+#ifdef FEATURE_MULTITHREADING
 // Unmanaged front-end to the finalizer thread. We require this because at the point when this thread is
 // created we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
@@ -44,35 +98,31 @@ uint32_t WINAPI FinalizerStart(void* pContext)
 #ifdef TARGET_WINDOWS
     g_ComAndFlsInitSucceeded = PalInitComAndFlsSlot();
     // handshake with EE initialization, as now we can attach Thread objects to native threads.
-    UInt32_BOOL res = PalSetEvent(g_FinalizerDoneEvent.GetOSEvent());
+    bool res = g_FinalizerDoneEvent.Set();
     ASSERT(res);
 
     // if FLS initialization failed do not attach the current thread and just exit instead.
     // we are going to fail the runtime initialization.
     if (!g_ComAndFlsInitSucceeded)
         return 0;
-#endif // DEBUG
+#endif // TARGET_WINDOWS
 
-    HANDLE hFinalizerEvent = (HANDLE)pContext;
+    CLREventStatic* finalizerEvent = static_cast<CLREventStatic*>(pContext);
 
     PalSetCurrentThreadName(".NET Finalizer");
 
     ThreadStore::AttachCurrentThread();
     Thread * pThread = ThreadStore::GetCurrentThread();
 
-    // Disallow gcstress on this thread to work around the current implementation's limitation that it will
-    // get into an infinite loop if performed on the finalizer thread.
-    pThread->SetSuppressGcStress();
-
     g_pFinalizerThread = PTR_Thread(pThread);
 
     // Wait for a finalization request.
-    uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
+    uint32_t uResult = finalizerEvent->Wait(INFINITE, false, false);
     ASSERT(uResult == WAIT_OBJECT_0);
 
     // Since we just consumed the request (and the event is auto-reset) we must set the event again so the
     // managed finalizer code will immediately start processing the queue when we run it.
-    UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
+    bool fResult = finalizerEvent->Set();
     ASSERT(fResult);
 
     // Run the managed portion of the finalizer. This call will never return.
@@ -82,9 +132,11 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     ASSERT(!"Finalizer thread should never return");
     return 0;
 }
+#endif // FEATURE_MULTITHREADING
 
 bool RhInitializeFinalization()
 {
+#ifdef FEATURE_MULTITHREADING
     // Allocate the events the GC expects the finalizer thread to have. The g_FinalizerEvent event is signalled
     // by the GC whenever it completes a collection where it found otherwise unreachable finalizable objects.
     // The g_FinalizerDoneEvent is set by the finalizer thread every time it wakes up and drains the
@@ -93,11 +145,24 @@ bool RhInitializeFinalization()
         return false;
     if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
         return false;
-    g_lowMemoryNotification = PalCreateLowMemoryResourceNotification();
+#ifdef TARGET_WINDOWS
+    HANDLE lowMemoryNotification = PalCreateLowMemoryResourceNotification();
+    if (lowMemoryNotification != NULL)
+    {
+        bool success = g_lowMemoryNotification.CreateFromOSHandle(lowMemoryNotification);
+        CloseHandle(lowMemoryNotification);
+        if (!success)
+            return false;
+    }
+#endif
 
     // Create the finalizer thread itself.
-    if (!PalStartFinalizerThread(FinalizerStart, (void*)g_FinalizerEvent.GetOSEvent()))
+    if (!PalStartFinalizerThread(FinalizerStart, &g_FinalizerEvent))
         return false;
+#else // FEATURE_MULTITHREADING
+    // The thread is not attached until the first managed entry.
+    g_pFinalizerThread = PTR_Thread(ThreadStore::RawGetCurrentThread());
+#endif // FEATURE_MULTITHREADING
 
     return true;
 }
@@ -105,7 +170,7 @@ bool RhInitializeFinalization()
 #ifdef TARGET_WINDOWS
 bool RhWaitForFinalizerThreadStart()
 {
-    g_FinalizerDoneEvent.Wait(INFINITE,FALSE);
+    g_FinalizerDoneEvent.Wait(INFINITE, FALSE, false);
     g_FinalizerDoneEvent.Reset();
     return g_ComAndFlsInitSucceeded;
 }
@@ -113,7 +178,13 @@ bool RhWaitForFinalizerThreadStart()
 
 void RhEnableFinalization()
 {
+#ifdef FEATURE_MULTITHREADING
     g_FinalizerEvent.Set();
+#elif defined(TARGET_BROWSER)
+    SystemJS_ScheduleFinalization();
+#else // TARGET_WASI
+    WasiFinalizer_Schedule();
+#endif // FEATURE_MULTITHREADING
 }
 
 static int32_t g_fullGcCountSeenByFinalization;
@@ -124,12 +195,15 @@ EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount, int32_t o
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
+
+#ifdef FEATURE_MULTITHREADING
     g_FinalizerDoneEvent.Set();
 
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
         YieldProcessorNormalization::PerformMeasurement();
     }
+#endif // FEATURE_MULTITHREADING
 }
 
 EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
@@ -138,6 +212,7 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
     // called in cooperative mode.
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
+#ifdef FEATURE_MULTITHREADING
     // Can't call this from the finalizer thread itself.
     if (ThreadStore::GetCurrentThread() != g_pFinalizerThread)
     {
@@ -168,12 +243,28 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
             goto tryAgain;
         }
     }
+#else // !FEATURE_MULTITHREADING
+    // The sole thread also runs application code, so thread identity cannot detect recursive waits.
+    static thread_local bool s_inDrain = false;
+    if (s_inDrain)
+    {
+        return;
+    }
+    s_inDrain = true;
+
+    ProcessFinalizersWorkerIteration();
+
+    s_inDrain = false;
+#endif // FEATURE_MULTITHREADING
 }
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
 EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
 {
+    IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
+
+#ifdef FEATURE_MULTITHREADING
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
     // the finalizer thread initiates as a result is not sufficient to remove the low memory condition the
@@ -183,22 +274,32 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
     // request.
     static bool fLastEventWasLowMemory = false;
 
-    IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
-
     // Wait in a loop because we may have to retry if we decide to only wait for finalization events but the
     // two second timeout expires.
     do
     {
-        HANDLE  lowMemEvent = g_lowMemoryNotification;
+#ifdef TARGET_WINDOWS
+        HANDLE lowMemEvent = g_lowMemoryNotification.IsValid()
+            ? (HANDLE)g_lowMemoryNotification.GetOSEvent()
+            : NULL;
+#else
+        HANDLE lowMemEvent = NULL;
+#endif
         HANDLE  rgWaitHandles[] = { g_FinalizerEvent.GetOSEvent(), lowMemEvent };
         uint32_t  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         uint32_t  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
-        uint32_t uResult = PalCompatibleWaitAny(/*alertable=*/ FALSE, uTimeout, cWaitHandles, rgWaitHandles, /*allowReentrantWait=*/ FALSE);
+#ifdef TARGET_WINDOWS
+        uint32_t uResult = WaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, false, uTimeout, false);
+#else
+        ASSERT(cWaitHandles == 1);
+        uint32_t uResult = g_FinalizerEvent.Wait(uTimeout);
+#endif
 
         switch (uResult)
         {
         case WAIT_OBJECT_0:
+#endif // FEATURE_MULTITHREADING
             // At least one object is ready for finalization.
             {
                 // Process pending finalizer work items from the GC first.
@@ -213,6 +314,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
             return TRUE;
 
+#ifdef FEATURE_MULTITHREADING
         case WAIT_OBJECT_0 + 1:
             // Memory is low, tell the finalizer thread to garbage collect.
             ASSERT(!fLastEventWasLowMemory);
@@ -227,10 +329,11 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             break;
 
         default:
-            ASSERT(!"Unexpected PalWaitForMultipleObjectsEx() result");
+            ASSERT(!"Unexpected event wait result");
             return FALSE;
         }
     } while (true);
+#endif // FEATURE_MULTITHREADING
 }
 
 //
@@ -260,5 +363,11 @@ FCIMPL0(OBJECTREF, RhpGetNextFinalizableObject)
         // We've found the first finalizable object, return it to the caller.
         return refNext;
     }
+}
+FCIMPLEND
+
+FCIMPL0(FC_BOOL_RET, RhpCurrentThreadIsFinalizerThread)
+{
+    FC_RETURN_BOOL(ThreadStore::GetCurrentThread() == g_pFinalizerThread);
 }
 FCIMPLEND

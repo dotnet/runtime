@@ -793,10 +793,7 @@ namespace System.Linq.Expressions.Compiler
                     clone = Clone(node.Expressions, i);
                 }
 
-                if (clone != null)
-                {
-                    clone[i] = rewritten.Node;
-                }
+                clone?[i] = rewritten.Node;
             }
 
             if (action != RewriteAction.None)
@@ -902,10 +899,7 @@ namespace System.Linq.Expressions.Compiler
                         cloneTests = Clone(testValues, j);
                     }
 
-                    if (cloneTests != null)
-                    {
-                        cloneTests[j] = test.Node;
-                    }
+                    cloneTests?[j] = test.Node;
                 }
 
                 // And all the cases also run on the same stack level.
@@ -924,10 +918,7 @@ namespace System.Linq.Expressions.Compiler
                     clone ??= Clone(cases, i);
                 }
 
-                if (clone != null)
-                {
-                    clone[i] = @case;
-                }
+                clone?[i] = @case;
             }
 
             // default body also runs on initial stack
@@ -989,10 +980,7 @@ namespace System.Linq.Expressions.Compiler
                         clone ??= Clone(handlers, i);
                     }
 
-                    if (clone != null)
-                    {
-                        clone[i] = handler;
-                    }
+                    clone?[i] = handler;
                 }
             }
 

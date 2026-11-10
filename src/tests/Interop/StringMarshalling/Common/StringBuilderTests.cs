@@ -15,6 +15,7 @@ public partial class StringBuilderTests
     private static readonly string InitialString = "Hello World";
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123529", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ByValue()
     {
         var builder = new StringBuilder(InitialString);
@@ -23,6 +24,7 @@ public partial class StringBuilderTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123529", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ByRef()
     {
         var builder = new StringBuilder(InitialString);
@@ -31,6 +33,7 @@ public partial class StringBuilderTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123529", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ReversePInvoke()
     {
         var builder = new StringBuilder(InitialString);

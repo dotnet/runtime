@@ -80,6 +80,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         addToTable = true;
                     }
                 }
+                else if (customAttributeTypeNamespace == "System.Diagnostics.CodeAnalysis")
+                {
+                    // Consulted by the JIT (via canValueClassInstancePointerEscape) to reason
+                    // about escaping receivers of value type instance methods.
+                    if (customAttributeTypeName == "UnscopedRefAttribute")
+                    {
+                        addToTable = true;
+                    }
+                }
 
                 if (!addToTable)
                     continue;
@@ -335,7 +344,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     string name = customAttributeEntry.TypeNamespace + "." + customAttributeEntry.TypeName;
                     // This hashing algorithm MUST match exactly the logic in NativeCuckooFilter
-                    int hashOfAttribute = VersionResilientHashCode.NameHashCode(name);
+                    int hashOfAttribute = VersionResilientHashCode.NameHashCode(System.Text.Encoding.UTF8.GetBytes(name));
                     uint hash = unchecked((uint)VersionResilientHashCode.CombineTwoValuesIntoHash((uint)hashOfAttribute, (uint)customAttributeEntry.Parent));
                     ushort fingerprint = (ushort)(hash >> 16);
                     if (fingerprint == 0)

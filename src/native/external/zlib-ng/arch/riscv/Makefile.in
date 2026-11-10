@@ -1,0 +1,63 @@
+# Makefile for zlib-ng
+# Copyright (C) 1995-2013 Jean-loup Gailly, Mark Adler
+# Copyright (C) 2024 Hans Kristian Rosbach
+# Copyright (C) 2025 Yin Tong <yintong.ustc@bytedance.com>, ByteDance
+# For conditions of distribution and use, see copyright notice in zlib.h
+
+CC=
+CFLAGS=
+SFLAGS=
+INCLUDES=
+SUFFIX=
+
+SRCDIR=.
+SRCTOP=../..
+TOPDIR=$(SRCTOP)
+
+RVVFLAG=
+
+all: \
+	riscv_features.o riscv_features.lo \
+	adler32_rvv.o adler32_rvv.lo \
+	chunkset_rvv.o chunkset_rvv.lo \
+	compare256_rvv.o compare256_rvv.lo \
+	slide_hash_rvv.o slide_hash_rvv.lo
+
+riscv_features.o: $(SRCDIR)/riscv_features.c
+	$(CC) $(CFLAGS) $(RVVFLAG) $(INCLUDES) -c -o $@ $(SRCDIR)/riscv_features.c
+
+riscv_features.lo: $(SRCDIR)/riscv_features.c
+	$(CC) $(SFLAGS) $(RVVFLAG) -DPIC $(INCLUDES) -c -o $@ $(SRCDIR)/riscv_features.c
+
+adler32_rvv.o: $(SRCDIR)/adler32_rvv.c
+	$(CC) $(CFLAGS) $(RVVFLAG) $(INCLUDES) -c -o $@ $(SRCDIR)/adler32_rvv.c
+
+adler32_rvv.lo: $(SRCDIR)/adler32_rvv.c
+	$(CC) $(SFLAGS) $(RVVFLAG) -DPIC $(INCLUDES) -c -o $@ $(SRCDIR)/adler32_rvv.c
+
+chunkset_rvv.o: $(SRCDIR)/chunkset_rvv.c
+	$(CC) $(CFLAGS) $(RVVFLAG) $(INCLUDES) -c -o $@ $(SRCDIR)/chunkset_rvv.c
+
+chunkset_rvv.lo: $(SRCDIR)/chunkset_rvv.c
+	$(CC) $(SFLAGS) $(RVVFLAG) -DPIC $(INCLUDES) -c -o $@ $(SRCDIR)/chunkset_rvv.c
+
+compare256_rvv.o: $(SRCDIR)/compare256_rvv.c
+	$(CC) $(CFLAGS) $(RVVFLAG) $(INCLUDES) -c -o $@ $(SRCDIR)/compare256_rvv.c
+
+compare256_rvv.lo: $(SRCDIR)/compare256_rvv.c
+	$(CC) $(SFLAGS) $(RVVFLAG) -DPIC $(INCLUDES) -c -o $@ $(SRCDIR)/compare256_rvv.c
+
+slide_hash_rvv.o: $(SRCDIR)/slide_hash_rvv.c
+	$(CC) $(CFLAGS) $(RVVFLAG) $(INCLUDES) -c -o $@ $(SRCDIR)/slide_hash_rvv.c
+
+slide_hash_rvv.lo: $(SRCDIR)/slide_hash_rvv.c
+	$(CC) $(SFLAGS) $(RVVFLAG) -DPIC $(INCLUDES) -c -o $@ $(SRCDIR)/slide_hash_rvv.c
+
+mostlyclean: clean
+clean:
+	rm -f *.o *.lo *~
+	rm -rf objs
+	rm -f *.gcda *.gcno *.gcov
+
+distclean: clean
+	rm -f Makefile

@@ -241,6 +241,18 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CreateRangeICollectionUsesCopyTo()
+        {
+            var items = new CopyToTrackingCollection<int>(1, 2, 3);
+
+            Assert.Equal(new[] { 1, 2, 3 }, ImmutableArray.CreateRange(items));
+            Assert.Equal(1, items.CopyToCallCount);
+
+            Assert.Equal(new[] { 1, 2, 3 }, items.ToImmutableArray());
+            Assert.Equal(2, items.CopyToCallCount);
+        }
+
+        [Fact]
         public void CreateRangeInvalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("items", () => ImmutableArray.CreateRange((IEnumerable<int>)null));
@@ -344,6 +356,11 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, Math.Max(0, array.Length - 1), 2, i => i));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, -1, i => i));
 
+            if (array.Length > 0)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 1, int.MaxValue, i => i));
+            }
+
             Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, 0, 0, i => i));
         }
 
@@ -386,6 +403,11 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, array.Length, 1, (i, j) => i + j, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, Math.Max(0, array.Length - 1), 2, (i, j) => i + j, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, -1, (i, j) => i + j, 0));
+
+            if (array.Length > 0)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 1, int.MaxValue, (i, j) => i + j, 0));
+            }
 
             Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, 0, 0, (x, y) => 0, 0));
         }
@@ -432,6 +454,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, int.MaxValue));
             }
         }
 
@@ -478,6 +501,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, int.MaxValue));
             }
         }
 
@@ -497,6 +521,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(1, array.Length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(1, int.MaxValue));
             }
         }
 
@@ -777,7 +802,25 @@ namespace System.Collections.Immutable.Tests
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "startIndex");
+        }
+
+        [Fact]
+        public void IndexOfConsistentWithArray()
+        {
+            ImmutableArray<int> immutableArray = ImmutableArray.Create(1, 2, 3, 4);
+            int[] array = new[] { 1, 2, 3, 4 };
+
+            Assert.Equal(-1, immutableArray.IndexOf(2, immutableArray.Length, 0));
+            Assert.Equal(-1, Array.IndexOf(array, 2, array.Length, 0));
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                int immutableArrayResult = immutableArray.IndexOf(immutableArray[i], 0, immutableArray.Length);
+                int arrayResult = Array.IndexOf(array, array[i], 0, array.Length);
+                Assert.Equal(immutableArrayResult, arrayResult);
+            }
         }
 
         [Fact]
@@ -1425,6 +1468,21 @@ namespace System.Collections.Immutable.Tests
             yield return new object[] { s_empty, 0, new uint[] { 1, 2, 3 } };
             yield return new object[] { s_manyElements, 0, new uint[] { 4, 5, 6 } };
             yield return new object[] { s_manyElements, 3, new uint[] { 4, 5, 6 } };
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void InsertRangeICollectionUsesCopyTo(int index)
+        {
+            ImmutableArray<int> immutableArray = s_manyElements;
+            var items = new CopyToTrackingCollection<int>(7, 8);
+
+            ImmutableArray<int> result = immutableArray.InsertRange(index, items);
+
+            Assert.Equal(1, items.CopyToCallCount);
+            Assert.Equal(s_manyElements.Take(index).Concat(new[] { 7, 8 }).Concat(s_manyElements.Skip(index)), result);
         }
 
         [Theory]
@@ -2508,7 +2566,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { "1" }, s_twoElementRefTypeWithNull.OfType<string>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddThreadSafety()
         {
             // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.

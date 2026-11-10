@@ -450,14 +450,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static void DangerousAs()
-        {
-            // Verify that As does not perform type checks
-            object o = new object();
-            Assert.IsType<object>(Unsafe.As<string>(o));
-        }
-
-        [Fact]
         public static void ByteOffsetArray()
         {
             var a = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
@@ -806,6 +798,25 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static unsafe void RefIsAddressGreaterThanOrEqualTo()
+        {
+            int[] a = new int[2];
+
+            Assert.True(Unsafe.IsAddressGreaterThanOrEqualTo(ref a[0], ref a[0]));
+            Assert.False(Unsafe.IsAddressGreaterThanOrEqualTo(ref a[0], ref a[1]));
+            Assert.True(Unsafe.IsAddressGreaterThanOrEqualTo(ref a[1], ref a[0]));
+            Assert.True(Unsafe.IsAddressGreaterThanOrEqualTo(ref a[1], ref a[1]));
+
+            // The following tests ensure that we're using unsigned comparison logic
+
+            Assert.False(Unsafe.IsAddressGreaterThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(1)), ref Unsafe.AsRef<byte>((void*)(-1))));
+            Assert.True(Unsafe.IsAddressGreaterThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(-1)), ref Unsafe.AsRef<byte>((void*)(1))));
+            Assert.True(Unsafe.IsAddressGreaterThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(int.MinValue)), ref Unsafe.AsRef<byte>((void*)(int.MaxValue))));
+            Assert.False(Unsafe.IsAddressGreaterThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(int.MaxValue)), ref Unsafe.AsRef<byte>((void*)(int.MinValue))));
+            Assert.True(Unsafe.IsAddressGreaterThanOrEqualTo(ref Unsafe.AsRef<byte>(null), ref Unsafe.AsRef<byte>(null)));
+        }
+
+        [Fact]
         public static unsafe void RefIsAddressLessThan()
         {
             int[] a = new int[2];
@@ -822,6 +833,25 @@ namespace System.Runtime.CompilerServices
             Assert.False(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(int.MinValue)), ref Unsafe.AsRef<byte>((void*)(int.MaxValue))));
             Assert.True(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(int.MaxValue)), ref Unsafe.AsRef<byte>((void*)(int.MinValue))));
             Assert.False(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>(null), ref Unsafe.AsRef<byte>(null)));
+        }
+
+        [Fact]
+        public static unsafe void RefIsAddressLessThanOrEqualTo()
+        {
+            int[] a = new int[2];
+
+            Assert.True(Unsafe.IsAddressLessThanOrEqualTo(ref a[0], ref a[0]));
+            Assert.True(Unsafe.IsAddressLessThanOrEqualTo(ref a[0], ref a[1]));
+            Assert.False(Unsafe.IsAddressLessThanOrEqualTo(ref a[1], ref a[0]));
+            Assert.True(Unsafe.IsAddressLessThanOrEqualTo(ref a[1], ref a[1]));
+
+            // The following tests ensure that we're using unsigned comparison logic
+
+            Assert.True(Unsafe.IsAddressLessThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(1)), ref Unsafe.AsRef<byte>((void*)(-1))));
+            Assert.False(Unsafe.IsAddressLessThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(-1)), ref Unsafe.AsRef<byte>((void*)(1))));
+            Assert.False(Unsafe.IsAddressLessThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(int.MinValue)), ref Unsafe.AsRef<byte>((void*)(int.MaxValue))));
+            Assert.True(Unsafe.IsAddressLessThanOrEqualTo(ref Unsafe.AsRef<byte>((void*)(int.MaxValue)), ref Unsafe.AsRef<byte>((void*)(int.MinValue))));
+            Assert.True(Unsafe.IsAddressLessThanOrEqualTo(ref Unsafe.AsRef<byte>(null), ref Unsafe.AsRef<byte>(null)));
         }
 
         [Fact]

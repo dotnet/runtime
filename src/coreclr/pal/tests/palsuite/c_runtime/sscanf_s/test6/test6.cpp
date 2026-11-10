@@ -35,7 +35,7 @@ PALTEST(c_runtime_sscanf_s_test6_paltest_sscanf_test6, "c_runtime/sscanf_s/test6
     DoNumTest("200000", "%lo", 65536);
     DoNumTest("-1", "%Lo", -1);
     DoNumTest("200000", "%Lo", 65536);
-    DoI64NumTest("40000000000", "%I64o", I64(4294967296));
+    DoI64NumTest("40000000000", "%I64o", 4294967296LL);
 
     PAL_Terminate();
     return PASS;

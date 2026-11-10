@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal MemberPrimitiveUnTyped? memberPrimitiveUnTyped;
         internal MemberReference? _memberReference;
         internal ObjectNull? _objectNull;
-        internal static volatile MessageEnd? _messageEnd;
+        internal static MessageEnd? _messageEnd;
 
         internal BinaryParser(Stream stream, ObjectReader objectReader)
         {
@@ -642,7 +642,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             PRs._value = _objectString._value;
             PRs._keyDt = "System.String";
-            PRs._dtType = Converter.s_typeofString;
+            PRs._dtType = typeof(string);
             PRs._dtTypeCode = InternalPrimitiveTypeE.Invalid;
             PRs._varValue = _objectString._value; //Need to set it because ObjectReader is picking up value from variant, not pr.PRvalue
 

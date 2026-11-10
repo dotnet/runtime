@@ -10,11 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.Metrics;
-#if TARGET_WASI
-using System.Diagnostics;
-using System.Net.Http.Metrics;
-using HttpHandlerType = System.Net.Http.WasiHttpHandler;
-#elif TARGET_BROWSER
+#if TARGET_BROWSER
 using System.Diagnostics;
 using System.Net.Http.Metrics;
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
@@ -28,7 +24,7 @@ namespace System.Net.Http
     {
         private readonly HttpHandlerType _underlyingHandler;
 
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
         private IMeterFactory? _meterFactory;
         private HttpMessageHandler? _firstHandler; // DiagnosticsHandler or MetricsHandler, depending on global configuration.
 
@@ -45,13 +41,14 @@ namespace System.Net.Http
 
                 // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
                 // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
+                // Since HttpClientHandler.Proxy is unsupported on most platforms, don't bother passing it to telemetry handlers.
                 if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                 {
-                    handler = new MetricsHandler(handler, _meterFactory, out _);
+                    handler = new MetricsHandler(handler, _meterFactory, proxy: null, out _);
                 }
                 if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
                 {
-                    handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                    handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current, proxy: null);
                 }
 
                 // Ensure a single handler is used for all requests.
@@ -101,7 +98,7 @@ namespace System.Net.Http
         [CLSCompliant(false)]
         public IMeterFactory? MeterFactory
         {
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             get => _meterFactory;
             set
             {
@@ -269,14 +266,14 @@ namespace System.Net.Http
                 switch (value)
                 {
                     case ClientCertificateOption.Manual:
-#if !(TARGET_BROWSER || TARGET_WASI)
+#if !TARGET_BROWSER
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
 #endif
                         break;
 
                     case ClientCertificateOption.Automatic:
-#if !(TARGET_BROWSER || TARGET_WASI)
+#if !TARGET_BROWSER
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
 #endif
@@ -307,7 +304,7 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
 #else
@@ -346,17 +343,13 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
-        //
-        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
-        // API compat will fail until this is fixed
-        //
-        //[UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             throw new PlatformNotSupportedException();
 #else
             ArgumentNullException.ThrowIfNull(request);
@@ -371,12 +364,11 @@ namespace System.Net.Http
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
-        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
-            s_dangerousAcceptAnyServerCertificateValidator ??
-            Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-            s_dangerousAcceptAnyServerCertificateValidator;
+            field ??
+            Interlocked.CompareExchange(ref field, delegate { return true; }, null) ??
+            field;
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {

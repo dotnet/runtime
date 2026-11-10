@@ -5,9 +5,9 @@ set( CORGUIDS_IDL_SOURCES
   clrinternal.idl
   xclrdata.idl
   corprof.idl
-  corpub.idl
   corsym.idl
   sospriv.idl
+  dacdbi.idl
 )
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -50,10 +50,6 @@ else(CLR_CMAKE_HOST_WIN32)
     endforeach(IDL_SOURCE)
 
 endif(CLR_CMAKE_HOST_WIN32)
-
-if(FEATURE_JIT_PITCHING)
-   add_definitions(-DFEATURE_JIT_PITCHING)
-endif(FEATURE_JIT_PITCHING)
 
 # Compile *_i.cpp to lib
 add_library_clr(corguids OBJECT ${CORGUIDS_SOURCES})

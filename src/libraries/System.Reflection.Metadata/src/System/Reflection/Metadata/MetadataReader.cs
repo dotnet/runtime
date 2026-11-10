@@ -236,7 +236,7 @@ namespace System.Reflection.Metadata
         {
             // storage header:
             memReader.ReadUInt16();
-            int streamCount = memReader.ReadInt16();
+            int streamCount = memReader.ReadUInt16();
 
             var streamHeaders = new StreamHeader[streamCount];
             for (int i = 0; i < streamHeaders.Length; i++)
@@ -1080,8 +1080,7 @@ namespace System.Reflection.Metadata
 
         public ImmutableArray<byte> GetBlobContent(BlobHandle handle)
         {
-            // TODO: We can skip a copy for virtual blobs.
-            byte[]? bytes = GetBlobBytes(handle);
+            byte[]? bytes = BlobHeap.GetBytes(handle, unique: false);
             return ImmutableCollectionsMarshal.AsImmutableArray(bytes);
         }
 

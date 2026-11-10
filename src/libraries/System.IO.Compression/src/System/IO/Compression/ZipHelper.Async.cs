@@ -10,22 +10,6 @@ namespace System.IO.Compression;
 
 internal static partial class ZipHelper
 {
-    /// <summary>
-    /// Asynchronously reads exactly bytesToRead out of stream, unless it is out of bytes.
-    /// </summary>
-    internal static async Task<int> ReadBytesAsync(Stream stream, Memory<byte> buffer, int bytesToRead, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        int bytesRead = await stream.ReadAtLeastAsync(buffer, bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead < bytesToRead)
-        {
-            throw new IOException(SR.UnexpectedEndOfStream);
-        }
-        return bytesRead;
-    }
-
     // Asynchronously assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
     // assumes maxBytesToRead is positive, ensures to not read beyond the provided max number of bytes,
     // if the signature is found then returns true and positions stream at first byte of signature
@@ -53,11 +37,18 @@ internal static partial class ZipHelper
             bool signatureFound = false;
 
             int totalBytesRead = 0;
-            int duplicateBytesRead = 0;
 
-            while (!signatureFound && !outOfBytes && totalBytesRead <= maxBytesToRead)
+            while (!signatureFound && !outOfBytes && totalBytesRead < maxBytesToRead)
             {
-                int bytesRead = await SeekBackwardsAndReadAsync(stream, bufferMemory, signatureToFind.Length, cancellationToken).ConfigureAwait(false);
+                int overlap = totalBytesRead == 0 ? 0 : signatureToFind.Length;
+
+                if (maxBytesToRead - totalBytesRead + overlap < bufferMemory.Length)
+                {
+                    // If we have less than a full buffer left to read, we adjust the buffer size.
+                    bufferMemory = bufferMemory.Slice(0, maxBytesToRead - totalBytesRead + overlap);
+                }
+
+                int bytesRead = await SeekBackwardsAndReadAsync(stream, bufferMemory, overlap, cancellationToken).ConfigureAwait(false);
 
                 outOfBytes = bytesRead < bufferMemory.Length;
                 if (bytesRead < bufferMemory.Length)
@@ -68,15 +59,13 @@ internal static partial class ZipHelper
                 bufferPointer = bufferMemory.Span.LastIndexOf(signatureToFind.Span);
                 Debug.Assert(bufferPointer < bufferMemory.Length);
 
-                totalBytesRead += (bufferMemory.Length - duplicateBytesRead);
+                totalBytesRead += bytesRead - overlap;
 
                 if (bufferPointer != -1)
                 {
                     signatureFound = true;
                     break;
                 }
-
-                duplicateBytesRead = signatureToFind.Length;
             }
 
             if (!signatureFound)
@@ -109,14 +98,14 @@ internal static partial class ZipHelper
         {
             Debug.Assert(overlap <= buffer.Length);
             stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
-            bytesRead = await ReadBytesAsync(stream, buffer, buffer.Length, cancellationToken).ConfigureAwait(false);
+            bytesRead = await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             stream.Seek(-buffer.Length, SeekOrigin.Current);
         }
         else
         {
             int bytesToRead = (int)stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
-            bytesRead = await ReadBytesAsync(stream, buffer, bytesToRead, cancellationToken).ConfigureAwait(false);
+            bytesRead = await stream.ReadAtLeastAsync(buffer, bytesToRead, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             stream.Seek(0, SeekOrigin.Begin);
         }
 

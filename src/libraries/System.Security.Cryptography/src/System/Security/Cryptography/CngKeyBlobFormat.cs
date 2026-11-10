@@ -134,17 +134,94 @@ namespace System.Security.Cryptography
             }
         }
 
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   public key BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   public key BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;PQDSAPUBLICBLOB&quot;.
+        /// </remarks>
         public static CngKeyBlobFormat PQDsaPublicBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPUBLICBLOB"); // BCRYPT_PQDSA_PUBLIC_BLOB
 
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private key BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private key BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;PQDSAPRIVATEBLOB&quot;.
+        /// </remarks>
         public static CngKeyBlobFormat PQDsaPrivateBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATEBLOB"); // BCRYPT_PQDSA_PRIVATE_BLOB
 
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private seed BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private seed BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;PQDSAPRIVATESEEDBLOB&quot;.
+        /// </remarks>
         public static CngKeyBlobFormat PQDsaPrivateSeedBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATESEEDBLOB"); // BCRYPT_PQDSA_PRIVATE_SEED_BLOB
+
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (ML-KEM) public key BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (ML-KEM) public key BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;MLKEMPUBLICBLOB&quot;.
+        /// </remarks>
+        public static CngKeyBlobFormat MLKemPublicBlob => field ??= new CngKeyBlobFormat("MLKEMPUBLICBLOB");
+
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (ML-KEM) private key BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (ML-KEM) private key BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;MLKEMPRIVATEBLOB&quot;.
+        /// </remarks>
+        public static CngKeyBlobFormat MLKemPrivateBlob => field ??= new CngKeyBlobFormat("MLKEMPRIVATEBLOB");
+
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (ML-KEM) private seed BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (ML-KEM) private seed BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;MLKEMPRIVATESEEDBLOB&quot;.
+        /// </remarks>
+        public static CngKeyBlobFormat MLKemPrivateSeedBlob => field ??= new CngKeyBlobFormat("MLKEMPRIVATESEEDBLOB");
+
+        internal static CngKeyBlobFormat CompositeMLKemPublicBlob => field ??= new CngKeyBlobFormat("COMPMLKEMPUBLICBLOB");
+
+        // IETF LAMPS private key format
+        internal static CngKeyBlobFormat CompositeMLKemPrivateBlob => field ??= new CngKeyBlobFormat("COMPMLKEMPRIVATELAMPSBLOB");
+
+        // CFRG private key format
+        internal static CngKeyBlobFormat CompositeMLKemPrivateIrtfSeedBlob => field ??= new CngKeyBlobFormat("COMPMLKEMPRIVATEIRTFSEEDBLOB");
 
         public static CngKeyBlobFormat OpaqueTransportBlob
         {

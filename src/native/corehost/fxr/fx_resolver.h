@@ -4,6 +4,8 @@
 #ifndef __FX_RESOLVER_H__
 #define __FX_RESOLVER_H__
 
+#include <optional>
+
 #include "error_codes.h"
 #include "fx_reference.h"
 #include "fx_definition.h"
@@ -24,14 +26,14 @@ public:
 public:
     static StatusCode resolve_frameworks(
         const pal::string_t& dotnet_root,
-        const runtime_config_t::settings_t& override_settings,
+        const std::optional<roll_forward_option>& override_roll_forward,
         const runtime_config_t& app_config,
         /*in_out*/ fx_definition_vector_t& fx_definitions,
         resolution_failure_info& resolution_failure);
 
     static StatusCode resolve_frameworks_for_app(
         const pal::string_t& dotnet_root,
-        const runtime_config_t::settings_t& override_settings,
+        const std::optional<roll_forward_option>& override_roll_forward,
         const runtime_config_t& app_config,
         /*in_out*/ fx_definition_vector_t& fx_definitions,
         const pal::char_t* app_display_name);
@@ -40,11 +42,10 @@ public:
         const runtime_config_t& config,
         const std::unordered_map<pal::string_t, const fx_ver_t> &existing_framework_versions_by_name);
 
+    static std::vector<pal::string_t> get_disabled_versions();
+
 private:
-    fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings)
-        : m_disable_multilevel_lookup{disable_multilevel_lookup}
-        , m_override_settings{override_settings}
-    { }
+    fx_resolver_t(const std::optional<roll_forward_option>& override_roll_forward);
 
     void update_newest_references(
         const runtime_config_t& config);
@@ -64,8 +65,7 @@ private:
     static void display_missing_framework_error(
         const pal::string_t& fx_name,
         const pal::string_t& fx_version,
-        const pal::string_t& dotnet_root,
-        bool disable_multilevel_lookup);
+        const pal::string_t& dotnet_root);
     static void display_incompatible_framework_error(
         const pal::string_t& higher,
         const fx_reference_t& lower);
@@ -95,8 +95,10 @@ private:
     // of the algorithm.
     fx_name_to_fx_reference_map_t m_oldest_fx_references;
 
-    bool m_disable_multilevel_lookup;
-    const runtime_config_t::settings_t& m_override_settings;
+    const std::optional<roll_forward_option>& m_override_roll_forward;
+
+    // Disabled runtime versions
+    std::vector<pal::string_t> m_disabled_versions;
 };
 
 #endif // __FX_RESOLVER_H__

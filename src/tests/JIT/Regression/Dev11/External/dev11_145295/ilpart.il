@@ -21,14 +21,14 @@
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
-.subsystem 0x0003       
-.corflags 0x00000001    
+.subsystem 0x0003
+.corflags 0x00000001
 
 
 
 .class
     public abstract auto ansi sealed beforefieldinit
-    Test.ILPart
+    dev11_145295.ILPart
         extends [mscorlib]System.Object
 {
 
@@ -86,21 +86,21 @@
             endfinally
 
         RUN_CALLOUT_3:
-            call        void [CSharpPart_145295]Test.Helpers::Callout3()
+            call        void [CSharpPart_145295]dev11_145295.Helpers::Callout3()
             endfinally
 
         RUN_CALLOUT_4:
             ldc.i4      4
             stloc       computedValue
-            call        void [CSharpPart_145295]Test.Helpers::Callout4()
+            call        void [CSharpPart_145295]dev11_145295.Helpers::Callout4()
             endfinally
 
         RUN_CALLOUT_5:
-            call        void [CSharpPart_145295]Test.Helpers::Callout5()
+            call        void [CSharpPart_145295]dev11_145295.Helpers::Callout5()
             endfinally
 
         RUN_CALLOUT_6:
-            call        void [CSharpPart_145295]Test.Helpers::Callout6()
+            call        void [CSharpPart_145295]dev11_145295.Helpers::Callout6()
             endfinally
 
         }
@@ -135,7 +135,7 @@
         .try
         {
 
-            call        void [CSharpPart_145295]Test.Helpers::Throw()
+            call        void [CSharpPart_145295]dev11_145295.Helpers::Throw()
             leave       END_OF_METHOD_BODY
 
         }
@@ -181,19 +181,19 @@
                 endfinally
 
             RUN_CALLOUT_3:
-                call        void [CSharpPart_145295]Test.Helpers::Callout3()
+                call        void [CSharpPart_145295]dev11_145295.Helpers::Callout3()
                 endfinally
 
             RUN_CALLOUT_4:
-                call        void [CSharpPart_145295]Test.Helpers::Callout4()
+                call        void [CSharpPart_145295]dev11_145295.Helpers::Callout4()
                 endfinally
 
             RUN_CALLOUT_5:
-                call        void [CSharpPart_145295]Test.Helpers::Callout5()
+                call        void [CSharpPart_145295]dev11_145295.Helpers::Callout5()
                 endfinally
 
             RUN_CALLOUT_6:
-                call        void [CSharpPart_145295]Test.Helpers::Callout6()
+                call        void [CSharpPart_145295]dev11_145295.Helpers::Callout6()
                 endfinally
 
             }

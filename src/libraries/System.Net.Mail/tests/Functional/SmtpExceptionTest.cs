@@ -51,6 +51,7 @@ namespace System.Net.Mail.Tests
             Assert.NotNull(se.Message);
             Assert.Equal(-1, se.Message.IndexOf(typeof(SmtpException).FullName));
             Assert.Equal((SmtpStatusCode)666, se.StatusCode);
+            Assert.NotEqual(new SmtpException(SmtpStatusCode.CommandUnrecognized).Message, se.Message);
         }
 
         [Fact]

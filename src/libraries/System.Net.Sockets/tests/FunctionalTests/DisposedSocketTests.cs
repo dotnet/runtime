@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class DisposedSocket
     {
         private static readonly byte[] s_buffer = new byte[1];
@@ -807,6 +807,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)
         {
             TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout);

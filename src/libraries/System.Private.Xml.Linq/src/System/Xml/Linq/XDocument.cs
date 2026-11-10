@@ -425,6 +425,12 @@ namespace System.Xml.Linq
             if (reader.ReadState == ReadState.Initial) reader.Read();
 
             XDocument d = InitLoad(reader, options);
+
+            if (reader.NodeType == XmlNodeType.XmlDeclaration)
+            {
+                d.Declaration = new XDeclaration(reader);
+            }
+
             d.ReadContentFrom(reader, options);
 
             if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
@@ -467,6 +473,12 @@ namespace System.Xml.Linq
             }
 
             XDocument d = InitLoad(reader, options);
+
+            if (reader.NodeType == XmlNodeType.XmlDeclaration)
+            {
+                d.Declaration = await XDeclaration.CreateAsync(reader).ConfigureAwait(false);
+            }
+
             await d.ReadContentFromAsync(reader, options, cancellationToken).ConfigureAwait(false);
 
             if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
@@ -495,10 +507,6 @@ namespace System.Xml.Linq
                 {
                     d.SetLineInfo(li.LineNumber, li.LinePosition);
                 }
-            }
-            if (reader.NodeType == XmlNodeType.XmlDeclaration)
-            {
-                d.Declaration = new XDeclaration(reader);
             }
             return d;
         }

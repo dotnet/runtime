@@ -4,5 +4,9 @@
       <!-- called through reflection by System.Net.HttpWebRequest -->
       <method name="get_Settings" />
     </type>
+    <type fullname="System.Net.Http.HttpRequestMessage">
+      <!-- called through UnsafeAccessor by System.Net.Http tests -->
+      <method name="ExperimentalDangerousDoNotPartitionConnectionPoolBySni" />
+    </type>
   </assembly>
 </linker>

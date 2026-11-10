@@ -61,7 +61,7 @@ namespace System.Media
             _stream = stream;
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -314,20 +314,7 @@ namespace System.Media
                 int streamLen = (int)_stream.Length;
                 _currentPos = 0;
                 _streamData = new byte[streamLen];
-#if NET
                 _stream.ReadExactly(_streamData);
-#else
-                int totalRead = 0;
-                while (totalRead < streamLen)
-                {
-                    int bytesRead = _stream.Read(_streamData, totalRead, streamLen - totalRead);
-                    if (bytesRead <= 0)
-                    {
-                        throw new EndOfStreamException();
-                    }
-                    totalRead += bytesRead;
-                }
-#endif
                 IsLoadCompleted = true;
                 OnLoadCompleted(new AsyncCompletedEventArgs(null, false, null));
             }

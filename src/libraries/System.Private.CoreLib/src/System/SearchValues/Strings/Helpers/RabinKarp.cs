@@ -142,7 +142,7 @@ namespace System.Buffers
                         }
                     }
 
-                    if (!Unsafe.IsAddressLessThan(ref current, ref end))
+                    if (Unsafe.IsAddressGreaterThanOrEqualTo(ref current, ref end))
                     {
                         break;
                     }
@@ -159,7 +159,7 @@ namespace System.Buffers
             return -1;
         }
 
-        private readonly int IndexOfAnyCaseInsensitiveUnicode(ReadOnlySpan<char> span)
+        private readonly unsafe int IndexOfAnyCaseInsensitiveUnicode(ReadOnlySpan<char> span)
         {
             Debug.Assert(span.Length <= MaxInputLength, "Teddy should have handled long inputs.");
 

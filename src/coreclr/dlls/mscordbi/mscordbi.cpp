@@ -10,9 +10,11 @@
 //*****************************************************************************
 #include "stdafx.h"
 
-#if defined(HOST_ARM64) && defined(TARGET_UNIX)
-// Flag to check if atomics feature is available on
-// the machine
+#if defined(HOST_ARM64) && defined(TARGET_UNIX) && !defined(MSCORDBI_LINKS_PRIVATE_PAL)
+// Flag to check if atomics feature is available on the machine. Legacy mscordbi borrows
+// the DAC's PAL and does not link pal.cpp, so it provides this symbol itself. The universal
+// binary links its own PAL (which already defines g_arm64_atomics_present), so it excludes
+// this definition to avoid a duplicate symbol at link time.
 bool g_arm64_atomics_present = false;
 #endif
 

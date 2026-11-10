@@ -7,7 +7,7 @@ initTargetDistroRid()
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
-    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" ]]; then
+    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" && "$__TargetOS" != "openharmony" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
@@ -60,6 +60,18 @@ build_native()
     cmakeArgs="$6"
     message="$7"
 
+    # When sccache is enabled, use it as the compiler launcher.
+    # On macOS, CMake wraps PCH includes with -Xarch_<arch> which sccache
+    # cannot parse.  Use a thin wrapper that strips -Xarch_<arch> flags
+    # (safe in single-architecture builds) before forwarding to sccache.
+    if [[ "${USE_SCCACHE:-}" == "true" ]]; then
+        local __sccacheLauncher="sccache"
+        if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
+            __sccacheLauncher="$__RepoRootDir/eng/native/sccache-xarch-wrapper.sh"
+        fi
+        cmakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=$__sccacheLauncher -DCMAKE_CXX_COMPILER_LAUNCHER=$__sccacheLauncher $cmakeArgs"
+    fi
+
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
@@ -70,7 +82,7 @@ build_native()
     # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
     # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
     # See https://github.com/dotnet/runtime/issues/35727 for more information.
-    # 
+    #
     # These flags MUST be exported before gen-buildsys.sh runs or cmake will ignore them
     #
     export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
@@ -89,12 +101,19 @@ build_native()
     fi
 
     if [[ "$targetOS" == maccatalyst ]]; then
-        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # Intentionally do not set CMAKE_OSX_DEPLOYMENT_TARGET for maccatalyst here:
+        # - CMake interprets CMAKE_OSX_DEPLOYMENT_TARGET as a macOS minimum version
+        #   instead of MacCatalyst, causing newer clang to reject it as invalid.
+        # - The effective Catalyst minimum version is enforced via the
+        #   -target *-apple-ios<version>-macabi flag in eng/native/configurecompiler.cmake
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-        local ANDROID_API_LEVEL=21
+        local ANDROID_API_LEVEL=24
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -118,12 +137,44 @@ build_native()
             echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
+    elif [[ "$targetOS" == openharmony ]]; then
+        # OpenHarmony NDK-style toolchain. The OHOS NDK provides its
+        # own CMake toolchain file (ohos.toolchain.cmake) which sets CMAKE_SYSTEM_NAME=OHOS
+        # and selects the aarch64/arm/x86_64 openharmony clang wrappers + sysroot.
+        if [[ -z "$OHOS_NDK_HOME" ]]; then
+            echo "Error: You need to set the OHOS_NDK_HOME environment variable pointing to the OpenHarmony NDK root."
+            exit 1
+        fi
+
+        local ohosToolchainFile="$OHOS_NDK_HOME/native/build/cmake/ohos.toolchain.cmake"
+        if [[ ! -f "$ohosToolchainFile" ]]; then
+            echo "Error: OHOS CMake toolchain file not found at $ohosToolchainFile. Verify OHOS_NDK_HOME."
+            exit 1
+        fi
+
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ohosToolchainFile $cmakeArgs"
+        cmakeArgs="-DOHOS_NDK_HOME=$OHOS_NDK_HOME $cmakeArgs"
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in ohos.toolchain.cmake already
+        __Compiler="default"
+
+        if [[ "$hostArch" == arm64 ]]; then
+            cmakeArgs="-DOHOS_ARCH=arm64-v8a $cmakeArgs"
+        elif [[ "$hostArch" == arm ]]; then
+            cmakeArgs="-DOHOS_ARCH=armeabi-v7a $cmakeArgs"
+        elif [[ "$hostArch" == x64 ]]; then
+            cmakeArgs="-DOHOS_ARCH=x86_64 $cmakeArgs"
+        else
+            echo "Error: Unknown OHOS architecture $hostArch."
+            exit 1
+        fi
     elif [[ "$targetOS" == iossimulator ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
         # set default iOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
         if [[ "$__TargetArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$__TargetArch" == arm64 ]]; then
@@ -137,7 +188,7 @@ build_native()
 
         # set default iOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
         if [[ "$__TargetArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
@@ -149,7 +200,7 @@ build_native()
 
         # set default tvOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
         if [[ "$__TargetArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$__TargetArch" == arm64 ]]; then
@@ -163,7 +214,7 @@ build_native()
 
         # set default tvOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
         if [[ "$__TargetArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
@@ -213,8 +264,8 @@ build_native()
         pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
-        echo "Executing $buildTool $target -j $__NumProc"
-        "$buildTool" $target -j "$__NumProc"
+        echo "Executing $buildTool -j $__NumProc $target"
+        "$buildTool" -j "$__NumProc" $target
         exit_code="$?"
 
         popd
@@ -230,8 +281,8 @@ build_native()
             # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.
             pushd "$intermediatesDir"
 
-            echo "Executing $buildTool $target -j $__NumProc"
-            "$buildTool" $target -j "$__NumProc"
+            echo "Executing $buildTool -j $__NumProc $target"
+            "$buildTool" -j "$__NumProc" $target
             exit_code="$?"
 
             popd
@@ -256,6 +307,7 @@ usage()
     echo ""
     echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -riscv64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
+    echo "-arch: target architecture (defaults to running architecture); alternative to the BuildArch flags above."
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
     echo "-ci: indicates if this is a CI build."
@@ -267,7 +319,7 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-ninja: target ninja instead of GNU make"
+    echo "-ninja: target ninja instead of GNU make (default: true, use -ninja false to disable)"
     echo "-numproc: set the number of build processes."
     echo "-targetrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
@@ -293,7 +345,7 @@ __TargetRid=''
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
-if [[ "$platform" == "freebsd" ]]; then
+if [[ "$platform" == "freebsd" || "$platform" == "openbsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
@@ -306,6 +358,9 @@ elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
 else
   __NumProc=1
 fi
+
+# Default to using Ninja for faster builds
+__UseNinja=1
 
 while :; do
     if [[ "$#" -le 0 ]]; then
@@ -408,7 +463,17 @@ while :; do
             ;;
 
         ninja|-ninja)
-            __UseNinja=1
+            if [[ -z "${2+x}" ]] || [[ "$2" == -* ]]; then
+              __UseNinja=1
+            else
+              ninja_arg="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+              if [[ "$ninja_arg" == "false" ]]; then
+                __UseNinja=0
+              else
+                __UseNinja=1
+              fi
+              shift
+            fi
             ;;
 
         numproc|-numproc)
@@ -473,6 +538,16 @@ while :; do
 
         ppc64le|-ppc64le)
             __TargetArch=ppc64le
+            ;;
+
+        arch|-arch)
+            if [[ -n "$2" ]]; then
+                __TargetArch=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+                shift
+            else
+                echo "ERROR: 'arch' requires a non-empty option argument"
+                exit 1
+            fi
             ;;
 
         os|-os)
@@ -547,8 +622,14 @@ elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
 elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
     # nothing to do here
     true
+elif [[ "$__TargetOS" == osx || "$__TargetOS" == maccatalyst ]]; then
+    # nothing to do here
+    true
 elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
+    true
+elif [[ "$__TargetOS" == openharmony ]]; then
+    # OpenHarmony uses its NDK toolchain, no rootfs required
     true
 else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
@@ -558,8 +639,8 @@ fi
 if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
-    # Darwin that doesn't use rootfs
-    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" ]]; then
+    # Darwin that doesn't use rootfs; OpenHarmony uses its NDK toolchain
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" && "$__TargetOS" != "openharmony" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR
     fi

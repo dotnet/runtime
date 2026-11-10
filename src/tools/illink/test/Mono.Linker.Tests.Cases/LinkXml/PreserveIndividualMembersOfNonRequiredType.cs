@@ -4,40 +4,40 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
-	[SetupLinkerDescriptorFile ("PreserveIndividualMembersOfNonRequiredType.xml")]
-	class PreserveIndividualMembersOfNonRequiredType
-	{
-		public static void Main ()
-		{
-			var t = typeof (Required);
-		}
+    [SetupLinkerDescriptorFile("PreserveIndividualMembersOfNonRequiredType.xml")]
+    class PreserveIndividualMembersOfNonRequiredType
+    {
+        public static void Main()
+        {
+            var t = typeof(Required);
+        }
 
-		class Required
-		{
-			[Kept]
-			public Required () { }
+        class Required
+        {
+            [Kept]
+            public Required() { }
 
-			[Kept]
-			public int Field1;
+            [Kept]
+            public int Field1;
 
-			public int Field2;
+            public int Field2;
 
-			[Kept]
-			public void Method1 () { }
+            [Kept]
+            public void Method1() { }
 
-			public void Method2 () { }
+            public void Method2() { }
 
-			[Kept]
-			[KeptBackingField]
-			public int Property1 { [Kept] get; [Kept] set; }
+            [Kept]
+            [KeptBackingField]
+            public int Property1 { [Kept] get; [Kept] set; }
 
-			public int Property2 { get; set; }
+            public int Property2 { get; set; }
 
-			[Kept]
-			[KeptBackingField]
-			[KeptEventAddMethod]
-			[KeptEventRemoveMethod]
-			public event EventHandler Event1;
-		}
-	}
+            [Kept]
+            [KeptBackingField]
+            [KeptEventAddMethod]
+            [KeptEventRemoveMethod]
+            public event EventHandler Event1;
+        }
+    }
 }

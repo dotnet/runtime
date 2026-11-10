@@ -6,6 +6,10 @@
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.GeneratedCertificates.cs"
@@ -43,6 +47,15 @@
     <Compile Include="SignedCms\SignedCmsWholeDocumentTests.cs" />
     <Compile Include="SignedCms\SignedDocuments.cs" />
     <Compile Include="SignedCms\SignerInfoTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
+    <Compile Include="EnvelopedCms\KemGeneralTests.cs" />
+    <Compile Include="EnvelopedCms\KemNotSupportedTests.cs" />
+    <Compile Include="EnvelopedCms\KemTestDocuments.cs" />
+    <Compile Include="EnvelopedCms\MLKemDecryptTests.cs" />
+    <Compile Include="EnvelopedCms\MLKemEncryptTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="AlgorithmIdentifierTest.cs" />

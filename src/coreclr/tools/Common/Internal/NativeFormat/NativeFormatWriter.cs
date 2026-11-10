@@ -1705,7 +1705,8 @@ namespace Internal.NativeFormat
                 if (place)
                     _section.Place(tree);
 
-                _section.Place(second);
+                second = _section.Place(second);
+                tree.Update(first, second);
 
                 isLeaf = false;
                 return tree;
@@ -2040,16 +2041,6 @@ namespace Internal.NativeFormat
                     _entryIndexSize = newEntryIndexSize;
                 }
             }
-        }
-
-        public override bool Equals(object obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
         }
     }
 }

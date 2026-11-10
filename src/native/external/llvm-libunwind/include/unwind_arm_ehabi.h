@@ -118,15 +118,18 @@ _Unwind_VRS_Get(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
 extern _Unwind_VRS_Result
 _Unwind_VRS_Set(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
                 uint32_t regno, _Unwind_VRS_DataRepresentation representation,
-                void *valuep, uintptr_t *pos);
+                void *valuep);
 
 extern _Unwind_VRS_Result
 _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
                 uint32_t discriminator,
                 _Unwind_VRS_DataRepresentation representation);
 
+extern _Unwind_Reason_Code __gnu_unwind_frame(_Unwind_Exception *,
+                                              _Unwind_Context *);
+
 #if defined(_LIBUNWIND_UNWIND_LEVEL1_EXTERNAL_LINKAGE)
-#define _LIBUNWIND_EXPORT_UNWIND_LEVEL1 extern
+#define _LIBUNWIND_EXPORT_UNWIND_LEVEL1 extern __inline__
 #else
 #define _LIBUNWIND_EXPORT_UNWIND_LEVEL1 static __inline__
 #endif
@@ -147,8 +150,8 @@ uintptr_t _Unwind_GetGR(struct _Unwind_Context *context, int index) {
 
 _LIBUNWIND_EXPORT_UNWIND_LEVEL1
 void _Unwind_SetGR(struct _Unwind_Context *context, int index,
-                   uintptr_t value, uintptr_t *pos) {
-  _Unwind_VRS_Set(context, _UVRSC_CORE, (uint32_t)index, _UVRSD_UINT32, &value, pos);
+                   uintptr_t value) {
+  _Unwind_VRS_Set(context, _UVRSC_CORE, (uint32_t)index, _UVRSD_UINT32, &value);
 }
 
 _LIBUNWIND_EXPORT_UNWIND_LEVEL1
@@ -160,7 +163,7 @@ uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
 _LIBUNWIND_EXPORT_UNWIND_LEVEL1
 void _Unwind_SetIP(struct _Unwind_Context *context, uintptr_t value) {
   uintptr_t thumb_bit = _Unwind_GetGR(context, 15) & ((uintptr_t)0x1);
-  _Unwind_SetGR(context, 15, value | thumb_bit, NULL);
+  _Unwind_SetGR(context, 15, value | thumb_bit);
 }
 
 #ifdef __cplusplus

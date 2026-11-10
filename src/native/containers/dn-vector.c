@@ -268,6 +268,9 @@ dn_vector_custom_free (
 	dn_vector_t *vector,
 	dn_vector_dispose_func_t dispose_func)
 {
+	if (DN_UNLIKELY(!vector))
+		return;
+
 	dn_vector_custom_dispose (vector, dispose_func);
 	dn_allocator_free (vector->_internal._allocator, vector);
 }
@@ -312,7 +315,7 @@ dn_vector_custom_resize (
 {
 	DN_ASSERT (vector);
 
-	if (size == vector->_internal._capacity)
+	if (size == vector->size)
 		return true;
 
 	if (size > vector->_internal._capacity)

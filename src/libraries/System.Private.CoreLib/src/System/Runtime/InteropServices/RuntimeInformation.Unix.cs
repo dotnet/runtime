@@ -7,10 +7,9 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static string? s_osDescription;
-        private static volatile int s_osArchPlusOne;
+        private static int s_osArchPlusOne;
 
-        public static string OSDescription => s_osDescription ??=
+        public static string OSDescription => field ??=
 #if TARGET_ANDROID
             $"Android (API level {Environment.OSVersion.Version.Major})";
 #elif TARGET_OSX
@@ -21,8 +20,6 @@ namespace System.Runtime.InteropServices
             $"iOS {Environment.OSVersion.Version}";
 #elif TARGET_TVOS
             $"tvOS {Environment.OSVersion.Version}";
-#elif TARGET_WATCHOS
-            $"watchOS {Environment.OSVersion.Version}";
 #elif TARGET_LINUX
             Interop.OSReleaseFile.GetPrettyName() ?? Interop.Sys.GetUnixVersion();
 #else

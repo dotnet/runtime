@@ -12,4 +12,8 @@
     </PropertyGroup>
   </Target>
 
+  <ItemGroup>
+    <Compile Include="..\CoreDump.cs" />
+  </ItemGroup>
+
 </Project>

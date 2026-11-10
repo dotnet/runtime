@@ -31,6 +31,13 @@ namespace System.Net
         // flag is only used on Win8 and later.
         internal static readonly bool SkipIOCPCallbackOnSuccess = Environment.OSVersion.Version >= new Version(6, 2);
 
+        // Enable buffering of response data in the Kernel. The default value is false.
+        // It should be used by an application doing synchronous I/O or by an application doing asynchronous I/O with
+        // no more than one outstanding write at a time, and can significantly improve throughput over high-latency connections.
+        // Applications that use asynchronous I/O and that may have more than one send outstanding at a time should not use this flag.
+        // Enabling this can result in higher CPU and memory usage by Http.sys.
+        internal static bool EnableKernelResponseBuffering => LocalAppContextSwitches.EnableKernelResponseBuffering;
+
         // Mitigate potential DOS attacks by limiting the number of unknown headers we accept.  Numerous header names
         // with hash collisions will cause the server to consume excess CPU.  1000 headers limits CPU time to under
         // 0.5 seconds per request.  Respond with a 400 Bad Request.
@@ -722,10 +729,7 @@ namespace System.Net
                 {
                     // They sent an authorization - destroy their previous credentials.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Clearing principal cache");
-                    if (disconnectResult != null)
-                    {
-                        disconnectResult.AuthenticatedConnection = null;
-                    }
+                    disconnectResult?.AuthenticatedConnection = null;
                 }
             }
 
@@ -735,6 +739,7 @@ namespace System.Net
             NegotiateAuthentication? sessionContext = null;
             bool keepSessionContext = false;
             string? contextPackage = null;
+            ExtendedProtectionPolicy? contextExtendedProtectionPolicy = null;
             AuthenticationSchemes headerScheme = AuthenticationSchemes.None;
             AuthenticationSchemes authenticationScheme = AuthenticationSchemes;
             ExtendedProtectionPolicy extendedProtectionPolicy = _extendedProtectionPolicy;
@@ -752,6 +757,7 @@ namespace System.Net
                 {
                     sessionContext = disconnectResult.Session;
                     contextPackage = disconnectResult.SessionPackage;
+                    contextExtendedProtectionPolicy = disconnectResult.SessionExtendedProtectionPolicy;
                 }
 
                 httpContext = new HttpListenerContext(session, memoryBlob);
@@ -809,17 +815,17 @@ namespace System.Net
                     if (index < authorizationHeader.Length)
                     {
                         if ((authenticationScheme & AuthenticationSchemes.Negotiate) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Negotiate, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            authorizationHeader.AsSpan(0, index).Equals(AuthenticationTypes.Negotiate, StringComparison.OrdinalIgnoreCase))
                         {
                             headerScheme = AuthenticationSchemes.Negotiate;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Ntlm) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthenticationTypes.NTLM, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            authorizationHeader.AsSpan(0, index).Equals(AuthenticationTypes.NTLM, StringComparison.OrdinalIgnoreCase))
                         {
                             headerScheme = AuthenticationSchemes.Ntlm;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Basic) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Basic, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            authorizationHeader.AsSpan(0, index).Equals(AuthenticationTypes.Basic, StringComparison.OrdinalIgnoreCase))
                         {
                             headerScheme = AuthenticationSchemes.Basic;
                         }
@@ -877,19 +883,42 @@ namespace System.Net
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"context: {sessionContext} for connectionId: {connectionId}");
 
                             string package = headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate;
-                            if (sessionContext is null || sessionContext.IsAuthenticated || contextPackage != package)
+                            ExtendedProtectionPolicy authenticationExtendedProtectionPolicy = GetAuthenticationExtendedProtectionPolicy(extendedProtectionPolicy);
+                            if (sessionContext is null || sessionContext.IsAuthenticated || contextPackage != package ||
+                                !AreExtendedProtectionPoliciesEquivalent(contextExtendedProtectionPolicy, authenticationExtendedProtectionPolicy))
                             {
-                                sessionContext?.Dispose();
+                                if (sessionContext is not null)
+                                {
+                                    // The enclosing condition requires a new context. If authentication is still in progress
+                                    // and the package is unchanged, the only remaining reason is a policy mismatch.
+                                    bool policyChangedDuringHandshake = !sessionContext.IsAuthenticated && contextPackage == package;
+                                    if (disconnectResult is not null)
+                                    {
+                                        disconnectResult.Session = null;
+                                        disconnectResult.SessionPackage = null;
+                                        disconnectResult.SessionExtendedProtectionPolicy = null;
+                                    }
+
+                                    sessionContext.Dispose();
+                                    if (policyChangedDuringHandshake)
+                                    {
+                                        // The peer's response belongs to the challenge issued under the old policy.
+                                        sessionContext = null;
+                                        httpError = HttpStatusCode.Unauthorized;
+                                        break;
+                                    }
+                                }
 
                                 binding = GetChannelBinding(session, connectionId, isSecureConnection, extendedProtectionPolicy);
                                 NegotiateAuthenticationServerOptions serverOptions = new NegotiateAuthenticationServerOptions
                                 {
                                     Package = package,
                                     Binding = binding,
-                                    Policy = GetAuthenticationExtendedProtectionPolicy(extendedProtectionPolicy)
+                                    Policy = authenticationExtendedProtectionPolicy
                                 };
                                 sessionContext = new NegotiateAuthentication(serverOptions);
                                 contextPackage = package;
+                                contextExtendedProtectionPolicy = authenticationExtendedProtectionPolicy;
                             }
 
                             try
@@ -1007,7 +1036,7 @@ namespace System.Net
                             {
                                 bytes = Convert.FromBase64String(inBlob);
 
-                                inBlob = WebHeaderEncoding.GetString(bytes, 0, bytes.Length);
+                                inBlob = Encoding.Latin1.GetString(bytes);
                                 index = inBlob.IndexOf(':');
 
                                 if (index != -1)
@@ -1106,6 +1135,7 @@ namespace System.Net
 
                     disconnectResult.Session = sessionContext;
                     disconnectResult.SessionPackage = contextPackage;
+                    disconnectResult.SessionExtendedProtectionPolicy = contextExtendedProtectionPolicy;
                     // Prevent finally from disposing the context
                     sessionContext = null;
                 }
@@ -1145,6 +1175,7 @@ namespace System.Net
                         {
                             disconnectResult.Session = null;
                             disconnectResult.SessionPackage = null;
+                            disconnectResult.SessionExtendedProtectionPolicy = null;
                         }
 
                         sessionContext?.Dispose();
@@ -1238,6 +1269,59 @@ namespace System.Net
                 policy.PolicyEnforcement,
                 policy.ProtectionScenario,
                 _defaultServiceNames.ServiceNames.Merge("HTTP/localhost"));
+        }
+
+        // Returns true only if the stored policy (used to create an existing NegotiateAuthentication
+        // context) and the current request's policy are equivalent, meaning the saved context can be
+        // safely reused. Any difference in enforcement level, scenario, or service names requires a
+        // fresh context so that the current request's policy is correctly applied.
+        private static bool AreExtendedProtectionPoliciesEquivalent(ExtendedProtectionPolicy? stored, ExtendedProtectionPolicy current)
+        {
+            if (stored is null)
+            {
+                // No policy was recorded for the saved context; treat as incompatible to be safe.
+                return false;
+            }
+
+            if (stored.PolicyEnforcement != current.PolicyEnforcement)
+            {
+                return false;
+            }
+
+            // Both are Never — no channel binding or service name enforcement either way.
+            if (stored.PolicyEnforcement == PolicyEnforcement.Never)
+            {
+                return true;
+            }
+
+            if (stored.ProtectionScenario != current.ProtectionScenario)
+            {
+                return false;
+            }
+
+            // Compare the effective service name lists.
+            ServiceNameCollection? storedNames = stored.CustomServiceNames;
+            ServiceNameCollection? currentNames = current.CustomServiceNames;
+
+            if (storedNames is null && currentNames is null)
+            {
+                return true;
+            }
+
+            if (storedNames is null || currentNames is null || storedNames.Count != currentNames.Count)
+            {
+                return false;
+            }
+
+            foreach (string? name in storedNames)
+            {
+                if (!currentNames.Contains(name))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         // This only works for context-destroying errors.
@@ -1698,6 +1782,8 @@ namespace System.Net
             internal NegotiateAuthentication? Session { get; set; }
 
             internal string? SessionPackage { get; set; }
+
+            internal ExtendedProtectionPolicy? SessionExtendedProtectionPolicy { get; set; }
         }
     }
 }

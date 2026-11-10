@@ -22,10 +22,7 @@ namespace System.Diagnostics.Metrics
         internal bool Disposed { get; private set; }
 
         [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
 
         /// <summary>
         /// Initialize a new instance of the Meter using the <see cref="MeterOptions" />.
@@ -74,7 +71,8 @@ namespace System.Diagnostics.Metrics
 
         private void Initialize(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope = null, string? telemetrySchemaUrl = null)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+            Name = name;
             Version = version;
             if (tags is not null)
             {

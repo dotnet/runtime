@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
         /// Map a curve name to algorithm. This enables curves that worked pre-Win10
         /// to work with newer APIs for import and export.
         /// </summary>
-        internal static CngAlgorithm EcdsaCurveNameToAlgorithm(ReadOnlySpan<char> name)
+        internal static unsafe CngAlgorithm EcdsaCurveNameToAlgorithm(ReadOnlySpan<char> name)
         {
             const int MaxCurveNameLength = 16;
             Span<char> nameLower = stackalloc char[MaxCurveNameLength];
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography
         /// Map a curve name to algorithm. This enables curves that worked pre-Win10
         /// to work with newer APIs for import and export.
         /// </summary>
-        internal static CngAlgorithm EcdhCurveNameToAlgorithm(ReadOnlySpan<char> name)
+        internal static unsafe CngAlgorithm EcdhCurveNameToAlgorithm(ReadOnlySpan<char> name)
         {
             const int MaxCurveNameLength = 16;
             Span<char> nameLower = stackalloc char[MaxCurveNameLength];

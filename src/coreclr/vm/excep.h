@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EXCEP.H
-//
-
-//
-
 
 #ifndef __excep_h__
 #define __excep_h__
@@ -34,7 +29,6 @@ BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pCo
 // General purpose functions for use on an IP in jitted code.
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
-
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 // Enums
@@ -50,7 +44,7 @@ enum LFH {
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
 #else // !TARGET_UNIX
-#define NULL_AREA_SIZE   GetOsPageSize()
+#define NULL_AREA_SIZE   minipal_getpagesize()
 #endif // !TARGET_UNIX
 
 class IJitManager;
@@ -109,24 +103,12 @@ void TerminateExceptionHandling();
 
 // Prototypes
 EXTERN_C VOID STDCALL ResetCurrentContext();
-#if !defined(FEATURE_EH_FUNCLETS)
-#ifdef _DEBUG
-void CheckStackBarrier(EXCEPTION_REGISTRATION_RECORD *exRecord);
-#endif
-EXCEPTION_REGISTRATION_RECORD *FindNestedEstablisherFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame);
-LFH LookForHandler(const EXCEPTION_POINTERS *pExceptionPointers, Thread *pThread, ThrowCallbackType *tct);
-StackWalkAction COMPlusThrowCallback (CrawlFrame *pCf, ThrowCallbackType *pData);
-void UnwindFrames(Thread *pThread, ThrowCallbackType *tct);
-#endif // !defined(FEATURE_EH_FUNCLETS)
 
-void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP);
+void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP) noexcept;
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
-DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM, const METHODTOKEN& mdTok, SIZE_T offsNat);
 BOOL IsException(MethodTable *pMT);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException);
-BOOL IsAsyncThreadException(OBJECTREF *pThrowable);
-BOOL IsUncatchable(OBJECTREF *pThrowable);
 VOID FixupOnRethrow(Thread *pCurThread, EXCEPTION_POINTERS *pExceptionPointers);
 BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord);
 BOOL IsStackOverflowException(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord);
@@ -159,16 +141,14 @@ BOOL InstallUnhandledExceptionFilter();
 // thing in the .text section. Reason for opting out of this approach was that BBT can move code
 // within a section, no matter where it was located - and for this case, we need the UEF code
 // at the right location to ensure that we can check the memory protection of its following
-// section so that shouldnt affect UEF's memory protection. For details, read the comment in
-// ClrVirtualProtect.
+// section so that shouldnt affect UEF's memory protection.
 //
 // Keeping UEF in its own section helps prevent code movement as BBT does not reorder
 // sections. As per my understanding of the linker, ".text" section always comes first,
 // followed by other "executable" sections (like our UEF section) and then ".data", etc.
 // The order of user defined executable sections is typically defined by the linker
 // in terms of which section it sees first. So, if there is another custom executable
-// section that comes after UEF section, it can affect the UEF section and we will
-// assert about it in ClrVirtualProtect.
+// section that comes after UEF section, it can affect the UEF section.
 #define CLR_UEF_SECTION_NAME ".CLR_UEF"
 #endif //!defined(TARGET_UNIX)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
@@ -184,12 +164,6 @@ bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMess
 void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
-
-// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
-// in the native code.
-struct CallOutFilterParam { BOOL OneShot; };
-LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
-
 
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
@@ -220,7 +194,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable);
-VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj);
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj, UINT_PTR targetSP = 0);
 
 //==========================================================================
 // Throw an undecorated runtime exception.
@@ -234,7 +208,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind);
 // in our .resources file.
 //==========================================================================
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName, Exception * pInnerException = NULL);
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName);
 
 //==========================================================================
 // Throw a decorated runtime exception.
@@ -260,13 +234,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
                                           LPCWSTR wszArg6 = NULL);
 
 #ifdef FEATURE_COMINTEROP
-
-enum tagGetErrorInfo
-{
-    kGetErrorInfo
-};
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo);
 
 //==========================================================================
 // Throw a runtime exception based on an HResult, check for error info
@@ -317,10 +284,12 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
 void GetExceptionMessage(OBJECTREF throwable, SString &result);
 STRINGREF GetExceptionMessage(OBJECTREF throwable);
 HRESULT GetExceptionHResult(OBJECTREF throwable);
-DWORD GetExceptionXCode(OBJECTREF throwable);
 
 void ExceptionPreserveStackTrace(OBJECTREF throwable);
 
+#ifdef FEATURE_COMINTEROP
+void FreeExceptionData(ExceptionData *pedata);
+#endif
 
 //==========================================================================
 // Create an exception object for an HRESULT
@@ -363,47 +332,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowArgumentException(LPCWSTR argName, LPCWST
 VOID DECLSPEC_NORETURN RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCastTo);
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo);
-
-#ifndef FEATURE_EH_FUNCLETS
-
-#include "eexcp.h"
-#include "exinfo.h"
-
-struct FrameHandlerExRecord
-{
-    EXCEPTION_REGISTRATION_RECORD   m_ExReg;
-
-    Frame *m_pEntryFrame;
-
-    Frame *GetCurrFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pEntryFrame;
-    }
-};
-
-struct NestedHandlerExRecord : public FrameHandlerExRecord
-{
-    ExInfo m_handlerInfo;
-    BOOL   m_ActiveForUnwind;
-    ExInfo *m_pCurrentExInfo;
-    EXCEPTION_REGISTRATION_RECORD *m_pCurrentHandler;
-    NestedHandlerExRecord() : m_handlerInfo() {LIMITED_METHOD_CONTRACT;}
-    void Init(PEXCEPTION_ROUTINE pFrameHandler, Frame *pEntryFrame)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        m_ExReg.Next=NULL;
-        m_ExReg.Handler=pFrameHandler;
-        m_pEntryFrame=pEntryFrame;
-        m_pCurrentExInfo = NULL;
-        m_pCurrentHandler = NULL;
-        m_handlerInfo.Init();
-        m_ActiveForUnwind = FALSE;
-    }
-};
-
-#endif // !FEATURE_EH_FUNCLETS
 
 #if defined(ENABLE_CONTRACTS_IMPL)
 
@@ -482,35 +410,6 @@ VOID PopSEHRecords(LPVOID pTargetSP);
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH);
 #endif
-
-#if !defined(FEATURE_EH_FUNCLETS)
-EXCEPTION_HANDLER_DECL(COMPlusFrameHandler);
-EXCEPTION_HANDLER_DECL(COMPlusNestedExceptionHandler);
-#ifdef FEATURE_COMINTEROP
-EXCEPTION_HANDLER_DECL(COMPlusFrameHandlerRevCom);
-#endif // FEATURE_COMINTEROP
-
-#ifdef DEBUGGING_SUPPORTED
-VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);
-#endif // DEBUGGING_SUPPORTED
-
-BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
-VOID PopNestedExceptionRecords(LPVOID pTargetSP, T_CONTEXT *pCtx, void *pSEH);
-
-#define STACK_OVERWRITE_BARRIER_SIZE 20
-#define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
-
-#ifdef _DEBUG
-#if defined(TARGET_X86)
-struct FrameHandlerExRecordWithBarrier {
-    DWORD m_StackOverwriteBarrier[STACK_OVERWRITE_BARRIER_SIZE];
-    FrameHandlerExRecord m_ExRecord;
-};
-
-void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF);
-#endif // defined(TARGET_X86)
-#endif // _DEBUG
-#endif // !defined(FEATURE_EH_FUNCLETS)
 
 //==========================================================================
 // This is a workaround designed to allow the use of the StubLinker object at bootup
@@ -674,8 +573,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread,
 //==========================================================================
 // Handy helper functions
 //==========================================================================
-LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
 bool IsInterceptableException(Thread *pThread);
 
 #ifdef DEBUGGING_SUPPORTED
@@ -706,9 +603,7 @@ bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
-                        T_CONTEXT*                      pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread);
+                        T_CONTEXT*                      pContext);
 
 void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, T_CONTEXT* pContext);
 
@@ -721,88 +616,31 @@ bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
-    SIZE_T cbReadOnlyPost = 0;
-#ifdef TARGET_AMD64
-    cbReadOnlyPost = sizeof(CONTEXT) - offsetof(CONTEXT, FltSave); // older OSes don't have the vector reg fields
-#endif // TARGET_AMD64
-
-    memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT) - cbReadOnlyPost);
-#ifdef TARGET_AMD64
-    pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
-#endif // TARGET_AMD64
+    memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT));
+#ifdef CONTEXT_XSTATE
+    pDest->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+#endif
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
-
-#ifdef _DEBUG
-void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
-#ifdef TARGET_X86
-                                                       EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
-#elif defined(FEATURE_EH_FUNCLETS)
-                                                       PVOID pEstablisherFrame
-#else
-#error Unsupported platform
-#endif
-                                                       );
-#endif // _DEBUG
-
-// See implementation for detailed comments in excep.cpp
-LONG AppDomainTransitionExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
-
-// See implementation for detailed comments in excep.cpp
-LONG ReflectionInvocationExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
 
 #ifndef DACCESS_COMPILE
 // exception filter invoked for unhandled exceptions on the entry point thread (thread 0)
 LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData);
 #endif // !DACCESS_COMPILE
 
-// Enum that defines the types of exception notification handlers
-// that we support.
-enum ExceptionNotificationHandlerType
-{
-    UnhandledExceptionHandler   = 0x1
-    ,
-    FirstChanceExceptionHandler = 0x2
-};
-
 // This class contains methods to support delivering the various exception notifications.
 class ExceptionNotifications
 {
-private:
-    void static GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
-
-    void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pThrowable);
-
 public:
-    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
-        OBJECTREF *pAppDomain);
-
-    BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
-
-    void static DeliverNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pThrowable);
-
-public:
-    void static DeliverFirstChanceNotification();
+    static void DeliverFirstChanceNotification();
 };
 
 #ifndef DACCESS_COMPILE
 
-#ifndef FEATURE_EH_FUNCLETS
-void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame);
-#endif
-
 X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGISTRATION_RECORD* pRec);)
 
-#ifdef FEATURE_EH_FUNCLETS
 VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind();
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_INTERPRETER
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP);

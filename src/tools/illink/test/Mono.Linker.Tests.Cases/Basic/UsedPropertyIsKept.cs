@@ -2,21 +2,21 @@
 
 namespace Mono.Linker.Tests.Cases.Basic
 {
-	class UsedPropertyIsKept
-	{
-		public static void Main ()
-		{
-			var obj = new B ();
-			obj.Prop = 1;
-			var val = obj.Prop;
-		}
+    class UsedPropertyIsKept
+    {
+        public static void Main()
+        {
+            var obj = new B();
+            obj.Prop = 1;
+            var val = obj.Prop;
+        }
 
-		[KeptMember (".ctor()")]
-		class B
-		{
-			[Kept]
-			[KeptBackingField]
-			public int Prop { [Kept] get; [Kept] set; }
-		}
-	}
+        [KeptMember(".ctor()")]
+        class B
+        {
+            [Kept]
+            [KeptBackingField]
+            public int Prop { [Kept] get; [Kept] set; }
+        }
+    }
 }

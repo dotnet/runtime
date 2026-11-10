@@ -89,8 +89,7 @@ namespace System.IO.Compression
 
         private static byte[] GetStaticDistanceTreeLength()
         {
-            byte[] staticDistanceTreeLength = new byte[MaxDistTreeElements];
-            Array.Fill(staticDistanceTreeLength, (byte)5);
+            byte[] staticDistanceTreeLength = Array.CreateFilled<byte>(MaxDistTreeElements, 5);
             return staticDistanceTreeLength;
         }
 
@@ -112,7 +111,7 @@ namespace System.IO.Compression
 
         // Calculate the huffman code for each character based on the code length for each character.
         // This algorithm is described in standard RFC 1951
-        private uint[] CalculateHuffmanCode()
+        private unsafe uint[] CalculateHuffmanCode()
         {
             Span<uint> bitLengthCount = stackalloc uint[17];
             bitLengthCount.Clear();

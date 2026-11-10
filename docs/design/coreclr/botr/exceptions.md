@@ -31,7 +31,8 @@ The basic macros are, of course, EX_TRY / EX_CATCH / EX_END_CATCH, and in use th
     EX_CATCH
       // If we're here, something failed.
       m_finalDisposition = terminallyHopeless;
-    EX_END_CATCH(RethrowTransientExceptions)
+      RethrowTransientExceptions();
+    EX_END_CATCH
 
 The EX_TRY macro simply introduces the try block, and is much like the C++ "try", except that it also includes an opening brace, "{".
 
@@ -70,7 +71,8 @@ More information is often most conveniently available through the managed except
         // . . . do something that might throw
     EX_CATCH
         throwable = GET_THROWABLE();
-    EX_END_CATCH(RethrowTransientExceptions)
+        RethrowTransientExceptions();
+    EX_END_CATCH
     // . . . do something with throwable
     GCPROTECT_END()
 
@@ -81,12 +83,11 @@ Sometimes, there is no avoiding a need for the C++ exception object, though this
 
 would tell whether the exception is (or derives from) CLRException.
 
-EX_END_CATCH(RethrowTransientExceptions)
+RethrowTransientExceptions
 ----------------------------------------
 
-In the example above, "RethrowTransientExceptions" is an argument to the EX_END_CATCH macro; it is one of three pre-defined macros that can be thought of "exception disposition". Here are the macros, and their meanings:
+In the example above, "RethrowTransientExceptions" is a macro in the `EX_CATCH` block; it is one of three pre-defined macros that can be thought of "exception disposition". Here are the macros, and their meanings:
 
-- _SwallowAllExceptions_: This is aptly named, and very simple. As the name suggests, it swallows everything. While simple and appealing, this is often not the right thing to do.
 - _RethrowTerminalExceptions_. A better name would be "RethrowThreadAbort", which is what this macro does.
 - _RethrowTransientExceptions_. The best definition of a "transient" exception is one that might not occur if tried again, possibly in a different context. These are the transient exceptions:
   - COR_E_THREADABORTED
@@ -102,9 +103,7 @@ In the example above, "RethrowTransientExceptions" is an argument to the EX_END_
 
 The CLR developer with doubts about which macro to use should probably pick _RethrowTransientExceptions_.
 
-In every case, however, the developer writing an EX_END_CATCH needs to think hard about which exception should be caught, and should catch only those exceptions. And, because the macros catch everything anyway, the only way to not catch an exception is to rethrow it.
-
-If an EX_CATCH / EX_END_CATCH block has properly categorized its exceptions, and has rethrown wherever necessary, then SwallowAllExceptions is the way to tell the macros that no further rethrowing is necessary.
+In every case, however, the developer writing an EX_CATCH block needs to think hard about which exception should be caught, and should catch only those exceptions. And, because the macros catch everything anyway, the only way to not catch an exception is to rethrow it.
 
 ## EX_CATCH_HRESULT
 

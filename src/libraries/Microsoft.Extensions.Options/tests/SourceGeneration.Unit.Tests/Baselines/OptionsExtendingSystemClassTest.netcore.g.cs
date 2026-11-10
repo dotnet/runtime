@@ -14,16 +14,15 @@
         /// <param name="options">The options instance.</param>
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-        #if !NET10_0_OR_GREATER
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.EndPointsOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "EndPointsOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "EndPointsOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -31,7 +30,7 @@
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "Host";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "EndPointsOptions.Host" : $"{name}.Host";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Host" : $"{name}.Host";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Host, context, validationResults, validationAttributes))
             {
@@ -39,7 +38,7 @@
             }
 
             context.MemberName = "Port";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "EndPointsOptions.Port" : $"{name}.Port";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Port" : $"{name}.Port";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -65,16 +64,15 @@ namespace Test
         /// <param name="options">The options instance.</param>
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-        #if !NET10_0_OR_GREATER
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.RedisClientOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "RedisClientOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RedisClientOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -82,7 +80,7 @@ namespace Test
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "EndPoints";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RedisClientOptions.EndPoints" : $"{name}.EndPoints";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "EndPoints" : $"{name}.EndPoints";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.EndPoints, context, validationResults, validationAttributes))
             {
@@ -96,11 +94,11 @@ namespace Test
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Test.__EndPointsOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"RedisClientOptions.EndPoints[{count}]" : $"{name}.EndPoints[{count}]", o));
+                        (builder ??= new()).AddResult(global::Test.__EndPointsOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"EndPoints[{count}]" : $"{name}.EndPoints[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"RedisClientOptions.EndPoints[{count}] is null" : $"{name}.EndPoints[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"EndPoints[{count}] is null" : $"{name}.EndPoints[{count}] is null");
                     }
                     count++;
                 }
@@ -121,16 +119,15 @@ namespace Test
         /// <param name="options">The options instance.</param>
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-        #if !NET10_0_OR_GREATER
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.RedisNamedClientOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "RedisNamedClientOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RedisNamedClientOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -138,7 +135,7 @@ namespace Test
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "RedisClientOptionsList";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RedisNamedClientOptions.RedisClientOptionsList" : $"{name}.RedisClientOptionsList";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "RedisClientOptionsList" : $"{name}.RedisClientOptionsList";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.RedisClientOptionsList, context, validationResults, validationAttributes))
             {
@@ -152,11 +149,11 @@ namespace Test
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Test.__RedisClientOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"RedisNamedClientOptions.RedisClientOptionsList[{count}]" : $"{name}.RedisClientOptionsList[{count}]", o));
+                        (builder ??= new()).AddResult(global::Test.__RedisClientOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"RedisClientOptionsList[{count}]" : $"{name}.RedisClientOptionsList[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"RedisNamedClientOptions.RedisClientOptionsList[{count}] is null" : $"{name}.RedisClientOptionsList[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"RedisClientOptionsList[{count}] is null" : $"{name}.RedisClientOptionsList[{count}] is null");
                     }
                     count++;
                 }
@@ -219,12 +216,46 @@ namespace __OptionValidationGeneratedAttributes
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            EnsureInitialized();
+
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Minimum, Maximum);
+        }
         private readonly bool _needToConvertMinMax;
         private volatile bool _initialized;
         private readonly object _lock = new();
         private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
+        {
+            EnsureInitialized();
+
+            if (value is null or string { Length: 0 })
+            {
+                return true;
+            }
+
+            global::System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+            object? convertedValue;
+
+            try
+            {
+                convertedValue = ConvertValue(value, formatProvider);
+            }
+            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
+            {
+                return false;
+            }
+
+            var min = (global::System.IComparable)Minimum;
+            var max = (global::System.IComparable)Maximum;
+
+            return
+                (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
+                (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
+        }
+        private void EnsureInitialized()
         {
             if (!_initialized)
             {
@@ -238,7 +269,7 @@ namespace __OptionValidationGeneratedAttributes
                         }
                         if (_needToConvertMinMax)
                         {
-                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                            global::System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
                             Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
                             Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
                         }
@@ -255,30 +286,6 @@ namespace __OptionValidationGeneratedAttributes
                     }
                 }
             }
-
-            if (value is null or string { Length: 0 })
-            {
-                return true;
-            }
-
-            System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-            object? convertedValue;
-
-            try
-            {
-                convertedValue = ConvertValue(value, formatProvider);
-            }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
-            {
-                return false;
-            }
-
-            var min = (global::System.IComparable)Minimum;
-            var max = (global::System.IComparable)Maximum;
-
-            return
-                (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
-                (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
         }
         private string GetValidationErrorMessage()
         {
@@ -290,7 +297,7 @@ namespace __OptionValidationGeneratedAttributes
                 (true, true) => "The field {0} must be between {1} exclusive and {2} exclusive.",
             };
         }
-        private object? ConvertValue(object? value, System.Globalization.CultureInfo formatProvider)
+        private object? ConvertValue(object? value, global::System.Globalization.CultureInfo formatProvider)
         {
             if (value is string stringValue)
             {

@@ -4,5 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ManualTests.cs" />
+    <Compile Include="NtfsOnLinuxSetup.cs" />
+    <Compile Include="NtfsOnLinuxTests.cs" />
   </ItemGroup>
 </Project>

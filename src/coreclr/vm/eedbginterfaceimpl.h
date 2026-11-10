@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 /*
- *
  * EE to Debugger Interface Implementation
- *
  */
+
 #ifndef _eedbginterfaceimpl_h_
 #define _eedbginterfaceimpl_h_
 
@@ -79,13 +77,6 @@ public:
 
     void* GetObjectFromHandle(OBJECTHANDLE handle);
 
-    OBJECTHANDLE GetHandleFromObject(void *obj,
-                              bool fStrongNewRef,
-                              AppDomain *pAppDomain);
-
-    void DbgDestroyHandle(OBJECTHANDLE oh,
-                          bool fStrongNewRef);
-
     OBJECTHANDLE GetThreadException(Thread *pThread);
 
     bool IsThreadExceptionNull(Thread *pThread);
@@ -117,6 +108,8 @@ public:
 
     BOOL IsManagedNativeCode(const BYTE *address);
 
+    BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip) DAC_UNEXPECTED();
+
     PCODE GetNativeCodeStartAddress(PCODE address) DAC_UNEXPECTED();
 
     MethodDesc *GetNativeCodeMethodDesc(const PCODE address) DAC_UNEXPECTED();
@@ -135,10 +128,8 @@ public:
                              size_t *hotSize,
                              size_t *coldSize);
 
-#if defined(FEATURE_EH_FUNCLETS)
     DWORD GetFuncletStartOffsets(const BYTE *pStart, DWORD* pStartOffsets, DWORD dwLength);
     StackFrame FindParentStackFrame(CrawlFrame* pCF);
-#endif // FEATURE_EH_FUNCLETS
 
     size_t GetFunctionSize(MethodDesc *pFD) DAC_UNEXPECTED();
 
@@ -154,18 +145,8 @@ public:
 
     Module *MethodDescGetModule(MethodDesc *pFD);
 
-    COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD);
-
-    ULONG MethodDescGetRVA(MethodDesc *pFD);
-
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
-
-    MethodDesc *LoadMethodDef(Module* pModule,
-                              mdMethodDef methodDef,
-                              DWORD numGenericArgs = 0,
-                              TypeHandle *pGenericArgs = NULL,
-                              TypeHandle *pOwnerTypeRes = NULL);
 
     TypeHandle FindLoadedClass(Module *pModule,
                              mdTypeDef classToken);
@@ -281,9 +262,6 @@ public:
                            SIZE_T *pEEThreadDebuggerFilterContextOffset,
                            SIZE_T *pEEFrameNextOffset,
                            DWORD  *pEEIsManagedExceptionStateMask);
-
-    void DebuggerModifyingLogSwitch (int iNewLevel,
-                                     const WCHAR *pLogSwitchName);
 
     HRESULT SetIPFromSrcToDst(Thread *pThread,
                               SLOT addrStart,

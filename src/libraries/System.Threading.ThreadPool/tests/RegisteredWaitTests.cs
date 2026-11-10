@@ -16,7 +16,54 @@ namespace System.Threading.ThreadPools.Tests
         {
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SingleThreadedRegistrationPreservesTimeoutValidation(bool useUnsafe)
+        {
+            using var handle = new ManualResetEvent(false);
+            WaitOrTimerCallback callback = (_, _) => Assert.Fail("The callback must not run.");
+            if (useUnsafe)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, -2, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, (uint)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, (long)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("timeout", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, TimeSpan.FromMilliseconds(-2), true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, 0, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, uint.MaxValue, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, -1L, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(null, null, null, Timeout.InfiniteTimeSpan, true));
+            }
+            else
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, -2, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, (uint)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, (long)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("timeout", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, TimeSpan.FromMilliseconds(-2), true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, 0, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, uint.MaxValue, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, -1L, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(null, null, null, Timeout.InfiniteTimeSpan, true));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void QueueRegisterPositiveAndFlowTest()
         {
             var asyncLocal = new AsyncLocal<int>();
@@ -146,7 +193,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(0, backgroundAsyncLocalValue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void QueueRegisterNegativeTest()
         {
             Assert.Throws<ArgumentNullException>(() => ThreadPool.QueueUserWorkItem(null));
@@ -191,7 +238,7 @@ namespace System.Threading.ThreadPools.Tests
                     true));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void SignalingRegisteredWaitHandleCallsCallback()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -208,7 +255,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.False(timedOut);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TimingOutRegisteredWaitHandleCallsCallback()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -224,7 +271,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(timedOut);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void UnregisteringWaitWithInvalidWaitHandleBeforeSignalingDoesNotCallCallback()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -239,7 +286,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.False(waitCallbackInvoked.WaitOne(ExpectedTimeoutMilliseconds));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void UnregisteringWaitWithEventBeforeSignalingDoesNotCallCallback()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -256,7 +303,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.False(waitCallbackInvoked.WaitOne(ExpectedTimeoutMilliseconds));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void NonrepeatingWaitFiresOnlyOnce()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -275,7 +322,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.False(anyTimedOut);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RepeatingWaitFiresUntilUnregistered()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -299,7 +346,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.False(anyTimedOut);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void UnregisterEventSignaledWhenUnregistered()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -350,7 +397,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.False(timedOut);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CanRegisterMoreThan64Waits()
         {
             RegisteredWaitHandle[] registeredWaitHandles = new RegisteredWaitHandle[65];
@@ -367,7 +414,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void StateIsPassedThroughToCallback()
         {
             object state = new object();
@@ -383,7 +430,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Same(state, statePassedToCallback);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void UnregisterWaitHandleIsNotSignaledWhenCallbackIsRunning()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -411,7 +458,7 @@ namespace System.Threading.ThreadPools.Tests
             waitUnregistered.CheckedWait();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void BlockingUnregisterBlocksWhileCallbackIsRunning()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -443,7 +490,7 @@ namespace System.Threading.ThreadPools.Tests
             waitForThread();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue()
         {
             var waitCallbackInvoked = new AutoResetEvent(false);
@@ -459,7 +506,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(registeredWaitHandle.Unregister(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void EventSetAfterUnregisterNotObservedOnWaitThread()
         {
             var waitEvent = new AutoResetEvent(false);
@@ -471,7 +518,7 @@ namespace System.Threading.ThreadPools.Tests
             waitEvent.CheckedWait(); // signal should not have been observed by wait thread
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CanDisposeEventAfterNonblockingUnregister()
         {
             using (var waitEvent = new AutoResetEvent(false))
@@ -482,7 +529,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void MultipleRegisteredWaitsUnregisterHandleShiftTest()
         {
             var handlePendingRemoval = new AutoResetEvent(false);

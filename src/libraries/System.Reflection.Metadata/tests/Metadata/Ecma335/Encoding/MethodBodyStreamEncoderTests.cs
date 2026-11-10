@@ -534,6 +534,157 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
+        public unsafe void AddMethodBody_MixedOpCodeAndCodeBuilderWritesAcrossChunkBoundaries()
+        {
+            // Explicitly use a 256-byte chunk capacity (the BlobBuilder default) so the test
+            // remains deterministic even if BlobBuilder's default capacity ever changes.
+            const int chunkSize = 256;
+            var codeBuilder = new BlobBuilder(chunkSize);
+            var flowBuilder = new ControlFlowBuilder();
+            var il = new InstructionEncoder(codeBuilder, flowBuilder);
+            var doneLabel = il.DefineLabel();
+
+            for (int i = 0; i < 30; i++)
+            {
+                var skipLabel = il.DefineLabel();
+
+                il.OpCode(ILOpCode.Ldarg_s);
+                codeBuilder.WriteByte(3);
+
+                il.OpCode(ILOpCode.Ldarg_s);
+                codeBuilder.WriteByte(0);
+
+                il.OpCode(ILOpCode.Ceq);
+                il.Branch(ILOpCode.Brfalse_s, skipLabel);
+                il.LoadString(MetadataTokens.UserStringHandle(i + 1));
+                il.Branch(ILOpCode.Br, doneLabel);
+                il.MarkLabel(skipLabel);
+            }
+
+            il.MarkLabel(doneLabel);
+            il.OpCode(ILOpCode.Ret);
+
+            var ilStream = new BlobBuilder();
+            var bodyEncoder = new MethodBodyStreamEncoder(ilStream);
+            bodyEncoder.AddMethodBody(il, maxStack: 8);
+
+            var streamBytes = ilStream.ToArray();
+
+            // Use MethodBodyBlock to decode the header and extract the IL bytes,
+            // rather than hard-coding the fat-header size.
+            byte[] ilBytes;
+            fixed (byte* streamPtr = &streamBytes[0])
+            {
+                var body = MethodBodyBlock.Create(new BlobReader(streamPtr, streamBytes.Length));
+                ilBytes = body.GetILBytes()!;
+            }
+
+            int pos = 0;
+            int ldargCount = 0;
+            while (pos < ilBytes.Length)
+            {
+                switch (ilBytes[pos])
+                {
+                    case (byte)ILOpCode.Ldarg_s:
+                        ldargCount++;
+                        byte argIndex = ilBytes[pos + 1];
+                        int expected = (ldargCount % 2 == 1) ? 3 : 0;
+                        Assert.Equal(expected, argIndex);
+                        pos += 2;
+                        break;
+
+                    case 0xFE: // first byte of a 2-byte opcode (ceq = 0xfe01)
+                        Assert.Equal(unchecked((byte)ILOpCode.Ceq), ilBytes[pos + 1]);
+                        pos += 2;
+                        break;
+
+                    case (byte)ILOpCode.Ldstr:
+                    case (byte)ILOpCode.Br:
+                        pos += 5;
+                        break;
+
+                    case (byte)ILOpCode.Brfalse_s:
+                        pos += 2;
+                        break;
+
+                    case (byte)ILOpCode.Ret:
+                        pos += 1;
+                        break;
+
+                    default:
+                        Assert.Fail($"Unexpected opcode 0x{ilBytes[pos]:X2} at IL offset {pos}.");
+                        break;
+                }
+            }
+
+            Assert.Equal(ilBytes.Length, pos);
+            Assert.Equal(60, ldargCount);
+        }
+
+        [Fact]
+        public unsafe void AddMethodBody_ShortBranchOperandAtChunkBoundary()
+        {
+            // Force a short-branch operand to land at the very last byte of the first
+            // BlobBuilder chunk (offset 255 in a 256-byte chunk).
+
+            // Use an explicit 256-byte chunk capacity so the boundary is deterministic.
+            const int chunkCapacity = 256;
+            var codeBuilder = new BlobBuilder(chunkCapacity);
+            var flowBuilder = new ControlFlowBuilder();
+            var il = new InstructionEncoder(codeBuilder, flowBuilder);
+            var skipLabel = il.DefineLabel();
+
+            // 253 nops + ldc.i4.0 = 254 bytes  →  brfalse.s opcode at offset 254,
+            // operand placeholder at offset 255 (last byte of the first chunk).
+            for (int i = 0; i < 253; i++)
+            {
+                il.OpCode(ILOpCode.Nop);
+            }
+
+            il.OpCode(ILOpCode.Ldc_i4_0);            // push 0 so brfalse.s is taken
+            il.Branch(ILOpCode.Brfalse_s, skipLabel); // opcode at 254, operand at 255
+
+            // This instruction starts at the very beginning of the second chunk (offset 256).
+            // Before the fix, the first byte of this chunk would be skipped during branch fixup.
+            il.OpCode(ILOpCode.Ldc_i4_1);            // unreachable, but validates byte at 256
+
+            il.MarkLabel(skipLabel);                  // skipLabel at offset 257
+            il.OpCode(ILOpCode.Ret);
+
+            var ilStream = new BlobBuilder();
+            var bodyEncoder = new MethodBodyStreamEncoder(ilStream);
+            bodyEncoder.AddMethodBody(il, maxStack: 8);
+
+            var streamBytes = ilStream.ToArray();
+            byte[] ilBytes;
+            fixed (byte* streamPtr = &streamBytes[0])
+            {
+                var body = MethodBodyBlock.Create(new BlobReader(streamPtr, streamBytes.Length));
+                ilBytes = body.GetILBytes()!;
+            }
+
+            Assert.Equal(258, ilBytes.Length);
+
+            // Verify the nops
+            for (int i = 0; i < 253; i++)
+            {
+                Assert.Equal((byte)ILOpCode.Nop, ilBytes[i]);
+            }
+
+            // Verify ldc.i4.0 + brfalse.s opcode
+            Assert.Equal((byte)ILOpCode.Ldc_i4_0, ilBytes[253]);
+            Assert.Equal((byte)ILOpCode.Brfalse_s, ilBytes[254]);
+
+            // Verify the branch operand was correctly fixed up:
+            // distance = skipLabel(257) - end-of-instruction(256) = 1
+            Assert.Equal(1, (sbyte)ilBytes[255]);
+
+            // Verify the first byte of the second chunk was NOT skipped.
+            Assert.Equal((byte)ILOpCode.Ldc_i4_1, ilBytes[256]);
+            Assert.Equal((byte)ILOpCode.Ret, ilBytes[257]);
+        }
+
+        [Fact]
         public void BranchErrors()
         {
             var codeBuilder = new BlobBuilder();

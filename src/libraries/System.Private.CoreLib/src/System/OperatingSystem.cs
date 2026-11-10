@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -28,16 +28,22 @@ namespace System
         "TVOS"
 #elif TARGET_ANDROID
         "ANDROID"
+#elif TARGET_OPENHARMONY
+        "OPENHARMONY"
 #elif TARGET_LINUX
         "LINUX"
 #elif TARGET_FREEBSD
         "FREEBSD"
 #elif TARGET_NETBSD
         "NETBSD"
+#elif TARGET_OPENBSD
+        "OPENBSD"
 #elif TARGET_ILLUMOS
         "ILLUMOS"
 #elif TARGET_SOLARIS
         "SOLARIS"
+#elif TARGET_HAIKU
+        "HAIKU"
 #else
 #error Unknown OS, add a corresponding TARGET_* constant to System.Private.CoreLib.Shared.projitems
 #endif
@@ -83,7 +89,7 @@ namespace System
 
         public override string ToString() => VersionString;
 
-        public string VersionString
+        public unsafe string VersionString
         {
             get
             {
@@ -118,7 +124,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
-        /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
+        /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, Windows.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsOSPlatform(string platform)
         {
@@ -136,7 +142,7 @@ namespace System
         /// <summary>
         /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
         /// </summary>
-        /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
+        /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, Windows.</param>
         /// <param name="major">Major OS version number.</param>
         /// <param name="minor">Minor OS version number (optional).</param>
         /// <param name="build">Build OS version number (optional).</param>
@@ -195,6 +201,45 @@ namespace System
             => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
 
         /// <summary>
+        /// Indicates whether the current application is running on OpenBSD.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsOpenBSD() =>
+#if TARGET_OPENBSD
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Check for the OpenBSD version with a >= version comparison. Used to guard APIs that were added in the given OpenBSD release.
+        /// </summary>
+        public static bool IsOpenBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsOpenBSD() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
+        /// Indicates whether the current application is running on Haiku.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsHaiku() =>
+#if TARGET_HAIKU
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Indicates whether the current application is running on OpenHarmony.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOpenHarmony() =>
+#if TARGET_OPENHARMONY
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
         /// Indicates whether the current application is running on Android.
         /// </summary>
         [NonVersionable]
@@ -242,7 +287,15 @@ namespace System
             false;
 #endif
 
-        internal static bool IsApplePlatform() =>
+        /// <summary>
+        /// Indicates whether the current application is running on Apple platforms.
+        /// </summary>
+        [SupportedOSPlatformGuard("macos")]
+        [SupportedOSPlatformGuard("ios")]
+        [SupportedOSPlatformGuard("tvos")]
+        [SupportedOSPlatformGuard("maccatalyst")]
+        [NonVersionable]
+        public static bool IsApplePlatform() =>
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             true;
 #else
@@ -292,17 +345,16 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on watchOS.
         /// </summary>
+        /// <remarks>watchOS is no longer supported. This method always returns <see langword="false" />.</remarks>
         [NonVersionable]
         public static bool IsWatchOS() =>
-#if TARGET_WATCHOS
-            true;
-#else
+            // watchOS is no longer supported.
             false;
-#endif
 
         /// <summary>
         /// Check for the watchOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given watchOS release.
         /// </summary>
+        /// <remarks>watchOS is no longer supported. This method always returns <see langword="false" />.</remarks>
         public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsWatchOS() && IsOSVersionAtLeast(major, minor, build, 0);
 

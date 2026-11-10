@@ -43,6 +43,31 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void FormatMessage_UsesSuppliedFormatAndLengths()
+        {
+            const string ExternalFormat = "external {0}:{1}:{2}";
+            const string ErrorMessageFormat = "internal {0}:{1}:{2}";
+            var attribute = new StringLengthAttribute(20)
+            {
+                ErrorMessage = ErrorMessageFormat,
+                MinimumLength = 10
+            };
+
+            Assert.Equal("external name:20:10", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("internal name:20:10", attribute.FormatErrorMessage("name"));
+        }
+
+        [Theory]
+        [InlineData(0, "The field name must be a string with a maximum length of 20.")]
+        [InlineData(10, "The field name must be a string with a minimum length of 10 and a maximum length of 20.")]
+        public static void FormatErrorMessage_DefaultTemplateUsesMinimumWhenSpecified(int minimumLength, string expected)
+        {
+            var attribute = new StringLengthAttribute(20) { MinimumLength = minimumLength };
+
+            Assert.Equal(expected, attribute.FormatErrorMessage("name"));
+        }
+
+        [Fact]
         public static void Validate_NegativeMaximumLength_ThrowsInvalidOperationException()
         {
             var attribute = new StringLengthAttribute(-1);

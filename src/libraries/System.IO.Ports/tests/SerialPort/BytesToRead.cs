@@ -17,7 +17,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasOneSerialPort))]
         public void BytesToRead_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -35,7 +35,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_RcvRndNumBytes()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -60,7 +60,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying BytesToRead with Read(byte[] buffer, int offset, int count)");
@@ -68,42 +68,42 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_Read_char_int_int()
         {
             Debug.WriteLine("Verifying BytesToRead with Read(char[] buffer, int offset, int count)");
             VerifyBytesToRead(Read_char_int_int, DEFAULT_NUM_RND_BYTES, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_ReadByte()
         {
             Debug.WriteLine("Verifying BytesToRead with ReadByte()");
             VerifyBytesToRead(ReadByte, 1, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_ReadChar()
         {
             Debug.WriteLine("Verifying BytesToRead with ReadChar()");
             VerifyBytesToRead(ReadChar, 1, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_ReadLine()
         {
             Debug.WriteLine("Verifying BytesToRead with ReadLine()");
             VerifyBytesToRead(ReadLine, DEFAULT_NUM_RND_BYTES, true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_ReadTo()
         {
             Debug.WriteLine("Verifying BytesToRead with ReadTo(string value)");
             VerifyBytesToRead(ReadTo, DEFAULT_NUM_RND_BYTES, true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BytesToRead_Property), nameof(HasNullModem))]
         public void BytesToRead_ReadExisting()
         {
             Debug.WriteLine("Verifying BytesToRead with ReadExisting()");

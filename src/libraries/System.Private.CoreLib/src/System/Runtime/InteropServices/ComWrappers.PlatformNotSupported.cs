@@ -47,6 +47,7 @@ namespace System.Runtime.InteropServices
         public struct ComInterfaceDispatch
         {
             public IntPtr Vtable;
+
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 throw new PlatformNotSupportedException();
@@ -54,6 +55,11 @@ namespace System.Runtime.InteropServices
         }
 
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags, in Guid interfaceId)
         {
             throw new PlatformNotSupportedException();
         }

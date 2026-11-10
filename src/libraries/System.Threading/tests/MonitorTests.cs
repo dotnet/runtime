@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,6 +12,192 @@ namespace System.Threading.Tests
     public static class MonitorTests
     {
         private const int FailTimeoutMilliseconds = 30000;
+
+        [Theory]
+        [InlineData(1, false, false)]
+        [InlineData(64, false, false)]
+        [InlineData(65, false, false)]
+        [InlineData(65, true, false)]
+        [InlineData(64, false, true)]
+        [InlineData(65, true, true)]
+        public static void HeaderStateSurvivesRecursionAndHashCode(int depth, bool hashBefore, bool finalizable)
+        {
+            object obj = finalizable ? new FinalizableLockObject() : new object();
+            if (finalizable)
+            {
+                GC.SuppressFinalize(obj);
+            }
+
+            int hashCode = hashBefore ? RuntimeHelpers.GetHashCode(obj) : 0;
+            int entered = 0;
+            try
+            {
+                while (entered < depth)
+                {
+                    Monitor.Enter(obj);
+                    entered++;
+                    Assert.True(Monitor.IsEntered(obj));
+                }
+
+                if (!hashBefore)
+                {
+                    hashCode = RuntimeHelpers.GetHashCode(obj);
+                }
+
+                GC.Collect();
+                Assert.Equal(hashCode, RuntimeHelpers.GetHashCode(obj));
+                Assert.True(Monitor.IsEntered(obj));
+            }
+            finally
+            {
+                while (entered != 0)
+                {
+                    Monitor.Exit(obj);
+                    entered--;
+                    Assert.Equal(entered != 0, Monitor.IsEntered(obj));
+                }
+            }
+        }
+
+        private sealed class FinalizableLockObject
+        {
+            ~FinalizableLockObject() => GC.KeepAlive(this);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void PulseRequiresOwnershipWithoutWaiters(bool pulseAll)
+        {
+            object obj = new();
+            Assert.Throws<SynchronizationLockException>(Pulse);
+            lock (obj)
+            {
+                Pulse();
+            }
+            Assert.Throws<SynchronizationLockException>(Pulse);
+
+            void Pulse()
+            {
+                if (pulseAll)
+                {
+                    Monitor.PulseAll(obj);
+                }
+                else
+                {
+                    Monitor.Pulse(obj);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(-2)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(20)]
+        public static void SingleThreadedWaitValidatesBeforeBlocking(int millisecondsTimeout)
+        {
+            object obj = new();
+            Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, millisecondsTimeout));
+            if (millisecondsTimeout < Timeout.Infinite)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            }
+            else
+            {
+                Assert.Throws<SynchronizationLockException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            }
+
+            lock (obj)
+            {
+                if (millisecondsTimeout < Timeout.Infinite)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                }
+                else if (millisecondsTimeout != Timeout.Infinite)
+                {
+                    lock (obj)
+                    {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        Assert.False(Monitor.Wait(obj, millisecondsTimeout));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        Assert.True(Monitor.IsEntered(obj));
+                    }
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                }
+                Assert.True(Monitor.IsEntered(obj));
+            }
+            Assert.False(Monitor.IsEntered(obj));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void WaitOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout)
+        {
+            object obj = new();
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                lock (obj)
+                {
+                    lock (obj)
+                    {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        Assert.False(Monitor.Wait(obj, millisecondsTimeout));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        stopwatch.Restart();
+                        Assert.False(Monitor.Wait(obj, TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
+                    }
+                    Assert.True(Monitor.IsEntered(obj));
+                }
+                Assert.False(Monitor.IsEntered(obj));
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        public static void WaitOnJSInteropThreadRestoresRecursiveOwnership()
+        {
+            object obj = new();
+            using ManualResetEventSlim ready = new(false);
+            Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
+            {
+                ready.CheckedWait();
+                lock (obj)
+                {
+                    Monitor.Pulse(obj);
+                    Thread.Sleep(100);
+                }
+            });
+            thread.IsBackground = true;
+            thread.Start();
+            try
+            {
+                ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+                {
+                    lock (obj)
+                    {
+                        lock (obj)
+                        {
+                            ready.Set();
+                            Assert.True(Monitor.Wait(obj, FailTimeoutMilliseconds));
+                            Assert.True(Monitor.IsEntered(obj));
+                        }
+                        Assert.True(Monitor.IsEntered(obj));
+                    }
+                    Assert.False(Monitor.IsEntered(obj));
+                });
+            }
+            finally
+            {
+                waitForThread();
+            }
+        }
 
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.
         [Fact]
@@ -64,7 +252,7 @@ namespace System.Threading.Tests
             Assert.False(Monitor.IsEntered(obj));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void IsEntered_WhenHeldBySomeoneElse()
         {
             var obj = new object();
@@ -126,7 +314,7 @@ namespace System.Threading.Tests
             Assert.Throws<SynchronizationLockException>(() => Monitor.Exit(valueType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
         {
             var obj = new object();
@@ -215,7 +403,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, TimeSpan.Zero, ref lockTaken));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Enter_HasToWait()
         {
             var thinLock = new object();
@@ -397,7 +585,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Wait_Invalid()
         {
             var obj = new object();
@@ -413,7 +601,21 @@ namespace System.Threading.Tests
                 () => Monitor.Wait(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void Wait_SingleThreaded()
+        {
+            object obj = new();
+            lock (obj)
+            {
+                Assert.False(Monitor.Wait(obj, 0));
+                Assert.False(Monitor.Wait(obj, TimeSpan.Zero));
+                Assert.False(Monitor.Wait(obj, 1));
+                Assert.False(Monitor.Wait(obj, TimeSpan.FromMilliseconds(1)));
+                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void WaitTest()
         {
             var obj = new object();
@@ -450,7 +652,7 @@ namespace System.Threading.Tests
             t.Join(500);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Enter_HasToWait_LockContentionCountTest()
         {
             long initialLockContentionCount = Monitor.LockContentionCount;
@@ -458,7 +660,7 @@ namespace System.Threading.Tests
             Assert.True(Monitor.LockContentionCount - initialLockContentionCount >= 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ObjectHeaderSyncBlockTransitionTryEnterRaceTest()
         {
             var threadStarted = new AutoResetEvent(false);
@@ -488,10 +690,9 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/87718", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void InterruptWaitTest()
         {
             object obj = new();
@@ -509,6 +710,72 @@ namespace System.Threading.Tests
                 threadReady.CheckedWait();
                 t.Interrupt();
                 waitForThread();
+            }
+        }
+
+        // Validates that reentrant Monitor.Wait calls from a SynchronizationContext
+        // message pump do not steal each other's pulse signals.
+        // The test is not applicable to Mono. Monitor.Wait is implemented natively and doesn't end up
+        // forwarding to SynchronizationContext.Wait, the reentrancy this test covers cannot occur.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public static void ReentrantWaitFromSyncContextTest()
+        {
+            // Since we set the SynchronizationContext for the current thread, we run
+            // this test in a background thread to avoid affecting other tests.
+            ThreadTestHelpers.RunTestInBackgroundThread(() =>
+            {
+                object lockA = new();
+                object lockB = new();
+                bool innerWaitResult = true; // should become false (lockB is never pulsed)
+
+                var pumpCtx = new ReentrantWaitSyncContext(() =>
+                {
+                    lock (lockB)
+                    {
+                        innerWaitResult = Monitor.Wait(lockB, 500);
+                    }
+                });
+                SynchronizationContext.SetSynchronizationContext(pumpCtx);
+
+                var t = new Thread(() =>
+                {
+                    Thread.Sleep(100);
+                    lock (lockA) { Monitor.Pulse(lockA); }
+                }) { IsBackground = true };
+                t.Start();
+
+                bool outerResult;
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                lock (lockA)
+                {
+                    outerResult = Monitor.Wait(lockA, FailTimeoutMilliseconds);
+                }
+                long elapsed = sw.ElapsedMilliseconds;
+
+                Assert.True(outerResult, "Outer Monitor.Wait should have been pulsed");
+                Assert.True(elapsed < FailTimeoutMilliseconds / 2,
+                    $"Outer Monitor.Wait took {elapsed}ms — signal was likely stolen by inner wait");
+                Assert.False(innerWaitResult,
+                    "Inner Monitor.Wait(lockB) should return false (lockB was never pulsed)");
+
+                t.Join(FailTimeoutMilliseconds);
+            });
+        }
+
+        private sealed class ReentrantWaitSyncContext : SynchronizationContext
+        {
+            private Action? _callback;
+
+            public ReentrantWaitSyncContext(Action callback)
+            {
+                _callback = callback;
+                SetWaitNotificationRequired();
+            }
+
+            public override int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+            {
+                Interlocked.Exchange(ref _callback, null)?.Invoke();
+                return base.Wait(waitHandles, waitAll, millisecondsTimeout);
             }
         }
     }

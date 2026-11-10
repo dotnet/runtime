@@ -18,10 +18,27 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
+    /// <summary>
+    /// Specifies the debug information emitted for WebAssembly ReadyToRun images.
+    /// </summary>
+    [Flags]
+    public enum WasmDebugInfo
+    {
+        /// <summary>Do not emit WebAssembly debug information.</summary>
+        None = 0,
+        /// <summary>Emit the standard WebAssembly function name section.</summary>
+        NameSection = 1,
+        /// <summary>Emit an Emscripten-compatible function symbol map sidecar.</summary>
+        SymbolMap = 2,
+        /// <summary>Emit all supported WebAssembly debug information.</summary>
+        All = NameSection | SymbolMap,
+    }
+
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
         private static bool _isJitInitialized = false;
 
+        private readonly ReadyToRunCompilerContext _r2rContext;
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _generateMapFile;
@@ -40,11 +57,14 @@ namespace ILCompiler
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
+        private bool _verifyGCModeTransitions;
+        private WasmDebugInfo _wasmDebugInfo = WasmDebugInfo.NameSection;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
         private int _genericCycleDetectionDepthCutoff = -1;
         private int _genericCycleDetectionBreadthCutoff = -1;
+        private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.PE;
 
         private string _jitPath;
         private string _outputFile;
@@ -55,12 +75,13 @@ namespace ILCompiler
         private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
-            CompilerTypeSystemContext context,
+            ReadyToRunCompilerContext context,
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
             : base(context, group, new NativeAotNameMangler())
         {
+            _r2rContext = context;
             _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -189,6 +210,18 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseVerifyGCModeTransitions(bool verifyGCModeTransitions)
+        {
+            _verifyGCModeTransitions = verifyGCModeTransitions;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseWasmDebugInfo(WasmDebugInfo wasmDebugInfo)
+        {
+            _wasmDebugInfo = wasmDebugInfo;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseHotColdSplitting(bool hotColdSplitting)
         {
             _hotColdSplitting = hotColdSplitting;
@@ -220,6 +253,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseContainerFormat(ReadyToRunContainerFormat format)
+        {
+            _format = format;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -227,7 +266,7 @@ namespace ILCompiler
             EcmaModule singleModule = _compilationGroup.IsCompositeBuildMode ? null : inputModules.First();
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(singleModule);
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile);
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile, _perfMapFormatVersion);
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files
@@ -257,6 +296,14 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
+            if (_verifyGCModeTransitions)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
+            }
+            if (_r2rContext.TargetIsSingleThreaded)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -269,6 +316,7 @@ namespace ILCompiler
                 win32Resources,
                 flags,
                 _nodeFactoryOptimizationFlags,
+                _format,
                 _imageBase,
                 automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
@@ -280,11 +328,20 @@ namespace ILCompiler
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
-            
-            List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };
+            List<CorJitFlag> corJitFlags = new List<CorJitFlag>();
+            if (!_nodeFactoryOptimizationFlags.StripDebugInfo)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+            }
+
             if (_hotColdSplitting)
             {
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
+            }
+
+            if (_verifyGCModeTransitions)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
             }
 
             switch (_optimizationMode)
@@ -319,10 +376,16 @@ namespace ILCompiler
                 _isJitInitialized = true;
             }
 
+            List<ICompilationRootProvider> compilationRoots = new(_compilationRoots);
+            if (_r2rContext.BubbleIncludesCoreModule)
+            {
+                compilationRoots.Add(new ReadyToRunJitHelperRootProvider(_r2rContext));
+            }
+
             return new ReadyToRunCodegenCompilation(
                 graph,
                 factory,
-                _compilationRoots,
+                compilationRoots,
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
@@ -344,7 +407,9 @@ namespace ILCompiler
                 _r2rMethodLayoutAlgorithm,
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
-                _verifyTypeAndFieldLayout);
+                _verifyTypeAndFieldLayout,
+                _format,
+                _wasmDebugInfo);
         }
     }
 }

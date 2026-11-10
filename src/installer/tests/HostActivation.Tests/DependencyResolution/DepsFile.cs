@@ -53,11 +53,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             // Test that .deps.json files with UTF8 BOM are parsed correctly
             TestApp app = sharedState.FrameworkReferenceApp;
-            
+
             // Create a copy of the existing deps.json with UTF8 BOM
-            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath), 
+            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath),
                 Path.GetFileNameWithoutExtension(sharedState.DepsJsonPath) + "_bom.deps.json");
-            
+
             try
             {
                 // Read the original deps.json content and write with UTF8 BOM
@@ -92,10 +92,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public SharedTestState()
             {
                 DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(HostTestContext.MicrosoftNETCoreAppVersion)
                     .Build();
 
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion, b => b
                     .WithProject(DependencyName, "1.0.0", p => p
                         .WithAssemblyGroup(null, g => g.WithAsset($"{DependencyName}.dll"))));
 

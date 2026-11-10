@@ -77,7 +77,6 @@ namespace System.Net
         private State _state;
         private readonly StringBuilder _saved;
         private bool _sawCR;
-        private bool _gotit;
         private int _trailerState;
         private readonly List<Chunk> _chunks;
 
@@ -150,7 +149,6 @@ namespace System.Net
 
                 _saved.Length = 0;
                 _sawCR = false;
-                _gotit = false;
             }
 
             if (_state == State.Body && offset < size)
@@ -177,7 +175,6 @@ namespace System.Net
 
                 _saved.Length = 0;
                 _sawCR = false;
-                _gotit = false;
             }
 
             if (offset < size)
@@ -252,14 +249,16 @@ namespace System.Net
                     continue;
                 }
 
-                if (_sawCR && c == '\n')
+                if (_sawCR)
+                {
+                    // The CR must be immediately followed by a LF. Don't drop a bare CR and join the digits around it.
+                    if (c != '\n')
+                        ThrowProtocolViolation("Missing \\n");
+
                     break;
+                }
 
-                if (c == ' ')
-                    _gotit = true;
-
-                if (!_gotit)
-                    _saved.Append(c);
+                _saved.Append(c);
 
                 if (_saved.Length > 20)
                     ThrowProtocolViolation("chunk size too long.");
@@ -267,14 +266,11 @@ namespace System.Net
 
             if (!_sawCR || c != '\n')
             {
-                if (offset < size)
-                    ThrowProtocolViolation("Missing \\n");
-
                 try
                 {
                     if (_saved.Length > 0)
                     {
-                        _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                        _chunkSize = ParseChunkSize(RemoveChunkExtension(_saved.ToString()));
                     }
                 }
                 catch (Exception)
@@ -288,7 +284,7 @@ namespace System.Net
             _chunkRead = 0;
             try
             {
-                _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                _chunkSize = ParseChunkSize(RemoveChunkExtension(_saved.ToString()));
             }
             catch (Exception)
             {
@@ -308,6 +304,15 @@ namespace System.Net
         {
             int idx = input.IndexOf(';');
             return idx >= 0 ? input.Slice(0, idx) : input;
+        }
+
+        private static int ParseChunkSize(ReadOnlySpan<char> input)
+        {
+            uint chunkSize = uint.Parse(input, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
+            if (chunkSize > int.MaxValue)
+                throw new OverflowException();
+
+            return (int)chunkSize;
         }
 
         private State ReadCRLF(byte[] buffer, ref int offset, int size)

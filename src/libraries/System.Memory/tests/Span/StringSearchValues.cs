@@ -232,7 +232,11 @@ namespace System.Memory.Tests.Span
                         .First(c => !values.AsSpan().ContainsAny(c, char.ToLowerInvariant(c)));
                 }
 
-                TestWithDifferentMarkerChars(haystack, '\0');
+                if (!values.Contains('\0'))
+                {
+                    TestWithDifferentMarkerChars(haystack, '\0');
+                }
+
                 TestWithDifferentMarkerChars(haystack, '\u00FC');
                 TestWithDifferentMarkerChars(haystack, asciiNumberNotInSet);
                 TestWithDifferentMarkerChars(haystack, asciiLetterLowerNotInSet);
@@ -407,8 +411,24 @@ namespace System.Memory.Tests.Span
             valuesArray[offset] = $"{original[0]}\u00F6{original.AsSpan(1)}";
             TestCore(valuesArray);
 
+            // Test non-ASCII values over 0xFF
+            valuesArray[offset] = $"{original}\u2049";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"\u2049{original}";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"{original[0]}\u2049{original.AsSpan(1)}";
+            TestCore(valuesArray);
+
             // Test null chars in values
             valuesArray[offset] = $"{original[0]}\0{original.AsSpan(1)}";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"\0{original}";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"{original}\0";
             TestCore(valuesArray);
 
             static void TestCore(string[] valuesArray)
@@ -496,7 +516,7 @@ namespace System.Memory.Tests.Span
             helper.TestRandomInputs();
         }
 
-        [ConditionalFact(nameof(CanTestInvariantCulture))]
+        [ConditionalFact(typeof(StringSearchValuesTests), nameof(CanTestInvariantCulture))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         public static void TestIndexOfAny_RandomInputs_InvariantCulture()
         {
@@ -508,7 +528,7 @@ namespace System.Memory.Tests.Span
             });
         }
 
-        [ConditionalFact(nameof(CanTestNls))]
+        [ConditionalFact(typeof(StringSearchValuesTests), nameof(CanTestNls))]
         public static void TestIndexOfAny_RandomInputs_Nls()
         {
             RunUsingNLS(static () =>
@@ -529,7 +549,7 @@ namespace System.Memory.Tests.Span
             if (RemoteExecutor.IsSupported && Avx512F.IsSupported)
             {
                 var psi = new ProcessStartInfo();
-                psi.Environment.Add("DOTNET_EnableAVX512F", "0");
+                psi.Environment.Add("DOTNET_EnableAVX512", "0");
                 RemoteExecutor.Invoke(RunStress, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
             }
 

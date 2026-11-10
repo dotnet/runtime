@@ -261,11 +261,11 @@ namespace System.Threading.Tasks.Tests.Status
             //
             if (_task != null && _task.Status == TaskStatus.Canceled && _task.IsCanceled != true)
             {
-                Assert.Fail(string.Format("Task final Status is Canceled, expecting IsCanceled property to be True as well"));
+                Assert.Fail("Task final Status is Canceled, expecting IsCanceled property to be True as well");
             }
             if (_childTask != null && _childTask.Status == TaskStatus.Canceled && _childTask.IsCanceled != true)
             {
-                Assert.Fail(string.Format("Child Task final Status is Canceled, expecting IsCanceled property to be True as well"));
+                Assert.Fail("Child Task final Status is Canceled, expecting IsCanceled property to be True as well");
             }
 
             //
@@ -280,7 +280,7 @@ namespace System.Threading.Tasks.Tests.Status
                 AggregateException exp = _promise.Task.Exception;
                 if (!_promise.Task.IsFaulted || exp == null)
                 {
-                    Assert.Fail(string.Format("No Exception found on promise"));
+                    Assert.Fail("No Exception found on promise");
                 }
                 else if (exp.Flatten().InnerException.GetType() == typeof(StatusTestException))
                 {
@@ -430,7 +430,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskStatus2()
         {
@@ -442,7 +442,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskStatus3()
         {
@@ -503,7 +503,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskStatus8()
         {
@@ -515,7 +515,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskStatus9()
         {
@@ -530,7 +530,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskStatus10()
         {
             TestParameters parameters = new TestParameters(TestAction.CancelTask)
@@ -544,7 +544,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskStatus11()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedTask)
@@ -555,7 +555,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskStatus12()
         {
@@ -570,7 +570,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskStatus13()
         {
@@ -584,7 +584,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskStatus14()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedChildTask)
@@ -598,7 +598,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskStatus15()
         {
             TestParameters parameters = new TestParameters(TestAction.FailedChildTask)
@@ -611,7 +611,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskStatus16()
         {
@@ -626,7 +626,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskStatus17()
         {
             TestParameters parameters = new TestParameters(TestAction.CancelTaskAndAcknowledge)
@@ -640,7 +640,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(Status_IsProperties_Match_MemberData))]
         public void Status_IsProperties_Match(StrongBox<Task> taskBox)
         {

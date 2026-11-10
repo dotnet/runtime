@@ -9,17 +9,17 @@ using System.Runtime.InteropServices;
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct RSAPrivateKeyAsn
+    internal ref partial struct ValueRSAPrivateKeyAsn
     {
         internal int Version;
-        internal System.Numerics.BigInteger Modulus;
-        internal System.Numerics.BigInteger PublicExponent;
-        internal System.Numerics.BigInteger PrivateExponent;
-        internal System.Numerics.BigInteger Prime1;
-        internal System.Numerics.BigInteger Prime2;
-        internal System.Numerics.BigInteger Exponent1;
-        internal System.Numerics.BigInteger Exponent2;
-        internal System.Numerics.BigInteger Coefficient;
+        internal ReadOnlySpan<byte> Modulus;
+        internal ReadOnlySpan<byte> PublicExponent;
+        internal ReadOnlySpan<byte> PrivateExponent;
+        internal ReadOnlySpan<byte> Prime1;
+        internal ReadOnlySpan<byte> Prime2;
+        internal ReadOnlySpan<byte> Exponent1;
+        internal ReadOnlySpan<byte> Exponent2;
+        internal ReadOnlySpan<byte> Coefficient;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -42,20 +42,19 @@ namespace System.Security.Cryptography.Asn1
             writer.PopSequence(tag);
         }
 
-        internal static RSAPrivateKeyAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRSAPrivateKeyAsn decoded)
         {
-            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
         }
 
-        internal static RSAPrivateKeyAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRSAPrivateKeyAsn decoded)
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out RSAPrivateKeyAsn decoded);
+                DecodeCore(ref reader, expectedTag, out decoded);
                 reader.ThrowIfNotEmpty();
-                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -63,12 +62,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out RSAPrivateKeyAsn decoded)
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueRSAPrivateKeyAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out RSAPrivateKeyAsn decoded)
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRSAPrivateKeyAsn decoded)
         {
             try
             {
@@ -80,10 +79,10 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out RSAPrivateKeyAsn decoded)
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRSAPrivateKeyAsn decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
 
             if (!sequenceReader.TryReadInt32(out decoded.Version))
@@ -91,14 +90,14 @@ namespace System.Security.Cryptography.Asn1
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            decoded.Modulus = sequenceReader.ReadInteger();
-            decoded.PublicExponent = sequenceReader.ReadInteger();
-            decoded.PrivateExponent = sequenceReader.ReadInteger();
-            decoded.Prime1 = sequenceReader.ReadInteger();
-            decoded.Prime2 = sequenceReader.ReadInteger();
-            decoded.Exponent1 = sequenceReader.ReadInteger();
-            decoded.Exponent2 = sequenceReader.ReadInteger();
-            decoded.Coefficient = sequenceReader.ReadInteger();
+            decoded.Modulus = sequenceReader.ReadIntegerBytes();
+            decoded.PublicExponent = sequenceReader.ReadIntegerBytes();
+            decoded.PrivateExponent = sequenceReader.ReadIntegerBytes();
+            decoded.Prime1 = sequenceReader.ReadIntegerBytes();
+            decoded.Prime2 = sequenceReader.ReadIntegerBytes();
+            decoded.Exponent1 = sequenceReader.ReadIntegerBytes();
+            decoded.Exponent2 = sequenceReader.ReadIntegerBytes();
+            decoded.Coefficient = sequenceReader.ReadIntegerBytes();
 
             sequenceReader.ThrowIfNotEmpty();
         }

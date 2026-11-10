@@ -118,7 +118,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     double latestNsPerYield;
     if (s_normalizationState == NormalizationState::Initialized)
     {
-        if (minipal_lowres_ticks() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if ((minipal_lowres_ticks() - s_previousNormalizationTimeMs) < MeasurementPeriodMs)
         {
             return;
         }
@@ -203,7 +203,7 @@ void YieldProcessorNormalization::PerformMeasurement()
 
     GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
 
-    s_previousNormalizationTimeMs = (unsigned int)minipal_lowres_ticks();
+    s_previousNormalizationTimeMs = minipal_lowres_ticks();
     s_normalizationState = NormalizationState::Initialized;
     s_isMeasurementScheduled = false;
 }
@@ -222,7 +222,7 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     NormalizationState normalizationState = VolatileLoadWithoutBarrier(&s_normalizationState);
     if (normalizationState == NormalizationState::Initialized)
     {
-        if (minipal_lowres_ticks() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if ((minipal_lowres_ticks() - s_previousNormalizationTimeMs) < MeasurementPeriodMs)
         {
             return;
         }

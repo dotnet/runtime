@@ -256,7 +256,7 @@ namespace System
         /// class that uses <typeparamref name="T"/>'s default constructor and a specified thread-safety mode.
         /// </summary>
         /// <param name="mode">The lazy thread-safety mode</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value</exception>
         public Lazy(LazyThreadSafetyMode mode) :
             this(null, mode, useDefaultConstructor: true)
         {
@@ -525,10 +525,10 @@ namespace System
         /// <summary>Returns the value of the Lazy object.</summary>
         public T? Value => _lazy.ValueForDebugDisplay;
 
-        /// <summary>Returns the execution mode of the Lazy object</summary>
+        /// <summary>Returns the execution mode of the Lazy object.</summary>
         public LazyThreadSafetyMode? Mode => _lazy.Mode;
 
-        /// <summary>Returns the execution mode of the Lazy object</summary>
+        /// <summary>Returns whether the value creation of the Lazy object is faulted or not.</summary>
         public bool IsValueFaulted => _lazy.IsValueFaulted;
     }
 }

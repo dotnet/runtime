@@ -6,12 +6,15 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
+using TestLibrary;
 
 class BaseClass1 { }
 
 public class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
 {
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("Reflection.Emit is not supported on fullaot", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestEntryPoint()
     {

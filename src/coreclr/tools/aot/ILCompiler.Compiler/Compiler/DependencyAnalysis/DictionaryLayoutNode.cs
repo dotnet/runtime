@@ -137,7 +137,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             if (HasFixedSlots)
             {
@@ -145,13 +145,13 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (DependencyNodeCore<NodeFactory> dependency in lookupResult.NonRelocDependenciesFromUsage(factory))
                     {
-                        yield return new DependencyListEntry(dependency, "GenericLookupResultDependency");
+                        sink.Add(dependency, "GenericLookupResultDependency");
                     }
                 }
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             Debug.Assert(HasFixedSlots);
 
@@ -165,16 +165,12 @@ namespace ILCompiler.DependencyAnalysis
                 templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_owningMethodOrType);
             }
 
-            List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
-
             foreach (var lookupSignature in FixedEntries)
             {
-                conditionalDependencies.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
+                sink.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
             }
-
-            return conditionalDependencies;
         }
 
         protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType}";
@@ -184,7 +180,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 
     public class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode
@@ -211,6 +207,30 @@ namespace ILCompiler.DependencyAnalysis
         public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot)
         {
             slot = Array.IndexOf(_layout, entry);
+
+
+            // If we're looking for a low type handle load level and it doesn't exist, check for a higher load level.
+            var necessaryLookup = entry as NecessaryTypeHandleGenericLookupResult;
+            var metadataLookup = entry as MetadataTypeHandleGenericLookupResult;
+            if (slot < 0
+                && (necessaryLookup != null || metadataLookup != null))
+            {
+                for (int i = 0; i < _layout.Length; i++)
+                {
+                    if (_layout[i] is TypeHandleGenericLookupResult thOther
+                        && (thOther.Type == necessaryLookup?.Type || thOther.Type == metadataLookup?.Type))
+                    {
+                        slot = i;
+                        return true;
+                    }
+                    if (_layout[i] is MetadataTypeHandleGenericLookupResult mdOther
+                        && mdOther.Type == necessaryLookup?.Type)
+                    {
+                        slot = i;
+                        return true;
+                    }
+                }
+            }
 
             // If this is a slot we should discard, respond false
             if (slot < 0 && Array.IndexOf(_discardedSlots, entry) >= 0)

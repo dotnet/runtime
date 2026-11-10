@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.X86Base.X64.cs" />
+    <Compile Include="BigMul.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

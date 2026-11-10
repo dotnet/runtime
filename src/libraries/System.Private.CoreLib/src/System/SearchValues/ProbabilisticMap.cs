@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -72,10 +73,14 @@ namespace System.Buffers
             }
         }
 
+        // SetCharBit and IsCharBitSet must bypass R2R because the set of supported intrinsics impacts how the type is constructed in memory,
+        // so which branch is taken must never change during program execution as we're tiering up. Other methods in this type only check for
+        // intrinsics as a fast path where the fallback path behaves identically, so they are fine to compile R2R.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRun]
         private static void SetCharBit(ref uint charMap, byte value)
         {
-            if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
+            if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported)
             {
                 Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) |= (byte)(1u << (value >> VectorizedIndexShift));
             }
@@ -86,7 +91,8 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported
+        [BypassReadyToRun]
+        private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported
             ? (Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) & (1u << (value >> VectorizedIndexShift))) != 0
             : (Unsafe.Add(ref charMap, value & PortableIndexMask) & (1u << (value >> PortableIndexShift))) != 0;
 
@@ -214,6 +220,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> ContainsMask16Chars(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, ref char searchSpace)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref searchSpace);
@@ -231,6 +238,11 @@ namespace System.Buffers
             {
                 sourceLower = AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
                 sourceUpper = AdvSimd.Arm64.UnzipOdd(source0.AsByte(), source1.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                sourceLower = PackedSimd.ConvertNarrowingSaturateUnsigned((source0 & Vector128.Create((ushort)255)).AsInt16(), (source1 & Vector128.Create((ushort)255)).AsInt16());
+                sourceUpper = PackedSimd.ConvertNarrowingSaturateUnsigned((source0 >>> 8).AsInt16(), (source1 >>> 8).AsInt16());
             }
             else
             {
@@ -386,7 +398,7 @@ namespace System.Buffers
         internal static int IndexOfAny<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
+            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && searchSpaceLength >= 16)
             {
                 return Vector512.IsHardwareAccelerated && Avx512Vbmi.VL.IsSupported
                     ? IndexOfAnyVectorizedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, ref state)
@@ -400,7 +412,7 @@ namespace System.Buffers
         internal static int LastIndexOfAny<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
+            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && searchSpaceLength >= 16)
             {
                 return Vector512.IsHardwareAccelerated && Avx512Vbmi.VL.IsSupported
                     ? LastIndexOfAnyVectorizedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, ref state)
@@ -495,10 +507,11 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse41))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static int IndexOfAnyVectorized<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
             Debug.Assert(searchSpaceLength >= 16);
 
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
@@ -620,7 +633,7 @@ namespace System.Buffers
                             }
                         }
 
-                        if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                        if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                         {
                             if (Unsafe.AreSame(ref cur, ref searchSpace))
                             {
@@ -673,10 +686,11 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse41))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static int LastIndexOfAnyVectorized<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
             Debug.Assert(searchSpaceLength >= 16);
 
             ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
@@ -709,7 +723,7 @@ namespace System.Buffers
                         }
                     }
 
-                    if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVectorAvx2))
+                    if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVectorAvx2))
                     {
                         if (Unsafe.AreSame(ref cur, ref searchSpace))
                         {
@@ -751,7 +765,7 @@ namespace System.Buffers
                     }
                 }
 
-                if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                 {
                     if (Unsafe.AreSame(ref cur, ref searchSpace))
                     {

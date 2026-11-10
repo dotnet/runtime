@@ -41,7 +41,7 @@ namespace System.Buffers
 
             if (children.GetType() == typeof(int[]))
             {
-                int[] table = Unsafe.As<int[]>(children);
+                int[] table = (int[])children;
                 if (c < (uint)table.Length)
                 {
                     index = table[c];
@@ -155,8 +155,7 @@ namespace System.Buffers
                     return false;
                 }
 
-                table = new int[maxValue + 1];
-                Array.Fill(table, -1);
+                table = Array.CreateFilled(maxValue + 1, -1);
 
                 foreach ((char childChar, int childIndex) in children)
                 {

@@ -86,6 +86,11 @@ char* nextcharW(_In_ __nullterminated char* pos)
     return (pos+2);
 }
 /*--------------------------------------------------------------------------*/
+static bool PtrIsWCHARAligned(char* ptr)
+{
+    return ((uintptr_t)ptr & (sizeof(WCHAR) - 1)) == 0;
+}
+/*--------------------------------------------------------------------------*/
 unsigned SymAU(_In_ __nullterminated char* curPos)
 {
     return (unsigned)*curPos;
@@ -93,10 +98,12 @@ unsigned SymAU(_In_ __nullterminated char* curPos)
 
 unsigned SymW(_In_ __nullterminated char* curPos)
 {
-    return (unsigned)*((WCHAR*)curPos);
+    WCHAR wc;
+    memcpy(&wc, curPos, sizeof(WCHAR));
+    return (unsigned)wc;
 }
 /*--------------------------------------------------------------------------*/
-char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenAU(_In_reads_(tokLen) void* curTok, size_t tokLen)
 {
     char *nb = new char[tokLen+1];
     if(nb != NULL)
@@ -106,13 +113,14 @@ char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen)
     }
     return nb;
 }
-char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenW(_In_reads_(tokLen) void* curTok, size_t tokLen)
 {
+    _ASSERTE(PtrIsWCHARAligned((char*) curTok) && "NewStrFromTokenW: misaligned curTok");
     WCHAR* wcurTok = (WCHAR*)curTok;
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
     {
-        tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
+        tokLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)wcurTok,tokLen >> 1,nb,(tokLen<<1) + 2,0);
         nb[tokLen] = 0;
     }
     return nb;
@@ -127,9 +135,15 @@ char* NewStaticStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen, _O
 }
 char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize)
 {
+    if (!PtrIsWCHARAligned(curTok))
+    {
+        _ASSERTE(!"NewStaticStrFromTokenW: misaligned curTok");
+        return NULL;
+    }
+    // CodeQL [SM02986] Cast to WCHAR is safe because we bail if curTok is not properly aligned
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
-    tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
+    tokLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)wcurTok,tokLen >> 1,staticBuf,bufSize,0);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
@@ -147,19 +161,18 @@ unsigned GetDoubleAU(_In_ __nullterminated char* begNum, unsigned L, double** pp
 
 unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
-    static char dbuff[256];
+    WCHAR dbuff[128] = {0};
     char* pdummy = NULL;
     if(L > 254) L = 254;
-    memcpy(dbuff,begNum,L);
-    dbuff[L] = 0;
-    dbuff[L+1] = 0;
-    *ppRes = new double(u16_strtod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
-    return ((unsigned)(pdummy - dbuff));
+    L &= ~1u; // round down to WCHAR boundary
+    memcpy(dbuff, begNum, L);
+    *ppRes = new double(u16_strtod(dbuff, (WCHAR**)&pdummy));
+    return ((unsigned)(pdummy - (char*)dbuff));
 }
 /*--------------------------------------------------------------------------*/
 char* yygetline(int Line)
 {
-    static char buff[0x4000];
+    alignas(WCHAR) static char buff[0x4000];
     char *pLine=NULL, *pNextLine=NULL;
     char *pBegin=NULL, *pEnd = NULL;
     unsigned uCount = parser->getAll(&pBegin);
@@ -179,9 +192,11 @@ char* yygetline(int Line)
         }
         if(Sym == SymW) // Unicode file
         {
+            // CodeQL [SM02986] pNextLine (via parser->getAll) points into properly WCHAR aligned data (MapViewOfFile) and is safely incremented by nextchar
             if(*((WCHAR*)pNextLine - 1) == '\r') pNextLine -= 2;
             uCount = (unsigned)(pNextLine - pLine);
             uCount &= 0x1FFF; // limit: 8K wchars
+            // CodeQL [SM02986] this cast is safe because buff is WCHAR aligned and we null terminate below
             WCHAR* wzBuff = (WCHAR*)buff;
             memcpy(buff,pLine,uCount);
             wzBuff[uCount >> 1] = 0;
@@ -199,12 +214,18 @@ char* yygetline(int Line)
 }
 
 void yyerror(_In_ __nullterminated const char* str) {
-    char tokBuff[64];
+    alignas(WCHAR) char tokBuff[64];
     const char* szfile = PENV->in->name();
     int iline = PENV->curLine;
 
     size_t len = PENV->curPos - PENV->curTok;
     if (len > 62) len = 62;
+    if (Sym == SymW)
+    {
+        // len must be even in the Unicode case, so the null
+        // termination isn't split across two WCHARs
+        len &= ~(size_t)1;
+    }
     memcpy(tokBuff, PENV->curTok, len);
     tokBuff[len] = 0;
     tokBuff[len+1] = 0;
@@ -217,7 +238,9 @@ void yyerror(_In_ __nullterminated const char* str) {
     const char* fmt = "%s(%d) : error : %s at token '%s' in: %s\n";
     if(Sym == SymW) // Unicode file
     {
+        // CodeQL [SM02986] Casting tokBuff to WCHAR* is safe because tokBuff is WCHAR-aligned and properly null terminated
         MAKE_UTF8PTR_FROMWIDE(tokBuffUtf8, (WCHAR*)tokBuff);
+        // CodeQL [SM02986] Casting yygetline result to WCHAR* is safe because buff is guaranteed to be WCHAR-aligned
         MAKE_UTF8PTR_FROMWIDE(curLineUtf8, (WCHAR*)yygetline(PENV->curLine));
         fprintf(stderr, fmt,
                 szfile, iline, str, tokBuffUtf8, curLineUtf8);
@@ -967,7 +990,7 @@ Its_An_Id:
                             {
                                 if((wzFile = new WCHAR[tokLen+1]) != NULL)
                                 {
-                                    tokLen = MultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
+                                    tokLen = minipal_convert_utf8_to_utf16(curTok,tokLen,(CHAR16_T*)wzFile,tokLen+1,0);
                                     wzFile[tokLen] = 0;
                                 }
                             }
@@ -980,6 +1003,30 @@ Its_An_Id:
 #endif
                                 )
                                 {
+#ifdef TARGET_UNIX
+                                    for(const WCHAR* wzDir = parser->wzIncludePath; (wzDir != NULL) && (*wzDir != 0); )
+                                    {
+                                        const WCHAR* wzEnd = u16_strchr(wzDir, W(':'));
+                                        COUNT_T dirLen = (wzEnd != NULL) ? (COUNT_T)(wzEnd - wzDir) : (COUNT_T)u16_strlen(wzDir);
+                                        if(dirLen != 0)
+                                        {
+                                            PathString wzCandidate;
+                                            wzCandidate.Set(wzDir, dirLen);
+                                            wzCandidate.Append(W("/"));
+                                            wzCandidate.Append(wzFile);
+                                            MAKE_UTF8PTR_FROMWIDE(candidateUtf8, wzCandidate.GetUnicode());
+                                            FILE* pCandidate = fopen(candidateUtf8, "rb");
+                                            if(pCandidate != NULL)
+                                            {
+                                                fclose(pCandidate);
+                                                delete [] wzFile;
+                                                wzFile = wzCandidate.GetCopyOfUnicodeString();
+                                                break;
+                                            }
+                                        }
+                                        wzDir = (wzEnd != NULL) ? wzEnd + 1 : NULL;
+                                    }
+#else
                                     PathString wzFullName;
 
                                     WCHAR* pwz;
@@ -991,7 +1038,7 @@ Its_An_Id:
 
                                         wzFile = wzFullName.GetCopyOfUnicodeString();
                                     }
-
+#endif
                                 }
                                 if(PASM->m_fReportProgress)
                                 {
@@ -1200,8 +1247,8 @@ Its_An_Id:
         begNum = curPos;
         {
             uint64_t i64 = str2uint64(begNum, const_cast<const char**>(&curPos), radix);
-            uint64_t mask64 = neg ? UI64(0xFFFFFFFF80000000) : UI64(0xFFFFFFFF00000000);
-            uint64_t largestNegVal32 = UI64(0x0000000080000000);
+            uint64_t mask64 = neg ? 0xFFFFFFFF80000000ULL : 0xFFFFFFFF00000000ULL;
+            uint64_t largestNegVal32 = 0x0000000080000000ULL;
             if ((i64 & mask64) && (i64 != largestNegVal32))
             {
                 yylval.int64 = new int64_t(i64);
@@ -1584,9 +1631,6 @@ AsmParse::AsmParse(ReadStream* aIn, Assembler *aAssem)
     wzIncludePath = NULL;
     penv = NULL;
 
-    hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
-    hstderr = GetStdHandle(STD_ERROR_HANDLE);
-
     success = true;
     _ASSERTE(parser == 0);          // Should only be one parser instance at a time
 
@@ -1770,23 +1814,15 @@ BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
 /**************************************************************************/
 void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
 {
-        WCHAR *wz = &wzUniBuf[0];
-        if(g_uCodePage != CP_ACP)
-        {
-                memset(wz,0,dwUniBuf); // dwUniBuf/2 WCHARs = dwUniBuf bytes
-                MultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
-
-                memset(sz,0,dwUniBuf);
-                WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
-        }
         fprintf(pF,"%s",sz);
 }
 /**************************************************************************/
 void AsmParse::error(const char* fmt, ...)
 {
+    if(assem->OnErrGo) return;
     char *sz = (char*)(&wzUniBuf[(dwUniBuf >> 1)]);
     char *psz=&sz[0];
-    FILE* pF = ((!assem->m_fReportProgress)&&(assem->OnErrGo)) ? stdout : stderr;
+    FILE* pF = stderr;
     success = false;
     va_list args;
     va_start(args, fmt);
@@ -1800,9 +1836,10 @@ void AsmParse::error(const char* fmt, ...)
 /**************************************************************************/
 void AsmParse::warn(const char* fmt, ...)
 {
+    if(assem->OnErrGo) return;
     char *sz = (char*)(&wzUniBuf[(dwUniBuf >> 1)]);
     char *psz=&sz[0];
-    FILE* pF = ((!assem->m_fReportProgress)&&(assem->OnErrGo)) ? stdout : stderr;
+    FILE* pF = stderr;
     va_list args;
     va_start(args, fmt);
 

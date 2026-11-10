@@ -269,7 +269,7 @@ namespace System.Reflection
             // It is documented that the inherit flag is ignored.
             // Attribute.GetCustomAttributes is to be used to search
             // inheritance chain.
-            return CustomAttribute.GetCustomAttributes(this, false);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, false);
         }
 
         public
@@ -279,7 +279,7 @@ namespace System.Reflection
             // It is documented that the inherit flag is ignored.
             // Attribute.GetCustomAttributes is to be used to search
             // inheritance chain.
-            return CustomAttribute.GetCustomAttributes(this, attributeType, false);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, false);
         }
 
         internal static object? GetDefaultValueImpl(ParameterInfo pinfo)
@@ -292,7 +292,7 @@ namespace System.Reflection
         override
         bool IsDefined(Type attributeType, bool inherit)
         {
-            return CustomAttribute.IsDefined(this, attributeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
@@ -425,6 +425,6 @@ namespace System.Reflection
 
         internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(ParameterType, Member, Position, optional, genericArgumentPosition) ?? Type.EmptyTypes;
 
-        public override Type GetModifiedParameterType() => ModifiedType.Create(ParameterType, this, PositionImpl + 1);
+        public override Type GetModifiedParameterType() => ModifiedType.Create(ParameterType, this);
     }
 }

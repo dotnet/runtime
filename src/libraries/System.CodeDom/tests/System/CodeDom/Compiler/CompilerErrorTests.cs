@@ -23,7 +23,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, 0, 0, null, null)]
         [InlineData("", -1, -1, "", "")]
         [InlineData("fileName", 1, 1, "errorNumber", "errorText")]
-        public void Ctor_String_Int_Int_String_String(string fileName, int line, int column, string errorNumber, string errorText)
+        public void Ctor_String_Int_Int_String_String(string? fileName, int line, int column, string? errorNumber, string? errorText)
         {
             var error = new CompilerError(fileName, line, column, errorNumber, errorText);
             Assert.Equal(column, error.Column);

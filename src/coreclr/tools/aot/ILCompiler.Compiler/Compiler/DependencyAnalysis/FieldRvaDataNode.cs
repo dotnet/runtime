@@ -11,7 +11,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class FieldRvaDataNode : ObjectNode, ISymbolDefinitionNode
+    public class FieldRvaDataNode : ObjectNode, ISymbolDefinitionNode, IObjectNodeWithAlignment
     {
         private readonly EcmaField _field;
 
@@ -33,14 +33,20 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => true;
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        // Keep this in sync with the alignment reported from GetData.
+        public int GetAlignment(NodeFactory factory)
         {
             int fieldTypePack = (_field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1;
+            return Math.Max(factory.Target.PointerSize, fieldTypePack);
+        }
+
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        {
             byte[] data = relocsOnly ? Array.Empty<byte>() : _field.GetFieldRvaData();
             return new ObjectData(
                 data,
                 Array.Empty<Relocation>(),
-                Math.Max(factory.Target.PointerSize, fieldTypePack),
+                GetAlignment(factory),
                 new ISymbolDefinitionNode[] { this });
         }
 

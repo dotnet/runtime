@@ -34,7 +34,7 @@ namespace Internal.IL
                     sb.Append("instance ");
                 disasm.AppendType(sb, owningMethod.Signature.ReturnType);
                 sb.Append(' ');
-                sb.Append(owningMethod.Name);
+                sb.Append(owningMethod.GetName());
                 if (owningMethod.HasInstantiation)
                 {
                     sb.Append('<');

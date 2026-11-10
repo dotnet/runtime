@@ -23,7 +23,7 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         mov     r11, rsi
 
         test    byte ptr [r10 + OFFSETOF__CONTEXT__ContextFlags], CONTEXT_INTEGER
-        je      Done_Restore_CONTEXT_INTEGER
+        je      LOCAL_LABEL(Done_Restore_CONTEXT_INTEGER)
         mov     rbx, [r10 + OFFSETOF__CONTEXT__Rbx]
         mov     rcx, [r10 + OFFSETOF__CONTEXT__Rcx]
         mov     rdx, [r10 + OFFSETOF__CONTEXT__Rdx]
@@ -36,25 +36,25 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         mov     r13, [r10 + OFFSETOF__CONTEXT__R13]
         mov     r14, [r10 + OFFSETOF__CONTEXT__R14]
         mov     r15, [r10 + OFFSETOF__CONTEXT__R15]
-    Done_Restore_CONTEXT_INTEGER:
+    LOCAL_LABEL(Done_Restore_CONTEXT_INTEGER):
     
         test    byte ptr [r10 + OFFSETOF__CONTEXT__ContextFlags], CONTEXT_CONTROL
-        je      Done_Restore_CONTEXT_CONTROL
+        je      LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL)
 
         test    r11, r11
-        je      No_Ssp_Update
+        je      LOCAL_LABEL(No_Ssp_Update)
         rdsspq  rax
         sub     r11, rax
         shr     r11, 3
         // the incsspq instruction uses only the lowest 8 bits of the argument, so we need to loop in case the increment is larger than 255
         mov     rax, 255
-    Update_Loop:
+    LOCAL_LABEL(Update_Loop):
         cmp     r11, rax
         cmovb   rax, r11
         incsspq rax
         sub     r11, rax
-        ja      Update_Loop
-    No_Ssp_Update:
+        ja      LOCAL_LABEL(Update_Loop)
+    LOCAL_LABEL(No_Ssp_Update):
 
         // When user-mode shadow stacks are enabled, and for example the intent is to continue execution in managed code after
         // exception handling, iret and ret can't be used because their shadow stack enforcement would not allow that transition,
@@ -63,7 +63,7 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         mov     rax, [r10 + OFFSETOF__CONTEXT__Rip]
         mov     rsp, [r10 + OFFSETOF__CONTEXT__Rsp]
         jmp     rax
-    Done_Restore_CONTEXT_CONTROL:
+    LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL):
     
         // The function was not asked to restore the control registers so we return back to the caller
         pop     rbp

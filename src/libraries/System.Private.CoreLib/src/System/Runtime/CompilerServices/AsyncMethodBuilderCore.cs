@@ -127,6 +127,20 @@ namespace System.Runtime.CompilerServices
                 wrapper._innerTask :           // A wrapped continuation, created by an awaiter
                 continuation.Target as Task;   // The continuation targets a task directly, such as with AsyncStateMachineBox
 
+        internal static IAsyncStateMachineBox? TryGetStateMachineBox(Action continuation)
+        {
+            object? target = continuation.Target;
+            if (target is IAsyncStateMachineBox box)
+            {
+                return box;
+            }
+            if (target is ContinuationWrapper cw)
+            {
+                return TryGetStateMachineBox(cw._continuation);
+            }
+            return null;
+        }
+
         /// <summary>
         /// Logically we pass just an Action (delegate) to a task for its action to 'ContinueWith' when it completes.
         /// However debuggers and profilers need more information about what that action is. (In particular what

@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.CodeAnalysis;
+using System.Text;
 
 namespace Microsoft.Interop
 {
@@ -32,5 +30,22 @@ namespace Microsoft.Interop
                 (false, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedEnabledMarshallingGeneratorResolver,
                 _ => throw new UnreachableException(),
             };
+
+        public static string CreateEmbeddedDataBlobExpression(ReadOnlySpan<byte> bytes)
+        {
+            // Three digits and ", " per byte; the brackets replace one separator.
+            var builder = new StringBuilder(Math.Max(2, checked(bytes.Length * 5)));
+            builder.Append('[');
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (i != 0)
+                {
+                    builder.Append(", ");
+                }
+                builder.Append(bytes[i]);
+            }
+            builder.Append(']');
+            return builder.ToString();
+        }
     }
 }

@@ -3,9 +3,11 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Xunit;
+using TestLibrary;
 
 public class Program 
 {
+    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint() 
     {

@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 /*****************************************************************************/
 
@@ -123,6 +124,7 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -147,6 +149,7 @@ const char* getRegName(regNumber reg)
     assert(reg < ArrLen(regNames));
     return regNames[reg];
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
 {
@@ -283,6 +286,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
+#if HAS_FIXED_REGISTER_SET
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
@@ -419,6 +423,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
         regPrev = regNum;
     }
 
+#endif // HAS_FIXED_REGISTER_SET
     return sep;
 }
 
@@ -561,7 +566,7 @@ DECODE_OPCODE:
 
                 INT_OP:
                     dumpILBytes(startOpcodePtr, (unsigned)((opcodePtr - startOpcodePtr) + sz), ALIGN_WIDTH);
-                    printf(" %-12s 0x%X", opcodeNames[opcode], iOp);
+                    printf(" %-12s 0x%llX", opcodeNames[opcode], (unsigned long long)iOp);
                     break;
 
                 case ShortInlineR:
@@ -1089,85 +1094,12 @@ void ConfigDoubleArray::Dump()
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
-void Counter::dump(FILE* output)
+void Counter::dump(FILE* output) const
 {
     fprintf(output, "%lld\n", (long long)Value);
 }
 
-/*****************************************************************************
- *  Histogram class.
- */
-
-Histogram::Histogram(const unsigned* const sizeTable)
-    : m_sizeTable(sizeTable)
-{
-    unsigned sizeCount = 0;
-    do
-    {
-        sizeCount++;
-    } while ((sizeTable[sizeCount] != 0) && (sizeCount < 1000));
-
-    assert(sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1);
-
-    m_sizeCount = sizeCount;
-
-    memset(m_counts, 0, (m_sizeCount + 1) * sizeof(*m_counts));
-}
-
-void Histogram::dump(FILE* output)
-{
-    unsigned t = 0;
-    for (unsigned i = 0; i < m_sizeCount; i++)
-    {
-        t += m_counts[i];
-    }
-
-    for (unsigned c = 0, i = 0; i <= m_sizeCount; i++)
-    {
-        if (i == m_sizeCount)
-        {
-            if (m_counts[i] == 0)
-            {
-                break;
-            }
-
-            fprintf(output, "      >    %7u", m_sizeTable[i - 1]);
-        }
-        else
-        {
-            if (i == 0)
-            {
-                fprintf(output, "     <=    ");
-            }
-            else
-            {
-                fprintf(output, "%7u .. ", m_sizeTable[i - 1] + 1);
-            }
-
-            fprintf(output, "%7u", m_sizeTable[i]);
-        }
-
-        c += static_cast<unsigned>(m_counts[i]);
-
-        fprintf(output, " ===> %7u count (%3u%% of total)\n", static_cast<unsigned>(m_counts[i]), (int)(100.0 * c / t));
-    }
-}
-
-void Histogram::record(unsigned size)
-{
-    unsigned i;
-    for (i = 0; i < m_sizeCount; i++)
-    {
-        if (m_sizeTable[i] >= size)
-        {
-            break;
-        }
-    }
-
-    InterlockedAdd(&m_counts[i], 1);
-}
-
-void NodeCounts::dump(FILE* output)
+void NodeCounts::dump(FILE* output) const
 {
     struct Entry
     {
@@ -1215,13 +1147,13 @@ void NodeCounts::record(genTreeOps oper)
 
 struct DumpOnShutdownEntry
 {
-    const char*     Name;
-    class Dumpable* Dumpable;
+    const char*           Name;
+    const class Dumpable* Dumpable;
 };
 
 static DumpOnShutdownEntry s_dumpOnShutdown[16];
 
-DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
+DumpOnShutdown::DumpOnShutdown(const char* name, const Dumpable* dumpable)
 {
     for (DumpOnShutdownEntry& entry : s_dumpOnShutdown)
     {
@@ -1511,15 +1443,15 @@ void HelperCallProperties::init()
     {
         // Generally you want initialize these to their most typical/safest result
         //
-        bool isPure        = false; // true if the result only depends upon input args and not any global state
-        bool noThrow       = false; // true if the helper will never throw
-        bool alwaysThrow   = false; // true if the helper will always throw
-        bool nonNullReturn = false; // true if the result will never be null or zero
-        bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
-        bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
-        bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
-        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
-        bool isNoGC        = false; // true if the helper cannot trigger GC
+        bool              isPure = false; // true if the result only depends upon input args and not any global state
+        ExceptionSetFlags exceptions    = ExceptionSetFlags::UnknownException; // Exceptions the helper may throw
+        bool              alwaysThrow   = false;                               // true if the helper will always throw
+        bool              nonNullReturn = false; // true if the result will never be null or zero
+        bool isAllocator = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
+        bool mutatesHeap = false; // true if any previous heap objects [are|can be] modified
+        bool mayRunCctor = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape  = false; // true if none of the GC ref arguments can escape
+        bool isNoGC      = false; // true if the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1538,16 +1470,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
-                isPure  = true;
-                noThrow = true;
-                break;
-
-            // Arithmetic helpers that *can* throw.
-
-            // This (or these) are not pure, in that they have "VM side effects"...but they don't mutate the heap.
-            case CORINFO_HELP_ENDCATCH:
-
-                noThrow = true;
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             // Arithmetic helpers that may throw
@@ -1585,7 +1509,7 @@ void HelperCallProperties::init()
 
                 isAllocator   = true;
                 nonNullReturn = true;
-                noThrow       = true; // only can throw OutOfMemory
+                exceptions    = ExceptionSetFlags::None; // only can throw OutOfMemory
                 break;
 
             // These allocation helpers do some checks on the size (and lower bound) inputs,
@@ -1603,15 +1527,6 @@ void HelperCallProperties::init()
                 nonNullReturn = true;
                 break;
 
-            // Heap Allocation helpers that are also pure
-            case CORINFO_HELP_STRCNS:
-
-                isPure        = true;
-                isAllocator   = true;
-                nonNullReturn = true;
-                noThrow       = true; // only can throw OutOfMemory
-                break;
-
             case CORINFO_HELP_BOX_NULLABLE:
                 // Box Nullable is not a 'pure' function
                 // It has a Byref argument that it reads the contents of.
@@ -1620,7 +1535,7 @@ void HelperCallProperties::init()
                 // will produce different results when the contents of the memory pointed to by the Byref changes
                 //
                 isAllocator = true;
-                noThrow     = true; // only can throw OutOfMemory
+                exceptions  = ExceptionSetFlags::None; // only can throw OutOfMemory
                 break;
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
@@ -1628,7 +1543,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
-                noThrow       = true;
+                exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
                 break;
 
@@ -1638,16 +1553,23 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ISINSTANCEOFCLASS:
             case CORINFO_HELP_ISINSTANCEOFANY:
             case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
-            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
-                isPure  = true;
-                noThrow = true; // These return null for a failing cast
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None; // These return null for a failing cast
+                break;
+
+            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
+                // Public default-handle null handling bypasses this internal, non-null-returning helper.
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
-                isPure  = true;
-                noThrow = true;
+                // In runtime async methods, execution may resume on a different thread after suspension.
+                // So managed thread ID is not a constant/pure value, but the helper is still no-throw.
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             // type casting helpers that throw
@@ -1674,17 +1596,23 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MEMZERO:
             case CORINFO_HELP_MEMSET:
             case CORINFO_HELP_NATIVE_MEMSET:
-                isNoEscape = true;
+                isNoEscape  = true;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
-                isPure = true;
+                // The returned slot address cannot be null; the object stored there can be.
+                isPure        = true;
+                nonNullReturn = true;
                 break;
 
             // GETREFANY is pure up to the value of the struct argument. We
-            // only support that when it is not an implicit byref.
+            // only support that when it is not an implicit byref. The
+            // TypedReference struct (two pointers) is passed by implicit
+            // byref on win-x64 and on wasm (the wasm ABI passes any struct
+            // without a single scalar lowering by reference).
             case CORINFO_HELP_GETREFANY:
-#ifndef WINDOWS_AMD64_ABI
+#if !defined(WINDOWS_AMD64_ABI) && !defined(TARGET_WASM)
                 isPure = true;
 #endif
                 break;
@@ -1693,8 +1621,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETCLASSFROMMETHODPARAM:
             case CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
 
-                isPure  = true;
-                noThrow = true;
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             // Helpers that load the base address for static variables.
@@ -1710,6 +1638,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
@@ -1727,7 +1657,7 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_INITCLASS:
             case CORINFO_HELP_INITINSTCLASS:
-                isPure      = true;
+                mutatesHeap = true;
                 mayRunCctor = true;
                 break;
 
@@ -1752,7 +1682,7 @@ void HelperCallProperties::init()
                 // These do not invoke static class constructors
                 //
                 isPure        = true;
-                noThrow       = true;
+                exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
                 break;
 
@@ -1771,13 +1701,13 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
 #endif
             // GC Write barrier support
-            // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            case CORINFO_HELP_ASSIGN_BYREF:
-                isNoGC = true;
-                FALLTHROUGH;
-            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
+            case CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                isNoGC      = true;
+                mutatesHeap = true;
+                break;
+
             case CORINFO_HELP_BULK_WRITEBARRIER:
                 mutatesHeap = true;
                 break;
@@ -1811,8 +1741,8 @@ void HelperCallProperties::init()
 
             // This is a debugging aid; it simply returns a constant address.
             case CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR:
-                isPure  = true;
-                noThrow = true;
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
@@ -1822,12 +1752,23 @@ void HelperCallProperties::init()
                 FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
             case CORINFO_HELP_POLL_GC:
-            case CORINFO_HELP_MON_ENTER:
-            case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-                noThrow = true;
+            case CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
+                exceptions = ExceptionSetFlags::None;
+                break;
+
+            case CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                isNoGC     = true;
+                exceptions = ExceptionSetFlags::None;
+                break;
+
+            // Monitor enter/exit are full memory barriers and write *lockTaken.
+            case CORINFO_HELP_MON_ENTER:
+            case CORINFO_HELP_MON_EXIT:
+                exceptions  = ExceptionSetFlags::None;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
@@ -1841,6 +1782,22 @@ void HelperCallProperties::init()
                 mutatesHeap = true; // Conservatively.
                 break;
 
+            case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+                mutatesHeap = false;
+                isPure      = true;
+                exceptions  = ExceptionSetFlags::NullReferenceException;
+                break;
+
+            case CORINFO_HELP_ALLOC_CONTINUATION:
+            case CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+            case CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+                mutatesHeap = true;
+                isAllocator = true;
+                break;
+
             default:
                 // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;
@@ -1848,7 +1805,7 @@ void HelperCallProperties::init()
         }
 
         m_isPure[helper]        = isPure;
-        m_noThrow[helper]       = noThrow;
+        m_exceptions[helper]    = exceptions;
         m_alwaysThrow[helper]   = alwaysThrow;
         m_nonNullReturn[helper] = nonNullReturn;
         m_isAllocator[helper]   = isAllocator;
@@ -2435,21 +2392,6 @@ double FloatingPointUtils::infinite_double()
 }
 
 //------------------------------------------------------------------------
-// infinite_float: return an infinite float value
-//
-// Returns:
-//    Infinite float value.
-//
-// Notes:
-//    This is the predefined constant HUGE_VALF on many platforms.
-//
-float FloatingPointUtils::infinite_float()
-{
-    int32_t bits = 0x7F800000;
-    return *reinterpret_cast<float*>(&bits);
-}
-
-//------------------------------------------------------------------------
 // hasPreciseReciprocal: check double for precise reciprocal. E.g. 2.0 <--> 0.5
 //
 // Arguments:
@@ -2685,70 +2627,6 @@ double FloatingPointUtils::maximum(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a greater magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::maximumMagnitude(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax > ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitudeNumber: // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::maximumMagnitudeNumber(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax > ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
 // maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
 //
 // It does not propagate NaN inputs back to the caller and
@@ -2804,70 +2682,6 @@ float FloatingPointUtils::maximum(float val1, float val2)
     }
 
     return isNegative(val2) ? val1 : val2;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a greater magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::maximumMagnitude(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax > ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitudeNumber: This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::maximumMagnitudeNumber(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax > ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
 }
 
 //------------------------------------------------------------------------
@@ -2929,70 +2743,6 @@ double FloatingPointUtils::minimum(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a lesser magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::minimumMagnitude(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax < ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::minimumMagnitudeNumber(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax < ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
 // minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
 //
 // It does not propagate NaN inputs back to the caller and
@@ -3051,70 +2801,6 @@ float FloatingPointUtils::minimum(float val1, float val2)
 }
 
 //------------------------------------------------------------------------
-// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a lesser magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::minimumMagnitude(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax < ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::minimumMagnitudeNumber(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax < ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
 // minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
 //
 // It does not propagate NaN inputs back to the caller and
@@ -3169,7 +2855,7 @@ double FloatingPointUtils::normalize(double value)
     }
 
     uint64_t bits;
-    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    static_assert(sizeof(bits) == sizeof(value));
     memcpy(&bits, &value, sizeof(value));
     bits |= 1ull << 51;
     memcpy(&value, &bits, sizeof(bits));
@@ -4249,11 +3935,8 @@ private:
 public:
     Utf16String(const char* str)
     {
-        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-        if (strBufferSize == 0)
-        {
-            return;
-        }
+        size_t strLength     = strlen(str) + 1;
+        size_t strBufferSize = minipal_get_length_utf8_to_utf16(str, strLength, 0);
 
         if (strBufferSize > bufferSize)
         {
@@ -4264,15 +3947,7 @@ public:
             m_pBuffer = m_bufferUnsafe;
         }
 
-        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
-        {
-            if (m_pBuffer != m_bufferUnsafe)
-            {
-                delete[] m_pBuffer;
-            }
-
-            m_pBuffer = nullptr;
-        }
+        minipal_convert_utf8_to_utf16(str, strLength, (CHAR16_T*)m_pBuffer, strBufferSize, 0);
     }
 
     ~Utf16String()

@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool SupportsSyncSend => PlatformDetection.IsNotMobile && PlatformDetection.IsNotBrowser;
 
-        [ConditionalFact(nameof(SupportsSyncSend))]
+        [ConditionalFact(typeof(HttpClientHandlerTest_General), nameof(SupportsSyncSend))]
         public void Send_Null_ThrowsArgumentNullException() => Assert.Throws<ArgumentNullException>(() => new TestHttpClientHandler().SendNull());
 
         private class TestHttpClientHandler : HttpClientHandler

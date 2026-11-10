@@ -126,4 +126,7 @@
   <data name="ArgumentException_CannotBeNegative" xml:space="preserve">
     <value>The argument cannot be a negative value.</value>
   </data>
+  <data name="InvalidDataException_SseExceededMaxLength" xml:space="preserve">
+    <value>SSE data exceeds maximum allowed length.</value>
+  </data>
 </root>

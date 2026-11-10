@@ -415,7 +415,7 @@ void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
     if (!GCHeapUtilities::IsGCHeapInitialized())
         return;
 
-    InterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
+    PalInterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
 
     ForceGCForDiagnostics();
 }
@@ -985,9 +985,6 @@ namespace
         FOREACH_THREAD(pThread)
         {
             if (pThread->IsGCSpecial())
-                continue;
-
-            if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), sc->thread_number))
                 continue;
 
             sc->thread_under_crawl = pThread;

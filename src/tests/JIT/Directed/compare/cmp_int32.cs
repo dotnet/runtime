@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_compare_cmp_int32;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -94,6 +96,13 @@ public static class CompareTestInt
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMinus2048((int, float) x) => (x.Item1 != -2048);
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static bool EqMin((int, float) x) => (x.Item1 == int.MinValue);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static bool NeMin((int, float) x) => (x.Item1 != int.MinValue);
+
+    [OuterLoop]
     [Fact]
     public static void Test()
     {
@@ -130,6 +139,9 @@ public static class CompareTestInt
         args = new object[] {(-2048, 0f)};
         Assert.True((bool)type.GetMethod("EqMinus2048").Invoke(null, args));
         Assert.False((bool)type.GetMethod("NeMinus2048").Invoke(null, args));
+        args = new object[] {(int.MinValue, 0f)};
+        Assert.True((bool)type.GetMethod("EqMin").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("NeMin").Invoke(null, args));
     }
 }
 
@@ -217,6 +229,13 @@ public static class CompareTestUint
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMinus2048((uint, float) x) => (x.Item1 != 0xFFFF_F800u);
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static bool EqMax((uint, float) x) => (x.Item1 == uint.MaxValue);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static bool NeMax((uint, float) x) => (x.Item1 != uint.MaxValue);
+
+    [OuterLoop]
     [Fact]
     public static void Test()
     {
@@ -253,5 +272,8 @@ public static class CompareTestUint
         args = new object[] {(0xFFFF_F800u, 0f)};
         Assert.True((bool)type.GetMethod("EqMinus2048").Invoke(null, args));
         Assert.False((bool)type.GetMethod("NeMinus2048").Invoke(null, args));
+        args = new object[] {(uint.MaxValue, 0f)};
+        Assert.True((bool)type.GetMethod("EqMax").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("NeMax").Invoke(null, args));
     }
 }

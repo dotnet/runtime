@@ -18,8 +18,6 @@
 // and there's no reason why DAC should be forbidden from using it.
 #define DO_NOT_DISABLE_RAND
 
-#define USE_COM_CONTEXT_DEF
-
 #include <stddef.h>
 #include <stdint.h>
 #include <windows.h>
@@ -42,6 +40,7 @@
 #include <common.h>
 #include <codeman.h>
 #include <debugger.h>
+#include <walker.h>
 #include <controller.h>
 #include <eedbginterfaceimpl.h>
 #include <methoditer.h>

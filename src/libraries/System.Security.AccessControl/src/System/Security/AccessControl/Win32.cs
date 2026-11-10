@@ -16,10 +16,7 @@ namespace System.Security.AccessControl
 {
     internal static class Win32
     {
-        //
         // Wrapper around advapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW
-        //
-
         internal static int ConvertSdToSddl(
             byte[] binaryForm,
             int requestedRevision,
@@ -36,16 +33,10 @@ namespace System.Security.AccessControl
                 goto Error;
             }
 
-            //
             // Extract data from the returned pointer
-            //
-
             resultSddl = Marshal.PtrToStringUni(ByteArray)!;
 
-            //
             // Now is a good time to get rid of the returned pointer
-            //
-
             Marshal.FreeHGlobal(ByteArray);
 
             return 0;
@@ -62,10 +53,7 @@ namespace System.Security.AccessControl
             return errorCode;
         }
 
-        //
         // Wrapper around advapi32.GetSecurityInfo
-        //
-
         internal static unsafe int GetSecurityInfo(
             ResourceType resourceType,
             string? name,
@@ -143,10 +131,8 @@ namespace System.Security.AccessControl
 
                 if (errorCode == Interop.Errors.ERROR_SUCCESS && IntPtr.Zero.Equals(ByteArray))
                 {
-                    //
                     // This means that the object doesn't have a security descriptor. And thus we throw
                     // a specific exception for the caller to catch and handle properly.
-                    //
                     throw new InvalidOperationException(SR.InvalidOperation_NoSecurityDescriptor);
                 }
                 else if (errorCode == Interop.Errors.ERROR_NOT_ALL_ASSIGNED ||
@@ -176,10 +162,7 @@ namespace System.Security.AccessControl
                 privilege?.Revert();
             }
 
-            //
             // Extract data from the returned pointer
-            //
-
             uint Length = Interop.Advapi32.GetSecurityDescriptorLength(ByteArray);
 
             byte[] BinaryForm = new byte[Length];
@@ -202,10 +185,7 @@ namespace System.Security.AccessControl
             return errorCode;
         }
 
-        //
         // Wrapper around advapi32.SetNamedSecurityInfoW and advapi32.SetSecurityInfo
-        //
-
         internal static int SetSecurityInfo(
             ResourceType type,
             string? name,
@@ -251,11 +231,8 @@ namespace System.Security.AccessControl
 
             if ((securityInformation & SecurityInfos.SystemAcl) != 0)
             {
-                //
                 // Enable security privilege if trying to set a SACL.
                 // Note: even setting it by handle needs this privilege enabled!
-                //
-
                 securityPrivilege = new Privilege(Privilege.Security);
             }
 

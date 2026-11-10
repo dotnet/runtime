@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -285,7 +285,7 @@ namespace System.Security.Cryptography
             source.CopyTo(destination.Slice(paddingLength + 3 + digestInfoPrefix.Length));
         }
 
-        internal static void PadOaep(
+        internal static unsafe void PadOaep(
             HashAlgorithmName hashAlgorithmName,
             ReadOnlySpan<byte> source,
             Span<byte> destination)
@@ -380,7 +380,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static void EncodePss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, Span<byte> destination, int keySize)
+        internal static unsafe void EncodePss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, Span<byte> destination, int keySize)
         {
             int hLen = HashLength(hashAlgorithmName);
 
@@ -469,7 +469,7 @@ namespace System.Security.Cryptography
             CryptoPool.Return(dbMaskRented, clearSize: 0);
         }
 
-        internal static bool VerifyPss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize)
+        internal static unsafe bool VerifyPss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize)
         {
             int hLen = HashLength(hashAlgorithmName);
 
@@ -585,7 +585,7 @@ namespace System.Security.Cryptography
         }
 
         // https://tools.ietf.org/html/rfc3447#appendix-B.2.1
-        private static void Mgf1(IncrementalHash hasher, ReadOnlySpan<byte> mgfSeed, Span<byte> mask)
+        private static unsafe void Mgf1(IncrementalHash hasher, ReadOnlySpan<byte> mgfSeed, Span<byte> mask)
         {
             int hLen = hasher.HashLengthInBytes;
             Span<byte> writePtr = mask;

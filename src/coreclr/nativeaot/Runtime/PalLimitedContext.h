@@ -6,14 +6,7 @@
 #define PAL_LIMITED_CONTEXT_INCLUDED
 
 #include "rhassert.h"
-
-#ifndef DECLSPEC_ALIGN
-#ifdef _MSC_VER
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
-#endif
-#endif // DECLSPEC_ALIGN
+#include <minipal/utils.h>
 
 #ifdef HOST_AMD64
 #define AMD64_ALIGN_16 DECLSPEC_ALIGN(16)
@@ -198,6 +191,14 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t GetFp() const { return Rbp; }
     void SetIp(uintptr_t ip) { IP = ip; }
     void SetSp(uintptr_t sp) { Rsp = sp; }
+#elif defined(TARGET_WASM)
+    uintptr_t IP;
+    uintptr_t SP;
+
+    uintptr_t GetIp() const { return IP; }
+    uintptr_t GetSp() const { return SP; }
+    void SetIp(uintptr_t ip) { IP = ip; }
+    void SetSp(uintptr_t sp) { SP = sp; }
 #else // TARGET_ARM
     uintptr_t  IP;
 

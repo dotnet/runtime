@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace Sandbox3
+namespace JitTest_Generics_Fields_getclassfrommethodparam
 {
     public class Foo<F>
     {
@@ -22,6 +22,8 @@ namespace Sandbox3
 
     public class Program
     {
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

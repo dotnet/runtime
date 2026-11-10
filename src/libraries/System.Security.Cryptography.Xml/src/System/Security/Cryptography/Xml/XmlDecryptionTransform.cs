@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
@@ -149,7 +150,16 @@ namespace System.Security.Cryptography.Xml
             document.PreserveWhitespace = true;
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
-            document.Load(xmlReader);
+            long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+            if (maxDepth > 0)
+            {
+                Utils.LoadXmlDocumentWithMaxDepthCheck(document, xmlReader, maxDepth);
+            }
+            else
+            {
+                document.Load(xmlReader);
+            }
+
             _containingDocument = document;
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
             _nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
@@ -179,7 +189,15 @@ namespace System.Security.Cryptography.Xml
                 // However, EncryptedXml.ReplaceData will preserve other top-level elements such as the XML
                 // entity declaration and top level comments.  So, in this case we must do the replacement
                 // ourselves.
-                parent.InnerXml = EncryptedXml.Encoding.GetString(decrypted);
+                string decryptedString = EncryptedXml.Encoding.GetString(decrypted);
+                long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                bool allowDtdProcessing = LocalAppContextSwitches.CryptoXmlAllowDtdProcessing;
+                if (maxDepth > 0 || !allowDtdProcessing)
+                {
+                    Utils.ValidateInputXmlMaxDepth(parent, decryptedString, maxDepth, allowDtdProcessing);
+                }
+
+                parent.InnerXml = decryptedString;
             }
             else
             {
@@ -215,15 +233,20 @@ namespace System.Security.Cryptography.Xml
         {
             if (encryptedDatas == null || encryptedDatas.Count == 0)
                 return;
-            Queue encryptedDatasQueue = new Queue();
+            int maxDepth = LocalAppContextSwitches.DangerousMaxRecursionDepth;
+            Queue<ProcessElementWorkItem> encryptedDatasQueue = new();
             foreach (XmlNode value in encryptedDatas)
             {
-                encryptedDatasQueue.Enqueue(value);
+                EncryptedXml.IncrementEncryptedDataCandidateCount();
+                encryptedDatasQueue.Enqueue(new(value, depth: 0));
             }
-            XmlNode? node = encryptedDatasQueue.Dequeue() as XmlNode;
-            while (node != null)
+
+            while (encryptedDatasQueue.Count > 0)
             {
-                XmlElement? encryptedDataElement = node as XmlElement;
+                ProcessElementWorkItem workItem = encryptedDatasQueue.Dequeue();
+                XmlElement? encryptedDataElement = workItem.Element as XmlElement;
+                int depth = workItem.Depth;
+
                 if (encryptedDataElement != null && encryptedDataElement.LocalName == "EncryptedData" &&
                     encryptedDataElement.NamespaceURI == EncryptedXml.XmlEncNamespaceUrl)
                 {
@@ -240,36 +263,68 @@ namespace System.Security.Cryptography.Xml
                             XmlNodeList nodes = child.SelectNodes("//enc:EncryptedData", _nsm!)!;
                             if (nodes.Count > 0)
                             {
+                                if (maxDepth > 0 && depth > maxDepth)
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Xml_MaxDepthExceeded);
+                                }
+
                                 foreach (XmlNode value in nodes)
                                 {
-                                    encryptedDatasQueue.Enqueue(value);
+                                    EncryptedXml.IncrementEncryptedDataCandidateCount();
+                                    encryptedDatasQueue.Enqueue(new(value, depth + 1));
                                 }
                             }
                         }
                     }
                 }
-                if (encryptedDatasQueue.Count == 0)
-                    break;
-                node = encryptedDatasQueue.Dequeue() as XmlNode;
             }
         }
 
         public override object GetOutput()
         {
-            // decrypt the encrypted sections
-            if (_encryptedDataList != null)
-                ProcessElementRecursively(_encryptedDataList);
-            // propagate namespaces
-            Utils.AddNamespaces(_containingDocument!.DocumentElement!, PropagatedNamespaces);
-            return _containingDocument;
+            EncryptedXml.EnterDecryptionOperation();
+            try
+            {
+                // decrypt the encrypted sections
+                if (_encryptedDataList != null)
+                    ProcessElementRecursively(_encryptedDataList);
+                // propagate namespaces
+                Utils.AddNamespaces(_containingDocument!.DocumentElement!, PropagatedNamespaces);
+                return _containingDocument;
+            }
+            finally
+            {
+                EncryptedXml.ExitDecryptionOperation();
+            }
         }
 
         public override object GetOutput(Type type)
         {
-            if (type == typeof(XmlDocument))
-                return (XmlDocument)GetOutput();
-            else
-                throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
+            EncryptedXml.EnterDecryptionOperation();
+            try
+            {
+                if (type == typeof(XmlDocument))
+                    return (XmlDocument)GetOutput();
+                else
+                    throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
+            }
+            finally
+            {
+                EncryptedXml.ExitDecryptionOperation();
+            }
+        }
+
+        internal override void ClearState()
+        {
+            _containingDocument = null;
+            _encryptedDataList = null;
+            _nsm = null;
+        }
+
+        private readonly struct ProcessElementWorkItem(XmlNode element, int depth)
+        {
+            public readonly XmlNode Element = element;
+            public readonly int Depth = depth;
         }
     }
 }

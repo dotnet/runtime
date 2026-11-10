@@ -1,10 +1,31 @@
 # System.IO.Compression
-Contains the source and tests of assembly System.IO.Compression, that includes types widely used on the compression space, as well as types for zip manipulation, and implementations of the Deflate and Gzip algorithms.
+Contains the source and tests of assembly System.IO.Compression, that includes types widely used on the compression space, as well as types for zip manipulation, and implementations of the Deflate, Gzip, and Zstandard algorithms.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.io.compression.
 
 ## System.IO.Compression.Native source
 [../../native/libs/System.IO.Compression.Native](../../native/libs/System.IO.Compression.Native) contains the PAL (Platform Abstraction Layer) of the zlib library used by System.IO.Compression.
+
+## Zstandard support
+Zstandard (zstd) compression and decompression is supported on all platforms except browser. The Zstandard source files are located in the `Zstandard` subdirectory.
+
+### Dictionaries
+
+`ZstandardDictionary.Train` returns raw dictionary bytes, which can be saved and distributed independently of compression or decompression:
+
+```csharp
+byte[] dictionaryData = ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize);
+File.WriteAllBytes("dictionary.zdict", dictionaryData);
+```
+
+Load the bytes and call `ZstandardDictionary.Create` to prepare a reusable dictionary. Choose compression quality during preparation:
+
+```csharp
+byte[] dictionaryData = File.ReadAllBytes("dictionary.zdict");
+using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData, quality: 19);
+```
+
+A prepared dictionary's quality takes precedence over `ZstandardCompressionOptions.Quality`. Use the same dictionary bytes to prepare dictionaries for different qualities or for decompression; do not train again.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)

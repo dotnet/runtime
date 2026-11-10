@@ -73,6 +73,30 @@ ep_rt_object_array_free (void *ptr)
 	if (ptr)
 		free (ptr);
 }
+
+static
+inline
+ep_char8_t *
+ep_rt_utf8_string_dup (const ep_char8_t *str)
+{
+	if (!str)
+		return NULL;
+
+	return strdup (str);
+}
+
+static
+inline
+void
+ep_rt_utf8_string_free (ep_char8_t *str)
+{
+	if (str)
+		free (str);
+}
+
+#undef EP_UNREACHABLE
+#define EP_UNREACHABLE(msg) do { EP_ASSERT (!(msg)); abort (); } while (0)
+
 #endif
 
 static bool _ipc_pal_socket_init = false;
@@ -248,11 +272,11 @@ ds_ipc_poll (
 		int client_socket = poll_handles_data [i].stream->client_socket;
 		int pending = ds_rt_websocket_poll (client_socket);
 		if (pending < 0){
-			poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_ERR;
+			poll_handles_data [i].events = (uint8_t)IPC_POLL_EVENTS_ERR;
 			return 1;
 		}
 		if (pending > 0){
-			poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_SIGNALED;
+			poll_handles_data [i].events = (uint8_t)IPC_POLL_EVENTS_SIGNALED;
 			return 1;
 		}
 	}
@@ -425,12 +449,24 @@ ipc_stream_close_func (void *object)
 	return ds_ipc_stream_close (ipc_stream, NULL);
 }
 
+static
+IpcPollEvents
+ipc_stream_poll_func (
+	void *object,
+	uint32_t timeout_ms)
+{
+	EP_ASSERT (!"ipc_stream_poll_func needs to be implemented for WebSockets");
+	// TODO: Implement ipc_stream_poll_func for WebSockets
+	return IPC_POLL_EVENTS_UNKNOWN;
+}
+
 static IpcStreamVtable ipc_stream_vtable = {
 	ipc_stream_free_func,
 	ipc_stream_read_func,
 	ipc_stream_write_func,
 	ipc_stream_flush_func,
-	ipc_stream_close_func };
+	ipc_stream_close_func,
+	ipc_stream_poll_func };
 
 static
 DiagnosticsIpcStream *
@@ -488,6 +524,15 @@ ds_ipc_stream_read (
 		bytes_to_read,
 		bytes_read,
 		timeout_ms);
+}
+
+bool
+ds_ipc_stream_read_fd (
+	DiagnosticsIpcStream *ipc_stream,
+	int *data_fd)
+{
+	// Not Supported
+	return false;
 }
 
 bool

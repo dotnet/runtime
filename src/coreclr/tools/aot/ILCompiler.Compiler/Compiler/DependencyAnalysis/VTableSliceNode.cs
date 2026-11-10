@@ -33,8 +33,7 @@ namespace ILCompiler.DependencyAnalysis
             bool isObjectType = type.IsObject;
             DefType defType = type.GetClosestDefType();
 
-            IEnumerable<MethodDesc> allSlots = type.IsInterface ?
-                type.GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+            IEnumerable<MethodDesc> allSlots = defType.EnumAllVirtualSlots();
 
             foreach (var method in allSlots)
             {
@@ -43,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Finalizers are called via a field on the MethodTable, not through the VTable
-                if (isObjectType && method.Name == "Finalize")
+                if (isObjectType && method.Name == "Finalize"u8)
                     continue;
 
                 // Current type doesn't define this slot.
@@ -78,22 +77,22 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_type.HasBaseType)
             {
-                yield return new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable");
+                sink.Add(factory.VTable(_type.BaseType), "Base type VTable");
             }
 
             TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
             if (_type != canonType)
             {
-                yield return new DependencyListEntry(factory.VTable(canonType), "Canonical type VTable");
+                sink.Add(factory.VTable(canonType), "Canonical type VTable");
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
@@ -123,7 +122,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsSlotUsed(MethodDesc slot)
         {
-            Debug.Assert(Array.IndexOf(_slots, slot) != -1);
+            Debug.Assert(Array.IndexOf(_slots, slot) >= 0);
             return true;
         }
 
@@ -176,7 +175,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsSlotUsed(MethodDesc slot)
         {
-            Debug.Assert(Array.IndexOf(_slots, slot) != -1);
+            Debug.Assert(Array.IndexOf(_slots, slot) >= 0);
 #if DEBUG
             _isLocked = true;
 #endif
@@ -198,13 +197,13 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!virtualMethod.HasInstantiation);
             Debug.Assert(virtualMethod.IsVirtual);
             Debug.Assert(virtualMethod.OwningType == _type);
-            Debug.Assert(Array.IndexOf(_slots, virtualMethod) != -1);
+            Debug.Assert(Array.IndexOf(_slots, virtualMethod) >= 0);
 #if DEBUG
             Debug.Assert(!_isLocked);
 #endif
 
             // Finalizers are called via a field on the MethodTable, not through the VTable
-            if (_type.IsObject && virtualMethod.Name == "Finalize")
+            if (_type.IsObject && virtualMethod.Name == "Finalize"u8)
                 return;
 
             _usedMethods.Add(virtualMethod);
@@ -218,14 +217,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
             // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
             DefType defType = _type.GetClosestDefType();
 
-            IEnumerable<MethodDesc> allSlots = _type.IsInterface ?
-                _type.GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+            IEnumerable<MethodDesc> allSlots = defType.EnumAllVirtualSlots();
 
             foreach (var method in allSlots)
             {
@@ -238,7 +236,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 if (defType.Context.SupportsCanon)
-                    yield return new CombinedDependencyListEntry(
+                    sink.AddConditional(
                         factory.VirtualMethodUse(method),
                         factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                         "Canonically equivalent virtual method use");

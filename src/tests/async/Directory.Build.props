@@ -9,7 +9,9 @@
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)RuntimeAsyncMethodGenerationAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RuntimeAsyncMethodGenerationAttribute.cs"
+             Condition="'$(Language)' == 'C#'" />
   </ItemGroup>
 </Project>

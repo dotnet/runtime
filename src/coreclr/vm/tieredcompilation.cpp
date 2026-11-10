@@ -8,6 +8,7 @@
 
 
 #include "common.h"
+#include "CLREventBase.h"
 #include "excep.h"
 #include "log.h"
 #include "threadsuspend.h"
@@ -100,47 +101,26 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
     }
 
     _ASSERT(!pMethodDesc->RequestedAggressiveOptimization());
-
-    if (!pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->IsCallCountingEnabled(NativeCodeVersion(pMethodDesc)))
-    {
-        // Tier 0 call counting may have been disabled for several reasons, the intention is to start with and stay at an
-        // optimized tier
-        return NativeCodeVersion::OptimizationTierOptimized;
-    }
-
-#ifdef FEATURE_PGO
-    if (g_pConfig->TieredPGO())
-    {
-        // Initial tier for R2R is always just OptimizationTier0
-        // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
-        // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
-        // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
-        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() || 
-            ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
-        {
-            return NativeCodeVersion::OptimizationTier0;
-        }
-        return NativeCodeVersion::OptimizationTier0Instrumented;
-    }
 #endif
 
-    return NativeCodeVersion::OptimizationTier0;
+    return (NativeCodeVersion::OptimizationTier)g_pConfig->TieredCompilation_DefaultTier();
+}
+
+bool TieredCompilationManager::IsTieringDelayActive()
+{
+    LIMITED_METHOD_CONTRACT;
+#if defined(FEATURE_TIERED_COMPILATION)
+    return m_methodsPendingCountingForTier1 != nullptr;
 #else
-    return NativeCodeVersion::OptimizationTierOptimized;
-#endif
+    return false;
+#endif // FEATURE_TIERED_COMPILATION
 }
 
 #if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
 
 void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMethodDesc)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
@@ -168,13 +148,13 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
             return;
         }
 
-        NewHolder<SArray<MethodDesc *>> methodsPendingCountingHolder = new SArray<MethodDesc *>();
+        NewHolder<SArray<MethodDesc *>> methodsPendingCountingHolder(new SArray<MethodDesc *>());
         methodsPendingCountingHolder->Preallocate(64);
 
         methodsPendingCountingHolder->Append(pMethodDesc);
         ++m_countOfNewMethodsCalledDuringDelay;
 
-        m_methodsPendingCountingForTier1 = methodsPendingCountingHolder.Extract();
+        m_methodsPendingCountingForTier1 = methodsPendingCountingHolder.Detach();
         _ASSERTE(!m_tier1CallCountingCandidateMethodRecentlyRecorded);
         _ASSERTE(IsTieringDelayActive());
 
@@ -212,7 +192,7 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
 
             EX_RETHROW;
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
     }
 
     if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
@@ -383,13 +363,7 @@ bool TieredCompilationManager::TryScheduleBackgroundWorkerWithoutGCTrigger_Locke
 
 void TieredCompilationManager::CreateBackgroundWorker()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(!IsLockOwnedByCurrentThread());
     _ASSERTE(s_isBackgroundWorkerRunning);
@@ -413,7 +387,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
     #endif
         newThread->SetBackground(true);
 
-        if (!newThread->CreateNewThread(0, BackgroundWorkerBootstrapper0, newThread, W(".NET Tiered Compilation Worker")))
+        if (!newThread->CreateNewThread(0, BackgroundWorkerBootstrapper0, newThread, W(".NET Tiered JIT")))
         {
             newThread->DecExternalCount(false);
             ThrowOutOfMemory();
@@ -433,18 +407,12 @@ void TieredCompilationManager::CreateBackgroundWorker()
 
         EX_RETHROW;
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(args != nullptr);
     Thread *thread = (Thread *)args;
@@ -485,13 +453,7 @@ void TieredCompilationManager::BackgroundWorkerBootstrapper1(LPVOID)
 
 void TieredCompilationManager::BackgroundWorkerStart()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(s_backgroundWorkAvailableEvent.IsValid());
 
@@ -515,14 +477,14 @@ void TieredCompilationManager::BackgroundWorkerStart()
         {
             do
             {
-                ClrSleepEx(delayMs, false);
+                minipal_sleep(delayMs);
             } while (!TryDeactivateTieringDelay());
         }
 
         // Don't want to perform background work as soon as it is scheduled if there is possibly more important work that could
         // be done. Some operating systems may also give a thread woken by a signal higher priority temporarily, which on a
         // CPU-limited environment may lead to rejitting a method as soon as it's promoted, effectively in the foreground.
-        ClrSleepEx(0, false);
+        minipal_sleep(0);
 
         if (IsTieringDelayActive())
         {
@@ -549,7 +511,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
         }
 
         // Wait for the worker to be scheduled again
-        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false);
+        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false, false);
         if (waitResult == WAIT_OBJECT_0)
         {
             continue;
@@ -574,21 +536,9 @@ void TieredCompilationManager::BackgroundWorkerStart()
     }
 }
 
-bool TieredCompilationManager::IsTieringDelayActive()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_methodsPendingCountingForTier1 != nullptr;
-}
-
 bool TieredCompilationManager::TryDeactivateTieringDelay()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThread() == s_backgroundWorkerThread);
 
@@ -661,8 +611,9 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DeactivateTieringDelay: "
                     "Exception in CallCountingManager::SetCodeEntryPoint, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
         }
     }
 
@@ -672,13 +623,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
 
 void TieredCompilationManager::AsyncCompleteCallCounting()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     {
         LockHolder tieredCompilationLockHolder;
@@ -808,8 +753,9 @@ bool TieredCompilationManager::DoBackgroundWork(
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DoBackgroundWork: "
                     "Exception in CallCountingManager::CompleteCallCounting, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
 
             continue;
         }
@@ -846,7 +792,7 @@ bool TieredCompilationManager::DoBackgroundWork(
         }
 
         int64_t beforeSleepTicks = currentTicks;
-        ClrSleepEx(0, false);
+        minipal_sleep(0);
 
         currentTicks = minipal_hires_ticks();
 
@@ -912,8 +858,9 @@ bool TieredCompilationManager::DoBackgroundWork(
             STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DoBackgroundWork: "
                 "Exception in CallCountingManager::StopAndDeleteAllCallCountingStubs, hr=0x%x\n",
                 GET_EXCEPTION()->GetHR());
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
     }
 
     *workDurationTicksRef = workDurationTicks;
@@ -954,7 +901,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::CompileCodeVersion Method=0x%pM (%s::%s), code version id=0x%x, code ptr=0x%p\n",
             pMethod, pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName,
             nativeCodeVersion.GetVersionId(),
-            pCode));
+              (void*)pCode));
 
         if (config->JitSwitchedToMinOpt())
         {
@@ -971,8 +918,9 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         // Failing to jit should be rare but acceptable. We will leave whatever code already exists in place.
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::CompileCodeVersion: Method %pM failed to jit, hr=0x%x\n",
             pMethod, GET_EXCEPTION()->GetHR());
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     return pCode != (PCODE)NULL;
 }
@@ -995,7 +943,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-        
+
         // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
         // methods this first attempt should succeed
         ilParent = nativeCodeVersion.GetILCodeVersion();
@@ -1044,61 +992,10 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(config != nullptr);
-    _ASSERTE(
-        !config->WasTieringDisabledBeforeJitting() ||
-        config->GetCodeVersion().IsFinalTier());
 
     CORJIT_FLAGS flags;
 
-    // Determine the optimization tier for the default code version (slightly faster common path during startup compared to
-    // below), and disable call counting and set the optimization tier if it's not going to be tier 0 (this is used in other
-    // places for the default code version where necessary to avoid the extra expense of GetOptimizationTier()).
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
-    if (nativeCodeVersion.IsDefaultVersion() && !config->WasTieringDisabledBeforeJitting())
-    {
-        MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
-        if (!methodDesc->IsEligibleForTieredCompilation())
-        {
-            _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
-            return flags;
-        }
-
-        _ASSERT(!methodDesc->RequestedAggressiveOptimization());
-
-        if (g_pConfig->TieredCompilation_QuickJit())
-        {
-            NativeCodeVersion::OptimizationTier currentTier = nativeCodeVersion.GetOptimizationTier();
-            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                return flags;
-            }
-
-            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier1Instrumented)
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-                return flags;
-            }
-
-            _ASSERTE(!nativeCodeVersion.IsFinalTier());
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-            if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
-            {
-                // If we plan to only instrument hot code we have to make an exception
-                // for cold methods with loops so if those self promote to OSR they need
-                // some profile to optimize, so here we allow JIT to enable instrumentation
-                // if current method has loops and is eligible for OSR.
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
-            }
-            return flags;
-        }
-
-        methodDesc->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(nativeCodeVersion);
-        nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-        return flags;
-    }
 
     switch (nativeCodeVersion.GetOptimizationTier())
     {
@@ -1117,6 +1014,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+#ifdef FEATURE_PGO
                 if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
                 {
                     // If we plan to only instrument hot code we have to make an exception
@@ -1125,6 +1023,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
                     // if current method has loops and is eligible for OSR.
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
                 }
+#endif
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 break;
             }

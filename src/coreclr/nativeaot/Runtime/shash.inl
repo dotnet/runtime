@@ -13,8 +13,8 @@ SHash<TRAITS>::SHash()
     m_tableOccupied(0),
     m_tableMax(0)
 {
-    C_ASSERT(TRAITS::s_growth_factor_numerator > TRAITS::s_growth_factor_denominator);
-    C_ASSERT(TRAITS::s_density_factor_numerator < TRAITS::s_density_factor_denominator);
+    static_assert(TRAITS::s_growth_factor_numerator > TRAITS::s_growth_factor_denominator);
+    static_assert(TRAITS::s_density_factor_numerator < TRAITS::s_density_factor_denominator);
 }
 
 template <typename TRAITS>
@@ -46,6 +46,28 @@ template <typename TRAITS>
 const typename SHash< TRAITS>::element_t* SHash<TRAITS>::LookupPtr(key_t key) const
 {
     return Lookup(m_table, m_tableSize, key);
+}
+
+template <typename TRAITS>
+template <typename Functor>
+bool SHash<TRAITS>::Update(key_t key, Functor &&functor)
+{
+    element_t *element = Lookup(m_table, m_tableSize, key);
+    if (element == nullptr)
+        return false;
+
+#ifdef _DEBUG
+    PTR_element_t table = m_table;
+    count_t tableSize = m_tableSize;
+    count_t count = m_tableCount;
+#endif // _DEBUG
+
+    functor(*element);
+
+    ASSERT(m_table == table && m_tableSize == tableSize && m_tableCount == count);
+    ASSERT(!TRAITS::IsNull(*element) && !TRAITS::IsDeleted(*element));
+    ASSERT(TRAITS::Equals(TRAITS::GetKey(*element), key));
+    return true;
 }
 
 template <typename TRAITS>
@@ -255,7 +277,7 @@ bool SHash<TRAITS>::Reallocate(count_t newTableSize)
 }
 
 template <typename TRAITS>
-const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t table, count_t tableSize, key_t key)
+typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t table, count_t tableSize, key_t key)
 {
     if (tableSize == 0)
         return NULL;
@@ -467,4 +489,3 @@ typename SHash<TRAITS>::count_t SHash<TRAITS>::NextPrime(typename SHash<TRAITS>:
 
 // restore "Conditional expression is constant" warning to default value
 #pragma warning(default:4127)
-

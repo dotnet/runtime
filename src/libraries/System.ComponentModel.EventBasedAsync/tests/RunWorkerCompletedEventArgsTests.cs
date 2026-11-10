@@ -28,7 +28,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("non null")]
-        public static void CtorTest(object expectedResult)
+        public static void CtorTest(object? expectedResult)
         {
             var target = new RunWorkerCompletedEventArgs(expectedResult, null, false);
             Assert.Same(expectedResult, target.Result);

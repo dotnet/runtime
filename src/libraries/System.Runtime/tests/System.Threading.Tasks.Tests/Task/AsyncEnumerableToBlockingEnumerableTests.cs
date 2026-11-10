@@ -10,8 +10,23 @@ namespace System.Threading.Tasks.Tests
 {
     public class AsyncEnumerableToBlockingEnumerableTests
     {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        public static void UnsupportedEnumerationThrowsOnlyOnMoveNext(bool nullSource, bool canceled)
+        {
+            var source = new InstrumentedAsyncEnumerable<int>(AsyncEnumerable.Range(0, 1));
+            IEnumerable<int> enumerable = (nullSource ? null : source).ToBlockingEnumerable(new CancellationToken(canceled));
+            using IEnumerator<int> enumerator = enumerable.GetEnumerator();
+            Assert.Equal(0, source.TotalGetAsyncEnumeratorCalls);
+            Assert.Throws<PlatformNotSupportedException>(() => enumerator.MoveNext());
+            Assert.Equal(0, source.TotalGetAsyncEnumeratorCalls);
+            Assert.Equal(0, source.TotalMoveNextAsyncCalls);
+            Assert.Equal(0, source.TotalDisposeAsyncCalls);
+        }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void EmptyAsyncEnumerable()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -34,10 +49,10 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void SimpleAsyncEnumerable()
         {
-            var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
+            var source = new InstrumentedAsyncEnumerable<int>(AsyncEnumerable.Range(0, 10));
 
             IEnumerable<int> blockingEnumerable = source.ToBlockingEnumerable();
             IEnumerator<int> enumerator = blockingEnumerable.GetEnumerator();
@@ -57,19 +72,9 @@ namespace System.Threading.Tasks.Tests
 
             enumerator.Dispose();
             Assert.Equal(1, source.TotalDisposeAsyncCalls);
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-            static async IAsyncEnumerable<int> CreateSourceEnumerable()
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    yield return i;
-                }
-            }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithDelays()
         {
@@ -104,7 +109,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithException()
         {
@@ -133,7 +138,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithCancellation()
         {

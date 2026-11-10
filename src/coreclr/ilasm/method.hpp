@@ -56,7 +56,7 @@ struct  ARG_NAME_LIST
     DWORD     dwAttr;
     CustomDescrList CustDList;
     ARG_NAME_LIST *pNext;
-    __forceinline ARG_NAME_LIST(int i, LPCUTF8 sz, BinStr *pbSig, BinStr *pbMarsh, DWORD attr)
+    FORCEINLINE ARG_NAME_LIST(int i, LPCUTF8 sz, BinStr *pbSig, BinStr *pbMarsh, DWORD attr)
     {
         nNum = i;
         //dwName = (DWORD)strlen(sz);
@@ -373,7 +373,7 @@ public:
         if(sz)
         {
             wzUniBuf[0] = 0;
-            MultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
+            minipal_convert_utf8_to_utf16(sz,strlen(sz)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
             return FindTyPar(wzUniBuf);
         }
         else return -1;

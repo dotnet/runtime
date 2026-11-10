@@ -25,7 +25,7 @@ namespace System.Reflection.TypeLoading
 
         private MemberInfo[] GetMemberImpl(string? optionalNameOrPrefix, MemberTypes type, BindingFlags bindingAttr)
         {
-            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith("*", StringComparison.Ordinal);
+            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith('*');
             string? optionalName = prefixSearch ? null : optionalNameOrPrefix;
 
             Func<MemberInfo, bool>? predicate = null;

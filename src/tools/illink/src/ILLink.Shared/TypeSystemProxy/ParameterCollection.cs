@@ -10,54 +10,54 @@ using System.Collections.Generic;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	/// <summary>
-	/// Enumerable struct used to enumerator over a method's parameters without allocating or going through IEnumerable
-	/// </summary>
-	internal readonly struct ParameterProxyEnumerable : IEnumerable<ParameterProxy>
-	{
-		private readonly int _start;
+    /// <summary>
+    /// Enumerable struct used to enumerator over a method's parameters without allocating or going through IEnumerable
+    /// </summary>
+    internal readonly struct ParameterProxyEnumerable : IEnumerable<ParameterProxy>
+    {
+        private readonly int _start;
 
-		private readonly int _end;
+        private readonly int _end;
 
-		private readonly MethodProxy _method;
+        private readonly MethodProxy _method;
 
-		public ParameterProxyEnumerable (int start, int end, MethodProxy method)
-		{
-			_start = start;
-			_end = end;
-			_method = method;
-		}
+        public ParameterProxyEnumerable(int start, int end, MethodProxy method)
+        {
+            _start = start;
+            _end = end;
+            _method = method;
+        }
 
-		public ParameterEnumerator GetEnumerator () => new ParameterEnumerator (_start, _end, _method);
+        public ParameterEnumerator GetEnumerator() => new ParameterEnumerator(_start, _end, _method);
 
-		IEnumerator<ParameterProxy> IEnumerable<ParameterProxy>.GetEnumerator () => new ParameterEnumerator (_start, _end, _method);
+        IEnumerator<ParameterProxy> IEnumerable<ParameterProxy>.GetEnumerator() => new ParameterEnumerator(_start, _end, _method);
 
-		IEnumerator IEnumerable.GetEnumerator () => new ParameterEnumerator (_start, _end, _method);
+        IEnumerator IEnumerable.GetEnumerator() => new ParameterEnumerator(_start, _end, _method);
 
-		public struct ParameterEnumerator : IEnumerator<ParameterProxy>
-		{
-			private readonly int _start;
-			private int _current;
-			private readonly int _end;
-			private readonly MethodProxy _method;
+        public struct ParameterEnumerator : IEnumerator<ParameterProxy>
+        {
+            private readonly int _start;
+            private int _current;
+            private readonly int _end;
+            private readonly MethodProxy _method;
 
-			public ParameterEnumerator (int start, int end, MethodProxy method)
-			{
-				_start = start;
-				_current = start - 1;
-				_end = end;
-				_method = method;
-			}
+            public ParameterEnumerator(int start, int end, MethodProxy method)
+            {
+                _start = start;
+                _current = start - 1;
+                _end = end;
+                _method = method;
+            }
 
-			public ParameterProxy Current => new ParameterProxy (_method, (ParameterIndex) _current);
+            public ParameterProxy Current => new ParameterProxy(_method, (ParameterIndex)_current);
 
-			object IEnumerator.Current => new ParameterProxy (_method, (ParameterIndex) _current);
+            object IEnumerator.Current => new ParameterProxy(_method, (ParameterIndex)_current);
 
-			public bool MoveNext () => ++_current < _end;
+            public bool MoveNext() => ++_current < _end;
 
-			public void Reset () => _current = _start;
+            public void Reset() => _current = _start;
 
-			void IDisposable.Dispose () { }
-		}
-	}
+            void IDisposable.Dispose() { }
+        }
+    }
 }

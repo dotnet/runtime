@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     pal.h
 
 Abstract:
-
     CoreCLR Platform Adaptation Layer (PAL) header file.  This file
     defines all types and API calls required by the CoreCLR when
     compiled for Unix-like systems.
@@ -27,7 +24,6 @@ Abstract:
 
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
-
 --*/
 
 #ifndef __PAL_H__
@@ -121,15 +117,7 @@ extern bool g_arm64_atomics_present;
 #define LANG_ENGLISH                     0x09
 
 /******************* Compiler-specific glue *******************************/
-#if defined(_MSC_VER)
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x)   __attribute__ ((aligned(x)))
-#endif
-
 #define DECLSPEC_NORETURN   PAL_NORETURN
-
-#define EMPTY_BASES_DECL
 
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #if __has_builtin(__builtin_assume)
@@ -138,18 +126,9 @@ extern bool g_arm64_atomics_present;
 #define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
 #endif // __has_builtin(__builtin_assume)
 
-#define __annotation(x)
 #endif //!MSC_VER
 
 #define UNALIGNED
-
-#ifndef FORCEINLINE
-#if _MSC_VER < 1200
-#define FORCEINLINE inline
-#else
-#define FORCEINLINE __forceinline
-#endif
-#endif
 
 #ifndef NOOPT_ATTRIBUTE
 #if defined(__llvm__)
@@ -157,10 +136,6 @@ extern bool g_arm64_atomics_present;
 #else
 #define NOOPT_ATTRIBUTE optimize("O0")
 #endif
-#endif
-
-#ifndef __has_cpp_attribute
-#define __has_cpp_attribute(x) (0)
 #endif
 
 /******************* PAL-Specific Entrypoints *****************************/
@@ -172,7 +147,6 @@ extern bool g_arm64_atomics_present;
 
 #define PAL_INITIALIZE_NONE                         0x00
 #define PAL_INITIALIZE_SYNC_THREAD                  0x01
-#define PAL_INITIALIZE_EXEC_ALLOCATOR               0x02
 #define PAL_INITIALIZE_STD_HANDLES                  0x04
 #define PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER     0x08
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
@@ -190,7 +164,6 @@ extern bool g_arm64_atomics_present;
 
 // PAL_InitializeCoreCLR() flags
 #define PAL_INITIALIZE_CORECLR         (PAL_INITIALIZE | \
-                                        PAL_INITIALIZE_EXEC_ALLOCATOR | \
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
@@ -225,7 +198,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, BOOL runningInExe);
+    BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -274,6 +247,47 @@ PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
 
+/// <summary>
+/// Callback invoked when a signal is received that will terminate the process.
+/// The callback should log the managed callstack for the signal.
+/// </summary>
+typedef VOID (*PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK)(LPCWSTR signalName);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
+
+/// <summary>
+/// Callback invoked from the fatal-signal path to write an in-proc crash
+/// report. The callback runs inside the signal handler and must therefore
+/// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
+/// raw ucontext_t pointer received by the PAL signal handler.
+///
+/// The PAL serializes concurrent crash diagnostics (this callback and the
+/// out-of-proc createdump path) through a shared gate before invoking the
+/// callback, so implementations do not need to serialize themselves.
+///
+/// Registration is opt-in: if no callback is installed the PAL falls back
+/// to its default crash-dump path (createdump where available). The PAL
+/// itself has no source-level dependency on the in-proc reporter library;
+/// it only knows about this callback ABI.
+/// </summary>
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void);
+
 PALIMPORT
 BOOL
 PALAPI
@@ -283,27 +297,6 @@ PAL_GenerateCoreDump(
     IN ULONG32 flags,
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer);
-
-typedef VOID (*PPAL_STARTUP_CALLBACK)(
-    char *modulePath,
-    HMODULE hModule,
-    PVOID parameter);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_RegisterForRuntimeStartup(
-    IN DWORD dwProcessId,
-    IN LPCWSTR lpApplicationGroupId,
-    IN PPAL_STARTUP_CALLBACK pfnCallback,
-    IN PVOID parameter,
-    OUT PVOID *ppUnregisterToken);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_UnregisterForRuntimeStartup(
-    IN PVOID pUnregisterToken);
 
 PALIMPORT
 BOOL
@@ -357,32 +350,6 @@ PAL_UnregisterModule(
 PALIMPORT
 BOOL
 PALAPI
-PAL_OpenProcessMemory(
-    IN DWORD processId,
-    OUT DWORD* pHandle
-);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_CloseProcessMemory(
-    IN DWORD handle
-);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_ReadProcessMemory(
-    IN DWORD handle,
-    IN ULONG64 address,
-    IN LPVOID buffer,
-    IN SIZE_T size,
-    OUT SIZE_T* numberOfBytesRead
-);
-
-PALIMPORT
-BOOL
-PALAPI
 PAL_ProbeMemory(
     PVOID pBuffer,
     DWORD cbBuffer,
@@ -403,7 +370,7 @@ PALIMPORT
 int
 PALAPI
 // Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo);
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
 
 PALIMPORT
 int
@@ -413,28 +380,10 @@ PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
-#define MB_OKCANCEL             0x00000001L
-#define MB_ABORTRETRYIGNORE     0x00000002L
-
-#define MB_ICONEXCLAMATION      0x00000030L
-
-#define MB_TASKMODAL            0x00002000L
-
-#define MB_DEFAULT_DESKTOP_ONLY     0x00020000L
-
 #define IDOK                    1
 #define IDCANCEL                2
 #define IDABORT                 3
 #define IDRETRY                 4
-
-// From win32.h
-#ifndef _CRTIMP
-#ifdef __GNUC__
-#define _CRTIMP
-#else // __GNUC__
-#define _CRTIMP __declspec(dllimport)
-#endif // __GNUC__
-#endif // _CRTIMP
 
 /******************* winbase.h Entrypoints and defines ************************/
 typedef struct _SECURITY_ATTRIBUTES {
@@ -442,11 +391,6 @@ typedef struct _SECURITY_ATTRIBUTES {
             LPVOID lpSecurityDescriptor;
             BOOL bInheritHandle;
 } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
-
-#define _SH_DENYWR      0x20    /* deny write mode */
-
-#define FILE_READ_DATA            ( 0x0001 )    // file & pipe
-#define FILE_APPEND_DATA          ( 0x0004 )    // file
 
 #define GENERIC_READ               (0x80000000L)
 #define GENERIC_WRITE              (0x40000000L)
@@ -461,16 +405,9 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define OPEN_ALWAYS                4
 #define TRUNCATE_EXISTING          5
 
-#define FILE_ATTRIBUTE_READONLY                 0x00000001
-#define FILE_ATTRIBUTE_HIDDEN                   0x00000002
-#define FILE_ATTRIBUTE_SYSTEM                   0x00000004
-#define FILE_ATTRIBUTE_DIRECTORY                0x00000010
-#define FILE_ATTRIBUTE_ARCHIVE                  0x00000020
-#define FILE_ATTRIBUTE_DEVICE                   0x00000040
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
-#define FILE_FLAG_NO_BUFFERING     0x20000000
 #define FILE_FLAG_RANDOM_ACCESS    0x10000000
 #define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000
 #define FILE_FLAG_BACKUP_SEMANTICS 0x02000000
@@ -484,39 +421,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define INVALID_SET_FILE_POINTER   ((DWORD)-1)
 
 
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileW(
-        IN LPCWSTR lpFileName,
-        IN DWORD dwDesiredAccess,
-        IN DWORD dwShareMode,
-        IN LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-        IN DWORD dwCreationDisposition,
-        IN DWORD dwFlagsAndAttributes,
-        IN HANDLE hTemplateFile);
-
-#ifdef UNICODE
-#define CreateFile CreateFileW
-#else
-#define CreateFile CreateFileA
-#endif
-
-
-PALIMPORT
-DWORD
-PALAPI
-SearchPathW(
-    IN LPCWSTR lpPath,
-    IN LPCWSTR lpFileName,
-    IN LPCWSTR lpExtension,
-    IN DWORD nBufferLength,
-    OUT LPWSTR lpBuffer,
-    OUT LPWSTR *lpFilePart
-    );
-
-#define SearchPath  SearchPathW
-
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
     ULONG_PTR InternalHigh;
@@ -525,281 +429,9 @@ typedef struct _OVERLAPPED {
     HANDLE  hEvent;
 } OVERLAPPED, *LPOVERLAPPED;
 
-PALIMPORT
-BOOL
-PALAPI
-WriteFile(
-      IN HANDLE hFile,
-      IN LPCVOID lpBuffer,
-      IN DWORD nNumberOfBytesToWrite,
-      OUT LPDWORD lpNumberOfBytesWritten,
-      IN LPOVERLAPPED lpOverlapped);
-
-PALIMPORT
-BOOL
-PALAPI
-ReadFile(
-     IN HANDLE hFile,
-     OUT LPVOID lpBuffer,
-     IN DWORD nNumberOfBytesToRead,
-     OUT LPDWORD lpNumberOfBytesRead,
-     IN LPOVERLAPPED lpOverlapped);
-
 #define STD_INPUT_HANDLE         ((DWORD)-10)
 #define STD_OUTPUT_HANDLE        ((DWORD)-11)
 #define STD_ERROR_HANDLE         ((DWORD)-12)
-
-PALIMPORT
-HANDLE
-PALAPI
-GetStdHandle(
-         IN DWORD nStdHandle);
-
-PALIMPORT
-DWORD
-PALAPI
-SetFilePointer(
-           IN HANDLE hFile,
-           IN LONG lDistanceToMove,
-           IN PLONG lpDistanceToMoveHigh,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFilePointerEx(
-           IN HANDLE hFile,
-           IN LARGE_INTEGER liDistanceToMove,
-           OUT PLARGE_INTEGER lpNewFilePointer,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-DWORD
-PALAPI
-GetFileSize(
-        IN HANDLE hFile,
-        OUT LPDWORD lpFileSizeHigh);
-
-PALIMPORT
-BOOL
-PALAPI GetFileSizeEx(
-        IN   HANDLE hFile,
-        OUT  PLARGE_INTEGER lpFileSize);
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemTimeAsFileTime(
-            OUT LPFILETIME lpSystemTimeAsFileTime);
-
-typedef struct _SYSTEMTIME {
-    WORD wYear;
-    WORD wMonth;
-    WORD wDayOfWeek;
-    WORD wDay;
-    WORD wHour;
-    WORD wMinute;
-    WORD wSecond;
-    WORD wMilliseconds;
-} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemTime(
-          OUT LPSYSTEMTIME lpSystemTime);
-
-PALIMPORT
-BOOL
-PALAPI
-FileTimeToSystemTime(
-            IN CONST FILETIME *lpFileTime,
-            OUT LPSYSTEMTIME lpSystemTime);
-
-
-
-PALIMPORT
-BOOL
-PALAPI
-FlushFileBuffers(
-         IN HANDLE hFile);
-
-PALIMPORT
-UINT
-PALAPI
-GetConsoleOutputCP();
-
-PALIMPORT
-DWORD
-PALAPI
-GetFullPathNameW(
-         IN LPCWSTR lpFileName,
-         IN DWORD nBufferLength,
-         OUT LPWSTR lpBuffer,
-         OUT LPWSTR *lpFilePart);
-
-#ifdef UNICODE
-#define GetFullPathName GetFullPathNameW
-#else
-#define GetFullPathName GetFullPathNameA
-#endif
-
-PALIMPORT
-DWORD
-PALAPI
-GetTempPathW(
-         IN DWORD nBufferLength,
-         OUT LPWSTR lpBuffer);
-
-PALIMPORT
-DWORD
-PALAPI
-GetTempPathA(
-         IN DWORD nBufferLength,
-         OUT LPSTR lpBuffer);
-
-
-#ifdef UNICODE
-#define GetTempPath GetTempPathW
-#else
-#define GetTempPath GetTempPathA
-#endif
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateSemaphoreExW(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCWSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenSemaphoreW(
-    IN DWORD dwDesiredAccess,
-    IN BOOL bInheritHandle,
-    IN LPCWSTR lpName);
-
-#define CreateSemaphoreEx CreateSemaphoreExW
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseSemaphore(
-         IN HANDLE hSemaphore,
-         IN LONG lReleaseCount,
-         OUT LPLONG lpPreviousCount);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN BOOL bManualReset,
-         IN BOOL bInitialState,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventExW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN LPCWSTR lpName,
-         IN DWORD dwFlags,
-         IN DWORD dwDesiredAccess);
-
-// CreateEventExW: dwFlags
-#define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
-#define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
-
-#define CreateEvent CreateEventW
-
-PALIMPORT
-BOOL
-PALAPI
-SetEvent(
-     IN HANDLE hEvent);
-
-PALIMPORT
-BOOL
-PALAPI
-ResetEvent(
-       IN HANDLE hEvent);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenEventW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-#ifdef UNICODE
-#define OpenEvent OpenEventW
-#endif
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexExW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN LPCWSTR lpName,
-    IN DWORD dwFlags,
-    IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_CreateMutexW(
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName,
-    IN BOOL bCurrentUserOnly,
-    IN LPSTR lpSystemCallErrors,
-    IN DWORD dwSystemCallErrorsBufferSize);
-
-// CreateMutexExW: dwFlags
-#define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
-
-#define CreateMutex CreateMutexW
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_OpenMutexW(
-       IN LPCWSTR lpName,
-       IN BOOL bCurrentUserOnly,
-       IN LPSTR lpSystemCallErrors,
-       IN DWORD dwSystemCallErrorsBufferSize);
-
-#ifdef UNICODE
-#define OpenMutex  OpenMutexW
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseMutex(
-    IN HANDLE hMutex);
 
 PALIMPORT
 DWORD
@@ -831,57 +463,10 @@ GetCurrentThread();
 
 #define STARTF_USESTDHANDLES       0x00000100
 
-typedef struct _STARTUPINFOW {
-    DWORD cb;
-    LPWSTR lpReserved_PAL_Undefined;
-    LPWSTR lpDesktop_PAL_Undefined;
-    LPWSTR lpTitle_PAL_Undefined;
-    DWORD dwX_PAL_Undefined;
-    DWORD dwY_PAL_Undefined;
-    DWORD dwXSize_PAL_Undefined;
-    DWORD dwYSize_PAL_Undefined;
-    DWORD dwXCountChars_PAL_Undefined;
-    DWORD dwYCountChars_PAL_Undefined;
-    DWORD dwFillAttribute_PAL_Undefined;
-    DWORD dwFlags;
-    WORD wShowWindow_PAL_Undefined;
-    WORD cbReserved2_PAL_Undefined;
-    LPBYTE lpReserved2_PAL_Undefined;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOW, *LPSTARTUPINFOW;
-
+typedef struct _STARTUPINFOW STARTUPINFOW, *LPSTARTUPINFOW;
 typedef STARTUPINFOW STARTUPINFO;
-typedef LPSTARTUPINFOW LPSTARTUPINFO;
 
-#define CREATE_NEW_CONSOLE          0x00000010
-
-#define NORMAL_PRIORITY_CLASS             0x00000020
-
-typedef struct _PROCESS_INFORMATION {
-    HANDLE hProcess;
-    HANDLE hThread;
-    DWORD dwProcessId;
-    DWORD dwThreadId_PAL_Undefined;
-} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
-
-PALIMPORT
-BOOL
-PALAPI
-CreateProcessW(
-           IN LPCWSTR lpApplicationName,
-           IN LPWSTR lpCommandLine,
-           IN LPSECURITY_ATTRIBUTES lpProcessAttributes,
-           IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
-           IN BOOL bInheritHandles,
-           IN DWORD dwCreationFlags,
-           IN LPVOID lpEnvironment,
-           IN LPCWSTR lpCurrentDirectory,
-           IN LPSTARTUPINFOW lpStartupInfo,
-           OUT LPPROCESS_INFORMATION lpProcessInformation);
-
-#define CreateProcess CreateProcessW
+typedef struct _PROCESS_INFORMATION PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
 
 PALIMPORT
 PAL_NORETURN
@@ -897,71 +482,12 @@ TerminateProcess(
          IN HANDLE hProcess,
          IN UINT uExitCode);
 
-PALIMPORT
-BOOL
-PALAPI
-GetExitCodeProcess(
-           IN HANDLE hProcess,
-           IN LPDWORD lpExitCode);
-
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
-#define WAIT_ABANDONED   0x00000080
-#define WAIT_ABANDONED_0 0x00000080
 #define WAIT_TIMEOUT 258
 #define WAIT_FAILED ((DWORD)0xFFFFFFFF)
 
 #define INFINITE 0xFFFFFFFF // Infinite timeout
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObject(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_WaitForSingleObjectPrioritized(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObjectEx(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds,
-            IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjects(
-               IN DWORD nCount,
-               IN CONST HANDLE *lpHandles,
-               IN BOOL bWaitAll,
-               IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjectsEx(
-             IN DWORD nCount,
-             IN CONST HANDLE *lpHandles,
-             IN BOOL bWaitAll,
-             IN DWORD dwMilliseconds,
-             IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-SignalObjectAndWait(
-    IN HANDLE hObjectToSignal,
-    IN HANDLE hObjectToWaitOn,
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
 
 #define DUPLICATE_CLOSE_SOURCE      0x00000001
 #define DUPLICATE_SAME_ACCESS       0x00000002
@@ -979,25 +505,10 @@ DuplicateHandle(
         IN DWORD dwOptions);
 
 PALIMPORT
-VOID
-PALAPI
-Sleep(
-      IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-SleepEx(
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
-
-PALIMPORT
 BOOL
 PALAPI
 SwitchToThread();
 
-#define DEBUG_PROCESS                     0x00000001
-#define DEBUG_ONLY_THIS_PROCESS           0x00000002
 #define CREATE_SUSPENDED                  0x00000004
 #define STACK_SIZE_PARAM_IS_A_RESERVATION 0x00010000
 
@@ -1036,162 +547,7 @@ PALAPI
 ResumeThread(
          IN HANDLE hThread);
 
-typedef VOID (PALAPI_NOEXPORT *PAPCFUNC)(ULONG_PTR dwParam);
-
-PALIMPORT
-DWORD
-PALAPI
-QueueUserAPC(
-         IN PAPCFUNC pfnAPC,
-         IN HANDLE hThread,
-         IN ULONG_PTR dwData);
-
-#ifdef HOST_X86
-
-//
-// ***********************************************************************************
-//
-// NOTE: These context definitions are replicated in ndp/clr/src/debug/inc/DbgTargetContext.h (for the
-// purposes manipulating contexts from different platforms during remote debugging). Be sure to keep those
-// definitions in sync if you make any changes here.
-//
-// ***********************************************************************************
-//
-
-#define SIZE_OF_80387_REGISTERS      80
-
-#define CONTEXT_i386            0x00010000
-#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
-#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
-#define CONTEXT_SEGMENTS        (CONTEXT_i386 | 0x00000004L)
-#define CONTEXT_FLOATING_POINT  (CONTEXT_i386 | 0x00000008L) // 387 state
-#define CONTEXT_DEBUG_REGISTERS (CONTEXT_i386 | 0x00000010L)
-
-#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS)
-#define CONTEXT_EXTENDED_REGISTERS  (CONTEXT_i386 | 0x00000020L)
-#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
-
-#define MAXIMUM_SUPPORTED_EXTENSION     512
-
-#define CONTEXT_XSTATE (CONTEXT_i386 | 0x40L)
-
-#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
-#define CONTEXT_SERVICE_ACTIVE 0x10000000L
-#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
-#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
-
-//
-// This flag is set by the unwinder if it has unwound to a call
-// site, and cleared whenever it unwinds through a trap frame.
-// It is used by language-specific exception handlers to help
-// differentiate exception scopes during dispatching.
-//
-
-#define CONTEXT_UNWOUND_TO_CALL 0x20000000
-
-typedef struct _FLOATING_SAVE_AREA {
-    DWORD   ControlWord;
-    DWORD   StatusWord;
-    DWORD   TagWord;
-    DWORD   ErrorOffset;
-    DWORD   ErrorSelector;
-    DWORD   DataOffset;
-    DWORD   DataSelector;
-    BYTE    RegisterArea[SIZE_OF_80387_REGISTERS];
-    DWORD   Cr0NpxState;
-} FLOATING_SAVE_AREA;
-
-typedef FLOATING_SAVE_AREA *PFLOATING_SAVE_AREA;
-
-typedef struct _CONTEXT {
-    ULONG ContextFlags;
-
-    ULONG   Dr0_PAL_Undefined;
-    ULONG   Dr1_PAL_Undefined;
-    ULONG   Dr2_PAL_Undefined;
-    ULONG   Dr3_PAL_Undefined;
-    ULONG   Dr6_PAL_Undefined;
-    ULONG   Dr7_PAL_Undefined;
-
-    FLOATING_SAVE_AREA FloatSave;
-
-    ULONG   SegGs_PAL_Undefined;
-    ULONG   SegFs_PAL_Undefined;
-    ULONG   SegEs_PAL_Undefined;
-    ULONG   SegDs_PAL_Undefined;
-
-    ULONG   Edi;
-    ULONG   Esi;
-    ULONG   Ebx;
-    ULONG   Edx;
-    ULONG   Ecx;
-    ULONG   Eax;
-
-    ULONG   Ebp;
-    ULONG   Eip;
-    ULONG   SegCs;
-    ULONG   EFlags;
-    ULONG   Esp;
-    ULONG   SegSs;
-
-    UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-} CONTEXT, *PCONTEXT, *LPCONTEXT;
-
-// To support saving and loading xmm register context we need to know the offset in the ExtendedRegisters
-// section at which they are stored. This has been determined experimentally since I have found no
-// documentation thus far but it corresponds to the offset we'd expect if a fxsave instruction was used to
-// store the regular FP state along with the XMM registers at the start of the extended registers section.
-// Technically the offset doesn't really matter if no code in the PAL or runtime knows what the offset should
-// be either (as long as we're consistent across GetThreadContext() and SetThreadContext() and we don't
-// support any other values in the ExtendedRegisters) but we might as well be as accurate as we can.
-#define CONTEXT_EXREG_XMM_OFFSET 160
-
-typedef struct _KNONVOLATILE_CONTEXT {
-
-    DWORD Edi;
-    DWORD Esi;
-    DWORD Ebx;
-    DWORD Ebp;
-
-} KNONVOLATILE_CONTEXT, *PKNONVOLATILE_CONTEXT;
-
-typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
-
-    // The ordering of these fields should be aligned with that
-    // of corresponding fields in CONTEXT
-    //
-    // (See FillRegDisplay in inc/regdisp.h for details)
-    PDWORD Edi;
-    PDWORD Esi;
-    PDWORD Ebx;
-    PDWORD Edx;
-    PDWORD Ecx;
-    PDWORD Eax;
-
-    PDWORD Ebp;
-
-} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
-
-
-//
-// Context Frame
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-
-#elif defined(HOST_AMD64)
+#if defined(HOST_AMD64)
 
 // copied from winnt.h
 
@@ -1221,12 +577,12 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define XSTATE_AVX512_ZMM (7)
 #define XSTATE_APX (19)
 
-#define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
+#define XSTATE_MASK_GSSE (1ULL << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
-#define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
-                            (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
-                            (UI64(1) << (XSTATE_AVX512_ZMM)))
-#define XSTATE_MASK_APX (UI64(1) << (XSTATE_APX))
+#define XSTATE_MASK_AVX512 ((1ULL << (XSTATE_AVX512_KMASK)) | \
+                            (1ULL << (XSTATE_AVX512_ZMM_H)) | \
+                            (1ULL << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_APX (1ULL << (XSTATE_APX))
 
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
@@ -1708,7 +1064,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
 
 #define XSTATE_ARM64_SVE (2)
-#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
+#define XSTATE_MASK_ARM64_SVE (1ULL << (XSTATE_ARM64_SVE))
 
 //
 // This flag is set by the unwinder if it has unwound to a call
@@ -1722,9 +1078,6 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 //
 // Define initial Cpsr/Fpscr value
 //
-
-#define INITIAL_CPSR 0x10
-#define INITIAL_FPSCR 0
 
 // begin_ntoshvp
 
@@ -1812,18 +1165,37 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
 
     /* +0x390 */ DWORD64 XStateFeaturesMask;
-
-    //
-    // Sve Registers
-    //
-    // TODO-SVE: Support Vector register sizes >128bit
-    // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
-    /* +0x398 */ DWORD Vl;
-    /* +0x39c */ DWORD Ffr;
-    /* +0x3a0 */ DWORD P[16];
-    /* +0x3e0 */
+    /* +0x3a0 */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+// The SVE header immediately follows CONTEXT, when CONTEXT_XSTATE is set and
+// XStateFeaturesMask contains XSTATE_MASK_ARM64_SVE.
+// If CONTEXT_SVE_STATE_HEADER.VectorLengthInBytes != 0, it is immediately
+// followed by the serialized state of the vector/predicate register files,
+// and the first-faulting register, padded to 16-byte alignment. The bottom
+// 128 bits of each Z register are duplicated in CONTEXT::V in this design.
+//
+//  +------------------------------------------+
+//  |                 CONTEXT                  |
+//  +------------------------------------------+
+//  | CONTEXT_SVE_STATE_HEADER (16 bytes)      |
+//  +------------------------------------------+
+//  | Z0..Z31 (32 * VL bytes)                  |
+//  +------------------------------------------+
+//  | P0..P15 (16 * VL/8 bytes)                |
+//  +------------------------------------------+
+//  | FFR (VL/8 bytes)                         |
+//  +------------------------------------------+
+//  | padding to 16-byte alignment             |
+//  +------------------------------------------+
+//
+// TODO-SVE: We should update this layout to conform with Windows XSTATE.
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT_SVE_STATE_HEADER
+{
+    DWORD VectorLengthInBytes;
+    DWORD Reserved[3];
+} CONTEXT_SVE_STATE_HEADER, *PCONTEXT_SVE_STATE_HEADER;
 
 //
 // Nonvolatile context pointer record.
@@ -1896,6 +1268,9 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
 
 #define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
 
+#define CONTEXT_LSX 0x10
+#define CONTEXT_LASX 0x20
+
 #define CONTEXT_EXCEPTION_ACTIVE 0x8000000
 #define CONTEXT_SERVICE_ACTIVE 0x10000000
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
@@ -1917,9 +1292,6 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
 // will track. Architecturally, LOONGARCH64 supports up to 16. In practice,
 // however, almost no one implements more than 4 of each.
 //
-
-#define LOONGARCH64_MAX_BREAKPOINTS     8
-#define LOONGARCH64_MAX_WATCHPOINTS     2
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
@@ -2037,9 +1409,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // will track. Architecturally, RISCV64 supports up to 16. In practice,
 // however, almost no one implements more than 4 of each.
 //
-
-#define RISCV64_MAX_BREAKPOINTS     8
-#define RISCV64_MAX_WATCHPOINTS     2
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
@@ -2399,6 +1768,11 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 typedef struct _CONTEXT {
     ULONG ContextFlags;
+
+    DWORD InterpreterWalkFramePointer;
+    DWORD InterpreterSP;
+    DWORD InterpreterFP;
+    DWORD InterpreterIP;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
@@ -2489,9 +1863,9 @@ PAL_GetCpuLimit(UINT* val);
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
 
 PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 
@@ -2508,25 +1882,6 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define MEM_DECOMMIT                    0x4000
 #define MEM_RELEASE                     0x8000
 #define MEM_FREE                        0x10000
-#define MEM_PRIVATE                     0x20000
-#define MEM_MAPPED                      0x40000
-#define MEM_TOP_DOWN                    0x100000
-#define MEM_WRITE_WATCH                 0x200000
-#define MEM_LARGE_PAGES                 0x20000000
-#define MEM_RESERVE_EXECUTABLE          0x40000000 // reserve memory using executable memory allocator
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileMappingW(
-           IN HANDLE hFile,
-           IN LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
-           IN DWORD flProtect,
-           IN DWORD dwMaxmimumSizeHigh,
-           IN DWORD dwMaximumSizeLow,
-           IN LPCWSTR lpName);
-
-#define CreateFileMapping CreateFileMappingW
 
 #define SECTION_QUERY       0x0001
 #define SECTION_MAP_WRITE   0x0002
@@ -2539,33 +1894,6 @@ CreateFileMappingW(
 #define FILE_MAP_COPY       SECTION_QUERY
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFile(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap);
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFileEx(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap,
-          IN LPVOID lpBaseAddress);
-
-PALIMPORT
-BOOL
-PALAPI
-UnmapViewOfFile(
-        IN LPCVOID lpBaseAddress);
 
 PALIMPORT
 HMODULE
@@ -2598,60 +1926,6 @@ PALAPI
 PAL_GetProcAddressDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCSTR lpProcName);
-
-/*++
-Function:
-  PAL_LOADLoadPEFile
-
-Abstract
-  Loads a PE file into memory.  Properly maps all of the sections in the PE file.  Returns a pointer to the
-  loaded base.
-
-Parameters:
-    IN hFile    - The file to load
-    IN offset - offset within hFile where the PE "file" is located
-
-Return value:
-    A valid base address if successful.
-    0 if failure
---*/
-PALIMPORT
-PVOID
-PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
-
-/*++
-    PAL_LOADUnloadPEFile
-
-    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_LOADUnloadPEFile(PVOID ptr);
-
-/*++
-    PAL_LOADMarkSectionAsNotNeeded
-
-    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADMarkSectionAsNotNeeded(void * ptr);
 
 PALIMPORT
 FARPROC
@@ -2702,77 +1976,6 @@ LPCSTR
 PALAPI
 PAL_GetLoadLibraryError();
 
-PALIMPORT
-LPVOID
-PALAPI
-PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
-    IN LPCVOID lpBeginAddress,
-    IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize,
-    IN BOOL storeAllocationInfo);
-
-PALIMPORT
-void
-PALAPI
-PAL_GetExecutableMemoryAllocatorPreferredRange(
-    OUT PVOID *start,
-    OUT PVOID *end);
-
-PALIMPORT
-LPVOID
-PALAPI
-VirtualAlloc(
-         IN LPVOID lpAddress,
-         IN SIZE_T dwSize,
-         IN DWORD flAllocationType,
-         IN DWORD flProtect);
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualFree(
-        IN LPVOID lpAddress,
-        IN SIZE_T dwSize,
-        IN DWORD dwFreeType);
-
-
-#if defined(HOST_APPLE) && defined(HOST_ARM64)
-
-PALIMPORT
-VOID
-PALAPI
-PAL_JitWriteProtect(bool writeEnable);
-
-#endif // defined(HOST_APPLE) && defined(HOST_ARM64)
-
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualProtect(
-           IN LPVOID lpAddress,
-           IN SIZE_T dwSize,
-           IN DWORD flNewProtect,
-           OUT PDWORD lpflOldProtect);
-
-typedef struct _MEMORY_BASIC_INFORMATION {
-    PVOID BaseAddress;
-    PVOID AllocationBase_PAL_Undefined;
-    DWORD AllocationProtect;
-    SIZE_T RegionSize;
-    DWORD State;
-    DWORD Protect;
-    DWORD Type;
-} MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
-
-PALIMPORT
-SIZE_T
-PALAPI
-VirtualQuery(
-         IN LPCVOID lpAddress,
-         OUT PMEMORY_BASIC_INFORMATION lpBuffer,
-         IN SIZE_T dwLength);
-
 #define MoveMemory memmove
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
@@ -2786,44 +1989,6 @@ FlushInstructionCache(
               IN LPCVOID lpBaseAddress,
               IN SIZE_T dwSize);
 
-#define MAX_LEADBYTES         12
-#define MAX_DEFAULTCHAR       2
-
-typedef struct _cpinfo {
-    UINT MaxCharSize;
-    BYTE DefaultChar[MAX_DEFAULTCHAR];
-    BYTE LeadByte[MAX_LEADBYTES];
-} CPINFO, *LPCPINFO;
-
-#define MB_PRECOMPOSED            0x00000001
-#define MB_ERR_INVALID_CHARS      0x00000008
-
-PALIMPORT
-int
-PALAPI
-MultiByteToWideChar(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCSTR lpMultiByteStr,
-            IN int cbMultiByte,
-            OUT LPWSTR lpWideCharStr,
-            IN int cchWideChar);
-
-#define WC_NO_BEST_FIT_CHARS      0x00000400
-
-PALIMPORT
-int
-PALAPI
-WideCharToMultiByte(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCWSTR lpWideCharStr,
-            IN int cchWideChar,
-            OUT LPSTR lpMultiByteStr,
-            IN int cbMultyByte,
-            IN LPCSTR lpDefaultChar,
-            OUT LPBOOL lpUsedDefaultChar);
-
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
 
@@ -2831,23 +1996,13 @@ WideCharToMultiByte(
 #define EXCEPTION_NESTED_CALL 0x10      // Nested exception handler call
 #define EXCEPTION_TARGET_UNWIND 0x20    // Target unwind in progress
 #define EXCEPTION_COLLIDED_UNWIND 0x40  // Collided exception handler call
-#define EXCEPTION_SKIP_VEH 0x200
 
 #define EXCEPTION_UNWIND (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND | \
                           EXCEPTION_TARGET_UNWIND | EXCEPTION_COLLIDED_UNWIND)
 
-#define IS_DISPATCHING(Flag) ((Flag & EXCEPTION_UNWIND) == 0)
-#define IS_UNWINDING(Flag) ((Flag & EXCEPTION_UNWIND) != 0)
-#define IS_TARGET_UNWIND(Flag) (Flag & EXCEPTION_TARGET_UNWIND)
-
 #define EXCEPTION_IS_SIGNAL 0x100
 
 #define EXCEPTION_MAXIMUM_PARAMETERS 15
-
-// Index in the ExceptionInformation array where we will keep the reference
-// to the native exception that needs to be deleted when dispatching
-// exception in managed code.
-#define NATIVE_EXCEPTION_ASYNC_SLOT (EXCEPTION_MAXIMUM_PARAMETERS-1)
 
 typedef struct _EXCEPTION_RECORD {
     DWORD ExceptionCode;
@@ -2887,44 +2042,7 @@ typedef struct _RUNTIME_FUNCTION {
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 #endif // HOST_ARM64
 
-#define STANDARD_RIGHTS_REQUIRED  (0x000F0000L)
 #define SYNCHRONIZE               (0x00100000L)
-#define READ_CONTROL              (0x00020000L)
-#define MAXIMUM_ALLOWED           (0x02000000L)
-
-#define EVENT_MODIFY_STATE        (0x0002)
-#define EVENT_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
-#define MUTANT_QUERY_STATE        (0x0001)
-#define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
-#define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
-
-#define SEMAPHORE_MODIFY_STATE    (0x0002)
-#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
-#define PROCESS_TERMINATE         (0x0001)
-#define PROCESS_CREATE_THREAD     (0x0002)
-#define PROCESS_SET_SESSIONID     (0x0004)
-#define PROCESS_VM_OPERATION      (0x0008)
-#define PROCESS_VM_READ           (0x0010)
-#define PROCESS_VM_WRITE          (0x0020)
-#define PROCESS_DUP_HANDLE        (0x0040)
-#define PROCESS_CREATE_PROCESS    (0x0080)
-#define PROCESS_SET_QUOTA         (0x0100)
-#define PROCESS_SET_INFORMATION   (0x0200)
-#define PROCESS_QUERY_INFORMATION (0x0400)
-#define PROCESS_SUSPEND_RESUME    (0x0800)
-#define PROCESS_ALL_ACCESS        (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | \
-                                   0xFFF)
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenProcess(
-    IN DWORD dwDesiredAccess, /* PROCESS_DUP_HANDLE or PROCESS_ALL_ACCESS */
-    IN BOOL bInheritHandle,
-    IN DWORD dwProcessId
-    );
 
 PALIMPORT
 VOID
@@ -2995,7 +2113,7 @@ PALIMPORT
 BOOL
 PALAPI
 CloseHandle(
-        IN OUT HANDLE hObject);
+        IN OUT HANDLE hObject) noexcept;
 
 PALIMPORT
 VOID
@@ -3284,8 +2402,6 @@ Define_InterlockMethod(
     __sync_sub_and_fetch(lpAddend, (LONG)1)
 )
 
-#define InterlockedDecrementRelease InterlockedDecrement
-
 Define_InterlockMethod(
     LONGLONG,
     InterlockedDecrement64(IN OUT LONGLONG volatile *lpAddend),
@@ -3321,23 +2437,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#if defined(HOST_X86)
-
-// 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
-// Use inline implementation instead.
-
-inline LONGLONG InterlockedExchange64(LONGLONG volatile * Target, LONGLONG Value)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Target;
-    } while (__sync_val_compare_and_swap(Target, Old, Value) != Old);
-
-    return Old;
-}
-
-#else
 
 Define_InterlockMethod(
     LONGLONG,
@@ -3346,7 +2445,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#endif
 
 
 /*++
@@ -3381,9 +2479,6 @@ Define_InterlockMethod(
         Comperand, /* The value to be compared */
         Exchange /* The value to be stored */)
 )
-
-#define InterlockedCompareExchangeAcquire InterlockedCompareExchange
-#define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
 Define_InterlockMethod(
     LONGLONG,
@@ -3499,7 +2594,7 @@ VOID
 PALAPI
 YieldProcessor()
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(HOST_AMD64)
     __asm__ __volatile__(
         "rep\n"
         "nop");
@@ -3542,22 +2637,13 @@ FormatMessageW(
 PALIMPORT
 DWORD
 PALAPI
-GetLastError();
+GetLastError() noexcept;
 
 PALIMPORT
 VOID
 PALAPI
 SetLastError(
-         IN DWORD dwErrCode);
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetCommandLineW();
-
-#ifdef UNICODE
-#define GetCommandLine GetCommandLineW
-#endif
+         IN DWORD dwErrCode) noexcept;
 
 PALIMPORT
 VOID
@@ -3574,11 +2660,6 @@ RtlCaptureContext(
   OUT PCONTEXT ContextRecord
 );
 
-PALIMPORT
-VOID
-PALAPI
-FlushProcessWriteBuffers();
-
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
 typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
 
@@ -3588,6 +2669,12 @@ PALAPI
 PAL_SetActivationFunction(
     IN PAL_ActivationFunction pActivationFunction,
     IN PAL_SafeActivationCheckFunction pSafeActivationCheckFunction);
+
+// Unblock the runtime activation signal for the current thread.
+PALIMPORT
+VOID
+PALAPI
+PAL_UnmaskActivationSignal(VOID);
 
 PALIMPORT
 BOOL
@@ -3616,25 +2703,11 @@ PALAPI
 GetSystemInfo(
           OUT LPSYSTEM_INFO lpSystemInfo);
 
-PALIMPORT
-BOOL
-PALAPI
-PAL_SetCurrentThreadAffinity(WORD procNo);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
-
 //
 // The types of events that can be logged.
 //
-#define EVENTLOG_SUCCESS                0x0000
 #define EVENTLOG_ERROR_TYPE             0x0001
-#define EVENTLOG_WARNING_TYPE           0x0002
 #define EVENTLOG_INFORMATION_TYPE       0x0004
-#define EVENTLOG_AUDIT_SUCCESS          0x0008
-#define EVENTLOG_AUDIT_FAILURE          0x0010
 
 #if defined FEATURE_PAL_ANSI
 #include "palprivate.h"
@@ -3663,31 +2736,13 @@ typedef int errno_t;
 
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
-PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
 PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 
-PALIMPORT DLLEXPORT size_t __cdecl PAL_wcslen(const WCHAR *);
-PALIMPORT DLLEXPORT int __cdecl PAL_wcscmp(const WCHAR*, const WCHAR*);
-PALIMPORT DLLEXPORT int __cdecl PAL_wcsncmp(const WCHAR *, const WCHAR *, size_t);
-PALIMPORT DLLEXPORT WCHAR * __cdecl PAL_wcscat(WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcscpy(WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcsncpy(WCHAR *, const WCHAR *, size_t);
-PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
-PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
-PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
-PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
-PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
-PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
-
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
-PALIMPORT int __cdecl _wtoi(const WCHAR *);
-PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 inline int _stricmp(const char* a, const char* b)
 {
@@ -3707,19 +2762,6 @@ inline char* _strdup(const char* a)
 // Define the MSVC implementation of the alloca concept.
 // As this allocates on the current stack frame, use a macro instead of an inline function.
 #define _alloca(x) alloca(x)
-
-#ifdef __cplusplus
-extern "C++" {
-inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
-        {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
-        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
-        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)S, P)); }
-inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
-        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
-}
-#endif
 
 #if !__has_builtin(_rotl) && !defined(_rotl)
 /*++
@@ -3764,7 +2806,6 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 #endif // !__has_builtin(_rotr)
 
 PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
-PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #ifndef ERANGE
 #define ERANGE          34
@@ -3779,13 +2820,21 @@ VOID
 PALAPI
 PAL_FreeExceptionRecords(
   IN EXCEPTION_RECORD *exceptionRecord,
-  IN CONTEXT *contextRecord);
+  IN CONTEXT *contextRecord) noexcept;
 
 #define EXCEPTION_CONTINUE_SEARCH   0
 #define EXCEPTION_EXECUTE_HANDLER   1
 #define EXCEPTION_CONTINUE_EXECUTION -1
 
-struct PAL_SEHException
+struct
+#ifdef __OpenBSD__
+// OpenBSD's libc++ compares exception type_info by pointer (relying on ld.so to merge
+// type_info across shared objects) instead of falling back to a name compare like Linux's
+// libstdc++. Default visibility lets ld.so merge type_info into one instance so a
+// PAL_SEHException thrown in one PAL DSO is caught in another (e.g. the pal_sxs test).
+__attribute__((visibility("default")))
+#endif
+PAL_SEHException
 {
 private:
     static const SIZE_T NoTargetFrameSp = (SIZE_T)SIZE_MAX;
@@ -3798,8 +2847,6 @@ private:
         TargetIp = ex.TargetIp;
         RecordsOnStack = ex.RecordsOnStack;
         IsExternal = ex.IsExternal;
-        ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
-        ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
         ex.Clear();
     }
@@ -3825,9 +2872,6 @@ public:
     // the well known runtime helpers
     bool IsExternal;
 
-    void(*ManagedToNativeExceptionCallback)(void* context);
-    void* ManagedToNativeExceptionCallbackContext;
-
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord, bool onStack = false)
     {
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
@@ -3836,8 +2880,6 @@ public:
         TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     PAL_SEHException()
@@ -3876,8 +2918,11 @@ public:
         TargetIp = 0;
         RecordsOnStack = false;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
+    }
+
+    bool HasTargetFrame()
+    {
+        return TargetFrameSp != NoTargetFrameSp;
     }
 
     CONTEXT* GetContextRecord()
@@ -3888,29 +2933,6 @@ public:
     EXCEPTION_RECORD* GetExceptionRecord()
     {
         return ExceptionPointers.ExceptionRecord;
-    }
-
-    bool IsFirstPass()
-    {
-        return (TargetFrameSp == NoTargetFrameSp);
-    }
-
-    void SecondPassDone()
-    {
-        TargetFrameSp = NoTargetFrameSp;
-    }
-
-    bool HasPropagateExceptionCallback()
-    {
-        return ManagedToNativeExceptionCallback != NULL;
-    }
-
-    void SetPropagateExceptionCallback(
-        void(*callback)(void*),
-        void* context)
-    {
-        ManagedToNativeExceptionCallback = callback;
-        ManagedToNativeExceptionCallbackContext = context;
     }
 };
 
@@ -3978,141 +3000,6 @@ public:
 #define HardwareExceptionHolder
 #endif // FEATURE_ENABLE_HARDWARE_EXCEPTIONS
 
-class NativeExceptionHolderBase;
-
-PALIMPORT
-PALAPI
-NativeExceptionHolderBase **
-PAL_GetNativeExceptionHolderHead();
-
-extern "C++" {
-
-//
-// This is the base class of native exception holder used to provide
-// the filter function to the exception dispatcher. This allows the
-// filter to be called during the first pass to better emulate SEH
-// the xplat platforms that only have C++ exception support.
-//
-class NativeExceptionHolderBase
-{
-    // Save the address of the holder head so the destructor
-    // doesn't have access the slow (on Linux) TLS value again.
-    NativeExceptionHolderBase **m_head;
-
-    // The next holder on the stack
-    NativeExceptionHolderBase *m_next;
-
-protected:
-    NativeExceptionHolderBase()
-    {
-        m_head = nullptr;
-        m_next = nullptr;
-    }
-
-    ~NativeExceptionHolderBase()
-    {
-        // Only destroy if Push was called
-        if (m_head != nullptr)
-        {
-            *m_head = m_next;
-            m_head = nullptr;
-            m_next = nullptr;
-        }
-    }
-
-public:
-    // Calls the holder's filter handler.
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex) = 0;
-
-    // Adds the holder to the "stack" of holders. This is done explicitly instead
-    // of in the constructor was to avoid the mess of move constructors combined
-    // with return value optimization (in CreateHolder).
-    void Push()
-    {
-        NativeExceptionHolderBase **head = PAL_GetNativeExceptionHolderHead();
-        m_head = head;
-        m_next = *head;
-        *head = this;
-    }
-
-    // Given the currentHolder and locals stack range find the next holder starting with this one
-    // To find the first holder, pass nullptr as the currentHolder.
-    static NativeExceptionHolderBase *FindNextHolder(NativeExceptionHolderBase *currentHolder, PVOID frameLowAddress, PVOID frameHighAddress);
-};
-
-//
-// This is the second part of the native exception filter holder. It is
-// templated because the lambda used to wrap the exception filter is a
-// unknown type.
-//
-template<class FilterType>
-class NativeExceptionHolder : public NativeExceptionHolderBase
-{
-    FilterType* m_exceptionFilter;
-
-public:
-    NativeExceptionHolder(FilterType* exceptionFilter)
-        : NativeExceptionHolderBase()
-    {
-        m_exceptionFilter = exceptionFilter;
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return (*m_exceptionFilter)(ex);
-    }
-};
-
-//
-// This is a native exception holder that is used when the catch catches
-// all exceptions.
-//
-class NativeExceptionHolderCatchAll : public NativeExceptionHolderBase
-{
-
-public:
-    NativeExceptionHolderCatchAll()
-        : NativeExceptionHolderBase()
-    {
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-};
-
-// This is a native exception holder that doesn't catch any exceptions.
-class NativeExceptionHolderNoCatch : public NativeExceptionHolderBase
-{
-
-public:
-    NativeExceptionHolderNoCatch()
-        : NativeExceptionHolderBase()
-    {
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-};
-
-//
-// This factory class for the native exception holder is necessary because
-// templated functions don't need the explicit type parameter and can infer
-// the template type from the parameter.
-//
-class NativeExceptionHolderFactory
-{
-public:
-    template<class FilterType>
-    static NativeExceptionHolder<FilterType> CreateHolder(FilterType* exceptionFilter)
-    {
-        return NativeExceptionHolder<FilterType>(exceptionFilter);
-    }
-};
-
 // Start of a try block for exceptions raised by RaiseException
 #define PAL_TRY(__ParamType, __paramDef, __paramRef)                            \
 {                                                                               \
@@ -4140,8 +3027,6 @@ public:
     try                                                                         \
     {                                                                           \
         HardwareExceptionHolder                                                 \
-        auto __exceptionHolder = NativeExceptionHolderFactory::CreateHolder(&exceptionFilter); \
-        __exceptionHolder.Push();                                               \
         tryBlock(__param);                                                      \
     }                                                                           \
     catch (PAL_SEHException& ex)                                                \
@@ -4153,8 +3038,7 @@ public:
         if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
         {                                                                       \
             throw;                                                              \
-        }                                                                       \
-        ex.SecondPassDone();
+        }
 
 // Start of an exception handler. It works the same way as the PAL_EXCEPT except
 // that the disposition is obtained by calling the specified filter.
@@ -4192,16 +3076,10 @@ public:
 #define PAL_CPP_THROW(type, obj) { throw obj; }
 #define PAL_CPP_RETHROW { throw; }
 #define PAL_CPP_TRY                     try { HardwareExceptionHolder
-#define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) {
-#define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) {
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
 #define PAL_CPP_CATCH_NON_DERIVED(type, ident) } catch (type ident) {
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
-#define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
-                                            try { throw; }                                        \
-                                            catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \
-                                            catch (...) {}
-
+#define PAL_CPP_CATCH_ALL               } catch (...) {
 #define PAL_CPP_ENDTRY                  }
 
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)
@@ -4224,7 +3102,6 @@ public:
 #define MAKEDLLNAME(x) MAKEDLLNAME_A(x)
 #endif
 
-#define PAL_SHLIB_PREFIX    "lib"
 #define PAL_SHLIB_PREFIX_W  u"lib"
 
 #if __APPLE__
@@ -4235,19 +3112,12 @@ public:
 #define PAL_SHLIB_SUFFIX_W  u".so"
 #endif
 
-#define DBG_EXCEPTION_HANDLED            ((DWORD   )0x00010001L)
 #define DBG_CONTINUE                     ((DWORD   )0x00010002L)
 #define DBG_EXCEPTION_NOT_HANDLED        ((DWORD   )0x80010001L)
 
-#define DBG_TERMINATE_THREAD             ((DWORD   )0x40010003L)
-#define DBG_TERMINATE_PROCESS            ((DWORD   )0x40010004L)
 #define DBG_CONTROL_C                    ((DWORD   )0x40010005L)
-#define DBG_RIPEXCEPTION                 ((DWORD   )0x40010007L)
-#define DBG_CONTROL_BREAK                ((DWORD   )0x40010008L)
-#define DBG_COMMAND_EXCEPTION            ((DWORD   )0x40010009L)
 
 #define STATUS_USER_APC                  ((DWORD   )0x000000C0L)
-#define STATUS_GUARD_PAGE_VIOLATION      ((DWORD   )0x80000001L)
 #define STATUS_DATATYPE_MISALIGNMENT     ((DWORD   )0x80000002L)
 #define STATUS_BREAKPOINT                ((DWORD   )0x80000003L)
 #define STATUS_SINGLE_STEP               ((DWORD   )0x80000004L)
@@ -4255,7 +3125,6 @@ public:
 #define STATUS_UNWIND_CONSOLIDATE        ((DWORD   )0x80000029L)
 #define STATUS_ACCESS_VIOLATION          ((DWORD   )0xC0000005L)
 #define STATUS_IN_PAGE_ERROR             ((DWORD   )0xC0000006L)
-#define STATUS_INVALID_HANDLE            ((DWORD   )0xC0000008L)
 #define STATUS_NO_MEMORY                 ((DWORD   )0xC0000017L)
 #define STATUS_ILLEGAL_INSTRUCTION       ((DWORD   )0xC000001DL)
 #define STATUS_NONCONTINUABLE_EXCEPTION  ((DWORD   )0xC0000025L)
@@ -4272,7 +3141,6 @@ public:
 #define STATUS_INTEGER_OVERFLOW          ((DWORD   )0xC0000095L)
 #define STATUS_PRIVILEGED_INSTRUCTION    ((DWORD   )0xC0000096L)
 #define STATUS_STACK_OVERFLOW            ((DWORD   )0xC00000FDL)
-#define STATUS_CONTROL_C_EXIT            ((DWORD   )0xC000013AL)
 
 #define WAIT_IO_COMPLETION                  STATUS_USER_APC
 
@@ -4286,7 +3154,6 @@ public:
 #define EXCEPTION_FLT_INEXACT_RESULT        STATUS_FLOAT_INEXACT_RESULT
 #define EXCEPTION_FLT_INVALID_OPERATION     STATUS_FLOAT_INVALID_OPERATION
 #define EXCEPTION_FLT_OVERFLOW              STATUS_FLOAT_OVERFLOW
-#define EXCEPTION_FLT_STACK_CHECK           STATUS_FLOAT_STACK_CHECK
 #define EXCEPTION_FLT_UNDERFLOW             STATUS_FLOAT_UNDERFLOW
 #define EXCEPTION_INT_DIVIDE_BY_ZERO        STATUS_INTEGER_DIVIDE_BY_ZERO
 #define EXCEPTION_INT_OVERFLOW              STATUS_INTEGER_OVERFLOW
@@ -4296,10 +3163,6 @@ public:
 #define EXCEPTION_NONCONTINUABLE_EXCEPTION  STATUS_NONCONTINUABLE_EXCEPTION
 #define EXCEPTION_STACK_OVERFLOW            STATUS_STACK_OVERFLOW
 #define EXCEPTION_INVALID_DISPOSITION       STATUS_INVALID_DISPOSITION
-#define EXCEPTION_GUARD_PAGE                STATUS_GUARD_PAGE_VIOLATION
-#define EXCEPTION_INVALID_HANDLE            STATUS_INVALID_HANDLE
-
-#define CONTROL_C_EXIT                      STATUS_CONTROL_C_EXIT
 
 /******************* HRESULT types ****************************************/
 
@@ -4330,8 +3193,10 @@ public:
 
 #define HRESULT_FROM_NT(x)      ((HRESULT) ((x) | FACILITY_NT_BIT))
 
-#ifdef  __cplusplus
-}
+#ifndef TARGET_WASM
+#define _ReturnAddress() __builtin_return_address(0)
+#else
+#define _ReturnAddress() 0
 #endif
 
 #endif // __PAL_H__

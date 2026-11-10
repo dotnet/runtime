@@ -122,6 +122,11 @@ namespace R2RTest
                 yield return $"--targetarch={_options.TargetArch}";
             }
 
+            if (_options.TargetOs != null)
+            {
+                yield return $"--targetos={_options.TargetOs}";
+            }
+
             if (_options.VerifyTypeAndFieldLayout)
             {
                 yield return "--verify-type-and-field-layout";
@@ -149,7 +154,11 @@ namespace R2RTest
 
             if (_options.MibcPath != null && _options.MibcPath.Length > 0)
             {
-                yield return "--embed-pgo-data";
+                if (_options.TargetArch != "wasm")
+                {
+                    yield return "--embed-pgo-data";
+                }
+
                 foreach (FileInfo mibc in _options.MibcPath)
                 {
                     yield return $"-m:{mibc.FullName}";

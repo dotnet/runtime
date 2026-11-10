@@ -11,20 +11,25 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
 {
     private readonly ContextHolder<AMD64Context> _holder = contextHolder;
 
-    void IPlatformFrameHandler.HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
     {
-        if (frame.TargetContext is not TargetPointer targetContext)
-        {
-            throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
-        }
-        _holder.ReadFromAddress(_target, targetContext);
+        base.HandleInlinedCallFrame(inlinedCallFrame);
 
-        // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
-        // that does not support holding any extended state.
-        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
+        Data.Frame? next = GetNextFrame(inlinedCallFrame.Address);
+        if (next is not null && _frameHelpers.GetFrameType(next.Identifier) == FrameType.InterpreterFrame)
+        {
+            if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows)
+            {
+                _holder.Context.Rcx = next.Address.Value;
+            }
+            else
+            {
+                _holder.Context.Rdi = next.Address.Value;
+            }
+        }
     }
 
-    void IPlatformFrameHandler.HandleHijackFrame(HijackFrame frame)
+    public void HandleHijackFrame(HijackFrame frame)
     {
         HijackArgsAMD64 args = _target.ProcessedData.GetOrAdd<Data.HijackArgsAMD64>(frame.HijackArgsPtr);
 
@@ -37,11 +42,20 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         else
         {
             // Non-Windows case, the stack pointer is the address immediately following HijacksArgs
-            uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+            uint hijackArgsSize = Data.HijackArgs.GetSize(_target);
             _holder.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
         }
 
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(args.CalleeSavedRegisters);
         UpdateFromRegisterDict(calleeSavedRegisters.Registers);
+    }
+
+    public override void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    {
+        base.HandleFaultingExceptionFrame(frame);
+
+        // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
+        // that does not support holding any extended state.
+        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
     }
 }

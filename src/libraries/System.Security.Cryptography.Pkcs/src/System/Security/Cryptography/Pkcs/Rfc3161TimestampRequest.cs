@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.DER);
                 int localBytesRead = reader.PeekEncodedValue().Length;
 
                 Rfc3161TimeStampResp.Decode(ref reader, source, out resp);
@@ -353,7 +353,7 @@ namespace System.Security.Cryptography.Pkcs
                 // Since nothing says BER, assume DER only.
                 const AsnEncodingRules RuleSet = AsnEncodingRules.DER;
 
-                AsnValueReader reader = new AsnValueReader(encodedBytes.Span, RuleSet);
+                ValueAsnReader reader = new ValueAsnReader(encodedBytes.Span, RuleSet);
                 ReadOnlySpan<byte> firstElement = reader.PeekEncodedValue();
 
                 Rfc3161TimeStampReq.Decode(ref reader, encodedBytes, out Rfc3161TimeStampReq req);
@@ -461,7 +461,7 @@ namespace System.Security.Cryptography.Pkcs
                 // If no certificate was requested then the CMS Certificates collection
                 // MUST be empty.
 
-                if (tokenCms.Certificates.Count != 0)
+                if (tokenCms.GetCertificatesNoClone().Count != 0)
                 {
                     if (shouldThrow)
                     {

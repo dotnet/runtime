@@ -4,9 +4,11 @@
 using System;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 public class test88113
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

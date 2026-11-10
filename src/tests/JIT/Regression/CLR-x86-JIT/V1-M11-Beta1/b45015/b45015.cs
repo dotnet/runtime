@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b45015
 {
     using System;
 
@@ -18,6 +18,7 @@ namespace Test
             return unchecked(m_ad[0] - (double)m_u * (m_ad[1] - loc));
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

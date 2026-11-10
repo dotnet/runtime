@@ -38,9 +38,9 @@ DacGetThread(ULONG32 osThread)
         UNREACHABLE();
     }
 
-    // Note that if we had access to TLS, we could get this at index gThreadTLSIndex for the specified
-    // thread.  However, this is the only place we might want to use TLS, and it's not performance critical,
-    // so we haven't added TLS support to ICorDebugDataTarget (the legacy ICLRDataTarget interface has it though)
+    // Note that if we had access to TLS, we could get this at TLS for the specified thread.  However, this is
+    // the only place we might want to use TLS, and it's not performance critical, so we haven't added TLS support
+    // to ICorDebugDataTarget (the legacy ICLRDataTarget interface has it though)
 
     // Scan the whole thread store to see if there's a matching thread.
 
@@ -49,7 +49,7 @@ DacGetThread(ULONG32 osThread)
         return NULL;
     }
 
-    Thread* thread = ThreadStore::s_pThreadStore->m_ThreadList.GetHead();
+    Thread* thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
     while (thread)
     {
         if (thread->GetOSThreadId() == osThread)
@@ -57,13 +57,13 @@ DacGetThread(ULONG32 osThread)
             return thread;
         }
 
-        thread = ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread);
+        thread = ThreadStore::GetAllThreadList(thread, 0, 0);
     }
 
     return NULL;
 }
 
-Thread* GetThread()
+Thread* GetThread() noexcept
 {
     // In dac mode it's unlikely that the thread calling dac
     // is actually the same "current thread" that the runtime cares
@@ -75,7 +75,7 @@ Thread* GetThread()
     return NULL;
 }
 
-Thread* GetThreadNULLOk()
+Thread* GetThreadNULLOk() noexcept
 {
     return GetThread();
 }
@@ -116,4 +116,3 @@ DacGetThreadContext(Thread* thread, T_CONTEXT* context)
 
     return TRUE;
 }
-

@@ -38,8 +38,6 @@ class RegMeta;
 // this list.
 //
 //*********************************************************************
-class UTSemReadWrite;
-
 class LOADEDMODULES : public CDynArray<RegMeta *>
 {
 private:
@@ -50,7 +48,7 @@ private:
 
 public:
     // Named for locking macros - see code:LOCKREAD
-    static UTSemReadWrite * m_pSemReadWrite;
+    static minipal_rwlock * m_pReadWriteLock;
 
     static HRESULT AddModuleToLoadedList(RegMeta *pRegMeta);
     static BOOL RemoveModuleFromLoadedList(RegMeta *pRegMeta);  // true if found and removed.

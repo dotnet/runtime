@@ -8,6 +8,7 @@ using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net.Http.Metrics;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
@@ -40,7 +41,7 @@ namespace System.Net.Http
         /// Gets a value that indicates whether the handler is supported on the current platform.
         /// </summary>
         [UnsupportedOSPlatformGuard("browser")]
-        public static bool IsSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+        public static bool IsSupported => !OperatingSystem.IsBrowser();
 
         public bool UseCookies
         {
@@ -298,6 +299,42 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Gets or sets the maximum number of concurrent HTTP/2 streams a new connection may use before it observes
+        /// the server's <c>SETTINGS_MAX_CONCURRENT_STREAMS</c> value.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// HTTP/2 lets the client start sending requests as soon as the connection is established, before the server
+        /// has advertised how many concurrent streams it accepts. Until that <c>SETTINGS</c> frame arrives, the client
+        /// optimistically allows up to this many streams, after which the server's value takes over.
+        /// </para>
+        /// <para>
+        /// The default suits virtually all deployments and most users never need to change it. It is intended for the
+        /// small subset of deployments where the server is known ahead of time to use a lower concurrency limit, and
+        /// starting a connection with a matching value avoids the brief burst of requests above that limit.
+        /// </para>
+        /// <para>
+        /// If an earlier connection to the same host advertised a lower limit,
+        /// that lower value is used instead for new connections to that host.
+        /// </para>
+        /// <para>
+        /// The value must be greater than or equal to 1. Defaults to 100.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is zero or negative.</exception>
+        public int InitialHttp2MaxConcurrentStreams
+        {
+            get => _settings._initialHttp2MaxConcurrentStreams;
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                CheckDisposedOrStarted();
+                _settings._initialHttp2MaxConcurrentStreams = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
         /// doesn't receive any frames on a connection for this period of time. This property is used together with
         /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
@@ -426,6 +463,41 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Gets or sets a callback that decides whether a pooled connection should be evicted.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When set, the callback is invoked for pooled connections with a
+        /// <see cref="SocketsHttpConnectionEvictionContext"/> describing the connection. Returning <see langword="true"/>
+        /// marks the connection for eviction: it will not be used to serve new requests and is retired once it
+        /// becomes idle (an in-flight request on the connection is allowed to complete first).
+        /// </para>
+        /// <para>
+        /// The callback is not guaranteed to run for every request, and it may run concurrently with the connection
+        /// serving requests as well as concurrently for different connections. Because it is asynchronous, a caller
+        /// may perform work such as a name resolution inside it; however, it is invoked for each pooled connection, so
+        /// keeping it inexpensive (for example, consulting a cached resolution result) is recommended. The supplied
+        /// <see cref="CancellationToken"/> is canceled if the connection is disposed while the callback is running.
+        /// </para>
+        /// <para>
+        /// This callback complements <see cref="PooledConnectionLifetime"/>. Because a caller can use it to evict
+        /// connections in response to their own DNS resolution, it makes it possible to set
+        /// <see cref="PooledConnectionLifetime"/> to <see cref="Timeout.InfiniteTimeSpan"/> and
+        /// retain otherwise healthy connections rather than recycling them purely to observe address changes.
+        /// </para>
+        /// </remarks>
+        [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>>? ShouldEvictConnection
+        {
+            get => _settings._shouldEvictConnection;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._shouldEvictConnection = value;
+            }
+        }
+
+        /// <summary>
         /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
         /// </summary>
         public IDictionary<string, object?> Properties =>
@@ -527,14 +599,14 @@ namespace System.Net.Http
             // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
             if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
             {
-                handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+                handler = new MetricsHandler(handler, settings._meterFactory, settings._proxy, out Meter meter);
                 settings._metrics = new SocketsHttpHandlerMetrics(meter);
             }
 
             // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
             if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
             {
-                handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
+                handler = new DiagnosticsHandler(handler, propagator, settings._proxy, settings._allowAutoRedirect);
             }
 
             if (settings._allowAutoRedirect)
@@ -545,7 +617,7 @@ namespace System.Net.Http
                 handler = new RedirectHandler(settings._maxAutomaticRedirections, handler, disableAuthOnRedirect: settings._credentials is not CredentialCache);
             }
 
-            if (settings._automaticDecompression != DecompressionMethods.None)
+            if ((settings._automaticDecompression & SupportedDecompressionMethods) != DecompressionMethods.None)
             {
                 Debug.Assert(_decompressionHandlerFactory is not null);
                 handler = _decompressionHandlerFactory(settings, handler);
@@ -566,6 +638,9 @@ namespace System.Net.Http
         {
             _decompressionHandlerFactory ??= (settings, handler) => new DecompressionHandler(settings._automaticDecompression, handler);
         }
+
+        // Not stored as a constant on the DecompressionHandler to allow it to get trimmed.
+        private const DecompressionMethods SupportedDecompressionMethods = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli | DecompressionMethods.Zstandard;
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
@@ -634,7 +709,7 @@ namespace System.Net.Http
         {
             if (request.Version != HttpVersion.Version10 && request.Version != HttpVersion.Version11 && request.Version != HttpVersion.Version20 && request.Version != HttpVersion.Version30)
             {
-                return new NotSupportedException(SR.net_http_unsupported_version);
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_unsupported_version));
             }
 
             // Add headers to define content transfer, if not present
@@ -642,8 +717,8 @@ namespace System.Net.Http
             {
                 if (request.Content == null)
                 {
-                    return new HttpRequestException(SR.net_http_client_execution_error,
-                        new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content));
+                    return ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_client_execution_error,
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content))));
                 }
 
                 // Since the user explicitly set TransferEncodingChunked to true, we need to remove
@@ -661,7 +736,7 @@ namespace System.Net.Http
                 // HTTP 1.0 does not support chunking
                 if (request.Headers.TransferEncodingChunked == true)
                 {
-                    return new NotSupportedException(SR.net_http_unsupported_chunking);
+                    return ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_unsupported_chunking));
                 }
 
                 // HTTP 1.0 does not support Expect: 100-continue; just disable it.
@@ -674,12 +749,12 @@ namespace System.Net.Http
             Uri? requestUri = request.RequestUri;
             if (requestUri is null || !requestUri.IsAbsoluteUri)
             {
-                return new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_http_client_invalid_requesturi));
             }
 
             if (!HttpUtilities.IsSupportedScheme(requestUri.Scheme))
             {
-                return new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme)));
             }
 
             return null;

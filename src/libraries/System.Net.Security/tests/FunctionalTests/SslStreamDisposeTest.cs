@@ -92,8 +92,8 @@ namespace System.Net.Security.Tests
                 {
                     // This will read everything into internal buffer. Following ReadAsync will not need IO.
                     task = client.ReadAsync(readBuffer, 0, 4, cts.Token);
-                    client.Dispose();
                     int readLength = await task.ConfigureAwait(false);
+                    client.Dispose();
                     Assert.Equal(4, readLength);
                 }
                 else
@@ -149,7 +149,10 @@ namespace System.Net.Security.Tests
                 {
                     await task;
                 }
-                catch (InvalidOperationException ex) when (ex.StackTrace?.Contains("System.IO.StreamBuffer.WriteAsync") ?? true)
+                catch (InvalidOperationException ex) when (ex.StackTrace is null ||
+                    ex.StackTrace.Contains("System.IO.ConnectedStreams") ||
+                    ex.StackTrace.Contains("System.IO.StreamBuffer.TryWriteToBuffer") ||
+                    ex.StackTrace.Contains("System.IO.StreamBuffer.WriteAsync"))
                 {
                     // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
                     return;

@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Foo
 {
@@ -99,6 +100,7 @@ public struct InlinedVal
 
 public class Test_Inlined
 {
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

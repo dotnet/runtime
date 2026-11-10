@@ -316,18 +316,7 @@ namespace System.Collections
                 }
             }
 
-            int ICollection.Count
-            {
-                get
-                {
-                    int count = 0;
-                    for (DictionaryNode? node = list.head; node != null; node = node.next)
-                    {
-                        count++;
-                    }
-                    return count;
-                }
-            }
+            int ICollection.Count => list.Count;
 
             bool ICollection.IsSynchronized => false;
 

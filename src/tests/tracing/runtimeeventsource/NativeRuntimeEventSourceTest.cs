@@ -17,11 +17,122 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests
 {
     public sealed class NativeRuntimeEventSourceTest
     {
+        private const ulong MemoryPressure = 1_234_567;
+        private const ulong WarmupMemoryPressure = 65_531;
+
+        [ActiveIssue("Memory-pressure tracing is not enabled on Mono", TestRuntimes.Mono)]
+        [ActiveIssue("WASM doesn't support diagnostics tracing", TestPlatforms.Browser | TestPlatforms.Wasi)]
+        [SkipOnCoreClr("Tracing tests routinely time out with GC stress.", RuntimeTestModes.AnyGCStress)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(EventLevel.Informational, 1L)]
+        [InlineData(EventLevel.Verbose, 0x10000L)]
+        public static void MemoryPressureEvents(EventLevel disabledLevel, long disabledKeywords)
+        {
+            const EventKeywords GCKeyword = (EventKeywords)1;
+            const int Iterations = 10;
+            const int TimeoutMilliseconds = 30_000;
+
+            using MemoryPressureListener listener = new();
+            using MemoryPressureListener disabledListener = new();
+            EventSource source = EventSource.GetSources().Single(source => source.Name == "Microsoft-Windows-DotNETRuntime");
+            listener.EnableEvents(source, EventLevel.Verbose, GCKeyword);
+            disabledListener.EnableEvents(source, disabledLevel, (EventKeywords)disabledKeywords);
+
+            long deadline = Environment.TickCount64 + TimeoutMilliseconds;
+            while (!listener.WarmupReceived && Environment.TickCount64 < deadline)
+            {
+                GC.AddMemoryPressure((long)WarmupMemoryPressure);
+                GC.RemoveMemoryPressure((long)WarmupMemoryPressure);
+                Thread.Sleep(10);
+            }
+            Assert.True(listener.WarmupReceived, "Timed out waiting for memory-pressure events.");
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                GC.AddMemoryPressure((long)MemoryPressure);
+                GC.RemoveMemoryPressure((long)MemoryPressure);
+            }
+
+            // A native GC event also waits for asynchronously forwarded pressure events.
+            listener.ExpectedCollectionCount = GC.CollectionCount(0) + 1;
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+            deadline = Environment.TickCount64 + TimeoutMilliseconds;
+            while (!listener.CollectionCompleted && Environment.TickCount64 < deadline)
+            {
+                Thread.Sleep(10);
+            }
+            Assert.True(listener.CollectionCompleted, "Timed out waiting for the collection-end event.");
+
+            EventWrittenEventArgs[] events = listener.Events.ToArray();
+            Assert.Equal(Iterations * 2, events.Length);
+            Assert.Equal(Iterations, events.Count(eventData => eventData.EventId == 200));
+            Assert.Equal(Iterations, events.Count(eventData => eventData.EventId == 201));
+            foreach (EventWrittenEventArgs eventData in events)
+            {
+                Assert.Equal(eventData.EventId == 200 ? "IncreaseMemoryPressure" : "DecreaseMemoryPressure", eventData.EventName);
+                Assert.Equal(0, eventData.Version);
+                Assert.Equal(EventLevel.Verbose, eventData.Level);
+                Assert.Equal(GCKeyword, eventData.Keywords & GCKeyword);
+                Assert.Equal((EventTask)1, eventData.Task);
+                Assert.Equal((EventOpcode)eventData.EventId, eventData.Opcode);
+                Assert.Equal(2, eventData.Payload.Count);
+                Assert.Equal(MemoryPressure, Assert.IsType<ulong>(eventData.Payload[0]));
+                Assert.Equal(listener.RuntimeInstanceId, Assert.IsType<ushort>(eventData.Payload[1]));
+                Assert.Equal(eventData.EventId == 200 ? "BytesAllocated" : "BytesFreed", eventData.PayloadNames[0]);
+                Assert.Equal("ClrInstanceID", eventData.PayloadNames[1]);
+            }
+            Assert.Empty(disabledListener.Events);
+        }
+
+        private sealed class MemoryPressureListener : EventListener
+        {
+            private int _warmupReceived;
+            private int _collectionCompleted;
+
+            public readonly ConcurrentQueue<EventWrittenEventArgs> Events = new();
+            public volatile int ExpectedCollectionCount = int.MaxValue;
+
+            public bool WarmupReceived => Volatile.Read(ref _warmupReceived) != 0;
+            public bool CollectionCompleted => Volatile.Read(ref _collectionCompleted) != 0;
+            public ushort RuntimeInstanceId { get; private set; }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventId == 2 &&
+                    eventData.Payload?[0] is uint collectionCount &&
+                    eventData.Payload[1] is uint depth &&
+                    eventData.Payload[2] is ushort instanceId &&
+                    depth == 2 &&
+                    collectionCount >= (uint)ExpectedCollectionCount)
+                {
+                    RuntimeInstanceId = instanceId;
+                    Volatile.Write(ref _collectionCompleted, 1);
+                }
+                else if (eventData.EventId is 200 or 201 && eventData.Payload?[0] is ulong bytes)
+                {
+                    if (bytes == WarmupMemoryPressure)
+                    {
+                        Volatile.Write(ref _warmupReceived, 1);
+                    }
+                    else if (bytes == MemoryPressure)
+                    {
+                        Events.Enqueue(eventData);
+                    }
+                }
+            }
+        }
+
+        [ActiveIssue("Build doesn't include diagnostics tracing", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/92727", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
+        [ActiveIssue("WASM doesn't support diagnostics tracing", TestPlatforms.Browser)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestEntryPoint()
         {
@@ -77,7 +188,7 @@ namespace Tracing.Tests
 
                         Stopwatch sw = Stopwatch.StartNew();
 
-                        while (sw.Elapsed <= TimeSpan.FromMinutes(1d / 12d))
+                        while (sw.Elapsed <= TimeSpan.FromSeconds(45))
                         {
                             Thread.Sleep(100);
 

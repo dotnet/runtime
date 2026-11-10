@@ -6,5 +6,5 @@
     <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
   </PropertyGroup>
 
-  <Import Project="..\..\..\..\..\libraries\Directory.Build.props" />
+  <Import Project="..\..\..\Directory.Build.props" />
 </Project>

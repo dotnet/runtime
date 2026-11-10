@@ -8,6 +8,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_DIR}/debug/ee)
 include_directories(${CLR_DIR}/gcdump)
 include_directories(${CLR_DIR}/interop/inc)
+include_directories(${CLR_DIR}/debug/datadescriptor-shared/inc)
 
 if(CLR_CMAKE_HOST_UNIX)
   include_directories(${GENERATED_INCLUDE_DIR})
@@ -16,7 +17,6 @@ endif(CLR_CMAKE_HOST_UNIX)
 set(DACCESS_SOURCES
   cdac.cpp
   dacdbiimpl.cpp
-  dacdbiimpllocks.cpp
   dacdbiimplstackwalk.cpp
   daccess.cpp
   dacfn.cpp
@@ -42,6 +42,8 @@ convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 
 add_library_clr(daccess ${DACCESS_SOURCES})
 set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
+# dacdbiimpl.cpp reconstructs read-write (MDInternalRW) metadata using the internal metadata types.
+target_compile_definitions(daccess PRIVATE FEATURE_METADATA_INTERNAL_APIS)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
 target_link_libraries(daccess PRIVATE cdac_api)
 

@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Czech")]
-        public void Ctor_String(string culture)
+        public void Ctor_String(string? culture)
         {
             var attribute = new AssemblyCultureAttribute(culture);
             Assert.Equal(culture, attribute.Culture);

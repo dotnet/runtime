@@ -18,6 +18,16 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
     return comp->gtNewLclVarNode(tmpNum);
 };
 
+static void InheritFlags(BasicBlock* dst, const BasicBlock* flagSrc)
+{
+    // Currently, all of our "new block" helpers set BBF_INTERNAL flag by default.
+    if (!flagSrc->HasFlag(BBF_INTERNAL))
+    {
+        dst->RemoveFlags(BBF_INTERNAL);
+        dst->SetFlags(BBF_IMPORTED);
+    }
+}
+
 //------------------------------------------------------------------------------
 // SplitAtTreeAndReplaceItWithLocal : Split block at the given tree and replace it with a local
 //    See comments in gtSplitTree and fgSplitBlockBeforeTree
@@ -82,6 +92,15 @@ GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* 
                                                         GenTree*                ctxTree,
                                                         void*                   compileTimeHandle)
 {
+#ifdef FEATURE_READYTORUN
+    if (IsAot() && (pRuntimeLookup->indirections == CORINFO_USEHELPER))
+    {
+        GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree);
+        call->setEntryPoint(pRuntimeLookup->helperEntryPoint);
+        return call;
+    }
+#endif
+
     // Call the helper
     // - Setup argNode with the pointer to the signature returned by the lookup
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
@@ -164,12 +183,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         return false;
     }
 
-    assert(call->gtArgs.CountArgs() == 2);
+    assert(call->gtArgs.CountUserArgs() == 2);
     // The call has the following signature:
     //
     //   type = call(genericCtx, signatureCns);
     //
-    const GenTree* signatureNode = call->gtArgs.GetArgByIndex(1)->GetNode();
+    const GenTree* signatureNode = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (!signatureNode->IsCnsIntOrI())
     {
         // We expect the signature to be a constant node here (it's marked as DONT_CSE)
@@ -241,8 +260,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         gtUpdateStmtSideEffects(stmt);
     }
 
-    GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
+    GenTree* ctxTree = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
     // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
     GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
@@ -386,7 +404,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     if (needsSizeCheck)
     {
         // sizeCheckBb is the first block after prevBb
-        fgRedirectTargetEdge(prevBb, sizeCheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), sizeCheckBb);
 
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         {
@@ -404,7 +422,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     else
     {
         // nullcheckBb is the first block after prevBb
-        fgRedirectTargetEdge(prevBb, nullcheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), nullcheckBb);
 
         // No size check, nullcheckBb jumps to fast path
         // fallbackBb is only reachable from nullcheckBb (jump destination)
@@ -440,6 +458,19 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
         // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
+    }
+
+    //
+    // Update flags in all new blocks
+    //
+
+    InheritFlags(nullcheckBb, prevBb);
+    InheritFlags(fastPathBb, prevBb);
+    InheritFlags(fallbackBb, prevBb);
+    InheritFlags(block, prevBb);
+    if (needsSizeCheck)
+    {
+        InheritFlags(sizeCheckBb, prevBb);
     }
 
     // All blocks are expected to be in the same EH region
@@ -746,7 +777,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     // fallback will just execute first time
     fallbackBb->inheritWeightPercentage(tlsRootNullCondBB, 0);
 
-    fgRedirectTargetEdge(prevBb, tlsRootNullCondBB);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), tlsRootNullCondBB);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -797,6 +828,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     if ((helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
     {
         return false;
@@ -841,7 +874,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
     JITDUMP("offsetOfBaseOfThreadLocalData= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData));
 
-    assert(call->gtArgs.CountArgs() == 1);
+    assert(call->gtArgs.CountUserArgs() == 1);
 
     // Split block right before the call tree
     BasicBlock* prevBb       = block;
@@ -962,9 +995,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fgMorphArgs(tlsRefCall);
 
         tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
-#ifdef UNIX_X86_ABI
-        tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Code sequence to access thread local variable on linux/arm64:
         //
@@ -989,7 +1019,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // Cache the tls value
     tlsValueDef                              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse                  = gtNewLclVarNode(tlsLclNum);
-    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetUserArgByIndex(0)->GetNode();
     assert(genActualType(typeThreadStaticBlockIndexValue) == TYP_INT);
 
     if (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
@@ -1033,7 +1063,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         tlsBaseComputeBB->SetTargetEdge(newEdge);
 
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectTargetEdge(prevBb, tlsBaseComputeBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), tlsBaseComputeBB);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
@@ -1142,7 +1172,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Update preds in all new blocks
         //
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectTargetEdge(prevBb, maxThreadStaticBlocksCondBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), maxThreadStaticBlocksCondBB);
 
         {
             FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
@@ -1441,7 +1471,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     {
         assert(isInitOffset == 0);
 
-        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
         isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
         isInitedActualValueNode->SetHasOrderingSideEffect();
 
@@ -1479,8 +1509,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         else
         {
             assert(staticBaseAddr.accessType == IAT_PVALUE);
-            replacementNode =
-                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+            replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR);
         }
     }
 
@@ -1518,7 +1547,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     //
 
     // Redirect prevBb from block to isInitedBb
-    fgRedirectTargetEdge(prevBb, isInitedBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), isInitedBb);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1545,6 +1574,14 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->inheritWeightPercentage(isInitedBb, 0);
+
+    //
+    // Update flags in all new blocks
+    //
+
+    InheritFlags(block, prevBb);
+    InheritFlags(isInitedBb, prevBb);
+    InheritFlags(helperCallBb, prevBb);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1623,7 +1660,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement
 
 //------------------------------------------------------------------------------
 // fgVNBasedIntrinsicExpansionForCall_ReadUtf8 : Expand NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8
-//    when src data is a string literal (UTF16) that can be converted to UTF8, e.g.:
+//    when src data is immutable UTF16 that can be converted to UTF8, e.g.:
 //
 //      string str = "Hello, world!";
 //      int bytesWritten = ReadUtf8(ref str[0], str.Length, buffer, buffer.Length);
@@ -1653,29 +1690,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     GenTree* srcPtr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
-    // We're interested in a case when srcPtr is a string literal and srcLen is a constant
-    // srcLen doesn't have to match the srcPtr's length, but it should not exceed it.
-    ssize_t               strObjOffset = 0;
-    CORINFO_OBJECT_HANDLE strObj       = nullptr;
-    if (!GetObjectHandleAndOffset(srcPtr, &strObjOffset, &strObj) || ((size_t)strObjOffset > INT_MAX))
-    {
-        // We might want to support more cases here, e.g. ROS<char> RVA data.
-        // Also, we check that strObjOffset (which is in most cases is expected to be just
-        // OFFSETOF__CORINFO_String__chars) doesn't exceed INT_MAX since we'll need to cast
-        // it to int for getObjectContent API.
-        JITDUMP("ReadUtf8: srcPtr is not an object handle\n")
-        return false;
-    }
-
-    assert(strObj != nullptr);
-
-    // We mostly expect string literal objects here, but let's be more agile just in case
-    if (!info.compCompHnd->isObjectImmutable(strObj))
-    {
-        JITDUMP("ReadUtf8: srcPtr is not immutable (not a frozen string object?)\n")
-        return false;
-    }
-
     const GenTree* srcLen = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (!srcLen->gtVNPair.BothEqual() || !vnStore->IsVNInt32Constant(srcLen->gtVNPair.GetLiberal()))
     {
@@ -1693,37 +1707,32 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         return false;
     }
 
-    uint16_t bufferU16[MaxU16BufferSizeInChars];
-
-    // getObjectContent is expected to validate the offset and length
-    // NOTE: (int) casts should not overflow:
-    //  * srcLenCns is <= MaxUTF16BufferSizeInChars
-    //  * strObjOffset is already checked to be <= INT_MAX
-    if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)(srcLenCnsU16 * sizeof(uint16_t)),
-                                            (int)strObjOffset))
+    uint8_t* bufferU16 = nullptr;
+    if (!GetImmutableDataFromAddress(srcPtr, (int)(srcLenCnsU16 * sizeof(uint16_t)), getAllocator(), &bufferU16))
     {
-        JITDUMP("ReadUtf8: getObjectContent returned false.\n")
+        JITDUMP("ReadUtf8: source data is not available at compile time\n")
         return false;
     }
 
     const int MaxU8BufferSizeInBytes = 256;
     uint8_t   bufferU8[MaxU8BufferSizeInBytes];
 
-    const int srcLenU8 = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
-                                                            MaxU8BufferSizeInBytes, 0);
-    if (srcLenU8 <= 0)
+    const size_t convertedLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
+                                                              MaxU8BufferSizeInBytes, 0);
+    if (convertedLen == 0)
     {
         // E.g. output buffer is too small
-        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned <= 0\n")
+        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned 0\n")
         return false;
     }
 
-    // The API is expected to return [1..MaxU8BufferSizeInBytes] real length of the UTF-8 value
-    // stored in bufferU8
-    assert((unsigned)srcLenU8 <= MaxU8BufferSizeInBytes);
+    // Narrow for the unsigned JIT helpers below. minipal_convert_utf16_to_utf8 cannot write
+    // more than MaxU8BufferSizeInBytes into the buffer.
+    const unsigned srcLenU8 = (unsigned)convertedLen;
+    assert(srcLenU8 <= (unsigned)MaxU8BufferSizeInBytes);
 
     // Now that we know the exact UTF8 buffer length we can check if it's unrollable
-    if (srcLenU8 > (int)getUnrollThreshold(UnrollKind::Memcpy))
+    if (srcLenU8 > getUnrollThreshold(UnrollKind::Memcpy))
     {
         JITDUMP("ReadUtf8: srcLenU8 is out of unrollable range\n")
         return false;
@@ -1845,7 +1854,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Update preds in all new blocks
     //
     // Redirect prevBb to lengthCheckBb
-    fgRedirectTargetEdge(prevBb, lengthCheckBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), lengthCheckBb);
     lengthCheckBb->inheritWeight(prevBb);
     assert(prevBb->JumpsToNext());
 
@@ -2026,8 +2035,10 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             case CORINFO_HELP_CHKCASTCLASS:
             case CORINFO_HELP_CHKCASTARRAY:
             case CORINFO_HELP_CHKCASTANY:
-                likelihoods[0] = 50; // 50% speculative guess
-                candidates[0]  = NO_CLASS_HANDLE;
+                *typeCheckFailed = helper == CORINFO_HELP_CHKCASTCLASS ? TypeCheckFailedAction::CallHelper_Specialized
+                                                                       : TypeCheckFailedAction::CallHelper;
+                likelihoods[0]   = 50; // 50% speculative guess
+                candidates[0]    = NO_CLASS_HANDLE;
                 return 1;
 
             default:
@@ -2107,29 +2118,19 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
     if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
-        // obj is string
-        // obj is string[]
+        // (string)obj
+        // (string[])obj
         //
-        if ((helper == CORINFO_HELP_CHKCASTCLASS))
-        {
-            // (string)obj
-            //
-            // Fallback for this expansion always throws InvalidCastException
-            // TODO: can we do the same for string[]? (importer did not)
-            *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
+        // Fallback for this expansion always throws InvalidCastException.
+        // Exactness excludes array covariance and primitive-array interchange.
+        *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
 
-            // Assume that exceptions are rare
-            likelihoods[0] = 100;
+        // Assume that exceptions are rare
+        likelihoods[0] = 100;
 
-            // Update the common denominator class to be more exact as
-            // the fallback always throws anyway, so we don't have to worry about what it returns.
-            *commonCls = castToCls;
-        }
-        else
-        {
-            // 50% chance of successful type check (speculative guess)
-            likelihoods[0] = 50;
-        }
+        // Update the common denominator class to be more exact as
+        // the fallback always throws anyway, so we don't have to worry about what it returns.
+        *commonCls    = castToCls;
         candidates[0] = castToCls;
         return 1;
     }
@@ -2139,8 +2140,6 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         // obj is string[]
         //
         // Fallbacks for these expansions simply return null
-        // TODO: should we keep the helper call for ISINSTANCEOFARRAY like we do for CHKCASTARRAY above?
-        // The logic is copied from the importer.
         *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
 
         // We're done, there is no need in consulting with PGO data
@@ -2152,7 +2151,6 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 2) If VM can tell us the exact class for this "cast to" class - use it.
-    //    Just make sure the class is truly exact.
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
@@ -2160,26 +2158,8 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS] = {};
     const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
-    bool      allTrulyExact   = true;
-    for (int i = 0; i < numExactClasses; i++)
-    {
-        // TODO-InlineCast: we shouldn't need isExactType check, otherwise we skip cases like this:
-        //
-        // if (obj is IMyInterface) { ... }
-        //
-        // class MyClass : IMyInterface
-        // class MySubClass : MyClass
-        //
-        // (and both classes are the only ones implementing the interface)
-        //
-        if (!comp->info.compCompHnd->isExactType(exactClasses[i]))
-        {
-            allTrulyExact = false;
-            break;
-        }
-    }
 
-    if ((numExactClasses > 0) && allTrulyExact)
+    if (numExactClasses > 0)
     {
         // We know all exact classes, but we don't know the likelihoods
         // TODO-InlineCast: check if we also have PGO data around (a rare case for getExactClasses,
@@ -2261,6 +2241,13 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         }
         if (castResult == TypeCompareState::Must)
         {
+            // The specialized helper skips null and exact-type checks. A failed guard against
+            // a subclass would not rule out the target class itself.
+            if ((helper == CORINFO_HELP_CHKCASTCLASS) && (candidates[0] == castToCls))
+            {
+                *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
+            }
+
             // return actual object on successful type check
             *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
             return 1;
@@ -2600,7 +2587,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         }
     }
 
-    fgRedirectTargetEdge(firstBb, nullcheckBb);
+    fgRedirectEdge(firstBb->TargetEdgeRef(), nullcheckBb);
 
     //
     // Re-distribute weights and set edge likelihoods.
@@ -2767,25 +2754,34 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
     {
         for (Statement* const stmt : block->Statements())
         {
-            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
-            {
-                continue;
-            }
+            // A single statement can contain more than one allocation. Expanding one splits
+            // the statement's tree and leaves the remainder (which may hold further
+            // allocations) in "stmt", so keep rescanning it until nothing is left to expand.
+            //
+            bool expanded = true;
 
-            for (GenTree* const tree : stmt->TreeList())
+            while (expanded)
             {
-                if (!tree->IsCall())
+                expanded = false;
+
+                if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
                 {
-                    continue;
+                    break;
                 }
 
-                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                for (GenTree* const tree : stmt->TreeList())
                 {
-                    // If we expand, we split the statement's tree
-                    // so will be done with this statment.
-                    //
-                    modified = true;
-                    break;
+                    if (!tree->IsCall())
+                    {
+                        continue;
+                    }
+
+                    if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                    {
+                        modified = true;
+                        expanded = true;
+                        break;
+                    }
                 }
             }
         }
@@ -2815,7 +2811,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         return false;
     }
 
-    const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
+    const CorInfoHelpFunc helper         = call->GetHelperNum();
     int                   lengthArgIndex = -1;
     int                   typeArgIndex   = -1;
 
@@ -2877,7 +2873,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     }
     else
     {
-        mt = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
+        mt = call->gtArgs.GetUserArgByIndex(typeArgIndex)->GetNode();
     }
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
@@ -2885,7 +2881,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array length.
     //
-    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* const   lengthArg     = call->gtArgs.GetUserArgByIndex(lengthArgIndex)->GetNode();
     GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
     GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
                                                    gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));

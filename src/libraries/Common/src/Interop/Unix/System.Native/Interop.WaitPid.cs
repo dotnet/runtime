@@ -18,6 +18,6 @@ internal static partial class Interop
         /// 4) on error, -1 is returned.
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitPidExitedNoHang", SetLastError = true)]
-        internal static partial int WaitPidExitedNoHang(int pid, out int exitCode);
+        internal static partial int WaitPidExitedNoHang(int pid, out int exitCode, out int terminatingSignal);
     }
 }

@@ -162,10 +162,7 @@ namespace System.DirectoryServices.Protocols
             get => _needDispose;
             set
             {
-                if (_ldapHandle != null)
-                {
-                    _ldapHandle._needDispose = value;
-                }
+                _ldapHandle?._needDispose = value;
 
                 _needDispose = value;
             }
@@ -419,10 +416,7 @@ namespace System.DirectoryServices.Protocols
             LdapPal.CancelDirectoryAsyncOperation(_ldapHandle, messageId);
 
             LdapRequestState resultObject = result._resultObject;
-            if (resultObject != null)
-            {
-                resultObject._abortCalled = true;
-            }
+            resultObject?._abortCalled = true;
         }
 
         public PartialResultsCollection GetPartialResults(IAsyncResult asyncResult)
@@ -519,7 +513,7 @@ namespace System.DirectoryServices.Protocols
 
             // Bind if user has not turned off automatic bind, have not done so or there is a need
             // to do rebind, also connectionless LDAP does not need to do bind.
-            if (AutoBind && (!_bounded || _needRebind) && ((LdapDirectoryIdentifier)Directory).Connectionless != true)
+            if (AutoBind && (!_bounded || _needRebind) && !((LdapDirectoryIdentifier)Directory).Connectionless)
             {
                 Debug.WriteLine("rebind occurs\n");
                 Bind();
@@ -1351,7 +1345,7 @@ namespace System.DirectoryServices.Protocols
         {
             var timeout = new LDAP_TIMEVAL()
             {
-                tv_sec = (int)(requestTimeOut.Ticks / TimeSpan.TicksPerSecond)
+                tv_sec = new CLong((int)(requestTimeOut.Ticks / TimeSpan.TicksPerSecond))
             };
             IntPtr ldapResult = IntPtr.Zero;
             DirectoryResponse response = null;
@@ -1367,8 +1361,7 @@ namespace System.DirectoryServices.Protocols
             if (resultType != ResultAll.LDAP_MSG_ALL)
             {
                 // we need to have 0 timeout as we are polling for the results and don't want to wait
-                timeout.tv_sec = 0;
-                timeout.tv_usec = 0;
+                timeout = default;
 
                 if (resultType == ResultAll.LDAP_MSG_POLLINGALL)
                 {
@@ -1386,8 +1379,7 @@ namespace System.DirectoryServices.Protocols
             }
             else
             {
-                timeout.tv_sec = 0;
-                timeout.tv_usec = 0;
+                timeout = default;
                 int iterationDelay = 1;
                 // Underlying native libraries don't support callback-based function, so we will instead use polling and
                 // use a Stopwatch to track the timeout manually.

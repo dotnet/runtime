@@ -5,12 +5,12 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.Class)]
-	public class TestCaseRequirementsAttribute : BaseExpectedLinkedBehaviorAttribute
-	{
-		public TestCaseRequirementsAttribute (TestRunCharacteristics targetFrameworkCharacteristics, string reason)
-		{
-			ArgumentNullException.ThrowIfNull (reason);
-		}
-	}
+    [AttributeUsage(AttributeTargets.Class)]
+    public class TestCaseRequirementsAttribute : BaseExpectedLinkedBehaviorAttribute
+    {
+        public TestCaseRequirementsAttribute(TestRunCharacteristics targetFrameworkCharacteristics, string reason)
+        {
+            ArgumentNullException.ThrowIfNull(reason);
+        }
+    }
 }

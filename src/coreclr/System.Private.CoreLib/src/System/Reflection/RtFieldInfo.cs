@@ -74,7 +74,7 @@ namespace System.Reflection
                 ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_fieldHandle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_fieldHandle, m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
 
         #endregion
 
@@ -135,12 +135,12 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return GetSignature().GetCustomModifiers(0, true);
+            return GetSignature().GetCustomModifiers(0, isOptional: false);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return GetSignature().GetCustomModifiers(0, false);
+            return GetSignature().GetCustomModifiers(0, isOptional: true);
         }
 
         internal Signature GetSignature() => new Signature(this, m_declaringType);

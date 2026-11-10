@@ -1,0 +1,28 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+    - '*'
+    exclude:
+    - release/*-staging
+  paths:
+    include:
+    - src/libraries/System.Net.Security/tests/StressTests/SslStress/**
+    - src/libraries/Common/tests/System/Net/StressTests/**
+    - eng/pipelines/libraries/stress/**
+
+variables:
+  - template: ../variables.yml
+  - name: dockerfilesFolder
+    value: $(Build.SourcesDirectory)/eng/docker
+  - name: sslStressProject
+    value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress
+  - name: sdkBaseImage
+    value: dotnet-sdk-libraries-current
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - template: /eng/pipelines/libraries/stress/ssl-stages.yml

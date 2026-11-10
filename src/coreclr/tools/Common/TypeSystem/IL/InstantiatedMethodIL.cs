@@ -18,7 +18,6 @@ namespace Internal.IL
         {
             Debug.Assert(methodIL.GetMethodILDefinition() == methodIL);
             Debug.Assert(owningMethod.HasInstantiation || owningMethod.OwningType.HasInstantiation);
-            Debug.Assert(owningMethod.GetTypicalMethodDefinition() == methodIL.OwningMethod);
 
             _methodIL = methodIL;
             _method = owningMethod;

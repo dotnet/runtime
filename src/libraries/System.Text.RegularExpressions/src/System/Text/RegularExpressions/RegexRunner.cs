@@ -109,6 +109,7 @@ namespace System.Text.RegularExpressions
         private bool _checkTimeout;
         private long _timeoutOccursAt;
 
+        /// <summary>Initializes a new instance of the <see cref="RegexRunner"/> class.</summary>
         protected RegexRunner() { }
 
         /// <summary>Used by a <see cref="Regex"/> object to scan the input <paramref name="text"/> looking for the next match.</summary>
@@ -159,6 +160,7 @@ namespace System.Text.RegularExpressions
             InternalScan(runregex!, beginning, beginning + text.Length);
         }
 
+        /// <summary>Used by a <see cref="Regex"/> object to scan the input <paramref name="text"/>.</summary>
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
@@ -353,6 +355,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Checks whether the operation has timed out, and throws <see cref="RegexMatchTimeoutException"/> if it has.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void CheckTimeout()
         {
@@ -418,9 +421,25 @@ namespace System.Text.RegularExpressions
                    ((uint)index < (uint)inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[index]));
         }
 
+        /// <summary>Determines whether the specified index is a boundary.</summary>",
+        /// <remarks>This variant is only employed when the subsequent character will separately be validated as a word character.</remarks>",
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPreWordCharBoundary(ReadOnlySpan<char> inputSpan, int index)
+        {
+            int indexMinus1 = index - 1;
+            return (uint)indexMinus1 >= (uint)inputSpan.Length || !RegexCharClass.IsBoundaryWordChar(inputSpan[indexMinus1]);
+        }
+
+        /// <summary>Determines whether the specified index is a boundary.</summary>
+        /// <remarks>This variant is only employed when the previous character has already been validated as a word character.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPostWordCharBoundary(ReadOnlySpan<char> inputSpan, int index) =>
+            (uint)index >= (uint)inputSpan.Length || !RegexCharClass.IsBoundaryWordChar(inputSpan[index]);
+
         /// <summary>Called to determine a char's inclusion in the \w set.</summary>
         internal static bool IsWordChar(char ch) => RegexCharClass.IsWordChar(ch);
 
+        /// <summary>Determines whether the position at the specified index is an ECMA-compatible word boundary.</summary>
         protected bool IsECMABoundary(int index, int startpos, int endpos)
         {
             return (index > startpos && RegexCharClass.IsECMAWordChar(runtext![index - 1])) !=
@@ -434,6 +453,7 @@ namespace System.Text.RegularExpressions
                    ((uint)index < (uint)inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[index]));
         }
 
+        /// <summary>Determines whether the specified character is in the given character set and category.</summary>
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected static bool CharInSet(char ch, string set, string category)
         {
@@ -441,6 +461,7 @@ namespace System.Text.RegularExpressions
             return RegexCharClass.CharInClass(ch, charClass);
         }
 
+        /// <summary>Determines whether the specified character matches the given character class string.</summary>
         public static bool CharInClass(char ch, string charClass)
         {
             return RegexCharClass.CharInClass(ch, charClass);
@@ -558,6 +579,13 @@ namespace System.Text.RegularExpressions
             else if (end <= start2)
             {
                 start = start2;
+
+                // Ensure we don't create a capture with negative length
+                // When the balancing capture precedes the balanced group, end might be less than the new start
+                if (end < start)
+                {
+                    end = start;
+                }
             }
             else
             {
@@ -577,9 +605,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*
-         * Called by Go() to revert the last capture
-         */
+        /// <summary>Called by <see cref="Go"/> to revert the last capture.</summary>
         protected void Uncapture()
         {
             int capnum = Popcrawl();

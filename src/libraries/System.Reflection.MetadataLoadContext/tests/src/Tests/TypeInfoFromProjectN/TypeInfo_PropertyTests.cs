@@ -45,7 +45,7 @@ namespace System.Reflection.Tests
 
             bool hasgenericParam = ti.ContainsGenericParameters;
 
-            Assert.True(hasgenericParam, string.Format("Failed!! TestContainsGenericParameter did not return correct result. "));
+            Assert.True(hasgenericParam, "Failed!! TestContainsGenericParameter did not return correct result. ");
         }
 
         // Verify ContainsGenericParameter
@@ -57,7 +57,7 @@ namespace System.Reflection.Tests
 
             bool hasgenericParam = ti.ContainsGenericParameters;
 
-            Assert.False(hasgenericParam, string.Format("Failed!! TestContainsGenericParameter did not return correct result. "));
+            Assert.False(hasgenericParam, "Failed!! TestContainsGenericParameter did not return correct result. ");
         }
 
         // Verify FullName

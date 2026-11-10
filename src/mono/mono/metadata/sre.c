@@ -2558,7 +2558,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	klass->inited = 1; /* we lie to the runtime */
 	klass->name = mono_string_to_utf8_image (klass->image, ref_name, error);
 	goto_if_nok (error, leave);
-	klass->name_hash = mono_metadata_str_hash (klass->name);
+	klass->name_hash = g_str_hash (klass->name);
 	klass->name_space = mono_string_to_utf8_image (klass->image, ref_nspace, error);
 	goto_if_nok (error, leave);
 	klass->type_token = MONO_TOKEN_TYPE_DEF | table_idx;
@@ -4136,6 +4136,25 @@ exit:
 	HANDLE_FUNCTION_RETURN ();
 }
 
+static MonoObject*
+runtime_resolve (MonoObject *obj, MonoError *error)
+{
+	static MonoMethod *resolve_method;
+	if (!resolve_method) {
+		MonoMethod *m = mono_class_get_method_from_name_checked (mono_class_get_module_builder_class (), "RuntimeResolve", 1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (m);
+		mono_memory_barrier ();
+		resolve_method = m;
+	}
+	void *args [ ] = { obj };
+	MonoObject *exc = NULL;
+	MonoObject *res = mono_runtime_try_invoke (resolve_method, NULL, args, &exc, error);
+	if (exc && is_ok (error))
+		mono_error_set_exception_instance (error, (MonoException*)exc);
+	return res;
+}
+
 gpointer
 mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
 {
@@ -4217,8 +4236,11 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			/* Already created */
 			result = klass;
 		} else {
-			// TODO: make this work on netcore when working on SRE.TypeBuilder
-			g_assert_not_reached();
+			obj = runtime_resolve (obj, error);
+			goto_if_nok (error, return_null);
+			g_assert (obj);
+			result = mono_reflection_resolve_object (image, obj, handle_class, context, error);
+			goto exit;
 		}
 
 		*handle_class = mono_defaults.typehandle_class;
@@ -4302,16 +4324,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			   !strcmp (oklass->name, "FieldOnTypeBuilderInstantiation") ||
 			   !strcmp (oklass->name, "MethodOnTypeBuilderInstantiation") ||
 			   !strcmp (oklass->name, "ConstructorOnTypeBuilderInstantiation")) {
-		static MonoMethod *resolve_method;
-		if (!resolve_method) {
-			MonoMethod *m = mono_class_get_method_from_name_checked (mono_class_get_module_builder_class (), "RuntimeResolve", 1, 0, error);
-			mono_error_assert_ok (error);
-			g_assert (m);
-			mono_memory_barrier ();
-			resolve_method = m;
-		}
-		void *args [ ] = { obj };
-		obj = mono_runtime_invoke_checked (resolve_method, NULL, args, error);
+		obj = runtime_resolve (obj, error);
 		goto_if_nok (error, return_null);
 		g_assert (obj);
 		result = mono_reflection_resolve_object (image, obj, handle_class, context, error);

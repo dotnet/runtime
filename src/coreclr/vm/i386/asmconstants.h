@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // asmconstants.h -
 //
 // This header defines field offsets and constants used by assembly code
@@ -35,7 +36,7 @@
 #define FRAMETYPE_InlinedCallFrame 0x1
 ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 #define FRAMETYPE_TailCallFrame 0x2
 ASMCONSTANTS_C_ASSERT(FRAMETYPE_TailCallFrame == (int)FrameIdentifier::TailCallFrame)
 #endif
@@ -74,43 +75,13 @@ ASMCONSTANTS_C_ASSERT(CONTEXT_Eip == offsetof(CONTEXT,Eip))
 #define CONTEXT_Esp 0xc4
 ASMCONSTANTS_C_ASSERT(CONTEXT_Esp == offsetof(CONTEXT,Esp))
 
-#ifndef FEATURE_EH_FUNCLETS
-// EHContext from clr/src/vm/i386/cgencpu.h
-#define EHContext_Eax 0x00
-ASMCONSTANTS_C_ASSERT(EHContext_Eax == offsetof(EHContext,Eax))
-
-#define EHContext_Ebx 0x04
-ASMCONSTANTS_C_ASSERT(EHContext_Ebx == offsetof(EHContext,Ebx))
-
-#define EHContext_Ecx 0x08
-ASMCONSTANTS_C_ASSERT(EHContext_Ecx == offsetof(EHContext,Ecx))
-
-#define EHContext_Edx 0x0c
-ASMCONSTANTS_C_ASSERT(EHContext_Edx == offsetof(EHContext,Edx))
-
-#define EHContext_Esi 0x10
-ASMCONSTANTS_C_ASSERT(EHContext_Esi == offsetof(EHContext,Esi))
-
-#define EHContext_Edi 0x14
-ASMCONSTANTS_C_ASSERT(EHContext_Edi == offsetof(EHContext,Edi))
-
-#define EHContext_Ebp 0x18
-ASMCONSTANTS_C_ASSERT(EHContext_Ebp == offsetof(EHContext,Ebp))
-
-#define EHContext_Esp 0x1c
-ASMCONSTANTS_C_ASSERT(EHContext_Esp == offsetof(EHContext,Esp))
-
-#define EHContext_Eip 0x20
-ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
-#endif // FEATURE_EH_FUNCLETS
-
+#ifdef FEATURE_VARARGS
 #define VASigCookie__StubOffset 4
-ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
+ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pPInvokeILStub))
+#endif // FEATURE_VARARGS
 
-#ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32
 ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
-#endif // !UNIX_X86_ABI
 
 // ICodeManager::SHADOW_SP_IN_FILTER from clr/src/inc/eetwain.h
 #define SHADOW_SP_IN_FILTER_ASM 0x1
@@ -196,43 +167,6 @@ ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + size
 #define               SZARRAY_BASE_SIZE 0xC
 ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD));
 
-#ifdef FEATURE_COMINTEROP
-
-#ifndef FEATURE_EH_FUNCLETS
-#define SIZEOF_FrameHandlerExRecord 0x0c
-#define OFFSETOF__FrameHandlerExRecord__m_ExReg__Next 0
-#define OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler 4
-#define OFFSETOF__FrameHandlerExRecord__m_pEntryFrame 8
-ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecord == sizeof(FrameHandlerExRecord))
-ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Next == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Next))
-ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Handler))
-ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(FrameHandlerExRecord, m_pEntryFrame))
-#endif
-
-#ifdef _DEBUG
-#ifndef STACK_OVERWRITE_BARRIER_SIZE
-#define STACK_OVERWRITE_BARRIER_SIZE 20
-#endif
-#ifndef STACK_OVERWRITE_BARRIER_VALUE
-#define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
-#endif
-
-#endif
-
-#define CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo DBG_FRE(0x20, 0xC)
-ASMCONSTANTS_C_ASSERT(CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo == offsetof(CLRToCOMCallMethodDesc, m_pCLRToCOMCallInfo))
-
-#define CLRToCOMCallInfo__m_cbStackPop 0x0e
-ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_cbStackPop == offsetof(CLRToCOMCallInfo, m_cbStackPop))
-
-#define COMMETHOD_PREPAD_ASM  8
-ASMCONSTANTS_C_ASSERT(COMMETHOD_PREPAD_ASM == COMMETHOD_PREPAD)
-
-#define OFFSETOF__UnmanagedToManagedFrame__m_pvDatum 8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum))
-
-#endif // FEATURE_COMINTEROP
-
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
 
@@ -240,24 +174,6 @@ ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 == VTABLE_SLOTS_PER_CHUNK_LOG2)
 
 #define JIT_TailCall_StackOffsetToFlags       0x08
-
-#define CallDescrData__pSrc                0x00
-#define CallDescrData__numStackSlots       0x04
-#define CallDescrData__pArgumentRegisters  0x08
-#define CallDescrData__fpReturnSize        0x0C
-#define CallDescrData__pTarget             0x10
-#ifndef __GNUC__
-#define CallDescrData__returnValue         0x18
-#else
-#define CallDescrData__returnValue         0x14
-#endif
-
-ASMCONSTANTS_C_ASSERT(CallDescrData__pSrc                 == offsetof(CallDescrData, pSrc))
-ASMCONSTANTS_C_ASSERT(CallDescrData__numStackSlots        == offsetof(CallDescrData, numStackSlots))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pArgumentRegisters   == offsetof(CallDescrData, pArgumentRegisters))
-ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrData, fpReturnSize))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
-ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x04
@@ -301,6 +217,7 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
+#ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
 
@@ -309,6 +226,7 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x08
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+#endif // FEATURE_TIERED_COMPILATION
 
 #undef ASMCONSTANTS_C_ASSERT
 #undef ASMCONSTANTS_RUNTIME_ASSERT

@@ -36,9 +36,9 @@ namespace ILCompiler
         /// </summary>
         private ReadyToRunCompilationModuleGroupBase _compilationGroup;
 
-        public ReadyToRunMetadataFieldLayoutAlgorithm()
+        public ReadyToRunMetadataFieldLayoutAlgorithm(bool targetIsSingleThreaded)
         {
-            _moduleFieldLayoutMap = new ModuleFieldLayoutMap();
+            _moduleFieldLayoutMap = new ModuleFieldLayoutMap(targetIsSingleThreaded);
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace ILCompiler
             if (defType.GetTypeDefinition() is EcmaType ecmaType)
             {
                 // ECMA types are the only ones that can have statics
-                ModuleFieldLayout moduleFieldLayout = _moduleFieldLayoutMap.GetOrCreateValue(ecmaType.EcmaModule);
+                ModuleFieldLayout moduleFieldLayout = _moduleFieldLayoutMap.GetOrCreateValue(ecmaType.Module);
                 layout.Offsets = _moduleFieldLayoutMap.GetOrAddDynamicLayout(defType, moduleFieldLayout);
             }
             return layout;
@@ -67,6 +67,16 @@ namespace ILCompiler
         /// </summary>
         private class ModuleFieldLayoutMap : LockFreeReaderHashtable<EcmaModule, ModuleFieldLayout>
         {
+            /// <summary>
+            /// When true, the target runtime lays out [ThreadStatic] fields as regular statics.
+            /// </summary>
+            private readonly bool _targetIsSingleThreaded;
+
+            public ModuleFieldLayoutMap(bool targetIsSingleThreaded)
+            {
+                _targetIsSingleThreaded = targetIsSingleThreaded;
+            }
+
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
                 return key == value.Module;
@@ -114,7 +124,7 @@ namespace ILCompiler
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                     }
-                    if (moduleLayout && fieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.EcmaModule != module)
+                    if (moduleLayout && fieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.Module != module)
                     {
                         // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
                         // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L1006">here</a>
@@ -215,7 +225,7 @@ namespace ILCompiler
                         {
                             ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                         }
-                        if (moduleLayout && fieldDesc.FieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.EcmaModule != module)
+                        if (moduleLayout && fieldDesc.FieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.Module != module)
                         {
                             // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
                             // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L1006">here</a>
@@ -431,12 +441,16 @@ namespace ILCompiler
 
             /// <summary>
             /// Try to locate the ThreadStatic custom attribute on the field (much like EcmaField.cs does in the method InitializeFieldFlags).
+            /// Single-threaded targets lay out thread statics as regular statics, so this always returns false for them.
             /// </summary>
             /// <param name="fieldDef">Field definition</param>
             /// <param name="metadataReader">Metadata reader for the module</param>
-            /// <returns>true when the field is marked with the ThreadStatic custom attribute</returns>
-            private static bool IsFieldThreadStatic(in FieldDefinition fieldDef, MetadataReader metadataReader)
+            /// <returns>true when the field is marked with the ThreadStatic custom attribute and the target lays it out as thread-static</returns>
+            private bool IsFieldThreadStatic(in FieldDefinition fieldDef, MetadataReader metadataReader)
             {
+                if (_targetIsSingleThreaded)
+                    return false;
+
                 return !metadataReader.GetCustomAttributeHandle(fieldDef.GetCustomAttributes(), "System", "ThreadStaticAttribute").IsNil;
             }
 
@@ -606,31 +620,32 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.IsExplicitLayout)
+            ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
+            MetadataLayoutKind layoutKind = layoutMetadata.Kind;
+            switch (layoutKind)
             {
-                // Works around https://github.com/dotnet/runtime/issues/102868
-                if (!type.IsValueType &&
-                    (type.MetadataBaseType is MetadataType baseType && baseType.IsSequentialLayout))
-                {
-                    ThrowHelper.ThrowTypeLoadException(type);
-                }
+                case MetadataLayoutKind.CStruct:
+                    return ComputeCStructFieldLayout(type, numInstanceFields);
+                case MetadataLayoutKind.CUnion:
+                    return ComputeCUnionFieldLayout(type, numInstanceFields);
+                case MetadataLayoutKind.Explicit:
+                    // Works around https://github.com/dotnet/runtime/issues/102868
+                    if (type is { IsValueType: false, BaseType.IsSequentialLayout: true })
+                    {
+                        ThrowHelper.ThrowTypeLoadException(type);
+                    }
 
-                return ComputeExplicitFieldLayout(type, numInstanceFields);
-            }
-            else if (type.IsSequentialLayout && !type.ContainsGCPointers)
-            {
-                // Works around https://github.com/dotnet/runtime/issues/102868
-                if (!type.IsValueType &&
-                    (type.MetadataBaseType is MetadataType baseType && baseType.IsExplicitLayout))
-                {
-                    ThrowHelper.ThrowTypeLoadException(type);
-                }
+                    return ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata);
+                case MetadataLayoutKind.Sequential when !type.ContainsGCPointers:
+                    // Works around https://github.com/dotnet/runtime/issues/102868
+                    if (type is { IsValueType: false, BaseType.IsExplicitLayout: true })
+                    {
+                        ThrowHelper.ThrowTypeLoadException(type);
+                    }
 
-                return ComputeSequentialFieldLayout(type, numInstanceFields);
-            }
-            else
-            {
-                return ComputeAutoFieldLayout(type, numInstanceFields);
+                    return ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata);
+                default:
+                    return ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata);
             }
         }
 

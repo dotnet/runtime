@@ -65,7 +65,7 @@ class Logger
 private:
     static bool             s_initialized;
     static UINT32           s_logLevel;
-    static HANDLE           s_logFile;
+    static FILE*            s_logFile;
     static char*            s_logFilePath;
     static minipal_mutex s_critSec;
 
@@ -73,7 +73,7 @@ public:
     static void Initialize();
     static void Shutdown();
 
-    static void OpenLogFile(char* logFilePath);
+    static void OpenLogFile(const char* logFilePath);
     static void CloseLogFile();
 
     static UINT32 ParseLogLevelString(const char* specifierStr);

@@ -359,7 +359,7 @@ namespace System.Reflection.Emit
 
         public override int GetHashCode()
         {
-            // Lame, but easy, and will work, and chances are
+            // This is easy and will work; chances are
             // you will only need a few of these.
             return 0;
         }

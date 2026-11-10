@@ -12,6 +12,7 @@ namespace System.Net.Security
         RecordOverflow = 22, // error
         DecompressionFail = 30, // error
         HandshakeFailure = 40, // error
+        NoCertificate = 41, // reserved - Used in SSLv3 but not in TLS
         BadCertificate = 42, // warning or error
         UnsupportedCert = 43, // warning or error
         CertificateRevoked = 44, // warning or error
@@ -22,12 +23,24 @@ namespace System.Net.Security
         AccessDenied = 49, // error
         DecodeError = 50, // error
         DecryptError = 51, // error
+        TooManyCidsRequested = 52, // error
         ExportRestriction = 60, // reserved
         ProtocolVersion = 70, // error
-        InsuffientSecurity = 71, // error
+        InsufficientSecurity = 71, // error
         InternalError = 80, // error
+        InappropriateFallback = 86, // error
         UserCanceled = 90, // warning or error
         NoRenegotiation = 100, // warning
-        UnsupportedExt = 110, // error
+        MissingExtension = 109, // error
+        UnsupportedExtension = 110, // error
+        CertificateUnobtainable = 111, // reserved - Used in TLS versions prior to 1.3
+        UnrecognizedName = 112, // error
+        BadCertificateStatusResponse = 113, // error
+        BadCertificateHashValue = 114, // reserved - Used in TLS versions prior to 1.3
+        UnknownPskIdentity = 115, // error
+        CertificateRequired = 116, // error
+        GeneralError = 117, // error
+        NoApplicationProtocol = 120, // error
+        EchRequired = 121, // error
     }
 }

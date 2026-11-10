@@ -18,54 +18,10 @@ bool Compiler::optDoEarlyPropForFunc()
 {
     // TODO-MDArray: bool propMDArrayLen = (optMethodFlags & OMF_HAS_MDNEWARRAY) && (optMethodFlags &
     // OMF_HAS_MDARRAYREF);
-    bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
+    bool propArrayLen  = (optMethodFlags & OMF_HAS_ARRAYREF) != 0;
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
     return propArrayLen || propNullCheck;
 }
-
-bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
-{
-    // TODO-MDArray: bool bbHasMDArrayRef = block->HasFlag(BBF_HAS_MID_IDX_LEN);
-    bool bbHasArrayRef  = block->HasFlag(BBF_HAS_IDX_LEN);
-    bool bbHasNullCheck = block->HasFlag(BBF_HAS_NULLCHECK);
-    return bbHasArrayRef || bbHasNullCheck;
-}
-
-#ifdef DEBUG
-//-----------------------------------------------------------------------------
-// optCheckFlagsAreSet: Check that the method flag and the basic block flag are set.
-//
-// Arguments:
-//    methodFlag           - The method flag to check.
-//    methodFlagStr        - String representation of the method flag.
-//    bbFlag               - The basic block flag to check.
-//    bbFlagStr            - String representation of the basic block flag.
-//    tree                 - Tree that makes the flags required.
-//    basicBlock           - The basic block to check the flag on.
-
-void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
-                                   const char* methodFlagStr,
-                                   unsigned    bbFlag,
-                                   const char* bbFlagStr,
-                                   GenTree*    tree,
-                                   BasicBlock* basicBlock)
-{
-    if ((optMethodFlags & methodFlag) == 0)
-    {
-        printf("%s is not set on optMethodFlags but is required because of the following tree\n", methodFlagStr);
-        gtDispTree(tree);
-        assert(false);
-    }
-
-    if (!basicBlock->HasFlag((BasicBlockFlags)bbFlag))
-    {
-        printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
-               basicBlock->bbNum);
-        gtDispTree(tree);
-        assert(false);
-    }
-}
-#endif
 
 //------------------------------------------------------------------------------------------
 // optEarlyProp: The entry point of the early value propagation.
@@ -97,13 +53,6 @@ PhaseStatus Compiler::optEarlyProp()
 
     for (BasicBlock* const block : Blocks())
     {
-#ifndef DEBUG
-        if (!optDoEarlyPropForBlock(block))
-        {
-            continue;
-        }
-#endif
-
         compCurBB = block;
 
         CompAllocator                 allocator(getAllocator(CMK_EarlyProp));
@@ -113,6 +62,12 @@ PhaseStatus Compiler::optEarlyProp()
         {
             // Preserve the next link before the propagation and morph.
             Statement* next = stmt->GetNextStmt();
+
+            if (stmt->GetRootNode() == nullptr || ((stmt->GetRootNode()->gtFlags & GTF_ALL_EFFECT) == 0))
+            {
+                stmt = next;
+                continue;
+            }
 
             compCurStmt = stmt;
 
@@ -134,7 +89,6 @@ PhaseStatus Compiler::optEarlyProp()
             if (isRewritten)
             {
                 // Make sure the transformation happens in debug, check, and release build.
-                assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(block));
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);
                 numChanges++;
@@ -189,16 +143,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     {
         return folded ? tree : nullptr;
     }
-#ifdef DEBUG
-    else
-    {
-        if (propKind == optPropKind::OPK_ARRAYLEN)
-        {
-            optCheckFlagsAreSet(OMF_HAS_ARRAYREF, "OMF_HAS_ARRAYREF", BBF_HAS_IDX_LEN, "BBF_HAS_IDX_LEN", tree,
-                                compCurBB);
-        }
-    }
-#endif
 
     unsigned lclNum    = objectRefPtr->AsLclVarCommon()->GetLclNum();
     unsigned ssaNum    = objectRefPtr->AsLclVarCommon()->GetSsaNum();
@@ -337,7 +281,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
         {
             if (valueKind == optPropKind::OPK_ARRAYLEN)
             {
-                value = getArrayLengthFromAllocation(defValue DEBUGARG(ssaVarDsc->GetBlock()));
+                value = getArrayLengthFromAllocation(defValue);
                 if (value != nullptr)
                 {
                     if (!value->IsCnsIntOrI())
@@ -372,19 +316,6 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 
 bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-#ifdef DEBUG
-    if (tree->OperIs(GT_NULLCHECK))
-    {
-        optCheckFlagsAreSet(OMF_HAS_NULLCHECK, "OMF_HAS_NULLCHECK", BBF_HAS_NULLCHECK, "BBF_HAS_NULLCHECK", tree,
-                            compCurBB);
-    }
-#else
-    if (!compCurBB->HasFlag(BBF_HAS_NULLCHECK))
-    {
-        return false;
-    }
-#endif
-
     GenTree*   nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
     GenTree*   nullCheckParent = nullptr;
     Statement* nullCheckStmt   = nullptr;
@@ -392,7 +323,6 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     if ((nullCheckTree != nullptr) && optIsNullCheckFoldingLegal(tree, nullCheckTree, &nullCheckParent, &nullCheckStmt))
     {
         // Make sure the transformation happens in debug, check, and release build.
-        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) && compCurBB->HasFlag(BBF_HAS_NULLCHECK));
         JITDUMP("optEarlyProp Marking a null check for removal\n");
         DISPTREE(nullCheckTree);
         JITDUMP("\n");
@@ -577,10 +507,10 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 {
     // Check all nodes between the GT_NULLCHECK and the indirection to see
     // if any nodes have unsafe side effects.
-    bool           isInsideTry        = compCurBB->hasTryIndex();
-    bool           canRemoveNullCheck = true;
-    const unsigned maxNodesWalked     = 50;
-    unsigned       nodesWalked        = 0;
+    bool           isInsideTryOrFilter = compCurBB->HasPotentialEHSuccs(this);
+    bool           canRemoveNullCheck  = true;
+    const unsigned maxNodesWalked      = 50;
+    unsigned       nodesWalked         = 0;
 
     // First walk the nodes in the statement containing the GT_NULLCHECK in forward execution order
     // until we get to the indirection or process the statement root.
@@ -595,7 +525,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         }
         const bool checkExceptionSummary = false;
         if ((nodesWalked++ > maxNodesWalked) ||
-            !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
+            !optCanMoveNullCheckPastTree(currentTree, isInsideTryOrFilter, checkExceptionSummary))
         {
             canRemoveNullCheck = false;
         }
@@ -623,7 +553,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         {
             const bool checkExceptionSummary = false;
             if ((nodesWalked++ > maxNodesWalked) ||
-                !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
+                !optCanMoveNullCheckPastTree(currentTree, isInsideTryOrFilter, checkExceptionSummary))
             {
                 canRemoveNullCheck = false;
             }
@@ -642,7 +572,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         {
             const bool checkExceptionSummary = true;
             if ((nodesWalked++ > maxNodesWalked) ||
-                !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
+                !optCanMoveNullCheckPastTree(currentTree, isInsideTryOrFilter, checkExceptionSummary))
             {
                 canRemoveNullCheck = false;
             }
@@ -670,15 +600,15 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 //
 // Arguments:
 //    tree                  - The tree to check.
-//    isInsideTry           - True if tree is inside try, false otherwise.
-//    checkSideEffectSummary -If true, check side effect summary flags only,
-//                            otherwise check the side effects of the operation itself.
+//    isInsideTryOrFilter   - True if tree is inside a try or filter, false otherwise.
+//    checkSideEffectSummary - If true, check side effect summary flags only,
+//                             otherwise check the side effects of the operation itself.
 //
 // Return Value:
 //    True if nullcheck may be folded into a node that is after tree in execution order,
 //    false otherwise.
 
-bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary)
+bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary)
 {
     bool result = true;
 
@@ -700,10 +630,15 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool
             {
                 result = false;
             }
-            else if (isInsideTry)
+            else if (isInsideTryOrFilter)
             {
-                // Inside try we allow only stores to locals not live in handlers.
-                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvLiveInOutOfHndlr;
+                // Inside a try or filter we allow only stores to locals not live in handlers.
+                result = false;
+                if (tree->OperIs(GT_STORE_LCL_VAR))
+                {
+                    LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVar());
+                    result            = varDsc->lvTracked && !varDsc->IsLiveInOutOfHandler();
+                }
             }
             else
             {
@@ -719,11 +654,11 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool
         }
         else if (checkSideEffectSummary)
         {
-            result = !isInsideTry && ((tree->gtFlags & GTF_GLOB_REF) == 0);
+            result = !isInsideTryOrFilter && ((tree->gtFlags & GTF_GLOB_REF) == 0);
         }
         else
         {
-            result = !isInsideTry && (!tree->OperRequiresAsgFlag() || ((tree->gtFlags & GTF_GLOB_REF) == 0));
+            result = !isInsideTryOrFilter && (!tree->OperRequiresAsgFlag() || ((tree->gtFlags & GTF_GLOB_REF) == 0));
         }
     }
 

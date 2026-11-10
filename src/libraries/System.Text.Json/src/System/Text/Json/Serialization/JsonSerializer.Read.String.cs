@@ -378,7 +378,7 @@ namespace System.Text.Json
             return ReadFromSpanAsObject(json, jsonTypeInfo);
         }
 
-        private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
+        private static unsafe TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
             byte[]? tempArray = null;
@@ -401,7 +401,7 @@ namespace System.Text.Json
             }
             finally
             {
-                if (tempArray != null)
+                if (tempArray is not null)
                 {
                     utf8.Clear();
                     ArrayPool<byte>.Shared.Return(tempArray);
@@ -409,7 +409,7 @@ namespace System.Text.Json
             }
         }
 
-        private static object? ReadFromSpanAsObject(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
+        private static unsafe object? ReadFromSpanAsObject(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
             byte[]? tempArray = null;
@@ -432,7 +432,7 @@ namespace System.Text.Json
             }
             finally
             {
-                if (tempArray != null)
+                if (tempArray is not null)
                 {
                     utf8.Clear();
                     ArrayPool<byte>.Shared.Return(tempArray);

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -130,6 +131,26 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
+        }
+
+        internal ConstructorInfo GetConstructorWithSameMetadataDefinitionAs<TRuntimeMethodCommon>(TRuntimeMethodCommon methodCommon)
+            where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
+        {
+            QueryResult<ConstructorInfo> constructors = Query<ConstructorInfo>(
+                ConstructorPolicies.Instance,
+                methodCommon.Name,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+
+            foreach (ConstructorInfo constructor in constructors)
+            {
+                if (constructor is RuntimePlainConstructorInfo<TRuntimeMethodCommon> runtimeConstructor &&
+                    runtimeConstructor.HasSameMetadataDefinitionAs(methodCommon))
+                {
+                    return constructor;
+                }
+            }
+
+            throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, methodCommon.Name), nameof(methodCommon));
         }
 
         private MemberInfo GetDeclaredMemberWithSameMetadataDefinitionAs(MemberInfo member)

@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     exception/signal.cpp
 
 Abstract:
-
     Signal handler implementation (map signals to exceptions)
-
-
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -40,7 +32,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
 #include "pal/debug.h"
-#include "pal/virtual.h"
+#include <minipal/ospagesize.h>
 #include "pal/utils.h"
 
 #include <string.h>
@@ -103,6 +95,8 @@ bool g_registered_signal_handlers = false;
 #if !HAVE_MACH_EXCEPTIONS
 bool g_enable_alternate_stack_check = false;
 #endif // !HAVE_MACH_EXCEPTIONS
+// When true, generate crash dump before invoking previously registered signal handler
+static bool g_crash_report_before_signal_chaining = false;
 
 static bool g_registered_sigterm_handler = false;
 static bool g_registered_activation_handler = false;
@@ -132,6 +126,22 @@ const int StackOverflowFlag = 0x40000000;
 #endif // !HAVE_MACH_EXCEPTIONS
 
 /* public function definitions ************************************************/
+
+/*++
+Function:
+  PAL_EnableCrashReportBeforeSignalChaining
+
+Abstract:
+  Enables generating a crash report before the signal is chained to previous handlers.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void)
+{
+    g_crash_report_before_signal_chaining = true;
+}
 
 /*++
 Function :
@@ -208,7 +218,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         // Allocate the minimal stack necessary for handling stack overflow
         int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 9 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
-        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
+        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, minipal_getpagesize()) + minipal_getpagesize();
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
 #ifdef MAP_STACK
         flags |= MAP_STACK;
@@ -219,13 +229,15 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             return FALSE;
         }
 
+#ifndef TARGET_WASM
         // create a guard page for the alternate stack
-        int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
+        int st = mprotect((void*)g_stackOverflowHandlerStack, minipal_getpagesize(), PROT_NONE);
         if (st != 0)
         {
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
             return FALSE;
         }
+#endif // TARGET_WASM
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
 #endif // HAVE_MACH_EXCEPTIONS
@@ -359,7 +371,15 @@ bool IsRunningOnAlternateStack(void *context)
     {
         // Note: WSL doesn't return the alternate signal ranges in the uc_stack (the whole structure is zeroed no
         // matter whether the code is running on an alternate stack or not). So the check would always fail on WSL.
+#ifdef TARGET_OPENBSD
+        // OpenBSD's ucontext_t (struct sigcontext) doesn't carry the signal stack,
+        // so query the currently installed alternate stack directly.
+        stack_t signalStackStorage;
+        stack_t *signalStack = &signalStackStorage;
+        sigaltstack(NULL, signalStack);
+#else
         stack_t *signalStack = &((native_context_t *)context)->uc_stack;
+#endif
         // Check if the signalStack local variable address is within the alternate stack range. If it is not,
         // then either the alternate stack was not installed at all or the current method is not running on it.
         void* alternateStackEnd = (char *)signalStack->ss_sp + signalStack->ss_size;
@@ -420,7 +440,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         if (signalRestarts)
         {
             // This signal mustn't be ignored because it will be restarted.
-            PROCAbort(code, siginfo);
+            PROCAbort(code, siginfo, context);
         }
         return;
     }
@@ -428,10 +448,12 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         if (signalRestarts)
         {
-            // Shutdown and create the core dump before we restore the signal to the default handler.
+            // Shutdown, log the managed callstack (if a host callback is registered),
+            // and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-            PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+            PROCLogManagedCallstackForSignal(code);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, CrashDumpSerialize_WaitInfinite);
 
             // Restore the original and restart h/w exception.
             restore_signal(code, action);
@@ -442,10 +464,21 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         {
             // We can't invoke the original handler because returning from the
             // handler doesn't restart the exception.
-            PROCAbort(code, siginfo);
+            PROCAbort(code, siginfo, context);
         }
     }
-    else if (IsSaSigInfo(action))
+
+    _ASSERTE(!IsSigDfl(action) && !IsSigIgn(action));
+
+    if (g_crash_report_before_signal_chaining)
+    {
+        PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+
+        PROCLogManagedCallstackForSignal(code);
+        PROCCreateCrashDumpIfEnabled(code, siginfo, context, CrashDumpSerialize_WaitInfinite);
+    }
+
+    if (IsSaSigInfo(action))
     {
         // Directly call the previous handler.
         _ASSERTE(action->sa_sigaction != NULL);
@@ -458,9 +491,13 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         action->sa_handler(code);
     }
 
-    PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+    if (!g_crash_report_before_signal_chaining)
+    {
+        PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-    PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+        PROCLogManagedCallstackForSignal(code);
+        PROCCreateCrashDumpIfEnabled(code, siginfo, context, CrashDumpSerialize_WaitInfinite);
+    }
 }
 
 /*++
@@ -511,7 +548,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
-void UnmaskActivationSignal()
+void PALAPI PAL_UnmaskActivationSignal()
 {
     sigset_t signal_set;
     sigemptyset(&signal_set);
@@ -563,7 +600,7 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
         // Unmask the activation signal now that we are running on the original stack of the thread
         // except for the stack overflow case when we are actually running on a special stack overflow
         // stack.
-        UnmaskActivationSignal();
+        PAL_UnmaskActivationSignal();
     }
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
@@ -647,13 +684,13 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         // If the failure address is at most one page above or below the stack pointer,
         // we have a stack overflow.
-        if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
+        if ((failureAddress - (sp - minipal_getpagesize())) < 2 * minipal_getpagesize())
         {
             if (GetCurrentPalThread())
             {
 #if defined(TARGET_TVOS)
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort(SIGSEGV, siginfo);
+                PROCAbort(SIGSEGV, siginfo, context);
 #else // TARGET_TVOS
                 size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
                 if (handlerStackTop == 0)
@@ -680,7 +717,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    PROCAbort(SIGSEGV, siginfo);
+                    PROCAbort(SIGSEGV, siginfo, context);
                 }
                 (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
 #endif // TARGET_TVOS
@@ -849,7 +886,8 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
-            PROCCreateCrashDumpIfEnabled(code, siginfo, false);
+            PROCLogManagedCallstackForSignal(code);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, CrashDumpSerialize_None);
         }
     }
 
@@ -876,7 +914,7 @@ Parameters :
 __attribute__((noinline))
 static void InvokeActivationHandler(CONTEXT *pWinContext)
 {
-    g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
+    g_InvokeActivationHandlerReturnAddress = _ReturnAddress();
     g_activationFunction(pWinContext);
 }
 
@@ -896,8 +934,8 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 {
     // Only accept activations from the current process
     if (g_activationFunction != NULL && (siginfo->si_pid == getpid()
-#ifdef HOST_OSX
-    // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+#ifdef HOST_APPLE
+    // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
     // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
     || siginfo->si_pid == 0
 #endif
@@ -914,7 +952,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_AMD64)
         contextFlags |= CONTEXT_XSTATE;
 #endif
 
@@ -937,15 +975,14 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
     else
     {
         // Call the original handler when it is not ignored or default (terminate).
-        if (g_previous_activation.sa_flags & SA_SIGINFO)
+        if (!IsSigDfl(&g_previous_activation) && !IsSigIgn(&g_previous_activation))
         {
-            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-            g_previous_activation.sa_sigaction(code, siginfo, context);
-        }
-        else
-        {
-            if (g_previous_activation.sa_handler != SIG_IGN &&
-                g_previous_activation.sa_handler != SIG_DFL)
+            if (IsSaSigInfo(&g_previous_activation))
+            {
+                _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+                g_previous_activation.sa_sigaction(code, siginfo, context);
+            }
+            else
             {
                 _ASSERTE(g_previous_activation.sa_handler != NULL);
                 g_previous_activation.sa_handler(code);
@@ -994,9 +1031,14 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 
     if (status != 0)
     {
-        // Failure to send the signal is fatal. There are only two cases when sending
-        // the signal can fail. First, if the signal ID is invalid and second,
-        // if the thread doesn't exist anymore.
+        // Failure to send the signal is fatal. Sending the signal can fail if the signal ID
+        // is invalid, if the thread doesn't exist anymore, or if the environment denies
+        // sending signals to threads of this process (e.g. a restrictive AppArmor/seccomp
+        // policy returning EACCES or EPERM). Report the reason, since the resulting abort
+        // is otherwise very hard to diagnose.
+        fprintf(stderr, "Failed to inject activation signal %d into thread: %s (%d)\n",
+            INJECT_ACTIVATION_SIGNAL, strerror(status), status);
+        PROCLogManagedCallstackForSignal(SIGABRT);
         PROCAbort();
     }
 
@@ -1104,7 +1146,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_AMD64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 

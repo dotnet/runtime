@@ -21,16 +21,20 @@ set "__RootBinDir=%__RepoRootDir%\artifacts"
 set __ToolsDir=%__ProjectDir%\..\Tools
 set "DotNetCli=%__RepoRootDir%\dotnet.cmd"
 
+set __HostOS=
 set __Sequential=
 set __ParallelType=
 set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
+set __UseManagedIlasm=
 set __PrintLastResultsOnly=
 set LogsDirArg=
 set RunInUnloadableContext=
 set TieringTest=
+set RunInterpreter=
+set RunWithNodeJS=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -45,6 +49,7 @@ if /i "%1" == "-help" goto Usage
 if /i "%1" == "x64"                                     (set __BuildArch=x64&shift&goto Arg_Loop)
 if /i "%1" == "x86"                                     (set __BuildArch=x86&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                                   (set __BuildArch=arm64&shift&goto Arg_Loop)
+if /i "%1" == "wasm"                                    (set __BuildArch=wasm&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                                   (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"                                 (set __BuildType=Release&shift&goto Arg_Loop)
@@ -64,16 +69,23 @@ if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shif
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
 if /i "%1" == "synthesizepgo"                           (set CrossGen2SynthesizePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
+if /i "%1" == "usemanagedilasm"                          (set __IlasmRoundTrip=1&set __UseManagedIlasm=1&shift&goto Arg_Loop)
 if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
 if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
+if /i "%1" == "interpreter"                             (set RunInterpreter=1&shift&goto Arg_Loop)
+if /i "%1" == "node"                                    (set RunWithNodeJS=1&shift&goto Arg_Loop)
+@REM For tree, support '/', '-', and '--' prefixes like build.cmd
+set __treeArg=%~1
+set __treeArg=%__treeArg:/=%
+set __treeArg=%__treeArg:-=%
+if /i "%__treeArg%" == "tree"                           (set __TreeSubtree=%~2&shift&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -93,6 +105,19 @@ shift
 
 if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
 
+:: Set default for RunWithNodeJS when using wasm architecture
+if /i "%__BuildArch%" == "wasm" (
+    if not defined RunWithNodeJS set RunWithNodeJS=1
+)
+
+:: Set default HostOS to browser when using wasm architecture
+if /i "%__BuildArch%" == "wasm" (
+    if not defined __HostOS set __HostOS=browser
+)
+
+:: Override TargetOS when HostOS is set
+if defined __HostOS set __TargetOS=%__HostOS%
+
 :: Set the remaining variables based upon the determined configuration
 set __MSBuildBuildArch=%__BuildArch%
 
@@ -105,84 +130,88 @@ set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%_
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
-REM Set up arguments to call run.py
+REM Set up arguments to call run.cs
 
-set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
+set __RuntestArgs=-arch %__BuildArch% -build_type %__BuildType%
 
-if defined LogsDirArg (
-    set __RuntestPyArgs=%__RuntestPyArgs% -logs_dir %LogsDirArg%
+if defined __HostOS (
+    set __RuntestArgs=!__RuntestArgs! -os %__HostOS%
 )
 
-if defined DoLink (
-    set __RuntestPyArgs=%__RuntestPyArgs% --il_link
+if defined LogsDirArg (
+    set __RuntestArgs=%__RuntestArgs% -logs_dir %LogsDirArg%
 )
 
 if defined __LongGCTests (
-    set __RuntestPyArgs=%__RuntestPyArgs% --long_gc
+    set __RuntestArgs=%__RuntestArgs% --long_gc
 )
 
 if defined __GCSimulatorTests (
-    set __RuntestPyArgs=%__RuntestPyArgs% --gcsimulator
+    set __RuntestArgs=%__RuntestArgs% --gcsimulator
 )
 
 if defined __IlasmRoundTrip (
-    set __RuntestPyArgs=%__RuntestPyArgs% --ilasmroundtrip
+    set __RuntestArgs=%__RuntestArgs% --ilasmroundtrip
+)
+
+if defined __UseManagedIlasm (
+    set __RuntestArgs=%__RuntestArgs% --use_managed_ilasm
 )
 
 if defined __TestEnv (
-    set __RuntestPyArgs=%__RuntestPyArgs% -test_env %__TestEnv%
+    set __RuntestArgs=%__RuntestArgs% -test_env %__TestEnv%
 )
 
 if defined __Sequential (
-    set __RuntestPyArgs=%__RuntestPyArgs% --sequential
+    set __RuntestArgs=%__RuntestArgs% --sequential
 )
 
 if defined __ParallelType (
-    set __RuntestPyArgs=%__RuntestPyArgs% -parallel %__ParallelType%
+    set __RuntestArgs=%__RuntestArgs% -parallel %__ParallelType%
 )
 
 if defined RunCrossGen2 (
-    set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen2_tests
+    set __RuntestArgs=%__RuntestArgs% --run_crossgen2_tests
 )
 
 if defined CrossgenLargeVersionBubble (
-    set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
+    set __RuntestArgs=%__RuntestArgs% --large_version_bubble
 )
 
 if defined CrossGen2SynthesizePgo (
-    set __RuntestPyArgs=%__RuntestPyArgs% --synthesize_pgo
+    set __RuntestArgs=%__RuntestArgs% --synthesize_pgo
 )
 
 if defined __PrintLastResultsOnly (
-    set __RuntestPyArgs=%__RuntestPyArgs% --analyze_results_only
+    set __RuntestArgs=%__RuntestArgs% --analyze_results_only
 )
 
 if defined RunInUnloadableContext (
-    set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
+    set __RuntestArgs=%__RuntestArgs% --run_in_context
 )
 
 if defined TieringTest (
-    set __RuntestPyArgs=%__RuntestPyArgs% --tiering_test
+    set __RuntestArgs=%__RuntestArgs% --tiering_test
 )
 
 if defined RunNativeAot (
-    set __RuntestPyArgs=%__RuntestPyArgs% --run_nativeaot_tests
+    set __RuntestArgs=%__RuntestArgs% --run_nativeaot_tests
 )
 
-REM Find python and set it to the variable PYTHON
-set _C=-c "import sys; sys.stdout.write(sys.executable)"
-(py -3 %_C% || py -2 %_C% || python3 %_C% || python2 %_C% || python %_C%) > %TEMP%\pythonlocation.txt 2> NUL
-set _C=
-set /p PYTHON=<%TEMP%\pythonlocation.txt
-
-if NOT DEFINED PYTHON (
-    echo %__MsgPrefix%Error: Could not find a Python installation.
-    exit /b 1
+if defined RunInterpreter (
+    set __RuntestArgs=%__RuntestArgs% --interpreter
 )
 
-set NEXTCMD="%PYTHON%" "%__RepoRootDir%\src\tests\run.py" %__RuntestPyArgs%
-echo %NEXTCMD%
-%NEXTCMD%
+if defined RunWithNodeJS (
+    set __RuntestArgs=%__RuntestArgs% --node
+)
+
+if defined __TreeSubtree (
+    set __RuntestArgs=%__RuntestArgs% --tree "%__TreeSubtree%"
+)
+
+echo "%DotNetCli%" "%__RepoRootDir%\src\tests\run.cs" -- %__RuntestArgs%
+call "%DotNetCli%" "%__RepoRootDir%\src\tests\run.cs" -- %__RuntestArgs%
 
 exit /b %ERRORLEVEL%
 
@@ -203,7 +232,7 @@ echo.
 echo where:
 echo.
 echo./? -? /h -h /help -help   - View this message.
-echo ^<build_architecture^>      - Specifies build architecture: x64, x86, or arm64 ^(default: x64^).
+echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm64, or wasm ^(default: x64^).
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo sequential                - Run tests sequentially ^(no parallelism^).
@@ -233,10 +262,14 @@ echo                             Note: some options override this ^(gcstressleve
 echo logsdir ^<dir^>             - Specify the logs directory ^(default: artifacts/log^)
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
+echo interpreter               - Runs the tests with the interpreter enabled.
+echo node                       - Runs the tests with NodeJS ^(wasm only^).
+echo tree ^<path^>               - Only run tests under the specified subtree ^(e.g. JIT/Regression^).
 echo.
 echo Note that arguments are not case-sensitive.
 echo.
 echo Examples:
 echo   %0 x86 checked
 echo   %0 x64 release
+echo   %0 wasm debug
 exit /b 1

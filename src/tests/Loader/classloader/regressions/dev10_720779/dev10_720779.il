@@ -15,7 +15,7 @@ where MyClosedDel is:
 
 
 */
-.assembly extern mscorlib {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly 'dev10_720779' {}
 
 
@@ -40,7 +40,7 @@ where MyClosedDel is:
 	}
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
-		call instance void [mscorlib]System.Object::.ctor()
+		call instance void [System.Runtime]System.Object::.ctor()
 		ret
 	}
 }
@@ -53,14 +53,17 @@ where MyClosedDel is:
 
 
 
-.class public sealed myClosedDel extends [mscorlib]System.MulticastDelegate {
+.class public sealed myClosedDel extends [System.Runtime]System.MulticastDelegate {
   .method public hidebysig specialname rtspecialname instance void .ctor(object 'object', native int 'method') runtime managed {}
-  .method public hidebysig newslot virtual instance class [mscorlib]System.IAsyncResult BeginInvoke(class [mscorlib]System.AsyncCallback callback, object 'object') runtime managed {}
+  .method public hidebysig newslot virtual instance class [System.Runtime]System.IAsyncResult BeginInvoke(class [System.Runtime]System.AsyncCallback callback, object 'object') runtime managed {}
   .method public hidebysig newslot virtual instance string Invoke() runtime managed {}
-  .method public hidebysig newslot virtual instance string EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed {}
+  .method public hidebysig newslot virtual instance string EndInvoke(class [System.Runtime]System.IAsyncResult result) runtime managed {}
 }
 .class public auto ansi beforefieldinit Framework {
-	.method public hidebysig static string DelCall0(object inst, class [mscorlib]System.Type t, string mName) cil managed {
+	.method public hidebysig static string DelCall0(object inst, class [System.Runtime]System.Type t, string mName) cil managed {
+
+		.param [2]
+		.custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 08 00 00 00 00 00 ) 
 	
 		//CS:
 	    //Delegate d = Delegate.CreateDelegate(typeof(myClosedDel), inst, t.GetMethod(mName));
@@ -68,30 +71,30 @@ where MyClosedDel is:
 
 		.maxstack  10
 		ldtoken    myClosedDel
-		call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
 		ldarg.0
 		ldarg.1
 		ldarg.2
-		callvirt   instance class [mscorlib]System.Reflection.MethodInfo [mscorlib]System.Type::GetMethod(string)
-		call       class [mscorlib]System.Delegate [mscorlib]System.Delegate::CreateDelegate(class [mscorlib]System.Type,object,class [mscorlib]System.Reflection.MethodInfo)
+		callvirt   instance class [System.Runtime]System.Reflection.MethodInfo [System.Runtime]System.Type::GetMethod(string)
+		call       class [System.Runtime]System.Delegate [System.Runtime]System.Delegate::CreateDelegate(class [System.Runtime]System.Type,object,class [System.Runtime]System.Reflection.MethodInfo)
 		ldnull
-		callvirt   instance object [mscorlib]System.Delegate::DynamicInvoke(object[])
-		castclass  [mscorlib]System.String
+		callvirt   instance object [System.Runtime]System.Delegate::DynamicInvoke(object[])
+		castclass  [System.Runtime]System.String
 		ret
 	}
 	.method private hidebysig static int32  CheckResult(string expected, string actual) cil managed {
 	  .maxstack  8
 	    ldstr      "EXPECTED : "
 	    ldarg.0
-	    call       string [mscorlib]System.String::Concat(string,string)
+	    call       string [System.Runtime]System.String::Concat(string,string)
 	    call       void [System.Console]System.Console::WriteLine(string)
 	    ldstr      "ACTUAL   : "
 	    ldarg.1
-	    call       string [mscorlib]System.String::Concat(string,string)
+	    call       string [System.Runtime]System.String::Concat(string,string)
 	    call       void [System.Console]System.Console::WriteLine(string)
 	    ldarg.0
 	    ldarg.1
-	    call       bool [mscorlib]System.String::op_Inequality(string,string)
+	    call       bool [System.Runtime]System.String::op_Inequality(string,string)
 	    brfalse.s  PASSING
 		
 		ldstr "FAIL"
@@ -122,9 +125,9 @@ where MyClosedDel is:
 		ldstr "Derived::Method"
 		newobj instance void class Derived::.ctor()
 		ldtoken class IBaseInterface2`2<string,int32>
-		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
 		ldstr "Method"
-		call string Framework::DelCall0(object,class [mscorlib]System.Type,string)
+		call string Framework::DelCall0(object,class [System.Runtime]System.Type,string)
 		call int32 Framework::CheckResult(string,string)
 
 		

@@ -18,8 +18,6 @@ const ep_char8_t* _ep_os_info = "Windows";
 const ep_char8_t* _ep_os_info = "tvOS";
 #elif defined(HOST_IOS)
 const ep_char8_t* _ep_os_info = "iOS";
-#elif defined(HOST_WATCHOS)
-const ep_char8_t* _ep_os_info = "watchOS";
 #elif defined(HOST_MACCAT)
 const ep_char8_t* _ep_os_info = "MacCatalyst";
 #elif defined(__APPLE__)
@@ -202,7 +200,7 @@ ep_event_source_enable (
 	ep_requires_lock_held ();
 
 	bool result = true;
-	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (event_source->provider_name, (uint64_t)-1, EP_EVENT_LEVEL_LOGALWAYS, NULL);
+	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (event_source->provider_name, (uint64_t)-1, EP_EVENT_LEVEL_LOGALWAYS, NULL, NULL, NULL);
 	if (session_provider != NULL)
 		result = ep_session_add_session_provider (session, session_provider);
 	return result;

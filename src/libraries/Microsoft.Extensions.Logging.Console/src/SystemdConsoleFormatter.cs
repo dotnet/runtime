@@ -58,6 +58,10 @@ namespace Microsoft.Extensions.Logging.Console
         private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel, string category,
             int eventId, string? exception, DateTimeOffset stamp)
         {
+            message = ConsoleControlCharacterSanitizer.Sanitize(message)!;
+            exception = ConsoleControlCharacterSanitizer.Sanitize(exception);
+            category = ConsoleControlCharacterSanitizer.Sanitize(category)!;
+
             // systemd reads messages from standard out line-by-line in a '<pri>message' format.
             // newline characters are treated as message delimiters, so we must replace them.
             // Messages longer than the journal LineMax setting (default: 48KB) are cropped.
@@ -139,7 +143,8 @@ namespace Microsoft.Extensions.Logging.Console
                 scopeProvider.ForEachScope((scope, state) =>
                 {
                     state.Write(" => ");
-                    state.Write(scope);
+                    string? scopeMessage = ConsoleControlCharacterSanitizer.Sanitize(scope?.ToString());
+                    state.Write(scopeMessage);
                 }, textWriter);
             }
         }

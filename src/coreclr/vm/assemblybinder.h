@@ -18,9 +18,9 @@ class AssemblyBinder
 {
 public:
 
-    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, BINDER_SPACE::Assembly** ppAssembly);
-    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, bool excludeAppPaths, BINDER_SPACE::Assembly** ppAssembly) = 0;
-    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName, BINDER_SPACE::Assembly** ppAssembly) = 0;
+    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo = NULL);
+    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, bool excludeAppPaths, BINDER_SPACE::Assembly** ppAssembly, BINDER_SPACE::Assembly** ppExistingAssemblyOnConflict = nullptr) = 0;
+    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName, BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo = NULL) = 0;
 
     /// <summary>
     /// Get LoaderAllocator for binders that contain it. For other binders, return NULL.
@@ -37,17 +37,17 @@ public:
         return &m_appContext;
     }
 
-    INT_PTR GetManagedAssemblyLoadContext()
+    INT_PTR GetAssemblyLoadContext()
     {
-        return m_ptrManagedAssemblyLoadContext;
+        return m_ptrAssemblyLoadContext;
     }
 
-    void SetManagedAssemblyLoadContext(INT_PTR ptrManagedDefaultBinderInstance)
+    void SetAssemblyLoadContext(INT_PTR ptrManagedDefaultBinderInstance)
     {
-        m_ptrManagedAssemblyLoadContext = ptrManagedDefaultBinderInstance;
+        m_ptrAssemblyLoadContext = ptrManagedDefaultBinderInstance;
     }
 
-    NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
+    NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName, bool isPlatformNative);
     void AddLoadedAssembly(Assembly* loadedAssembly);
 
     void GetNameForDiagnostics(/*out*/ SString& alcName);
@@ -125,9 +125,15 @@ private:
 
     // A GC handle to the managed AssemblyLoadContext.
     // It is a long weak handle for collectible AssemblyLoadContexts and strong handle for non-collectible ones.
-    INT_PTR m_ptrManagedAssemblyLoadContext;
+    INT_PTR m_ptrAssemblyLoadContext;
 
     SArray<Assembly*> m_loadedAssemblies;
+    friend struct cdac_data<AssemblyBinder>;
 };
 
+template<>
+struct cdac_data<AssemblyBinder>
+{
+    static constexpr size_t AssemblyLoadContext = offsetof(AssemblyBinder, m_ptrAssemblyLoadContext);
+};
 #endif

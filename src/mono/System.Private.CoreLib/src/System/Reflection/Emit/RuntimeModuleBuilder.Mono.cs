@@ -313,7 +313,7 @@ namespace System.Reflection.Emit
             int i;
             for (i = 0; i < validElementsInArray; ++i)
             {
-                if (string.Compare(className.DisplayName, arr[i].FullName, true, CultureInfo.InvariantCulture) == 0)
+                if (string.Equals(className.DisplayName, arr[i].FullName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return arr[i];
                 }
@@ -326,7 +326,7 @@ namespace System.Reflection.Emit
             int i;
             for (i = 0; i < validElementsInArray; ++i)
             {
-                if (string.Compare(className.DisplayName, arr[i].Name, true, CultureInfo.InvariantCulture) == 0)
+                if (string.Equals(className.DisplayName, arr[i].Name, StringComparison.InvariantCultureIgnoreCase))
                     return arr[i];
             }
             return null;
@@ -854,14 +854,14 @@ namespace System.Reflection.Emit
             return base.IsDefined(attributeType, inherit);
         }
 
-        public override object[] GetCustomAttributes(bool inherit) => CustomAttribute.GetCustomAttributes(this, inherit);
+        public override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, inherit);
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
-            CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttribute.GetCustomAttributesData(this);
+            return RuntimeCustomAttribute.GetCustomAttributesData(this);
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]

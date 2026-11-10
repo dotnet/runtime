@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ./dotnet.sh build -c <Debug|Release> src/tests/FunctionalTests/Android/Device_Emulator/NativeAOT/Android.Device_Emulator.NativeAOT.Test.csproj /t:Test -bl /p:targetos=android /p:targetarchitecture=x64 -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+    <PublishAOT>true</PublishAOT>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+
+</Project>

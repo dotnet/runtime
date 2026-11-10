@@ -13,9 +13,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node that points to various symbols and can be sequentially addressed.
     /// </summary>
-    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private readonly string _blobName;
         private readonly NodeFactory _nodeFactory;
 
@@ -28,8 +27,6 @@ namespace ILCompiler.DependencyAnalysis
             _nodeFactory = nodeFactory;
         }
 
-        int INodeWithSize.Size => _size.Value;
-
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_" + _blobName + "_references");
@@ -41,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Adds a new entry to the table. Thread safety: not thread safe. Expected to be called at the final
         /// object data emission phase from a single thread.
         /// </summary>
-        public uint GetIndex(ISymbolNode symbol, int delta = 0)
+        public uint GetIndex(ISymbolNode symbol, int delta = 0, RelocType? relocType = null)
         {
 #if DEBUG
             if (_nodeFactory.MarkingComplete)
@@ -52,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 #endif
 
-            SymbolAndDelta key = new SymbolAndDelta(symbol, delta);
+            SymbolAndDelta key = new SymbolAndDelta(symbol, delta, relocType);
 
             uint index;
             if (!_insertedSymbolsDictionary.TryGetValue(key, out index))
@@ -91,7 +88,11 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {
-                if (factory.Target.SupportsRelativePointers)
+                if (symbolAndDelta.RelocType is RelocType relocType)
+                {
+                    builder.EmitReloc(symbolAndDelta.Symbol, relocType, symbolAndDelta.Delta);
+                }
+                else if (factory.Target.SupportsRelativePointers)
                 {
                     // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
                     builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_RELPTR32, symbolAndDelta.Delta);
@@ -101,8 +102,6 @@ namespace ILCompiler.DependencyAnalysis
                     builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
                 }
             }
-
-            _size = builder.CountBytes;
 
             builder.AddSymbol(this);
 
@@ -120,16 +119,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             public readonly ISymbolNode Symbol;
             public readonly int Delta;
+            public readonly RelocType? RelocType;
 
-            public SymbolAndDelta(ISymbolNode symbol, int delta)
+            public SymbolAndDelta(ISymbolNode symbol, int delta, RelocType? relocType)
             {
                 Symbol = symbol;
                 Delta = delta;
+                RelocType = relocType;
             }
 
             public bool Equals(SymbolAndDelta other)
             {
-                return Symbol == other.Symbol && Delta == other.Delta;
+                return Symbol == other.Symbol && Delta == other.Delta && RelocType == other.RelocType;
             }
 
             public override bool Equals(object obj)
@@ -139,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return Symbol.GetHashCode();
+                return HashCode.Combine(Symbol, Delta, RelocType);
             }
         }
     }

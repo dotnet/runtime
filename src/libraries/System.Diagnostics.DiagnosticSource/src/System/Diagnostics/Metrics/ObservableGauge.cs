@@ -17,13 +17,16 @@ namespace System.Diagnostics.Metrics
     {
         private readonly object _callback;
 
+        internal override object? Callback => _callback;
+
         internal ObservableGauge(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : this(meter, name, observeValue, unit, description, tags: null)
         {
         }
 
         internal ObservableGauge(Meter meter, string name, Func<T> observeValue, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
-            _callback = observeValue ?? throw new ArgumentNullException(nameof(observeValue));
+            ArgumentNullException.ThrowIfNull(observeValue);
+            _callback = observeValue;
             Publish();
         }
 
@@ -33,7 +36,8 @@ namespace System.Diagnostics.Metrics
 
         internal ObservableGauge(Meter meter, string name, Func<Measurement<T>> observeValue, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
-            _callback = observeValue ?? throw new ArgumentNullException(nameof(observeValue));
+            ArgumentNullException.ThrowIfNull(observeValue);
+            _callback = observeValue;
             Publish();
         }
 
@@ -43,13 +47,14 @@ namespace System.Diagnostics.Metrics
 
         internal ObservableGauge(Meter meter, string name, Func<IEnumerable<Measurement<T>>> observeValues, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
-            _callback = observeValues ?? throw new ArgumentNullException(nameof(observeValues));
+            ArgumentNullException.ThrowIfNull(observeValues);
+            _callback = observeValues;
             Publish();
         }
 
         /// <summary>
         /// Observe() fetches the current measurements being tracked by this observable counter.
         /// </summary>
-        protected override IEnumerable<Measurement<T>> Observe() => Observe(_callback);
+        protected override IEnumerable<Measurement<T>> Observe() => ((Func<IEnumerable<Measurement<T>>>)_callback)();
     }
 }

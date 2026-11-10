@@ -44,7 +44,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         void IElement.PostParse(IElement parentElement)
         {
-            if (_startArc.End.OutArcs.IsEmpty)
+            if (_startArc!.End!.OutArcs.IsEmpty)
             {
                 XmlParser.ThrowSrgsException(SRID.EmptyOneOf);
             }
@@ -69,8 +69,8 @@ namespace System.Speech.Internal.SrgsCompiler
             start = TrimStart(start, _backend);
             end = TrimEnd(end, _backend);
 
-            State endStartState = end.Start;
-            State startEndState = start.End;
+            State? endStartState = end.Start;
+            State? startEndState = start.End;
 
             // Connect the previous arc with the 'start' set the insertion point
             if (start.IsEpsilonTransition && start.IsPropertylessTransition && startEndState != null && startEndState.InArcs.IsEmpty)

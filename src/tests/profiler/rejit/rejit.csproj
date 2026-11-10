@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
+    <Features>$(Features);runtime-async=on</Features>
     <!-- This test provides no interesting scenarios for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- The test launches a secondary process and process launch creates
@@ -15,7 +16,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="../common/profiler_common.csproj" />
     <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
   </ItemGroup>

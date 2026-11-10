@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// writer.cpp
-//
 
 #include "ilasmpch.h"
 
@@ -10,6 +7,7 @@
 
 #include "ceefilegenwriter.h"
 #include "sha256.h"
+#include <dn-stdio.h>
 
 #ifndef _MSC_VER
 //cloned definition from ntimage.h that is removed for non MSVC builds
@@ -499,9 +497,9 @@ HRESULT Assembler::CreateExportDirectory()
     // get the DLL name from output file name
     char*                   pszDllName;
     Ldllname = (unsigned)u16_strlen(m_wzOutputFileName)*3+3;
-    NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
+    AStringHolder    szOutputFileName(new char[Ldllname]);
     memset(szOutputFileName,0,u16_strlen(m_wzOutputFileName)*3+3);
-    WideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)m_wzOutputFileName,u16_strlen(m_wzOutputFileName)+1,szOutputFileName,Ldllname,0);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
 #ifdef TARGET_WINDOWS
     if(pszDllName == NULL) pszDllName = strrchr(szOutputFileName,':');
@@ -725,54 +723,6 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
 }
 //#endif
 
-HRESULT Assembler::GetCAName(mdToken tkCA, _Out_ LPWSTR *ppszName)
-{
-    HRESULT hr = S_OK;
-    DWORD cchName;
-    LPWSTR name;
-
-    *ppszName = NULL;
-
-    if (TypeFromToken(tkCA) == mdtMemberRef)
-    {
-        mdToken parent;
-        if (FAILED(hr = m_pImporter->GetMemberRefProps( tkCA, &parent, NULL, 0, NULL, NULL, NULL)))
-            return hr;
-        tkCA = parent;
-    }
-    else if (TypeFromToken(tkCA) == mdtMethodDef)
-    {
-        mdToken parent;
-        if (FAILED(hr = m_pImporter->GetMemberProps( tkCA, &parent, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)))
-            return hr;
-        tkCA = parent;
-    }
-
-    if (TypeFromToken(tkCA) == mdtTypeRef)
-    {
-        // A TypeRef
-        if (FAILED(hr = m_pImporter->GetTypeRefProps(tkCA, NULL, NULL, 0, &cchName)))
-            return hr;
-        if ((name = new WCHAR[cchName + 1]) == NULL)
-            return E_OUTOFMEMORY;
-        hr = m_pImporter->GetTypeRefProps(tkCA, NULL, name, cchName, &cchName);
-    }
-    else
-    {
-        hr = m_pImporter->GetTypeDefProps(tkCA, NULL, 0, &cchName, NULL, NULL);
-        if (hr != S_OK)
-            return hr;
-        if ((name = new WCHAR[cchName + 1]) == NULL)
-            return E_OUTOFMEMORY;
-        hr = m_pImporter->GetTypeDefProps(tkCA, name, cchName, &cchName, NULL, NULL);
-    }
-    if (SUCCEEDED(hr))
-        *ppszName = name;
-    else
-        delete [] name;
-    return hr;
-}
-
 BYTE HexToByte (CHAR wc)
 {
     if (!iswxdigit(wc)) return (BYTE) 0xff;
@@ -925,7 +875,7 @@ HRESULT Assembler::ResolveLocalMemberRefs()
                         }
                         if(tkMemberDef && ((*pMRD_pSig & IMAGE_CEE_CS_CALLCONV_MASK)==IMAGE_CEE_CS_CALLCONV_VARARG))
                         {
-                            MultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
+                            minipal_convert_utf8_to_utf16(pMRD_szName,strlen(pMRD_szName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
 
                             if(IsMdPrivateScope(pListMD->m_Attr))
                             {
@@ -968,7 +918,7 @@ HRESULT Assembler::ResolveLocalMemberRefs()
 
                         if(RidFromToken(tkRef))
                         {
-                            MultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
+                            minipal_convert_utf8_to_utf16(pMRD_szName,strlen(pMRD_szName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
 
                             m_pEmitter->DefineMemberRef(tkRef, wzUniBuf, pMRD_pSig,
                                 pMRD_dwCSig, &tkMemberDef);
@@ -1238,7 +1188,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             if(m_dwCeeFileFlags & ICEE_CREATE_FILE_PE64)
             {
                 ULONGLONG *pdw = new ULONGLONG[N];
-                for(i=0; i<N; i++) pdw[i] = UI64(0xdeadbeefdeadbeef);
+                for(i=0; i<N; i++) pdw[i] = 0xdeadbeefdeadbeefULL;
                 EmitData(pdw,sizeof(ULONGLONG)*N);
                 m_VTFList.PUSH(new VTFEntry((USHORT)N,COR_VTABLE_64BIT|COR_VTABLE_FROM_UNMANAGED,sz));
                 delete [] pdw;
@@ -1256,7 +1206,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     wzScopeName=&wzUniBuf[0];
     if(m_szScopeName[0]) // default: scope name = output file name
     {
-        MultiByteToWideChar(g_uCodePage,0,m_szScopeName,-1,wzScopeName,MAX_SCOPE_LENGTH);
+        minipal_convert_utf8_to_utf16(m_szScopeName,strlen(m_szScopeName)+1,(CHAR16_T*)wzScopeName,MAX_SCOPE_LENGTH,0);
     }
     else
     {
@@ -1720,7 +1670,8 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         pb = (BYTE*)(((size_t)pb + 3) & ~3);
         PSTORAGEHEADER pSHdr = (PSTORAGEHEADER)pb;
         PSTORAGESTREAM pStr = (PSTORAGESTREAM)(pSHdr+1);
-        for(short iStr = 1; iStr <= VAL16(pSHdr->iStreams); iStr++)
+        USHORT streamCount = VAL16(pSHdr->iStreams);
+        for(unsigned int iStr = 1; iStr <= streamCount; iStr++)
         {
             if((strcmp(pStr->rcName,"#-")==0)||(strcmp(pStr->rcName,"#~")==0))
             {
@@ -1755,12 +1706,12 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         {
             m_pManifest->m_fMResNew[i] = FALSE;
             memset(sz,0,2048);
-            WideCharToMultiByte(CP_ACP,0,m_pManifest->m_wzMResName[i],-1,sz,2047,NULL,NULL);
+            minipal_convert_utf16_to_utf8((const CHAR16_T*)m_pManifest->m_wzMResName[i],u16_strlen(m_pManifest->m_wzMResName[i])+1,sz,2047,0);
             L = m_pManifest->m_dwMResSize[i];
             sizeread = 0;
             memcpy(ptr,&L,sizeof(DWORD));
             ptr += sizeof(DWORD);
-            if(fopen_s(&pFile,sz,"rb") == 0)
+            if(fopen_lp(&pFile,m_pManifest->m_wzMResName[i],W("rb")) == 0)
             {
                 sizeread = fread((void *)ptr,1,L,pFile);
                 fclose(pFile);

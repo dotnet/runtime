@@ -4,16 +4,16 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
-	[SetupCompileBefore ("LibraryWithPortablePdbSymbols.dll", new[] { "Dependencies/LibraryWithPortablePdbSymbols.cs" }, additionalArguments: new[] { "/debug:portable" }, compilerToUse: "csc")]
-	[SetupLinkerLinkSymbols ("true")]
-	[SetupLinkerAction ("copy", "LibraryWithPortablePdbSymbols")]
+    [SetupCompileBefore("LibraryWithPortablePdbSymbols.dll", new[] { "Dependencies/LibraryWithPortablePdbSymbols.cs" }, additionalArguments: new[] { "/debug:portable" }, compilerToUse: "csc")]
+    [SetupLinkerLinkSymbols("true")]
+    [SetupLinkerAction("copy", "LibraryWithPortablePdbSymbols")]
 
-	[KeptSymbols ("LibraryWithPortablePdbSymbols.dll")]
-	public class ReferenceWithPortablePdbCopyActionAndSymbolLinkingEnabled
-	{
-		static void Main ()
-		{
-			LibraryWithPortablePdbSymbols.SomeMethod ();
-		}
-	}
+    [KeptSymbols("LibraryWithPortablePdbSymbols.dll")]
+    public class ReferenceWithPortablePdbCopyActionAndSymbolLinkingEnabled
+    {
+        static void Main()
+        {
+            LibraryWithPortablePdbSymbols.SomeMethod();
+        }
+    }
 }

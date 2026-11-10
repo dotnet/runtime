@@ -83,7 +83,10 @@ namespace System.IO
             string newPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
             ReadOnlySpan<char> trimmedNewPath = Path.TrimEndingDirectorySeparator(newPath.AsSpan());
-            ReadOnlySpan<char> trimmedCurrentPath = Path.TrimEndingDirectorySeparator(FullPath.AsSpan());
+
+            // Trim any trailing separator, including from a root path for proper boundary checking.
+            // TrimEndingDirectorySeparator does not trim the character from path roots.
+            ReadOnlySpan<char> trimmedCurrentPath = FullPath.TrimEnd(Path.DirectorySeparatorChar);
 
             // We want to make sure the requested directory is actually under the subdirectory.
             if (trimmedNewPath.StartsWith(trimmedCurrentPath, PathInternal.StringComparison)

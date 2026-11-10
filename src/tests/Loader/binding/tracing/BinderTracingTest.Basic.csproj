@@ -1,7 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- https://github.com/dotnet/runtime/issues/57786 -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'coreclr'">true</DisableProjectBuild>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.Basic.cs" />
     <Compile Include="BinderTracingTest.DefaultProbing.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <Import Project="BinderTracingTest.targets" />
 </Project>

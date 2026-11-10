@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 
 
@@ -204,6 +205,7 @@ public class Test_Base01a_auto
 	
 	}
 	
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

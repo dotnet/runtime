@@ -7,7 +7,6 @@
     <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
     <_SampleProjectName>$([System.String]::Copy('$(_SampleProject)').Replace('.csproj',''))</_SampleProjectName>
     <_MONO_LOG_LEVEL Condition="false">--env MONO_LOG_LEVEL=debug --env MONO_LOG_MASK=all</_MONO_LOG_LEVEL>
-    <_DOTNET_WASI_PRINT_EXIT_CODE>--env DOTNET_WASI_PRINT_EXIT_CODE=1</_DOTNET_WASI_PRINT_EXIT_CODE>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"
@@ -35,7 +34,7 @@
       <_DotnetWasmName>dotnet.wasm</_DotnetWasmName>
       <_DotnetWasmName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))</_DotnetWasmName>
       <_AppBundlePath>$([MSBuild]::NormalizeDirectory('bin/wasi-wasm/AppBundle'))</_AppBundlePath>
-      <WasiCommand>$(WasmtimeDir)wasmtime$(_ExeExt) $(_MONO_LOG_LEVEL) $(_DOTNET_WASI_PRINT_EXIT_CODE)</WasiCommand>
+      <WasiCommand>$(WasmtimeDir)wasmtime$(_ExeExt) $(_MONO_LOG_LEVEL)</WasiCommand>
 
 
       <WasiCommand Condition="'$(_WasiNeedsHttp)' == 'true'"                                         >$(WasiCommand) --wasi http</WasiCommand>

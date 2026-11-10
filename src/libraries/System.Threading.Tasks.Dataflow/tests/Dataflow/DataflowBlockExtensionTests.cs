@@ -454,7 +454,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<ArgumentNullException>(() => source.LinkTo(target, null, i => true));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestLinkTo_TwoPhaseCommit()
         {
             var source1 = new BufferBlock<int>();
@@ -478,7 +478,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 43, actual: tuple.Item2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task TestLinkTo_DoubleLinking()
         {
             foreach (bool greedy in DataflowTestHelpers.BooleanValues)
@@ -971,7 +971,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: buffer.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task TestReceive_NotYetAvailable()
         {
             var buffer = new BufferBlock<int>();
@@ -1005,7 +1005,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 6, actual: await t4);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // timeout involved
         public async Task TestReceive_Timeout()
         {
@@ -1028,7 +1028,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task TestReceive_Cancellation()
         {
             var bb = new BufferBlock<int>();
@@ -1070,7 +1070,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task TestReceive_CanceledSource()
         {
             foreach (bool beforeReceive in DataflowTestHelpers.BooleanValues)
@@ -1125,7 +1125,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "uses a lot of stack")]
         public async Task TestReceiveAsync_LongChain()
         {
             const int Length = 10000;
@@ -1711,7 +1711,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 () => DataflowBlock.Encapsulate<int, int>(new BufferBlock<int>(), new BufferBlock<int>()).Fault(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestEncapsulate_LinkingAndUnlinking()
         {
             var buffer = new BufferBlock<int>();
@@ -1926,7 +1926,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "uses a lot of stack")]
         public async Task TestOutputAvailableAsync_LongSequence()
         {
             const int iterations = 10000; // enough to stack overflow if there's a problem

@@ -64,8 +64,8 @@
              Link="Common\Interop\Interop.OpenProcessToken.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation.cs"
              Link="Common\Interop\Interop.GetTokenInformation.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_SafeLocalAllocHandle.cs"
-             Link="Common\Interop\Interop.GetTokenInformation_SafeLocalAllocHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_SafeNativeMemoryHandle.cs"
+             Link="Common\Interop\Interop.GetTokenInformation_SafeNativeMemoryHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DuplicateTokenEx.cs"
              Link="Common\Interop\Interop.DuplicateTokenEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeAccessTokenHandle.cs"
@@ -128,8 +128,8 @@
              Link="Common\Interop\Windows\SspiCli\Interop.TokenSource.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeNativeMemoryHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeNativeMemoryHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs"
@@ -143,13 +143,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\src\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Claims\src\System.Security.Claims.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>

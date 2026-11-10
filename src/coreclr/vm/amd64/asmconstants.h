@@ -53,11 +53,10 @@ ASMCONSTANTS_C_ASSERT(ASM_ELEMENT_TYPE_R8 == ELEMENT_TYPE_R8);
 #define METHODDESC_REGNUM                    10
 #define METHODDESC_REGISTER                 r10
 
-#define PINVOKE_CALLI_TARGET_REGNUM          10
-#define PINVOKE_CALLI_TARGET_REGISTER       r10
-
-#define PINVOKE_CALLI_SIGTOKEN_REGNUM        11
-#define PINVOKE_CALLI_SIGTOKEN_REGISTER     r11
+#ifdef FEATURE_VARARGS
+#define PINVOKE_VARARG_SIGTOKEN_REGNUM       11
+#define PINVOKE_VARARG_SIGTOKEN_REGISTER    r11
+#endif // FEATURE_VARARGS
 
 #ifdef UNIX_AMD64_ABI
 // rdi, rsi, rdx, rcx, r8, r9
@@ -91,17 +90,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Frame__m_Next
                     == offsetof(Frame, m_Next));
 
 #define               SIZEOF__Frame                 0x10
-
-#ifdef FEATURE_COMINTEROP
-#define               SIZEOF__ComPrestubMethodFrame                 0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
-                    == sizeof(ComPrestubMethodFrame));
-
-#define               SIZEOF__ComMethodFrame                        0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
-                    == sizeof(ComMethodFrame));
-
-#endif // FEATURE_COMINTEROP
 
 #define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
@@ -236,21 +224,11 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
 
 ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
 
-#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
-
-#define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
-                    == offsetof(VASigCookie, pNDirectILStub));
+#ifdef FEATURE_VARARGS
+#define               OFFSETOF__VASigCookie__pPInvokeILStub     0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pPInvokeILStub
+                    == offsetof(VASigCookie, pPInvokeILStub));
+#endif // FEATURE_VARARGS
 
 #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
 // Expression is too complicated, is currently:
@@ -491,33 +469,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pThread
                     == offsetof(InlinedCallFrame, m_pThread));
 
-#define CallDescrData__pSrc                0x00
-#define CallDescrData__numStackSlots       0x08
-#ifdef UNIX_AMD64_ABI
-#define CallDescrData__pArgumentRegisters  0x10
-#define CallDescrData__pFloatArgumentRegisters 0x18
-#define CallDescrData__fpReturnSize        0x20
-#define CallDescrData__pTarget             0x28
-#define CallDescrData__returnValue         0x30
-#else
-#define CallDescrData__dwRegTypeMap        0x10
-#define CallDescrData__fpReturnSize        0x18
-#define CallDescrData__pTarget             0x20
-#define CallDescrData__returnValue         0x28
-#endif
-
-ASMCONSTANTS_C_ASSERT(CallDescrData__pSrc                 == offsetof(CallDescrData, pSrc))
-ASMCONSTANTS_C_ASSERT(CallDescrData__numStackSlots        == offsetof(CallDescrData, numStackSlots))
-#ifdef UNIX_AMD64_ABI
-ASMCONSTANTS_C_ASSERT(CallDescrData__pArgumentRegisters   == offsetof(CallDescrData, pArgumentRegisters))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pFloatArgumentRegisters == offsetof(CallDescrData, pFloatArgumentRegisters))
-#else
-ASMCONSTANTS_C_ASSERT(CallDescrData__dwRegTypeMap         == offsetof(CallDescrData, dwRegTypeMap))
-#endif
-ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrData, fpReturnSize))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
-ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
-
 #ifdef UNIX_AMD64_ABI
 #define OFFSETOF__TransitionBlock__m_argumentRegisters    0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__TransitionBlock__m_argumentRegisters == offsetof(TransitionBlock, m_argumentRegisters))
@@ -538,6 +489,7 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
+#ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
 
@@ -546,13 +498,20 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 #define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(InterfaceDispatchCache, m_rgEntries))
 
+#define OFFSETOF__InterfaceDispatchCache__m_cEntries 0x18
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_cEntries == offsetof(InterfaceDispatchCache, m_cEntries))
+
 #define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
+
+#define IDC_CACHE_POINTER_MASK 0x3
+ASMCONSTANTS_C_ASSERT(IDC_CACHE_POINTER_MASK == ::IDC_CachePointerMask)
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #define OFFSETOF__ThreadLocalInfo__m_pThread 0
@@ -566,17 +525,13 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#ifdef TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb50
-#else // TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xba8
-#endif // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
 
-#define OFFSETOF__CallStubHeader__Routines 0x10
+#define OFFSETOF__CallStubHeader__Routines 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
 
 #ifdef TARGET_UNIX

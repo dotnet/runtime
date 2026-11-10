@@ -7,10 +7,9 @@
 #ifndef __EXCEPTION_HANDLING_h__
 #define __EXCEPTION_HANDLING_h__
 
-#ifdef FEATURE_EH_FUNCLETS
-
 #include "eexcp.h"
 #include "exstatecommon.h"
+#include "exkind.h"
 
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
@@ -22,17 +21,16 @@ ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
-EXTERN_C EXCEPTION_DISPOSITION __cdecl
-CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRecord,
-                                       IN     PVOID                 pEstablisherFrame,
-                                       IN OUT PT_CONTEXT            pContextRecord,
-                                       IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
+void NormalizeThrownObject(OBJECTREF *ppThrowable);
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExInfo *pExInfo);
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL, ExKind exKind = ExKind::None);
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExKind exKind = ExKind::None);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
+
+void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
@@ -51,19 +49,13 @@ enum EHFuncletType
     Catch = 0x0004,
 };
 
-// These values are or-ed into the InlinedCallFrame::m_Datum field.
-// The bit 0 is used for unrelated purposes (see comments on the
-// InlinedCallFrame::m_Datum field for details).
+// These values are or-ed into the InlinedCallFrame::m_Datum field when it contains
+// a MethodDesc pointer.
+// [cDAC] [StackWalk]: Contract depends on these values.
 enum class InlinedCallFrameMarker
 {
-#ifdef HOST_64BIT
-    ExceptionHandlingHelper = 2,
-    SecondPassFuncletCaller = 4,
-#else // HOST_64BIT
     ExceptionHandlingHelper = 1,
-    SecondPassFuncletCaller = 2,
-#endif // HOST_64BIT
-    Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
+    Mask = ExceptionHandlingHelper
 };
 
 #ifdef FEATURE_INTERPRETER
@@ -83,11 +75,14 @@ public:
         *pResumeIP = m_resumeIP;
     }
 };
+
+#ifndef HOST_WASM
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp, bool isInterruptedContext = false);
+#endif // HOST_WASM
+
 #endif // FEATURE_INTERPRETER
 
 void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER

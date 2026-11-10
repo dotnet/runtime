@@ -6,6 +6,7 @@
 #include "longfilepathwrappers.h"
 #include "sstring.h"
 #include "ex.h"
+#include <dn-stdio.h>
 
 #ifdef HOST_WINDOWS
 class LongFile
@@ -30,7 +31,6 @@ public:
         static BOOL IsDevice(const SString & path);
         static void NormalizeDirectorySeparators(SString& path);
 };
-#endif // HOST_WINDOWS
 
 DWORD
 SearchPathWrapper(
@@ -45,6 +45,7 @@ SearchPathWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -54,7 +55,6 @@ SearchPathWrapper(
 
     EX_TRY
     {
-#ifdef HOST_WINDOWS
         LongPathString Existingpath(LongPathString::Literal, lpPath);
         if (lpPath != NULL)
         {
@@ -67,7 +67,6 @@ SearchPathWrapper(
                 lpPath = Existingpath.GetUnicode();
             }
         }
-#endif // HOST_WINDOWS
 
         if (!getPath)
         {
@@ -126,6 +125,7 @@ SearchPathWrapper(
     return ret;
 
 }
+#endif // HOST_WINDOWS
 
 DWORD
 GetModuleFileNameWrapper(
@@ -136,6 +136,7 @@ GetModuleFileNameWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -192,6 +193,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -255,6 +257,7 @@ LoadLibraryExWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -303,6 +306,7 @@ CreateFileWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -342,58 +346,31 @@ CreateFileWrapper(
     return ret;
 }
 
-BOOL
-CopyFileExWrapper(
-        _In_        LPCWSTR lpExistingFileName,
-        _In_        LPCWSTR lpNewFileName,
-        _In_opt_    LPPROGRESS_ROUTINE lpProgressRoutine,
-        _In_opt_    LPVOID lpData,
-        _When_(pbCancel != NULL, _Pre_satisfies_(*pbCancel == FALSE))
-        _Inout_opt_ LPBOOL pbCancel,
-        _In_        DWORD dwCopyFlags
-        )
+int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
 {
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-    HRESULT hr  = S_OK;
-    BOOL    ret = FALSE;
-    DWORD lastError = 0;
-
     EX_TRY
     {
-        LongPathString Existingpath(LongPathString::Literal, lpExistingFileName);
-        LongPathString Newpath(LongPathString::Literal, lpNewFileName);
+        LongPathString path(LongPathString::Literal, filename);
 
-        if (SUCCEEDED(LongFile::NormalizePath(Existingpath)) && SUCCEEDED(LongFile::NormalizePath(Newpath)))
+        if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
-            ret = CopyFileExW(
-                    Existingpath.GetUnicode(),
-                    Newpath.GetUnicode(),
-                    lpProgressRoutine,
-                    lpData,
-                    pbCancel,
-                    dwCopyFlags
-                    );
+            return u16_fopen_s(stream, path.GetUnicode(), mode);
         }
-
-        lastError = GetLastError();
     }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
+    EX_CATCH
     {
-        SetLastError(hr);
+        return -1;
     }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
+    EX_END_CATCH
 
-    return ret;
+    return -1;
 }
 
 //Implementation of LongFile Helpers

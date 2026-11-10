@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' == ''">net12.0</TargetFramework>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' != ''">$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+    <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>

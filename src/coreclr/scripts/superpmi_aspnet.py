@@ -138,7 +138,7 @@ def build_and_run(coreclr_args):
         # install dotnet 8.0
         run_command([dotnet_install_script_path, "-Version", "8.0.0"], temp_location, _exit_on_fail=True)
         os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
-        os.environ['DOTNET_SKIP_FIRST_TIME_EXPERIENCE'] = '1'
+        os.environ['DOTNET_NOLOGO'] = '1'
         dotnet_path = path.join(source_directory, ".dotnet")
         dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
         # run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)

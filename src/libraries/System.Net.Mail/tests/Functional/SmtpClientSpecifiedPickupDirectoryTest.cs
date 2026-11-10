@@ -82,7 +82,7 @@ namespace System.Net.Mail.Tests
         [InlineData("")]
         [InlineData(null)]
         [InlineData("\0abc")]
-        public async Task Send_SpecifiedPickupDirectoryInvalid(string location)
+        public async Task Send_SpecifiedPickupDirectoryInvalid(string? location)
         {
             Smtp.DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory;
             Smtp.PickupDirectoryLocation = location;

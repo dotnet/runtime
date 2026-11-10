@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -12,8 +13,8 @@ internal static partial class Interop
         public unsafe struct IP_ADDR_STRING
         {
             public IP_ADDR_STRING* Next;
-            public fixed byte IpAddress[16];
-            public fixed byte IpMask[16];
+            public InlineArray16<byte> IpAddress;
+            public InlineArray16<byte> IpMask;
             public uint Context;
         }
     }

@@ -5,9 +5,7 @@ import { dotnet, exit } from './_framework/dotnet.js'
 
 try {
     const dotnetRuntime = await dotnet
-        .withElementOnExit()
-        .withExitCodeLogging()
-        .withExitOnUnhandledError()
+        .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true })
         .create();
     const config = dotnetRuntime.getConfig();
     var url = window.location.origin + window.location.pathname;

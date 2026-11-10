@@ -3,85 +3,109 @@
 
 using System.Collections.Generic;
 using System.Security.Cryptography.Tests;
-
-using Xunit;
 using Test.Cryptography;
+using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class ECDiffieHellmanTests : EccTestBase
+    public abstract partial class ECDiffieHellmanTests : EccTestBase
     {
-        private static List<object[]> s_everyKeysize;
-        private static List<object[]> s_mismatchedKeysizes;
+        protected abstract ECDiffieHellmanProvider ECDiffieHellmanFactory { get; }
 
-        public static IEnumerable<object[]> EveryKeysize()
+        private static Dictionary<ECDiffieHellmanProvider, List<int>> s_everyKeysizePerProvider = new();
+        private static Dictionary<ECDiffieHellmanProvider, List<(int, int)>> s_mismatchedKeysizesPerProvider = new();
+
+        public List<int> EveryKeysize()
         {
-            if (s_everyKeysize == null)
+            lock (s_everyKeysizePerProvider)
             {
-                List<object[]> everyKeysize = new List<object[]>();
-
-                using (ECDiffieHellman defaultKeysize = ECDiffieHellmanFactory.Create())
+                if (!s_everyKeysizePerProvider.TryGetValue(ECDiffieHellmanFactory, out List<int> everyKeysize))
                 {
-                    foreach (KeySizes keySizes in defaultKeysize.LegalKeySizes)
-                    {
-                        for (int size = keySizes.MinSize; size <= keySizes.MaxSize; size += keySizes.SkipSize)
-                        {
-                            everyKeysize.Add(new object[] { size });
+                    everyKeysize = new List<int>();
 
-                            if (keySizes.SkipSize == 0)
+                    using (ECDiffieHellman defaultKeysize = ECDiffieHellmanFactory.Create())
+                    {
+                        foreach (KeySizes keySizes in defaultKeysize.LegalKeySizes)
+                        {
+                            for (int size = keySizes.MinSize; size <= keySizes.MaxSize; size += keySizes.SkipSize)
                             {
-                                break;
+                                everyKeysize.Add(size);
+
+                                if (keySizes.SkipSize == 0)
+                                {
+                                    break;
+                                }
                             }
                         }
                     }
+
+                    s_everyKeysizePerProvider[ECDiffieHellmanFactory] = everyKeysize;
                 }
 
-                s_everyKeysize = everyKeysize;
+                return everyKeysize;
             }
-
-            return s_everyKeysize;
         }
 
-        public static IEnumerable<object[]> MismatchedKeysizes()
+        public List<(int, int)> MismatchedKeysizes()
         {
-            if (s_mismatchedKeysizes == null)
+            lock (s_mismatchedKeysizesPerProvider)
             {
-                int firstSize = -1;
-                List<object[]> mismatchedKeysizes = new List<object[]>();
-
-                using (ECDiffieHellman defaultKeysize = ECDiffieHellmanFactory.Create())
+                if (!s_mismatchedKeysizesPerProvider.TryGetValue(ECDiffieHellmanFactory, out List<(int, int)> mismatchedKeysizes))
                 {
-                    foreach (KeySizes keySizes in defaultKeysize.LegalKeySizes)
-                    {
-                        for (int size = keySizes.MinSize; size <= keySizes.MaxSize; size += keySizes.SkipSize)
-                        {
-                            if (firstSize == -1)
-                            {
-                                firstSize = size;
-                            }
-                            else if (size != firstSize)
-                            {
-                                mismatchedKeysizes.Add(new object[] { firstSize, size });
-                            }
+                    int firstSize = -1;
+                    mismatchedKeysizes = new List<(int, int)>();
 
-                            if (keySizes.SkipSize == 0)
+                    using (ECDiffieHellman defaultKeysize = ECDiffieHellmanFactory.Create())
+                    {
+                        foreach (KeySizes keySizes in defaultKeysize.LegalKeySizes)
+                        {
+                            for (int size = keySizes.MinSize; size <= keySizes.MaxSize; size += keySizes.SkipSize)
                             {
-                                break;
+                                if (firstSize == -1)
+                                {
+                                    firstSize = size;
+                                }
+                                else if (size != firstSize)
+                                {
+                                    mismatchedKeysizes.Add((firstSize, size));
+                                }
+
+                                if (keySizes.SkipSize == 0)
+                                {
+                                    break;
+                                }
                             }
                         }
                     }
+
+                    s_mismatchedKeysizesPerProvider[ECDiffieHellmanFactory] = mismatchedKeysizes;
                 }
 
-                s_mismatchedKeysizes = mismatchedKeysizes;
+                return mismatchedKeysizes;
             }
-
-            return s_mismatchedKeysizes;
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void SupportsKeysize(int keySize)
+        protected void ForEachKeySize(Action<int> test)
+        {
+            foreach (int size in EveryKeysize())
+            {
+                test(size);
+            }
+        }
+
+        protected void ForEachMismatchedKeySize(Action<int, int> test)
+        {
+            foreach ((int, int) pair in MismatchedKeysizes())
+            {
+                test(pair.Item1, pair.Item2);
+            }
+        }
+
+        [Fact]
+        public void SupportsKeysize() => ForEachKeySize(SupportsKeysizeImpl);
+
+        private void SupportsKeysizeImpl(int keySize)
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(keySize))
             {
@@ -89,9 +113,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void PublicKey_NotNull(int keySize)
+        [Fact]
+        public void PublicKey_NotNull() => ForEachKeySize(PublicKey_NotNullImpl);
+
+        private void PublicKey_NotNullImpl(int keySize)
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(keySize))
             using (ECDiffieHellmanPublicKey ecdhPubKey = ecdh.PublicKey)
@@ -101,7 +126,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void PublicKeyIsFactory()
+        public void PublicKeyIsFactory()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellmanPublicKey publicKey1 = ecdh.PublicKey)
@@ -112,7 +137,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void PublicKey_TryExportSubjectPublicKeyInfo_TooSmall()
+        public void PublicKey_TryExportSubjectPublicKeyInfo_TooSmall()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
@@ -126,7 +151,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static void UseAfterDispose(bool importKey)
+        public void UseAfterDispose(bool importKey)
         {
             ECDiffieHellman key = ECDiffieHellmanFactory.Create();
             ECDiffieHellmanPublicKey pubKey;
@@ -172,8 +197,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             pubKey.Dispose();
         }
 
-#if NET
-        private static ECDiffieHellman OpenKnownKey()
+        private ECDiffieHellman OpenKnownKey()
         {
             ECParameters ecParams = new ECParameters
             {
@@ -199,7 +223,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             ecdh.ImportParameters(ecParams);
             return ecdh;
         }
-#endif
     }
 
     internal static class EcdhTestExtensions

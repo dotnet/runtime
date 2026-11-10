@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 
 using Internal.Runtime;
@@ -85,7 +86,7 @@ namespace System
             return RuntimeImports.RhGetGeneration(obj);
         }
 
-        internal static int GetGenerationSize(int gen)
+        internal static ulong GetGenerationSize(int gen)
         {
             return RuntimeImports.RhGetGenerationSize(gen);
         }
@@ -191,7 +192,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure);
+            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
         }
 
         /// <summary>
@@ -331,9 +332,9 @@ namespace System
                     switch (status)
                     {
                         case EnableNoGCRegionCallbackStatus.NotStarted:
-                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionNotInProgress));
+                            throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionNotInProgress);
                         case EnableNoGCRegionCallbackStatus.InsufficientBudget:
-                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionAllocationExceeded));
+                            throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionAllocationExceeded);
                         case EnableNoGCRegionCallbackStatus.AlreadyRegistered:
                             throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionCallbackAlreadyRegistered);
                     }
@@ -426,7 +427,11 @@ namespace System
             }
 
             StartNoGCRegionStatus status =
-                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(
+                    totalSize,
+                    hasLohSize ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    lohSize,
+                    disallowFullBlockingGC ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
             switch (status)
             {
                 case StartNoGCRegionStatus.NotEnoughMemory:
@@ -508,139 +513,13 @@ namespace System
             return RuntimeImports.RhGetGcCollectionCount(generation, false);
         }
 
-        // Support for AddMemoryPressure and RemoveMemoryPressure below.
-        private const uint PressureCount = 4;
-#if TARGET_64BIT
-        private const uint MinGCMemoryPressureBudget = 4 * 1024 * 1024;
-#else
-        private const uint MinGCMemoryPressureBudget = 3 * 1024 * 1024;
-#endif
+        private static long GetCurrentObjSize() => RuntimeImports.RhGetCurrentObjSize();
 
-        private const uint MaxGCMemoryPressureRatio = 10;
+        private static long GetGCNow() => RuntimeImports.RhGetGCNow();
 
-        private static int[] s_gcCounts = new int[] { 0, 0, 0 };
+        private static long GetLastGCStartTime() => RuntimeImports.RhGetLastGCStartTime(2);
 
-        private static long[] s_addPressure = new long[] { 0, 0, 0, 0 };
-        private static long[] s_removePressure = new long[] { 0, 0, 0, 0 };
-        private static uint s_iteration;
-
-        /// <summary>
-        /// Resets the pressure accounting after a gen2 GC has occurred.
-        /// </summary>
-        private static void CheckCollectionCount()
-        {
-            if (s_gcCounts[2] != CollectionCount(2))
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    s_gcCounts[i] = CollectionCount(i);
-                }
-
-                s_iteration++;
-
-                uint p = s_iteration % PressureCount;
-
-                s_addPressure[p] = 0;
-                s_removePressure[p] = 0;
-            }
-        }
-
-        private static long InterlockedAddMemoryPressure(ref long pAugend, long addend)
-        {
-            long oldMemValue;
-            long newMemValue;
-
-            do
-            {
-                oldMemValue = pAugend;
-                newMemValue = oldMemValue + addend;
-
-                // check for overflow
-                if (newMemValue < oldMemValue)
-                {
-                    newMemValue = long.MaxValue;
-                }
-            } while (Interlocked.CompareExchange(ref pAugend, newMemValue, oldMemValue) != oldMemValue);
-
-            return newMemValue;
-        }
-
-        /// <summary>
-        /// New AddMemoryPressure implementation (used by RCW and the CLRServicesImpl class)
-        /// 1. Less sensitive than the original implementation (start budget 3 MB)
-        /// 2. Focuses more on newly added memory pressure
-        /// 3. Budget adjusted by effectiveness of last 3 triggered GC (add / remove ratio, max 10x)
-        /// 4. Budget maxed with 30% of current managed GC size
-        /// 5. If Gen2 GC is happening naturally, ignore past pressure
-        ///
-        /// Here's a brief description of the ideal algorithm for Add/Remove memory pressure:
-        /// Do a GC when (HeapStart is less than X * MemPressureGrowth) where
-        /// - HeapStart is GC Heap size after doing the last GC
-        /// - MemPressureGrowth is the net of Add and Remove since the last GC
-        /// - X is proportional to our guess of the ummanaged memory death rate per GC interval,
-        /// and would be calculated based on historic data using standard exponential approximation:
-        /// Xnew = UMDeath/UMTotal * 0.5 + Xprev
-        /// </summary>
-        /// <param name="bytesAllocated"></param>
-        public static void AddMemoryPressure(long bytesAllocated)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
-#if !TARGET_64BIT
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
-#endif
-
-            CheckCollectionCount();
-            uint p = s_iteration % PressureCount;
-            long newMemValue = InterlockedAddMemoryPressure(ref s_addPressure[p], bytesAllocated);
-
-            Debug.Assert(PressureCount == 4, "GC.AddMemoryPressure contains unrolled loops which depend on the PressureCount");
-
-            if (newMemValue >= MinGCMemoryPressureBudget)
-            {
-                long add = s_addPressure[0] + s_addPressure[1] + s_addPressure[2] + s_addPressure[3] - s_addPressure[p];
-                long rem = s_removePressure[0] + s_removePressure[1] + s_removePressure[2] + s_removePressure[3] - s_removePressure[p];
-
-                long budget = MinGCMemoryPressureBudget;
-
-                if (s_iteration >= PressureCount)  // wait until we have enough data points
-                {
-                    // Adjust according to effectiveness of GC
-                    // Scale budget according to past m_addPressure / m_remPressure ratio
-                    if (add >= rem * MaxGCMemoryPressureRatio)
-                    {
-                        budget = MinGCMemoryPressureBudget * MaxGCMemoryPressureRatio;
-                    }
-                    else if (add > rem)
-                    {
-                        Debug.Assert(rem != 0);
-
-                        // Avoid overflow by calculating addPressure / remPressure as fixed point (1 = 1024)
-                        budget = (add * 1024 / rem) * budget / 1024;
-                    }
-                }
-
-                // If still over budget, check current managed heap size
-                if (newMemValue >= budget)
-                {
-                    long heapOver3 = RuntimeImports.RhGetCurrentObjSize() / 3;
-
-                    if (budget < heapOver3)  //Max
-                    {
-                        budget = heapOver3;
-                    }
-
-                    if (newMemValue >= budget)
-                    {
-                        // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
-                        if ((RuntimeImports.RhGetGCNow() - RuntimeImports.RhGetLastGCStartTime(2)) > (RuntimeImports.RhGetLastGCDuration(2) * 5))
-                        {
-                            RuntimeImports.RhCollect(2, InternalGCCollectionMode.NonBlocking);
-                            CheckCollectionCount();
-                        }
-                    }
-                }
-            }
-        }
+        private static long GetLastGCDuration() => RuntimeImports.RhGetLastGCDuration(2);
 
         internal struct GCConfigurationContext
         {
@@ -648,7 +527,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void ConfigCallback(void* configurationContext, void* name, void* publicKey, RuntimeImports.GCConfigurationType type, long data)
+        private static unsafe void ConfigCallback(void* configurationContext, byte* name, byte* publicKey, RuntimeImports.GCConfigurationType type, long data)
         {
             // If the public key is null, it means that the corresponding configuration isn't publicly available
             // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
@@ -664,7 +543,7 @@ namespace System
             Debug.Assert(context.Configurations != null);
             Dictionary<string, object> configurationDictionary = context.Configurations!;
 
-            string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            string nameAsString = Utf8StringMarshaller.ConvertToManaged(name)!;
             switch (type)
             {
                 case RuntimeImports.GCConfigurationType.Int64:
@@ -673,7 +552,7 @@ namespace System
 
                 case RuntimeImports.GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
+                        string? dataAsString = Utf8StringMarshaller.ConvertToManaged((byte*)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }
@@ -698,18 +577,6 @@ namespace System
 
             RuntimeImports.RhEnumerateConfigurationValues(&context, &ConfigCallback);
             return context.Configurations!;
-        }
-
-        public static void RemoveMemoryPressure(long bytesAllocated)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
-#if !TARGET_64BIT
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
-#endif
-
-            CheckCollectionCount();
-            uint p = s_iteration % PressureCount;
-            InterlockedAddMemoryPressure(ref s_removePressure[p], bytesAllocated);
         }
 
         public static long GetTotalMemory(bool forceFullCollection)
@@ -764,7 +631,7 @@ namespace System
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
-        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfoUnchecked(GCKind.Any);
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
@@ -780,6 +647,11 @@ namespace System
                                           GCKind.Background));
             }
 
+            return GetGCMemoryInfoUnchecked(kind);
+        }
+
+        private static GCMemoryInfo GetGCMemoryInfoUnchecked(GCKind kind)
+        {
             var data = new GCMemoryInfoData();
             RuntimeImports.RhGetMemoryInfo(ref data.GetRawData(), kind);
             return new GCMemoryInfo(data);

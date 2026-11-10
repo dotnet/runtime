@@ -1,5 +1,0 @@
-<linker>
-    <assembly fullname="abstract03">
-        <type fullname="GenBase" required="true" />
-    </assembly>
-</linker>

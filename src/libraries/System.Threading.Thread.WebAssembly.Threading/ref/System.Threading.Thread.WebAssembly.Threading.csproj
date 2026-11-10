@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <FeatureWasmManagedThreads>true</FeatureWasmManagedThreads>
     <AssemblyName>System.Threading.Thread</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- tell references.targets to bump the assembly version -->
@@ -11,7 +10,7 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

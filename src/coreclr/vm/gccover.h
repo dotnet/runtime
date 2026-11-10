@@ -8,6 +8,19 @@
 
 #ifdef HAVE_GCCOVER
 
+#ifndef DACCESS_COMPILE
+// R2R image pages are not owned by the JIT executable allocator.
+class GCStressCodeWriter
+{
+    ExecutableWriterHolderNoLog<BYTE> m_writer;
+    BYTE* m_addressRW;
+
+public:
+    GCStressCodeWriter(BYTE* address, size_t size);
+    BYTE* GetRW() const { return m_addressRW; }
+};
+#endif // !DACCESS_COMPILE
+
 /****************************************************************************/
 /* GCCOverageInfo holds the state of which instructions have been visited by
    a GC and which ones have not */
@@ -58,7 +71,9 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 
 #if defined(TARGET_X86)
 #define INTERRUPT_INSTR_CALL                   0xFA    // X86 CLI instruction
-#define INTERRUPT_INSTR_PROTECT_FIRST_RET      0xFB    // X86 STI instruction, protect the first return register
+#define INTERRUPT_INSTR_PROTECT_RET            0xFB    // X86 STI instruction, protect the first return register
+#define INTERRUPT_INSTR_PROTECT_CONT           0xEC    // X86 IN instruction, protect the continuation register
+#define INTERRUPT_INSTR_PROTECT_CONT_AND_RET   0xED    // X86 IN instruction, protect both continuation and return registers
 #endif
 
 #elif defined(TARGET_ARM)
@@ -117,7 +132,9 @@ inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
     {
     case INTERRUPT_INSTR:
     case INTERRUPT_INSTR_CALL:
-    case INTERRUPT_INSTR_PROTECT_FIRST_RET:
+    case INTERRUPT_INSTR_PROTECT_RET:
+    case INTERRUPT_INSTR_PROTECT_CONT:
+    case INTERRUPT_INSTR_PROTECT_CONT_AND_RET:
         return true;
     default:
         return false;

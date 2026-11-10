@@ -26,6 +26,11 @@ namespace Microsoft.Extensions.Configuration
         public static Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(this Microsoft.Extensions.Configuration.IConfiguration configuration, string key) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
+    public sealed partial class ConfigurationIgnoreAttribute : System.Attribute
+    {
+        public ConfigurationIgnoreAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public sealed partial class ConfigurationKeyNameAttribute : System.Attribute
     {
         public ConfigurationKeyNameAttribute(string name) { }

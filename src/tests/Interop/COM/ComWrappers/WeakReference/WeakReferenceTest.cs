@@ -278,6 +278,7 @@ namespace ComWrappersTests
             Assert.False(weakRef.TryGetTarget(out _));
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

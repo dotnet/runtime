@@ -52,6 +52,25 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [InlineData(16)]
+        [InlineData(24)]
+        [InlineData(32)]
+        public static void KeySizeInBytes(int keyLength)
+        {
+            byte[] key = new byte[keyLength];
+
+            using (var aesCcm = new AesCcm(key))
+            {
+                Assert.Equal(keyLength, aesCcm.KeySizeInBytes);
+            }
+
+            using (var aesCcm = new AesCcm(key.AsSpan()))
+            {
+                Assert.Equal(keyLength, aesCcm.KeySizeInBytes);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(GetInvalidNonceSizes))]
         public static void InvalidNonceSize(int nonceSize)
         {
@@ -696,7 +715,7 @@ namespace System.Security.Cryptography.Tests
     {
         public static bool RuntimeSaysIsNotSupported => !AesCcm.IsSupported;
 
-        [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
+        [ConditionalFact(typeof(AesCcmIsSupportedTests), nameof(RuntimeSaysIsNotSupported))]
         public static void CtorThrowsPNSEIfNotSupported()
         {
             byte[] key = RandomNumberGenerator.GetBytes(256 / 8);

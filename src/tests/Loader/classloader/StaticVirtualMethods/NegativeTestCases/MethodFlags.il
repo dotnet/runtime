@@ -3,8 +3,10 @@
 
 .assembly extern System.Console {}
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern mscorlib {}
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern TypeHierarchyCommonCs {}
 .assembly 'MethodFlags' {}
 
@@ -37,6 +39,7 @@
   .method public static void Test_Scenario1() cil managed noinlining
   {
     ldtoken BaseScenario1
+    call string [TypeHierarchyCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     pop
     ret
   } // end of method Test_Scenario1
@@ -44,6 +47,7 @@
   .method public static void Test_Scenario2() cil managed noinlining
   {
     ldtoken BaseScenario2
+    call string [TypeHierarchyCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     pop
     ret
   } // end of method Test_Scenario1
@@ -53,6 +57,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .entrypoint
     .locals init (class [System.Runtime]System.Exception V_0)
     .try {
@@ -92,7 +97,7 @@ VirtualFlagOnClassStaticDone: nop
         leave.s AbstractFlagOnClassStaticDone
     }
 AbstractFlagOnClassStaticDone: nop
-    
+
     call int32 [TypeHierarchyCommonCs]Statics::ReportResults()
     ret  } // end of method Main
 } // end of class TestEntrypoint

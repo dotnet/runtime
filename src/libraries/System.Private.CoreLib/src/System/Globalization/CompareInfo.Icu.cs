@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -11,10 +12,28 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
-        // Matches HighCharTable below.
-        private static readonly SearchValues<char> s_nonSpecialAsciiChars =
-            SearchValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        private static class IcuSearchValues
+        {
+            // Characters which do not require special handling
+            internal static readonly SearchValues<char> s_nonSpecialAsciiChars = CreateNonSpecialAsciiChars();
+
+            private static SearchValues<char> CreateNonSpecialAsciiChars()
+            {
+                ReadOnlySpan<bool> highCharTable = HighCharTable;
+                Span<char> values = stackalloc char[highCharTable.Length];
+                int valueIndex = 0;
+
+                for (int i = 0; i < highCharTable.Length; i++)
+                {
+                    if (!highCharTable[i])
+                    {
+                        values[valueIndex++] = (char)i;
+                    }
+                }
+
+                return SearchValues.Create(values.Slice(0, valueIndex));
+            }
+        }
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
@@ -78,16 +97,15 @@ namespace System.Globalization
             }
             else
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return IndexOfCoreNative(target, source, options, fromBeginning, matchLengthPtr);
+#endif
                 // GetReference may return nullptr if the input span is defaulted. The native layer handles
                 // this appropriately; no workaround is needed on the managed side.
-
                 fixed (char* pSource = &MemoryMarshal.GetReference(source))
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (GlobalizationMode.Hybrid)
-                        return IndexOfCoreNative(pTarget, target.Length, pSource, source.Length, options, fromBeginning, matchLengthPtr);
-#endif
                     if (fromBeginning)
                         return Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
                     else
@@ -114,14 +132,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                if (target.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                    if (source.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }
@@ -197,7 +215,7 @@ namespace System.Globalization
                     ? source.Slice(endIndex)
                     : source.Slice(0, startIndex);
 
-                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                if (remainingSource.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
@@ -207,7 +225,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
+                    return IndexOfCoreNative(target, source, options, fromBeginning, matchLengthPtr);
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
@@ -229,14 +247,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                if (target.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                    if (source.ContainsAnyExcept(IcuSearchValues.s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }
@@ -301,7 +319,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
+                    return IndexOfCoreNative(target, source, options, fromBeginning, matchLengthPtr);
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
@@ -328,13 +346,13 @@ namespace System.Globalization
             }
             else
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeStartsWith(prefix, source, options);
+#endif
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
                 {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (GlobalizationMode.Hybrid)
-                        return NativeStartsWith(pPrefix, prefix.Length, pSource, source.Length, options);
-#endif
                     return Interop.Globalization.StartsWith(_sortHandle, pPrefix, prefix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
@@ -416,7 +434,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeStartsWith(bp, prefix.Length, ap, source.Length, options);
+                    return NativeStartsWith(prefix, source, options);
 #endif
                 return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
@@ -488,7 +506,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeStartsWith(bp, prefix.Length, ap, source.Length, options);
+                    return NativeStartsWith(prefix, source, options);
 #endif
                 return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
@@ -512,13 +530,13 @@ namespace System.Globalization
             }
             else
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeEndsWith(suffix, source, options);
+#endif
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
                 {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (GlobalizationMode.Hybrid)
-                        return NativeEndsWith(pSuffix, suffix.Length, pSource, source.Length, options);
-#endif
                     return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
@@ -601,7 +619,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeEndsWith(bp, suffix.Length, ap, source.Length, options);
+                    return NativeEndsWith(suffix, source, options);
 #endif
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }
@@ -673,7 +691,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeEndsWith(bp, suffix.Length, ap, source.Length, options);
+                    return NativeEndsWith(suffix, source, options);
 #endif
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }

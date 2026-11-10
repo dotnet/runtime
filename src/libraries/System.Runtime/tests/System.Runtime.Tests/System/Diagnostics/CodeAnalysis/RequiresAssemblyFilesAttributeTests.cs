@@ -20,7 +20,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData("Message")]
         [InlineData("")]
         [InlineData(null)]
-        public void TestSetMessage(string message)
+        public void TestSetMessage(string? message)
         {
             var attr = new RequiresAssemblyFilesAttribute(message);
 
@@ -32,7 +32,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData("https://dot.net")]
         [InlineData("")]
         [InlineData(null)]
-        public void TestSetUrl(string url)
+        public void TestSetUrl(string? url)
         {
             var attr = new RequiresAssemblyFilesAttribute()
             {
@@ -53,7 +53,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(null, "https://dot.net")]
         [InlineData(null, "")]
         [InlineData(null, null)]
-        public void TestSetMessageAndUrl(string message, string url)
+        public void TestSetMessageAndUrl(string? message, string? url)
         {
             var attr = new RequiresAssemblyFilesAttribute(message)
             {

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace System.Formats.Asn1
 {
@@ -73,12 +73,12 @@ namespace System.Formats.Asn1
         {
             CheckUniversalTag(tag, encodingType);
 
-            Text.Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
+            Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
             WriteCharacterStringCore(tag ?? new Asn1Tag(encodingType), encoding, str);
         }
 
         // T-REC-X.690-201508 sec 8.23
-        private void WriteCharacterStringCore(Asn1Tag tag, Text.Encoding encoding, ReadOnlySpan<char> str)
+        private void WriteCharacterStringCore(Asn1Tag tag, Encoding encoding, ReadOnlySpan<char> str)
         {
             int size = encoding.GetByteCount(str);
 
@@ -110,7 +110,7 @@ namespace System.Formats.Asn1
             _offset += size;
         }
 
-        private void WriteConstructedCerCharacterString(Asn1Tag tag, Text.Encoding encoding, ReadOnlySpan<char> str, int size)
+        private void WriteConstructedCerCharacterString(Asn1Tag tag, Encoding encoding, ReadOnlySpan<char> str, int size)
         {
             Debug.Assert(size > AsnReader.MaxCERSegmentSize);
 

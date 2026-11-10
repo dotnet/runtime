@@ -2,7 +2,7 @@
 <linker>
 	<assembly fullname="System.Private.CoreLib">
 		<!-- assembly-load-context.c: -->
-		<!-- object-internals.h: MonoManagedAssemblyLoadContext -->
+		<!-- object-internals.h: MonoAssemblyLoadContext -->
 		<type fullname="System.Runtime.Loader.AssemblyLoadContext">
 			<!-- assembly-load-context.c: mono_alc_invoke_resolve_using_load -->
 			<method name="MonoResolveUsingLoad" />
@@ -278,6 +278,12 @@
 			<method name="GetHashCode" />
 		</type>
 
+		<!-- domain.c: mono_defaults.gc_class -->
+		<type fullname="System.GC">
+			<!-- gc.c: mono_gc_run_finalize -->
+			<method name="GuardedFinalize" />
+		</type>
+
 		<!-- appdomain.c (create_domain_objects) domain->out_of_memory_ex -->
 		<type fullname="System.OutOfMemoryException">
 			<!-- mono_exception_from_name_two_strings (only one string in the signature since NULL is used as the 2nd parameter) -->
@@ -328,9 +334,6 @@
 			<!-- exception.c: mono_get_exception_stack_overflow / mono_exception_from_name -->
 			<method signature="System.Void .ctor()" />
 		</type>
-
-		<!-- object.c: mono_runtime_exec_main -->
-		<type fullname="System.STAThreadAttribute" />
 
 		<!-- domain.c: mono_defaults.string_class -->
 		<type fullname="System.String">

@@ -24,17 +24,26 @@ namespace ILCompiler.Dataflow
         private readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDesc CreatingMethod,
-            /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
+            /// <summary>Generic parameters of the creator used as type arguments for the type</summary>
             IReadOnlyList<GenericParameterDesc?>? OriginalAttributes);
 
         private readonly TypeCacheHashtable _typeCacheHashtable;
 
         private readonly Logger _logger;
 
-        public CompilerGeneratedState(ILProvider ilProvider, Logger logger)
+        private readonly bool _disableGeneratedCodeHeuristics;
+
+        public CompilerGeneratedState(ILProvider ilProvider, Logger logger, bool disableGeneratedCodeHeuristics)
         {
-            _typeCacheHashtable = new TypeCacheHashtable(ilProvider);
+            _typeCacheHashtable = new TypeCacheHashtable(
+#if ILTRIM
+                ilProvider
+#else
+                new AsyncMaskingILProvider(ilProvider)
+#endif
+                );
             _logger = logger;
+            _disableGeneratedCodeHeuristics = disableGeneratedCodeHeuristics;
         }
 
         private sealed class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
@@ -108,7 +117,7 @@ namespace ILCompiler.Dataflow
             internal TypeCache(MetadataType type, ILProvider ilProvider)
             {
                 Debug.Assert(type == type.GetTypeDefinition());
-                Debug.Assert(!CompilerGeneratedNames.IsStateMachineOrDisplayClass(type.Name));
+                Debug.Assert(!CompilerGeneratedNames.IsStateMachineOrDisplayClass(type.Name.AsSpan()));
 
                 Type = type;
 
@@ -129,8 +138,8 @@ namespace ILCompiler.Dataflow
                 {
                     Debug.Assert(method == method.GetTypicalMethodDefinition());
 
-                    bool isStateMachineMember = CompilerGeneratedNames.IsStateMachineType(((MetadataType)method.OwningType).Name);
-                    if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
+                    bool isStateMachineMember = CompilerGeneratedNames.IsStateMachineType(((MetadataType)method.OwningType).Name.AsSpan());
+                    if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name.AsSpan()))
                     {
                         if (!isStateMachineMember)
                         {
@@ -172,9 +181,9 @@ namespace ILCompiler.Dataflow
                                         // Find calls to state machine constructors that occur outside the type
                                         if (referencedMethod.IsConstructor &&
                                             referencedMethod.OwningType is MetadataType generatedType &&
-                                            // Don't consider calls in the same type, like inside a static constructor
-                                            method.OwningType != generatedType &&
-                                            CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
+                                            // Don't consider calls in the same/nested type, like inside a static constructor
+                                            !IsSameOrNestedType(method.OwningType, generatedType) &&
+                                            CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name.AsSpan()))
                                         {
                                             Debug.Assert(generatedType.IsTypeDefinition);
 
@@ -187,7 +196,7 @@ namespace ILCompiler.Dataflow
                                             continue;
                                         }
 
-                                        if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(referencedMethod.Name))
+                                        if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(referencedMethod.Name.AsSpan()))
                                             continue;
 
                                         if (isStateMachineMember)
@@ -213,9 +222,9 @@ namespace ILCompiler.Dataflow
                                         field = field.GetTypicalFieldDefinition();
 
                                         if (field.OwningType is MetadataType generatedType &&
-                                            // Don't consider field accesses in the same type, like inside a static constructor
-                                            method.OwningType != generatedType &&
-                                            CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
+                                            // Don't consider field accesses in the same/nested type, like inside a static constructor
+                                            !IsSameOrNestedType(method.OwningType, generatedType) &&
+                                            CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name.AsSpan()))
                                         {
                                             Debug.Assert(generatedType.IsTypeDefinition);
 
@@ -240,7 +249,7 @@ namespace ILCompiler.Dataflow
                     if (TryGetStateMachineType(method, out MetadataType? stateMachineType))
                     {
                         Debug.Assert(stateMachineType.ContainingType == type ||
-                            (CompilerGeneratedNames.IsStateMachineOrDisplayClass(stateMachineType.ContainingType.Name) &&
+                            (CompilerGeneratedNames.IsStateMachineOrDisplayClass(stateMachineType.ContainingType.Name.AsSpan()) &&
                              stateMachineType.ContainingType.ContainingType == type));
                         Debug.Assert(stateMachineType == stateMachineType.GetTypeDefinition());
 
@@ -255,6 +264,22 @@ namespace ILCompiler.Dataflow
                         // Already warned above if multiple methods map to the same type
                         // Fill in null for argument providers now, the real providers will be filled in later
                         generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
+                    }
+
+                    static bool IsSameOrNestedType(TypeDesc type, TypeDesc potentialOuterType)
+                    {
+                        do
+                        {
+                            if (type == potentialOuterType)
+                                return true;
+
+                            if (type is not EcmaType ecmaType)
+                                return false;
+
+                            type = ecmaType.ContainingType;
+                        } while (type != null);
+
+                        return false;
                     }
                 }
 
@@ -300,7 +325,7 @@ namespace ILCompiler.Dataflow
                         switch (compilerGeneratedMember)
                         {
                             case MethodDesc nestedFunction:
-                                Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(nestedFunction.Name));
+                                Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(nestedFunction.Name.AsSpan()));
                                 // Nested functions get suppressions from the user method only.
                                 _compilerGeneratedMethodToUserCodeMethod ??= new Dictionary<MethodDesc, MethodDesc>();
                                 if (!_compilerGeneratedMethodToUserCodeMethod.TryAdd(nestedFunction, userDefinedMethod))
@@ -315,7 +340,7 @@ namespace ILCompiler.Dataflow
                                 // are represented by the state machine type itself.
                                 // We are already tracking the association of the state machine type to the user code method
                                 // above, so no need to track it here.
-                                Debug.Assert(CompilerGeneratedNames.IsStateMachineType(stateMachineType.Name));
+                                Debug.Assert(CompilerGeneratedNames.IsStateMachineType(stateMachineType.Name.AsSpan()));
                                 break;
                             default:
                                 throw new InvalidOperationException();
@@ -346,15 +371,15 @@ namespace ILCompiler.Dataflow
                 /// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was
                 /// something like this:
                 /// <code>
-                /// void M&lt;T&gt; () {
-                ///     Action a = () => { Console.WriteLine (typeof (T)); };
+                /// void M&lt;T&gt;() {
+                ///     Action a = () => { Console.WriteLine(typeof(T)); };
                 /// }
                 /// </code>
                 /// The compiler will generate a nested class like this:
                 /// <code>
                 /// class &lt;&gt;c__DisplayClass0&lt;T&gt; {
-                ///     public void &lt;M&gt;b__0 () {
-                ///         Console.WriteLine (typeof (T));
+                ///     public void &lt;M&gt;b__0() {
+                ///         Console.WriteLine(typeof(T));
                 ///     }
                 /// }
                 /// </code>
@@ -367,7 +392,7 @@ namespace ILCompiler.Dataflow
                     MetadataType generatedType,
                     Dictionary<MetadataType, TypeArgumentInfo> generatedTypeToTypeArgs)
                 {
-                    Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
+                    Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name.AsSpan()));
                     Debug.Assert(generatedType == generatedType.GetTypeDefinition());
 
                     var typeInfo = generatedTypeToTypeArgs[generatedType];
@@ -407,7 +432,7 @@ namespace ILCompiler.Dataflow
                             else
                             {
                                 // Must be a type ref
-                                if (method.OwningType is not MetadataType owningType || !CompilerGeneratedNames.IsStateMachineOrDisplayClass(owningType.Name))
+                                if (method.OwningType is not MetadataType owningType || !CompilerGeneratedNames.IsStateMachineOrDisplayClass(owningType.Name.AsSpan()))
                                 {
                                     userAttrs = param;
                                 }
@@ -548,7 +573,7 @@ namespace ILCompiler.Dataflow
         {
             foreach (var nestedType in type.GetNestedTypes())
             {
-                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(nestedType.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(nestedType.Name.AsSpan()))
                     continue;
 
                 yield return nestedType;
@@ -560,14 +585,14 @@ namespace ILCompiler.Dataflow
 
         public static bool IsHoistedLocal(FieldDesc field)
         {
-            if (CompilerGeneratedNames.IsLambdaDisplayClass(field.OwningType.Name))
+            if (CompilerGeneratedNames.IsLambdaDisplayClass(field.OwningType.Name.AsSpan()))
                 return true;
 
-            if (CompilerGeneratedNames.IsStateMachineType(field.OwningType.Name))
+            if (CompilerGeneratedNames.IsStateMachineType(field.OwningType.Name.AsSpan()))
             {
                 // Don't track the "current" field which is used for state machine return values,
                 // because this can be expensive to track.
-                return !CompilerGeneratedNames.IsStateMachineCurrentField(field.Name);
+                return !CompilerGeneratedNames.IsStateMachineCurrentField(field.Name.AsSpan());
             }
 
             return false;
@@ -576,13 +601,13 @@ namespace ILCompiler.Dataflow
         // "Nested function" refers to lambdas and local functions.
         public static bool IsNestedFunctionOrStateMachineMember(TypeSystemEntity member)
         {
-            if (member is MethodDesc method && CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
+            if (member is MethodDesc method && CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name.AsSpan()))
                 return true;
 
             if (member.GetOwningType() is not MetadataType declaringType)
                 return false;
 
-            return CompilerGeneratedNames.IsStateMachineType(declaringType.Name);
+            return CompilerGeneratedNames.IsStateMachineType(declaringType.Name.AsSpan());
         }
 
         public static bool TryGetStateMachineType(MethodDesc method, [NotNullWhen(true)] out MetadataType? stateMachineType)
@@ -612,7 +637,7 @@ namespace ILCompiler.Dataflow
             // State machines can be emitted into display classes, so we may also need to go one more level up.
             // To avoid depending on implementation details, we go up until we see a non-compiler-generated type.
             // This is the counterpart to GetCompilerGeneratedNestedTypes.
-            while (userType != null && CompilerGeneratedNames.IsStateMachineOrDisplayClass(userType.Name))
+            while (userType != null && CompilerGeneratedNames.IsStateMachineOrDisplayClass(userType.Name.AsSpan()))
                 userType = userType.ContainingType as MetadataType;
 
             if (userType is null)
@@ -657,7 +682,17 @@ namespace ILCompiler.Dataflow
         public IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(MetadataType type)
         {
             MetadataType generatedType = (MetadataType)type.GetTypeDefinition();
-            Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
+            Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name.AsSpan()));
+
+            // Avoid the heuristics for .NET10+, where DynamicallyAccessedMembers flows to generated code
+            // because it is annotated with CompilerLoweringPreserveAttribute.
+            if (_disableGeneratedCodeHeuristics &&
+                generatedType.Module.Assembly is EcmaAssembly asm && asm.GetTargetFrameworkVersion() >= new Version(10, 0))
+            {
+                // Still run the logic for coverage to help us find bugs, but don't use the result.
+                GetCompilerGeneratedStateForType(generatedType);
+                return null;
+            }
 
             var typeCache = GetCompilerGeneratedStateForType(generatedType);
             if (typeCache is null)
@@ -707,6 +742,12 @@ namespace ILCompiler.Dataflow
             userMethod = null;
             if (sourceMember == null)
                 return false;
+
+            Debug.Assert(sourceMember is not MethodDesc sourceMethod || sourceMethod.IsTypicalMethodDefinition);
+#if !ILTRIM
+            if (sourceMember is AsyncMethodVariant asyncVariant)
+                sourceMember = asyncVariant.Target;
+#endif
 
             TypeSystemEntity member = sourceMember;
             MethodDesc? userMethodCandidate;

@@ -91,13 +91,13 @@ namespace Microsoft.Extensions.Hosting
         {
             IHostApplicationLifetime applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
-            token.Register(state =>
+            using var _ = token.Register(static state =>
             {
                 ((IHostApplicationLifetime)state!).StopApplication();
             },
             applicationLifetime);
 
-#if NET8_0_OR_GREATER
+#if NET
             await Task.Delay(Timeout.Infinite, applicationLifetime.ApplicationStopping).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 #else
             var waitForStop = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);

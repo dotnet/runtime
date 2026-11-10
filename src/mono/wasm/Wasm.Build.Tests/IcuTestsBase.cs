@@ -131,7 +131,10 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         File.WriteAllText(programPath, programText);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
 
-        UpdateBrowserMainJs();
+        // The template main.js calls JS interop APIs (setModuleImports, getAssemblyExports)
+        // which the ICU test program does not use. Replace it with a minimal version tailored
+        // for ICU tests, otherwise the JS interop assembly would be linked away by the trimmer.
+        ReplaceMainJsWithMinimalRunMain();
         return info;
     }
 

@@ -26,7 +26,9 @@ void interceptor_ICJC::finalizeAndCommitCollection(MethodContext* mc, CorJitResu
         mc->cr->recAllocGCInfoCapture();
     }
 
-    mc->saveToFile(hFile);
+    // The collection file failed to open at startup; that was already reported.
+    if (hFile != nullptr)
+        mc->saveToFile(hFile);
 }
 
 template<typename TPrinter>
@@ -68,7 +70,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     auto* mc = new MethodContext();
     interceptor_ICJI our_ICorJitInfo(this, comp, mc);
 
-    mc->cr->recProcessName(GetCommandLineA());
+    mc->cr->recProcessName(GetProcessCommandLine().c_str());
 
     mc->recCompileMethod(info, flags, currentOs);
 

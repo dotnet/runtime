@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         private const int MaxEscapedCharacterLength = JsonConstants.MaxExpansionFactorWhileEscaping;
 
-        public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override unsafe char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))
             {
@@ -63,5 +63,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
             new() { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 1 };
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.String;
     }
 }

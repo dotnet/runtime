@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
@@ -133,6 +136,58 @@ namespace System.ComponentModel.DataAnnotations.Tests
             attribute.ErrorMessageResourceName = null;
             attribute.ErrorMessageResourceType = null;
             Assert.Equal(expected, attribute.FormatErrorMessage("name"));
+        }
+
+        [Theory]
+        [InlineData("SomeMessage", "name", "SomeMessage")]
+        [InlineData("SomeMessage with name <{0}>", "name", "SomeMessage with name <name>")]
+        public static void FormatMessage_ReturnsExpected(string format, string name, string expected)
+        {
+            var attribute = new ValidationAttributeNoOverrides();
+            Assert.Equal(expected, attribute.FormatMessage(format, name));
+        }
+
+        public static IEnumerable<object[]> FormatMessageAttributes()
+        {
+            yield return new object[] { new ValidationAttributeNoOverrides() };
+            yield return new object[] { new CompareAttribute("OtherProperty") };
+            yield return new object[] { new FileExtensionsAttribute() };
+            yield return new object[] { new LengthAttribute(1, 2) };
+            yield return new object[] { new MaxLengthAttribute(2) };
+            yield return new object[] { new MinLengthAttribute(1) };
+            yield return new object[] { new RangeAttribute(1, 2) };
+            yield return new object[] { new RegularExpressionAttribute("pattern") };
+            yield return new object[] { new StringLengthAttribute(2) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatMessageAttributes))]
+        public static void FormatMessage_NullFormat_ThrowsArgumentNullException(ValidationAttribute attribute)
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "format",
+                () => attribute.FormatMessage(null, "name"));
+        }
+
+        [Fact]
+        public static void FormatMessage_InvalidFormat_ThrowsFormatException()
+        {
+            var attribute = new ValidationAttributeNoOverrides();
+
+            Assert.Throws<FormatException>(() => attribute.FormatMessage("{1}", "name"));
+        }
+
+        [Fact]
+        public static void FormatErrorMessage_DelegatesToFormatMessage()
+        {
+            var attribute = new ValidationAttributeOverrideFormatMessage
+            {
+                ErrorMessage = "SomeMessage with name <{0}>"
+            };
+
+            Assert.Equal(
+                "SomeMessage with name <{0}>|name",
+                attribute.FormatErrorMessage("name"));
         }
 
         [Theory]
@@ -324,6 +379,11 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
         }
 
+        public class ValidationAttributeOverrideFormatMessage : ValidationAttribute
+        {
+            public override string FormatMessage(string format, string name) => $"{format}|{name}";
+        }
+
         public class ValidationAttributeOverrideOneArgIsValid : ValidationAttribute
         {
             public override bool IsValid(object value)
@@ -391,6 +451,241 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public class ValidationAttributeAlwaysInvalidEmptyErrorMessage : ValidationAttribute
         {
             protected override ValidationResult IsValid(object value, ValidationContext validationContext) => new ValidationResult(string.Empty);
+        }
+
+        [Fact]
+        public static void AsyncValidationAttribute_IsValid_SubclassCanThrowForSyncUse()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute();
+            var context = new ValidationContext(new object());
+            Assert.Throws<InvalidOperationException>(() => attribute.GetValidationResult("test", context));
+        }
+
+        [Fact]
+        public static void AsyncValidationAttribute_IsValid_SubclassCanProvideSyncFallback()
+        {
+            var attribute = new TestAsyncWithSyncFallbackAttribute();
+            var context = new ValidationContext(new object());
+            var result = attribute.GetValidationResult("sync-valid", context);
+            Assert.Equal(ValidationResult.Success, result);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_ReturnsFailure()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute();
+            var context = new ValidationContext(new object());
+            var result = await attribute.GetValidationResultAsync("test", context);
+            Assert.NotNull(result);
+            Assert.NotEqual(ValidationResult.Success, result);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_ReturnsSuccess()
+        {
+            var attribute = new TestAsyncAlwaysSucceedsAttribute();
+            var context = new ValidationContext(new object());
+            var result = await attribute.GetValidationResultAsync("test", context);
+            Assert.Equal(ValidationResult.Success, result);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_FormatsErrorMessage()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute();
+            var context = new ValidationContext(new object()) { DisplayName = "TestField" };
+            var result = await attribute.GetValidationResultAsync("test", context);
+            Assert.NotNull(result);
+            Assert.Contains("TestField", result.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_CustomErrorMessage()
+        {
+            var attribute = new TestAsyncAlwaysFailsAttribute { ErrorMessage = "Custom: {0}" };
+            var context = new ValidationContext(new object()) { DisplayName = "MyProp" };
+            var result = await attribute.GetValidationResultAsync("test", context);
+            Assert.NotNull(result);
+            Assert.Equal("Custom: MyProp", result.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_ErrorMessageAccessor()
+        {
+            var attribute = new TestAsyncAlwaysFailsWithAccessorAttribute();
+            var context = new ValidationContext(new object()) { DisplayName = "Field1" };
+            var result = await attribute.GetValidationResultAsync("test", context);
+            Assert.NotNull(result);
+            Assert.Contains("Field1", result.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_ThrowsOnNullContext()
+        {
+            var attribute = new TestAsyncAlwaysSucceedsAttribute();
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await attribute.GetValidationResultAsync("test", null));
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_PreservesExplicitErrorMessage()
+        {
+            var attribute = new TestAsyncFailsWithExplicitMessageAttribute();
+            var context = new ValidationContext(new object()) { DisplayName = "Ignored" };
+            var result = await attribute.GetValidationResultAsync("test", context);
+            Assert.NotNull(result);
+            Assert.Equal("Explicit error message", result.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_GetValidationResultAsync_TrulyAsync()
+        {
+            var attribute = new TestAsyncDelayedValidationAttribute();
+            var context = new ValidationContext(new object());
+            var result = await attribute.GetValidationResultAsync("test", context);
+            Assert.NotNull(result);
+            Assert.NotEqual(ValidationResult.Success, result);
+        }
+
+        public class TestAsyncAlwaysFailsAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(new ValidationResult(null));
+            }
+        }
+
+        public class TestAsyncAlwaysSucceedsAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(ValidationResult.Success);
+            }
+        }
+
+        public class TestAsyncAlwaysFailsWithAccessorAttribute : AsyncValidationAttribute
+        {
+            public TestAsyncAlwaysFailsWithAccessorAttribute() : base(() => "Accessor error for {0}") { }
+
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(new ValidationResult(null));
+            }
+        }
+
+        public class TestAsyncFailsWithExplicitMessageAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(new ValidationResult("Explicit error message"));
+            }
+        }
+
+        public class TestAsyncDelayedValidationAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                await Task.Yield();
+                return new ValidationResult(null);
+            }
+        }
+
+        public class TestAsyncWithSyncFallbackAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+            {
+                if (value is string s && s == "sync-valid")
+                {
+                    return ValidationResult.Success;
+                }
+                return new ValidationResult("Sync fallback failed");
+            }
+
+            protected override Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(ValidationResult.Success);
+            }
+        }
+
+        private class TestAsyncCancellable : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Yield();
+
+                return ValidationResult.Success;
+            }
+        }
+
+        private class TestAsyncWithMessage : AsyncValidationAttribute
+        {
+            public TestAsyncWithMessage(string errorMessage) : base(errorMessage) { }
+
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(null);
+            }
+        }
+
+        [Fact]
+        public static void AsyncValidationAttribute_SyncFallbackOverride_Works()
+        {
+            var attribute = new TestAsyncWithSyncFallbackAttribute();
+            var context = new ValidationContext(new object());
+            var result = attribute.GetValidationResult("sync-valid", context);
+            Assert.Equal(ValidationResult.Success, result);
+        }
+
+        [Fact]
+        public static void AsyncValidationAttribute_SyncFallbackOverride_FailsCorrectly()
+        {
+            var attribute = new TestAsyncWithSyncFallbackAttribute();
+            var context = new ValidationContext(new object());
+            var result = attribute.GetValidationResult("other", context);
+            Assert.NotNull(result);
+            Assert.Equal("Sync fallback failed", result.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task AsyncValidationAttribute_CancellationToken_Propagated()
+        {
+            var attribute = new TestAsyncCancellable();
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await attribute.GetValidationResultAsync("value", s_testValidationContext, cts.Token));
+        }
+
+        [Fact]
+        public static void AsyncValidationAttribute_Constructor_WithErrorMessage()
+        {
+            var attribute = new TestAsyncWithMessage("Custom error");
+            Assert.Throws<InvalidOperationException>(
+                () => attribute.GetValidationResult("any", s_testValidationContext));
         }
 
         public class ToBeTested

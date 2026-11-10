@@ -50,7 +50,7 @@ namespace System.Net.Mime.Tests
         [InlineData(typeof(ArgumentNullException), null)]
         [InlineData(typeof(FormatException), "inline; creation-date=\"" + InvalidDate + "\";")]
         [InlineData(typeof(FormatException), "inline; size=\"notANumber\"")]
-        public static void Ctor_InvalidThrows(Type exceptionType, string contentDisposition)
+        public static void Ctor_InvalidThrows(Type exceptionType, string? contentDisposition)
         {
             Assert.Throws(exceptionType, () => new ContentDisposition(contentDisposition));
         }
@@ -58,7 +58,7 @@ namespace System.Net.Mime.Tests
         [Theory]
         [InlineData(typeof(ArgumentNullException), null)]
         [InlineData(typeof(ArgumentException), "")]
-        public static void DispositionType_SetValue_InvalidThrows(Type exceptionType, string contentDisposition)
+        public static void DispositionType_SetValue_InvalidThrows(Type exceptionType, string? contentDisposition)
         {
             Assert.Throws(exceptionType, () => new ContentDisposition().DispositionType = contentDisposition);
         }
@@ -90,6 +90,17 @@ namespace System.Net.Mime.Tests
             cd.FileName = string.Empty;
             Assert.Null(cd.FileName);
             Assert.Empty(cd.Parameters);
+        }
+
+        [Fact]
+        public static void ToString_EncodedWordWithinInvalidParameterValue_DoesNotBypassEncoding()
+        {
+            var cd = new ContentDisposition();
+            cd.FileName = "report\r\nX-Test: injected =?utf-8?B?YQ?=";
+
+            string value = cd.ToString();
+
+            Assert.DoesNotContain("\r\nX-Test:", value, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -343,6 +354,60 @@ namespace System.Net.Mime.Tests
             {
                 CultureInfo.CurrentCulture = origCulture;
             }
+        }
+
+        [Theory]
+        [InlineData("=?utf-8?B?SGVsbG8=?=")]
+        [InlineData("=?utf-8?Q?Hello=20world?=")]
+        [InlineData("=?utf-8?B?SGVsbG8=?=\r\n =?utf-8?B?d29ybGQ=?=")]
+        [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
+        [InlineData("=?utf-8?Q?foo\"bar?=")]
+        [InlineData("=?utf-8?B?Zm9v?=trailing")]
+        public static void FileName_ParsingSerialization_Roundtrip(string encoded)
+        {
+            var cd = new ContentDisposition();
+            cd.FileName = encoded;
+
+            // Property roundtrip
+            Assert.Equal(encoded, cd.FileName);
+
+            // Serialize/deserialize roundtrip
+            string serialized = cd.ToString();
+            var reparsed = new ContentDisposition(serialized);
+            Assert.Equal(encoded, reparsed.FileName);
+
+            Assert.Equal(cd.Parameters.Count, reparsed.Parameters.Count);
+        }
+
+        [Theory]
+        [InlineData("inline")]
+        [InlineData("attachment")]
+        [InlineData("foo")]
+        [InlineData("foo_bar")]
+        [InlineData("foo@bar")]
+        public void ContentDisposition_Type_Validation_Valid(string dispositionType)
+        {
+            var cd = new ContentDisposition();
+            cd.DispositionType = dispositionType;
+            Assert.Equal(dispositionType, cd.DispositionType);
+        }
+
+        [Theory]
+        [InlineData("foo\rbar")]
+        [InlineData("foo\nbar")]
+        [InlineData("foo\r\nbar")]
+        [InlineData("foo; abc=bar")] // You can pass this to ctor, but not to property of already parsed disposition
+        [InlineData("foo\"bar")]
+        [InlineData("fň")]
+        public void ContentDisposition_Type_Validation_Invalid(string dispositionType)
+        {
+            var cd = new ContentDisposition();
+            Assert.Throws<ArgumentException>(() =>
+            {
+                cd.DispositionType = dispositionType;
+            });
         }
     }
 }

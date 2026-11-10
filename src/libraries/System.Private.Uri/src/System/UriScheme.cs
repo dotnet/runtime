@@ -77,8 +77,8 @@ namespace System
             Debug.Assert(sizeof(Uri.Flags) == sizeof(ulong));
 
             // If ParseMinimal is called multiple times this Uri instance may be corrupted, throw an exception instead
-            ulong previous = Interlocked.Or(ref Unsafe.As<Uri.Flags, ulong>(ref uri._flags), (ulong)Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
-            if (((Uri.Flags)previous & Uri.Flags.CustomParser_ParseMinimalAlreadyCalled) != 0)
+            Uri.Flags previous = Interlocked.Or(ref uri._flags, Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
+            if ((previous & Uri.Flags.CustomParser_ParseMinimalAlreadyCalled) != 0)
             {
                 throw new InvalidOperationException(SR.net_uri_InitializeCalledAlreadyOrTooLate);
             }

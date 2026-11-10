@@ -121,7 +121,7 @@ namespace System.Reflection.Emit
              * dynamically created ctors.
              */
             if (typeb.is_created)
-                return CustomAttribute.GetCustomAttributes(this, inherit);
+                return RuntimeCustomAttribute.GetCustomAttributes(this, inherit);
             else
                 throw CreateNotSupportedException();
         }
@@ -129,7 +129,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (typeb.is_created)
-                return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+                return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
             else
                 throw CreateNotSupportedException();
         }
@@ -247,8 +247,7 @@ namespace System.Reflection.Emit
             type = RuntimeTypeBuilder.ResolveUserType(type);
             RuntimeTypeBuilder.ResolveUserTypes(modReq);
             RuntimeTypeBuilder.ResolveUserTypes(modOpt);
-            if (marshal_info != null)
-                marshal_info.marshaltyperef = RuntimeTypeBuilder.ResolveUserType(marshal_info.marshaltyperef);
+            marshal_info?.marshaltyperef = RuntimeTypeBuilder.ResolveUserType(marshal_info.marshaltyperef);
         }
 
         internal FieldInfo RuntimeResolve()

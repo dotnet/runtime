@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Options;
 
@@ -68,20 +67,12 @@ namespace Microsoft.Extensions.Logging.Console
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
-            if (envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            if (ConsoleUtils.GetColorOverrideFromEnvironment() is bool colorOverride)
             {
-                // ANSI color support forcibly enabled via environment variable. This logic matches the behaviour
-                // found in System.ConsoleUtils.EmitAnsiColorCodes.
-                return true;
+                return colorOverride;
             }
-            if (
-#if NETFRAMEWORK
-                Environment.OSVersion.Platform != PlatformID.Win32NT
-#else
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-#endif
-                )
+
+            if (!OperatingSystem.IsWindows())
             {
                 return true;
             }

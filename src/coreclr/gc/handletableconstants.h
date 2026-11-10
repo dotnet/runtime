@@ -14,7 +14,7 @@
 #endif
 
 #define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
-#define HANDLE_MAX_INTERNAL_TYPES       12
+#define HANDLE_MAX_INTERNAL_TYPES       13
 
 /*--------------------------------------------------------------------------*/
 
@@ -93,9 +93,12 @@
 #define HANDLE_MASKS_PER_SEGMENT        (HANDLE_HANDLES_PER_SEGMENT / HANDLE_HANDLES_PER_MASK)
 #define HANDLE_MASKS_PER_BLOCK          (HANDLE_HANDLES_PER_BLOCK / HANDLE_HANDLES_PER_MASK)
 #define HANDLE_CLUMPS_PER_MASK          (HANDLE_HANDLES_PER_MASK / HANDLE_HANDLES_PER_CLUMP)
+#define HANDLE_SEGMENT_BLOCK_TYPE_OFFSET ((HANDLE_BLOCKS_PER_SEGMENT * sizeof(uint32_t)) + \
+                                          HANDLE_BLOCKS_PER_SEGMENT + \
+                                          (HANDLE_MASKS_PER_SEGMENT * sizeof(uint32_t)))
 
 // We use this relation to check for free mask per block.
-C_ASSERT (HANDLE_HANDLES_PER_MASK * 2 == HANDLE_HANDLES_PER_BLOCK);
+static_assert (HANDLE_HANDLES_PER_MASK * 2 == HANDLE_HANDLES_PER_BLOCK);
 
 
 // cache layout metrics

@@ -245,6 +245,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Indicates whether the service is a keyed service.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(ServiceKey))]
         public bool IsKeyedService => ServiceKey != null;
 
         /// <inheritdoc />
@@ -263,7 +264,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 if (KeyedImplementationFactory != null)
                 {
-#if NET9_0_OR_GREATER
+#if NET
                     DiagnosticMethodInfo? dmi = DiagnosticMethodInfo.Create(KeyedImplementationFactory);
                     string declaringTypeName = dmi?.DeclaringTypeName ?? "?";
                     string methodName = dmi?.Name ?? "?";
@@ -287,7 +288,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 if (ImplementationFactory != null)
                 {
-#if NET9_0_OR_GREATER
+#if NET
                     DiagnosticMethodInfo? dmi = DiagnosticMethodInfo.Create(ImplementationFactory);
                     string declaringTypeName = dmi?.DeclaringTypeName ?? "?";
                     string methodName = dmi?.Name ?? "?";

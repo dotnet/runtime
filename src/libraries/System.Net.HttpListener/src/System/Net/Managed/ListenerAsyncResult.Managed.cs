@@ -31,6 +31,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 
@@ -67,7 +68,7 @@ namespace System.Net
             }
             _exception = exc;
             if (_inGet && (exc is ObjectDisposedException))
-                _exception = new HttpListenerException((int)HttpStatusCode.InternalServerError, SR.net_listener_close);
+                _exception = new HttpListenerException((int)SocketError.OperationAborted, SR.net_listener_close);
             lock (_locker)
             {
                 _completed = true;

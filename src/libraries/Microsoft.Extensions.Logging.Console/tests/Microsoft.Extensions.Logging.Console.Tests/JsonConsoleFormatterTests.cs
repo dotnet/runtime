@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class JsonConsoleFormatterTests : ConsoleFormatterTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void NoLogScope_DoesNotWriteAnyScopeContentToOutput_Json()
         {
             // Arrange
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Contains("SimpleScope", write.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_TimestampFormatSet_ContainsTimestamp()
         {
             // Arrange
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_NullMessage_LogsWhenMessageIsNotProvided()
         {
             // Arrange
@@ -104,12 +104,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(3, sink.Writes.Count);
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\",\"Message\":\"[null]\""
-                + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
+                + ",\"State\":{\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\",\"Message\":\"[null]\""
-                + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
+                + ",\"State\":{\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
 
@@ -117,12 +117,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\""
                 + ",\"Message\":\"[null]\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
+                + ",\"State\":{\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_ExceptionWithMessage_ExtractsInfo()
         {
             // Arrange
@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message with stacktrace\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"exception message with stacktrace\",\"0\":\"stacktrace\",\"{OriginalFormat}\":\"exception message with {0}\"}"
+                + ",\"State\":{\"0\":\"stacktrace\",\"{OriginalFormat}\":\"exception message with {0}\"}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"exception message\"}"
+                + ",\"State\":{}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
@@ -170,13 +170,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"exception message\"}"
+                + ",\"State\":{}"
                 + ",\"Scopes\":[{\"Message\":\"scope1 123\",\"name1\":123,\"{OriginalFormat}\":\"scope1 {name1}\"},{\"Message\":\"scope2 456 789\",\"name1\":456,\"name2\":789,\"{OriginalFormat}\":\"scope2 {name1} {name2}\"}]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_IncludeScopes_ContainsDuplicateNamedPropertiesInScope_AcceptableJson()
         {
             // Arrange
@@ -203,13 +203,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
-                + ",\"State\":{\"Message\":\"exception message\"}"
+                + ",\"State\":{}"
                 + ",\"Scopes\":[{\"Message\":\"scope1 123\",\"name1\":123,\"{OriginalFormat}\":\"scope1 {name1}\"},{\"Message\":\"scope2 456 789\",\"name1\":456,\"name2\":789,\"{OriginalFormat}\":\"scope2 {name1} {name2}\"}]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_StateAndScopeAreCollections_IncludesMessageAndCollectionValues()
         {
             // Arrange
@@ -238,13 +238,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"1\""
-                + ",\"State\":{\"Message\":\"1\",\"LogEntryNumber\":1,\"{OriginalFormat}\":\"{LogEntryNumber}\"}"
+                + ",\"State\":{\"LogEntryNumber\":1,\"{OriginalFormat}\":\"{LogEntryNumber}\"}"
                 + ",\"Scopes\":[{\"Message\":\"2\",\"Number\":2,\"{OriginalFormat}\":\"{Number}\"},{\"Message\":\"3\",\"AnotherNumber\":3,\"{OriginalFormat}\":\"{AnotherNumber}\"}]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(SpecialCaseValues))]
         public void Log_StateAndScopeContainsSpecialCaseValue_SerializesValueAsExpected(object value, string expectedJsonValue)
         {
@@ -274,7 +274,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Contains("\"LogEntryValue\":" + expectedJsonValue + ",", message);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FloatingPointValues))]
         public void Log_StateAndScopeContainsFloatingPointType_SerializesValue(object value)
         {
@@ -313,7 +313,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_StateAndScopeContainsNullValue_SerializesNull()
         {
             // Arrange
@@ -342,7 +342,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Contains("\"LogKey\":null", message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_ScopeIsIEnumerable_SerializesKeyValuePair()
         {
             // Arrange
@@ -508,7 +508,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ShouldContainInnerException(bool indented)
@@ -534,7 +534,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 .Replace(Environment.NewLine, newLineReplacement);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ShouldContainAggregateExceptions(bool indented)

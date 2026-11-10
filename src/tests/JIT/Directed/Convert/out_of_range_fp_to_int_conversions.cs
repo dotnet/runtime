@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 namespace FPBehaviorApp
 {
@@ -318,6 +319,9 @@ namespace FPBehaviorApp
             }
         }
 
+        [ActiveIssue("Mono does not define out of range fp to int conversions", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test can run for a very long time under JIT stress.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("This test can run for a very long time under GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

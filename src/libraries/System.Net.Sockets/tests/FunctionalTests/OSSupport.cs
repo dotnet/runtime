@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -37,6 +38,14 @@ namespace System.Net.Sockets.Tests
             static void RunTest()
             {
                 Assert.False(Socket.OSSupportsIPv6);
+
+                // related to https://github.com/dotnet/runtime/issues/122435
+                var listenSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                listenSocket.DualMode = true;
+
+                listenSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                listenSocket.Listen(1);
+                listenSocket.Close();
             }
         }
 
@@ -125,6 +134,12 @@ namespace System.Net.Sockets.Tests
 
                         server.Send(new byte[] { 42 }, SocketFlags.None);
                         server.Send(new byte[] { 43 }, SocketFlags.OutOfBand);
+
+                        // SIOCATMARK is already 0 before any data arrives, so wait for the OOB data itself.
+                        // Select, not Poll: macOS poll() does not report OOB data as POLLPRI; Select uses select() there.
+                        var errorList = new List<Socket> { client };
+                        Socket.Select(null, null, errorList, TimeSpan.FromSeconds(10));
+                        Assert.Single(errorList);
 
                         // OOB data received, but read pointer not at mark.
                         Assert.True(SpinWait.SpinUntil(() =>

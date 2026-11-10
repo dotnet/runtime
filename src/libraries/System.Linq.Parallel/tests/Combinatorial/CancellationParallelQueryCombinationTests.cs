@@ -603,7 +603,7 @@ namespace System.Linq.Parallel.Tests
             AssertThrows.AlreadyCanceled(source => operation.Item(source, () => { }).Min());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Observing "eventual" cancellation requires concurrent workers; unsupported on single-threaded platforms.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22626", TestPlatforms.Linux)]
         [MemberData(nameof(UnaryCancelingOperators))]
         [MemberData(nameof(BinaryCancelingOperators))]

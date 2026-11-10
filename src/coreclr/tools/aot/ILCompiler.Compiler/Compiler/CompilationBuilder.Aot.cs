@@ -21,11 +21,12 @@ namespace ILCompiler
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
         protected ReadOnlyFieldPolicy _readOnlyFieldPolicy = new ReadOnlyFieldPolicy();
         protected IInliningPolicy _inliningPolicy;
-        protected bool _methodBodyFolding;
+        protected MethodBodyFoldingMode _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
         protected SecurityMitigationOptions _mitigationOptions;
         protected bool _dehydrate;
         protected bool _useDwarf5;
+        protected TypeMapManager _typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
 
         partial void InitializePartial()
         {
@@ -93,9 +94,9 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder UseMethodBodyFolding(bool enable)
+        public CompilationBuilder UseMethodBodyFolding(MethodBodyFoldingMode mode)
         {
-            _methodBodyFolding = enable;
+            _methodBodyFolding = mode;
             return this;
         }
 
@@ -129,6 +130,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseTypeMapManager(TypeMapManager typeMapManager)
+        {
+            _typeMapManager = typeMapManager;
+            return this;
+        }
+
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
@@ -146,5 +153,12 @@ namespace ILCompiler
     public enum SecurityMitigationOptions
     {
         ControlFlowGuardAnnotations = 0x0001,
+    }
+
+    public enum MethodBodyFoldingMode
+    {
+        None,
+        Generic,
+        All,
     }
 }

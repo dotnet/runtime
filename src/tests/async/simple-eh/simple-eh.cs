@@ -8,15 +8,12 @@ using System.Linq;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using TestLibrary;
 using Xunit;
-
 public class Async2SimpleEH
 {
     [Fact]
-    public static void Test()
-    {
-        Task.Run(AsyncEntry).Wait();
-    }
+    public static Task TestThrowAfterYield() => Task.Run(AsyncEntry);
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     public static async Task AsyncEntry()
@@ -49,4 +46,51 @@ public class Async2SimpleEH
         public int Value;
         public IntegerException(int value) => Value = value;
     }
+
+    [Fact]
+    public static async Task<int> TestDefinesIntButThrowsAsync()
+    {
+        int x = GetValue();
+        try
+        {
+            x = await IntThrows();
+        }
+        catch
+        {
+        }
+
+        return x;
+    }
+
+    private static async Task<int> IntThrows()
+    {
+        await Task.Yield();
+        throw new Exception();
+    }
+
+    private struct S { public long A, B, C, D; }
+
+    [Fact]
+    public static async Task<int> TestDefinesSButThrowsAsync()
+    {
+        S x = new S { A = GetValue(), B = GetValue() + 1, C = GetValue() + 2, D = GetValue() + 3 };
+        try
+        {
+            x = await SThrows();
+        }
+        catch
+        {
+        }
+
+        return (int)x.A;
+    }
+
+    private static async Task<S> SThrows()
+    {
+        await Task.Yield();
+        throw new Exception();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int GetValue() => 100;
 }

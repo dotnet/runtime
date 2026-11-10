@@ -30,12 +30,23 @@ namespace System.Reflection.Emit
         private MethodAttributes _attributes;
         private CallingConventions _callingConvention;
         private RuntimeParameterInfo[]? _parameters;
+        private readonly bool _isDiagnosticsHidden;
 
         // needed to keep the object alive during jitting
         // assigned by the DynamicResolver ctor
         internal DynamicResolver? _resolver;
 
         internal bool _restrictedSkipVisibility;
+
+        internal bool IsDiagnosticsHidden => _isDiagnosticsHidden;
+
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
+        internal DynamicMethod(string name, Type? returnType, Type[]? parameterTypes,
+            Module module, bool skipVisibility, bool isDiagnosticsHidden)
+            : this(name, returnType, parameterTypes, module, skipVisibility)
+        {
+            _isDiagnosticsHidden = isDiagnosticsHidden;
+        }
 
         //
         // Delegate and method creation
@@ -51,14 +62,11 @@ namespace System.Reflection.Emit
                 // Compile the method since accessibility checks are done as part of compilation
                 GetMethodDescriptor();
                 IRuntimeMethodInfo? methodHandle = _methodHandle;
-                CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
+                CompileMethod(methodHandle != null ? IRuntimeMethodInfo.GetValue(methodHandle) : RuntimeMethodHandleInternal.EmptyHandle);
                 GC.KeepAlive(methodHandle);
             }
 
-            MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateNoSecurityCheck(delegateType, target, GetMethodDescriptor());
-            // stash this MethodInfo by brute force.
-            d.StoreDynamicMethod(this);
-            return d;
+            return Delegate.CreateDelegateForDynamicMethod(delegateType, target, GetMethodDescriptor(), this);
         }
 
         // This is guaranteed to return a valid handle

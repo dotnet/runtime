@@ -40,13 +40,17 @@ void JitConfigValues::MethodSet::initialize(const char* listFromConfig, ICorJitH
         name->m_next                  = m_names;
         name->m_patternStart          = start;
         name->m_patternEnd            = end;
-        const char* colon             = static_cast<const char*>(memchr(start, ':', end - start));
-        const char* startOfMethodName = colon != nullptr ? colon + 1 : start;
+        const char* exclamation       = static_cast<const char*>(memchr(start, '!', end - start));
+        const char* startOfClassName  = exclamation != nullptr ? exclamation + 1 : start;
+        const char* colon             = static_cast<const char*>(memchr(startOfClassName, ':', end - startOfClassName));
+        const char* startOfMethodName = colon != nullptr ? colon + 1 : startOfClassName;
 
         const char* parens          = static_cast<const char*>(memchr(startOfMethodName, '(', end - startOfMethodName));
         const char* endOfMethodName = parens != nullptr ? parens : end;
         name->m_methodNameContainsInstantiation =
             memchr(startOfMethodName, '[', endOfMethodName - startOfMethodName) != nullptr;
+
+        name->m_containsAssemblyName = (exclamation != nullptr);
 
         if (colon != nullptr)
         {
@@ -164,8 +168,9 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
         {
             printer.Truncate(0);
             bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
-                comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
-                                    sigInfo,
+                comp->eePrintMethod(&printer, classHnd, methodHnd, sigInfo,
+                                    /* includeAssembly */ name->m_containsAssemblyName,
+                                    /* includeClass */ name->m_containsClassName,
                                     /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
                                     /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
                                     /* includeSignature */ name->m_containsSignature,

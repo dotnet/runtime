@@ -30,6 +30,7 @@ namespace System.Text.Json.SourceGeneration
         Queue,
         ImmutableEnumerable,
         MemoryOfT,
-        ReadOnlyMemoryOfT
+        ReadOnlyMemoryOfT,
+        IReadOnlySetOfT
     }
 }

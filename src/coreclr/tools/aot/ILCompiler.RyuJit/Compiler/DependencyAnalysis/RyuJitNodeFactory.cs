@@ -9,26 +9,27 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class RyuJitNodeFactory : NodeFactory
     {
+        private readonly MethodBodyDeduplicator _methodBodyDeduplicator;
+
         public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
             InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider, InlinedThreadStatics inlinedThreadStatics, PreinitializationManager preinitializationManager,
-            DevirtualizationManager devirtualizationManager, ObjectDataInterner dataInterner)
-            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider, inlinedThreadStatics, new ExternSymbolsImportedNodeProvider(), preinitializationManager, devirtualizationManager, dataInterner)
+            DevirtualizationManager devirtualizationManager, ObjectDataInterner dataInterner, MethodBodyDeduplicator methodBodyDeduplicator, TypeMapManager typeMapManager)
+            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider, inlinedThreadStatics, new ExternSymbolsImportedNodeProvider(), preinitializationManager, devirtualizationManager, dataInterner, typeMapManager)
         {
+            _methodBodyDeduplicator = methodBodyDeduplicator;
         }
+
+        protected override bool CanFold(MethodDesc method)
+            => _methodBodyDeduplicator?.CanFold(method) ?? false;
+
+        // WASM stack-trace metadata distinguishes address-taken methods from direct-call targets.
+        protected override bool RequiresAddressTakenTracking => Target.IsWasm;
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
             if (method.IsInternalCall)
             {
-                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
-                }
-                else if (TypeSystemContext.IsDefaultInterfaceMethodImplementationThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(method));
-                }
-                else if (method.IsArrayAddressMethod())
+                if (method.IsArrayAddressMethod())
                 {
                     return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
                 }
@@ -56,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.Signature.IsStatic);
 
-            if (method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
+            if (!Target.IsWasm && method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
             {
                 // Unboxing stubs to canonical instance methods need a special unboxing stub that unboxes
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
@@ -66,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                // Otherwise we just unbox 'this' and don't touch anything else.
+                // WASM stubs can also supply the instantiation argument directly.
                 return new UnboxingStubNode(method);
             }
         }

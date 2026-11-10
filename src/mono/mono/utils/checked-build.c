@@ -501,7 +501,7 @@ check_mempool_owner_eq (MonoMemPoolOwner a, MonoMemPoolOwner b)
 	return a.image == b.image && a.image_set == b.image_set;
 }
 
-// Say image X "references" image Y if X either contains Y in its modules field, or X’s "references" field contains an
+// Say image X "references" image Y if X either contains Y in its modules field, or X's "references" field contains an
 // assembly whose image is Y.
 // Say image X transitively references image Y if there is any chain of images-referencing-images which leads from X to Y.
 // Once the mempools for two pointers have been looked up, there are four possibilities:
@@ -677,7 +677,7 @@ check_image_set_may_reference_image_set (MonoImageSet *from, MonoImageSet *to)
 	return valid; // All items in "to" were found in "from"
 }
 
-// Case 4. Image FROM points to ImageSet TO: FROM transitively references *ALL* of the “images” listed in TO
+// Case 4. Image FROM points to ImageSet TO: FROM transitively references *ALL* of the "images" listed in TO
 static gboolean
 check_image_may_reference_image_set (MonoImage *from, MonoImageSet *to)
 {

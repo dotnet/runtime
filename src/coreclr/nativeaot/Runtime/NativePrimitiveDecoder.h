@@ -46,17 +46,31 @@ public:
         return value;
     }
 
+    static uint32_t PeekUInt32(const uint8_t* p)
+    {
+        uint32_t value;
+        memcpy(&value, p, sizeof(value));
+        return value;
+    }
+
+    static int32_t PeekInt32(const uint8_t* p)
+    {
+        int32_t value;
+        memcpy(&value, p, sizeof(value));
+        return value;
+    }
+
     static int32_t ReadInt32(uint8_t* & p)
     {
-        int32_t value = *p | (*(p+1) << 8) | (*(p+2) << 16) | (*(p+3) << 24);
-        p += 4;
+        int32_t value = PeekInt32(p);
+        p += sizeof(int32_t);
         return value;
     }
 
     static uint32_t ReadUInt32(uint8_t* & p)
     {
-        uint32_t value = *p | (*(p+1) << 8) | (*(p+2) << 16) | (*(p+3) << 24);
-        p += 4;
+        uint32_t value = PeekUInt32(p);
+        p += sizeof(uint32_t);
         return value;
     }
 };

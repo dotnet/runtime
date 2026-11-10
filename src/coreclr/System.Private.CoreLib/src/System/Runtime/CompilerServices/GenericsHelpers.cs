@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices;
@@ -11,6 +12,7 @@ namespace System.Runtime.CompilerServices;
 [DebuggerStepThrough]
 internal static unsafe partial class GenericsHelpers
 {
+    [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
     [LibraryImport(RuntimeHelpers.QCall)]
     private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule);
 

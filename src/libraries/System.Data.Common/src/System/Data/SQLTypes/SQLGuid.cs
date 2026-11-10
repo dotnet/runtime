@@ -110,7 +110,7 @@ namespace System.Data.SqlTypes
         }
 
         // Comparison operators
-        private static EComparison Compare(SqlGuid x, SqlGuid y)
+        private static unsafe EComparison Compare(SqlGuid x, SqlGuid y)
         {
             // Comparison orders.
             ReadOnlySpan<byte> rgiGuidOrder = [10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3];

@@ -112,6 +112,32 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(4, 213_503_983, 0, 0, 0, 0, 0)]
+        [InlineData(4, -213_503_983, 0, 0, 0, 0, 0)]
+        [InlineData(6, 213_503_982, 8, 1, 49, 551, 616)]
+        [InlineData(5, 213_503_983, 0, 0, 0, 0, 0)]
+        [InlineData(6, 213_503_983, 0, 0, 0, 0, 0)]
+        public static void Ctor_DayBased_Overflow_Invalid(int argumentCount, int days, int hours, int minutes, int seconds, int milliseconds, int microseconds)
+        {
+            Action action = argumentCount switch
+            {
+                4 => () => new TimeSpan(days, hours, minutes, seconds),
+                5 => () => new TimeSpan(days, hours, minutes, seconds, milliseconds),
+                6 => () => new TimeSpan(days, hours, minutes, seconds, milliseconds, microseconds),
+                _ => throw new ArgumentOutOfRangeException(nameof(argumentCount)),
+            };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, action);
+        }
+
+        [Fact]
+        public static void Ctor_DayBased_Boundary_Valid()
+        {
+            Assert.Equal(TimeSpan.FromDays(TimeSpan.MaxValue.Days), new TimeSpan(TimeSpan.MaxValue.Days, 0, 0, 0));
+            Assert.Equal(TimeSpan.FromDays(TimeSpan.MinValue.Days), new TimeSpan(TimeSpan.MinValue.Days, 0, 0, 0));
+        }
+
+        [Theory]
         [InlineData(100)]
         [InlineData(300)]
         [InlineData(900)]
@@ -1125,6 +1151,9 @@ namespace System.Tests
 
             // OverflowExceptions
             yield return new object[] { "1:1:1.99999999", null, typeof(OverflowException) }; // overflowing fraction
+            yield return new object[] { "0:0:0.000000268435456", CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "0:0:0.0000000268435456", CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "0:0:0.00000000268435456", CultureInfo.InvariantCulture, typeof(OverflowException) };
 
             yield return new object[] { "2147483647", null, typeof(OverflowException) }; // overflowing value == int.MaxValue
             yield return new object[] { "2147483648", null, typeof(OverflowException) }; // overflowing value == int.MaxValue + 1
@@ -1187,6 +1216,12 @@ namespace System.Tests
             // "G"
             yield return new object[] { "1:12:24:02.243", "G", new TimeSpan(1, 12, 24, 2, 243) }; // DD:MM:HH:SS.FFF
             yield return new object[] { "-01:07:45:16.999", "G", -new TimeSpan(1, 7, 45, 16, 999) }; // -DD:MM:HH:SS.FFF
+            yield return new object[] { "0:00:00:00.000000049999999", "G", TimeSpan.Zero };
+            yield return new object[] { "0:00:00:00.000000050000000", "G", TimeSpan.FromTicks(1) };
+            yield return new object[] { "0:00:00:00.0000000268435455", "G", TimeSpan.Zero };
+            yield return new object[] { "0:00:00:00.00000000268435455", "G", TimeSpan.Zero };
+            yield return new object[] { "-0:00:00:00.000000049999999", "G", TimeSpan.Zero };
+            yield return new object[] { "-0:00:00:00.000000050000000", "G", TimeSpan.FromTicks(-1) };
 
             // Custom timespan formats
             yield return new object[] { "12.23:32:43", @"dd\.h\:m\:s", new TimeSpan(12, 23, 32, 43) };
@@ -1742,6 +1777,22 @@ namespace System.Tests
             yield return new object[] {"0:00:00.00123456",    new TimeSpan(12346)};
             yield return new object[] {"0:00:00.00000098",    new TimeSpan(10)};
             yield return new object[] {"0:00:00.00000099",    new TimeSpan(10)};
+            yield return new object[] {"0:0:0.0000000123456789", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.00000268435455", new TimeSpan(27)};
+            yield return new object[] {"00:00:00.000000268435455", new TimeSpan(3)};
+            yield return new object[] {"00:00:00.0000000268435455", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.00000000268435455", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.00000009999999", new TimeSpan(1)};
+            yield return new object[] {"00:00:00.000000049999999", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.000000050000000", new TimeSpan(1)};
+            yield return new object[] {"00:00:00.000000099999999", new TimeSpan(1)};
+            yield return new object[] {"00:00:00.00000049999999", new TimeSpan(5)};
+            yield return new object[] {"00:00:00.00000050000000", new TimeSpan(5)};
+            yield return new object[] {"00:00:00.0000000000000000", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.9999999", new TimeSpan(9_999_999)};
+            yield return new object[] {"-00:00:00.000000049999999", new TimeSpan(0)};
+            yield return new object[] {"-00:00:00.000000050000000", new TimeSpan(-1)};
+            yield return new object[] {"-00:00:00.000000268435455", new TimeSpan(-3)};
         }
 
         [Theory, MemberData(nameof(ParseDifferentLengthFractionWithLeadingZerosData))]
@@ -1749,6 +1800,17 @@ namespace System.Tests
         {
             Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
             Assert.Equal(expected, TimeSpan.ParseExact(input, "g", CultureInfo.InvariantCulture));
+            Assert.True(TimeSpan.TryParse(input, CultureInfo.InvariantCulture, out TimeSpan result));
+            Assert.Equal(expected, result);
+            Assert.True(TimeSpan.TryParseExact(input, "g", CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
+
+            Assert.Equal(expected, TimeSpan.Parse(input.AsSpan(), CultureInfo.InvariantCulture));
+            Assert.Equal(expected, TimeSpan.ParseExact(input.AsSpan(), "g", CultureInfo.InvariantCulture));
+            Assert.True(TimeSpan.TryParse(input.AsSpan(), CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
+            Assert.True(TimeSpan.TryParseExact(input.AsSpan(), "g", CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
         }
 
         [Theory, MemberData(nameof(MultiplicationTestData))]
@@ -1775,7 +1837,7 @@ namespace System.Tests
         [Theory, MemberData(nameof(MultiplicationTestData))]
         public static void Division(TimeSpan timeSpan, double factor, TimeSpan expected)
         {
-            Assert.Equal(factor, expected / timeSpan, 14);
+            AssertExtensions.Equal(factor, expected / timeSpan, 1e-14);
             double divisor = 1.0 / factor;
             Assert.Equal(expected, timeSpan / divisor);
         }
@@ -1818,7 +1880,7 @@ namespace System.Tests
         [Theory, MemberData(nameof(MultiplicationTestData))]
         public static void NamedDivision(TimeSpan timeSpan, double factor, TimeSpan expected)
         {
-            Assert.Equal(factor, expected.Divide(timeSpan), 14);
+            AssertExtensions.Equal(factor, expected.Divide(timeSpan), 1e-14);
             double divisor = 1.0 / factor;
             Assert.Equal(expected, timeSpan.Divide(divisor));
         }
@@ -1885,6 +1947,41 @@ namespace System.Tests
                 Assert.Equal(expected, Encoding.UTF8.GetString(dst.Slice(0, dst.Length - 1)));
                 Assert.Equal(0, dst[dst.Length - 1]);
             }
+        }
+
+        [Theory]
+        [InlineData("'é'", "é")]
+        [InlineData("'\\é'", "é")]
+        [InlineData("\\é", "é")]
+        [InlineData("'\U0001F600'", "\U0001F600")]
+        [InlineData("'\\\U0001F600'", "\U0001F600")]
+        [InlineData("\\\U0001F600", "\U0001F600")]
+        public static void TryFormat_CustomFormatWithUnicodeLiteral(string format, string expected)
+        {
+            Span<char> chars = new char[expected.Length];
+            Assert.True(TimeSpan.Zero.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal(expected, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = new byte[Encoding.UTF8.GetByteCount(expected)];
+            Assert.True(TimeSpan.Zero.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryFormat_CustomFormatWithUnpairedSurrogate(bool highSurrogate)
+        {
+            string literal = new(highSurrogate ? '\uD83D' : '\uDE00', 1);
+            string format = $"'{literal}'";
+
+            Span<char> chars = new char[literal.Length];
+            Assert.True(TimeSpan.Zero.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal(literal, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = stackalloc byte[3];
+            Assert.True(TimeSpan.Zero.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal("\uFFFD", Encoding.UTF8.GetString(bytes[..bytesWritten]));
         }
 
         [Theory]

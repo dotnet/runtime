@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Formats.Asn1;
-using System.Linq;
 using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
+using System.Security.Cryptography.EcDiffieHellman.Tests;
 using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Asn1;
@@ -276,7 +275,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData((PbeEncryptionAlgorithm)(-1), nameof(HashAlgorithmName.SHA1))]
         public static void ExportPkcs12_PbeParameters_ArgValidation(
             PbeEncryptionAlgorithm encryptionAlgorithm,
-            string hashAlgorithm)
+            string? hashAlgorithm)
         {
             using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
             {
@@ -370,7 +369,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             PbeParameters pbeParameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, X509KeyStorageFlags.Exportable))
             {
                 byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
                 (int certs, int keys) = VerifyPkcs12(
@@ -382,7 +381,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(1, certs);
                 Assert.Equal(1, keys);
 
-                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password, X509KeyStorageFlags.Exportable))
                 using (MLKem kem = reLoaded.GetMLKemPrivateKey())
                 {
                     Assert.NotNull(kem);
@@ -392,15 +391,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public static void ExportPkcs12_MLDsa_Generated_Roundtrip(MLDsaKeyInfo info)
         {
             string password = info.EncryptionPassword;
             PbeParameters pbeParameters = info.EncryptionParameters;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(info.Pfx_Seed, password))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(info.Pfx_Seed, password, X509KeyStorageFlags.Exportable))
             {
                 byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
                 (int certs, int keys) = VerifyPkcs12(
@@ -412,16 +410,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(1, certs);
                 Assert.Equal(1, keys);
 
-                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password, X509KeyStorageFlags.Exportable))
                 using (MLDsa mldsa = reLoaded.GetMLDsaPrivateKey())
                 {
                     Assert.NotNull(mldsa);
                     Assert.Equal(info.Algorithm, mldsa.Algorithm);
                     AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
 
-                    byte[] actualSecretKey = new byte[info.SecretKey.Length];
-                    Assert.Equal(actualSecretKey.Length, mldsa.ExportMLDsaSecretKey(actualSecretKey));
-                    AssertExtensions.SequenceEqual(info.SecretKey, actualSecretKey);
+                    byte[] actualPrivateKey = mldsa.ExportMLDsaPrivateKey();
+                    AssertExtensions.SequenceEqual(info.PrivateKey, actualPrivateKey);
                 }
             }
         }
@@ -434,7 +431,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             PbeParameters pbeParameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, password))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, password, X509KeyStorageFlags.Exportable))
             {
                 byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
                 (int certs, int keys) = VerifyPkcs12(
@@ -446,12 +443,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(1, certs);
                 Assert.Equal(1, keys);
 
-                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password, X509KeyStorageFlags.Exportable))
                 using (SlhDsa slhDsa = reLoaded.GetSlhDsaPrivateKey())
                 {
                     Assert.NotNull(slhDsa);
                     Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaPrivateKey());
                 }
             }
         }
@@ -463,7 +460,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string password = info.EncryptionPassword;
             PbeParameters pbeParameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(info.SelfSignedCertificatePfx, password))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(info.SelfSignedCertificatePfx, password, X509KeyStorageFlags.Exportable))
             {
                 byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
                 (int certs, int keys) = VerifyPkcs12(
@@ -475,12 +472,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(1, certs);
                 Assert.Equal(1, keys);
 
-                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password, X509KeyStorageFlags.Exportable))
                 using (SlhDsa slhDsa = reLoaded.GetSlhDsaPrivateKey())
                 {
                     Assert.NotNull(slhDsa);
                     Assert.Equal(info.Algorithm, slhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(info.SecretKey, slhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(info.PrivateKey, slhDsa.ExportSlhDsaPrivateKey());
                     AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
                 }
             }
@@ -733,7 +730,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ECDsa_Export_DefaultKeyStorePermitsUnencryptedExports_ExportParameters(bool explicitParameters)
         {
-            if (explicitParameters && !ECDsaFactory.ExplicitCurvesSupported)
+            if (explicitParameters && !DefaultECDsaProvider.Instance.ExplicitCurvesSupported)
             {
                 return;
             }
@@ -760,7 +757,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ECDH_Export_DefaultKeyStorePermitsUnencryptedExports_ExportParameters(bool explicitParameters)
         {
-            if (explicitParameters && !ECDsaFactory.ExplicitCurvesSupported)
+            if (explicitParameters && !DefaultECDiffieHellmanProvider.Instance.ExplicitCurvesSupported)
             {
                 return;
             }
@@ -805,7 +802,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS | TestPlatforms.OSX, "DSA is not supported on Apple platforms")]
         public static void DSA_Export_DefaultKeyStorePermitsUnencryptedExports_ExportParameters()
         {
             (byte[] pkcs12, DSA dsa) = CreateSimplePkcs12<DSA>();
@@ -822,7 +819,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS | TestPlatforms.OSX, "DSA is not supported on Apple platforms")]
         public static void DSA_Export_DefaultKeyStorePermitsUnencryptedExports_Pkcs8PrivateKey()
         {
             (byte[] pkcs12, DSA dsa) = CreateSimplePkcs12<DSA>();
@@ -840,6 +837,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(expected.X, actual.X);
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void Export_Pfx_WindowsRsaLegacy()
+        {
+            // Exercises a quirk of PKCS#12 exports with CSP-backed non-ephemeral keys. When PFXExportCertStoreEx is
+            // called with a NULL buffer, the cbData can be oversized. Only when it does the actual export with a
+            // real buffer does it return the real size. When combined with new byte[cbData] that means there are trailing
+            // zeros. Import is tolerant of that, but not all ecosystems tolerate trailing zeros.
+            using RSACryptoServiceProvider key = new(1024, new CspParameters(1)
+            {
+                KeyContainerName = $"pkcs12-test-{nameof(Export_Pfx_WindowsRsaLegacy)}{Guid.NewGuid()}",
+                Flags = CspProviderFlags.NoPrompt
+            });
+
+            key.PersistKeyInCsp = false;
+            key.ImportCspBlob(TestData.LegacyRsaPkcs12PaddedRsaCspBlob);
+
+            using X509Certificate2 publicCertificate =
+                X509Certificate2.CreateFromPem(TestData.LegacyRsaPkcs12PaddedCertificatePem);
+            using X509Certificate2 certificate = publicCertificate.CopyWithPrivateKey(key);
+
+            byte[] pkcs12 = certificate.Export(X509ContentType.Pkcs12)!;
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                null,
+                expectedIterations: 2000,
+                HashAlgorithmName.SHA1,
+                PbeEncryptionAlgorithm.TripleDes3KeyPkcs12);
+            Assert.Equal(1, certs);
+            Assert.Equal(1, keys);
         }
 
         private static (byte[] Pkcs12, TKey key) CreateSimplePkcs12<TKey>() where TKey : AsymmetricAlgorithm
@@ -943,8 +972,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(Pkcs7Data, pfxAsn.AuthSafe.ContentType);
             byte[] safeContents = AsnDecoder.ReadOctetString(pfxAsn.AuthSafe.Content.Span, AsnEncodingRules.BER, out _);
 
-            AsnValueReader authSafeReader = new AsnValueReader(safeContents, AsnEncodingRules.BER);
-            AsnValueReader sequenceReader = authSafeReader.ReadSequence();
+            ValueAsnReader authSafeReader = new ValueAsnReader(safeContents, AsnEncodingRules.BER);
+            ValueAsnReader sequenceReader = authSafeReader.ReadSequence();
             authSafeReader.ThrowIfNotEmpty();
 
             int certs = 0;
@@ -1005,18 +1034,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     // pbeWithSHA1And3-KeyTripleDES-CBC
                     Assert.Equal("1.2.840.113549.1.12.1.3", algorithmIdentifier.Algorithm);
-                    PBEParameter pbeParameter = PBEParameter.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+                    ValuePBEParameter.Decode(
+                        algorithmIdentifier.Parameters.Value.Span,
+                        AsnEncodingRules.BER,
+                        out ValuePBEParameter pbeParameter);
 
                     Assert.Equal(expectedIterations, pbeParameter.IterationCount);
                 }
                 else
                 {
                     Assert.Equal("1.2.840.113549.1.5.13", algorithmIdentifier.Algorithm); // PBES2
-                    PBES2Params pbes2Params = PBES2Params.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+                    ValuePBES2Params.Decode(
+                        algorithmIdentifier.Parameters.Value.Span,
+                        AsnEncodingRules.BER,
+                        out ValuePBES2Params pbes2Params);
                     Assert.Equal("1.2.840.113549.1.5.12", pbes2Params.KeyDerivationFunc.Algorithm); // PBKDF2
-                    Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
-                        pbes2Params.KeyDerivationFunc.Parameters.Value,
-                        AsnEncodingRules.BER);
+                    ValuePbkdf2Params.Decode(
+                        pbes2Params.KeyDerivationFunc.Parameters,
+                        AsnEncodingRules.BER,
+                        out ValuePbkdf2Params pbkdf2Params);
                     string expectedEncryptionOid = expectedEncryptionAlgorithm switch
                     {
                         PbeEncryptionAlgorithm.Aes128Cbc => "2.16.840.1.101.3.4.1.2",
@@ -1032,7 +1068,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        private static HashAlgorithmName GetHashAlgorithmFromPbkdf2Params(Pbkdf2Params pbkdf2Params)
+        private static HashAlgorithmName GetHashAlgorithmFromPbkdf2Params(in ValuePbkdf2Params pbkdf2Params)
         {
             return pbkdf2Params.Prf.Algorithm switch
             {

@@ -21,22 +21,7 @@
 
 #ifndef _MSC_VER
 #define __stdcall
-#ifdef __GNUC__
-#define __forceinline __attribute__((always_inline)) inline
-#else // __GNUC__
-#define __forceinline inline
-#endif // __GNUC__
-// [LOCALGC TODO] is there a better place for this?
-#define NOINLINE __attribute__((noinline))
-#else // !_MSC_VER
-#define NOINLINE __declspec(noinline)
 #endif // _MSC_VER
-
-#ifdef _MSC_VER
-#define __UNREACHABLE() __assume(0)
-#else
-#define __UNREACHABLE() __builtin_unreachable()
-#endif
 
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ((size_t)-1)
@@ -88,13 +73,10 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define FALSE false
 
 #define CALLBACK __stdcall
-#define FORCEINLINE __forceinline
 
 #define INFINITE 0xFFFFFFFF
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#define C_ASSERT(cond) static_assert( cond, #cond )
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
@@ -103,12 +85,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define sprintf_s snprintf
 #define _snprintf_s(string, sizeInBytes, count, format, ...) \
   snprintf(string, sizeInBytes, format, ## __VA_ARGS__)
-#endif
-
-#ifdef UNICODE
-#define _tfopen _wfopen
-#else
-#define _tfopen fopen
 #endif
 
 #define WINAPI __stdcall
@@ -137,10 +113,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #pragma intrinsic(__dmb)
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
- #elif defined(HOST_BROWSER)
-  #define YieldProcessor()
-  #define MemoryBarrier __sync_synchronize
-#elif defined(HOST_AMD64)
+ #elif defined(HOST_AMD64)
 
   extern "C" void
   _mm_pause (
@@ -175,7 +148,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #endif
 #else // _MSC_VER
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__x86_64__)
 
 #if __has_builtin(__builtin_ia32_pause)
  // clang added this intrinsic in 3.8
@@ -214,6 +187,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() asm volatile( ".word 0x0100000f");
  #define MemoryBarrier __sync_synchronize
 #endif // __riscv
+
+#ifdef HOST_WASM
+  #define YieldProcessor()
+  #define MemoryBarrier __sync_synchronize
+#endif // HOST_WASM
 
 #endif // _MSC_VER
 
@@ -403,8 +381,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define STATIC_CONTRACT_GC_NOTRIGGER
 #define STATIC_CONTRACT_MODE_COOPERATIVE
 #define CONTRACTL
-#define CONTRACT(_expr)
-#define CONTRACT_VOID
 #define THROWS
 #define NOTHROW
 #define INSTANCE_CHECK
@@ -414,23 +390,16 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define GC_NOTRIGGER
 #define CAN_TAKE_LOCK
 #define SUPPORTS_DAC
-#define FORBID_FAULT
 #define CONTRACTL_END
-#define CONTRACT_END
 #define TRIGGERSGC()
 #define WRAPPER(_contract)
 #define DISABLED(_contract)
-#define INJECT_FAULT(_expr)
-#define INJECTFAULT_GCHEAP 0x2
-#define FAULT_NOT_FATAL()
 #define BEGIN_DEBUG_ONLY_CODE
 #define END_DEBUG_ONLY_CODE
 #define BEGIN_GETTHREAD_ALLOWED
 #define END_GETTHREAD_ALLOWED
 #define LEAF_DAC_CONTRACT
 #define PRECONDITION(_expr)
-#define POSTCONDITION(_expr)
-#define RETURN return
 #define CONDITIONAL_CONTRACT_VIOLATION(_violation, _expr)
 
 // -----------------------------------------------------------------------------------------------------------
@@ -450,19 +419,12 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 #define DATA_ALIGNMENT sizeof(uintptr_t)
 #define RAW_KEYWORD(x) x
 
-#ifdef _MSC_VER
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
-#endif
-
 #ifndef _ASSERTE
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 #define CONSISTENCY_CHECK(_expr) ASSERT(_expr)
 #define COMPILER_ASSUME(cond) ASSERT(cond)
 #define EEPOLICY_HANDLE_FATAL_ERROR(error) ASSERT(!"EEPOLICY_HANDLE_FATAL_ERROR")
-#define UI64(_literal) _literal##ULL
 
 class ObjHeader;
 class MethodTable;

@@ -4,6 +4,7 @@
 // Regression test for VSW 543506
 /*
 
+using TestLibrary;
 Testing that generic argument types for co/contravariant generic types are boxed
 (VSW 543506)
 Test_vsw543506: under Loader\ClassLoader\Generics\Variance\IL
@@ -19,6 +20,7 @@ IPos<int> is not castable to IPos<MyEnum>
 */
 using System;
 using Xunit;
+using TestLibrary;
 
 public class C<T> : IPos<T>, INeg<T>
 {
@@ -102,6 +104,7 @@ public class Test_vsw543506
 
    	
 
+   [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
   	[Fact]
   	public static int TestEntryPoint() 
 	{
@@ -154,7 +157,7 @@ public class Test_vsw543506
 
 
 
-		// IPos<unit> --> IPos<int>
+		// IPos<uint> --> IPos<int>
 	    	IsInstShouldFail<IPos<int>>(cui);
 
 		// IPos<IComparable> --> IPos<uint>

@@ -13,12 +13,102 @@
 #define __DEBUG_DEBUGGER_h__
 #include <object.h>
 
-extern "C" void QCALLTYPE DebugDebugger_Break();
+extern "C" void QCALLTYPE DebugDebugger_Break(QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_Launch();
 extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
-extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data);
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
+
+#ifdef DEBUGGING_SUPPORTED
+class DebuggerEval;
+class ExternalMemoryHandle;
+struct DebuggerFuncEvalArgument;
+
+void ValidateFuncEvalConstructorType(MethodTable* pMT);
+HRESULT ValidateObject(Object* objPtr);
+
+struct DebuggerFuncEvalCapturedArgument
+{
+#if BIGENDIAN
+    SIZE_T high;
+    SIZE_T low;
+#else
+    SIZE_T low;
+    SIZE_T high;
+#endif
+
+    BYTE* GetAddress(UINT32 size)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(size <= sizeof(*this));
+        BYTE* address = reinterpret_cast<BYTE*>(this);
+#if BIGENDIAN
+        address += sizeof(*this) - size;
+#endif
+        return address;
+    }
+};
+
+struct DebuggerFuncEvalContext
+{
+    DebuggerEval* pEval;
+    DebuggerFuncEvalArgument* pArguments;
+    void** pInteriors;
+    void** pHomes;
+    DebuggerFuncEvalCapturedArgument* pCapturedArguments;
+    ExternalMemoryHandle* pTemporaryResult;
+    void** pResultByRefs;
+    void* pResultData;
+    void* resultHandle;
+    Module* pModule;
+    UINT32 argumentCount;
+    UINT32 parameterCount;
+    UINT32 flags;
+    mdMethodDef methodToken;
+    uint32_t genericArgsCount;
+};
+
+enum DebuggerFuncEvalFlags
+{
+    FuncEvalNewObject = 1,
+    FuncEvalExternalResult = 2,
+    FuncEvalValueTypeResult = 4,
+};
+
+struct DebuggerFuncEvalArgument
+{
+    BYTE* pLiteral;
+    UINT32 elementType;
+    UINT32 flags;
+};
+
+enum DebuggerFuncEvalArgumentFlags
+{
+    FuncEvalLiteral = 1,
+    FuncEvalHandle = 2,
+    FuncEvalMemory = 4,
+    FuncEvalRegister = 8,
+};
+
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
+    DebuggerFuncEvalContext* pContext,
+    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
+    QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
+    DebuggerFuncEvalContext* pContext, QCall::TypeHandle resultType,
+    QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
+    QCallExceptionStatus* qcallError);
+#endif // DEBUGGING_SUPPORTED
 
 class StackFrameHelper : public Object
 {
@@ -70,6 +160,8 @@ typedef REF <StackFrameHelper> STACKFRAMEHELPERREF;
 typedef StackFrameHelper* STACKFRAMEHELPERREF;
 #endif
 
+// Validate that the IL offsets in the method returned by WalkILOffsets matches that as reported by the debugger.
+void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, uint8_t* ipHotStart, size_t hotLen);
 
 class DebugStackTrace
 {
@@ -131,8 +223,92 @@ public:
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
-    QCall::ObjectHandleOnStack exception);
+    QCall::ObjectHandleOnStack exception,
+    QCallExceptionStatus* qcallError);
 
-extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);
+extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
+    void* diagnosticIP,
+    QCall::ObjectHandleOnStack exception,
+    QCallExceptionStatus* qcallError);
+
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, QCallExceptionStatus* qcallError);
+
+
+class ILToNativeMapArrays
+{
+private:
+    // This is the limit on how big the il-to-native map can get, as measured by number
+    // of entries in each parallel array (IL offset array and native offset array).
+    // The logic is used to by tracing to ensure that the size of the event does not exceed the Windows event size limit.
+    uint32_t m_cMapEntriesMax;
+    bool m_fHasLastMapping = false;
+    bool m_fNextReplacesLast = false;
+    int callInstrSequence = 0;
+    InlineSArray<uint32_t, 128> m_rguiNativeOffset;
+    InlineSArray<uint32_t, 128> m_rguiILOffset;
+
+    static int32_t CompareILOffsets(uint32_t ilOffsetA, uint32_t ilOffsetB);
+    static bool CompareLessOffsets(uint32_t ilOffsetA, uint32_t nativeOffsetA, uint32_t ilOffsetB, uint32_t nativeOffsetB);
+    static bool CompareGreaterOffsets(uint32_t ilOffsetA, uint32_t nativeOffsetA, uint32_t ilOffsetB, uint32_t nativeOffsetB);
+    static void Swap(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t i, int32_t j);
+    static void Copy(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t i, int32_t j);
+    static int32_t Partition(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t low, int32_t high);
+    static void QuickSort(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t low, int32_t high, int32_t stackDepth = 0);
+
+    void Sort()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (m_rguiNativeOffset.GetCount() > 1)
+        {
+            // Sort the arrays in place.
+            QuickSort(m_rguiNativeOffset.GetElements(), m_rguiILOffset.GetElements(), 0, m_rguiNativeOffset.GetCount() - 1);
+        }
+    }
+
+public:
+
+    ILToNativeMapArrays(uint32_t cMapEntriesMax)
+        : m_cMapEntriesMax(cMapEntriesMax)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    void GetArrays(uint32_t *pcMap, uint32_t **prguiNativeOffset, uint32_t **prguiILOffset)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Sort();
+        if (m_rguiNativeOffset.GetCount() > 0)
+        {
+            static_assert(sizeof(uint32_t) == sizeof(COUNT_T));
+            if (m_rguiNativeOffset.GetCount() > m_cMapEntriesMax)
+            {
+                // If the number of entries exceeds the maximum, we cap it to the maximum.
+                // This is to ensure that we do not exceed the Windows event size limit.
+                // Note that this is a rare case, as the JIT should not produce more than
+                // m_cMapEntriesMax entries in a method in common scenarios, unless code is
+                // extremely large
+                *pcMap = m_cMapEntriesMax;
+            }
+            else
+            {
+                *pcMap = m_rguiNativeOffset.GetCount();
+            }
+            *prguiNativeOffset = m_rguiNativeOffset.GetElements();
+            *prguiILOffset = m_rguiILOffset.GetElements();
+        }
+        else
+        {
+            *pcMap = 0;
+            *prguiNativeOffset = NULL;
+            *prguiILOffset = NULL;
+        }
+    }
+
+    void AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping);
+};
+
+
+size_t ComputeILOffsetArrays(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext);
 
 #endif  // __DEBUG_DEBUGGER_h__

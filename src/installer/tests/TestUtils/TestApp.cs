@@ -57,7 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             assetRelativePath = assetRelativePath ?? appName;
             TestApp app = CreateEmpty(appName);
             TestArtifact.CopyRecursive(
-                Path.Combine(TestContext.TestAssetsOutput, assetRelativePath),
+                Path.Combine(HostTestContext.TestAssetsOutput, assetRelativePath),
                 app.Location);
             return app;
         }
@@ -107,18 +107,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void PopulateSelfContained(MockedComponent mock, Action<NetCoreAppBuilder> customizer = null)
         {
-            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, TestContext.BuildRID);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, HostTestContext.BuildRID);
 
             // Update the .runtimeconfig.json - add included framework and remove any existing NETCoreApp framework
             builder.WithRuntimeConfig(c =>
-                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion)
+                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion)
                     .RemoveFramework(Constants.MicrosoftNETCoreApp));
 
             // Add main project assembly
             builder.WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()));
 
             // Add runtime libraries and assets
-            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l =>
+            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{HostTestContext.BuildRID}", HostTestContext.MicrosoftNETCoreAppVersion, l =>
             {
                 if (mock == MockedComponent.None)
                 {

@@ -14,6 +14,172 @@ namespace System.Threading.Tests
     /// </summary>
     public class SemaphoreSlimTests
     {
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        public static async Task AsyncWaitersWorkWithoutOtherThreads(int waiterCount)
+        {
+            using SemaphoreSlim semaphore = new(0, waiterCount);
+            WaitHandle handle = semaphore.AvailableWaitHandle;
+            Task<bool>[] waiters = new Task<bool>[waiterCount];
+            for (int i = 0; i < waiters.Length; i++)
+            {
+                waiters[i] = semaphore.WaitAsync(Timeout.Infinite);
+                Assert.False(waiters[i].IsCompleted);
+            }
+
+            Assert.Equal(0, semaphore.Release(waiterCount));
+            foreach (Task<bool> waiter in waiters)
+            {
+                Assert.True(await waiter);
+            }
+            Assert.Equal(0, semaphore.CurrentCount);
+            Assert.False(handle.WaitOne(0));
+            Assert.False(await semaphore.WaitAsync(0));
+
+            Assert.Equal(0, semaphore.Release());
+            Assert.True(handle.WaitOne(0));
+            Assert.True(await semaphore.WaitAsync(0));
+            Assert.False(handle.WaitOne(0));
+        }
+
+        [Fact]
+        public static async Task AsyncCancellationDoesNotLosePermits()
+        {
+            using SemaphoreSlim semaphore = new(0, 1);
+            using CancellationTokenSource cancellation = new();
+            Task<bool> canceled = semaphore.WaitAsync(Timeout.Infinite, cancellation.Token);
+            Task<bool> next = semaphore.WaitAsync(Timeout.Infinite);
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+            Assert.Equal(0, semaphore.Release());
+            Assert.True(await next);
+            Assert.Equal(0, semaphore.CurrentCount);
+            Assert.False(await semaphore.WaitAsync(0));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public static async Task AsyncTimeoutDoesNotLosePermits(int millisecondsTimeout)
+        {
+            using SemaphoreSlim semaphore = new(0, 1);
+            Assert.False(await semaphore.WaitAsync(millisecondsTimeout));
+            Assert.Equal(0, semaphore.Release());
+            Assert.Equal(1, semaphore.CurrentCount);
+            Assert.True(await semaphore.WaitAsync(0));
+            Assert.Equal(0, semaphore.CurrentCount);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task SingleThreadedReleaseDuringCancellation(bool registerReleaseFirst)
+        {
+            using SemaphoreSlim semaphore = new(0, 1);
+            using CancellationTokenSource cancellation = new();
+            CancellationTokenRegistration registration = default;
+            if (registerReleaseFirst)
+            {
+                registration = cancellation.Token.Register(() => semaphore.Release());
+            }
+
+            Task<bool> waiter = semaphore.WaitAsync(Timeout.Infinite, cancellation.Token);
+            if (!registerReleaseFirst)
+            {
+                registration = cancellation.Token.Register(() => semaphore.Release());
+            }
+
+            try
+            {
+                cancellation.Cancel();
+                Assert.True(await waiter);
+                Assert.Equal(0, semaphore.CurrentCount);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(0, 1)]
+        [InlineData(1, 1)]
+        [InlineData(0, -1)]
+        [InlineData(1, -1)]
+        [InlineData(0, 20)]
+        [InlineData(1, 20)]
+        public static void SingleThreadedSynchronousWaitHonorsAvailableCount(int count, int millisecondsTimeout)
+        {
+            using SemaphoreSlim semaphore = new(count, 1);
+            WaitHandle handle = semaphore.AvailableWaitHandle;
+            if (count != 0)
+            {
+                Assert.True(semaphore.Wait(millisecondsTimeout));
+                Assert.Equal(0, semaphore.CurrentCount);
+                Assert.False(handle.WaitOne(0));
+                semaphore.Release();
+                Assert.True(handle.WaitOne(0));
+                Assert.True(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.False(handle.WaitOne(0));
+            }
+            else if (millisecondsTimeout != Timeout.Infinite)
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(semaphore.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait(millisecondsTimeout));
+                Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+            }
+            Assert.Equal(0, semaphore.CurrentCount);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0, false, false)]
+        [InlineData(20, false, false)]
+        [InlineData(0, true, false)]
+        [InlineData(20, true, false)]
+        [InlineData(0, false, true)]
+        [InlineData(20, false, true)]
+        [InlineData(0, true, true)]
+        [InlineData(20, true, true)]
+        public static async Task WaitOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout, bool queueAsyncWaiter, bool warnOnly)
+        {
+            using SemaphoreSlim semaphore = new(0, 1);
+            Task<bool> asyncWaiter = queueAsyncWaiter ? semaphore.WaitAsync(Timeout.Infinite) : null;
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(semaphore.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                if (!warnOnly)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait());
+                }
+            }, warnOnly);
+            semaphore.Release();
+            if (queueAsyncWaiter)
+            {
+                Assert.True(await asyncWaiter);
+                Assert.Equal(0, semaphore.CurrentCount);
+            }
+            else
+            {
+                Assert.True(semaphore.Wait(0));
+            }
+        }
+
         /// <summary>
         /// SemaphoreSlim public methods and properties to be tested
         /// </summary>
@@ -60,18 +226,37 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_Wait_Helper(10, 10, 10, true, null);
             RunSemaphoreSlimTest1_Wait_Helper(1, 10, 10, true, null);
             RunSemaphoreSlimTest1_Wait_Helper(0, 10, 10, false, null);
+            RunSemaphoreSlimTest1_Wait_Helper(1, 10, TimeSpan.FromMilliseconds(uint.MaxValue), true, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void Wait_SingleThreaded()
+        {
+            using SemaphoreSlim semaphore = new(1, 1);
+
+            semaphore.Wait();
+            semaphore.Release();
+            semaphore.Wait(CancellationToken.None);
+            semaphore.Release();
+            Assert.True(semaphore.Wait(1));
+            semaphore.Release();
+            Assert.True(semaphore.Wait(TimeSpan.FromMilliseconds(1)));
+            semaphore.Release();
+            Assert.True(semaphore.Wait(0, CancellationToken.None));
+
+            Assert.False(semaphore.Wait(0));
+            Assert.False(semaphore.Wait(1));
+            Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest1_Wait_NegativeCases()
         {
             // Invalid timeout
-            RunSemaphoreSlimTest1_Wait_Helper(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
-            RunSemaphoreSlimTest1_Wait_Helper
-               (10, 10, new TimeSpan(0, 0, int.MaxValue), true, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest1_Wait_Helper(10, 10, -10, false, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest1_WaitAsync()
         {
             // Infinite timeout
@@ -87,16 +272,16 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, 10, true, null);
             RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, 10, true, null);
             RunSemaphoreSlimTest1_WaitAsync_Helper(0, 10, 10, false, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, TimeSpan.FromMilliseconds(uint.MaxValue), true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, TimeSpan.MaxValue, true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void RunSemaphoreSlimTest1_WaitAsync_NegativeCases()
         {
             // Invalid timeout
             RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
-            RunSemaphoreSlimTest1_WaitAsync_Helper
-               (10, 10, new TimeSpan(0, 0, int.MaxValue), true, typeof(ArgumentOutOfRangeException));
             RunSemaphoreSlimTest1_WaitAsync2();
         }
 
@@ -122,7 +307,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest2_Release_Helper(int.MaxValue - 1, int.MaxValue, 10, typeof(SemaphoreFullException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest4_Dispose()
         {
             RunSemaphoreSlimTest4_Dispose_Helper(5, 10, null, null);
@@ -137,7 +322,7 @@ namespace System.Threading.Tests
               (5, 10, SemaphoreSlimActions.AvailableWaitHandle, typeof(ObjectDisposedException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest5_CurrentCount()
         {
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, null);
@@ -146,7 +331,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, SemaphoreSlimActions.Release);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest7_AvailableWaitHandle()
         {
             RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, null, true);
@@ -462,7 +647,7 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(5, 1000, 50, 50, 50, 0, 5, 1000)]
         [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
         [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
@@ -528,7 +713,7 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(5, 1000, 50, 50, 50, 0, 5, 500)]
         [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
         [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
@@ -577,7 +762,7 @@ namespace System.Threading.Tests
             Assert.Equal(finalCount, semaphore.CurrentCount);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(10, 10)]
         [InlineData(1, 10)]
         [InlineData(10, 1)]

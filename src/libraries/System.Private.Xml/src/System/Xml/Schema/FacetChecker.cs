@@ -352,7 +352,7 @@ namespace System.Xml.Schema
                 //Additional check for pattern facet
                 //If facet is XMLSchemaPattern, then the String built inside the loop
                 //needs to be converted to a RegEx
-                if (_firstPattern == false)
+                if (!_firstPattern)
                 {
                     _derivedRestriction.Patterns ??= new ArrayList();
                     try

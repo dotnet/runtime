@@ -453,6 +453,88 @@ namespace Internal.NativeFormat
         }
     }
 
+    internal struct NativeArray
+    {
+        private const uint BlockSize = 16;
+
+        private NativeReader _reader;
+        private uint _baseOffset;
+        private uint _nElements;
+        private byte _entryIndexSize;
+
+        public NativeArray(NativeParser parser)
+        {
+            _reader = parser.Reader;
+            _baseOffset = _reader.DecodeUnsigned(parser.Offset, out uint val);
+            _nElements = val >> 2;
+
+            byte entryIndexSize = (byte)(val & 3);
+            if (entryIndexSize > 2)
+                NativeReader.ThrowBadImageFormatException();
+            _entryIndexSize = entryIndexSize;
+        }
+
+        public uint GetCount()
+        {
+            return _nElements;
+        }
+
+        public bool TryGetAt(uint index, out NativeParser parser)
+        {
+            parser = default;
+
+            if (index >= _nElements)
+                return false;
+
+            uint offset;
+            if (_entryIndexSize == 0)
+            {
+                offset = _reader.ReadUInt8(_baseOffset + (index / BlockSize));
+            }
+            else if (_entryIndexSize == 1)
+            {
+                offset = _reader.ReadUInt16(_baseOffset + 2 * (index / BlockSize));
+            }
+            else
+            {
+                offset = _reader.ReadUInt32(_baseOffset + 4 * (index / BlockSize));
+            }
+            offset += _baseOffset;
+
+            for (uint bit = BlockSize >> 1; bit > 0; bit >>= 1)
+            {
+                uint offset2 = _reader.DecodeUnsigned(offset, out uint val);
+                if ((index & bit) != 0)
+                {
+                    if ((val & 2) != 0)
+                    {
+                        offset += val >> 2;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if ((val & 1) != 0)
+                    {
+                        offset = offset2;
+                        continue;
+                    }
+                }
+
+                if ((val & 3) == 0 && (val >> 2) == (index & (BlockSize - 1)))
+                {
+                    offset = offset2;
+                    break;
+                }
+
+                return false;
+            }
+
+            parser = new NativeParser(_reader, offset);
+            return true;
+        }
+    }
+
     internal struct NativeHashtable
     {
         private NativeReader _reader;

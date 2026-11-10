@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration
         public FileConfigurationProvider Provider { get; set; } = null!;
 
         /// <summary>
-        /// Gets or sets the exception that occurred in Load.
+        /// Gets or sets the exception that occurred during file loading.
         /// </summary>
         public Exception Exception { get; set; } = null!;
 

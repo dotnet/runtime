@@ -115,6 +115,20 @@ namespace System
         {
             return (MethodHandleInfo*)_value;
         }
+
+        internal readonly unsafe IntPtr ResolveGenericVirtualMethodTarget(object target)
+        {
+            MethodHandleInfo* info = ToMethodHandleInfo();
+            void* methodInstantiation = info->NumGenericArgs != 0 ? (MethodTable*)&info->FirstArgument : null;
+
+            return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                new RuntimeTypeHandle(target.GetMethodTable()),
+                info->DeclaringType,
+                info->Handle,
+                isAsyncVariant: false,
+                methodInstantiation,
+                isMethodInstantiationDataRelative: false);
+        }
     }
 
     [CLSCompliant(false)]

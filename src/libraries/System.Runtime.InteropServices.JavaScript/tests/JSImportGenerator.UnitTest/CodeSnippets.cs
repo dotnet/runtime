@@ -28,7 +28,7 @@ namespace JSImportGenerator.Unit.Tests
                     Task<float> ta5,
                     Task<IntPtr> ta7,
                     JSObject jso,
-                    string[] aa1, byte[] aab, double[] aad, int[] aai
+                    string[] aa1, byte[] aab, double[] aad, float[] aaf, int[] aai
                 );
             }
             """;
@@ -56,7 +56,8 @@ namespace JSImportGenerator.Unit.Tests
                     [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTime> a12,
                     [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTimeOffset> a13,
                     [JSMarshalAs<JSType.Promise<JSType.Number>>] Task<long> a14,
-                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15
+                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15,
+                    [JSMarshalAs<JSType.MemoryView>] ArraySegment<float> a16
                 );
             }
             """;
@@ -84,7 +85,8 @@ namespace JSImportGenerator.Unit.Tests
                     [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTime> a12,
                     [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTimeOffset> a13,
                     [JSMarshalAs<JSType.Promise<JSType.Number>>] Task<long> a14,
-                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15
+                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15,
+                    [JSMarshalAs<JSType.MemoryView>] ArraySegment<float> a16
                 )
                 {}
             }
@@ -113,7 +115,8 @@ namespace JSImportGenerator.Unit.Tests
                     Task<DateTime> a12,
                     Task<DateTimeOffset> a13,
                     Task<long> a14,
-                    Task<long> a15
+                    Task<long> a15,
+                    ArraySegment<float> a16
                 );
             }
             """;
@@ -188,6 +191,100 @@ namespace JSImportGenerator.Unit.Tests
 
             }
             """;
+
+        public static readonly string TaskAndDelegateSignatures = """
+            using System;
+            using System.Runtime.InteropServices.JavaScript;
+            using System.Threading.Tasks;
+
+            public partial class Callbacks
+            {
+                [JSImport("task")]
+                public static partial Task ImportTask(Task value);
+
+                [JSExport]
+                public static Task ExportTask(Task value) => value;
+
+                [JSImport("taskResult")]
+                public static partial Task<IntPtr> ImportTaskResult(Task<IntPtr> value);
+
+                [JSExport]
+                public static Task<IntPtr> ExportTaskResult(Task<IntPtr> value) => value;
+
+                [JSImport("action")]
+                [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt>>]
+                public static partial Action<int, string, long> ImportAction(
+                    [JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt>>] Action<int, string, long> value);
+
+                [JSExport]
+                [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt>>]
+                public static Action<int, string, long> ExportAction(
+                    [JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt>>] Action<int, string, long> value) => value;
+
+                [JSImport("function")]
+                [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt, JSType.Number>>]
+                public static partial Func<int, string, long, int> ImportFunction(
+                    [JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt, JSType.Number>>] Func<int, string, long, int> value);
+
+                [JSExport]
+                [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt, JSType.Number>>]
+                public static Func<int, string, long, int> ExportFunction(
+                    [JSMarshalAs<JSType.Function<JSType.Number, JSType.String, JSType.BigInt, JSType.Number>>] Func<int, string, long, int> value) => value;
+            }
+            """;
+
+        public static readonly string NestedDeclarations = """
+            using System.Runtime.InteropServices.JavaScript;
+
+            namespace Outer.Inner;
+
+            public partial record class Container
+            {
+                public readonly partial record struct Nested
+                {
+                    [JSImport("import")]
+                    public static partial int Import(int value);
+
+                    [JSExport]
+                    public static int Export(int value) => value;
+                }
+            }
+            """;
+
+        public static readonly string EscapedIdentifiersAndLiterals = """
+            using System.Runtime.InteropServices.JavaScript;
+
+            namespace @namespace.@event;
+
+            public partial class @class
+            {
+                [JSImport("function\"\\\r\n\0\u2028", "module\"\\\t")]
+                public static partial int @event(int @return);
+
+                [JSImport("", "")]
+                public static partial void Empty();
+
+                [JSExport]
+                public static int @return(int @class) => @class;
+
+                [JSExport]
+                public static int \u0045xport(int @class) => @class;
+            }
+            """;
+
+        public static readonly string IncrementalGeneration = """
+            using System.Runtime.InteropServices.JavaScript;
+
+            public partial class Basic
+            {
+                [JSImport("import")]
+                public static partial int Import(int value);
+
+                [JSExport]
+                public static int Export(int value) => value;
+            }
+            """;
+
         public static string DefaultReturnMarshaler<T>() => DefaultReturnMarshaler(typeof(T).ToString());
 
         public static string DefaultReturnMarshaler(string type) => $$"""

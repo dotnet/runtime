@@ -10,6 +10,7 @@ public class AllocBug
     {
     }
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -38,9 +39,9 @@ public class AllocBug
         {
             byte[] buffer = new byte[bytesToAlloc];
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Console.WriteLine("Unexpected Exception when allocating "+bytesToAlloc+" bytes.");
+            Console.WriteLine($"Unexpected exception when allocating {bytesToAlloc} bytes: {ex}");
             ret = -1;
         }
     }

@@ -9,7 +9,7 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 endif(CLR_CMAKE_HOST_WIN32)
 # add the executable
-add_library (ArrayWithOffsetNative SHARED ${SOURCES})
+add_library (ArrayWithOffsetNative ${TEST_LIB_TYPE} ${SOURCES})
 target_link_libraries(ArrayWithOffsetNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 # add the install targets
 install (TARGETS ArrayWithOffsetNative DESTINATION bin)

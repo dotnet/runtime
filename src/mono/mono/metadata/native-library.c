@@ -440,7 +440,7 @@ static MonoDl* native_handle_lookup_wrapper (gpointer handle)
 }
 
 static MonoDl *
-netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, const char *scope, guint32 flags, MonoError *error)
+netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, const char *scope, gboolean user_specified_flags, guint32 flags, MonoError *error)
 {
 	MonoDl *result = NULL;
 	gpointer lib = NULL;
@@ -476,7 +476,7 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 	goto_if_nok (error, leave);
 
 	gboolean has_search_flags;
-	has_search_flags = flags != 0 ? TRUE : FALSE;
+	has_search_flags = user_specified_flags;
 	gpointer args [5];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
@@ -493,12 +493,12 @@ leave:
 }
 
 static MonoDl *
-netcore_resolve_with_dll_import_resolver_nofail (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, const char *scope, guint32 flags)
+netcore_resolve_with_dll_import_resolver_nofail (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, const char *scope, gboolean user_specified_flags, guint32 flags)
 {
 	MonoDl *result = NULL;
 	ERROR_DECL (error);
 
-	result = netcore_resolve_with_dll_import_resolver (alc, assembly, scope, flags, error);
+	result = netcore_resolve_with_dll_import_resolver (alc, assembly, scope, user_specified_flags, flags, error);
 	if (!is_ok (error))
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Error while invoking ALC DllImportResolver(\"%s\") delegate: '%s'", scope, mono_error_get_message (error));
 
@@ -703,7 +703,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 		goto leave;
 	}
 
-	module = (MonoDl *)netcore_resolve_with_dll_import_resolver_nofail (alc, assembly, scope, flags);
+	module = (MonoDl *)netcore_resolve_with_dll_import_resolver_nofail (alc, assembly, scope, user_specified_flags, flags);
 	if (module) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via DllImportResolver: '%s'.", scope);
 		goto add_to_alc_cache;

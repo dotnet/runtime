@@ -36,6 +36,7 @@ public static partial class ZipFileExtensions
     /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
     /// Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, overwriteFiles: false, cancellationToken);
 
@@ -68,6 +69,7 @@ public static partial class ZipFileExtensions
     /// Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="overwriteFiles">True to indicate overwrite.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static async Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -77,7 +79,25 @@ public static partial class ZipFileExtensions
 
         foreach (ZipArchiveEntry entry in source.Entries)
         {
-            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken).ConfigureAwait(false);
+            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously extracts all of the files in the archive to a directory on the file system using the specified options.
+    /// </summary>
+    public static async Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, ZipExtractionOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(destinationDirectoryName);
+        ArgumentNullException.ThrowIfNull(options);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        foreach (ZipArchiveEntry entry in source.Entries)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, options.OverwriteFiles, options.Password, cancellationToken).ConfigureAwait(false);
         }
     }
 }

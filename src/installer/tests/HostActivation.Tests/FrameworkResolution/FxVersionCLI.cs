@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -40,27 +41,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .WithFramework(MicrosoftNETCoreApp, frameworkReferenceVersion))
                     .WithCommandLine(Constants.FxVersion.CommandLineArgument, fxVersion))
                 .ShouldHaveResolvedFrameworkOrFailToFind(MicrosoftNETCoreApp, resolvedFramework);
-        }
-
-        // Validates that --fx-version ignores any <rollForwardOnNoCandidateFx> or <applyPatches> settings
-        [Theory] // rollForwardOnNoCandidateFx applyPatches
-        [InlineData(null,                      null )]
-        [InlineData(0,                         null )]
-        [InlineData(0,                         true )]
-        [InlineData(1,                         null )]
-        [InlineData(1,                         true )]
-        [InlineData(2,                         null )]
-        [InlineData(0,                         false)]
-        public void IgnoresRollForwardOnNoCandidateFxAndApplyPatchesSettings(int? rollForwardOnNoCandidateFx, bool? applyPatches)
-        {
-            RunTest(
-                new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithFramework(MicrosoftNETCoreApp, "2.5.4"))
-                    .WithCommandLine(Constants.FxVersion.CommandLineArgument, "2.5.5")
-                    .With(RollForwardOnNoCandidateFxSetting(SettingLocation.CommandLine, rollForwardOnNoCandidateFx))
-                    .With(ApplyPatchesSetting(SettingLocation.RuntimeOptions, applyPatches)))
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "2.5.5");
         }
 
         // Validates that --fx-version ignores any rollForward <rollForward> settings
@@ -109,8 +89,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "2.5.5");
         }
 
-        private CommandResult RunTest(TestSettings testSettings) =>
-            RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings);
+        private CommandResult RunTest(TestSettings testSettings, [CallerMemberName] string caller = "") =>
+            RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings, caller: caller);
 
         public class SharedTestState : SharedTestStateBase
         {

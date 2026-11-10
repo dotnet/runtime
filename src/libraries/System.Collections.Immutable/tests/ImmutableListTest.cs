@@ -494,13 +494,32 @@ namespace System.Collections.Immutable.Tests
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "index");
             IndexOfTests.IndexOfTest(
                 seq => (IImmutableList<int>)ImmutableList.CreateRange(seq),
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "index");
+        }
+
+        [Fact]
+        public void IndexOfConsistentWithArray()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3, 4);
+            int[] array = new[] { 1, 2, 3, 4 };
+
+            Assert.Equal(-1, list.IndexOf(2, list.Count, 0));
+            Assert.Equal(-1, Array.IndexOf(array, 2, array.Length, 0));
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                int listResult = list.IndexOf(list[i], 0, list.Count);
+                int arrayResult = Array.IndexOf(array, array[i], 0, array.Length);
+                Assert.Equal(listResult, arrayResult);
+            }
         }
 
         [Fact]
@@ -520,6 +539,31 @@ namespace System.Collections.Immutable.Tests
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
+        }
+
+        [Fact]
+        public void LastIndexOfMultipleMatches()
+        {
+            ImmutableList<string> list = ImmutableList.Create("NonMatch", "Match", "Match", "NonMatch");
+            Assert.Equal(2, list.LastIndexOf("Match", index: 3, count: 4, equalityComparer: null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.LastIndexOf("Match", index: 4, count: 4, equalityComparer: null));
+        }
+
+        [Fact]
+        public void LastIndexOfConsistentWithImmutableArray()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.LastIndexOf(1, list.Count, 1, equalityComparer: null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => array.LastIndexOf(1, array.Length, 1, equalityComparer: null));
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                int listResult = list.LastIndexOf(list[i], list.Count - 1, list.Count, equalityComparer: null);
+                int arrayResult = array.LastIndexOf(array[i], array.Length - 1, array.Length, equalityComparer: null);
+                Assert.Equal(arrayResult, listResult);
+            }
         }
 
         [Fact]
@@ -722,6 +766,37 @@ namespace System.Collections.Immutable.Tests
 
             ImmutableList<int> populatedList = ImmutableList.Create(3, 2, 1);
             Assert.Equal(Enumerable.Range(1, 3), populatedList.Reverse());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(1000)]
+        public void ReverseEntireList(int count)
+        {
+            ImmutableList<int> list = ImmutableList.CreateRange(Enumerable.Range(0, count));
+            ImmutableList<int> reversed = list.Reverse();
+            Assert.Equal(Enumerable.Range(0, count).Reverse(), reversed);
+            Assert.Equal(reversed, list.Reverse(0, count));
+            Assert.Equal(list, reversed.Reverse());
+            Assert.Equal(Enumerable.Range(0, count), list);
+            Assert.Equal(count, reversed.Count);
+            VerifyBalanced(reversed);
+
+            for (int i = 0; i < count; i++)
+            {
+                Assert.Equal(count - i - 1, reversed[i]);
+            }
+
+            if (count <= 1)
+            {
+                Assert.Same(list, reversed);
+            }
         }
 
         [Fact]

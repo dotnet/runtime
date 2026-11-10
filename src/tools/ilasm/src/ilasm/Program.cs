@@ -1,0 +1,357 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Immutable;
+using System.CommandLine;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+
+namespace Microsoft.DotNet.ILAssembler;
+
+internal sealed class Program
+{
+    private readonly IlasmRootCommand _command;
+    private readonly ParseResult _result;
+
+    public Program(IlasmRootCommand command, ParseResult result)
+    {
+        _command = command;
+        _result = result;
+    }
+
+    public int Run()
+    {
+        Stopwatch? stopwatch = null;
+        if (Get(_command.Clock))
+        {
+            stopwatch = Stopwatch.StartNew();
+        }
+
+        string[]? inputFiles = _result.GetValue(_command.InputFilePaths);
+        bool quiet = Get(_command.Quiet);
+
+        if (!Get(_command.NoLogo) && !quiet)
+        {
+            Console.WriteLine(IlasmRootCommand.ProductName);
+            Console.WriteLine();
+        }
+
+        if (inputFiles is null || inputFiles.Length == 0)
+        {
+            Console.Error.WriteLine("Error: No input file specified");
+            return 1;
+        }
+
+        // Validate all input files exist
+        foreach (string file in inputFiles)
+        {
+            if (!File.Exists(file))
+            {
+                Console.Error.WriteLine($"Error: Input file not found: {file}");
+                return 1;
+            }
+        }
+
+        // Each --pathmap is one comma-separated list; the entries of all of them apply, in the order given. An invalid
+        // one fails the run before any file is read or written.
+        PathMap pathMap = PathMap.Empty;
+        foreach (string text in _result.GetValue(_command.PathMap) ?? [])
+        {
+            if (!PathMap.TryParse(text, out PathMap? parsed, out string? error))
+            {
+                Console.Error.WriteLine($"Error: {error}");
+                return 1;
+            }
+
+            pathMap = pathMap.Concat(parsed);
+        }
+
+        // Determine output file (based on first input file)
+        bool isDll = Get(_command.BuildDll);
+        string? outputPath = Get(_command.OutputFilePath) ??
+            $"{Path.GetFileNameWithoutExtension(inputFiles[0])}{(isDll ? ".dll" : ".exe")}";
+
+        int exitCode = 0;
+        try
+        {
+            // The PDB is <output without extension>.pdb beside the output, and without --deterministic
+            // the image's CodeView entry records the PDB's full path. With --deterministic it records
+            // only the PDB's file name and extension, so that a deterministic image does not depend on
+            // the directory it is written to, which is the native linker's /PDBALTPATH:%_PDB% convention.
+            string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+
+            // Report each file being assembled
+            foreach (string file in inputFiles)
+            {
+                if (!quiet)
+                {
+                    Console.WriteLine($"Assembling '{file}' to {(isDll ? "DLL" : "EXE")} --> '{outputPath}'");
+                }
+            }
+
+            // Build individual SourceText for each input file. Its path is the full path, which the PDB records
+            // as the input file's document name.
+            var documents = ImmutableArray.CreateBuilder<SourceText>(inputFiles.Length);
+            foreach (string file in inputFiles)
+            {
+                documents.Add(new SourceText(File.ReadAllText(file), Path.GetFullPath(file)));
+            }
+
+            // Build options
+            bool errorTolerant = Get(_command.ErrorTolerant);
+            var options = new Options
+            {
+                Dll = isDll,
+                NoAutoInherit = Get(_command.NoAutoInherit),
+                ErrorTolerant = errorTolerant,
+            };
+
+            // Apply PE header overrides from command line
+            int subsystem = Get(_command.Subsystem);
+            if (subsystem != 0)
+            {
+                options.Subsystem = (Subsystem)subsystem;
+            }
+
+            string? ssver = Get(_command.SubsystemVersion);
+            if (!string.IsNullOrEmpty(ssver))
+            {
+                var parts = ssver.Split('.');
+                if (parts.Length == 2 && ushort.TryParse(parts[0], out ushort ssvMajor) && ushort.TryParse(parts[1], out ushort ssvMinor))
+                {
+                    options.SubsystemVersion = (ssvMajor, ssvMinor);
+                }
+            }
+
+            int alignment = Get(_command.Alignment);
+            if (alignment != 0)
+            {
+                options.FileAlignment = alignment;
+            }
+
+            long imageBase = Get(_command.ImageBase);
+            if (imageBase != 0)
+            {
+                options.ImageBase = imageBase;
+            }
+
+            int stackReserve = Get(_command.StackReserve);
+            if (stackReserve != 0)
+            {
+                options.StackReserve = stackReserve;
+            }
+
+            int flags = Get(_command.Flags);
+            if (flags != 0)
+            {
+                options.CorFlags = (CorFlags)flags;
+            }
+
+            // Target machine
+            if (Get(_command.TargetX64) || Get(_command.Pe64))
+            {
+                options.Machine = Machine.Amd64;
+            }
+            else if (Get(_command.TargetArm64))
+            {
+                options.Machine = Machine.Arm64;
+            }
+
+            // PE characteristics
+            options.AppContainer = Get(_command.AppContainer);
+            options.HighEntropyVA = Get(_command.HighEntropyVa);
+            options.StripReloc = Get(_command.StripReloc);
+            options.Prefer32Bit = Get(_command.Prefer32Bit);
+
+            // Deterministic and metadata version
+            options.Deterministic = Get(_command.Deterministic);
+            options.MetadataVersion = Get(_command.MetadataVersion);
+
+            // Paths recorded in the PDB and the image's CodeView entry; files are still read and written at their
+            // real paths.
+            options.PathMap = pathMap;
+
+            // Debug options
+            options.Debug = Get(_command.Debug);
+            options.Pdb = Get(_command.Pdb);
+            options.DebugMode = Get(_command.DebugMode);
+
+            // Assembly options
+            options.AssemblyName = Get(_command.AssemblyName);
+            options.KeyFile = Get(_command.KeyFile);
+            options.Win32ResourceFile = Get(_command.ResourceFile);
+            options.Optimize = Get(_command.Optimize);
+            options.PseudoAttributes = Get(_command.PseudoAttributes);
+            options.Fold = Get(_command.Fold);
+            options.OutputFileName = Path.GetFileName(outputPath);
+            options.PdbFilePath = options.Deterministic ? Path.GetFileName(pdbPath) : pdbPath;
+
+            // Set up include path for #include directive resolution
+            string? includePath = Get(_command.IncludePath);
+            string baseDir = Path.GetDirectoryName(Path.GetFullPath(inputFiles[0])) ?? ".";
+
+            // An included file is named by its full path: its instructions' sequence
+            // points are in a PDB document of that name.
+            SourceText LoadIncludedDocument(string path)
+            {
+                // Try the path as-is first
+                if (File.Exists(path))
+                {
+                    return new SourceText(File.ReadAllText(path), Path.GetFullPath(path));
+                }
+
+                // Try relative to the base directory
+                string fullPath = Path.Combine(baseDir, path);
+                if (File.Exists(fullPath))
+                {
+                    return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
+                }
+
+                // Try the include path if specified
+                if (!string.IsNullOrEmpty(includePath))
+                {
+                    fullPath = Path.Combine(includePath, path);
+                    if (File.Exists(fullPath))
+                    {
+                        return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
+                    }
+                }
+
+                throw new FileNotFoundException($"Include file not found: {path}");
+            }
+
+            byte[] LoadResource(string path)
+            {
+                // Try the path as-is first
+                if (File.Exists(path))
+                {
+                    return File.ReadAllBytes(path);
+                }
+
+                // Try relative to the base directory
+                string fullPath = Path.Combine(baseDir, path);
+                if (File.Exists(fullPath))
+                {
+                    return File.ReadAllBytes(fullPath);
+                }
+
+                throw new FileNotFoundException($"Resource file not found: {path}");
+            }
+
+            // Compile
+            var compiler = new DocumentCompiler();
+            var (diagnostics, compilationResult) = compiler.Compile(
+                documents.ToImmutable(),
+                LoadIncludedDocument,
+                LoadResource,
+                options);
+
+            // Report diagnostics
+            bool hasErrors = false;
+            if (!errorTolerant)
+            {
+                foreach (var diagnostic in diagnostics)
+                {
+                    hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
+                    Console.WriteLine($"{diagnostic.Location} : {diagnostic.Severity.ToString().ToLowerInvariant()} {diagnostic.Id} : {diagnostic.Message}");
+                }
+            }
+
+            // In error-tolerant mode, continue even with errors
+            if (compilationResult is null || hasErrors)
+            {
+                Console.Error.WriteLine("***** FAILURE *****");
+                return 1;
+            }
+
+            // Write the image, then the PDB beside it (or, when there is none, remove the PDB of the image
+            // that was replaced).
+            // Every failure above returns before this, leaving the existing files as they are.
+            var blobBuilder = new BlobBuilder();
+            compilationResult.Serialize(blobBuilder);
+            OutputWriteResult written = OutputFileWriter.Write(
+                outputPath,
+                pdbPath,
+                stream => blobBuilder.WriteContentTo(stream),
+                compilationResult.PortablePdb);
+            if (written == OutputWriteResult.PdbWouldOverwriteOutput)
+            {
+                Console.Error.WriteLine($"Error: The PDB file '{pdbPath}' would overwrite the output file");
+                Console.Error.WriteLine("***** FAILURE *****");
+                return 1;
+            }
+
+            if (hasErrors)
+            {
+                if (!quiet)
+                {
+                    Console.WriteLine("Output file contains errors");
+                }
+            }
+            else if (!quiet)
+            {
+                Console.WriteLine("Operation completed successfully");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            exitCode = 1;
+        }
+
+        if (stopwatch is not null)
+        {
+            stopwatch.Stop();
+            Console.WriteLine($"Total time: {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        return exitCode;
+    }
+
+    private T Get<T>(Argument<T> argument) => _result.GetValue(argument)!;
+
+    private T Get<T>(Option<T> option) => _result.GetValue(option)!;
+
+    private static int Main(string[] args)
+    {
+        IlasmRootCommand command = new();
+        string[] normalizedArgs;
+        try
+        {
+            normalizedArgs = NativeCommandLine.Normalize(args, command);
+        }
+        catch (ArgumentException e)
+        {
+            Console.Error.WriteLine($"Error: {e.Message}");
+            return 1;
+        }
+
+        command.SetAction(result =>
+        {
+            if (result.GetValue(command.WaitForDebugger))
+            {
+                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
+                Console.ReadLine();
+            }
+
+            try
+            {
+                return new Program(command, result).Run();
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine("Error: " + e.Message);
+                Console.ResetColor();
+                return 1;
+            }
+        });
+
+        return command
+            .Parse(normalizedArgs)
+            .Invoke();
+    }
+}

@@ -12,13 +12,14 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
-    [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
     public class Comhost : IClassFixture<Comhost.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
         public Comhost(SharedTestState sharedTestState)
         {
+            Assert.SkipUnless(OperatingSystem.IsWindows(), "COM activation is only supported on Windows");
+
             sharedState = sharedTestState;
         }
 
@@ -35,7 +36,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 sharedState.ComHostPath,
                 sharedState.ClsidString
             };
-            CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+            CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                 .Execute();
 
             result.Should().Pass()
@@ -68,7 +69,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     comHost,
                     sharedState.ClsidString
                     };
-                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -82,6 +83,61 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 else
                 {
                     result.Should().ExecuteInIsolatedContext(library.AssemblyName);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ActivateClasses_LoadContextIdentifier(bool useSameIdentifier)
+        {
+            using (var libraryA = sharedState.ComLibrary.Copy())
+            using (var libraryB = sharedState.ComLibrary2.Copy())
+            {
+                const string IdentifierA = $"{nameof(Comhost)}.{nameof(ActivateClasses_LoadContextIdentifier)}.A";
+                string identifierB = useSameIdentifier ? IdentifierA : $"{nameof(Comhost)}.{nameof(ActivateClasses_LoadContextIdentifier)}.B";
+                var comHostA = Path.Combine(libraryA.Location, $"{libraryA.AssemblyName}.comhost.dll");
+                var comHostB = Path.Combine(libraryB.Location, $"{libraryB.AssemblyName}.comhost.dll");
+
+                RuntimeConfig.FromFile(libraryA.RuntimeConfigJson)
+                    .WithProperty("System.Runtime.InteropServices.COM.LoadContextIdentifier", IdentifierA)
+                    .Save();
+                RuntimeConfig.FromFile(libraryB.RuntimeConfigJson)
+                    .WithProperty("System.Runtime.InteropServices.COM.LoadContextIdentifier", identifierB)
+                    .Save();
+
+                string[] args = {
+                    "comhost",
+                    "loadcontext",
+                    "2",
+                    comHostA,
+                    sharedState.ClsidString,
+                    comHostB,
+                    sharedState.ClsidString
+                };
+                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.");
+
+                string loadContextA = GetAssemblyLoadContext(libraryA.AssemblyName);
+                string loadContextB = GetAssemblyLoadContext(libraryB.AssemblyName);
+                Assert.StartsWith($"\"ComponentLoadContext({IdentifierA})\"", loadContextA, StringComparison.Ordinal);
+                Assert.StartsWith($"\"ComponentLoadContext({identifierB})\"", loadContextB, StringComparison.Ordinal);
+                Assert.Equal(
+                    useSameIdentifier,
+                    loadContextA == loadContextB);
+
+                string GetAssemblyLoadContext(string assemblyName)
+                {
+                    string prefix = $"{assemblyName}: AssemblyLoadContext = ";
+                    string line = Assert.Single(
+                        result.StdOut.Split(Environment.NewLine),
+                        line => line.StartsWith(prefix, StringComparison.Ordinal));
+                    return line[prefix.Length..];
                 }
             }
         }
@@ -101,7 +157,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     comHostWithAppLocalFxr,
                     sharedState.ClsidString
                 };
-                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -128,15 +184,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     sharedState.ComHostPath,
                     sharedState.ClsidString
                 };
-                sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .WorkingDirectory(cwd.Location)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("New instance of Server created")
                     .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
-                    .And.ResolveHostFxr(TestContext.BuiltDotNet)
-                    .And.ResolveHostPolicy(TestContext.BuiltDotNet)
-                    .And.ResolveCoreClr(TestContext.BuiltDotNet);
+                    .And.ResolveHostFxr(HostTestContext.BuiltDotNet)
+                    .And.ResolveHostPolicy(HostTestContext.BuiltDotNet)
+                    .And.ResolveCoreClr(HostTestContext.BuiltDotNet);
             }
         }
 
@@ -155,7 +211,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     comHost,
                     sharedState.ClsidString
                 };
-                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -173,7 +229,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 sharedState.ComHostPath,
                 sharedState.ClsidString
             };
-            CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+            CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                 .Execute();
 
             result.Should().Pass()
@@ -190,6 +246,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public TestApp ComLibrary { get; }
 
+            public TestApp ComLibrary2 { get; }
+
             public string ClsidMapPath { get; }
 
             public IReadOnlyDictionary<int, string> TypeLibraries { get; }
@@ -203,6 +261,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 }
 
                 ComLibrary = TestApp.CreateFromBuiltAssets("ComLibrary");
+                ComLibrary2 = TestApp.CreateFromBuiltAssets("ComLibrary2");
 
                 // Create a .clsidmap from the assembly
                 ClsidMapPath = Path.Combine(BaseDirectory, $"{ComLibrary.AssemblyName}.clsidmap");
@@ -230,11 +289,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     ComHostPath,
                     ClsidMapPath,
                     TypeLibraries);
+
+                string clsidMap2Path = Path.Combine(BaseDirectory, $"{ComLibrary2.AssemblyName}.clsidmap");
+                using (var assemblyStream = new FileStream(ComLibrary2.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
+                using (var peReader = new System.Reflection.PortableExecutable.PEReader(assemblyStream))
+                {
+                    MetadataReader reader = peReader.GetMetadataReader();
+                    ClsidMap.Create(reader, clsidMap2Path);
+                }
+
+                string comHost2Path = Path.Combine(ComLibrary2.Location, $"{ComLibrary2.AssemblyName}.comhost.dll");
+                ComHost.Create(
+                    Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, "comhost.dll"),
+                    comHost2Path,
+                    clsidMap2Path,
+                    typeLibraries: null);
             }
 
             protected override void Dispose(bool disposing)
             {
                 ComLibrary?.Dispose();
+                ComLibrary2?.Dispose();
                 base.Dispose(disposing);
             }
         }

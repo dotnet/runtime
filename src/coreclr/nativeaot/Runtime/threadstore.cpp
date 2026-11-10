@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
@@ -22,13 +23,15 @@
 #include "TargetPtrs.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/time.h>
-
-#include "slist.inl"
+#include <minipal/thread.h>
+#include "SignalSafeThreadMap.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
+
+SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
 
 ThreadStore * GetThreadStore()
 {
@@ -142,7 +145,15 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
-    pTS->m_ThreadList.PushHead(pAttachingThread);
+    pTS->m_ThreadList.InsertHead(pAttachingThread);
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    if (!InsertThreadIntoSignalSafeMap(pAttachingThread->m_threadId, pAttachingThread))
+    {
+        PalPrintFatalError("\nFailed to insert thread into signal-safe map due to out of memory.\n");
+        RhFailFast();
+    }
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 // static
@@ -183,11 +194,14 @@ void ThreadStore::DetachCurrentThread()
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         CrstHolder threadStoreLock(&pTS->m_Lock);
-        ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         // remove the thread from the list of managed threads.
-        pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        bool removed = pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        ASSERT(removed);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        RemoveThreadFromSignalSafeMap(pDetachingThread->m_threadId, pDetachingThread);
+#endif
     }
 
     // post-mortem clean up.
@@ -233,11 +247,12 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     }
 
     // set the global trap for pinvoke leave and return
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
-    PalFlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 
     int prevRemaining = INT32_MAX;
     bool observeOnly = true;
@@ -310,7 +325,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     // This is needed to synchronize threads that were running in preemptive mode thus were
     // left alone by suspension to flush their writes that they made before they switched to
     // preemptive mode.
-    PalFlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 }
 
@@ -329,10 +344,19 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
         // This is needed to synchronize threads that were running in preemptive mode while
         // the runtime was suspended and that will return to cooperative mode after the runtime
         // is restarted.
-        PalFlushProcessWriteBuffers();
+        minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
+    if (waitForGCEvent)
+    {
+        // Fire the "restart end" event right before the threads are released. Once they are released,
+        // this thread may be preempted for a long time under CPU load, which would be wrongly reported
+        // as a part of the EE suspension.
+        FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
+    }
+
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
 
     RhpSuspendingThread = NULL;
     if (waitForGCEvent)
@@ -341,90 +365,23 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
 } // ResumeAllThreads
 
-void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
-{
-    SuspendAllThreads(/* waitForGCEvent = */ false);
-    // TODO: consider enabling multiple thread aborts running in parallel on different threads
-    ASSERT((RhpTrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) == 0);
-    RhpTrapThreads |= (uint32_t)TrapThreadsFlags::AbortInProgress;
-
-    targetThread->SetThreadAbortException(threadAbortException);
-
-    // TODO: Stage 2: Queue APC to the target thread to break out of possible wait
-
-    bool initiateAbort = false;
-
-    if (!doRudeAbort)
-    {
-        // TODO: Stage 3: protected regions (finally, catch) handling
-        //  If it was in a protected region, set the "throw at protected region end" flag on the native Thread object
-        // TODO: Stage 4: reverse PInvoke handling
-        //  If there was a reverse Pinvoke frame between the current frame and the funceval frame of the target thread,
-        //  find the outermost reverse Pinvoke frame below the funceval frame and set the thread abort flag in its transition frame.
-        //  If both of these cases happened at once, find out which one of the outermost frame of the protected region
-        //  and the outermost reverse Pinvoke frame is closer to the funceval frame and perform one of the two actions
-        //  described above based on the one that's closer.
-        initiateAbort = true;
-    }
-    else
-    {
-        initiateAbort = true;
-    }
-
-    if (initiateAbort)
-    {
-        PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
-        transitionFrame->m_Flags |= PTFF_THREAD_ABORT;
-    }
-
-    ResumeAllThreads(/* waitForGCEvent = */ false);
-}
-
-void ThreadStore::CancelThreadAbort(Thread* targetThread)
-{
-    SuspendAllThreads(/* waitForGCEvent = */ false);
-
-    ASSERT((RhpTrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) != 0);
-    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::AbortInProgress;
-
-    PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
-    if (transitionFrame != nullptr)
-    {
-        transitionFrame->m_Flags &= ~PTFF_THREAD_ABORT;
-    }
-
-    targetThread->SetThreadAbortException(nullptr);
-
-    ResumeAllThreads(/* waitForGCEvent = */ false);
-}
-
-EXTERN_C void* QCALLTYPE RhpGetCurrentThread()
-{
-    return ThreadStore::GetCurrentThread();
-}
-
-FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, FC_BOOL_ARG doRudeAbort)
-{
-    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, FC_ACCESS_BOOL(doRudeAbort));
-}
-FCIMPLEND
-
-FCIMPL1(void, RhpCancelThreadAbort, void* thread)
-{
-    GetThreadStore()->CancelThreadAbort((Thread*)thread);
-}
-FCIMPLEND
-
-C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
+static_assert(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
-__thread RuntimeThreadLocals tls_CurrentThread;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;
 #endif
 
 EXTERN_C RuntimeThreadLocals* RhpGetThread()
 {
     return &tls_CurrentThread;
 }
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
+{
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
+}
+#endif // TARGET_UNIX && !TARGET_WASM
 
 #endif // !DACCESS_COMPILE
 
@@ -463,27 +420,6 @@ void ThreadStore::SaveCurrentThreadOffsetForDAC()
 
 GPTR_IMPL(uint32_t, p_tls_index);
 GVAL_IMPL(uint32_t, SECTIONREL__tls_CurrentThread);
-
-//
-// This routine supports the !Thread debugger extension routine
-//
-// static
-PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
-{
-    if (pTEB == NULL)
-        return NULL;
-
-    uint32_t tlsIndex = *p_tls_index;
-    TADDR pTls = *(PTR_TADDR)(pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer);
-    if (pTls == NULL)
-        return NULL;
-
-    TADDR pOurTls = *(PTR_TADDR)(pTls + (tlsIndex * sizeof(void*)));
-    if (pOurTls == NULL)
-        return NULL;
-
-    return (PTR_Thread)(pOurTls + SECTIONREL__tls_CurrentThread);
-}
 
 #endif // DACCESS_COMPILE
 

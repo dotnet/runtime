@@ -7,6 +7,11 @@
 
   <ItemGroup>
     <Compile Include="GenerateHWIntrinsicTests_Arm.cs" />
+    <Compile Include="Arm/AdvSimdTests.cs" />
+    <Compile Include="Arm/BaseTests.cs" />
+    <Compile Include="Arm/SveTests.cs" />
+    <Compile Include="Arm/Sve2Tests.cs" />
+    <Compile Include="Arm/Templates.cs" />
   </ItemGroup>
 
 </Project>

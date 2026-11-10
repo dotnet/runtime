@@ -129,7 +129,7 @@ public sealed class TestEventListener : EventListener
                 }
             }
 #endif
-            sb.Append($"[{eventData.EventName}] ");
+        sb.Append($"[{eventData.EventName}] ");
 
         for (int i = 0; i < eventData.Payload?.Count; i++)
         {

@@ -513,5 +513,179 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<IEnumerable<int>>;
             Assert.False(en is not null && en.MoveNext());
         }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_OuterEmptyInnerNonEmpty()
+        {
+            CustomerRec[] outer = [];
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 45321, custID = 98022, total = 50 },
+                new OrderRec{ orderID = 97865, custID = 32103, total = 25 }
+            ];
+            Assert.Empty(outer.GroupJoin(inner, e => e.custID, e => e.custID));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_OuterNonEmptyInnerEmpty()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 43434 },
+                new CustomerRec{ name = "Bob", custID = 34093 }
+            ];
+            OrderRec[] inner = [];
+
+            var result = outer.GroupJoin(inner, e => e.custID, e => e.custID).ToList();
+
+            Assert.Equal(2, result.Count);
+            Assert.Equal(outer[0], result[0].Key);
+            Assert.Empty(result[0]);
+            Assert.Equal(outer[1], result[1].Key);
+            Assert.Empty(result[1]);
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_SingleElementEachAndMatches()
+        {
+            CustomerRec[] outer = [new CustomerRec{ name = "Tim", custID = 43434 }];
+            OrderRec[] inner = [new OrderRec{ orderID = 97865, custID = 43434, total = 25 }];
+
+            var result = outer.GroupJoin(inner, e => e.custID, e => e.custID).ToList();
+
+            Assert.Single(result);
+            Assert.Equal(outer[0], result[0].Key);
+            Assert.Single(result[0]);
+            Assert.Equal(inner[0], result[0].First());
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_InnerSameKeyMoreThanOneElementAndMatches()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 1234 },
+                new CustomerRec{ name = "Bob", custID = 9865 }
+            ];
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 97865, custID = 1234, total = 25 },
+                new OrderRec{ orderID = 34390, custID = 1234, total = 19 },
+                new OrderRec{ orderID = 34390, custID = 9865, total = 19 }
+            ];
+
+            var result = outer.GroupJoin(inner, e => e.custID, e => e.custID).ToList();
+
+            Assert.Equal(2, result.Count);
+            Assert.Equal(outer[0], result[0].Key);
+            Assert.Equal(2, result[0].Count());
+            Assert.Equal(outer[1], result[1].Key);
+            Assert.Single(result[1]);
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_OuterNull()
+        {
+            CustomerRec[] outer = null;
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 45321, custID = 98022, total = 50 }
+            ];
+
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.GroupJoin(inner, e => e.custID, e => e.custID));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_InnerNull()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 1234 }
+            ];
+            OrderRec[] inner = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.GroupJoin(inner, e => e.custID, e => e.custID));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_OuterKeySelectorNull()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 1234 }
+            ];
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 45321, custID = 98022, total = 50 }
+            ];
+
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.GroupJoin(inner, null, e => e.custID));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_InnerKeySelectorNull()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 1234 }
+            ];
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 45321, custID = 98022, total = 50 }
+            ];
+
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.GroupJoin<CustomerRec, OrderRec, int?>(inner, e => e.custID, null));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_CanIterateMultipleTimes()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 1234 }
+            ];
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 97865, custID = 1234, total = 25 }
+            ];
+
+            var result = outer.GroupJoin(inner, e => e.custID, e => e.custID).ToList();
+
+            Assert.Single(result);
+
+            // Iterate the grouped elements multiple times
+            Assert.Single(result[0]);
+            Assert.Single(result[0]);
+            Assert.Equal(inner[0], result[0].First());
+            Assert.Equal(inner[0], result[0].First());
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_CustomComparer()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 1234 },
+                new CustomerRec{ name = "Bob", custID = 9865 },
+                new CustomerRec{ name = "Robert", custID = 9895 }
+            ];
+            AnagramRec[] inner =
+            [
+                new AnagramRec{ name = "Robert", orderID = 93483, total = 19 },
+                new AnagramRec{ name = "miT", orderID = 93489, total = 45 }
+            ];
+
+            var result = outer.GroupJoin(inner, e => e.name, e => e.name, new AnagramEqualityComparer()).ToList();
+
+            Assert.Equal(3, result.Count);
+            Assert.Equal(outer[0], result[0].Key);
+            Assert.Single(result[0]);
+            Assert.Equal(inner[1], result[0].First());
+            Assert.Equal(outer[1], result[1].Key);
+            Assert.Empty(result[1]);
+            Assert.Equal(outer[2], result[2].Key);
+            Assert.Single(result[2]);
+            Assert.Equal(inner[0], result[2].First());
+        }
     }
 }

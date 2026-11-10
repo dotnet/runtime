@@ -9,10 +9,7 @@ using Xunit;
 public class Async2Small
 {
     [Fact]
-    public static void TestEntryPoint()
-    {
-        SmallType(123).Wait();
-    }
+    public static Task TestEntryPoint() => SmallType(123);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task SmallType(byte arg)

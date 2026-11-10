@@ -158,6 +158,37 @@ namespace System.Net.Sockets.Tests
             ActivityAssert.HasTag(activity, "network.transport", "tcp");
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task Connect_NonBlockingPending_ActivityNotMarkedAsError()
+        {
+            await RemoteExecutor.Invoke(static () =>
+            {
+                using Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen();
+
+                using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                {
+                    Blocking = false
+                };
+
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
+
+                // A non-blocking connect reports WouldBlock (Windows) or InProgress (Unix) by design while
+                // the attempt continues in the background. The "socket connect" activity is started and
+                // stopped synchronously inside Connect, so its final state can be asserted immediately.
+                SocketException ex = Assert.Throws<SocketException>(() => client.Connect(server.LocalEndPoint));
+                Assert.True(ex.SocketErrorCode is SocketError.WouldBlock or SocketError.InProgress,
+                    $"Unexpected SocketError: {ex.SocketErrorCode}");
+
+                recorder.VerifyActivityRecorded(1);
+                Activity activity = recorder.LastFinishedActivity;
+                VerifyTcpConnectActivity(activity, (IPEndPoint)server.LocalEndPoint, ipv6: false);
+                Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+                Assert.Null(activity.GetTagItem("error.type"));
+            }).DisposeAsync();
+        }
+
         [OuterLoop("Connection failure takes long on Windows.")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]

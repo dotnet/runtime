@@ -287,6 +287,13 @@ namespace System.PrivateUri.Tests
             new object[] { "file://c:/directory/filename", false },
             new object[] { "\\\\?\\UNC\\Server01\\user\\docs\\Letter.txt", false },
 
+            // Test Scheme
+            new object[] { @"http:/host/path", false },
+            new object[] { @"http:\host/path", false },
+            new object[] { @"http:/\host/path", false },
+            new object[] { @"http:\/host/path", false },
+            new object[] { @"http:\\host/path", false },
+
             // Test Host
             new object[] { "http://www.contoso.com", true },
             new object[] { "http://\u00E4.contos.com", true },
@@ -306,7 +313,6 @@ namespace System.PrivateUri.Tests
             // Test Path
             new object[] { "http://www.contoso.com/path???/file name", false },
             new object[] { "http://www.contoso.com/\u00E4???/file name", false },
-            new object[] { "http:\\host/path/file", false },
 
             new object[] { "http://www.contoso.com/a/sek http://test.com", false },
             new object[] { "http://www.contoso.com/\u00E4/sek http://test.com", false },
@@ -437,14 +443,15 @@ namespace System.PrivateUri.Tests
             new object[] { "http://www.contoso.com/path?a# a ", false },
             new object[] { "http://www.contoso.com/path?\u00E4# \u00E4 ", false },
 
-
             new object[] { "http://www.contoso.com/path?a#a?a", true },
             new object[] { "http://www.contoso.com/\u00E4?\u00E4#u00E4?\u00E4", true },
 
-            // Sample in "private unsafe Check CheckCanonical(char* str, ref ushort idx, ushort end, char delim)" code comments
             new object[] { "http://www.contoso.com/\u00E4/ path2/ param=val", false },
             new object[] { "http://www.contoso.com/\u00E4? param=val", false },
             new object[] { "http://www.contoso.com/\u00E4?param=val# fragment", false },
+
+            // Surrogate pairs
+            new object[] { "http://www.contoso.com/path/\uD83C\uDF49?query\uD83C\uDF49=\uD83C\uDF49#\uD83C\uDF49", true },
         };
 
         [Theory]

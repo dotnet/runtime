@@ -88,6 +88,8 @@ The following code block can be used as the contents of the `pre-commit` file to
 
 ```sh
 #!/bin/sh
-./eng/formatting/format.sh
 
+./eng/formatting/format.sh
 ```
+
+Make sure the file is executable (`chmod +x .git/hooks/pre-commit`). If `git config core.hooksPath` points elsewhere, set it with `git config core.hooksPath .git/hooks`.

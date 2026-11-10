@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
@@ -95,13 +96,22 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        public void WriteStringReference(Utf8String value)
+        {
+            long stringsOffset = _stringTableWriter.Position;
+            _stringTableWriter.WriteUtf8String(value);
+
+            Debug.Assert(stringsOffset < uint.MaxValue);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_str"u8), stringsOffset);
+        }
+
         public void WriteStringReference(string value)
         {
             long stringsOffset = _stringTableWriter.Position;
             _stringTableWriter.WriteUtf8String(value);
 
             Debug.Assert(stringsOffset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_str", stringsOffset);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_str"u8), stringsOffset);
         }
 
         public void WriteInfoAbsReference(long offset)
@@ -127,7 +137,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void WriteCodeReference(string sectionSymbolName, long offset = 0)
+        public void WriteCodeReference(Utf8String sectionSymbolName, long offset = 0)
         {
             Debug.Assert(offset >= 0);
             _infoSectionWriter.EmitSymbolReference(_codeRelocType, sectionSymbolName, offset);
@@ -136,7 +146,13 @@ namespace ILCompiler.ObjectWriter
         public void WriteLineReference(long offset)
         {
             Debug.Assert(offset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_line", offset);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_line"u8), offset);
+        }
+
+        public void WriteAddressTableReference(long offset)
+        {
+            Debug.Assert(offset < uint.MaxValue);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_addr"u8), offset);
         }
 
         public DwarfExpressionBuilder GetExpressionBuilder()
@@ -156,39 +172,70 @@ namespace ILCompiler.ObjectWriter
         {
             long offset = _locSectionWriter.Position;
             Debug.Assert(offset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_loc", (int)offset);
+            Utf8String sectionName = new(_builder.UseDwarf5 ? ".debug_loclists"u8 : ".debug_loc"u8);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, sectionName, offset);
         }
 
-        public void WriteLocationListExpression(string methodName, long startOffset, long endOffset, DwarfExpressionBuilder expressionBuilder)
+        public void WriteLocationListExpression(Utf8String methodName, long startOffset, long endOffset, DwarfExpressionBuilder expressionBuilder)
         {
             _ = expressionBuilder;
+            if (_builder.UseDwarf5)
+            {
+                _locSectionWriter.WriteByte(DwarfNative.DW_LLE_start_end);
+            }
             _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, startOffset);
             _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, endOffset);
-            _locSectionWriter.WriteLittleEndian<ushort>((ushort)_expressionBufferWriter.WrittenCount);
+            if (_builder.UseDwarf5)
+            {
+                _locSectionWriter.WriteULEB128((uint)_expressionBufferWriter.WrittenCount);
+            }
+            else
+            {
+                _locSectionWriter.WriteLittleEndian<ushort>((ushort)_expressionBufferWriter.WrittenCount);
+            }
             _locSectionWriter.Write(_expressionBufferWriter.WrittenSpan);
         }
 
         public void WriteEndLocationList()
         {
-            _locSectionWriter.WritePadding(TargetPointerSize * 2);
+            if (_builder.UseDwarf5)
+            {
+                _locSectionWriter.WriteByte(DwarfNative.DW_LLE_end_of_list);
+            }
+            else
+            {
+                _locSectionWriter.WritePadding(TargetPointerSize * 2);
+            }
         }
 
         public void WriteStartRangeList()
         {
             long offset = _rangeSectionWriter.Position;
             Debug.Assert(offset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_ranges", offset);
+            Utf8String sectionName = new(_builder.UseDwarf5 ? ".debug_rnglists"u8 : ".debug_ranges"u8);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, sectionName, offset);
         }
 
-        public void WriteRangeListEntry(string symbolName, long startOffset, long endOffset)
+        public void WriteRangeListEntry(Utf8String symbolName, long startOffset, long endOffset)
         {
+            if (_builder.UseDwarf5)
+            {
+                _rangeSectionWriter.WriteByte(DwarfNative.DW_RLE_start_end);
+            }
             _rangeSectionWriter.EmitSymbolReference(_codeRelocType, symbolName, startOffset);
             _rangeSectionWriter.EmitSymbolReference(_codeRelocType, symbolName, endOffset);
         }
 
         public void WriteEndRangeList()
         {
-            _rangeSectionWriter.WritePadding(TargetPointerSize * 2);
+            if (_builder.UseDwarf5)
+            {
+                _rangeSectionWriter.WriteByte(DwarfNative.DW_RLE_end_of_list);
+            }
+            else
+            {
+                _rangeSectionWriter.WritePadding(TargetPointerSize * 2);
+            }
         }
 
         public void Dispose()

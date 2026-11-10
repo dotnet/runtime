@@ -6,23 +6,21 @@ using System;
 using Internal.NativeFormat;
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a hash table of function pointer types generated into the image.
     /// </summary>
-    internal sealed class FunctionPointerMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class FunctionPointerMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private readonly ExternalReferencesTableNode _externalReferences;
 
         public FunctionPointerMapNode(ExternalReferencesTableNode externalReferences)
         {
             _externalReferences = externalReferences;
         }
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -37,9 +35,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public static void GetHashtableDependencies(ref DependencyList dependencies, NodeFactory factory, FunctionPointerType type)
+        public static void AddHashtableDependencies(DependencySink dependencies, NodeFactory factory, FunctionPointerType type)
         {
-            dependencies ??= new DependencyList();
             dependencies.Add(factory.NecessaryTypeSymbol(type.Signature.ReturnType), "Function pointer type composition");
             foreach (TypeDesc paramType in type.Signature)
                 dependencies.Add(factory.NecessaryTypeSymbol(paramType), "Function pointer type composition");
@@ -69,8 +66,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
-
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

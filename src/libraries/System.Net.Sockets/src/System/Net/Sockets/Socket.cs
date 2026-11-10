@@ -70,7 +70,7 @@ namespace System.Net.Sockets
         private bool _disposed;
 
         public Socket(SocketType socketType, ProtocolType protocolType)
-            : this(OSSupportsIPv6DualMode ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
+            : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
         {
             if (OSSupportsIPv6DualMode)
             {
@@ -132,6 +132,7 @@ namespace System.Net.Sockets
             {
                 // Get properties like address family and blocking mode from the OS.
                 LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening, out bool isSocket);
+                _willBlock = _willBlockInternal;
 
                 if (isSocket)
                 {
@@ -149,6 +150,11 @@ namespace System.Net.Sockets
                     }
 
                     Debug.Assert(bufferLength <= buffer.Length);
+
+                    if (_addressFamily == AddressFamily.Unknown)
+                    {
+                        _addressFamily = SocketAddressPal.GetAddressFamily(buffer.Slice(0, bufferLength));
+                    }
 
                     // Try to get the local end point.  That will in turn enable the remote
                     // end point to be retrieved on-demand when the property is accessed.
@@ -260,7 +266,8 @@ namespace System.Net.Sockets
         public static bool OSSupportsIPv4 => SocketProtocolSupportPal.OSSupportsIPv4;
         public static bool OSSupportsIPv6 => SocketProtocolSupportPal.OSSupportsIPv6;
         [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6;
+        // OpenBSD does not support dual-mode (IPv4-mapped IPv6) sockets: setting IPV6_V6ONLY to 0 fails with EINVAL.
+        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6 && !OperatingSystem.IsOpenBSD();
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool OSSupportsThreads => !OperatingSystem.IsWasi();
         public static bool OSSupportsUnixDomainSockets => SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
@@ -291,7 +298,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the local end point.
-        public EndPoint? LocalEndPoint
+        public unsafe EndPoint? LocalEndPoint
         {
             get
             {
@@ -339,7 +346,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the remote end point.
-        public EndPoint? RemoteEndPoint
+        public unsafe EndPoint? RemoteEndPoint
         {
             get
             {
@@ -749,7 +756,7 @@ namespace System.Net.Sockets
                 {
                     return false;
                 }
-                if (!OSSupportsIPv6DualMode)
+                if (OperatingSystem.IsWasi())
                 {
                     return false;
                 }
@@ -762,7 +769,7 @@ namespace System.Net.Sockets
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
 
-                if (!OSSupportsIPv6DualMode && value) throw new PlatformNotSupportedException();
+                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException();
 
                 SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, value ? 0 : 1);
             }
@@ -1087,8 +1094,10 @@ namespace System.Net.Sockets
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
-            Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint!, socket.LocalEndPoint);
+            // macOS can return accept() success with an empty remote sockaddr when the peer reset before accept.
+            EndPoint? remoteEndPoint = socketAddress.Size > 0 ? _rightEndPoint.Create(socketAddress) : null;
+            Socket socket = CreateAcceptSocket(acceptedSocketHandle, remoteEndPoint);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, remoteEndPoint, socket.LocalEndPoint);
             return socket;
         }
 
@@ -1324,6 +1333,13 @@ namespace System.Net.Sockets
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ThrowIfDisposed();
+
+            // SendFile is not supported on non-blocking sockets.
+            // ValidateBlockingMode() below checks for async mismatch; this checks explicit non-blocking.
+            if (!Blocking)
+            {
+                throw new InvalidOperationException(SR.net_sockets_blocking);
+            }
 
             if (!IsConnectionOriented || !Connected)
             {
@@ -2875,11 +2891,14 @@ namespace System.Net.Sockets
         }
 
         public bool ConnectAsync(SocketAsyncEventArgs e) =>
-            ConnectAsync(e, userSocket: true, saeaCancelable: true);
+            ConnectAsync(e, userSocket: true, saeaMultiConnectCancelable: true);
 
-        internal bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket, bool saeaCancelable)
+        internal bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket, bool saeaMultiConnectCancelable, CancellationToken cancellationToken = default)
         {
-            bool pending;
+            // saeaMultiConnectCancelable == true means that this method is being called by a SocketAsyncEventArgs-based top level API.
+            // In such cases, SocketAsyncEventArgs.StartOperationConnect() will set up an internal cancellation token (_multipleConnectCancellation)
+            // to support cancelling DNS multi-connect for Socket.CancelConnectAsync().
+            Debug.Assert(!saeaMultiConnectCancelable || cancellationToken == default);
 
             ThrowIfDisposed();
 
@@ -2901,6 +2920,7 @@ namespace System.Net.Sockets
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
             DnsEndPoint? dnsEP = endPointSnapshot as DnsEndPoint;
 
+            bool pending;
             if (dnsEP != null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.ConnectedAsyncDns(this);
@@ -2911,10 +2931,10 @@ namespace System.Net.Sockets
                 }
 
                 e.StartOperationCommon(this, SocketAsyncOperation.Connect);
-                e.StartOperationConnect(saeaCancelable, userSocket);
+                e.StartOperationConnect(saeaMultiConnectCancelable, userSocket);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, default, default);
+                    pending = e.DnsConnectAsync(dnsEP, default, default, default, cancellationToken);
                 }
                 catch
                 {
@@ -2957,8 +2977,8 @@ namespace System.Net.Sockets
                     // ConnectEx supports connection-oriented sockets but not UDS. The socket must be bound before calling ConnectEx.
                     bool canUseConnectEx = _socketType == SocketType.Stream && endPointSnapshot.AddressFamily != AddressFamily.Unix;
                     SocketError socketError = canUseConnectEx ?
-                        e.DoOperationConnectEx(this, _handle) :
-                        e.DoOperationConnect(_handle); // For connectionless protocols, Connect is not an I/O call.
+                        e.DoOperationConnectEx(this, _handle, cancellationToken) :
+                        e.DoOperationConnect(_handle, cancellationToken); // For connectionless protocols, Connect is not an I/O call.
                     pending = socketError == SocketError.IOPending;
                 }
                 catch (Exception ex)
@@ -2977,9 +2997,16 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e)
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e) =>
+                            ConnectAsync(socketType, protocolType, e, ConnectAlgorithm.Default);
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e, ConnectAlgorithm connectAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(e);
+            if (connectAlgorithm != ConnectAlgorithm.Default &&
+                connectAlgorithm != ConnectAlgorithm.Parallel)
+            {
+                throw new ArgumentException(SR.Format(SR.net_sockets_invalid_connect_algorithm, connectAlgorithm), nameof(connectAlgorithm));
+            }
 
             if (e.HasMultipleBuffers)
             {
@@ -3001,7 +3028,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(saeaMultiConnectCancelable: true, userSocket: false);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType);
+                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType, connectAlgorithm, cancellationToken: default);
                 }
                 catch
                 {
@@ -3012,7 +3039,7 @@ namespace System.Net.Sockets
             else
             {
                 Socket attemptSocket = new Socket(endPointSnapshot.AddressFamily, socketType, protocolType);
-                pending = attemptSocket.ConnectAsync(e, userSocket: false, saeaCancelable: true);
+                pending = attemptSocket.ConnectAsync(e, userSocket: false, saeaMultiConnectCancelable: true);
             }
 
             return pending;
@@ -3087,7 +3114,12 @@ namespace System.Net.Sockets
 
             ArgumentNullException.ThrowIfNull(e);
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
-            if (e._socketAddress == null)
+
+            // e._socketAddress is normally created once and reused on every subsequent call for this
+            // SocketAsyncEventArgs. If the instance is being reused across sockets of different address
+            // families (e.g. an IPv4 socket, then an IPv6 one), the previous buffer may be too small for
+            // this socket's family, so it needs to be replaced rather than reused as-is.
+            if (e._socketAddress == null || e._socketAddress.Buffer.Length < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {
                 if (endPointSnapshot is DnsEndPoint)
                 {
@@ -3111,7 +3143,7 @@ namespace System.Net.Sockets
                 {
                     endPointSnapshot = s_IPEndPointIPv6;
                 }
-                e._socketAddress ??= new SocketAddress(AddressFamily);
+                e._socketAddress = new SocketAddress(AddressFamily);
             }
 
             // DualMode sockets may have updated the endPointSnapshot, and it has to have the same AddressFamily as
@@ -3833,7 +3865,7 @@ namespace System.Net.Sockets
                 return;
             }
 
-            Debug.Assert(_nonBlockingConnectInProgress == false);
+            Debug.Assert(!_nonBlockingConnectInProgress);
 
             // Update the status: this socket was indeed connected at
             // some point in time update the perf counter as well.

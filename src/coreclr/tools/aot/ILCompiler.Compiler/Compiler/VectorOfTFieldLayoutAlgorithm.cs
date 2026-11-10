@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -51,7 +53,10 @@ namespace ILCompiler
             {
                 ByteCountUnaligned = instanceFieldSize,
                 ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
-                FieldAlignment = layoutFromMetadata.FieldAlignment,
+                // On WASM Vector<T> is passed as a v128 and requires 16-byte alignment.
+                FieldAlignment = targetDetails.IsWasm
+                    ? new LayoutInt(16)
+                    : layoutFromMetadata.FieldAlignment,
                 FieldSize = instanceFieldSize,
                 Offsets = layoutFromMetadata.Offsets,
                 IsVectorTOrHasVectorTFields = true,
@@ -76,7 +81,7 @@ namespace ILCompiler
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
-                            type.Instantiation[0].IsPrimitiveNumeric)
+                            VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
             {
                 return type.InstanceFieldSize.AsInt switch
                 {
@@ -96,7 +101,7 @@ namespace ILCompiler
 
         public static bool IsVectorOfTType(DefType type)
         {
-            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
+            return type.IsIntrinsic && type.Namespace == "System.Numerics"u8 && type.Name == "Vector`1"u8;
         }
     }
 }

@@ -167,7 +167,7 @@ namespace System.Text.RegularExpressions.Tests
             DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(col);
             PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
             Group[] items = itemProperty.GetValue(info.Instance) as Group[];
-            Assert.Equal(col, items);
+            Assert.Equal(col.Cast<Group>(), items);
         }
 
         [Fact]

@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="PrivateInitialize.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

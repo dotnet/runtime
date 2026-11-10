@@ -15,11 +15,22 @@ namespace System.Text.Json.Serialization.Converters
 
         public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                return ReadNumberWithCustomHandling(ref reader, options.NumberHandling, options);
+            }
+
             return reader.GetDecimal();
         }
 
         public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                WriteNumberWithCustomHandling(writer, value, options.NumberHandling);
+                return;
+            }
+
             writer.WriteNumberValue(value);
         }
 
@@ -59,5 +70,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Number, numberHandling);
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
     }
 }

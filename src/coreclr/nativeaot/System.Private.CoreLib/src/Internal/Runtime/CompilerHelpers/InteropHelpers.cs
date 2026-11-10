@@ -275,7 +275,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
-#if !TARGET_UNIX
+#if TARGET_WINDOWS
             Interop.Kernel32.FreeLibrary(hModule);
 #else
             Interop.Sys.FreeLibrary(hModule);
@@ -445,17 +445,17 @@ namespace Internal.Runtime.CompilerHelpers
         /// <summary>
         /// Retrieves the function pointer for the current open static delegate that is being called
         /// </summary>
-        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
+        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer(IntPtr pContext)
         {
-            return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer();
+            return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer(pContext);
         }
 
         /// <summary>
         /// Retrieves the current delegate that is being called
         /// </summary>
-        public static T GetCurrentCalleeDelegate<T>() where T : Delegate
+        public static T GetCurrentCalleeDelegate<T>(IntPtr pContext) where T : Delegate
         {
-            return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
+            return PInvokeMarshal.GetCurrentCalleeDelegate<T>(pContext);
         }
 
         public static IntPtr ConvertManagedComInterfaceToNative(object pUnk, Guid interfaceGuid)
@@ -499,7 +499,7 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if TARGET_WINDOWS
 #pragma warning disable CA1416
-            return ComWrappers.ComObjectForInterface(pUnk);
+            return ComWrappers.ComObjectForInterface(pUnk, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
 #pragma warning restore CA1416
 #else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

@@ -133,7 +133,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
-        protected virtual byte[] SignDataCore(
+        protected virtual unsafe byte[] SignDataCore(
             ReadOnlySpan<byte> data,
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
@@ -327,7 +327,7 @@ namespace System.Security.Cryptography
         ///   An error occurred in the signing operation.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography
         ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
@@ -418,7 +418,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the signing operation.
         /// </exception>
-        protected virtual byte[] SignHashCore(ReadOnlySpan<byte> hash, DSASignatureFormat signatureFormat)
+        protected virtual unsafe byte[] SignHashCore(ReadOnlySpan<byte> hash, DSASignatureFormat signatureFormat)
         {
             Span<byte> signature = stackalloc byte[SignatureStackBufSize];
             int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
@@ -459,7 +459,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual bool TrySignData(
+        public virtual unsafe bool TrySignData(
             ReadOnlySpan<byte> data,
             Span<byte> destination,
             HashAlgorithmName hashAlgorithm,
@@ -530,7 +530,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the signing operation.
         /// </exception>
-        protected virtual bool TrySignDataCore(
+        protected virtual unsafe bool TrySignDataCore(
             ReadOnlySpan<byte> data,
             Span<byte> destination,
             HashAlgorithmName hashAlgorithm,
@@ -571,7 +571,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use
         ///   <see cref="SignData(ReadOnlySpan{byte}, HashAlgorithmName, DSASignatureFormat)" />.
         /// </remarks>
@@ -699,7 +699,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use
         ///   <see cref="SignData(ReadOnlySpan{byte}, Span{byte}, HashAlgorithmName, DSASignatureFormat)" />.
         /// </remarks>
@@ -838,7 +838,7 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
         }
 
-        public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm)
+        public virtual unsafe bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm)
         {
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
@@ -889,7 +889,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or verification operation.
         /// </exception>
-        protected virtual bool VerifyDataCore(
+        protected virtual unsafe bool VerifyDataCore(
             ReadOnlySpan<byte> data,
             ReadOnlySpan<byte> signature,
             HashAlgorithmName hashAlgorithm,

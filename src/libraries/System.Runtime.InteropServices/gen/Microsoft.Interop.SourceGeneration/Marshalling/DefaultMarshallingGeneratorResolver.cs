@@ -27,6 +27,7 @@ namespace Microsoft.Interop
             IMarshallingGeneratorResolver fallbackResolver = new NotSupportedResolver();
             List<IMarshallingGeneratorResolver> coreResolvers = [
                 .. additionalResolvers,
+                new IidParameterIndexMarshallerResolver(),
                 new BlittableMarshallerResolver(env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling)),
                 new MarshalAsMarshallingGeneratorResolver(new InteropGenerationOptions(UseMarshalType: true)),
                 new NoMarshallingInfoErrorResolver(stringMarshallingAttribute),
@@ -51,30 +52,29 @@ namespace Microsoft.Interop
                     MarshalMode.ElementOut,
                     ResolveElementsFromSelf: true));
 
-            IMarshallingGeneratorResolver generatorResolver = new ByValueContentsMarshalKindValidator(
-                new CompositeMarshallingGeneratorResolver(
-                    [
-                        .. coreResolvers,
-                        new AttributedMarshallingModelGeneratorResolver(
-                            new CompositeMarshallingGeneratorResolver(
-                               [elementFactory, .. coreResolvers, charElementMarshaller, fallbackResolver]),
-                            new AttributedMarshallingModelOptions(
-                                env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
-                                direction == MarshalDirection.ManagedToUnmanaged
-                                    ? MarshalMode.ManagedToUnmanagedIn
-                                    : MarshalMode.UnmanagedToManagedOut,
-                                direction == MarshalDirection.ManagedToUnmanaged
-                                    ? MarshalMode.ManagedToUnmanagedRef
-                                    : MarshalMode.UnmanagedToManagedRef,
-                                direction == MarshalDirection.ManagedToUnmanaged
-                                    ? MarshalMode.ManagedToUnmanagedOut
-                                    : MarshalMode.UnmanagedToManagedIn,
-                                ResolveElementsFromSelf: false)),
-                        // Since the char type can go into the P/Invoke signature here, we can only use it when
-                        // runtime marshalling is disabled.
-                        new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), stringMarshallingAttribute),
-                        fallbackResolver
-                    ]));
+            IMarshallingGeneratorResolver generatorResolver = new CompositeMarshallingGeneratorResolver(
+                [
+                    .. coreResolvers,
+                    new AttributedMarshallingModelGeneratorResolver(
+                        new CompositeMarshallingGeneratorResolver(
+                           [elementFactory, .. coreResolvers, charElementMarshaller, fallbackResolver]),
+                        new AttributedMarshallingModelOptions(
+                            env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
+                            direction == MarshalDirection.ManagedToUnmanaged
+                                ? MarshalMode.ManagedToUnmanagedIn
+                                : MarshalMode.UnmanagedToManagedOut,
+                            direction == MarshalDirection.ManagedToUnmanaged
+                                ? MarshalMode.ManagedToUnmanagedRef
+                                : MarshalMode.UnmanagedToManagedRef,
+                            direction == MarshalDirection.ManagedToUnmanaged
+                                ? MarshalMode.ManagedToUnmanagedOut
+                                : MarshalMode.UnmanagedToManagedIn,
+                            ResolveElementsFromSelf: false)),
+                    // Since the char type can go into the P/Invoke signature here, we can only use it when
+                    // runtime marshalling is disabled.
+                    new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), stringMarshallingAttribute),
+                    fallbackResolver
+                ]);
             generatorResolver = new BreakingChangeDetector(generatorResolver);
 
             return generatorResolver;

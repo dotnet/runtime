@@ -7,9 +7,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -41,13 +41,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return _genericMethodDefinition.CustomAttributes;
-            }
-        }
+        internal sealed override MetadataReader? GetMetadataReader() => _genericMethodDefinition.GetMetadataReader();
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _genericMethodDefinition.GetCustomAttributeHandles();
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
@@ -72,7 +68,17 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override int GetHashCode()
         {
-            return _genericMethodDefinition.GetHashCode();
+            var hashcode = default(HashCode);
+
+            hashcode.Add(_genericMethodDefinition);
+            hashcode.Add(_genericTypeArguments.Length);
+
+            for (int i = 0; i < _genericTypeArguments.Length; i++)
+            {
+                hashcode.Add(_genericTypeArguments[i]);
+            }
+
+            return hashcode.ToHashCode();
         }
 
         internal sealed override int GenericParameterCount => _genericMethodDefinition.GenericParameterCount;
@@ -198,9 +204,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
+        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod)
         {
-            return _genericMethodDefinition.GetRuntimeParameters(this, out returnParameter);
+            return _genericMethodDefinition.GetRuntimeParameters(this);
+        }
+
+        internal sealed override RuntimeParameterInfo GetRuntimeReturnParameter(RuntimeMethodInfo contextMethod)
+        {
+            return _genericMethodDefinition.GetRuntimeReturnParameter(this);
         }
 
         internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType

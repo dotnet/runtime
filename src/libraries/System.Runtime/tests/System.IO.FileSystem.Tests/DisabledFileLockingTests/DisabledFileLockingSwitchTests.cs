@@ -9,10 +9,12 @@ namespace System.IO.Tests
     public class DisabledFileLockingSwitchTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public static void ConfigSwitchIsHonored()
         {
-            Assert.Equal(OperatingSystem.IsWindows(), PlatformDetection.IsFileLockingEnabled);
+            bool expected = OperatingSystem.IsWindows() ||
+                (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) ||
+                OperatingSystem.IsTvOS();
+            Assert.Equal(expected, PlatformDetection.IsFileLockingEnabled);
         }
     }
 }

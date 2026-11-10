@@ -207,20 +207,7 @@ namespace System.Formats.Cbor
         public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)
         {
             HashCode hash = default;
-#if NET
             hash.AddBytes(encoding);
-#else
-            while (encoding.Length >= sizeof(int))
-            {
-                hash.Add(MemoryMarshal.Read<int>(encoding));
-                encoding = encoding.Slice(sizeof(int));
-            }
-
-            foreach (byte b in encoding)
-            {
-                hash.Add(b);
-            }
-#endif
             return hash.ToHashCode();
         }
 

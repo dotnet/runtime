@@ -55,6 +55,8 @@ namespace System.Net.Mail.Tests
         public ParsedMailMessage Message { get; private set; }
         public bool IsEncrypted { get; private set; }
         public string TlsHostName { get; private set; }
+        public System.Security.Authentication.SslProtocols TlsProtocol { get; private set; }
+        public SslApplicationProtocol ApplicationProtocol { get; private set; }
 
         public int ConnectionCount { get; private set; }
         public int MessagesReceived { get; private set; }
@@ -124,7 +126,9 @@ namespace System.Net.Mail.Tests
 
             async ValueTask SendMessageAsync(string text)
             {
-                var bytes = buffer.Slice(0, Encoding.UTF8.GetBytes(text, buffer.Span) + 2);
+                int byteCount = Encoding.UTF8.GetByteCount(text);
+                Memory<byte> bytes = byteCount + 2 <= buffer.Length ? buffer.Slice(0, byteCount + 2) : new byte[byteCount + 2];
+                Encoding.UTF8.GetBytes(text, bytes.Span);
                 bytes.Span[^2] = (byte)'\r';
                 bytes.Span[^1] = (byte)'\n';
 
@@ -261,6 +265,8 @@ namespace System.Net.Mail.Tests
                             await sslStream.AuthenticateAsServerAsync(SslOptions);
                             IsEncrypted = true;
                             TlsHostName = sslStream.TargetHostName;
+                            TlsProtocol = sslStream.SslProtocol;
+                            ApplicationProtocol = sslStream.NegotiatedApplicationProtocol;
 
                             stream = sslStream;
                             break;
@@ -333,8 +339,7 @@ namespace System.Net.Mail.Tests
             public string Cc => GetHeader("Cc");
             public string Subject => GetHeader("Subject");
 
-            private ContentType _contentType;
-            public ContentType ContentType => _contentType ??= new ContentType(GetHeader("Content-Type"));
+            public ContentType ContentType => field ??= new ContentType(GetHeader("Content-Type"));
 
             private ParsedMailMessage(Dictionary<string, string> headers, string body, string rawBody, List<ParsedAttachment> attachments)
             {

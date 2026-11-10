@@ -28,10 +28,13 @@ private:
 
 public:
     LicenseTesting(_In_opt_ BSTR lic)
-        : _lic{ lic }
+        : _lic{ TP_SysAllocString(lic) }
     {
         if (s_DenyLicense)
+        {
+            CoreClrBStrFree(_lic);
             throw CLASS_E_NOTLICENSED;
+        }
     }
 
     ~LicenseTesting()

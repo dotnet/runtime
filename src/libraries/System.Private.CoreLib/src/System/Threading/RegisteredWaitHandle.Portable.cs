@@ -55,15 +55,14 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
 #if TARGET_WINDOWS
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
 #endif
             GC.SuppressFinalize(this);
 
-            Thread.ThrowIfNoThreadStart();
             _waitHandle = waitHandle.SafeWaitHandle;
             _callbackHelper = callbackHelper;
             _signedMillisecondsTimeout = millisecondsTimeout;
@@ -72,6 +71,7 @@ namespace System.Threading
             {
                 RestartTimeout();
             }
+#endif
         }
 
         private static AutoResetEvent RentEvent() =>

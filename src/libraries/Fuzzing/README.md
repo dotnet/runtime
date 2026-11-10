@@ -58,7 +58,23 @@ deployment/HttpHeadersFuzzer/local-run.bat
 See the [libFuzzer options](https://llvm.org/docs/LibFuzzer.html#options) documentation for more information on how to customize the fuzzing process.
 For example, here is how you can run the fuzzer against a `header-inputs` corpus directory for 10 minutes, running multiple instances in parallel:
 ```cmd
-deployment/HttpHeadersFuzzer/local-run.bat header-inputs -timeout=30 -max_total_time=600 -jobs=5
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs -max_total_time=600 -jobs=5
+```
+
+### Generating coverage reports
+
+After letting the fuzzer run for a while, you can use the generated inputs to test code coverage.
+
+```cmd
+mkdir header-inputs
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs
+
+.\collect-coverage.ps1 HttpHeadersFuzzer header-inputs
+```
+
+The HTML report can be opened from
+```cmd
+.\coverage-report\html\index.html
 ```
 
 ## Creating a new fuzzing target
@@ -83,8 +99,9 @@ internal sealed class IPAddressFuzzer : IFuzzer
 }
 ```
 
-- `TargetAssemblies` is a list of assemblies where the tested code lives and that must be instrumented.
-- `TargetCoreLibPrefixes` is the same, but for types/namespaces in `System.Private.CoreLib`.
+- Fuzzer implementations in `DotnetFuzzing.Fuzzers` and linked production code in `System.*` within the fuzzer assembly are always instrumented.
+- `TargetAssemblies` is a list of additional assemblies where the tested code lives and that must be instrumented. It can be empty if the tested code lives only in the fuzzer assembly or `System.Private.CoreLib`.
+- `TargetCoreLibPrefixes` specifies the types/namespaces to instrument in `System.Private.CoreLib`.
 - `FuzzTarget` is the logic that the fuzzer will run for every test input. It should exercise code from the target assemblies.
 
 Once you've created the new target, you can follow instructions above to run it locally.
@@ -101,4 +118,4 @@ cd src/libraries/Fuzzing/DotnetFuzzing
 dotnet run HttpHeadersFuzzer inputs
 ```
 
-This can be useful when debugging a crash, or running the fuzzer over existing inputs to collect code coverage.
+This can be useful when debugging a crash.

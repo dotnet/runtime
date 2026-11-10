@@ -25,7 +25,6 @@ namespace System.Runtime.Serialization
         private ObjectReferenceStack _byValObjectsInScope;
         private XmlSerializableWriter? _xmlSerializableWriter;
         private const int depthToCheckCyclicReference = 512;
-        private ObjectToIdCache? _serializedObjects;
         private bool _isGetOnlyCollection;
         private readonly bool _unsafeTypeForwardingEnabled;
         protected bool serializeReadOnlyTypes;
@@ -53,7 +52,7 @@ namespace System.Runtime.Serialization
             _unsafeTypeForwardingEnabled = true;
         }
 
-        protected ObjectToIdCache SerializedObjects => _serializedObjects ??= new ObjectToIdCache();
+        protected ObjectToIdCache SerializedObjects => field ??= new ObjectToIdCache();
 
         internal override bool IsGetOnlyCollection
         {
@@ -96,7 +95,7 @@ namespace System.Runtime.Serialization
         {
             if (writeXsiType)
             {
-                Type declaredType = Globals.TypeOfObject;
+                Type declaredType = typeof(object);
                 SerializeWithXsiType(xmlWriter, obj, obj.GetType().TypeHandle, null/*type*/, -1, declaredType.TypeHandle, declaredType);
             }
             else if (isDeclaredType)
@@ -565,7 +564,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    InternalSerializeReference(xmlWriter, obj, false /*isDeclaredType*/, false /*writeXsiType*/, -1, Globals.TypeOfObject.TypeHandle);
+                    InternalSerializeReference(xmlWriter, obj, false /*isDeclaredType*/, false /*writeXsiType*/, -1, typeof(object).TypeHandle);
                 }
 
                 xmlWriter.WriteEndElement();
@@ -710,19 +709,19 @@ namespace System.Runtime.Serialization
                 return;
 
             Type dataType = dataNode.DataType;
-            if (dataType == Globals.TypeOfClassDataNode)
+            if (dataType == typeof(ClassDataNode))
                 WriteExtensionClassData(xmlWriter, (ClassDataNode)dataNode);
-            else if (dataType == Globals.TypeOfCollectionDataNode)
+            else if (dataType == typeof(CollectionDataNode))
                 WriteExtensionCollectionData(xmlWriter, (CollectionDataNode)dataNode);
-            else if (dataType == Globals.TypeOfXmlDataNode)
+            else if (dataType == typeof(XmlDataNode))
                 WriteExtensionXmlData(xmlWriter, (XmlDataNode)dataNode);
-            else if (dataType == Globals.TypeOfISerializableDataNode)
+            else if (dataType == typeof(ISerializableDataNode))
                 WriteExtensionISerializableData(xmlWriter, (ISerializableDataNode)dataNode);
             else
             {
                 WriteExtensionDataTypeInfo(xmlWriter, dataNode);
 
-                if (dataType == Globals.TypeOfObject)
+                if (dataType == typeof(object))
                 {
                     // NOTE: serialize value in DataNode<object> since it may contain non-primitive
                     // deserialized object (ex. empty class)
@@ -745,7 +744,7 @@ namespace System.Runtime.Serialization
             if (o == null)
                 return false;
 
-            Type declaredType = (dataNode.DataContractName == null) ? o.GetType() : Globals.TypeOfObject;
+            Type declaredType = (dataNode.DataContractName == null) ? o.GetType() : typeof(object);
             InternalSerialize(xmlWriter, o, false /*isDeclaredType*/, false /*writeXsiType*/, -1, declaredType.TypeHandle);
             return true;
         }

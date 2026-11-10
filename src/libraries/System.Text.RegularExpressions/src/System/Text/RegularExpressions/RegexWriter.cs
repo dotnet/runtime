@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions
         /// This is the only function that should be called from outside.
         /// It takes a <see cref="RegexTree"/> and creates a corresponding <see cref="RegexInterpreterCode"/>.
         /// </summary>
-        public static RegexInterpreterCode Write(RegexTree tree)
+        public static unsafe RegexInterpreterCode Write(RegexTree tree)
         {
             using var writer = new RegexWriter(tree, stackalloc int[EmittedSize], stackalloc int[IntStackSize]);
             return writer.EmitCode();

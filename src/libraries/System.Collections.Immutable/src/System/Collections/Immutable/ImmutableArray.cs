@@ -216,20 +216,16 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
             Requires.Range(start >= 0 && start <= items.Length, nameof(start));
-            Requires.Range(length >= 0 && start + length <= items.Length, nameof(length));
+            Requires.Range(length >= 0 && length <= items.Length - start, nameof(length));
 
             if (length == 0)
             {
                 // Avoid allocating an array.
-                return Create<T>();
+                return ImmutableArray<T>.Empty;
             }
 
             var array = new T[length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = items[start + i];
-            }
-
+            Array.Copy(items, start, array, 0, length);
             return new ImmutableArray<T>(array);
         }
 
@@ -247,11 +243,11 @@ namespace System.Collections.Immutable
         public static ImmutableArray<T> Create<T>(ImmutableArray<T> items, int start, int length)
         {
             Requires.Range(start >= 0 && start <= items.Length, nameof(start));
-            Requires.Range(length >= 0 && start + length <= items.Length, nameof(length));
+            Requires.Range(length >= 0 && length <= items.Length - start, nameof(length));
 
             if (length == 0)
             {
-                return Create<T>();
+                return ImmutableArray<T>.Empty;
             }
 
             if (start == 0 && length == items.Length)
@@ -282,7 +278,7 @@ namespace System.Collections.Immutable
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -311,12 +307,12 @@ namespace System.Collections.Immutable
             int itemsLength = items.Length;
 
             Requires.Range(start >= 0 && start <= itemsLength, nameof(start));
-            Requires.Range(length >= 0 && start + length <= itemsLength, nameof(length));
+            Requires.Range(length >= 0 && length <= itemsLength - start, nameof(length));
             Requires.NotNull(selector, nameof(selector));
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -340,7 +336,7 @@ namespace System.Collections.Immutable
         /// the source array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, Func<TSource, TArg, TResult> selector, TArg arg)
-#if NET9_0_OR_GREATER
+#if NET
             where TArg : allows ref struct
 #endif
         {
@@ -350,7 +346,7 @@ namespace System.Collections.Immutable
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -376,19 +372,19 @@ namespace System.Collections.Immutable
         /// included in the resulting array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, int start, int length, Func<TSource, TArg, TResult> selector, TArg arg)
-#if NET9_0_OR_GREATER
+#if NET
             where TArg : allows ref struct
 #endif
         {
             int itemsLength = items.Length;
 
             Requires.Range(start >= 0 && start <= itemsLength, nameof(start));
-            Requires.Range(length >= 0 && start + length <= itemsLength, nameof(length));
+            Requires.Range(length >= 0 && length <= itemsLength - start, nameof(length));
             Requires.NotNull(selector, nameof(selector));
 
             if (length == 0)
             {
-                return Create<TResult>();
+                return ImmutableArray<TResult>.Empty;
             }
 
             var array = new TResult[length];
@@ -407,7 +403,7 @@ namespace System.Collections.Immutable
         /// <returns>A new builder.</returns>
         public static ImmutableArray<T>.Builder CreateBuilder<T>()
         {
-            return Create<T>().ToBuilder();
+            return ImmutableArray<T>.Empty.ToBuilder();
         }
 
         /// <summary>

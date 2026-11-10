@@ -33,6 +33,23 @@ namespace System.Net.Sockets.Tests
                 SocketWindows(af, type, protocol) :
                 SocketUnix(af, type, protocol);
 
+        [Fact]
+        public void SetHandleAsInvalid_DoesNotRelease()
+        {
+            // Transfer ownership to other SafeSocketHandle instance.
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            IntPtr rawHandle = socket.SafeHandle.DangerousGetHandle();
+            using var newOwner = new SafeSocketHandle(rawHandle, ownsHandle: true);
+            socket.SafeHandle.SetHandleAsInvalid();
+
+            // Close the original socket. The OS handle must not be released due to calling SetHandleAsInvalid.
+            socket.Dispose();
+
+            // Verify the handle is still usable.
+            using var newSocket = new Socket(newOwner);
+            newSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+        }
+
         [DllImport("ws2_32.dll", EntryPoint = "socket")]
         private static extern SafeSocketHandle SocketWindows(int af, int type, int protocol);
 

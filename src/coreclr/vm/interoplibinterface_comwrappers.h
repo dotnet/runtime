@@ -9,6 +9,7 @@
 #define _INTEROPLIBINTERFACE_COMWRAPPERS_H_
 
 #include <interoplibabi.h>
+#include "cdacdata.h"
 
 // Native calls for the managed ComWrappers API
 class ComWrappersNative
@@ -33,19 +34,19 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
 
 extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRefRelease();
 
-extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj);
+extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError);
 
 extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl();
 
 extern "C" void const* QCALLTYPE ComWrappers_GetTaggedImpl();
 
-extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback();
+extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback(QCallExceptionStatus* qcallError);
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager();
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_TryRegisterReferenceTrackerManager(_In_ void* manager);
 
-extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(_In_ QCall::ObjectHandleOnStack cache);
+extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(_In_ QCall::ObjectHandleOnStack cache, QCallExceptionStatus* qcallError);
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled();
 
@@ -76,6 +77,14 @@ private:
 public:
     OBJECTREF _wrappedObject;
     DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) _wrapper;
+    friend struct ::cdac_data<ManagedObjectWrapperHolderObject>;
+};
+
+template<>
+struct cdac_data<ManagedObjectWrapperHolderObject>
+{
+    static constexpr size_t WrappedObject = offsetof(ManagedObjectWrapperHolderObject, _wrappedObject);
+    static constexpr size_t Wrapper = offsetof(ManagedObjectWrapperHolderObject, _wrapper);
 };
 
 class NativeObjectWrapperObject : public Object
@@ -98,6 +107,14 @@ public:
     {
         return _externalComObject;
     }
+
+    friend struct ::cdac_data<NativeObjectWrapperObject>;
+};
+
+template<>
+struct cdac_data<NativeObjectWrapperObject>
+{
+    static constexpr size_t ExternalComObject = offsetof(NativeObjectWrapperObject, _externalComObject);
 };
 
 class ReferenceTrackerNativeObjectWrapperObject final : public NativeObjectWrapperObject

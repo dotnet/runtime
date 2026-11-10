@@ -3353,22 +3353,6 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 	}
 }
 
-static MonoArray*
-mono_marshal_get_callconvs_array_from_attribute (MonoCustomAttrEntry *attr, CattrNamedArg **arginfo)
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	ERROR_DECL (error);
-	MonoArrayHandleOut typed_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
-	MonoArrayHandleOut named_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
-	mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, typed_args_h, named_args_h, arginfo, error);
-	if (!is_ok (error)) {
-		mono_error_cleanup (error);
-	}
-
-	HANDLE_FUNCTION_RETURN_OBJ (named_args_h);
-}
-
 static void
 mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
 {
@@ -3392,28 +3376,35 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		}
 	}
 
-	if (attr != NULL)
-	{
-		CattrNamedArg *arginfo;
-		MonoArray *named_args = mono_marshal_get_callconvs_array_from_attribute(attr, &arginfo);
-		if (named_args)
-		{
-			for (mono_array_size_t i = 0; i < mono_array_length_internal(named_args); ++i) {
-				CattrNamedArg *info = &arginfo[i];
-				g_assert(info->field);
-				if (strcmp(info->field->name, "CallConvs") != 0)
+	if (attr != NULL) {
+		/*
+		 * Decode the attribute without allocating managed objects: this runs in the AOT
+		 * compiler too, where that is not possible when cross-compiling (classes are laid out
+		 * for the target there, so a managed Type [] would not fit the allocation made for it).
+		 */
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (method->klass), attr->ctor, attr->data, attr->data_size, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
+		} else {
+			for (int i = 0; i < decoded_args->named_args_num; ++i) {
+				CattrNamedArg *info = &decoded_args->named_args_info [i];
+				if (!info->field || strcmp (info->field->name, "CallConvs") != 0)
 					continue;
 
-				/* CallConvs is an array of types */
-				MonoArray *callconv_array = mono_array_get_internal(named_args, MonoArray *, i);
-				for (mono_array_size_t j = 0; j < mono_array_length_internal(callconv_array); ++j) {
-					MonoReflectionType *callconv_type = mono_array_get_internal(callconv_array, MonoReflectionType *, j);
-					mono_marshal_set_callconv_for_type(callconv_type->type, csig, skip_gc_trans);
+				/* CallConvs is an array of types, and may be null */
+				MonoCustomAttrValue *callconvs = decoded_args->named_args [i];
+				if (!callconvs)
+					continue;
+
+				MonoCustomAttrValueArray *callconv_array = callconvs->value.array;
+				for (int j = 0; j < callconv_array->len; ++j) {
+					MonoType *callconv_type = (MonoType *)callconv_array->values [j].value.primitive;
+					if (callconv_type)
+						mono_marshal_set_callconv_for_type (callconv_type, csig, skip_gc_trans);
 				}
 			}
 		}
-
-		g_free (arginfo);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 	}
 
 	if (!cinfo->cached)
@@ -3474,7 +3465,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 	}
 
 	if (attr != NULL) {
-		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (method->klass), attr->ctor, attr->data, attr->data_size, error);
 		mono_error_assert_ok (error);
 		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
@@ -4860,11 +4851,8 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 
 	/* Compressed interface bitmaps require code that is quite complex, so don't optimize for it. */
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (element_class) && !mono_class_has_variant_generic_params (element_class))
-#ifdef COMPRESSED_INTERFACE_BITMAP
-		return STELEMREF_COMPLEX;
-#else
-		return STELEMREF_INTERFACE;
-#endif
+		return mono_opt_compressed_interface_bitmap ? STELEMREF_COMPLEX : STELEMREF_INTERFACE;
+
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
 	if (m_class_get_rank (element_class) || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
@@ -5943,61 +5931,38 @@ mono_marshal_is_loading_type_info (MonoClass *klass)
 	return g_slist_find (loads_list, klass) != NULL;
 }
 
-/**
- * mono_marshal_load_type_info:
- *
- * Initialize \c klass::marshal_info using information from metadata. This function can
- * recursively call itself, and the caller is responsible to avoid that by calling
- * \c mono_marshal_is_loading_type_info beforehand.
- *
- * LOCKING: Acquires the loader lock.
- */
-MonoMarshalType *
-mono_marshal_load_type_info (MonoClass* klass)
+static void
+mono_marshal_load_extended_layout_type_info(MonoClass* klass, MonoMarshalType* info)
 {
-	int j, count = 0;
-	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
-	MonoMarshalType *info;
+	int j = 0;
+	gpointer iter = NULL;
 	MonoClassField* field;
-	gpointer iter;
-	guint32 layout;
-	GSList *loads_list;
 
-	g_assert (klass != NULL);
-
-	info = mono_class_get_marshal_info (klass);
-	if (info)
-		return info;
-
-	if (!m_class_is_inited (klass))
-		mono_class_init_internal (klass);
-
-	info = mono_class_get_marshal_info (klass);
-	if (info)
-		return info;
-
-	/*
-	 * This function can recursively call itself, so we keep the list of classes which are
-	 * under initialization in a TLS list.
-	 */
-	g_assert (!mono_marshal_is_loading_type_info (klass));
-	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
-	loads_list = g_slist_prepend (loads_list, klass);
-	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
-
-	iter = NULL;
+	info->native_size = mono_class_instance_size(klass) - MONO_ABI_SIZEOF (MonoObject);
+	info->min_align = mono_class_min_align(klass);
+ 
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
+
 		if (mono_field_is_deleted (field))
 			continue;
-		count++;
+
+		info->fields [j].field = field;
+		info->fields [j].offset = mono_field_get_offset (field);
 	}
+}
+
+static void
+mono_marshal_load_standard_layout_type_info(MonoClass* klass, MonoMarshalType* info)
+{
+	int j;
+	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
+	MonoClassField* field;
+	gpointer iter;
+	guint32 layout;
 
 	layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
-
-	info = (MonoMarshalType *)mono_image_alloc0 (m_class_get_image (klass), MONO_SIZEOF_MARSHAL_TYPE + sizeof (MonoMarshalField) * count);
-	info->num_fields = count;
 
 	/* Try to find a size for this type in metadata */
 	explicit_size = mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, &native_size);
@@ -6048,7 +6013,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
 						break;
 					else
-						size = initial_size; // failure occured during AOT compilation, continue execution
+						size = initial_size; // failure occurred during AOT compilation, continue execution
 				} else {
 					mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
 					break;
@@ -6108,6 +6073,70 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (m_class_get_rank (klass) && !mono_marshal_is_loading_type_info (m_class_get_element_class (klass))) {
 		mono_marshal_load_type_info (m_class_get_element_class (klass));
 	}
+}
+
+/**
+ * mono_marshal_load_type_info:
+ *
+ * Initialize \c klass::marshal_info using information from metadata. This function can
+ * recursively call itself, and the caller is responsible to avoid that by calling
+ * \c mono_marshal_is_loading_type_info beforehand.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+MonoMarshalType *
+mono_marshal_load_type_info (MonoClass* klass)
+{
+	int count = 0;
+	MonoMarshalType *info;
+	MonoClassField* field;
+	gpointer iter;
+	guint32 layout;
+	GSList *loads_list;
+
+	g_assert (klass != NULL);
+
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
+
+	if (!m_class_is_inited (klass))
+		mono_class_init_internal (klass);
+
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
+
+	/*
+	 * This function can recursively call itself, so we keep the list of classes which are
+	 * under initialization in a TLS list.
+	 */
+	g_assert (!mono_marshal_is_loading_type_info (klass));
+	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
+	loads_list = g_slist_prepend (loads_list, klass);
+	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
+
+	iter = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		count++;
+	}
+
+	info = (MonoMarshalType *)mono_image_alloc0 (m_class_get_image (klass), MONO_SIZEOF_MARSHAL_TYPE + sizeof (MonoMarshalField) * count);
+	info->num_fields = count;
+
+
+	layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
+
+	if (layout == TYPE_ATTRIBUTE_EXTENDED_LAYOUT) {
+		mono_marshal_load_extended_layout_type_info(klass, info);
+	} else {
+		mono_marshal_load_standard_layout_type_info(klass, info);
+	}
+
 
 	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
 	loads_list = g_slist_remove (loads_list, klass);

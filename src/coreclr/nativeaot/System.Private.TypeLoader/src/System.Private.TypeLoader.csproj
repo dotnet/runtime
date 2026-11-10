@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Nullable>disable</Nullable>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
@@ -17,11 +17,13 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
-    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.Primitives.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
       <Link>MethodTable.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MethodTable.Constants.cs">
       <Link>MethodTable.Constants.cs</Link>
@@ -34,9 +36,6 @@
     </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
       <Link>TransitionBlock.cs</Link>
-    </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>LowLevelList.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
       <Link>MetadataBlob.cs</Link>
@@ -53,6 +52,10 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\SR.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
       <Link>IntrinsicAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\Text\Utf8Span.cs">
+      <Link>Internal\Text\Utf8Span.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\ArrayType.Canon.cs">
       <Link>Internal\TypeSystem\ArrayType.Canon.cs</Link>
@@ -116,6 +119,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\CastingHelper.cs">
       <Link>Internal\TypeSystem\CastingHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\CastingHelper.Canon.cs">
+      <Link>Internal\TypeSystem\CastingHelper.Canon.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\DefType.cs">
       <Link>Internal\TypeSystem\DefType.cs</Link>
@@ -204,6 +210,9 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
       <Link>TypeNameFormatter.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\VirtualMethodAlgorithm.cs">
       <Link>Internal\TypeSystem\VirtualMethodAlgorithm.cs</Link>
     </Compile>
@@ -216,7 +225,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="$(CompilerCommonPath)\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
-    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.NativeFormatModuleInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\GenericDictionary.cs" />
@@ -245,16 +253,13 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderTypeSystemContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemContextFactory.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemExtensions.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\WellKnownTypeExtensions.cs" />
     <Compile Include="Internal\TypeSystem\AssemblyNameInfo.Dummy.cs" />
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />
-    <Compile Include="Internal\TypeSystem\DefType.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\ExceptionTypeNameFormatter.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\InstantiatedMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodForInstantiatedType.Runtime.cs" />
-    <Compile Include="Internal\TypeSystem\NoMetadataMethodDesc.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeGenericParameterDesc.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.Canon.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.cs" />

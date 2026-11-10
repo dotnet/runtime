@@ -16,7 +16,6 @@
 #include "executableallocator.h"
 #endif
 
-typedef NEON128                     FPRegister64;
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
@@ -62,6 +61,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
+    // Integer registers (must match RegNum order in cordebuginfo.h)
     REGISTER_ARM64_X0,
     REGISTER_ARM64_X1,
     REGISTER_ARM64_X2,
@@ -94,19 +94,53 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_ARM64_FP,
     REGISTER_ARM64_LR,
     REGISTER_ARM64_SP,
-    REGISTER_ARM64_PC
+    REGISTER_ARM64_PC,
+
+    // FP/SIMD V registers (V0-V31, starting at REGNUM_FP_FIRST)
+    REGISTER_ARM64_V0,
+    REGISTER_ARM64_V1,
+    REGISTER_ARM64_V2,
+    REGISTER_ARM64_V3,
+    REGISTER_ARM64_V4,
+    REGISTER_ARM64_V5,
+    REGISTER_ARM64_V6,
+    REGISTER_ARM64_V7,
+    REGISTER_ARM64_V8,
+    REGISTER_ARM64_V9,
+    REGISTER_ARM64_V10,
+    REGISTER_ARM64_V11,
+    REGISTER_ARM64_V12,
+    REGISTER_ARM64_V13,
+    REGISTER_ARM64_V14,
+    REGISTER_ARM64_V15,
+    REGISTER_ARM64_V16,
+    REGISTER_ARM64_V17,
+    REGISTER_ARM64_V18,
+    REGISTER_ARM64_V19,
+    REGISTER_ARM64_V20,
+    REGISTER_ARM64_V21,
+    REGISTER_ARM64_V22,
+    REGISTER_ARM64_V23,
+    REGISTER_ARM64_V24,
+    REGISTER_ARM64_V25,
+    REGISTER_ARM64_V26,
+    REGISTER_ARM64_V27,
+    REGISTER_ARM64_V28,
+    REGISTER_ARM64_V29,
+    REGISTER_ARM64_V30,
+    REGISTER_ARM64_V31,
 };
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID eip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Pc = (DWORD64)eip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->Sp);
+    return (CORDB_ADDRESS)(context->Sp);
 }
 
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID esp) {
@@ -132,11 +166,8 @@ inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT *
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // @ARMTODO: Sort out frame registers
-
     if ((pCtx1->Pc == pCtx2->Pc) &&
-        (pCtx1->Sp == pCtx2->Sp) &&
-        (pCtx1->Fp == pCtx2->Fp))
+        (pCtx1->Sp == pCtx2->Sp))
     {
         return TRUE;
     }
@@ -172,19 +203,19 @@ inline PRD_TYPE CORDbgGetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address)
 }
 
 
-inline void SetSSFlag(DT_CONTEXT *pContext)
+inline void SetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->Cpsr |= 0x00200000;
 }
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext)
+inline void UnsetSSFlag(T_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->Cpsr &= ~0x00200000;
 }
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
+inline bool IsSSFlagEnabled(T_CONTEXT * pContext)
 {
     _ASSERTE(pContext != NULL);
     return (pContext->Cpsr & 0x00200000) != 0;

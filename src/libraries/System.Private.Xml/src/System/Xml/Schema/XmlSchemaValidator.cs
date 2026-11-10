@@ -716,10 +716,8 @@ namespace System.Xml.Schema
                 _context.CheckRequiredAttribute = false;
                 CheckRequiredAttributes(currentElementDecl);
             }
-            if (schemaInfo != null)
-            { //set validity depending on whether all required attributes were validated successfully
-                schemaInfo.Validity = _context.Validity;
-            }
+            //set validity depending on whether all required attributes were validated successfully
+            schemaInfo?.Validity = _context.Validity;
         }
 
         public void ValidateText(string elementValue)
@@ -1475,8 +1473,7 @@ namespace System.Xml.Schema
                 if (exception != null)
                 {
                     string stringValue = parsedValue as string ?? XmlSchemaDatatype.ConcatenatedToString(parsedValue);
-
-                    SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), stringValue, GetTypeName(decl), exception.Message }, exception);
+                    SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), TruncateValueForErrorMessage(stringValue), GetTypeName(decl), exception.Message }, exception);
                     return null;
                 }
 
@@ -1510,6 +1507,14 @@ namespace System.Xml.Schema
             }
 
             return typeName;
+        }
+
+        private static string TruncateValueForErrorMessage(string value)
+        {
+            const int MaxLength = 40;
+            return value.Length > MaxLength
+                ? string.Concat(value.AsSpan(0, MaxLength), "...")
+                : value;
         }
 
         private void SaveTextValue(object value)
@@ -1960,7 +1965,7 @@ namespace System.Xml.Schema
         Error:
             _attrValid = false;
             stringValue ??= XmlSchemaDatatype.ConcatenatedToString(value);
-            SendValidationEvent(SR.Sch_AttributeValueDataTypeDetailed, new string[] { attdef.Name.ToString(), stringValue, GetTypeName(decl), exception.Message }, exception);
+            SendValidationEvent(SR.Sch_AttributeValueDataTypeDetailed, new string[] { attdef.Name.ToString(), TruncateValueForErrorMessage(stringValue), GetTypeName(decl), exception.Message }, exception);
             return null;
         }
 
@@ -1975,7 +1980,7 @@ namespace System.Xml.Schema
             Exception? exception = dtype.TryParseValue(stringValue, _nameTable, _nsResolver, out typedValue);
             if (exception != null)
             {
-                SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), stringValue, GetTypeName(decl), exception.Message }, exception);
+                SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), TruncateValueForErrorMessage(stringValue), GetTypeName(decl), exception.Message }, exception);
                 return null;
             }
 
@@ -2084,10 +2089,7 @@ namespace System.Xml.Schema
 
         private void ClearPSVI()
         {
-            if (_textValue != null)
-            {
-                _textValue.Length = 0;
-            }
+            _textValue?.Length = 0;
 
             _attPresence.Clear(); //Clear attributes hashtable for every element
             _wildID = null; //clear it for every element

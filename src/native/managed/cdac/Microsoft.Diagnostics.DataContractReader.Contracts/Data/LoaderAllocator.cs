@@ -3,20 +3,20 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class LoaderAllocator : IData<LoaderAllocator>
+[CdacType(nameof(DataType.LoaderAllocator))]
+internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 {
-    static LoaderAllocator IData<LoaderAllocator>.Create(Target target, TargetPointer address)
-        => new LoaderAllocator(target, address);
-
-    public LoaderAllocator(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
-
-        ReferenceCount = target.Read<uint>(address + (ulong)type.Fields[nameof(ReferenceCount)].Offset);
-
-    }
-
-    public uint ReferenceCount { get; init; }
-
+    [Field] public partial uint ReferenceCount { get; }
+    [Field] public partial TargetPointer HighFrequencyHeap { get; }
+    [Field] public partial TargetPointer LowFrequencyHeap { get; }
+    [Field] public partial TargetPointer StaticsHeap { get; }
+    [Field] public partial TargetPointer ExecutableHeap { get; }
+    [Field] public partial TargetPointer? FixupPrecodeHeap { get; }
+    [Field] public partial TargetPointer? NewStubPrecodeHeap { get; }
+    [Field] public partial TargetPointer? DynamicHelpersStubHeap { get; }
+    [Field] public partial TargetPointer VirtualCallStubManager { get; }
+    [Field] public partial ObjectHandle ObjectHandle { get; }
+    [Field] public partial bool IsCollectible { get; }
+    [Field] public partial ulong CreationNumber { get; }
     public bool IsAlive => ReferenceCount != 0;
 }

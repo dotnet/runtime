@@ -71,6 +71,7 @@ namespace System.Threading.Tasks
         /// <summary>Initialize the <see cref="ValueTask"/> with a <see cref="Task"/> that represents the operation.</summary>
         /// <param name="task">The task.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public ValueTask(Task task)
         {
             if (task == null)
@@ -110,12 +111,17 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets a task that has already completed successfully.</summary>
-        public static ValueTask CompletedTask => default;
+        public static ValueTask CompletedTask
+        {
+            [Intrinsic]
+            get => default;
+        }
 
         /// <summary>Creates a <see cref="ValueTask{TResult}"/> that's completed successfully with the specified result.</summary>
         /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
+        [Intrinsic]
         public static ValueTask<TResult> FromResult<TResult>(TResult result) =>
             new ValueTask<TResult>(result);
 
@@ -169,6 +175,7 @@ namespace System.Threading.Tasks
         /// It will either return the wrapped task object if one exists, or it'll
         /// manufacture a new task object to represent the result.
         /// </remarks>
+        [Intrinsic]
         public Task AsTask()
         {
             object? obj = _obj;
@@ -479,6 +486,7 @@ namespace System.Threading.Tasks
         /// <summary>Initialize the <see cref="ValueTask{TResult}"/> with a <typeparamref name="TResult"/> result value.</summary>
         /// <param name="result">The result.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public ValueTask(TResult result)
         {
             _result = result;
@@ -491,6 +499,7 @@ namespace System.Threading.Tasks
         /// <summary>Initialize the <see cref="ValueTask{TResult}"/> with a <see cref="Task{TResult}"/> that represents the operation.</summary>
         /// <param name="task">The task.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public ValueTask(Task<TResult> task)
         {
             if (task == null)
@@ -570,6 +579,7 @@ namespace System.Threading.Tasks
         /// It will either return the wrapped task object if one exists, or it'll
         /// manufacture a new task object to represent the result.
         /// </remarks>
+        [Intrinsic]
         public Task<TResult> AsTask()
         {
             object? obj = _obj;

@@ -5,13 +5,14 @@ using System;
 using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
     /// This class represents a single indirection cell in one of the import tables.
     /// </summary>
-    public class Import : EmbeddedObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public class Import : EmbeddedObjectNode, ISymbolDefinitionNode, ISortableSymbolNode, IObjectNodeWithAlignment
     {
         public readonly ImportSectionNode Table;
 
@@ -19,12 +20,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal readonly MethodDesc CallingMethod;
 
+        private readonly bool _sortLast;
+
         public Signature Signature => ImportSignature.Target;
 
-        public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null)
+        public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null, bool sortLast = false)
         {
             Table = tableNode;
             CallingMethod = callingMethod;
+            _sortLast = sortLast;
             ImportSignature = new SignatureEmbeddedPointerIndirectionNode(this, importSignature);
         }
 
@@ -44,6 +48,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public virtual bool EmitPrecode => Table.EmitPrecode;
 
+        // Import cells live in a pointer-aligned import section whose entries are 'EntrySize' bytes
+        // each, so every cell is guaranteed to be aligned to 'EntrySize' (the pointer size). Keep
+        // this in sync with the alignment applied by the containing ImportSectionNode.
+        public int GetAlignment(NodeFactory factory) => Table.EntrySize;
+
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
             // This needs to be an empty target pointer since it will be filled in with Module*
@@ -60,15 +69,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            return new DependencyListEntry[] { new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import") };
+            sink.Add(ImportSignature, "Signature for ready-to-run fixup import");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             Import otherNode = (Import)other;
-            int result = comparer.Compare(CallingMethod, otherNode.CallingMethod);
+            int result = _sortLast.CompareTo(otherNode._sortLast);
+            if (result != 0)
+                return result;
+
+            result = comparer.Compare(CallingMethod, otherNode.CallingMethod);
             if (result != 0)
                 return result;
 

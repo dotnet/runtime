@@ -68,7 +68,7 @@ namespace System.Text
                         else
                         {
                             // Low surrogate
-                            if (bHighSurrogate == false)
+                            if (!bHighSurrogate)
                                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
                             bHighSurrogate = false;
                         }
@@ -124,7 +124,7 @@ namespace System.Text
                         else
                         {
                             // Low surrogate
-                            if (bHighSurrogate == false)
+                            if (!bHighSurrogate)
                                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
                             bHighSurrogate = false;
                         }

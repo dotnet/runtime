@@ -27,12 +27,12 @@ namespace System.Globalization
     /// Calendar support range:
     ///     Calendar    Minimum     Maximum
     ///     ==========  ==========  ==========
-    ///     Gregorian   1868/09/08  9999/12/31
+    ///     Gregorian   1868/10/23  9999/12/31
     ///     Japanese    Meiji 01/01 Reiwa 7981/12/31
     /// </remarks>
     public partial class JapaneseCalendar : Calendar
     {
-        private static readonly DateTime s_calendarMinValue = new DateTime(1868, 9, 8);
+        private static readonly DateTime s_calendarMinValue = new DateTime(1868, 10, 23);
 
         public override DateTime MinSupportedDateTime => s_calendarMinValue;
 

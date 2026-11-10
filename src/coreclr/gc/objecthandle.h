@@ -3,9 +3,6 @@
 
 /*
  * Wraps handle table to implement various handle types (Strong, Weak, etc.)
- *
-
- *
  */
 
 #ifndef _OBJECTHANDLE_H
@@ -63,7 +60,6 @@ void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF secondary);
 
 #ifndef DACCESS_COMPILE
 uint32_t     GetVariableHandleType(OBJECTHANDLE handle);
-void         UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type);
 uint32_t     CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t oldType, uint32_t newType);
 
 /*
@@ -81,7 +77,6 @@ int getNumberOfSlots();
  */
 bool Ref_Initialize();
 void Ref_Shutdown();
-bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket);
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket);
 void Ref_DestroyHandleTableBucket(HandleTableBucket *pBucket);
 
@@ -104,6 +99,10 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
 void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanWeakInteriorPointersForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
+#ifdef FEATURE_JAVAMARSHAL
+uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext* sc, size_t* numObjs);
+void Ref_NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles);
+#endif //FEATURE_JAVAMARSHAL
 
 void Ref_CheckReachable       (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext* sc);
 void Ref_CheckAlive           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext *sc);

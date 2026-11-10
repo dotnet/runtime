@@ -38,7 +38,7 @@ namespace System.Net.Http.Headers
         public AuthenticationHeaderValue(string scheme, string? parameter)
         {
             HeaderUtilities.CheckValidToken(scheme);
-            HttpHeaders.CheckContainsNewLine(parameter);
+            HttpHeaders.CheckContainsNewLineOrNull(parameter);
             _scheme = scheme;
             _parameter = parameter;
         }
@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
 
             parsedValue = null;
 
-            if (string.IsNullOrEmpty(input) || (startIndex >= input.Length) || HttpRuleParser.ContainsNewLine(input, startIndex))
+            if (string.IsNullOrEmpty(input) || (startIndex >= input.Length) || HttpRuleParser.ContainsNewLineOrNull(input, startIndex))
             {
                 return 0;
             }
@@ -142,7 +142,7 @@ namespace System.Net.Http.Headers
                 case 9: targetScheme = "Negotiate"; break;
             }
 
-            string scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
+            string scheme = targetScheme != null && input.AsSpan(startIndex, schemeLength).Equals(targetScheme, StringComparison.Ordinal) ?
                 targetScheme :
                 input.Substring(startIndex, schemeLength);
 

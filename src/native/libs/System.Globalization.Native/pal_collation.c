@@ -407,29 +407,14 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     return pClonedCollator;
 }
 
-// Returns TRUE if all the collation elements in str are completely ignorable
+// Returns TRUE if str is completely ignorable by the collator.
 static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, int32_t length)
 {
-    int result = true;
-    UErrorCode err = U_ZERO_ERROR;
-    UCollationElements* pCollElem = ucol_openElements(pColl, lpStr, length, &err);
-
-    if (U_SUCCESS(err))
-    {
-        int32_t curCollElem = UCOL_NULLORDER;
-        while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
-        {
-            if (curCollElem != UCOL_IGNORABLE)
-            {
-                result = false;
-                break;
-            }
-        }
-
-        ucol_closeElements(pCollElem);
-    }
-
-    return U_SUCCESS(err) ? result : false;
+    // Collation element iterators expose raw elements and do not apply shifted
+    // alternate handling. Compare against an empty string so all collator
+    // options, including IgnoreSymbols, are honored.
+    UChar emptyString = 0;
+    return ucol_strcoll(pColl, lpStr, length, &emptyString, 0) == UCOL_EQUAL;
 }
 
 static void CreateSortHandle(SortHandle** ppSortHandle)

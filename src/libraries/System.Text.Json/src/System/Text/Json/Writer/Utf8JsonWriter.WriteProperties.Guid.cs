@@ -137,7 +137,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringEscapeProperty(ReadOnlySpan<char> propertyName, Guid value, int firstEscapeIndexProp)
+        private unsafe void WriteStringEscapeProperty(ReadOnlySpan<char> propertyName, Guid value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
@@ -154,13 +154,13 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedPropertyName.Slice(0, written), value);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
         }
 
-        private void WriteStringEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, Guid value, int firstEscapeIndexProp)
+        private unsafe void WriteStringEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, Guid value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
@@ -177,7 +177,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedPropertyName.Slice(0, written), value);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -379,7 +379,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        internal void WritePropertyName(Guid value)
+        internal unsafe void WritePropertyName(Guid value)
         {
             Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatGuidLength];
             bool result = Utf8Formatter.TryFormat(value, utf8PropertyName, out int bytesWritten);

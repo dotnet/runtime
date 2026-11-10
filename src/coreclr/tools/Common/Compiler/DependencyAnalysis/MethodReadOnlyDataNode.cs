@@ -18,12 +18,22 @@ namespace ILCompiler.DependencyAnalysis
             _owningMethod = owningMethod;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
+#if !READYTORUN
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            IMethodNode owningBody = factory.MethodEntrypoint(_owningMethod);
+            return factory.ObjectInterner.GetDeduplicatedSymbol(factory, owningBody) != owningBody;
+        }
+#endif
+
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+            => ObjectNodeSection.ReadOnlyDataSection;
+
         public override bool StaticDependenciesAreComputed => _data != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__readonlydata_" + nameMangler.GetMangledMethodName(_owningMethod));
+            sb.Append("__readonlydata_"u8).Append(nameMangler.GetMangledMethodName(_owningMethod));
         }
         public int Offset => 0;
         public override bool IsShareable => true;

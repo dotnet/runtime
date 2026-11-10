@@ -7,6 +7,7 @@
 // Best-scoring C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
+using TestLibrary;
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Isaac Gouy, transliterated from Oleg Mazurov's Java program
@@ -99,6 +100,9 @@ namespace BenchmarksGame
             maxFlips[taskId] = maxflips;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52781", TestPlatforms.Android)]
+        [ActiveIssue("((null) error) * Assertion at runtime/src/mono/mono/metadata/assembly.c:2049, condition `is_ok (error)' not met, function:mono_assembly_load_friends, Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

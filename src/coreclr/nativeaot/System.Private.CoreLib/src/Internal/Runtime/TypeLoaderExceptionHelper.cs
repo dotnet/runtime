@@ -92,6 +92,8 @@ namespace Internal.Runtime
                     return SR.ClassLoad_InlineArrayLength;
                 case ExceptionStringID.ClassLoadInlineArrayExplicit:
                     return SR.ClassLoad_InlineArrayExplicit;
+                case ExceptionStringID.ClassLoadInlineArrayExplicitSize:
+                    return SR.ClassLoad_InlineArrayExplicitSize;
                 case ExceptionStringID.InvalidProgramDefault:
                     return SR.InvalidProgram_Default;
                 case ExceptionStringID.InvalidProgramSpecific:

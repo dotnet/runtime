@@ -474,7 +474,9 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                Registers endRegisters = _containsAnyAnchor ?
+                // Use DefaultInputReader when pattern contains \Z anchor (needs special \n handling),
+                // otherwise use NoZAnchorOptimizedInputReader for correct capture tracking
+                Registers endRegisters = _containsEndZAnchor ?
                     FindSubcaptures<DefaultInputReader>(input, matchStart, matchEnd, perThreadData) :
                     FindSubcaptures<NoZAnchorOptimizedInputReader>(input, matchStart, matchEnd, perThreadData);
                 return new SymbolicMatch(matchStart, matchEnd - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
@@ -1481,9 +1483,9 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if ((uint)pos < (uint)input.Length)
                 {
-                    // Find the minterm, handling the special case for the last \n for states that start with a relevant anchor
+                    // Find the minterm, handling the special case for the last \n for \Z anchor
                     int c = input[pos];
-                    return c == '\n' && pos == input.Length - 1 ?
+                    return c == '\n' && pos == input.Length - 1 && matcher._containsEndZAnchor ?
                         matcher._minterms.Length : // mintermId = minterms.Length represents an \n at the very end of input
                         matcher._mintermClassifier.GetMintermID(c);
                 }

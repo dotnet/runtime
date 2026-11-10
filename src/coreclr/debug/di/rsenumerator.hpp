@@ -213,6 +213,7 @@ HRESULT CordbEnumerator<ElemType,
         CordbEnumerator<ElemType, ElemPublicType, EnumInterfaceType, IID_EnumInterfaceType, GetPublicType>* clone =
             new CordbEnumerator<ElemType, ElemPublicType, EnumInterfaceType, IID_EnumInterfaceType, GetPublicType>(
                 GetProcess(), m_items, m_countItems);
+        GetProcess()->GetContinueNeuterList()->Add(GetProcess(), clone);
         clone->QueryInterface(__uuidof(ICorDebugEnum), (void**)ppEnum);
     }
     EX_CATCH_HRESULT(hr)

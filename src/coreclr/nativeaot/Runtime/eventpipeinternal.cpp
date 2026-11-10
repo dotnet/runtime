@@ -67,19 +67,23 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
 
     if (configProviders) {
         for (uint32_t i = 0; i < numProviders; ++i) {
+            ep_char8_t *providerName = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName));
+            ep_char8_t *filterData = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData));
             ep_provider_config_init (
                 &configProviders[i],
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName)),
+                providerName,
                 nativeProviders[i].keywords,
                 static_cast<EventPipeEventLevel>(nativeProviders[i].loggingLevel),
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData)));
+                filterData);
+            ep_rt_utf8_string_free (providerName);
+            ep_rt_utf8_string_free (filterData);
         }
     }
 
     ep_char8_t *outputPathUTF8 = NULL;
     if (outputFile)
         outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputFile));
-    EventPipeSessionID result = ep_enable (
+    EventPipeSessionID result = ep_init_session (
         outputPathUTF8,
         circularBufferSizeInMB,
         configProviders,
@@ -92,13 +96,11 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
         nullptr);
     ep_rt_utf8_string_free (outputPathUTF8);
 
-    ep_start_streaming(result);
+    ep_start_session(result);
 
     if (configProviders) {
-        for (uint32_t i = 0; i < numProviders; ++i) {
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&configProviders[i]));
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&configProviders[i]));
-        }
+        for (uint32_t i = 0; i < numProviders; ++i)
+            ep_provider_config_fini (&configProviders[i]);
         free(configProviders);
     }
 

@@ -84,12 +84,12 @@ namespace System.Net.Http.Tests
             Assert.Equal(2, headers.TransferEncoding.Count);
             Assert.Equal("chunked, chunked", headers.TransferEncoding.ToString());
 
-            // removes first instance of
+            // removes all instances of "chunked"
             headers.TransferEncodingChunked = false;
 
-            Assert.True((bool)headers.TransferEncodingChunked);
-            Assert.Equal(1, headers.TransferEncoding.Count);
-            Assert.Equal(specialChunked.ToString(), headers.TransferEncoding.ToString());
+            Assert.False((bool)headers.TransferEncodingChunked);
+            Assert.Equal(0, headers.TransferEncoding.Count);
+            Assert.Empty(headers.TransferEncoding.ToString());
 
             // does not add duplicate
             headers.TransferEncodingChunked = true;

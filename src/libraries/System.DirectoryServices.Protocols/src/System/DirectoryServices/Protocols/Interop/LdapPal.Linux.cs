@@ -92,13 +92,9 @@ namespace System.DirectoryServices.Protocols
         {
             LDAP_TIMEVAL searchTimeout = new LDAP_TIMEVAL
             {
-                tv_sec = timelimit
+                // zero must not be passed otherwise libldap returns LDAP_PARAM_ERROR; -1 means no time limit
+                tv_sec = new CLong(timelimit < 1 ? -1 : timelimit)
             };
-
-            //zero must not be passed otherwise libldap runtime returns LDAP_PARAM_ERROR
-            if (searchTimeout.tv_sec < 1)
-                //-1 means no time limit
-                searchTimeout.tv_sec = -1;
 
             return Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, searchTimeout, sizelimit, ref messageNumber);
         }
@@ -114,6 +110,8 @@ namespace System.DirectoryServices.Protocols
         internal static int SetStringOption(ConnectionHandle ldapHandle, LdapOption option, string inValue) => Interop.Ldap.ldap_set_option_string(ldapHandle, option, inValue);
 
         internal static int SetReferralOption(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue) => Interop.Ldap.ldap_set_option_referral(ldapHandle, option, ref outValue);
+
+        internal static int SetTimevalOption(ConnectionHandle ldapHandle, LdapOption option, ref LDAP_TIMEVAL inValue) => Interop.Ldap.ldap_set_option_timeval(ldapHandle, option, ref inValue);
 
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);

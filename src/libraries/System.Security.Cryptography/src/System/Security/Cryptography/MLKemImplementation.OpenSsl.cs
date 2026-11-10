@@ -13,6 +13,27 @@ namespace System.Security.Cryptography
         // OpenSSL is expected to give "all or none" support.
         internal static new bool IsSupported => Interop.Crypto.EvpKemAlgs.MlKem512 is not null;
 
+        internal static bool IsAlgorithmSupported(MLKemAlgorithm algorithm)
+        {
+            if (algorithm == MLKemAlgorithm.MLKem512)
+            {
+                return Interop.Crypto.EvpKemAlgs.MlKem512 is not null;
+            }
+            else if (algorithm == MLKemAlgorithm.MLKem768)
+            {
+                return Interop.Crypto.EvpKemAlgs.MlKem768 is not null;
+            }
+            else if (algorithm == MLKemAlgorithm.MLKem1024)
+            {
+                return Interop.Crypto.EvpKemAlgs.MlKem1024 is not null;
+            }
+            else
+            {
+                Debug.Fail($"Unexpected algorithm: {algorithm}");
+                return false;
+            }
+        }
+
         private readonly bool _hasSeed;
         private readonly bool _hasDecapsulationKey;
 
@@ -64,18 +85,19 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (disposing)
             {
                 _key.Dispose();
             }
+
+            base.Dispose(disposing);
         }
 
         internal SafeEvpPKeyHandle DuplicateHandle() =>  _key.DuplicateHandle();
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemDecapsulate(_key, ciphertext, sharedSecret);
         }
 
@@ -86,11 +108,13 @@ namespace System.Security.Cryptography
 
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
+            ThrowIfNoSeed(_hasSeed);
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
         }
 

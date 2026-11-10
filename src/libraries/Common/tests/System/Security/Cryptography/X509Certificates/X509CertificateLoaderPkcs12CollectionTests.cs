@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderPkcs12CollectionTests_FromByteArray : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderPkcs12CollectionTests_FromByteSpan : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderPkcs12CollectionTests_FromFile : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #if NETFRAMEWORK
             X509KeyStorageFlags.DefaultKeySet;
 #else
-           PlatformDetection.UsesAppleCrypto ? 
+           PlatformDetection.UsesAppleCrypto ?
                 X509KeyStorageFlags.DefaultKeySet :
                 X509KeyStorageFlags.EphemeralKeySet;
 #endif
@@ -301,7 +301,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(contentType, actualType);
                 }
             }
-            
+
             if (path is null)
             {
                 Assert.ThrowsAny<CryptographicException>(() => LoadPfxNoFile(data));
@@ -749,22 +749,32 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
 
+#if !NET
             if (allowDuplicates)
             {
                 limits = Pkcs12LoaderLimits.DangerousNoLimits;
             }
+#endif
 
             // remove the edit lock
             limits = new Pkcs12LoaderLimits(limits)
             {
+#if NET
+                AllowDuplicateAttributes = allowDuplicates,
+#endif
                 PreserveCertificateAlias = false,
                 PreserveKeyName = false,
                 PreserveStorageProvider = false,
                 PreserveUnknownAttributes = false,
             };
 
-            Func<X509Certificate2Collection> func =
-                () => LoadPfxNoFile(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw, loaderLimits: limits);
+            Func<X509Certificate2Collection> func = () =>
+            {
+                return TestData.WithDuplicateAttributesPfx(limits, (bytes, limits) =>
+                {
+                    return LoadPfxNoFile(bytes, TestData.PlaceholderPw, loaderLimits: limits);
+                });
+            };
 
             if (allowDuplicates)
             {

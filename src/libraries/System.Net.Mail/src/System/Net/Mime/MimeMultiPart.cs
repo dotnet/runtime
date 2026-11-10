@@ -13,7 +13,6 @@ namespace System.Net.Mime
 {
     internal sealed class MimeMultiPart : MimeBasePart
     {
-        private Collection<MimeBasePart>? _parts;
         private static int s_boundary;
 
         internal MimeMultiPart(MimeMultiPartType type)
@@ -39,7 +38,7 @@ namespace System.Net.Mime
             ContentType.Boundary = GetNextBoundary();
         }
 
-        internal Collection<MimeBasePart> Parts => _parts ??= new Collection<MimeBasePart>();
+        internal Collection<MimeBasePart> Parts => field ??= new Collection<MimeBasePart>();
 
         internal override async Task SendAsync<TIOAdapter>(BaseWriter writer, bool allowUnicode, CancellationToken cancellationToken = default)
         {

@@ -201,6 +201,29 @@ enum ICodeManagerFlags
 
 #include "gcinfotypes.h"
 
+namespace BitOperations
+{
+    FORCEINLINE UINT32 TrailingZeroCount(size_t value)
+    {
+        _ASSERTE(value != 0);
+#if defined(_MSC_VER)
+        unsigned long result;
+#if defined(HOST_64BIT)
+        ::_BitScanForward64(&result, value);
+#else
+        ::_BitScanForward(&result, value);
+#endif
+        return static_cast<UINT32>(result);
+#else
+#if defined(HOST_64BIT)
+        return static_cast<UINT32>(__builtin_ctzll(value));
+#else
+        return static_cast<UINT32>(__builtin_ctz(value));
+#endif
+#endif
+    }
+}
+
 #ifdef _DEBUG
     #define MAX_PREDECODED_SLOTS  4
 #else
@@ -248,6 +271,8 @@ enum GcInfoHeaderFlags
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
+#else
+    // unused                           = 0x80,
 #endif // TARGET_AMD64
     GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
@@ -300,7 +325,7 @@ public:
     }
 
     // NOTE: This routine is perf-critical
-    __forceinline size_t Read( int numBits )
+    FORCEINLINE size_t Read( int numBits )
     {
         SUPPORTS_DAC;
 
@@ -325,7 +350,7 @@ public:
 
     // This version reads one bit
     // NOTE: This routine is perf-critical
-    __forceinline size_t ReadOneFast()
+    FORCEINLINE size_t ReadOneFast()
     {
         SUPPORTS_DAC;
 
@@ -345,14 +370,63 @@ public:
         return result;
     }
 
+    // Reads up to the remaining bits in the current word (at most maxBits and at most BITS_PER_SIZE_T).
+    // Returns the read bits in the low bits of the result and sets bitsRead to the number of bits consumed.
+    FORCEINLINE size_t ReadWord(UINT32 maxBits, UINT32& bitsRead)
+    {
+        SUPPORTS_DAC;
+        _ASSERTE(maxBits > 0);
 
-    __forceinline size_t GetCurrentPos()
+        if (m_RelPos == BITS_PER_SIZE_T)
+        {
+            m_pCurrent++;
+            m_current = *m_pCurrent;
+            m_RelPos = 0;
+        }
+
+        UINT32 availBits = (UINT32)(BITS_PER_SIZE_T - m_RelPos);
+        UINT32 chunkBits = _min(maxBits, availBits);
+        bitsRead = chunkBits;
+
+        size_t mask = (chunkBits == BITS_PER_SIZE_T) ? ~(size_t)0 : ((size_t{ 1 } << chunkBits) - 1);
+        size_t result = m_current & mask;
+        m_current = (chunkBits == BITS_PER_SIZE_T) ? 0 : (m_current >> chunkBits);
+        m_RelPos += chunkBits;
+
+        return result;
+    }
+
+    // Counts consecutive zero bits up to the next set bit, consumes the zero bits and that set bit,
+    // and returns the number of zero bits skipped.
+    FORCEINLINE UINT32 SkipZerosAndReadOne()
+    {
+        SUPPORTS_DAC;
+
+        UINT32 skipped = 0;
+        while (m_current == 0)
+        {
+            skipped += (UINT32)(BITS_PER_SIZE_T - m_RelPos);
+            m_pCurrent++;
+            m_current = *m_pCurrent;
+            m_RelPos = 0;
+        }
+
+        UINT32 tz = BitOperations::TrailingZeroCount(m_current);
+        skipped += tz;
+        UINT32 consume = tz + 1;
+        m_RelPos += consume;
+        m_current = (consume == BITS_PER_SIZE_T) ? 0 : (m_current >> consume);
+        return skipped;
+    }
+
+
+    FORCEINLINE size_t GetCurrentPos()
     {
         SUPPORTS_DAC;
         return (size_t) ((m_pCurrent - m_pBuffer) * BITS_PER_SIZE_T + m_RelPos - m_InitialRelPos);
     }
 
-    __forceinline void SetCurrentPos( size_t pos )
+    FORCEINLINE void SetCurrentPos( size_t pos )
     {
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
@@ -364,7 +438,7 @@ public:
         _ASSERTE(GetCurrentPos() == pos);
     }
 
-    __forceinline void Skip( SSIZE_T numBitsToSkip )
+    FORCEINLINE void Skip( SSIZE_T numBitsToSkip )
     {
         SUPPORTS_DAC;
 
@@ -416,7 +490,7 @@ public:
         }
     }
 
-    __forceinline size_t DecodeVarLengthUnsigned(int base)
+    FORCEINLINE size_t DecodeVarLengthUnsigned(int base)
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
 
@@ -598,9 +672,7 @@ public:
 #endif
     size_t  GetNumBytesRead();
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32  GetSizeOfStackParameterArea();
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    UINT32 GetSizeOfStackParameterArea();
 
     inline UINT32 Version()
     {
@@ -636,9 +708,18 @@ private:
 #endif
     UINT32  m_NumInterruptibleRanges;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32 m_SizeOfStackOutgoingAndScratchArea;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    template <bool isConst, typename T>
+    struct TypeMaybeConst
+    {
+        typedef T type;
+    };
+    template <typename T>
+    struct TypeMaybeConst<true, T>
+    {
+        typedef const T type;
+    };
+
+    typename TypeMaybeConst<!GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA, UINT32>::type m_SizeOfStackOutgoingAndScratchArea = 0;
 
 #ifdef _DEBUG
     GcInfoDecoderFlags m_Flags;

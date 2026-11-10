@@ -333,20 +333,24 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         WriteBase64((byte[])value);
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                     {
                         //Write Nothing
                     }
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         WriteTimeSpan((TimeSpan)value);
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         WriteGuid((Guid)value);
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         WriteUri((Uri)value);
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         WriteQName((XmlQualifiedName)value);
+                    else if (valueType == typeof(DateOnly))
+                        WriteDateOnly((DateOnly)value);
+                    else if (valueType == typeof(TimeOnly))
+                        WriteTimeOnly((TimeOnly)value);
                     else
                         handled = false;
                     break;
@@ -410,22 +414,26 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         WriteBase64(((DataNode<byte[]>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                     {
                         object? obj = dataNode.Value;
                         if (obj != null)
                             WriteAnyType(obj);
                     }
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         WriteTimeSpan(((DataNode<TimeSpan>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         WriteGuid(((DataNode<Guid>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         WriteUri(((DataNode<Uri>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         WriteQName(((DataNode<XmlQualifiedName>)dataNode).GetValue());
+                    else if (valueType == typeof(DateOnly))
+                        WriteDateOnly(((DataNode<DateOnly>)dataNode).GetValue());
+                    else if (valueType == typeof(TimeOnly))
+                        WriteTimeOnly(((DataNode<TimeOnly>)dataNode).GetValue());
                     else
                         handled = false;
                     break;
@@ -462,6 +470,30 @@ namespace System.Runtime.Serialization
         {
             WriteStartElementPrimitive(name, ns);
             WriteDateTime(value);
+            WriteEndElementPrimitive();
+        }
+
+        // DateOnly / TimeOnly
+        internal virtual void WriteDateOnly(DateOnly value)
+        {
+            writer.WriteString(value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+        internal void WriteDateOnly(DateOnly value, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteDateOnly(value);
+            WriteEndElementPrimitive();
+        }
+        internal virtual void WriteTimeOnly(TimeOnly value)
+        {
+            // Use optional fractional second digits (F) so trailing zeros and the '.' are omitted automatically.
+            // "f" forces zeros; "F" suppresses them. "HH:mm:ss.FFFFFFF" yields minimal length representation.
+            writer.WriteString(value.ToString("HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture));
+        }
+        internal void WriteTimeOnly(TimeOnly value, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteTimeOnly(value);
             WriteEndElementPrimitive();
         }
 

@@ -195,6 +195,34 @@ namespace System.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnMono("Mono does not suppress reentrant first chance exception notifications")]
+        public void FirstChanceException_HandlerThrows_DoesNotRecurse()
+        {
+            // A handler that throws must not cause the runtime to recursively deliver
+            // first-chance notifications for the exceptions it throws, which would
+            // otherwise recurse until the stack overflows. The handler should be
+            // invoked exactly once for the original exception.
+            RemoteExecutor.Invoke(() => {
+                int count = 0;
+                EventHandler<FirstChanceExceptionEventArgs> handler = (sender, e) =>
+                {
+                    count++;
+                    throw new FirstChanceTestException("from handler");
+                };
+                AppDomain.CurrentDomain.FirstChanceException += handler;
+                try
+                {
+                    throw new FirstChanceTestException("outer");
+                }
+                catch
+                {
+                }
+                AppDomain.CurrentDomain.FirstChanceException -= handler;
+                Assert.Equal(1, count);
+            }).Dispose();
+        }
+
         class FirstChanceTestException : Exception
         {
             public FirstChanceTestException(string message) : base(message)
@@ -841,7 +869,7 @@ namespace System.Tests
 
         public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.HasAssemblyFiles;
 
-        [ConditionalTheory(nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
+        [ConditionalTheory(typeof(AppDomainTests), nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {

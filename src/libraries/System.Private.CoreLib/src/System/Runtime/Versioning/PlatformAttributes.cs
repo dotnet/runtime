@@ -134,14 +134,32 @@ namespace System.Runtime.Versioning
 #endif
         sealed class ObsoletedOSPlatformAttribute : OSPlatformAttribute
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObsoletedOSPlatformAttribute"/> class with the specified platform name.
+        /// </summary>
+        /// <param name="platformName">The name of the platform where the API was obsoleted.</param>
         public ObsoletedOSPlatformAttribute(string platformName) : base(platformName)
         {
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObsoletedOSPlatformAttribute"/> class with the specified platform name and message.
+        /// </summary>
+        /// <param name="platformName">The name of the platform where the API was obsoleted.</param>
+        /// <param name="message">The message that explains the obsolescence.</param>
         public ObsoletedOSPlatformAttribute(string platformName, string? message) : base(platformName)
         {
             Message = message;
         }
+
+        /// <summary>
+        /// Gets the message that explains the obsolescence.
+        /// </summary>
         public string? Message { get; }
+
+        /// <summary>
+        /// Gets or sets the URL that provides more information about the obsolescence.
+        /// </summary>
         public string? Url { get; set; }
     }
 

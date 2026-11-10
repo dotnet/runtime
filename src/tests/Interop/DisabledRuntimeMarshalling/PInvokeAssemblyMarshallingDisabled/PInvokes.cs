@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 using static DisabledRuntimeMarshallingNative;
 
 namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingDisabled;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
 public class PInvokes
 {
 

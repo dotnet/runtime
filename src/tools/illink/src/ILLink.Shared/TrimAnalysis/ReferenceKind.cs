@@ -4,11 +4,11 @@
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	public enum ReferenceKind
-	{
-		Ref,
-		In,
-		Out,
-		None
-	}
+    public enum ReferenceKind
+    {
+        Ref,
+        In,
+        Out,
+        None
+    }
 }

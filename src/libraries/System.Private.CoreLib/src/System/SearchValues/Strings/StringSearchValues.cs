@@ -4,11 +4,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+using System.Text.Unicode;
 using static System.Buffers.StringSearchValuesHelper;
 
 namespace System.Buffers
@@ -19,9 +20,6 @@ namespace System.Buffers
 
         private static readonly SearchValues<char> s_asciiLetters =
             SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-
-        private static readonly SearchValues<char> s_allAsciiExceptLowercase =
-            SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\e\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~\u007F");
 
         public static SearchValues<string> Create(ReadOnlySpan<string> values, bool ignoreCase)
         {
@@ -82,18 +80,8 @@ namespace System.Buffers
             ahoCorasickBuilder.Dispose();
             return searchValues;
 
-            static string NormalizeIfNeeded(string value, bool ignoreCase)
-            {
-                if (ignoreCase && value.AsSpan().ContainsAnyExcept(s_allAsciiExceptLowercase))
-                {
-                    string upperCase = string.FastAllocateString(value.Length);
-                    int charsWritten = Ordinal.ToUpperOrdinal(value, new Span<char>(ref upperCase.GetRawStringData(), upperCase.Length));
-                    Debug.Assert(charsWritten == upperCase.Length);
-                    value = upperCase;
-                }
-
-                return value;
-            }
+            static string NormalizeIfNeeded(string value, bool ignoreCase) =>
+                ignoreCase ? value.ToUpperOrdinal() : value;
 
             static Span<string> RemoveUnreachableValues(Span<string> values, HashSet<string> unreachableValues)
             {
@@ -127,7 +115,7 @@ namespace System.Buffers
                 return CreateForSingleValue(values[0], uniqueValues, ignoreCase, allAscii, asciiLettersOnly);
             }
 
-            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
+            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 TryGetTeddyAcceleratedValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, nonAsciiAffectedByCaseConversion, minLength) is { } searchValues)
             {
                 return searchValues;
@@ -143,9 +131,9 @@ namespace System.Buffers
 
             if (nonAsciiAffectedByCaseConversion)
             {
-                if (ContainsIncompleteSurrogatePairs(values))
+                if (ContainsInvalidValues(values))
                 {
-                    // Aho-Corasick can't deal with the matching semantics of standalone surrogate code units.
+                    // Aho-Corasick can't deal with the matching semantics of invalid values.
                     // We will use a slow but correct O(n * m) fallback implementation.
                     return new MultiStringIgnoreCaseSearchValuesFallback(uniqueValues);
                 }
@@ -197,7 +185,7 @@ namespace System.Buffers
 
             int n = minLength == 2 ? 2 : 3;
 
-            if (Ssse3.IsSupported)
+            if (Ssse3.IsSupported || PackedSimd.IsSupported)
             {
                 foreach (string value in values)
                 {
@@ -205,8 +193,9 @@ namespace System.Buffers
                     {
                         // If we let null chars through here, Teddy would still work correctly, but it
                         // would hit more false positives that the verification step would have to rule out.
-                        // While we could flow a generic flag like Ssse3AndWasmHandleZeroInNeedle through,
-                        // we expect such values to be rare enough that introducing more code is not worth it.
+                        // Ssse3.PackUnsignedSaturate and PackedSimd.ConvertNarrowingSaturateUnsigned both
+                        // treat negative signed-16 values as 0, so we filter out null-containing needles
+                        // for both to avoid that source of false positives.
                         return null;
                     }
                 }
@@ -417,27 +406,49 @@ namespace System.Buffers
         {
             if (!ignoreCase)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseSensitive>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseSensitive>(value, uniqueValues);
             }
 
             if (asciiLettersOnly)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAsciiLetters>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseInsensitiveAsciiLetters>(value, uniqueValues);
             }
 
             if (allAscii)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAscii>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseInsensitiveAscii>(value, uniqueValues);
             }
 
             // SingleStringSearchValuesThreeChars doesn't have logic to handle non-ASCII case conversion, so we require that anchor characters are ASCII.
             // Right now we're always selecting the first character as one of the anchors, and we need at least two.
             if (char.IsAscii(value[0]) && value.AsSpan(1).ContainsAnyInRange((char)0, (char)127))
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveUnicode>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseInsensitiveUnicode>(value, uniqueValues);
             }
 
             return null;
+        }
+
+        private static SearchValues<string> CreateSingleValuesThreeChars<TValueLength, TCaseSensitivity>(
+            string value,
+            HashSet<string>? uniqueValues)
+            where TValueLength : struct, IValueLength
+            where TCaseSensitivity : struct, ICaseSensitivity
+        {
+            CharacterFrequencyHelper.GetSingleStringMultiCharacterOffsets(value, ignoreCase: typeof(TCaseSensitivity) != typeof(CaseSensitive), out int ch2Offset, out int ch3Offset);
+
+            if (CanUsePackedImpl(value[0]) && CanUsePackedImpl(value[ch2Offset]) && CanUsePackedImpl(value[ch3Offset]))
+            {
+                return new SingleStringSearchValuesPackedThreeChars<TValueLength, TCaseSensitivity>(uniqueValues, value, ch2Offset, ch3Offset);
+            }
+
+            return new SingleStringSearchValuesThreeChars<TValueLength, TCaseSensitivity>(uniqueValues, value, ch2Offset, ch3Offset);
+
+            // Unlike with PackedSpanHelpers (Sse2 only), we are also using this approach on ARM64.
+            // We use PackUnsignedSaturate on X86 and UnzipEven on ARM, so the set of allowed characters differs slightly (we can't use it for \0 and \xFF on X86).
+            static bool CanUsePackedImpl(char c) =>
+                PackedSpanHelpers.PackedIndexOfIsSupported ? PackedSpanHelpers.CanUsePackedIndexOf(c) :
+                (AdvSimd.Arm64.IsSupported && c <= byte.MaxValue);
         }
 
         private static void AnalyzeValues(
@@ -480,33 +491,13 @@ namespace System.Buffers
             }
         }
 
-        private static bool ContainsIncompleteSurrogatePairs(ReadOnlySpan<string> values)
+        private static bool ContainsInvalidValues(ReadOnlySpan<string> values)
         {
             foreach (string value in values)
             {
-                int i = value.AsSpan().IndexOfAnyInRange(CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
-                if (i < 0)
+                if (!Utf16.IsValid(value))
                 {
-                    continue;
-                }
-
-                for (; (uint)i < (uint)value.Length; i++)
-                {
-                    if (char.IsHighSurrogate(value[i]))
-                    {
-                        if ((uint)(i + 1) >= (uint)value.Length || !char.IsLowSurrogate(value[i + 1]))
-                        {
-                            // High surrogate not followed by a low surrogate.
-                            return true;
-                        }
-
-                        i++;
-                    }
-                    else if (char.IsLowSurrogate(value[i]))
-                    {
-                        // Low surrogate not preceded by a high surrogate.
-                        return true;
-                    }
+                    return true;
                 }
             }
 

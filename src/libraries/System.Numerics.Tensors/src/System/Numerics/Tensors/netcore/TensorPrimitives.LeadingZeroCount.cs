@@ -29,9 +29,12 @@ namespace System.Numerics.Tensors
         internal readonly unsafe struct LeadingZeroCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
         {
             public static bool Vectorizable =>
-                (Avx512CD.VL.IsSupported && (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)) ||
-                (Avx512Vbmi.VL.IsSupported && sizeof(T) == 1) ||
-                (AdvSimd.IsSupported && (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4));
+                // byte/ushort: the software fallback (bit-smear + PopCount) is a measured win at these widths.
+                // uint/ulong: a serial smear chain over only 2-4 lanes doesn't beat a single-instruction scalar
+                // clz (x86 lzcnt, wasm i32/i64.clz), so we only vectorize them with a hardware vector clz.
+                (sizeof(T) == 1 || sizeof(T) == 2) ||
+                (Avx512CD.VL.IsSupported && (sizeof(T) == 4 || sizeof(T) == 8)) ||
+                (AdvSimd.IsSupported && sizeof(T) == 4);
 
             public static T Invoke(T x) => T.LeadingZeroCount(x);
 
@@ -45,7 +48,7 @@ namespace System.Numerics.Tensors
                     Vector128<byte> nibbleMask = Vector128.Create<byte>(0xF);
                     Vector128<byte> permuteMask = Vector128.Create<byte>(0x80);
                     Vector128<byte> lowNibble = x.AsByte() & nibbleMask;
-                    Vector128<byte> highNibble = Sse2.ShiftRightLogical(x.AsInt32(), 4).AsByte() & nibbleMask;
+                    Vector128<byte> highNibble = (x.AsInt32() >>> 4).AsByte() & nibbleMask;
                     Vector128<byte> nibbleSelectMask = Sse2.CompareEqual(highNibble, Vector128<byte>.Zero);
                     Vector128<byte> indexVector = Sse41.BlendVariable(highNibble, lowNibble, nibbleSelectMask) +
                         (~nibbleSelectMask & nibbleMask);
@@ -58,12 +61,12 @@ namespace System.Numerics.Tensors
                     if (sizeof(T) == 2)
                     {
                         Vector128<uint> lowHalf = Vector128.Create((uint)0x0000FFFF);
-                        Vector128<uint> x_bot16 = Sse2.Or(Sse2.ShiftLeftLogical(x.AsUInt32(), 16), lowHalf);
-                        Vector128<uint> x_top16 = Sse2.Or(x.AsUInt32(), lowHalf);
+                        Vector128<uint> x_bot16 = (x.AsUInt32() << 16) | lowHalf;
+                        Vector128<uint> x_top16 = x.AsUInt32() | lowHalf;
                         Vector128<uint> lz_bot16 = Avx512CD.VL.LeadingZeroCount(x_bot16);
                         Vector128<uint> lz_top16 = Avx512CD.VL.LeadingZeroCount(x_top16);
-                        Vector128<uint> lz_top16_shift = Sse2.ShiftLeftLogical(lz_top16, 16);
-                        return Sse2.Or(lz_bot16, lz_top16_shift).AsUInt16().As<ushort, T>();
+                        Vector128<uint> lz_top16_shift = lz_top16 << 16;
+                        return (lz_bot16 | lz_top16_shift).AsUInt16().As<ushort, T>();
                     }
 
                     if (sizeof(T) == 4)
@@ -77,13 +80,36 @@ namespace System.Numerics.Tensors
                     }
                 }
 
-                Debug.Assert(AdvSimd.IsSupported);
+                if (AdvSimd.IsSupported)
                 {
                     if (sizeof(T) == 1) return AdvSimd.LeadingZeroCount(x.AsByte()).As<byte, T>();
                     if (sizeof(T) == 2) return AdvSimd.LeadingZeroCount(x.AsUInt16()).As<ushort, T>();
 
                     Debug.Assert(sizeof(T) == 4);
                     return AdvSimd.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
+                }
+
+                // Software fallback (byte/ushort only): smear the most-significant set bit down so every
+                // lower bit is set, then LeadingZeroCount == bitWidth - PopCount(smeared).
+                if (sizeof(T) == 1)
+                {
+                    // Byte shifts are unavailable on some ISAs, so shift as 16-bit and mask off the
+                    // bits that bleed in from the adjacent higher byte.
+                    Vector128<byte> v = x.AsByte();
+                    v |= (v.AsUInt16() >> 1).AsByte() & Vector128.Create((byte)0x7F);
+                    v |= (v.AsUInt16() >> 2).AsByte() & Vector128.Create((byte)0x3F);
+                    v |= (v.AsUInt16() >> 4).AsByte() & Vector128.Create((byte)0x0F);
+                    return (Vector128.Create((byte)8) - PopCountOperator<byte>.Invoke(v)).As<byte, T>();
+                }
+
+                Debug.Assert(sizeof(T) == 2);
+                {
+                    Vector128<ushort> v = x.AsUInt16();
+                    v |= v >> 1;
+                    v |= v >> 2;
+                    v |= v >> 4;
+                    v |= v >> 8;
+                    return (Vector128.Create((ushort)16) - PopCountOperator<ushort>.Invoke(v)).As<ushort, T>();
                 }
             }
 
@@ -97,7 +123,7 @@ namespace System.Numerics.Tensors
                                                3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                     Vector256<byte> nibbleMask = Vector256.Create<byte>(0xF);
                     Vector256<byte> lowNibble = x.AsByte() & nibbleMask;
-                    Vector256<byte> highNibble = Avx2.ShiftRightLogical(x.AsInt32(), 4).AsByte() & nibbleMask;
+                    Vector256<byte> highNibble = (x.AsInt32() >>> 4).AsByte() & nibbleMask;
                     Vector256<byte> nibbleSelectMask = Avx2.CompareEqual(highNibble, Vector256<byte>.Zero);
                     Vector256<byte> indexVector = Avx2.BlendVariable(highNibble, lowNibble, nibbleSelectMask) +
                         (~nibbleSelectMask & nibbleMask);
@@ -109,12 +135,12 @@ namespace System.Numerics.Tensors
                     if (sizeof(T) == 2)
                     {
                         Vector256<uint> lowHalf = Vector256.Create((uint)0x0000FFFF);
-                        Vector256<uint> x_bot16 = Avx2.Or(Avx2.ShiftLeftLogical(x.AsUInt32(), 16), lowHalf);
-                        Vector256<uint> x_top16 = Avx2.Or(x.AsUInt32(), lowHalf);
+                        Vector256<uint> x_bot16 = (x.AsUInt32() << 16) | lowHalf;
+                        Vector256<uint> x_top16 = x.AsUInt32() | lowHalf;
                         Vector256<uint> lz_bot16 = Avx512CD.VL.LeadingZeroCount(x_bot16);
                         Vector256<uint> lz_top16 = Avx512CD.VL.LeadingZeroCount(x_top16);
-                        Vector256<uint> lz_top16_shift = Avx2.ShiftLeftLogical(lz_top16, 16);
-                        return Avx2.Or(lz_bot16, lz_top16_shift).AsUInt16().As<ushort, T>();
+                        Vector256<uint> lz_top16_shift = lz_top16 << 16;
+                        return (lz_bot16 | lz_top16_shift).AsUInt16().As<ushort, T>();
                     }
 
                     if (sizeof(T) == 4)
@@ -152,7 +178,7 @@ namespace System.Numerics.Tensors
                                                2, 2, 2, 2, 2, 2, 2, 2);
                     Vector512<byte> lookupVectorB = Vector512.Create((byte)1);
                     Vector512<byte> bit7ZeroMask = Avx512BW.CompareLessThan(x.AsByte(), Vector512.Create((byte)128));
-                    return Avx512F.And(bit7ZeroMask, Avx512Vbmi.PermuteVar64x8x2(lookupVectorA, x.AsByte(), lookupVectorB)).As<byte, T>();
+                    return (bit7ZeroMask & Avx512Vbmi.PermuteVar64x8x2(lookupVectorA, x.AsByte(), lookupVectorB)).As<byte, T>();
                 }
 
                 if (Avx512CD.IsSupported)
@@ -160,12 +186,12 @@ namespace System.Numerics.Tensors
                     if (sizeof(T) == 2)
                     {
                         Vector512<uint> lowHalf = Vector512.Create((uint)0x0000FFFF);
-                        Vector512<uint> x_bot16 = Avx512F.Or(Avx512F.ShiftLeftLogical(x.AsUInt32(), 16), lowHalf);
-                        Vector512<uint> x_top16 = Avx512F.Or(x.AsUInt32(), lowHalf);
+                        Vector512<uint> x_bot16 = (x.AsUInt32() << 16) | lowHalf;
+                        Vector512<uint> x_top16 = x.AsUInt32() | lowHalf;
                         Vector512<uint> lz_bot16 = Avx512CD.LeadingZeroCount(x_bot16);
                         Vector512<uint> lz_top16 = Avx512CD.LeadingZeroCount(x_top16);
-                        Vector512<uint> lz_top16_shift = Avx512F.ShiftLeftLogical(lz_top16, 16);
-                        return Avx512F.Or(lz_bot16, lz_top16_shift).AsUInt16().As<ushort, T>();
+                        Vector512<uint> lz_top16_shift = lz_top16 << 16;
+                        return (lz_bot16 | lz_top16_shift).AsUInt16().As<ushort, T>();
                     }
 
                     if (sizeof(T) == 4)

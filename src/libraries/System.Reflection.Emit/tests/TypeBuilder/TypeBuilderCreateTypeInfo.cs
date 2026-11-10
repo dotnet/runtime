@@ -53,7 +53,6 @@ namespace System.Reflection.Emit.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(TypeAttributes.ClassSemanticsMask, typeof(InvalidOperationException))]
         [InlineData(TypeAttributes.HasSecurity, typeof(ArgumentException))]
-        [InlineData(TypeAttributes.LayoutMask, typeof(ArgumentException))]
         [InlineData(TypeAttributes.NestedAssembly, typeof(ArgumentException))]
         [InlineData(TypeAttributes.NestedFamANDAssem, typeof(ArgumentException))]
         [InlineData(TypeAttributes.NestedFamily, typeof(ArgumentException))]

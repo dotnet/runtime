@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -11,11 +12,18 @@ public class Program
     public static int s_58;
     public static uint s_66;
     public static byte[] s_126 = new byte[] { 0 };
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {
+        string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return 100;
+        }
+
         CollectibleALC alc = new CollectibleALC();
-        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
         System.Reflection.MethodInfo mi = asm.GetType(typeof(Program).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         int count = (int)mi.Invoke(null, new object[] { System.Activator.CreateInstance(runtimeTy) });

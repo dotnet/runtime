@@ -3,12 +3,90 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
 {
     public static partial class JsonNodeTests
     {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task LazyInitialization_ConcurrentReads_PreserveChildIdentity(bool isArray)
+        {
+            const int ReaderCount = 4;
+            const int IterationCount = 10;
+            // Widen the initialization window so the synchronized readers contend on publication.
+            const int ElementCount = 10_000;
+
+            JsonNode template = isArray ? new JsonArray() : new JsonObject();
+            for (int i = 0; i < ElementCount; i++)
+            {
+                if (template is JsonArray array)
+                {
+                    array.Add(i + 1);
+                }
+                else
+                {
+                    template[$"item{i}"] = i + 1;
+                }
+            }
+
+            string json = template.ToJsonString();
+            var parents = new JsonNode[IterationCount];
+            for (int i = 0; i < parents.Length; i++)
+            {
+                parents[i] = JsonNode.Parse(json)!;
+            }
+
+            using var barrier = new Barrier(ReaderCount);
+            var readers = new Task<JsonNode[]>[ReaderCount];
+            for (int i = 0; i < readers.Length; i++)
+            {
+                readers[i] = Task.Factory.StartNew(() =>
+                {
+                    var children = new JsonNode[IterationCount];
+                    for (int iteration = 0; iteration < children.Length; iteration++)
+                    {
+                        Assert.True(barrier.SignalAndWait(TimeSpan.FromSeconds(60)));
+                        children[iteration] = parents[iteration][0]!;
+                    }
+
+                    return children;
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }
+
+            JsonNode[][] results = await Task.WhenAll(readers);
+            for (int iteration = 0; iteration < parents.Length; iteration++)
+            {
+                JsonNode parent = parents[iteration];
+                JsonNode expectedChild = parent[0]!;
+                foreach (JsonNode[] children in results)
+                {
+                    JsonNode child = children[iteration];
+                    Assert.Same(expectedChild, child);
+                    Assert.Same(parent, child.Parent);
+                    Assert.Equal(1, child.GetValue<int>());
+                    Assert.Equal(isArray ? "$[0]" : "$.item0", child.GetPath());
+
+                    if (isArray)
+                    {
+                        Assert.Equal(0, child.GetElementIndex());
+                    }
+                    else
+                    {
+                        Assert.Equal("item0", child.GetPropertyName());
+                    }
+                }
+
+                expectedChild.ReplaceWith(-1);
+                Assert.Null(expectedChild.Parent);
+                Assert.Equal(-1, parent[0]!.GetValue<int>());
+            }
+        }
+
         [Fact]
         public static void JsonTypes_Deserialize()
         {
@@ -212,8 +290,8 @@ namespace System.Text.Json.Nodes.Tests
         [InlineData("{ }", " {    }")]
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "x" : 1, "y" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "y" : 2, "x" : 1 }""")]
-        [InlineData("""[]""", """ [ ]""")]
-        [InlineData("""[1, 2, 3]""", """ [1,  2,  3  ]""")]
+        [InlineData("[]", " [ ]")]
+        [InlineData("[1, 2, 3]", " [1,  2,  3  ]")]
         [InlineData("""[null, false, 3.14, "ABC", { "x" : 1, "y" : 2 }, []]""",
             """[null, false, 314e-2, "\u0041\u0042\u0043", { "y" : 2, "x" : 1 }, [ ] ]""")]
         public static void DeepEquals_EqualValuesReturnTrue(string value1, string value2)
@@ -302,6 +380,42 @@ namespace System.Text.Json.Nodes.Tests
             JsonNode obj2 = JsonNode.Parse(value2);
 
             AssertNotDeepEqual(obj1, obj2);
+        }
+
+        [Fact]
+        public static void JsonNode_ReplaceWith()
+        {
+            JsonObject obj = new JsonObject();
+            obj["name"] = "test";
+            JsonNode node = obj["name"];
+            
+            node.ReplaceWith(JsonValue.Create("replaced"));
+            Assert.Equal("replaced", obj["name"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void JsonArray_Replace()
+        {
+            JsonArray arr = new JsonArray(1, 2, 3);
+            arr[1] = JsonValue.Create(99);
+            Assert.Equal(99, arr[1].GetValue<int>());
+        }
+
+        [Fact]
+        public static void JsonObject_SetProperty()
+        {
+            JsonObject obj = new JsonObject();
+            obj["key"] = "value";
+            obj["key"] = "newValue";
+            Assert.Equal("newValue", obj["key"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void JsonValue_AsValue()
+        {
+            JsonNode node = JsonValue.Create(42);
+            JsonValue value = node.AsValue();
+            Assert.Equal(42, value.GetValue<int>());
         }
     }
 }

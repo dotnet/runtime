@@ -99,6 +99,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumerateBuilderWhileMutating()
         {
+#pragma warning disable xUnit2027 // Comparison of sets to linear containers have undefined results
             ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet<int>.Empty.Union(Enumerable.Range(1, 10)).ToBuilder();
             Assert.Equal(Enumerable.Range(1, 10), builder);
 
@@ -116,6 +117,7 @@ namespace System.Collections.Immutable.Tests
 
             // Verify that by obtaining a new enumerator, we can enumerate all the contents.
             Assert.Equal(Enumerable.Range(1, 11), builder);
+#pragma warning restore xUnit2027
         }
 
         [Fact]

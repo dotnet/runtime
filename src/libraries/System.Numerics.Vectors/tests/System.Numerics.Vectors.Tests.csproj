@@ -18,6 +18,11 @@
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
+    <Compile Include="Argb.Tests.cs" />
+    <Compile Include="Argb.T.Tests.cs" />
+    <Compile Include="Rgba.Tests.cs" />
+    <Compile Include="Rgba.T.Tests.cs" />
+    <Compile Include="TestHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\GenericMathTestMemberData.cs" Link="Common\System\GenericMathTestMemberData.cs" />
   </ItemGroup>
 </Project>

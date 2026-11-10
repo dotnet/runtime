@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_cmov_Int_Or_Op;
+
 #pragma warning disable
 
 using System;

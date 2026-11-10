@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, NativeAotIncompatible -->
+    <!-- Needed for NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
@@ -14,6 +13,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CscBench.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <PropertyGroup>
     <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark+roslyn\obj\project.assets.json</ProjectAssetsFile>

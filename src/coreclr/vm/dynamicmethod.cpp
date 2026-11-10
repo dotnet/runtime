@@ -11,6 +11,7 @@
 #include "nibblemapmacros.h"
 #include "stringliteralmap.h"
 #include "virtualcallstub.h"
+#include "finalizerthread.h"
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 
@@ -19,22 +20,20 @@
 // get the method table for dynamic methods
 DynamicMethodTable* Module::GetDynamicMethodTable()
 {
-    CONTRACT (DynamicMethodTable*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(m_pDynamicMethodTable));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!m_pDynamicMethodTable)
         DynamicMethodTable::CreateDynamicMethodTable(&m_pDynamicMethodTable, this, AppDomain::GetCurrentDomain());
 
 
-    RETURN m_pDynamicMethodTable;
+    return m_pDynamicMethodTable;
 }
 
 void ReleaseDynamicMethodTable(DynamicMethodTable *pDynMT)
@@ -48,24 +47,22 @@ void ReleaseDynamicMethodTable(DynamicMethodTable *pDynMT)
 
 void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocation, Module *pModule, AppDomain *pDomain)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(ppLocation));
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(*ppLocation));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AllocMemTracker amt;
 
     LoaderHeap* pHeap = pDomain->GetHighFrequencyHeap();
     _ASSERTE(pHeap);
 
-    if (*ppLocation) RETURN;
+    if (*ppLocation) return;
 
     DynamicMethodTable* pDynMT = (DynamicMethodTable*)
             amt.Track(pHeap->AllocMem(S_SIZE_T(sizeof(DynamicMethodTable))));
@@ -73,7 +70,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
     // Note: Memory allocated on loader heap is zero filled
     // memset((void*)pDynMT, 0, sizeof(DynamicMethodTable));
 
-    if (*ppLocation) RETURN;
+    if (*ppLocation) return;
 
     LOG((LF_BCL, LL_INFO100, "Level2 - Creating DynamicMethodTable {0x%p}...\n", pDynMT));
 
@@ -83,19 +80,18 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
     pDynMT->m_pDomain = pDomain;
     pDynMT->MakeMethodTable(&amt);
 
-    if (*ppLocation) RETURN;
+    if (*ppLocation) return;
 
     if (InterlockedCompareExchangeT(ppLocation, pDynMT, NULL) != NULL)
     {
         LOG((LF_BCL, LL_INFO100, "Level2 - Another thread got here first - deleting DynamicMethodTable {0x%p}...\n", pDynMT));
-        RETURN;
+        return;
     }
 
     dynMTHolder.SuppressRelease();
 
     amt.SuppressRelease();
     LOG((LF_BCL, LL_INFO10, "Level1 - DynamicMethodTable created {0x%p}...\n", pDynMT));
-    RETURN;
 }
 
 void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
@@ -105,7 +101,6 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -141,14 +136,13 @@ void DynamicMethodTable::Destroy()
 
 void DynamicMethodTable::AddMethodsToList()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AllocMemTracker amt;
 
@@ -160,12 +154,12 @@ void DynamicMethodTable::AddMethodsToList()
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
         mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* HasAsyncMethodData */, m_pMethodTable, &amt);
-    if (m_DynamicMethodList) RETURN;
+    if (m_DynamicMethodList) return;
 
     int methodCount = pChunk->GetCount();
 
     BYTE* pResolvers = (BYTE*)amt.Track(pHeap->AllocMem(S_SIZE_T(sizeof(LCGMethodResolver)) * S_SIZE_T(methodCount)));
-    if (m_DynamicMethodList) RETURN;
+    if (m_DynamicMethodList) return;
 
     DynamicMethodDesc *pNewMD = (DynamicMethodDesc *)pChunk->GetFirstMethodDesc();
     DynamicMethodDesc *pPrevMD = NULL;
@@ -181,10 +175,7 @@ void DynamicMethodTable::AddMethodsToList()
                         | DynamicMethodDesc::FlagStatic
                         | DynamicMethodDesc::FlagIsLCGMethod);
 
-        LCGMethodResolver* pResolver = new (pResolvers) LCGMethodResolver();
-        pResolver->m_pDynamicMethod = pNewMD;
-        pResolver->m_DynamicMethodTable = this;
-        pNewMD->m_pResolver = pResolver;
+        pNewMD->m_pResolver = new (pResolvers) LCGMethodResolver(pNewMD, this);
 
         pNewMD->SetTemporaryEntryPoint(&amt);
 
@@ -194,7 +185,7 @@ void DynamicMethodTable::AddMethodsToList()
 
         if (pPrevMD)
         {
-            pPrevMD->GetLCGMethodResolver()->m_next = pNewMD;
+            pPrevMD->GetLCGMethodResolver()->SetNextFreeDynamicMethod(pNewMD);
         }
         pPrevMD = pNewMD;
         pNewMD = (DynamicMethodDesc *)(dac_cast<TADDR>(pNewMD) + pNewMD->SizeOf());
@@ -202,12 +193,12 @@ void DynamicMethodTable::AddMethodsToList()
         pResolvers += sizeof(LCGMethodResolver);
     }
 
-    if (m_DynamicMethodList) RETURN;
+    if (m_DynamicMethodList) return;
 
     {
         // publish method list and method table
         LockHolder lh(this);
-        if (m_DynamicMethodList) RETURN;
+        if (m_DynamicMethodList) return;
 
         // publish the new method descs on the method table
         m_pMethodTable->GetClass()->AddChunk(pChunk);
@@ -219,18 +210,14 @@ void DynamicMethodTable::AddMethodsToList()
 
 DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSize, PTR_CUTF8 name)
 {
-    CONTRACT (DynamicMethodDesc*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LOG((LF_BCL, LL_INFO10000, "Level4 - Getting DynamicMethod\n"));
 
@@ -243,7 +230,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
             pNewMD = m_DynamicMethodList;
             if (pNewMD)
             {
-                m_DynamicMethodList = pNewMD->GetLCGMethodResolver()->m_next;
+                m_DynamicMethodList = pNewMD->GetLCGMethodResolver()->GetNextFreeDynamicMethodDesc();
 #ifdef _DEBUG
                 m_Used++;
 #endif
@@ -260,10 +247,6 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
     // Reset the method desc into pristine state
 
-    // Note: Reset has THROWS contract since it may allocate jump stub. It will never throw here
-    // since it will always reuse the existing jump stub.
-    pNewMD->Reset();
-
     LOG((LF_BCL, LL_INFO1000, "Level3 - DynamicMethod obtained {0x%p} (used %d)\n", pNewMD, m_Used));
 
     // the store sig part of the method desc
@@ -273,6 +256,16 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
+
+    // LCG signatures contain only types supplied by the managed API, which are already loaded.
+    pNewMD->SetNativeImageDependenciesPrepared();
+
+    // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
+    // It will never throw here for jump stubs since it will always reuse the existing jump stub,
+    // and for signature parsing, the signature produced for LCG is guaranteed to only have loaded types
+    // so that can't fail either.
+    pNewMD->Reset(); // Run the Reset after setting the signature and flags, since Reset may need to examine
+                     // the signature to establish the correct entrypoint details.
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
@@ -287,31 +280,29 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->SetNotInline(TRUE);
     pNewMD->GetLCGMethodResolver()->Reset();
 
-    RETURN pNewMD;
+    return pNewMD;
 }
 
-void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
+void DynamicMethodTable::AddToFreeList(DynamicMethodDesc *pMethod)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMethod));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    LOG((LF_BCL, LL_INFO10000, "Level4 - Returning DynamicMethod to free list {0x%p} (used %d)\n", pMethod, m_Used));
+    LOG((LF_BCL, LL_INFO10000, "Level4 - Returning DynamicMethod to free list {%p} (used %d)\n", pMethod, m_Used));
     {
         LockHolder lh(this);
-        pMethod->GetLCGMethodResolver()->m_next = m_DynamicMethodList;
+        pMethod->GetLCGMethodResolver()->SetNextFreeDynamicMethod(m_DynamicMethodList);
         m_DynamicMethodList = pMethod;
 #ifdef _DEBUG
         m_Used--;
 #endif
     }
-
-    RETURN;
 }
 
 
@@ -320,32 +311,30 @@ void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
 //
 HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager)
 {
-    CONTRACT (HeapList*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION((RETVAL != NULL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()));
+    NewHolder<HostCodeHeap> pCodeHeap{ new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()) };
 
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
     {
-        _ASSERTE(!pInfo->getThrowOnOutOfMemoryWithinRange());
-        RETURN NULL;
+        _ASSERTE(pInfo->IsSpecificMemoryRangeRequested());
+        return NULL;
     }
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - base addr 0x%p, size available 0x%p, nibble map ptr 0x%p\n",
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - base addr 0x%p, size available 0x%zx, nibble map ptr 0x%p\n",
                             (HostCodeHeap*)pCodeHeap, pCodeHeap->m_pBaseAddr, pCodeHeap->m_TotalBytesAvailable, pCodeHeap->m_pHeapList->pHdrMap));
 
-    pCodeHeap.SuppressRelease();
-
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap created {0x%p}\n", (HostCodeHeap*)pCodeHeap));
-    RETURN pHp;
+    _ASSERTE((pHp != NULL) || pInfo->IsSpecificMemoryRangeRequested());
+    pCodeHeap.Detach();
+    return pHp;
 }
 
 HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
@@ -355,7 +344,6 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -370,6 +358,7 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
     m_pFreeList = NULL;
     m_pAllocator = NULL;
     m_pNextHeapToRelease = NULL;
+    m_heapType = CodeHeapType::HostCodeHeap;
 }
 
 HostCodeHeap::~HostCodeHeap()
@@ -380,7 +369,7 @@ HostCodeHeap::~HostCodeHeap()
         delete[] m_pHeapList->pHdrMap;
 
     if (m_pBaseAddr)
-        ExecutableAllocator::Instance()->Release(m_pBaseAddr);
+        ExecutableAllocator::Instance()->Release(m_pBaseAddr, m_TotalBytesAvailable);
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap destroyed {0x%p}\n", this));
 }
 
@@ -394,7 +383,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     }
     CONTRACTL_END;
 
-    size_t ReserveBlockSize = pInfo->getRequestSize();
+    size_t ReserveBlockSize = pInfo->GetRequestSize();
 
     // Add TrackAllocation, HeapList and very conservative padding to make sure we have enough for the allocation
     ReserveBlockSize += sizeof(TrackAllocation) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
@@ -406,20 +395,16 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // reserve ReserveBlockSize rounded-up to VIRTUAL_ALLOC_RESERVE_GRANULARITY of memory
     ReserveBlockSize = ALIGN_UP(ReserveBlockSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-    if (pInfo->m_loAddr != NULL || pInfo->m_hiAddr != NULL)
+    if (pInfo->IsSpecificMemoryRangeRequested())
     {
-        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->m_loAddr, pInfo->m_hiAddr);
+        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->GetLoAddr(), pInfo->GetHiAddr());
         if (!m_pBaseAddr)
-        {
-            if (pInfo->getThrowOnOutOfMemoryWithinRange())
-                ThrowOutOfMemoryWithinRange();
             return NULL;
-        }
     }
     else
     {
         // top up the ReserveBlockSize to suggested minimum
-        ReserveBlockSize = max(ReserveBlockSize, pInfo->getReserveSize());
+        ReserveBlockSize = max(ReserveBlockSize, pInfo->GetReserveSize());
 
         m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->Reserve(ReserveBlockSize);
         if (!m_pBaseAddr)
@@ -429,9 +414,10 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pLastAvailableCommittedAddr = m_pBaseAddr;
     m_TotalBytesAvailable = ReserveBlockSize;
     m_ApproximateLargestBlock = ReserveBlockSize;
-    m_pAllocator = pInfo->m_pAllocator;
+    m_pAllocator = pInfo->GetAllocator();
 
     HeapList* pHp = new HeapList;
+    pHp->isOptimizedCode = false;
 
     TrackAllocation *pTracker = NULL;
 
@@ -447,8 +433,6 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
         if (pTracker == NULL)
         {
-            // This should only ever happen with fault injection
-            _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
             delete pHp;
             ThrowOutOfMemory();
         }
@@ -459,10 +443,11 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
+    pHp->pLoaderAllocator = m_pAllocator;
     // wire it back
     m_pHeapList = (PTR_HeapList)pHp;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%p, private data ptr [0x%p, 0x%p]\n",
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%zx, private data ptr [0x%p, 0x%zx]\n",
         (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, (pTracker ? pTracker->size : 0)));
 
     // It is important to exclude the CLRPersonalityRoutine from the tracked range
@@ -472,13 +457,12 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->endAddress = pHp->startAddress;
 
     pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
-    pHp->reserveForJumpStubs = 0;
 
 #if defined(TARGET_64BIT)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
-        emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+        emitBackToBackJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
     }
 #endif
 
@@ -501,7 +485,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
 
     if (m_pFreeList)
     {
-        LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Alloc size corrected 0x%X for free list\n", this, size));
+        LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Alloc size corrected 0x%zx for free list\n", this, size));
         // walk the list looking for a block with enough capacity
         TrackAllocation *pCurrent = m_pFreeList;
         TrackAllocation *pPrevious = NULL;
@@ -512,7 +496,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
             if (pCurrent->size >= realSize + reserveForJumpStubs)
             {
                 // found a block
-                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Block found, size 0x%X\n", this, pCurrent->size));
+                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Block found, size 0x%zx\n", this, pCurrent->size));
 
                 ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
                 if (pPrevious)
@@ -526,7 +510,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 // update the TrackAllocation record for the current block
                 if (pCurrent->size - realSize < max<size_t>(HOST_CODEHEAP_SIZE_ALIGN, sizeof(TrackAllocation)))
                 {
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item removed %p, size 0x%X\n", this, pCurrent, pCurrent->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item removed %p, size 0x%zx\n", this, pCurrent, pCurrent->size));
                     // remove current
                     if (pPrevious)
                     {
@@ -546,7 +530,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                     newCurrentWriterHolder.GetRW()->pNext = pCurrent->pNext;
                     newCurrentWriterHolder.GetRW()->size = pCurrent->size - realSize;
 
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item changed %p, new size 0x%X\n", this, pNewCurrent, pNewCurrent->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item changed %p, new size 0x%zx\n", this, pNewCurrent, pNewCurrent->size));
                     if (pPrevious)
                     {
                         previousWriterHolder.GetRW()->pNext = pNewCurrent;
@@ -562,14 +546,14 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
 
                 currentWriterHolder.GetRW()->pHeap = this;
 
-                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation returned %p, size 0x%X - data -> %p\n", this, pCurrent, pCurrent->size, pPointer));
+                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation returned %p, size 0x%zx - data -> %p\n", this, pCurrent, pCurrent->size, pPointer));
                 return pCurrent;
             }
             pPrevious = pCurrent;
             pCurrent = pCurrent->pNext;
         }
     }
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - No block in free list for size 0x%X\n", this, size));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - No block in free list for size 0x%zx\n", this, size));
     return NULL;
 }
 
@@ -583,7 +567,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
     }
     CONTRACTL_END;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Add to FreeList [%p, 0x%X]\n", this, pBlockToInsert, pBlockToInsert->size));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Add to FreeList [%p, 0x%zx]\n", this, pBlockToInsert, pBlockToInsert->size));
 
     // append to the list in the proper position and coalesce if needed
     if (m_pFreeList)
@@ -602,7 +586,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                 {
                     previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
                     previousWriterHolder.GetRW()->pNext = pBlockToInsert;
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] -> [%p, 0x%X] -> [%p, 0x%X]\n", this,
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] -> [%p, 0x%zx] -> [%p, 0x%zx]\n", this,
                                                                         pPrevious, pPrevious->size,
                                                                         pBlockToInsert, pBlockToInsert->size,
                                                                         pCurrent, pCurrent->size));
@@ -610,17 +594,17 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                 else
                 {
                     m_pFreeList = pBlockToInsert;
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to head\n", this, pBlockToInsert, pBlockToInsert->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to head\n", this, pBlockToInsert, pBlockToInsert->size));
                 }
 
                 // check for coalescing
                 if ((BYTE*)pBlockToInsert + pBlockToInsert->size == (BYTE*)pCurrent)
                 {
                     // coalesce with next
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%X] with [%p, 0x%X] - new size 0x%X\n", this,
-                                                                        pBlockToInsert, pBlockToInsert->size,
-                                                                        pCurrent, pCurrent->size,
-                                                                        pCurrent->size + pBlockToInsert->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
+                                                                      pBlockToInsert, pBlockToInsert->size,
+                                                                      pCurrent, pCurrent->size,
+                                                                      pCurrent->size + pBlockToInsert->size));
                     pBlockToInsertRW->pNext = pCurrent->pNext;
                     pBlockToInsertRW->size += pCurrent->size;
                 }
@@ -628,7 +612,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                 if (pPrevious && (BYTE*)pPrevious + pPrevious->size == (BYTE*)pBlockToInsert)
                 {
                     // coalesce with previous
-                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%X] with [%p, 0x%X] - new size 0x%X\n", this,
+                      LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
                                                                         pPrevious, pPrevious->size,
                                                                         pBlockToInsert, pBlockToInsert->size,
                                                                         pPrevious->size + pBlockToInsert->size));
@@ -649,7 +633,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
         if ((BYTE*)pPrevious + pPrevious->size == (BYTE*)pBlockToInsert)
         {
             // coalesce with previous
-            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%X] with [%p, 0x%X] - new size 0x%X\n", this,
+            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
                                                                 pPrevious, pPrevious->size,
                                                                 pBlockToInsert, pBlockToInsert->size,
                                                                 pPrevious->size + pBlockToInsert->size));
@@ -658,7 +642,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
         else
         {
             previousWriterHolder2.GetRW()->pNext = pBlockToInsert;
-            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to end after [%p, 0x%X]\n", this,
+            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to end after [%p, 0x%zx]\n", this,
                                                                 pBlockToInsert, pBlockToInsert->size,
                                                                 pPrevious, pPrevious->size));
         }
@@ -669,7 +653,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
     // first in the list
     pBlockToInsertRW->pNext = m_pFreeList;
     m_pFreeList = pBlockToInsert;
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to head\n", this,
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to head\n", this,
                                                         m_pFreeList, m_pFreeList->size));
 }
 
@@ -729,22 +713,12 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
     }
     CONTRACTL_END;
 
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP))
-    {
-        char *a = new (nothrow) char;
-        if (a == NULL)
-            return NULL;
-        delete a;
-    }
-#endif // _DEBUG
-
     // Skip walking the free list if the cached size of the largest block is not enough
     size_t totalRequiredSize = ALIGN_UP(sizeof(TrackAllocation) + header + size + (alignment - 1) + reserveForJumpStubs, sizeof(void*));
     if (totalRequiredSize > m_ApproximateLargestBlock)
         return NULL;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation requested 0x%X\n", this, size));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation requested 0x%zx\n", this, size));
 
     TrackAllocation* pTracker = AllocFromFreeList(header, size, alignment, reserveForJumpStubs);
     if (!pTracker)
@@ -787,7 +761,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
         }
         else
         {
-            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - allocation failed:\n\tm_pLastAvailableCommittedAddr: 0x%X\n\tsizeToCommit: 0x%X\n\tm_pBaseAddr: 0x%X\n\tm_TotalBytesAvailable: 0x%X\n", this, m_pLastAvailableCommittedAddr, sizeToCommit, m_pBaseAddr, m_TotalBytesAvailable));
+            LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - allocation failed:\n\tm_pLastAvailableCommittedAddr: %p\n\tsizeToCommit: 0x%zx\n\tm_pBaseAddr: %p\n\tm_TotalBytesAvailable: 0x%zx\n", this, m_pLastAvailableCommittedAddr, sizeToCommit, m_pBaseAddr, m_TotalBytesAvailable));
             // Update largest available block size
             m_ApproximateLargestBlock = totalRequiredSize - 1;
         }
@@ -859,7 +833,6 @@ HostCodeHeap* HostCodeHeap::GetCodeHeap(TADDR codeStart)
     return HostCodeHeap::GetTrackAllocation(codeStart)->pHeap;
 }
 
-
 #ifndef DACCESS_COMPILE
 
 void HostCodeHeap::FreeMemForCode(void * codeStart)
@@ -873,7 +846,7 @@ void HostCodeHeap::FreeMemForCode(void * codeStart)
     m_ApproximateLargestBlock += pTracker->size;
 
     m_AllocationCount--;
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap released [0x%p, vt(0x%x)] - ref count %d\n", this, *(size_t*)this, m_AllocationCount));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap released [%p, vt(0x%zx)] - ref count %d\n", this, *(size_t*)this, m_AllocationCount));
 
     if (m_AllocationCount == 0)
     {
@@ -884,47 +857,41 @@ void HostCodeHeap::FreeMemForCode(void * codeStart)
 //
 // Implementation for DynamicMethodDesc declared in method.hpp
 //
-void DynamicMethodDesc::Destroy()
+bool DynamicMethodDesc::TryDestroy()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
-    _ASSERTE(IsDynamicMethod());
     LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-    LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethod {0x%p}\n", this));
+    LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethodDesc {%p}\n", this));
 
-    // The m_pSig and m_pszMethodName need to be destroyed after the GetLCGMethodResolver()->Destroy() call
-    // otherwise the EEJitManager::CodeHeapIterator could return DynamicMethodDesc with these members NULLed, but
-    // the nibble map for the corresponding code memory indicating that this DynamicMethodDesc is still alive.
-    PCODE pSig = m_pSig;
-    PTR_CUTF8 pszMethodName = m_pszMethodName;
+    PTR_LCGMethodResolver methodResolver = GetLCGMethodResolver();
 
-    GetLCGMethodResolver()->Destroy();
+    // Destroy the code heap memory associated with this method first.
+    // This is done before any other destruction to ensure that CodeHeap
+    // iteration won't find this method while it is being destroyed.
+    if (!methodResolver->TryDestroyCodeHeapMemory())
+    {
+        // We failed to destroy the code heap memory, so we cannot continue with the destruction.
+        return false;
+    }
+
+    // See ModuleHandle_GetDynamicMethod() for allocation of these DynamicMethodDesc members.
+    // Free the member field memory here prior to storage reclamation below.
+    delete[] m_pszMethodName;
+    delete[] (BYTE*)m_pSig;
+
+    methodResolver->DestroyResolver();
     // The current DynamicMethodDesc storage is destroyed at this point
 
-    if (pszMethodName != NULL)
-    {
-        delete[] pszMethodName;
-    }
-
-    if (pSig != (PCODE)NULL)
-    {
-        delete[] (BYTE*)pSig;
-    }
-
+    // If the LoaderAllocator is collectible, we release it.
     if (pLoaderAllocator->IsCollectible())
     {
         if (pLoaderAllocator->Release())
-        {
-            GCX_PREEMP();
             LoaderAllocator::GCLoaderAllocators(pLoaderAllocator);
-        }
     }
+
+    return true;
 }
 
 //
@@ -934,7 +901,8 @@ void DynamicMethodDesc::Destroy()
 void LCGMethodResolver::Reset()
 {
     m_DynamicStringLiterals = NULL;
-    m_recordCodePointer     = NULL;
+    m_initialCodePointer    = {};
+    m_DynamicCodePointers   = &m_initialCodePointer;
     m_UsedIndCellList       = NULL;
     m_pJumpStubCache        = NULL;
     m_next                  = NULL;
@@ -946,11 +914,13 @@ void LCGMethodResolver::Reset()
 //
 void LCGMethodResolver::RecycleIndCells()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     // Append the list of indirection cells used by this dynamic method to the free list
     IndCellList * list = m_UsedIndCellList;
@@ -997,15 +967,74 @@ void LCGMethodResolver::RecycleIndCells()
     }
 }
 
-void LCGMethodResolver::Destroy()
+bool LCGMethodResolver::TryDestroyCodeHeapMemory()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+        PRECONDITION(FinalizerThread::IsCurrentThreadFinalizer());
+    }
+    CONTRACTL_END;
+
+    while (m_DynamicCodePointers != NULL)
+    {
+        void* recordCodePointer = m_DynamicCodePointers->m_pEntry;
+        if (recordCodePointer != NULL)
+        {
+            // Remove the unwind information (if applicable)
+            UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)recordCodePointer);
+
+            HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)recordCodePointer);
+            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", this, pHeap, *(size_t*)pHeap));
+            if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, recordCodePointer))
+                return false;
+        }
+
+        m_DynamicCodePointers = m_DynamicCodePointers->m_pNext;
+    }
+
+    if (m_pJumpStubCache != NULL)
+    {
+        JumpStubBlockHeader* current = m_pJumpStubCache->m_pBlocks;
+        while (current)
+        {
+            JumpStubBlockHeader* next = current->m_next;
+
+            HostCodeHeap *pHeap = current->GetHostCodeHeap();
+            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", current, pHeap, *(size_t*)pHeap));
+            if (!pHeap->GetJitManager()->TryFreeJumpStubBlock(pHeap, current))
+            {
+                // We were unable to destroy this code heap memory.
+                // Update the JumpStub cache in place so clean-up can be done later.
+                m_pJumpStubCache->m_pBlocks = current;
+                return false;
+            }
+
+            current = next;
+        }
+        m_pJumpStubCache->m_pBlocks = NULL;
+
+        delete m_pJumpStubCache;
+        m_pJumpStubCache = NULL;
+    }
+
+    return true;
+}
+
+void LCGMethodResolver::DestroyResolver()
+{
+    CONTRACTL
+    {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+        MODE_PREEMPTIVE;
+        PRECONDITION(FinalizerThread::IsCurrentThreadFinalizer());
+    }
+    CONTRACTL_END;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - Resolver - Destroying Resolver {0x%p}\n", this));
+    LOG((LF_BCL, LL_INFO100, "Level2 - Resolver - Destroying Resolver {%p}\n", this));
     if (m_Code)
     {
         delete[] m_Code;
@@ -1018,14 +1047,16 @@ void LCGMethodResolver::Destroy()
         m_LocalSig = SigPointer();
     }
 
-    // Get the global string literal interning map
-    GlobalStringLiteralMap* pStringLiteralMap = SystemDomain::GetGlobalStringLiteralMapNoCreate();
-
     // release references to all the string literals used in this Dynamic Method
-    if (pStringLiteralMap != NULL)
+    if (m_DynamicStringLiterals != NULL)
     {
+        // Get the global string literal interning map
+        GlobalStringLiteralMap* pStringLiteralMap = SystemDomain::GetGlobalStringLiteralMapNoCreate();
+
+        // If we have string literals, we should have a string literal map
+        _ASSERTE(pStringLiteralMap != NULL);
+
         // lock the global string literal interning map
-        // we cannot use GetGlobalStringLiteralMap() here because it might throw
         CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
 
         // Access to m_DynamicStringLiterals doesn't need to be synchronized because
@@ -1035,40 +1066,13 @@ void LCGMethodResolver::Destroy()
             m_DynamicStringLiterals->m_pEntry->Release();
             m_DynamicStringLiterals = m_DynamicStringLiterals->m_pNext;
         }
+
+        m_DynamicStringLiterals = NULL;
     }
 
-    if (m_recordCodePointer)
-    {
-#if defined(TARGET_AMD64)
-        // Remove the unwind information (if applicable)
-        UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)m_recordCodePointer);
-#endif // defined(TARGET_AMD64)
-
-        HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
-        LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", this, pHeap, *(size_t*)pHeap));
-        pHeap->m_pJitManager->FreeCodeMemory(pHeap, m_recordCodePointer);
-
-        m_recordCodePointer = NULL;
-    }
-
-    if (m_pJumpStubCache != NULL)
-    {
-        JumpStubBlockHeader* current = m_pJumpStubCache->m_pBlocks;
-        while (current)
-        {
-            JumpStubBlockHeader* next = current->m_next;
-
-            HostCodeHeap *pHeap = current->GetHostCodeHeap();
-            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", current, pHeap, *(size_t*)pHeap));
-            pHeap->m_pJitManager->FreeCodeMemory(pHeap, current);
-
-            current = next;
-        }
-        m_pJumpStubCache->m_pBlocks = NULL;
-
-        delete m_pJumpStubCache;
-        m_pJumpStubCache = NULL;
-    }
+    // Code heap memory should be destroyed before the resolver is destroyed
+    _ASSERTE(m_DynamicCodePointers == NULL);
+    _ASSERTE(m_pJumpStubCache == NULL);
 
     // Note that we need to do this before m_jitTempData is deleted
     RecycleIndCells();
@@ -1082,21 +1086,13 @@ void LCGMethodResolver::Destroy()
         m_managedResolver = NULL;
     }
 
-    m_DynamicMethodTable->LinkMethod(m_pDynamicMethod);
+    m_pDynamicMethodTable->AddToFreeList(m_pDynamicMethod);
 }
 
 void LCGMethodResolver::FreeCompileTimeState()
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    //m_jitTempData.Delete();
+    LIMITED_METHOD_CONTRACT;
 }
-
-
 
 void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlags,
                                       TypeHandle *typeOwner)
@@ -1109,19 +1105,24 @@ void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlag
 
     GCX_COOP();
 
-    MethodDescCallSite getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT, m_managedResolver);
-
-    OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-    _ASSERTE(resolver); // gc root must be up the stack
-
-    ARG_SLOT args[] =
+    struct
     {
-        ObjToArgSlot(resolver),
-        PtrToArgSlot(securityControlFlags),
-    };
+        OBJECTREF Resolver;
+        OBJECTREF ResultType;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.ResultType = NULL;
+    _ASSERTE(gc.Resolver); // gc root must be up the stack
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)getJitContext.Call_RetOBJECTREF(args);
+    GCPROTECT_BEGIN(gc);
+
+    UnmanagedCallersOnlyCaller getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT);
+    getJitContext.InvokeThrowing(&gc.Resolver, (int32_t*)securityControlFlags, &gc.ResultType);
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)gc.ResultType;
     *typeOwner = refType != NULL ? refType->GetType() : TypeHandle();
+
+    GCPROTECT_END();
 
 }
 
@@ -1153,33 +1154,35 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         GCX_COOP();
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting CodeInfo on resolver 0x%p...\n", this));
-        // get the code - Byte[] Resolver.GetCodeInfo(ref ushort stackSize, ref int EHCount)
-        MethodDescCallSite getCodeInfo(METHOD__RESOLVER__GET_CODE_INFO, m_managedResolver);
 
-        OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-        VALIDATEOBJECTREF(resolver); // gc root must be up the stack
+        struct
+        {
+            OBJECTREF Resolver;
+            U1ARRAYREF DataArray;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        gc.DataArray = NULL;
+
+        GCPROTECT_BEGIN(gc);
 
         int32_t stackSize = 0, initLocals = 0, EHSize = 0;
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(resolver),
-            PtrToArgSlot(&stackSize),
-            PtrToArgSlot(&initLocals),
-            PtrToArgSlot(&EHSize),
-        };
-        U1ARRAYREF dataArray = (U1ARRAYREF) getCodeInfo.Call_RetOBJECTREF(args);
-        DWORD codeSize = dataArray->GetNumComponents();
-        NewArrayHolder<BYTE> code(new BYTE[codeSize]);
-        memcpy(code, dataArray->GetDataPtr(), codeSize);
+
+        UnmanagedCallersOnlyCaller getCodeInfo(METHOD__RESOLVER__GET_CODE_INFO);
+        getCodeInfo.InvokeThrowing(&gc.Resolver, &stackSize, &initLocals, &EHSize, &gc.DataArray);
+
+        DWORD codeSize = gc.DataArray->GetNumComponents();
+        NewArrayHolder<BYTE> code{ new BYTE[codeSize] };
+        memcpy(code, gc.DataArray->GetDataPtr(), codeSize);
         m_CodeSize = codeSize;
         _ASSERTE(FitsIn<unsigned short>(stackSize));
         m_StackSize = static_cast<unsigned short>(stackSize);
         m_Options = (initLocals) ? CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
         _ASSERTE(FitsIn<unsigned short>(EHSize));
         m_EHSize = static_cast<unsigned short>(EHSize);
-        m_Code = (BYTE*)code;
-        code.SuppressRelease();
+        m_Code = code.Detach();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: CodeInfo {0x%p} on resolver %p\n", m_Code, this));
+
+        GCPROTECT_END();
     }
 
     *pCodeSize = m_CodeSize;
@@ -1206,23 +1209,28 @@ LCGMethodResolver::GetLocalSig()
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting LocalSig on resolver 0x%p...\n", this));
 
-        MethodDescCallSite getLocalsSignature(METHOD__RESOLVER__GET_LOCALS_SIGNATURE, m_managedResolver);
-
-        OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-        VALIDATEOBJECTREF(resolver); // gc root must be up the stack
-
-        ARG_SLOT args[] =
+        struct
         {
-            ObjToArgSlot(resolver)
-        };
-        U1ARRAYREF dataArray = (U1ARRAYREF) getLocalsSignature.Call_RetOBJECTREF(args);
-        DWORD localSigSize = dataArray->GetNumComponents();
-        NewArrayHolder<COR_SIGNATURE> localSig(new COR_SIGNATURE[localSigSize]);
-        memcpy((void *)localSig, dataArray->GetDataPtr(), localSigSize);
+            OBJECTREF Resolver;
+            U1ARRAYREF DataArray;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        gc.DataArray = NULL;
+
+        GCPROTECT_BEGIN(gc);
+
+        UnmanagedCallersOnlyCaller getLocalsSignature(METHOD__RESOLVER__GET_LOCALS_SIGNATURE);
+        getLocalsSignature.InvokeThrowing(&gc.Resolver, &gc.DataArray);
+
+        DWORD localSigSize = gc.DataArray->GetNumComponents();
+        NewArrayHolder<COR_SIGNATURE> localSig{ new COR_SIGNATURE[localSigSize] };
+        memcpy((void *)localSig, gc.DataArray->GetDataPtr(), localSigSize);
 
         m_LocalSig = SigPointer((PCCOR_SIGNATURE)localSig, localSigSize);
-        localSig.SuppressRelease();
+        localSig.Detach();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: LocalSig {0x%p} on resolver %p\n", m_LocalSig.GetPtr(), this));
+
+        GCPROTECT_END();
     }
 
     return m_LocalSig;
@@ -1230,14 +1238,14 @@ LCGMethodResolver::GetLocalSig()
 
 //---------------------------------------------------------------------------------------
 //
-OBJECTHANDLE
+STRINGREF*
 LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
 
     GCX_COOP();
 
-    OBJECTHANDLE string = NULL;
+    STRINGREF* string = NULL;
     STRINGREF strRef = GetStringLiteral(metaTok);
 
     GCPROTECT_BEGIN(strRef);
@@ -1247,7 +1255,7 @@ LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
         // Instead of storing the string literal in the appdomain specific string literal map,
         // we store it in the dynamic method specific string liternal list
         // This way we can release it when the dynamic method is collected.
-        string = (OBJECTHANDLE)GetOrInternString(&strRef);
+        string = GetOrInternString(&strRef);
     }
 
     GCPROTECT_END();
@@ -1279,16 +1287,22 @@ LCGMethodResolver::GetStringLiteral(
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    MethodDescCallSite getStringLiteral(METHOD__RESOLVER__GET_STRING_LITERAL, m_managedResolver);
+    struct
+    {
+        OBJECTREF Resolver;
+        OBJECTREF Result;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.Result = NULL;
 
-    OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-    VALIDATEOBJECTREF(resolver); // gc root must be up the stack
+    GCPROTECT_BEGIN(gc);
 
-    ARG_SLOT args[] = {
-        ObjToArgSlot(resolver),
-        metaTok,
-    };
-    return getStringLiteral.Call_RetSTRINGREF(args);
+    UnmanagedCallersOnlyCaller getStringLiteral(METHOD__RESOLVER__GET_STRING_LITERAL);
+    getStringLiteral.InvokeThrowing(&gc.Resolver, (int)metaTok, &gc.Result);
+
+    GCPROTECT_END();
+
+    return (STRINGREF)gc.Result;
 }
 
 // This method will get the interned string by calling GetInternedString on the
@@ -1306,7 +1320,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     // Get the global string literal interning map
     GlobalStringLiteralMap* pStringLiteralMap = SystemDomain::GetGlobalStringLiteralMap();
 
-    // Calculating the hash: EEUnicodeHashTableHelper::GetHash
+    // Calculating the hash.
     EEStringData StringData = EEStringData((*pProtectedStringRef)->GetStringLength(), (*pProtectedStringRef)->GetBuffer());
     DWORD dwHash = pStringLiteralMap->GetHash(&StringData);
 
@@ -1316,7 +1330,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash, /* bAddIfNotFound */ TRUE));
 
     DynamicStringLiteral* pStringLiteral = (DynamicStringLiteral*)m_jitTempData.New(sizeof(DynamicStringLiteral));
-    pStringLiteral->m_pEntry = pEntry.Extract();
+    pStringLiteral->m_pEntry = pEntry.Detach();
 
     // Add to m_DynamicStringLiterals:
     //  we don't need to check for duplicate because the string literal entries in
@@ -1349,7 +1363,6 @@ void LCGMethodResolver::AddToUsedIndCellList(BYTE * indcell)
         if (InterlockedCompareExchangeT(&m_UsedIndCellList, link, link->pNext) == link->pNext)
             break;
     }
-
 }
 
 void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
@@ -1358,20 +1371,25 @@ void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken
 
     GCX_COOP();
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_TOKEN, ObjectFromHandle(m_managedResolver));
-
-    DECLARE_ARGHOLDER_ARRAY(args, 5);
+    struct
+    {
+        OBJECTREF Resolver;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
 
     TypeHandle handle;
-    MethodDesc* pMD = NULL;
-    FieldDesc* pFD = NULL;
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = &handle;
-    args[ARGNUM_3] = &pMD;
-    args[ARGNUM_4] = &pFD;
+    MethodDesc* pMD;
+    FieldDesc* pFD;
 
-    CALL_MANAGED_METHOD_NORET(args);
+    GCPROTECT_BEGIN(gc);
+
+    UnmanagedCallersOnlyCaller resolveToken(METHOD__RESOLVER__RESOLVE_TOKEN);
+    TADDR typeHandleValue = 0;
+    resolveToken.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), &typeHandleValue, &pMD, &pFD);
+
+    handle = TypeHandle::FromTAddr(typeHandleValue);
+
+    GCPROTECT_END();
 
     _ASSERTE(pMD == NULL || pFD == NULL);
 
@@ -1403,24 +1421,33 @@ LCGMethodResolver::ResolveSignature(
 
     GCX_COOP();
 
-    U1ARRAYREF dataArray = NULL;
+    struct
+    {
+        OBJECTREF Resolver;
+        U1ARRAYREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_SIGNATURE, ObjectFromHandle(m_managedResolver));
+    DWORD cbSig = 0;
+    PCCOR_SIGNATURE pSig = NULL;
 
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    GCPROTECT_BEGIN(gc);
 
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(0);
+    UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
+    resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 0, &gc.DataArray);
 
-    CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
-
-    if (dataArray == NULL)
+    if (gc.DataArray == NULL)
+    {
         COMPlusThrow(kInvalidProgramException);
+    }
 
-    DWORD cbSig = dataArray->GetNumComponents();
-    PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
-    memcpy((void *)pSig, dataArray->GetDataPtr(), cbSig);
+    cbSig = gc.DataArray->GetNumComponents();
+    pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
+    memcpy((void *)pSig, gc.DataArray->GetDataPtr(), cbSig);
+
+    GCPROTECT_END();
+
     return SigPointer(pSig, cbSig);
 } // LCGMethodResolver::ResolveSignature
 
@@ -1434,24 +1461,33 @@ LCGMethodResolver::ResolveSignatureForVarArg(
 
     GCX_COOP();
 
-    U1ARRAYREF dataArray = NULL;
+    struct
+    {
+        OBJECTREF Resolver;
+        U1ARRAYREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_SIGNATURE, ObjectFromHandle(m_managedResolver));
+    DWORD cbSig = 0;
+    PCCOR_SIGNATURE pSig = NULL;
 
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    GCPROTECT_BEGIN(gc);
 
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(1);
+    UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
+    resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 1, &gc.DataArray);
 
-    CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
-
-    if (dataArray == NULL)
+    if (gc.DataArray == NULL)
+    {
         COMPlusThrow(kInvalidProgramException);
+    }
 
-    DWORD cbSig = dataArray->GetNumComponents();
-    PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
-    memcpy((void *)pSig, dataArray->GetDataPtr(), cbSig);
+    cbSig = gc.DataArray->GetNumComponents();
+    pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
+    memcpy((void *)pSig, gc.DataArray->GetDataPtr(), cbSig);
+
+    GCPROTECT_END();
+
     return SigPointer(pSig, cbSig);
 } // LCGMethodResolver::ResolveSignatureForVarArg
 
@@ -1463,66 +1499,81 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 
     GCX_COOP();
 
-    // attempt to get the raw EHInfo first
+    struct
     {
-        U1ARRAYREF dataArray;
+        OBJECTREF Resolver;
+        U1ARRAYREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
 
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__GET_RAW_EH_INFO, ObjectFromHandle(m_managedResolver));
+    GCPROTECT_BEGIN(gc);
 
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
+    UnmanagedCallersOnlyCaller getEhInfo(METHOD__RESOLVER__GET_EH_INFO);
+    getEhInfo.InvokeThrowing(&gc.Resolver, EHnumber, &gc.DataArray, clause);
 
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
+    if (gc.DataArray != NULL)
+    {
+        // If we have raw EH info, we need to parse the clause manually.
+        COR_ILMETHOD_SECT_EH* pEH = (COR_ILMETHOD_SECT_EH*)gc.DataArray->GetDataPtr();
 
-        CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
+        COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehClause;
+        const COR_ILMETHOD_SECT_EH_CLAUSE_FAT* ehInfo;
+        ehInfo = (COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)pEH->EHClause(EHnumber, &ehClause);
 
-        if (dataArray != NULL)
-        {
-            COR_ILMETHOD_SECT_EH* pEH = (COR_ILMETHOD_SECT_EH*)dataArray->GetDataPtr();
-
-            COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehClause;
-            const COR_ILMETHOD_SECT_EH_CLAUSE_FAT* ehInfo;
-            ehInfo = (COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)pEH->EHClause(EHnumber, &ehClause);
-
-            clause->Flags = (CORINFO_EH_CLAUSE_FLAGS)ehInfo->GetFlags();
-            clause->TryOffset = ehInfo->GetTryOffset();
-            clause->TryLength = ehInfo->GetTryLength();
-            clause->HandlerOffset = ehInfo->GetHandlerOffset();
-            clause->HandlerLength = ehInfo->GetHandlerLength();
-            clause->ClassToken = ehInfo->GetClassToken();
-            clause->FilterOffset = ehInfo->GetFilterOffset();
-            return;
-        }
+        clause->Flags = (CORINFO_EH_CLAUSE_FLAGS)ehInfo->GetFlags();
+        clause->TryOffset = ehInfo->GetTryOffset();
+        clause->TryLength = ehInfo->GetTryLength();
+        clause->HandlerOffset = ehInfo->GetHandlerOffset();
+        clause->HandlerLength = ehInfo->GetHandlerLength();
+        clause->ClassToken = ehInfo->GetClassToken();
+        clause->FilterOffset = ehInfo->GetFilterOffset();
     }
 
-    // failed, get the info off the ilgenerator
-    {
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__GET_EH_INFO, ObjectFromHandle(m_managedResolver));
-
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-        args[ARGNUM_1] = DWORD_TO_ARGHOLDER(EHnumber);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(clause);
-
-        CALL_MANAGED_METHOD_NORET(args);
-    }
+    GCPROTECT_END();
 }
 
 #endif // !DACCESS_COMPILE
-
 
 // Get the associated managed resolver. This method will be called during a GC so it should not throw, trigger a GC or cause the
 // object in question to be validated.
 OBJECTREF LCGMethodResolver::GetManagedResolver()
 {
     LIMITED_METHOD_CONTRACT;
+#ifdef DACCESS_COMPILE
+    if (m_managedResolver == (OBJECTHANDLE)NULL)
+        return NULL;
+#endif // DACCESS_COMPILE
     return ObjectFromHandle(m_managedResolver);
 }
 
+void** LCGMethodResolver::AllocateRecordCodePointer()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    DynamicCodePointer* codePointer = &m_initialCodePointer;
+    if (codePointer->m_pEntry != NULL)
+    {
+        codePointer = (DynamicCodePointer*)m_jitTempData.New(sizeof(DynamicCodePointer));
+        *codePointer = {};
+        codePointer->m_pNext = m_DynamicCodePointers;
+        m_DynamicCodePointers = codePointer;
+    }
+
+    return &codePointer->m_pEntry;
+}
 
 //
 // ChunkAllocator implementation
 //
+
+#define CHUNK_SIZE 64
+
 ChunkAllocator::~ChunkAllocator()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1556,7 +1607,7 @@ void* ChunkAllocator::New(size_t size)
     size = ALIGN_UP(size, sizeof(void *));
 
     BYTE *pNewBlock = NULL;
-    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - allocation requested 0x%X, available 0x%X\n", this, size, (m_pData) ? ((size_t*)m_pData)[1] : 0));
+    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - allocation requested 0x%zx, available 0x%zx\n", this, size, (m_pData) ? ((size_t*)m_pData)[1] : 0));
     if (m_pData)
     {
         // we may have room available
@@ -1566,7 +1617,7 @@ void* ChunkAllocator::New(size_t size)
             LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - reusing block {0x%p}\n", this, m_pData));
             ((size_t*)m_pData)[1] = available - size;
             pNewBlock = (m_pData + CHUNK_SIZE - available);
-            LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%X\n", this, pNewBlock, ((size_t*)m_pData)[1]));
+            LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%zx\n", this, pNewBlock, ((size_t*)m_pData)[1]));
             return pNewBlock;
         }
     }
@@ -1575,20 +1626,20 @@ void* ChunkAllocator::New(size_t size)
     if (size + (sizeof(void*) * 2) < CHUNK_SIZE)
     {
         // make the allocation
-        NewArrayHolder<BYTE> newBlock(new BYTE[CHUNK_SIZE]);
+        NewArrayHolder<BYTE> newBlock{ new BYTE[CHUNK_SIZE] };
         pNewBlock = (BYTE*)newBlock;
         ((size_t*)pNewBlock)[1] = CHUNK_SIZE - size - (sizeof(void*) * 2);
         LOG((LF_BCL, LL_INFO10, "Level1 - DM - Allocator [0x%p] - new block {0x%p}\n", this, pNewBlock));
-        newBlock.SuppressRelease();
+        newBlock.Detach();
     }
     else
     {
         // request bigger than default size this is going to be a single block
-        NewArrayHolder<BYTE> newBlock(new BYTE[size + (sizeof(void*) * 2)]);
+        NewArrayHolder<BYTE> newBlock{ new BYTE[size + (sizeof(void*) * 2)] };
         pNewBlock = (BYTE*)newBlock;
         ((size_t*)pNewBlock)[1] = 0; // no available bytes left
         LOG((LF_BCL, LL_INFO10, "Level1 - DM - Allocator [0x%p] - new BIG block {0x%p}\n", this, pNewBlock));
-        newBlock.SuppressRelease();
+        newBlock.Detach();
     }
 
     // all we have left to do is to link the block.
@@ -1614,7 +1665,8 @@ void* ChunkAllocator::New(size_t size)
     }
 
     pNewBlock += (sizeof(void*) * 2);
-    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%X\n", this, pNewBlock, ((size_t*)m_pData)[1]));
+    LOG((LF_BCL, LL_INFO100, "Level2 - DM - Allocator [0x%p] - ptr -> 0x%p, available 0x%zx\n", this, pNewBlock, ((size_t*)m_pData)[1]));
     return pNewBlock;
 }
 
+#undef CHUNK_SIZE

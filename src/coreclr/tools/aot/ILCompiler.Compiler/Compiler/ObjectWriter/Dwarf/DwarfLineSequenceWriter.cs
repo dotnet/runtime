@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
@@ -11,9 +12,10 @@ namespace ILCompiler.ObjectWriter
     internal sealed class DwarfLineSequenceWriter
     {
         private readonly ArrayBufferWriter<byte> _writer;
-        private readonly string _sectionName;
+        private readonly Utf8String _sectionName;
         private readonly byte _minimumInstructionLength;
         private readonly uint _maxDeltaAddressPerSpecialCode;
+        private readonly long? _endAddress;
 
         // DWARF state machine
         private ulong _address;
@@ -21,10 +23,11 @@ namespace ILCompiler.ObjectWriter
         private int _line = 1;
         private int _column;
 
-        public DwarfLineSequenceWriter(string sectionName, byte minimumInstructionLength)
+        public DwarfLineSequenceWriter(Utf8String sectionName, byte minimumInstructionLength, long? endAddress = null)
         {
             _writer = new ArrayBufferWriter<byte>();
             _sectionName = sectionName;
+            _endAddress = endAddress;
 
             // Calculations hard code this
             Debug.Assert(DwarfLineProgramTableWriter.MaximumOperationsPerInstruction == 1);
@@ -106,6 +109,10 @@ namespace ILCompiler.ObjectWriter
                     WriteByte((byte)opcode);
                 }
             }
+            else
+            {
+                WriteByte(DW_LNS_copy);
+            }
 
             _line = sequencePoint.LineNumber;
             _address = (ulong)sequencePoint.NativeOffset + (ulong)methodAddress;
@@ -118,6 +125,12 @@ namespace ILCompiler.ObjectWriter
             lineSection.EmitSymbolReference(codeRelocType, _sectionName, 0);
 
             lineSection.Write(_writer.WrittenSpan);
+            if (_endAddress is long endAddress)
+            {
+                Debug.Assert((ulong)endAddress >= _address);
+                lineSection.WriteByte(DW_LNS_advance_pc);
+                lineSection.WriteULEB128(((ulong)endAddress - _address) / _minimumInstructionLength);
+            }
             lineSection.Write([0, 1, DW_LNE_end_sequence]);
         }
     }

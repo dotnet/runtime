@@ -30,7 +30,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     try
                     {
-                        if (CompileAttribute(compiler) == false)
+                        if (!CompileAttribute(compiler))
                         {
                             throw XsltException.Create(SR.Xslt_InvalidAttribute, input.LocalName, element);
                         }

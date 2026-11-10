@@ -36,10 +36,9 @@ namespace System.Reflection.TypeLoading
         public sealed override AssemblyName GetName(bool copiedName) => GetAssemblyNameDataNoCopy().CreateAssemblyName();
         internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ??= ComputeNameData();
         protected abstract AssemblyNameData ComputeNameData();
-        private volatile AssemblyNameData? _lazyAssemblyNameData;
+        private AssemblyNameData? _lazyAssemblyNameData;
 
-        public sealed override string FullName => _lazyFullName ??= GetName().FullName;
-        private volatile string? _lazyFullName;
+        public sealed override string FullName => field ??= GetName().FullName;
 
         internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
 
@@ -152,7 +151,7 @@ namespace System.Reflection.TypeLoading
 
         private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ??= ComputeAssemblyReferences();
         protected abstract AssemblyNameData[] ComputeAssemblyReferences();
-        private volatile AssemblyNameData[]? _lazyAssemblyReferences;
+        private AssemblyNameData[]? _lazyAssemblyReferences;
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
@@ -195,7 +194,7 @@ namespace System.Reflection.TypeLoading
         }
 
         // Serialization
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

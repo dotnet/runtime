@@ -163,7 +163,9 @@ namespace System.Text.Json.Serialization.Tests
             o.TypeInfoResolver = r;
 
             string json = JsonSerializer.Serialize(13, o);
-            Assert.Equal(@"""13""", json);
+            Assert.Equal("""
+                "13"
+                """, json);
 
             var deserialized = JsonSerializer.Deserialize<int>(json, o);
             Assert.Equal(13, deserialized);
@@ -185,7 +187,9 @@ namespace System.Text.Json.Serialization.Tests
             o.TypeInfoResolver = r;
 
             string json = JsonSerializer.Serialize<object>(13, o);
-            Assert.Equal(@"""13""", json);
+            Assert.Equal("""
+                "13"
+                """, json);
 
             var deserialized = JsonSerializer.Deserialize<object>(json, o);
             Assert.Equal("13", ((JsonElement)deserialized).GetString());
@@ -213,7 +217,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(testObj, o);
-            Assert.Equal(@"{""ObjProp"":""45"",""IntProp"":""13""}", json);
+            Assert.Equal("""{"ObjProp":"45","IntProp":"13"}""", json);
 
             var deserialized = JsonSerializer.Deserialize<SomeClass>(json, o);
             Assert.Equal(testObj.ObjProp.ToString(), ((JsonElement)deserialized.ObjProp).GetString());
@@ -271,7 +275,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(testObj, o);
-            Assert.Equal(@"{""IntProp"":""13"",""RecursiveProperty"":{""IntProp"":""14"",""RecursiveProperty"":null}}", json);
+            Assert.Equal("""{"IntProp":"13","RecursiveProperty":{"IntProp":"14","RecursiveProperty":null}}""", json);
 
             var deserialized = JsonSerializer.Deserialize<SomeRecursiveClass>(json, o);
             Assert.Equal(testObj.IntProp, deserialized.IntProp);

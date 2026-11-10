@@ -48,6 +48,11 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets or sets the action that's called if an uncaught exception occurs in FileConfigurationProvider.Load.
         /// </summary>
+        /// <remarks>
+        /// When <see cref="ReloadOnChange"/> is enabled, this callback is also invoked on background reload failures.
+        /// If the callback is not set or does not set <see cref="FileLoadExceptionContext.Ignore"/> to <see langword="true"/>,
+        /// exceptions from background reloads will propagate unhandled on the thread pool.
+        /// </remarks>
         public Action<FileLoadExceptionContext>? OnLoadException { get; set; }
 
         /// <summary>
@@ -68,26 +73,17 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Creates a physical file provider for the nearest existing directory if no file provider has been set, for absolute Path.
+        /// Creates a physical file provider for the file's directory if no file provider has been set, for absolute Path.
         /// </summary>
         public void ResolveFileProvider()
         {
             if (FileProvider == null &&
                 !string.IsNullOrEmpty(Path) &&
-                System.IO.Path.IsPathRooted(Path))
+                System.IO.Path.IsPathRooted(Path) &&
+                System.IO.Path.GetDirectoryName(Path) is string directory)
             {
-                string? directory = System.IO.Path.GetDirectoryName(Path);
-                string? pathToFile = System.IO.Path.GetFileName(Path);
-                while (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                {
-                    pathToFile = System.IO.Path.Combine(System.IO.Path.GetFileName(directory), pathToFile);
-                    directory = System.IO.Path.GetDirectoryName(directory);
-                }
-                if (Directory.Exists(directory))
-                {
-                    FileProvider = new PhysicalFileProvider(directory);
-                    Path = pathToFile;
-                }
+                FileProvider = new PhysicalFileProvider(directory);
+                Path = System.IO.Path.GetFileName(Path);
             }
         }
     }

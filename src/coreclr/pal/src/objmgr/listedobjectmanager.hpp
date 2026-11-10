@@ -115,17 +115,7 @@ namespace CorUnix
             IPalObject **ppobj
             );
 
-        virtual
-        PAL_ERROR
-        ReferenceMultipleObjectsByHandleArray(
-            CPalThread *pthr,
-            HANDLE rghHandlesToReference[],
-            DWORD dwHandleCount,
-            CAllowedObjectTypes *paot,
-            IPalObject *rgpobjs[]
-            );
     };
 }
 
 #endif // _PAL_SHMOBJECTMANAGER_HPP_
-

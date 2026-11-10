@@ -19,9 +19,9 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly EcmaModule _module;
 
-        public const string ResourceAccessorTypeName = "SR";
-        public const string ResourceAccessorTypeNamespace = "System";
-        public const string ResourceAccessorGetStringMethodName = "GetResourceString";
+        public static ReadOnlySpan<byte> ResourceAccessorTypeName => "SR"u8;
+        public static ReadOnlySpan<byte> ResourceAccessorTypeNamespace => "System"u8;
+        public static ReadOnlySpan<byte> ResourceAccessorGetStringMethodName => "GetResourceString"u8;
 
         public InlineableStringsResourceNode(EcmaModule module)
         {
@@ -58,19 +58,18 @@ namespace ILCompiler.DependencyAnalysis
             return srType.GetMethod(ResourceAccessorGetStringMethodName, null) != null;
         }
 
-        public static void AddDependenciesDueToResourceStringUse(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddDependenciesDueToResourceStringUse(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             if (method.Name == ResourceAccessorGetStringMethodName && method.OwningType is MetadataType mdType
                 && mdType.Name == ResourceAccessorTypeName && mdType.Namespace == ResourceAccessorTypeNamespace)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.InlineableStringResource((EcmaModule)mdType.Module), "Using the System.SR class");
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context)
             => $"String resources for {_module.Assembly.GetName().Name}";
     }

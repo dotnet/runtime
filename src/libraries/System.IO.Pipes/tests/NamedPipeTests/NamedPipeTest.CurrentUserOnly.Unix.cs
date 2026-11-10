@@ -69,6 +69,59 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77470", TestPlatforms.LinuxBionic)]
+        public void CurrentUserOnly_SetsUnixFileMode()
+        {
+            string pipeName = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly))
+            {
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(pipeName));
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77470", TestPlatforms.LinuxBionic)]
+        public void CurrentUserOnly_SubsequentInstance_TightensSharedMode()
+        {
+            string pipeName = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+            using (var first = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, PipeOptions.None))
+            {
+                UnixFileMode initialMode = File.GetUnixFileMode(pipeName);
+                Assert.NotEqual(UnixFileMode.UserRead | UnixFileMode.UserWrite, initialMode);
+
+                using (var second = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly))
+                {
+                    Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(pipeName));
+                }
+
+                // Mode is one-way: it stays restrictive even after the CurrentUserOnly instance is disposed.
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(pipeName));
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77470", TestPlatforms.LinuxBionic)]
+        public void CurrentUserOnly_SubsequentInstance_DoesNotLoosenSharedMode()
+        {
+            string pipeName = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+            using (var first = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly))
+            {
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(pipeName));
+
+                using (var second = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, PipeOptions.None))
+                {
+                    Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(pipeName));
+                }
+            }
+        }
+
         private static void ConnectClientFromRemoteInvoker(string pipeName, string isCurrentUserOnly, string isReadOnly)
         {
             PipeOptions pipeOptions = bool.Parse(isCurrentUserOnly) ? PipeOptions.CurrentUserOnly : PipeOptions.None;

@@ -24,9 +24,9 @@
 // isn't writable and read-related methods will assert if it isn't readable. Methods that have no asserts should have immutable results that
 // can be used at any point during the buffer's lifetime. The buffer has no internal locks so it is the caller's responsibility to synchronize
 // their usage.
-// Writing into the buffer and calling convert_to_read_only() is always done with EventPipeThread rt_lock held. The eventual reader thread can do
+// Calling convert_to_read_only() is always done with EventPipeBufferManager lock held, and it yields to concurrent writes. The eventual reader thread can do
 // a few different things to ensure it sees a consistent state:
-// 1) Take the writer's EventPipeThread rt_lock at least once after the last time the writer writes events
+// 1) Take the buffer manager's lock at least once after the last time the writer writes events
 // 2) Use a memory barrier that prevents reader loads from being re-ordered earlier, such as the one that will occur implicitly by evaluating
 //    ep_buffer_get_volatile_state ()
 
@@ -57,7 +57,7 @@ struct _EventPipeBuffer_Internal {
 	// The linked list is invasive, thus we declare the pointers here.
 	EventPipeBuffer *prev_buffer;
 	EventPipeBuffer *next_buffer;
-	// State transition WRITABLE -> READ_ONLY only occurs while holding the writer_thread->rt_lock;
+	// State transition WRITABLE -> READ_ONLY only occurs while holding the buffer_manager lock;
 	// It can be read at any time
 	volatile uint32_t state;
 	// The sequence number corresponding to current_read_event
@@ -74,7 +74,6 @@ struct _EventPipeBuffer {
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, ep_timestamp_t, creation_timestamp)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, uint8_t *, buffer)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, uint8_t *, limit)
-EP_DEFINE_GETTER_REF(EventPipeBuffer *, buffer, volatile uint32_t *, state)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, EventPipeBuffer *, prev_buffer)
 EP_DEFINE_SETTER(EventPipeBuffer *, buffer, EventPipeBuffer *, prev_buffer)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, EventPipeBuffer *, next_buffer)
@@ -146,7 +145,7 @@ EventPipeBufferState
 ep_buffer_get_volatile_state (const EventPipeBuffer *buffer);
 
 // Convert the buffer writable to readable.
-// _Requires_lock_held (thread)
+// Should only be called while holding the buffer manager lock.
 void
 ep_buffer_convert_to_read_only (EventPipeBuffer *buffer);
 

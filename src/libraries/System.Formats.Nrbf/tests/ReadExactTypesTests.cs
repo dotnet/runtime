@@ -173,7 +173,7 @@ public class ReadExactTypesTests : ReadTests
     [InlineData("Hello", ", ", "World!")]
     [InlineData("Single ", "null", null)]
     [InlineData("Multiple ", null, null)]
-    public void CanRead_CustomTypeWithStringsArrayField(string value0, string value1, string value2)
+    public void CanRead_CustomTypeWithStringsArrayField(string value0, string? value1, string? value2)
     {
         CustomTypeWithStringArrayField input = new()
         {

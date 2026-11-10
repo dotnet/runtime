@@ -12,22 +12,11 @@ namespace System
     [Obsolete("System.TimeZone has been deprecated. Investigate the use of System.TimeZoneInfo instead.")]
     public abstract class TimeZone
     {
-        private static volatile TimeZone? currentTimeZone;
+        private static TimeZone? currentTimeZone;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object? s_InternalSyncObject;
-        private static object InternalSyncObject
-        {
-            get
-            {
-                if (s_InternalSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
+        private static object InternalSyncObject =>
+            field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
 
         protected TimeZone()
         {

@@ -132,6 +132,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include <minipal/time.h>
 #include "rejit.h"
 #include "method.hpp"
 #include "eeconfig.h"
@@ -470,7 +471,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
     }
     CONTRACTL_END;
 
-    // Serialize all RequestReJIT() and Revert() calls against each other (even across AppDomains)
+    // Serialize all RequestReJIT() and Revert() calls against each other
     CrstHolder ch(&(s_csGlobalRequest));
 
     HRESULT hr = S_OK;
@@ -548,7 +549,9 @@ HRESULT ReJitManager::UpdateActiveILVersions(
 
         if ((flags & COR_PRF_REJIT_BLOCK_INLINING) == COR_PRF_REJIT_BLOCK_INLINING)
         {
-            hr = UpdateNativeInlinerActiveILVersions(&mgrToCodeActivationBatch, pModule, rgMethodDefs[i], fIsRevert, flags);
+            _ASSERTE(!fIsRevert);
+
+            hr = UpdateNativeInlinerActiveILVersions(&mgrToCodeActivationBatch, pModule, rgMethodDefs[i], flags);
             if (FAILED(hr))
             {
                 return hr;
@@ -711,7 +714,6 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
     SHash<CodeActivationBatchTraits>   *pMgrToCodeActivationBatch,
     Module                             *pInlineeModule,
     mdMethodDef                         inlineeMethodDef,
-    BOOL                                fIsRevert,
     COR_PRF_REJIT_FLAGS                 flags)
 {
     CONTRACTL
@@ -758,7 +760,7 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
                     }
                 }
 
-                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, inliner.m_module, inliner.m_methodDef, fIsRevert, flags);
+                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, inliner.m_module, inliner.m_methodDef, FALSE /* fIsRevert */, flags);
                 if (FAILED(hr))
                 {
                     ReportReJITError(inliner.m_module, inliner.m_methodDef, NULL, hr);
@@ -902,7 +904,7 @@ HRESULT ReJitManager::BindILVersion(
     // Either there was no ILCodeVersion yet for this MethodDesc OR whatever we've found
     // couldn't be reused (and needed to be reverted).  Create a new ILCodeVersion to return
     // to the caller.
-    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion, FALSE);
+    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion, FALSE, CodeVersionSource::kReJIT);
     pILCodeVersion->SetEnableReJITCallback(fDoCallback);
     return hr;
 }
@@ -982,8 +984,9 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
     if (fNeedsParameters)
     {
         HRESULT hr = S_OK;
-        ReleaseHolder<ProfilerFunctionControl> pFuncControl = NULL;
+        ReleaseHolder<ProfilerFunctionControl> pFuncControl;
 
+#ifdef PROFILING_SUPPORTED
         if (ilCodeVersion.GetEnableReJITCallback())
         {
             // Here's where we give a chance for the rejit requestor to
@@ -1009,6 +1012,9 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 END_PROFILER_CALLBACK();
             }
         }
+#else
+        _ASSERTE(!ilCodeVersion.GetEnableReJITCallback());
+#endif // PROFILING_SUPPORTED
 
         if (!ilCodeVersion.GetEnableReJITCallback() || FAILED(hr))
         {
@@ -1091,7 +1097,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                     break; // the other thread got the parameters successfully, go race to rejit
                 }
             }
-            ClrSleepEx(1, FALSE);
+            minipal_sleep(1);
         }
     }
 
@@ -1137,7 +1143,7 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     }
 
     NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, pCodeStart);
-    if (nativeCodeVersion.IsNull())
+    if (nativeCodeVersion.IsNull() || nativeCodeVersion.GetILCodeVersion().GetSource() != CodeVersionSource::kReJIT)
     {
         return 0;
     }
@@ -1188,7 +1194,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
     {
         ILCodeVersion curILVersion = *iter;
 
-        if (curILVersion.GetRejitState() == RejitFlags::kStateActive)
+        if (curILVersion.GetSource() == CodeVersionSource::kReJIT && curILVersion.GetRejitState() == RejitFlags::kStateActive)
         {
             if (cnt < cReJitIds)
             {

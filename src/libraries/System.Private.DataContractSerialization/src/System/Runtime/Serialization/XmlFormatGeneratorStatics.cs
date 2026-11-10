@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -68,11 +69,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static PropertyInfo? s_extensionDataProperty;
-        internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
+        internal static PropertyInfo ExtensionDataProperty => field ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
 
-        private static MethodInfo? s_boxPointer;
-        internal static MethodInfo BoxPointer => s_boxPointer ??= typeof(Pointer).GetMethod("Box")!;
+        internal static MethodInfo BoxPointer => field ??= typeof(Pointer).GetMethod("Box")!;
 
         private static ConstructorInfo? s_dictionaryEnumeratorCtor;
         internal static ConstructorInfo DictionaryEnumeratorCtor
@@ -81,7 +80,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_dictionaryEnumeratorCtor == null)
                 {
-                    s_dictionaryEnumeratorCtor = typeof(CollectionDataContract.DictionaryEnumerator).GetConstructor(Globals.ScanAllMembers, new Type[] { Globals.TypeOfIDictionaryEnumerator });
+                    s_dictionaryEnumeratorCtor = typeof(CollectionDataContract.DictionaryEnumerator).GetConstructor(Globals.ScanAllMembers, new Type[] { typeof(IDictionaryEnumerator) });
                     Debug.Assert(s_dictionaryEnumeratorCtor != null);
                 }
                 return s_dictionaryEnumeratorCtor;
@@ -188,8 +187,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static MethodInfo? s_unboxPointer;
-        internal static MethodInfo UnboxPointer => s_unboxPointer ??= typeof(Pointer).GetMethod("Unbox")!;
+        internal static MethodInfo UnboxPointer => field ??= typeof(Pointer).GetMethod("Unbox")!;
 
         private static PropertyInfo? s_nodeTypeProperty;
         internal static PropertyInfo NodeTypeProperty
@@ -205,26 +203,15 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static ConstructorInfo? s_serializationExceptionCtor;
-        internal static ConstructorInfo SerializationExceptionCtor => s_serializationExceptionCtor ??= typeof(SerializationException).GetConstructor(new Type[] { typeof(string) })!;
+        internal static ConstructorInfo SerializationExceptionCtor => field ??= typeof(SerializationException).GetConstructor(new Type[] { typeof(string) })!;
 
-        private static ConstructorInfo? s_extensionDataObjectCtor;
-        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??= typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
+        internal static ConstructorInfo ExtensionDataObjectCtor => field ??= typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
 
-        private static ConstructorInfo? s_hashtableCtor;
-        internal static ConstructorInfo HashtableCtor
+        internal static ConstructorInfo DictionaryCtor
         {
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            {
-                if (s_hashtableCtor == null)
-                {
-                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes);
-                    Debug.Assert(s_hashtableCtor != null);
-                }
-                return s_hashtableCtor;
-            }
+            get => field ??= typeof(Dictionary<object, object>).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
         }
 
         private static MethodInfo? s_getStreamingContextMethod;
@@ -912,8 +899,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static MethodInfo? s_extensionDataSetExplicitMethodInfo;
-        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => s_extensionDataSetExplicitMethodInfo ??= typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod)!;
+        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => field ??= typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod)!;
 
         private static PropertyInfo? s_childElementNamespacesProperty;
         internal static PropertyInfo ChildElementNamespacesProperty

@@ -12,7 +12,6 @@
 **               SetThreadPriority
 **               GetThreadPriority
 **               ResumeThread
-**               WaitForSingleObject
 **               GetLastError
 **
 ** Purpose:
@@ -35,6 +34,7 @@
 /* we're missing the GetExitCodeThread() API                   */
 
 static int g_priority = 0;
+static LONG g_completedThreadCount = 0;
 
 /**
  * ThreadFunc
@@ -66,6 +66,7 @@ DWORD PALAPI ThreadFunc_GetCurrentThread_test2( LPVOID param )
 
     /* store this globally because we don't have GetExitCodeThread() */
     g_priority = priority;
+    InterlockedIncrement(&g_completedThreadCount);
     return (DWORD)priority;
 }
 
@@ -79,8 +80,6 @@ PALTEST(threading_GetCurrentThread_test2_paltest_getcurrentthread_test2, "thread
 {
     HANDLE   hThread = NULL;
     DWORD    IDThread;
-    DWORD    dwRet;
-
     SIZE_T i = 0;
 
     /* PAL initialization */
@@ -121,13 +120,7 @@ PALTEST(threading_GetCurrentThread_test2_paltest_getcurrentthread_test2, "thread
     ResumeThread( hThread );
 
 
-    /* wait for the thread to finish */
-    dwRet = WaitForSingleObject( hThread, INFINITE );
-    if( dwRet == WAIT_FAILED )
-    {
-        /* ERROR */
-        Fail( "ERROR:%lu:WaitForSingleObject call failed\n", GetLastError() );
-    }
+    WaitForThreadCompletion(&g_completedThreadCount, 1);
 
     /* validate the thread's exit code */
     if( g_priority != THREAD_PRIORITY_TIME_CRITICAL )
@@ -136,6 +129,7 @@ PALTEST(threading_GetCurrentThread_test2_paltest_getcurrentthread_test2, "thread
         Fail( "FAIL:Unexpected thread priority %d returned, expected %d\n",
                 g_priority, THREAD_PRIORITY_TIME_CRITICAL );
     }
+    CloseHandle(hThread);
 #endif
 
     PAL_Terminate();

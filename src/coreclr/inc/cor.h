@@ -1582,17 +1582,8 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
 //**********************************************************************
 
 //
-// Native Link method custom value definitions. This is for N-direct support.
+// Native Link method custom value definitions. This is for P/Invoke support.
 //
-
-#include <pshpack1.h>
-typedef struct
-{
-    BYTE        m_linkType;       // see CorNativeLinkType below
-    BYTE        m_flags;          // see CorNativeLinkFlags below
-    mdMemberRef m_entryPoint;     // member ref token giving entry point, format is lib:entrypoint
-} COR_NATIVE_LINK;
-#include <poppack.h>
 
 typedef enum
 {
@@ -1657,14 +1648,6 @@ typedef enum
 //*****************************************************************************
 //*****************************************************************************
 
-#ifndef FORCEINLINE
- #if _MSC_VER < 1200
-   #define FORCEINLINE inline
- #else
-   #define FORCEINLINE __forceinline
- #endif
-#endif
-
 
 // We need a version that is FORCEINLINE on retail and NOINLINE on debug
 
@@ -1676,20 +1659,18 @@ typedef enum
 #endif
 #endif
 
-#ifndef NOINLINE
-#ifdef _MSC_VER
-#define NOINLINE __declspec(noinline)
-#elif defined __GNUC__
-#define NOINLINE __attribute__ ((noinline))
-#else
-#define NOINLINE
-#endif
-#endif // !NOINLINE
-
 // return true if it is a primitive type, i.e. only need to store CorElementType
 FORCEINLINE int CorIsPrimitiveType(CorElementType elementtype)
 {
     return (elementtype < ELEMENT_TYPE_PTR || elementtype == ELEMENT_TYPE_I || elementtype == ELEMENT_TYPE_U);
+}
+
+// Returns true if the element type is a real or integer type.
+FORCEINLINE bool CorIsNumericalType(CorElementType elementType)
+{
+    return ((elementType >= ELEMENT_TYPE_I1) && (elementType <= ELEMENT_TYPE_R8))
+        || (elementType == ELEMENT_TYPE_I)
+        || (elementType == ELEMENT_TYPE_U);
 }
 
 

@@ -6,126 +6,75 @@ ifdef FEATURE_COMINTEROP
 include AsmMacros.inc
 include asmconstants.inc
 
-; extern "C" const BYTE* ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pErrorResult)
+; extern "C" const BYTE* ComPreStubWorker(UMEntryThunkData* pEntryThunkInfo);
 extern ComPreStubWorker:proc
-extern JIT_FailFast:proc
+extern UMEntryPrestubUnwindFrameChainHandler:proc
 
+NESTED_ENTRY ComCallPreStub, _TEXT, UMEntryPrestubUnwindFrameChainHandler
 
-; extern "C" VOID ComCallPreStub()
-NESTED_ENTRY ComCallPreStub, _TEXT
+ComCallPreStub_STACK_FRAME_SIZE = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES
 
-;
-; Stack layout:
-;
-; (stack parameters)
-; ...
-; r9
-; r8
-; rdx
-; rcx
-; ComPrestubMethodFrame::m_ReturnAddress
-; ComPrestubMethodFrame::m_pFuncDesc
-; Frame::m_Next
-; FrameIdentifier::ComPrestubMethodFrame        <-- rsp + ComCallPreStub_ComPrestubMethodFrame_OFFSET
-; HRESULT                                       <-- rsp + ComCallPreStub_ERRORRETVAL_OFFSET
-; (optional padding to qword align xmm save area)
-; xmm3
-; xmm2
-; xmm1
-; xmm0                                          <-- rsp + ComCallPreStub_XMM_SAVE_OFFSET
-; callee's r9
-; callee's r8
-; callee's rdx
-; callee's rcx
+; XMM save area
+ComCallPreStub_XMM_SAVE_OFFSET = ComCallPreStub_STACK_FRAME_SIZE
+ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + SIZEOF_MAX_FP_ARG_SPILL
 
-ComCallPreStub_STACK_FRAME_SIZE = 0
+ComCallPreStub_NONVOL_REG_SAVE_OFFSET = ComCallPreStub_STACK_FRAME_SIZE
+ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 8 ; for one non-volatile register to preserve the secret argument
 
-; ComPrestubMethodFrame MUST be the highest part of the stack frame,
-; immediately below the return address, so that
-; ComPrestubMethodFrame::m_ReturnAddress and m_FuncDesc are in the right place.
-ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + SIZEOF__ComPrestubMethodFrame - 8
-ComCallPreStub_ComPrestubMethodFrame_NEGOFFSET = ComCallPreStub_STACK_FRAME_SIZE
-
-; CalleeSavedRegisters MUST be immediately below ComPrestubMethodFrame
-ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 8*8
-ComCallPreStub_CalleeSavedRegisters_NEGOFFSET = ComCallPreStub_STACK_FRAME_SIZE
-
-; UINT64 (out param to ComPreStubWorker)
-ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 8
-ComCallPreStub_ERRORRETVAL_NEGOFFSET = ComCallPreStub_STACK_FRAME_SIZE
-
-; Ensure that the offset of the XMM save area will be 16-byte aligned.
-if ((ComCallPreStub_STACK_FRAME_SIZE + SIZEOF__Frame + 8) mod 16) ne 0
+; Ensure that the new rsp will be 16-byte aligned.  Note that the caller has
+; already pushed the return address.
+if ((ComCallPreStub_STACK_FRAME_SIZE + 8) MOD 16) ne 0
 ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 8
 endif
 
-; FP parameters (xmm0-xmm3)
-ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 40h
-ComCallPreStub_XMM_SAVE_NEGOFFSET = ComCallPreStub_STACK_FRAME_SIZE
+        alloc_stack     ComCallPreStub_STACK_FRAME_SIZE
 
-; Callee scratch area
-ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 20h
+        save_reg_postrsp    rcx, ComCallPreStub_STACK_FRAME_SIZE + 8h
+        save_reg_postrsp    rdx, ComCallPreStub_STACK_FRAME_SIZE + 10h
+        save_reg_postrsp    r8,  ComCallPreStub_STACK_FRAME_SIZE + 18h
+        save_reg_postrsp    r9,  ComCallPreStub_STACK_FRAME_SIZE + 20h
 
-; Now we have the full size of the stack frame.  The offsets have been computed relative to the
-; top, so negate them to make them relative to the post-prologue rsp.
-ComCallPreStub_ComPrestubMethodFrame_OFFSET = ComCallPreStub_STACK_FRAME_SIZE - ComCallPreStub_ComPrestubMethodFrame_NEGOFFSET
-ComCallPreStub_ERRORRETVAL_OFFSET           = ComCallPreStub_STACK_FRAME_SIZE - ComCallPreStub_ERRORRETVAL_NEGOFFSET
-ComCallPreStub_XMM_SAVE_OFFSET              = ComCallPreStub_STACK_FRAME_SIZE - ComCallPreStub_XMM_SAVE_NEGOFFSET
+        save_xmm128_postrsp xmm0, ComCallPreStub_XMM_SAVE_OFFSET
+        save_xmm128_postrsp xmm1, ComCallPreStub_XMM_SAVE_OFFSET + 10h
+        save_xmm128_postrsp xmm2, ComCallPreStub_XMM_SAVE_OFFSET + 20h
+        save_xmm128_postrsp xmm3, ComCallPreStub_XMM_SAVE_OFFSET + 30h
 
-        .allocstack     8                       ; ComPrestubMethodFrame::m_pFuncDesc, pushed by prepad
-
-        alloc_stack     SIZEOF__ComPrestubMethodFrame - 2*8
-
-        ;
-        ; Save ComPrestubMethodFrame* to pass to ComPreStubWorker
-        ;
-        mov             r10, rsp
-
-        ;
-        ; Allocate callee scratch area and save FP parameters
-        ;
-        alloc_stack     ComCallPreStub_ComPrestubMethodFrame_OFFSET
-
-        ;
-        ; Save argument registers
-        ;
-        SAVE_ARGUMENT_REGISTERS ComCallPreStub_STACK_FRAME_SIZE + 8h
-
-        ;
-        ; spill the fp args
-        ;
-        SAVE_FLOAT_ARGUMENT_REGISTERS ComCallPreStub_XMM_SAVE_OFFSET
+        save_reg_postrsp    r12, ComCallPreStub_NONVOL_REG_SAVE_OFFSET
 
         END_PROLOGUE
 
         ;
-        ; Resolve target.
+        ; Do prestub-specific stuff
         ;
-        mov             rcx, r10
-        lea             rdx, [rsp + ComCallPreStub_ERRORRETVAL_OFFSET]
+        mov             rcx, METHODDESC_REGISTER
+        mov             r12, METHODDESC_REGISTER
         call            ComPreStubWorker
-        test            rax, rax
-        jz              ExitError
+
+        ; Restore the secret argument
+        mov             METHODDESC_REGISTER, r12
 
         ;
-        ; Restore FP parameters
+        ; we're going to tail call to the exec stub that we just setup
+        ; or return the specified error
         ;
-        RESTORE_FLOAT_ARGUMENT_REGISTERS ComCallPreStub_XMM_SAVE_OFFSET
+
+        mov             rcx, [rsp + ComCallPreStub_STACK_FRAME_SIZE + 8h]
+        mov             rdx, [rsp + ComCallPreStub_STACK_FRAME_SIZE + 10h]
+        mov             r8,  [rsp + ComCallPreStub_STACK_FRAME_SIZE + 18h]
+        mov             r9,  [rsp + ComCallPreStub_STACK_FRAME_SIZE + 20h]
+
+        movdqa          xmm0, xmmword ptr [rsp + ComCallPreStub_XMM_SAVE_OFFSET]
+        movdqa          xmm1, xmmword ptr [rsp + ComCallPreStub_XMM_SAVE_OFFSET + 10h]
+        movdqa          xmm2, xmmword ptr [rsp + ComCallPreStub_XMM_SAVE_OFFSET + 20h]
+        movdqa          xmm3, xmmword ptr [rsp + ComCallPreStub_XMM_SAVE_OFFSET + 30h]
+
+        mov             r12, [rsp + ComCallPreStub_NONVOL_REG_SAVE_OFFSET]
 
         ;
-        ; Restore integer parameters
+        ; epilogue
         ;
-        RESTORE_ARGUMENT_REGISTERS ComCallPreStub_STACK_FRAME_SIZE + 8h
-
-        add             rsp, ComCallPreStub_ComPrestubMethodFrame_OFFSET + SIZEOF__ComPrestubMethodFrame - 8
-
+        add             rsp, ComCallPreStub_STACK_FRAME_SIZE
         TAILJMP_RAX
-
-ExitError:
-        mov             rax, [rsp + ComCallPreStub_ERRORRETVAL_OFFSET]
-        add             rsp, ComCallPreStub_ComPrestubMethodFrame_OFFSET + SIZEOF__ComPrestubMethodFrame - 8
-
-        ret
 
 NESTED_END ComCallPreStub, _TEXT
 

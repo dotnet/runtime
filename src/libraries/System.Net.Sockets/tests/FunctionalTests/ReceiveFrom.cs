@@ -62,7 +62,7 @@ namespace System.Net.Sockets.Tests
             }   
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void NullSocketAddress_Throws_ArgumentException()
         {
             using Socket socket = CreateSocket();
@@ -312,6 +312,83 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReceiveSent_ReuseEventArgsAcrossAddressFamilies_Success(bool ipv4First)
+        {
+            const int TimeoutMs = 30_000;
+
+            using Socket ipv4Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using Socket ipv6Socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+            ipv6Socket.DualMode = false;
+            ipv4Socket.BindToAnonymousPort(IPAddress.Loopback);
+            ipv6Socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+
+            using var saea = new SocketAsyncEventArgs();
+            var completed = new ManualResetEventSlim();
+            saea.Completed += delegate { completed.Set(); };
+            saea.SetBuffer(new byte[1], 0, 1);
+
+            // A single SocketAsyncEventArgs reused across sockets of different address families must grow its
+            // cached native address buffer to fit the larger family, not stay sized for whichever it saw first.
+            (Socket first, Socket second) = ipv4First ? (ipv4Socket, ipv6Socket) : (ipv6Socket, ipv4Socket);
+            ReceiveOnce(first);
+            ReceiveOnce(second);
+
+            void ReceiveOnce(Socket listener)
+            {
+                bool listenerIsIPv4 = listener.AddressFamily == AddressFamily.InterNetwork;
+                IPAddress any = listenerIsIPv4 ? IPAddress.Any : IPAddress.IPv6Any;
+                IPAddress loopback = listenerIsIPv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+                saea.RemoteEndPoint = new IPEndPoint(any, 0);
+
+                using Socket sender = new Socket(listener.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                sender.Bind(new IPEndPoint(loopback, 0));
+                bool pending = listener.ReceiveFromAsync(saea);
+                sender.SendTo(new byte[] { 1 }, new IPEndPoint(loopback, ((IPEndPoint)listener.LocalEndPoint).Port));
+                if (pending) Assert.True(completed.Wait(TimeoutMs), "Expected operation to complete within timeout");
+                completed.Reset();
+
+                Assert.Equal(SocketError.Success, saea.SocketError);
+                Assert.Equal(1, saea.BytesTransferred);
+                Assert.Equal(sender.LocalEndPoint, saea.RemoteEndPoint);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReceiveSent_SocketAddressFamilyMismatch_Success(bool ipv4)
+        {
+            const int DatagramSize = 256;
+
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            AddressFamily wrongFamily = ipv4 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+            using Socket server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket client = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+
+            client.BindToAnonymousPort(address);
+            server.BindToAnonymousPort(address);
+
+            byte[] sendBuffer = new byte[DatagramSize];
+            byte[] receiveBuffer = new byte[DatagramSize];
+            new Random(0).NextBytes(sendBuffer);
+
+            // SocketAddress.Family is caller-controlled and is only validated (as .Size) against the socket's
+            // real family, never for .Family itself -- the native receive buffer must still be sized off the
+            // socket's real address family rather than trusting this (deliberately wrong) declared one.
+            SocketAddress sa = new SocketAddress(wrongFamily, SocketAddress.GetMaximumAddressSize(address.AddressFamily));
+
+            await client.SendToAsync(sendBuffer, SocketFlags.None, server.LocalEndPoint.Serialize());
+
+            int readBytes = await server.ReceiveFromAsync(receiveBuffer, SocketFlags.None, sa);
+
+            Assert.Equal(DatagramSize, readBytes);
+            AssertExtensions.SequenceEqual(sendBuffer, receiveBuffer);
+            Assert.Equal(client.LocalEndPoint, client.LocalEndPoint.Create(sa));
+        }
+
         [Fact]
         public async Task ReceiveSent_SmallSocketAddress_Throws()
         {
@@ -421,19 +498,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_Sync : ReceiveFrom<SocketHelperArraySync>
     {
         public ReceiveFrom_Sync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_SyncForceNonBlocking : ReceiveFrom<SocketHelperSyncForceNonBlocking>
     {
         public ReceiveFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_Apm : ReceiveFrom<SocketHelperApm>
     {
         public ReceiveFrom_Apm(ITestOutputHelper output) : base(output) { }
@@ -477,7 +554,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentException>("endPoint", () => socket.EndReceiveFrom(iar, ref invalidEndPoint));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54418", TestPlatforms.MacCatalyst)]
         public void BeginReceiveFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
         {
@@ -546,13 +623,13 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_SpanSync : ReceiveFrom<SocketHelperSpanSync>
     {
         public ReceiveFrom_SpanSync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_SpanSyncForceNonBlocking : ReceiveFrom<SocketHelperSpanSyncForceNonBlocking>
     {
         public ReceiveFrom_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }

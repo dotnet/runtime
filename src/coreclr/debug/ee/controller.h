@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: controller.h
 //
-
-//
 // Debugger control flow object
-//
 //*****************************************************************************
 
 #ifndef CONTROLLER_H_
@@ -17,6 +15,10 @@
 #if !defined(DACCESS_COMPILE)
 
 #include "frameinfo.h"
+#include "executioncontrol.h"
+#ifdef FEATURE_INTERPRETER
+#include "interpreterwalker.h"
+#endif // FEATURE_INTERPRETER
 
 /* ------------------------------------------------------------------------- *
  * Forward declarations
@@ -183,15 +185,12 @@ public:
     //      caller wants information about a specific frame.
     // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
     //      we use our temp context.
-    // bool suppressUMChainFromCLRToCOMMethodFrameGeneric - A ridiculous flag that is trying to narrowly
-    //      target a fix for issue 650903.
     // StackTraceTicket - ticket ensuring that we have permission to call this.
     void GetStackInfo(
         StackTraceTicket ticket,
         Thread *thread,
         FramePointer targetFP,
-        CONTEXT *pContext,
-        bool suppressUMChainFromCLRToCOMMethodFrameGeneric = false
+        CONTEXT *pContext
         );
 
     //bool ControllerStackInfo::HasReturnFrame()  Returns
@@ -213,11 +212,6 @@ private:
     bool                    m_activeFound;
     bool                    m_returnFound;
     FrameInfo               m_returnFrame;
-
-    // A ridiculous flag that is targeting a very narrow fix at issue 650903
-    // (4.5.1/Blue).  This is set for the duration of a stackwalk designed to
-    // help us "Step Out" to a managed frame (i.e., managed-only debugging).
-    bool                    m_suppressUMChainFromCLRToCOMMethodFrameGeneric;
 
     // Track if this stackwalk actually happened.
     // This is used by the StackTraceTicket(ControllerStackInfo * info) ticket.
@@ -312,7 +306,11 @@ public:
     UINT_PTR                RipTargetFixup;
 #endif
 
+    const InstructionAttribute& GetInstructionAttrib() { return m_instrAttrib; }
+    void SetInstructionAttrib(const InstructionAttribute& instrAttrib) { m_instrAttrib = instrAttrib; }
+
 private:
+    InstructionAttribute   m_instrAttrib;      // info about the instruction being skipped over
     const static DWORD SentinelValue = 0xffffffff;
     LONG    m_refCount;
 };
@@ -365,8 +363,7 @@ enum DebuggerPatchKind { PATCH_KIND_IL_PRIMARY, PATCH_KIND_IL_REPLICA, PATCH_KIN
 // this should contain all the info that's needed over the course of a
 // patch's lifetime.
 //
-// FREEHASHENTRY entry:  Three ULONGs, this is required
-//      by the underlying hashtable implementation
+// ULONG iPrev, iNext, iFree:  Slot indices for the patch chains and free list.
 //  DWORD opcode:  A nonzero opcode && address field means that
 //      the patch has been applied to something. This may not be a full
 //      opcode, it is possible it is a partial opcode.
@@ -421,7 +418,9 @@ struct DebuggerControllerPatch
     friend class DebuggerPatchTable;
     friend class DebuggerController;
 
-    FREEHASHENTRY           entry;
+    ULONG                   iPrev;
+    ULONG                   iNext;
+    ULONG                   iFree;
     DebuggerController      *controller;
     DebuggerFunctionKey     key;
     SIZE_T                  offset;
@@ -434,6 +433,13 @@ struct DebuggerControllerPatch
     TraceDestination        trace;
     MethodDesc*             pMethodDescFilter; // used for IL Primary patches that should only bind to jitted
                                                // code versions for a single generic instantiation
+#ifdef FEATURE_INTERPRETER
+    // Interpreter opcodes can have value 0 (e.g., INTOP_RET), so we need a separate flag
+    // to track activation state since PRDIsEmpty() returns true for opcode 0.
+    // TODO: We should consider using the activated flag for all patches and stop using opcode == 0 as a special case for "not active".
+    // https://github.com/dotnet/runtime/issues/124499
+    bool                    m_interpActivated;
+#endif // FEATURE_INTERPRETER
 private:
     DebuggerPatchKind       kind;
     int                     refCount;
@@ -533,6 +539,15 @@ public:
 
     bool IsActivated()
     {
+#ifdef FEATURE_INTERPRETER
+        // m_interpActivated is set only by InterpreterExecutionControl::ApplyPatch
+        if (m_interpActivated)
+        {
+            _ASSERTE(address != NULL);
+            return TRUE;
+        }
+#endif // FEATURE_INTERPRETER
+
         // Patch is activate if we've stored a non-zero opcode
         // Note: this might be a problem as opcode 0 may be a valid opcode (see issue 366221).
         if( PRDIsEmpty(opcode) ) {
@@ -550,9 +565,12 @@ public:
     // Is this patch at a position at which it's safe to take a stack?
     bool IsSafeForStackTrace();
 
+#ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // gets a pointer to the shared buffer
     SharedPatchBypassBuffer* GetOrCreateSharedPatchBypassBuffer();
+
+    void CopyInstructionBlock(BYTE *to, const BYTE* from);
 
     // entry point for general initialization when the controller is being created
     void Initialize()
@@ -567,6 +585,7 @@ public:
             m_pSharedPatchBypassBuffer->Release();
     }
 #endif // !FEATURE_EMULATE_SINGLESTEP
+#endif // !DACCESS_COMPILE
 
     void LogInstance()
     {
@@ -592,6 +611,13 @@ public:
 };
 
 typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
+
+// Determines whether a breakpoint patch should be bound to a given MethodDesc.
+// When pMethodDescFilter is NULL, the default filtering policy is applied which
+// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
+// MethodDesc and no default filtering is applied.
+bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter);
 
 /* class DebuggerPatchTable:  This is the table that contains
  *  information about the patches (breakpoints) maintained by the
@@ -628,98 +654,102 @@ typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
 #define DPT_INVALID_SLOT (UINT32_MAX)
 #define DPT_DEFAULT_TRACE_TYPE TRACE_OTHER
 
-/* Although CHashTableAndData can grow, we always use a fixed number of buckets.
- * This is problematic for tables like the patch table which are usually small, but
- * can become huge.  When the number of entries far exceeds the number of buckets,
- * lookup and addition basically degrade into linear searches.  There is a trade-off
- * here between wasting memory for unused buckets, and performance of large tables.
- * Also note that the number of buckets should be a prime number.
-*/
-#define DPT_HASH_BUCKETS 1103
+struct DebuggerPatchKey
+{
+    TADDR address;
+    TADDR module;
+    mdMethodDef token;
+};
 
-class DebuggerPatchTable : private CHashTableAndData<CNewZeroData>
+struct DebuggerPatchListEntry : DebuggerHeapHashEntry
+{
+    DebuggerPatchKey key;
+    ULONG first;
+};
+
+class EMPTY_BASES DebuggerPatchListTraits : public DefaultSHashTraits<DebuggerPatchListEntry>
+{
+public:
+    typedef DebuggerPatchKey key_t;
+    static key_t GetKey(const element_t &element) { return element.key; }
+    static BOOL Equals(key_t left, key_t right)
+    {
+        return left.address == right.address && left.module == right.module && left.token == right.token;
+    }
+    static count_t Hash(key_t key)
+    {
+        TADDR value = key.address != 0 ? key.address : key.module;
+        return HashCOUNT_T(key.token, DebuggerHashPointer(value));
+    }
+    static element_t Null() { return {}; }
+    static element_t Deleted()
+    {
+        element_t element = {};
+        element.key.address = static_cast<TADDR>(-1);
+        return element;
+    }
+    static bool IsNull(const element_t &element) { return element.key.address == 0 && element.key.module == 0; }
+    static bool IsDeleted(const element_t &element) { return element.key.address == static_cast<TADDR>(-1); }
+};
+
+class DebuggerPatchTable
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerPatchTable);
 
+    friend struct ::cdac_data<DebuggerPatchTable>;
+
 public:
+#ifndef DACCESS_COMPILE
+    virtual ~DebuggerPatchTable();
+#else
     virtual ~DebuggerPatchTable() = default;
+#endif
 
     friend class DebuggerRCThread;
 private:
     //incremented so that we can get DPT-wide unique PIDs.
     // pid = Patch ID.
     SIZE_T m_patchId;
-    // Given a patch, retrieves the correct key.  The return value of this function is passed to Cmp(), Find(), etc.
-    SIZE_T Key(DebuggerControllerPatch *patch)
+    // Slots retain their indices when the SHash index grows. Readers in another process
+    // consume only this zero-initialized, contiguous storage and its published capacity.
+    TADDR m_pcEntries;
+    ULONG m_iEntries;
+    ULONG m_iFree;
+    SHash<DebuggerPatchListTraits> m_patchLists;
+
+    static DebuggerPatchKey Key(DebuggerControllerPatch *patch)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        // Most clients of CHashTable pass a host pointer as the key.   However, the key really could be
-        // anything.  In our case, the key can either be a host pointer of type DebuggerFunctionKey or
-        // the address of the patch.
-        if (patch->address == NULL)
-        {
-            return (SIZE_T)(&patch->key);
-        }
-        else
-        {
-            return (SIZE_T)(dac_cast<TADDR>(patch->address));
-        }
+        return patch->address == nullptr
+            ? DebuggerPatchKey{0, dac_cast<TADDR>(patch->key.module), patch->key.md}
+            : DebuggerPatchKey{dac_cast<TADDR>(patch->address), 0, 0};
     }
 
-    // Given two DebuggerControllerPatches, tells
-    // whether they are equal or not.  Does this by comparing the correct
-    // key.
-    // BYTE* pc1:  If pc2 is hashed by address,
-    //  pc1 is an address.  If
-    //  pc2 is hashed by DebuggerFunctionKey,
-    //  pc1 is a DebuggerFunctionKey
-    //Returns true if the two patches are equal, false otherwise
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
+    DebuggerControllerPatch *FindPatch(DebuggerPatchKey key)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        DebuggerControllerPatch * pPatch2 = dac_cast<PTR_DebuggerControllerPatch>(const_cast<HASHENTRY *>(pc2));
-
-        if (pPatch2->address == NULL)
-        {
-            // k1 is a host pointer of type DebuggerFunctionKey.
-            DebuggerFunctionKey * pKey1 = reinterpret_cast<DebuggerFunctionKey *>(k1);
-
-            return ((pKey1->module != pPatch2->key.module) || (pKey1->md != pPatch2->key.md));
-        }
-        else
-        {
-            return ((SIZE_T)(dac_cast<TADDR>(pPatch2->address)) != k1);
-        }
+        const DebuggerPatchListEntry *entry = m_patchLists.LookupPtr(key);
+        return entry == nullptr || entry->first == DPT_INVALID_SLOT ? nullptr
+            : EntryPtr(entry->first);
     }
 
-    //Computes a hash value based on an address
-    ULONG HashAddress(PTR_CORDB_ADDRESS_TYPE address)
+    DebuggerControllerPatch *EntryPtr(ULONG index)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (ULONG)(SIZE_T)(dac_cast<TADDR>(address));
+        return dac_cast<PTR_DebuggerControllerPatch>(m_pcEntries + index * sizeof(DebuggerControllerPatch));
     }
 
-    //Computes a hash value based on a DebuggerFunctionKey
-    ULONG HashKey(DebuggerFunctionKey * pKey)
+    ULONG ItemIndex(DebuggerControllerPatch *patch)
     {
-        SUPPORTS_DAC;
-        return HashPtr(pKey->md, pKey->module);
+        LIMITED_METHOD_DAC_CONTRACT;
+        return static_cast<ULONG>((dac_cast<TADDR>(patch) - m_pcEntries) / sizeof(DebuggerControllerPatch));
     }
 
-    //Computes a hash value from a patch, using the address field
-    // if the patch is hashed by address, using the DebuggerFunctionKey
-    // otherwise
-    ULONG Hash(DebuggerControllerPatch * pPatch)
-    {
-        SUPPORTS_DAC;
-
-        if (pPatch->address == NULL)
-            return HashKey(&(pPatch->key));
-        else
-            return HashAddress(pPatch->address);
-    }
+#ifndef DACCESS_COMPILE
+    DebuggerControllerPatch *AddPatch(DebuggerPatchKey key);
+    void EnsureList(DebuggerPatchKey key);
+    void LinkPatch(DebuggerControllerPatch *patch);
+#endif
     //Public Members
 public:
     enum {
@@ -729,7 +759,8 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    DebuggerPatchTable() : CHashTableAndData<CNewZeroData>(DPT_HASH_BUCKETS) { }
+    DebuggerPatchTable() : m_patchId(DCP_PATCHID_FIRST_VALID), m_pcEntries(0),
+        m_iEntries(0), m_iFree(DPT_INVALID_SLOT) { }
 
     HRESULT Init()
     {
@@ -737,8 +768,7 @@ public:
 
         m_patchId = DCP_PATCHID_FIRST_VALID;
 
-        SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        return NewInit(17, sizeof(DebuggerControllerPatch), 101);
+        return S_OK;
     }
 
     // Assuming that the chain of patches (as defined by all the
@@ -791,16 +821,12 @@ public:
     // We can hopefully remove them.
     static SIZE_T GetOffsetOfEntries()
     {
-        // assert that we the offsets of these fields in the base class is
-        // the same as the offset of this field in this class.
-        _ASSERTE((void*)(DebuggerPatchTable*)NULL == (void*)(CHashTableAndData<CNewZeroData>*)NULL);
-        return helper_GetOffsetOfEntries();
+        return offsetof(DebuggerPatchTable, m_pcEntries);
     }
 
     static SIZE_T GetOffsetOfCount()
     {
-        _ASSERTE((void*)(DebuggerPatchTable*)NULL == (void*)(CHashTableAndData<CNewZeroData>*)NULL);
-        return helper_GetOffsetOfCount();
+        return offsetof(DebuggerPatchTable, m_iEntries);
     }
 
     // GetPatch  find the first  patch in the hash table
@@ -812,12 +838,7 @@ public:
     // this Module,mdMethodDef pair
     DebuggerControllerPatch *GetPatch(Module *module, mdToken md)
     {
-        DebuggerFunctionKey key;
-
-        key.module = module;
-        key.md = md;
-
-        return reinterpret_cast<DebuggerControllerPatch *>(Find(HashKey(&key), (SIZE_T)&key));
+        return FindPatch({0, dac_cast<TADDR>(module), md});
     }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -829,44 +850,47 @@ public:
         SUPPORTS_DAC;
         ARM_ONLY(_ASSERTE(dac_cast<TADDR>(address) & THUMB_CODE));
 
-        DebuggerControllerPatch * pPatch =
-            dac_cast<PTR_DebuggerControllerPatch>(Find(HashAddress(address), (SIZE_T)(dac_cast<TADDR>(address))));
-
-        return pPatch;
+        return FindPatch({dac_cast<TADDR>(address), 0, 0});
     }
 
     DebuggerControllerPatch *GetNextPatch(DebuggerControllerPatch *prev);
 
     // Find the first patch in the patch table, and store
-    //      index info in info.  Along with GetNextPatch, this can
-    //      iterate through the whole patch table.  Note that since the
-    //      hashtable operates via iterating through all the contents
-    //      of all the buckets, if you add an entry while iterating
-    //      through the table, you  may or may not iterate across
+    //      the next slot index in pIndex. Along with GetNextPatch, this can
+    //      iterate through the whole patch table by scanning its slots.
+    //      If you add an entry while iterating
+    //      through the table, you may or may not iterate across
     //      the new entries.  You will iterate through all the entries
     //      that were present at the beginning of the run.  You
     //      safely delete anything you've already iterated by, anything
     //      else is kinda risky.
-    DebuggerControllerPatch * GetFirstPatch(HASHFIND * pInfo)
+    DebuggerControllerPatch *GetFirstPatch(ULONG *pIndex)
     {
         SUPPORTS_DAC;
 
-        return dac_cast<PTR_DebuggerControllerPatch>(FindFirstEntry(pInfo));
+        *pIndex = 0;
+        return GetNextPatch(pIndex);
     }
 
     // Along with GetFirstPatch, this can iterate through
     //      the whole patch table.  See GetFirstPatch for more info
     //      on the rules of iterating through the table.
-    DebuggerControllerPatch * GetNextPatch(HASHFIND * pInfo)
+    DebuggerControllerPatch *GetNextPatch(ULONG *pIndex)
     {
         SUPPORTS_DAC;
 
-        return dac_cast<PTR_DebuggerControllerPatch>(FindNextEntry(pInfo));
+        while (*pIndex < m_iEntries)
+        {
+            DebuggerControllerPatch *patch = EntryPtr((*pIndex)++);
+            if (!patch->IsFree())
+                return patch;
+        }
+        return nullptr;
     }
 
     // Used by DebuggerController to translate an index
     //      of a patch into a direct pointer.
-    inline HASHENTRY * GetEntryPtr(ULONG iEntry)
+    inline DebuggerControllerPatch *GetEntryPtr(ULONG iEntry)
     {
         SUPPORTS_DAC;
 
@@ -875,24 +899,23 @@ public:
 
     // Used by DebuggerController to grab indices of patches
     //      rather than holding direct pointers to them.
-    inline ULONG GetItemIndex(HASHENTRY * p)
+    inline ULONG GetItemIndex(DebuggerControllerPatch *patch)
     {
         SUPPORTS_DAC;
 
-        return ItemIndex(p);
+        return ItemIndex(patch);
     }
-
-#ifdef _DEBUG
-public:
-    // DEBUG An internal debugging routine, it iterates
-    //      through the hashtable, stopping at every
-    //      single entry, no matter what it's state.
-    void CheckPatchTable();
-#endif // _DEBUG
 
     // Count how many patches are in the table.
     // Use for asserts
     int GetNumberOfPatches();
+};
+
+template<>
+struct cdac_data<DebuggerPatchTable>
+{
+    static constexpr size_t Entries = offsetof(DebuggerPatchTable, m_pcEntries);
+    static constexpr size_t Count = offsetof(DebuggerPatchTable, m_iEntries);
 };
 
 typedef VPTR(class DebuggerPatchTable) PTR_DebuggerPatchTable;
@@ -999,7 +1022,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 #ifndef TARGET_UNIX
     MEMORY_BASIC_INFORMATION mbi;
 
-    if (sizeof(mbi) == ClrVirtualQuery(address, &mbi, sizeof(mbi)))
+    if (sizeof(mbi) == VirtualQuery(address, &mbi, sizeof(mbi)))
     {
         if (!(mbi.State & MEM_COMMIT))
         {
@@ -1028,6 +1051,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 class DebuggerController
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerController);
+    friend struct ::cdac_data<DebuggerController>;
 
 #if !defined(DACCESS_COMPILE)
 
@@ -1209,13 +1233,13 @@ private:
     static bool UnapplyPatch(DebuggerControllerPatch *patch);
     static bool IsPatched(CORDB_ADDRESS_TYPE *address, BOOL native);
 
-    static void ActivatePatch(DebuggerControllerPatch *patch);
+    static bool ActivatePatch(DebuggerControllerPatch *patch);
     static void DeactivatePatch(DebuggerControllerPatch *patch);
 
     static void ApplyTraceFlag(Thread *thread);
     static void UnapplyTraceFlag(Thread *thread);
 
-    virtual void DebuggerDetachClean();
+    virtual bool DebuggerDetachClean();
 
   public:
     static const BYTE *GetILPrestubDestination(const BYTE *prestub);
@@ -1278,7 +1302,7 @@ public:
                   AppDomain *pAppDomain);
 
     // Add a patch at the start of a not-yet-jitted method.
-    void AddPatchToStartOfLatestMethod(MethodDesc * fd);
+    BOOL AddPatchToStartOfLatestMethod(MethodDesc * fd);
 
 
     // This version is particularly useful b/c it doesn't assume that the
@@ -1339,9 +1363,6 @@ public:
     void Dequeue();
 
   protected:
-    // Helper function that is called on each virtual trace call target to set a trace patch
-    static void PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData);
-
     DebuggerControllerPatch *AddILPrimaryPatch(Module *module,
                   mdMethodDef md,
                   MethodDesc *pMethodDescFilter,
@@ -1469,8 +1490,13 @@ private:
 #endif // !DACCESS_COMPILE
 };
 
-
 #if !defined(DACCESS_COMPILE)
+
+template<>
+struct cdac_data<DebuggerController>
+{
+    static constexpr DebuggerPatchTable **PatchTable = &DebuggerController::g_patches;
+};
 
 // this structure stores useful information about single-stepping over a call instruction
 // it is used to communicate the patch skip opcode and current state between the controller on left side and HandleSetThreadContextNeeded on the right side
@@ -1515,11 +1541,9 @@ class DebuggerPatchSkip : public DebuggerController
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
         { return DEBUGGER_CONTROLLER_PATCH_SKIP; }
 
-    void CopyInstructionBlock(BYTE *to, const BYTE* from);
-
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
 
-    void DebuggerDetachClean();
+    bool DebuggerDetachClean();
 
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump
@@ -1542,8 +1566,8 @@ public:
 
 #endif // !FEATURE_EMULATE_SINGLESTEP
 
-    BOOL IsInPlaceSingleStep() 
-    { 
+    BOOL IsInPlaceSingleStep()
+    {
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
         // only in-place single steps over call intructions are supported at this time
@@ -1639,6 +1663,9 @@ protected:
                       TraceDestination *pTD);
 
     bool TrapStep(ControllerStackInfo *info, bool in);
+#ifdef FEATURE_INTERPRETER
+    bool TrapInterpreterCodeStep(ControllerStackInfo *info, bool in, DebuggerJitInfo *ji);
+#endif
 
     // @todo - must remove that fForceTraditional flag. Need a way for a JMC stepper
     // to do a Trad step out.
@@ -1740,7 +1767,6 @@ protected:
     COR_DEBUG_STEP_RANGE *  m_range; // Ranges for active steppers are always in native offsets.
 
     SIZE_T                  m_rangeCount;
-    SIZE_T                  m_realRangeCount; // @todo - delete b/c only used for CodePitching & Old-Enc
 
     // The original step intention.
     // As the stepper moves through code, it may change its other members.
@@ -1762,11 +1788,9 @@ protected:
     // This is the only frame that the ranges are valid in.
     FramePointer            m_fp;
 
-#if defined(FEATURE_EH_FUNCLETS)
     // This frame pointer is used for funclet stepping.
     // See IsRangeAppropriate() for more information.
     FramePointer            m_fpParentMethod;
-#endif // FEATURE_EH_FUNCLETS
 
     //m_fpException is 0 if we haven't stepped into an exception,
     //  and is ignored.  If we get a TriggerUnwind while mid-step, we note
@@ -1836,6 +1860,66 @@ protected:
 private:
 
 };
+
+
+#ifdef FEATURE_INTERPRETER
+/* ------------------------------------------------------------------------- *
+ * InterpreterStepHelper
+ * ------------------------------------------------------------------------- */
+// InterpreterStepHelper: Implements stepping through interpreter code using
+// control flow prediction and breakpoint patches.
+//
+// The interpreter runtime doesn't support single-stepping, nor do we emulate
+// it in a general-purpose way (cf. FEATURE_EMULATE_SINGLESTEP for ARM).
+// Instead we've implemented alternate solutions for debugger scenarios that
+// traditionally rely upon it:
+//
+//   - For breakpoint skipping the interpreter allows executing an alternate
+//     opcode on a per-thread basis (see BypassPatch in ActivatePatchSkip).
+//   - For stepping we primarily use control flow prediction + breakpoints:
+//     we analyze the current bytecode instruction and place breakpoint patches
+//     at all possible next instruction locations.
+//   - For step-in on calls (both direct and indirect) we rely on JMC
+//     method-enter backstops. The interpreter's INTOP_DEBUG_METHOD_ENTER fires
+//     for all interpreted methods (not just JMC), so this reliably catches
+//     entry into any interpreted target. A step-over patch is also placed as
+//     fallback in case the target doesn't trigger MethodEnter.
+//
+class InterpreterStepHelper
+{
+public:
+    // Result of SetupStep operation
+    enum StepSetupResult
+    {
+        SSR_Success,            // Breakpoints placed, step can proceed
+        SSR_NeedStepIn,         // Caller should handle step-in (call target available)
+        SSR_NeedStepOut,        // Caller should invoke TrapStepOut (return/throw)
+        SSR_Failed              // Could not set up step
+    };
+
+    InterpreterStepHelper(DebuggerStepper* pStepper,
+                           ControllerStackInfo* pInfo,
+                           DebuggerJitInfo* pJitInfo);
+
+    // Analyze instruction at current IP and set up breakpoints for stepping.
+    // Returns result indicating how caller should proceed.
+    StepSetupResult SetupStep(bool stepIn);
+
+    // Get the walk type of the current instruction (for logging/debugging)
+    WALK_TYPE GetWalkType() const { return m_walkType; }
+
+private:
+    // Add a breakpoint patch at the given interpreter bytecode address
+    void AddInterpreterPatch(const int32_t* pIP);
+
+    DebuggerStepper*        m_pStepper;
+    ControllerStackInfo*    m_pInfo;
+    DebuggerJitInfo*        m_pJitInfo;
+    PCODE                   m_currentPC;
+    InterpMethod*           m_pInterpMethod;
+    WALK_TYPE               m_walkType;
+};
+#endif // FEATURE_INTERPRETER
 
 
 /* ------------------------------------------------------------------------- *

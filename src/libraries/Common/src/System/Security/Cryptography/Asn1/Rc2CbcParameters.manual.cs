@@ -10,9 +10,9 @@ namespace System.Security.Cryptography.Asn1
     // Since 3370 says to just use that alternative there's no fallback in this code for handling
     // just an IV which means that an effective key size of 32-bits has been chosen.  Since 40-bit is the
     // smallest supported by .NET that's not really a problem.
-    internal partial struct Rc2CbcParameters
+    file static class Rc2CbcEncoding
     {
-        private static ReadOnlySpan<byte> Rc2EkbEncoding =>
+        internal static ReadOnlySpan<byte> Rc2EkbEncoding =>
         [
             0xbd, 0x56, 0xea, 0xf2, 0xa2, 0xf1, 0xac, 0x2a, 0xb0, 0x93, 0xd1, 0x9c, 0x1b, 0x33, 0xfd, 0xd0,
             0x30, 0x04, 0xb6, 0xdc, 0x7d, 0xdf, 0x32, 0x4b, 0xf7, 0xcb, 0x45, 0x9b, 0x31, 0xbb, 0x21, 0x5a,
@@ -31,12 +31,15 @@ namespace System.Security.Cryptography.Asn1
             0x64, 0x6d, 0x7a, 0xd4, 0x10, 0x81, 0x44, 0xef, 0x49, 0xd6, 0xae, 0x2e, 0xdd, 0x76, 0x5c, 0x2f,
             0xa7, 0x1c, 0xc9, 0x09, 0x69, 0x9a, 0x83, 0xcf, 0x29, 0x39, 0xb9, 0xe9, 0x4c, 0xff, 0x43, 0xab,
         ];
+    }
 
+    internal partial struct Rc2CbcParameters
+    {
         internal Rc2CbcParameters(ReadOnlyMemory<byte> iv, int keySize)
         {
             Rc2Version = keySize > byte.MaxValue ?
                 keySize :
-                Rc2EkbEncoding[keySize];
+                Rc2CbcEncoding.Rc2EkbEncoding[keySize];
 
             Iv = iv;
         }
@@ -44,6 +47,14 @@ namespace System.Security.Cryptography.Asn1
         internal int GetEffectiveKeyBits() =>
             Rc2Version > byte.MaxValue ?
                 Rc2Version :
-                Rc2EkbEncoding.IndexOf((byte)Rc2Version);
+                Rc2CbcEncoding.Rc2EkbEncoding.IndexOf((byte)Rc2Version);
+    }
+
+    internal ref partial struct ValueRc2CbcParameters
+    {
+        internal int GetEffectiveKeyBits() =>
+            Rc2Version > byte.MaxValue ?
+                Rc2Version :
+                Rc2CbcEncoding.Rc2EkbEncoding.IndexOf((byte)Rc2Version);
     }
 }

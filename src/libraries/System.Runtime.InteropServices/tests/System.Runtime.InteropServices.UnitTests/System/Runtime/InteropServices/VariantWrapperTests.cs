@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(null)]
         [InlineData(1)]
         [InlineData("Value")]
-        public void Ctor_Value(object value)
+        public void Ctor_Value(object? value)
         {
             var wrapper = new VariantWrapper(value);
             Assert.Equal(value, wrapper.WrappedObject);

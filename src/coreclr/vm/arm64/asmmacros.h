@@ -1,30 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-;-----------------------------------------------------------------------------
-; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
-; name (e.g. C++ decorated names).
-    MACRO
-      SETALIAS   $name, $symbol
-        GBLS    $name
-$name   SETS    "|$symbol|"
-    MEND
+#include "arm64/AsmMacros_Windows.h"
 
-;-----------------------------------------------------------------------------
-; Basic extension of Assembler Macros- For Consistency
-
-    MACRO
-        EPILOG_BRANCH_REG $reg
-
-        EPILOG_NOP br $reg
-    MEND
-;-----------------------------------------------------------------------------
-
-    MACRO
-        EPILOG_BRANCH $_target
-
-        EPILOG_NOP b $_target
-    MEND
 ;-----------------------------------------------------------------------------
 ; The following group of macros assist in implementing prologs and epilogs for methods that set up some
 ; subclass of TransitionFrame. They ensure that the SP is 16-byte aligned at the conclusion of the prolog
@@ -33,10 +11,15 @@ $name   SETS    "|$symbol|"
 ; Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
 ; comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned
 ;
+; $pushCalleeSavedFloatRegs - Optional parameter. If set to PushCalleeSavedFloatRegs, the macro will also save
+;                             the callee-saved floating point registers (d8-d15) to the stack. These registers
+;                             are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+;
     MACRO
-        PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs
+        PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs, $pushCalleeSavedFloatRegs
 
         GBLA __PWTB_FloatArgumentRegisters
+        GBLA __PWTB_FloatCalleeSavedRegisters
         GBLA __PWTB_ArgumentRegisters
         GBLA __PWTB_ArgumentRegister_FirstArg ; We save the x8 register ahead of the first argument, so this
                                               ; is different from the start of the argument register save area.
@@ -51,13 +34,20 @@ __PWTB_SaveFPArgs SETL {true}
         ENDIF
 
         IF "$extraLocals" != ""
-__PWTB_FloatArgumentRegisters SETA $extraLocals
+__PWTB_FloatCalleeSavedRegisters SETA $extraLocals
         ELSE
-__PWTB_FloatArgumentRegisters SETA 0
+__PWTB_FloatCalleeSavedRegisters SETA 0
         ENDIF
 
-        IF __PWTB_FloatArgumentRegisters:MOD:16 != 0
-__PWTB_FloatArgumentRegisters SETA __PWTB_FloatArgumentRegisters + 8
+        IF __PWTB_FloatCalleeSavedRegisters:MOD:16 != 0
+__PWTB_FloatCalleeSavedRegisters SETA __PWTB_FloatCalleeSavedRegisters + 8
+        ENDIF
+
+        ; If PushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
+__PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters + 64
+        ELSE
+__PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters
         ENDIF
 
         IF __PWTB_SaveFPArgs
@@ -86,6 +76,14 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
 
         IF __PWTB_SaveFPArgs
         SAVE_FLOAT_ARGUMENT_REGISTERS  sp, __PWTB_FloatArgumentRegisters
+        ENDIF
+
+        ; Save callee-saved floating point registers if requested
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
+        stp     d8, d9, [sp, #__PWTB_FloatCalleeSavedRegisters]
+        stp     d10, d11, [sp, #(__PWTB_FloatCalleeSavedRegisters + 16)]
+        stp     d12, d13, [sp, #(__PWTB_FloatCalleeSavedRegisters + 32)]
+        stp     d14, d15, [sp, #(__PWTB_FloatCalleeSavedRegisters + 48)]
         ENDIF
 
     MEND
@@ -139,39 +137,12 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
     MEND
 
 ;-----------------------------------------------------------------------------
-; Macro used to end a function with explicit _End label
-    MACRO
-    LEAF_END_MARKED $FuncName
-
-    LCLS __EndLabelName
-__EndLabelName SETS "$FuncName":CC:"_End"
-    EXPORT $__EndLabelName
-$__EndLabelName
-
-    LEAF_END $FuncName
-
-    ; make sure this symbol gets its own address
-    nop
-
-    MEND
-;-----------------------------------------------------------------------------
-; Macro use for enabling C++ to know where to patch code at runtime.
-    MACRO
-    PATCH_LABEL $FuncName
-$FuncName
-    EXPORT $FuncName
-
-    MEND
-
-;-----------------------------------------------------------------------------
 ; Macros used for shared allocation helpers
 
     SETALIAS t_runtime_thread_locals, ?t_runtime_thread_locals@@3URuntimeThreadLocals@@A
 
     MACRO
     INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
-
-        EXTERN $t_runtime_thread_locals
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, $t_runtime_thread_locals
     MEND
@@ -204,103 +175,53 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
     MEND
 
-#define GC_ALLOC_FINALIZE 1
-
-;-----------------------------------------------------------------------------
-; Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
-; out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
-; before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
-; is misaligned.
+; Pushes a full TransitionBlock on the stack including argument registers and
+; floating point argument registers. Used for exception throw helpers where we
+; need to capture the complete register state including FP callee-saved registers.
 ;
-    MACRO
-        CHECK_STACK_ALIGNMENT
-
-#ifdef _DEBUG
-        add     x9, sp, xzr
-        tst     x9, #15
-        beq     %F0
-        EMIT_BREAKPOINT
-0
-#endif
-    MEND
-
-;-----------------------------------------------------------------------------
-; The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-; base address to be passed in $reg
+; Stack layout (from low to high address):
+;   sp+0:     FP callee-saved registers (d8-d15, 64 bytes)
+;   sp+64:    FloatArgumentRegisters (q0-q7, 128 bytes)
+;   sp+192:   TransitionBlock start (176 bytes)
+;             - CalleeSavedRegisters (fp, lr, x19-x28 - 96 bytes)
+;             - padding (8 bytes)
+;             - x8 (8 bytes)
+;             - ArgumentRegisters (x0-x7, 64 bytes)
 ;
-
-; Reserve 72 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
+; On exit, $Target contains the TransitionBlock pointer (sp+192).
     MACRO
-       SAVE_ARGUMENT_REGISTERS $reg, $offset
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $Target
 
-       GBLA __PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
 
-       IF "$offset" != ""
-__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
+        ; Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, #16
+        PROLOG_SAVE_REG_PAIR   x21, x22, #32
+        PROLOG_SAVE_REG_PAIR   x23, x24, #48
+        PROLOG_SAVE_REG_PAIR   x25, x26, #64
+        PROLOG_SAVE_REG_PAIR   x27, x28, #80
 
-        str                    x8, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET)]
-        stp                    x0, x1, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 8)]
-        stp                    x2, x3, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 24)]
-        stp                    x4, x5, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 40)]
-        stp                    x6, x7, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 56)]
+        ; Allocate space for FloatArgumentRegisters (128) + FP callee-saved (64) = 192 bytes
+        PROLOG_STACK_ALLOC 192
 
-    MEND
+        ; Save argument registers (x8, x0-x7) at offset 296 from sp (192 + 104)
+        SAVE_ARGUMENT_REGISTERS sp, 296
 
-; Reserve 128 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
-    MACRO
-       SAVE_FLOAT_ARGUMENT_REGISTERS $reg, $offset
+        ; Save floating point argument registers (q0-q7) at sp+64
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, 64
 
-       GBLA __PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET
+        ; Save FP callee-saved registers (d8-d15) at sp+0
+        str     d8,  [sp, #0]
+        str     d9,  [sp, #8]
+        str     d10, [sp, #16]
+        str     d11, [sp, #24]
+        str     d12, [sp, #32]
+        str     d13, [sp, #40]
+        str     d14, [sp, #48]
+        str     d15, [sp, #56]
 
-       IF "$offset" != ""
-__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
-
-        stp                    q0, q1, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
-        stp                    q2, q3, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
-        stp                    q4, q5, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 64)]
-        stp                    q6, q7, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 96)]
-    MEND
-
-    MACRO
-       RESTORE_ARGUMENT_REGISTERS $reg, $offset
-
-       GBLA __PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET
-
-       IF "$offset" != ""
-__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
-
-        ldr                    x8, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET)]
-        ldp                    x0, x1, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 8)]
-        ldp                    x2, x3, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 24)]
-        ldp                    x4, x5, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 40)]
-        ldp                    x6, x7, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 56)]
-
-    MEND
-
-    MACRO
-       RESTORE_FLOAT_ARGUMENT_REGISTERS $reg, $offset
-
-       GBLA __PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET
-
-       IF "$offset" != ""
-__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
-
-        ldp                    q0, q1, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
-        ldp                    q2, q3, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
-        ldp                    q4, q5, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 64)]
-        ldp                    q6, q7, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 96)]
+        ; Set target to TransitionBlock pointer
+        add     $Target, sp, #192
     MEND
 
 ; ------------------------------------------------------------------
@@ -367,42 +288,12 @@ $__RedirectionStubEndFuncName
 
 ;; -----------------------------------------------------------------------------
 ;;
-;; Macro to get a pointer to a threadlocal symbol for the currently executing thread
-;;
-
-__tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
-
-    MACRO
-        INLINE_GET_TLS_VAR $destReg, $trashReg, $variable
-
-        EXTERN _tls_index
-
-        ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
-        ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
-        LCLS TrashRegister32Bit
-TrashRegister32Bit SETS "$trashReg"
-TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
-
-        adrp        $destReg, _tls_index
-        ldr         $TrashRegister32Bit, [$destReg, _tls_index]
-        ldr         $destReg, [xpr, #__tls_array]
-        ldr         $destReg, [$destReg, $TrashRegister32Bit uxtw #3]
-        add         $destReg, $destReg, #0, lsl #0xC
-        RELOC       0xA, $variable                          ;; IMAGE_REL_ARM64_SECREL_HIGH12A
-        add         $destReg, $destReg, #0, lsl #0
-        RELOC       0x9, $variable                          ;; IMAGE_REL_ARM64_SECREL_LOW12A
-    MEND
-
-;; -----------------------------------------------------------------------------
-;;
 ;; Macro to get a pointer to the Thread* object for the currently executing thread
 ;;
     SETALIAS t_CurrentThreadInfo, ?t_CurrentThreadInfo@@3UThreadLocalInfo@@A
 
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
-
-        EXTERN $t_CurrentThreadInfo
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, $t_CurrentThreadInfo
         ldr $destReg, [$destReg]                            ;; return t_CurrentThreadInfo.m_pThread

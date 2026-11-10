@@ -35,12 +35,16 @@ provider_prepare_callback_data (
 // _Requires_lock_held (ep)
 static
 void
-provider_refresh_all_events (EventPipeProvider *provider);
+provider_refresh_all_events (
+	EventPipeProvider *provider,
+	uint64_t session_mask);
 
 // _Requires_lock_held (ep)
 static
 void
-provider_refresh_event_state (EventPipeEvent *ep_event);
+provider_refresh_event_state (
+	EventPipeEvent *ep_event,
+	uint64_t session_mask);
 
 // Compute the enabled bit mask, the ith bit is 1 iff an event with the
 // given (provider, keywords, eventLevel) is enabled for the ith session.
@@ -50,8 +54,7 @@ int64_t
 provider_compute_event_enable_mask (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
-	int64_t keywords,
-	EventPipeEventLevel event_level);
+	const EventPipeEvent *ep_event);
 
 /*
  * EventPipeProvider.
@@ -97,7 +100,9 @@ provider_prepare_callback_data (
 
 static
 void
-provider_refresh_all_events (EventPipeProvider *provider)
+provider_refresh_all_events (
+	EventPipeProvider *provider,
+	uint64_t session_mask)
 {
 	EP_ASSERT (provider != NULL);
 
@@ -106,7 +111,7 @@ provider_refresh_all_events (EventPipeProvider *provider)
 	EP_ASSERT (provider->event_list != NULL);
 
 	DN_LIST_FOREACH_BEGIN (EventPipeEvent *, current_event, provider->event_list) {
-		provider_refresh_event_state (current_event);
+		provider_refresh_event_state (current_event, session_mask);
 	} DN_LIST_FOREACH_END;
 
 	ep_requires_lock_held ();
@@ -115,7 +120,9 @@ provider_refresh_all_events (EventPipeProvider *provider)
 
 static
 void
-provider_refresh_event_state (EventPipeEvent *ep_event)
+provider_refresh_event_state (
+	EventPipeEvent *ep_event,
+	uint64_t session_mask)
 {
 	EP_ASSERT (ep_event != NULL);
 
@@ -127,8 +134,13 @@ provider_refresh_event_state (EventPipeEvent *ep_event)
 	EventPipeConfiguration *config = provider->config;
 	EP_ASSERT (config != NULL);
 
-	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event_get_keywords (ep_event), ep_event_get_level (ep_event));
+	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event);
 	ep_event_set_enabled_mask (ep_event, enable_mask);
+
+	// If session_mask is not zero, that session is being enabled/disabled.
+	// We need to unset the metadata_written_mask for this session.
+	if (session_mask != 0)
+		ep_event_update_metadata_written_mask (ep_event, session_mask, false);
 
 	ep_requires_lock_held ();
 	return;
@@ -139,8 +151,7 @@ int64_t
 provider_compute_event_enable_mask (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
-	int64_t keywords,
-	EventPipeEventLevel event_level)
+	const EventPipeEvent *ep_event)
 {
 	EP_ASSERT (provider != NULL);
 
@@ -148,29 +159,21 @@ provider_compute_event_enable_mask (
 
 	int64_t result = 0;
 	bool provider_enabled = ep_provider_get_enabled (provider);
+	if (!provider_enabled)
+		return result;
+
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
-		if (session) {
-			EventPipeSessionProvider *session_provider = config_get_session_provider (config, session, provider);
-			if (session_provider) {
-				int64_t session_keyword = ep_session_provider_get_keywords (session_provider);
-				EventPipeEventLevel session_level = ep_session_provider_get_logging_level (session_provider);
-				// The event is enabled if:
-				//  - The provider is enabled.
-				//  - The event keywords are unspecified in the manifest (== 0) or when masked with the enabled config are != 0.
-				//  - The event level is LogAlways
-                //    or the provider's verbosity level is LogAlways
-                //    or the provider's verbosity level is set to greater than the event's verbosity level in the manifest.
-				bool keyword_enabled = (keywords == 0) || ((session_keyword & keywords) != 0);
-				bool level_enabled = (event_level == EP_EVENT_LEVEL_LOGALWAYS) ||
-                    (session_level == EP_EVENT_LEVEL_LOGALWAYS) ||
-                    (session_level >= event_level);
+		if (session == NULL)
+			continue;
 
-				if (provider_enabled && keyword_enabled && level_enabled)
-					result = result | ep_session_get_mask (session);
-			}
-		}
+		EventPipeSessionProvider *session_provider = config_get_session_provider (config, session, provider);
+		if (session_provider == NULL)
+			continue;
+
+		if (ep_session_provider_allows_event (session_provider, ep_event))
+			result = result | ep_session_get_mask (session);
 	}
 
 	ep_requires_lock_held ();
@@ -287,7 +290,7 @@ ep_provider_add_event (
 	// Take the config lock before inserting a new event.
 	EP_LOCK_ENTER (section1)
 		ep_raise_error_if_nok_holding_lock (dn_list_push_back (provider->event_list, instance), section1);
-		provider_refresh_event_state (instance);
+		provider_refresh_event_state (instance, 0);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -333,7 +336,7 @@ provider_set_config (
 	provider->keywords = keywords_for_all_sessions;
 	provider->provider_level = level_for_all_sessions;
 
-	provider_refresh_all_events (provider);
+	provider_refresh_all_events (provider, session_mask);
 	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, session_id);
 
 	ep_requires_lock_held ();
@@ -362,15 +365,30 @@ provider_unset_config (
 	provider->keywords = keywords_for_all_sessions;
 	provider->provider_level = level_for_all_sessions;
 
-	provider_refresh_all_events (provider);
+	provider_refresh_all_events (provider, session_mask);
 	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, (EventPipeSessionID)0);
 
 	ep_requires_lock_held ();
 	return callback_data;
 }
 
+const EventPipeProviderCallbackData *
+provider_prepare_capture_state_callback (
+	EventPipeProvider *provider,
+	EventPipeProviderCallbackData *provider_callback_data,
+	EventPipeSessionID session_id)
+{
+	ep_requires_lock_held ();
+
+	return provider_prepare_callback_data (
+		provider, provider->keywords, provider->provider_level, NULL, provider_callback_data, session_id);
+}
+
+static
 void
-provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
+provider_invoke_callback_core (
+	EventPipeProviderCallbackData *provider_callback_data,
+	unsigned long control_code)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
@@ -381,7 +399,6 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 
 	const ep_char8_t *filter_data = ep_provider_callback_data_get_filter_data (provider_callback_data);
 	EventPipeCallback callback_function = ep_provider_callback_data_get_callback_function (provider_callback_data);
-	bool enabled = ep_provider_callback_data_get_enabled (provider_callback_data);
 	int64_t keywords = ep_provider_callback_data_get_keywords (provider_callback_data);
 	EventPipeEventLevel provider_level = ep_provider_callback_data_get_provider_level (provider_callback_data);
 	void *callback_data = ep_provider_callback_data_get_callback_data (provider_callback_data);
@@ -425,14 +442,11 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 		is_event_filter_desc_init = true;
 	}
 
-	// NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
-	// If we want to add new ControlCode, we have to make corresponding change in ETW callback signature
-	// to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
 	if (callback_function && !ep_rt_process_shutdown ()) {
 		ep_rt_provider_invoke_callback (
 			callback_function,
 			(uint8_t *)(session_id == 0 ? NULL : &session_id), /* session_id */
-			enabled ? 1 : 0, /* ControlCode */
+			control_code,
 			(uint8_t)provider_level,
 			(uint64_t)keywords,
 			0, /* match_all_keywords */
@@ -462,6 +476,19 @@ ep_on_exit:
 
 ep_on_error:
 	ep_exit_error_handler ();
+}
+
+void
+provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
+{
+	provider_invoke_callback_core (
+		provider_callback_data, ep_provider_callback_data_get_enabled (provider_callback_data) ? 1 : 0);
+}
+
+void
+provider_invoke_capture_state_callback (EventPipeProviderCallbackData *provider_callback_data)
+{
+	provider_invoke_callback_core (provider_callback_data, 2 /* EVENT_CONTROL_CODE_CAPTURE_STATE */);
 }
 
 EventPipeProvider *
@@ -527,7 +554,7 @@ provider_add_event (
 	ep_raise_error_if_nok (instance != NULL);
 
 	ep_raise_error_if_nok (dn_list_push_back (provider->event_list, instance));
-	provider_refresh_event_state (instance);
+	provider_refresh_event_state (instance, 0);
 
 ep_on_exit:
 	ep_requires_lock_held ();

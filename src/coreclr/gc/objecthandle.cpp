@@ -3,9 +3,6 @@
 
 /*
  * Wraps handle table to implement various handle types (Strong, Weak, etc.)
- *
-
- *
  */
 
 #include "common.h"
@@ -19,6 +16,8 @@
 #include "handletablepriv.h"
 
 #include "gchandletableimpl.h"
+
+#include "gcbridge.h"
 
 HandleTableMap g_HandleTableMap;
 
@@ -276,8 +275,8 @@ void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
 
     if (!g_theGCHeap->IsPromoted(*pPrimaryRef))
     {
-        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pPrimaryRef)));
-        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pSecondaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable " LOG_OBJECT_CLASS(*pPrimaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable " LOG_OBJECT_CLASS(*pSecondaryRef)));
         *pPrimaryRef = NULL;
         *pSecondaryRef = NULL;
     }
@@ -478,7 +477,10 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     case    HNDTYPE_STRONG:
 #ifdef FEATURE_SIZED_REF_HANDLES
     case    HNDTYPE_SIZEDREF:
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
+#ifdef FEATURE_JAVAMARSHAL
+    case    HNDTYPE_CROSSREFERENCE:
+#endif // FEATURE_JAVAMARSHAL
         break;
 
     case    HNDTYPE_PINNED:
@@ -572,6 +574,7 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_NATIVE_COM
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_INTERIOR_POINTER
+    HNDF_EXTRAINFO, // HNDTYPE_CROSSREFERENCE
 };
 
 int getNumberOfSlots()
@@ -635,7 +638,6 @@ bool Ref_Initialize()
     {
         NOTHROW;
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return false);
     }
     CONTRACTL_END;
 
@@ -738,95 +740,6 @@ void Ref_Shutdown()
     }
 }
 
-bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        INJECT_FAULT(return false);
-    }
-    CONTRACTL_END;
-
-    HandleTableBucket *result = bucket;
-    HandleTableMap *walk = &g_HandleTableMap;
-
-    HandleTableMap *last = NULL;
-    uint32_t offset = 0;
-
-    result->pTable = NULL;
-
-    // create handle table set for the bucket
-    int n_slots = getNumberOfSlots();
-
-    HandleTableBucketHolder bucketHolder(result, n_slots);
-
-    result->pTable = new (nothrow) HHANDLETABLE[n_slots];
-    if (!result->pTable)
-    {
-        return false;
-    }
-
-    ZeroMemory(result->pTable, n_slots * sizeof(HHANDLETABLE));
-
-    for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++) {
-        result->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, ARRAY_SIZE(s_rgTypeFlags));
-        if (!result->pTable[uCPUindex])
-            return false;
-    }
-
-    for (;;) {
-        // Do we have free slot
-        while (walk) {
-            for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++) {
-                if (walk->pBuckets[i] == 0) {
-                    for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++)
-                        HndSetHandleTableIndex(result->pTable[uCPUindex], i+offset);
-
-                    result->HandleTableIndex = i+offset;
-                    if (Interlocked::CompareExchangePointer(&walk->pBuckets[i], result, NULL) == 0) {
-                        // Get a free slot.
-                        bucketHolder.SuppressRelease();
-                        return true;
-                    }
-                }
-            }
-            last = walk;
-            offset = walk->dwMaxIndex;
-            walk = walk->pNext;
-        }
-
-        // No free slot.
-        // Let's create a new node
-        HandleTableMap *newMap = new (nothrow) HandleTableMap;
-        if (!newMap)
-        {
-            return false;
-        }
-
-        newMap->pBuckets = new (nothrow) HandleTableBucket * [ INITIAL_HANDLE_TABLE_ARRAY_SIZE ];
-        if (!newMap->pBuckets)
-        {
-            delete newMap;
-            return false;
-        }
-
-        newMap->dwMaxIndex = last->dwMaxIndex + INITIAL_HANDLE_TABLE_ARRAY_SIZE;
-        newMap->pNext = NULL;
-        ZeroMemory(newMap->pBuckets,
-                INITIAL_HANDLE_TABLE_ARRAY_SIZE * sizeof (HandleTableBucket *));
-
-        if (Interlocked::CompareExchangePointer(&last->pNext, newMap, NULL) != NULL)
-        {
-            // This thread loses.
-            delete [] newMap->pBuckets;
-            delete newMap;
-        }
-        walk = last->pNext;
-        offset = last->dwMaxIndex;
-    }
-}
-
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
 {
     LIMITED_METHOD_CONTRACT;
@@ -923,38 +836,6 @@ uint32_t GetVariableHandleType(OBJECTHANDLE handle)
     WRAPPER_NO_CONTRACT;
 
     return (uint32_t)HndGetHandleExtraInfo(handle);
-}
-
-/*
- * UpdateVariableHandleType.
- *
- * Changes the dynamic type of a variable-strength handle.
- *
- * N.B. This routine is not a macro since we do validation in RETAIL.
- * We always validate the type here because it can come from external callers.
- */
-void UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // verify that we are being asked to set a valid type
-    if (!IS_VALID_VHT_VALUE(type))
-    {
-        // bogus value passed in
-        _ASSERTE(FALSE);
-        return;
-    }
-
-    // <REVISIT_TODO> (francish)  CONCURRENT GC NOTE</REVISIT_TODO>
-    //
-    // If/when concurrent GC is implemented, we need to make sure variable handles
-    // DON'T change type during an asynchronous scan, OR that we properly recover
-    // from the change.  Some changes are benign, but for example changing to or
-    // from a pinning handle in the middle of a scan would not be fun.
-    //
-
-    // store the type in the handle's extra info
-    HndSetHandleExtraInfo(handle, HNDTYPE_VARIABLE, (uintptr_t)type);
 }
 
 /*
@@ -1201,9 +1082,6 @@ void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintpt
     UNREFERENCED_PARAMETER(lParam2);
 #endif // FEATURE_REFCOUNTED_HANDLES
 }
-
-
-
 
 void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
@@ -1529,6 +1407,118 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 }
 #endif // FEATURE_SIZED_REF_HANDLES
 
+#ifdef FEATURE_JAVAMARSHAL
+
+static void NullBridgeObjectWeakRef(Object **handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
+{
+    size_t length = (size_t)param1;
+    Object*** bridgeHandleArray = (Object***)param2;
+
+    Object* weakRef = *handle;
+    for (size_t i = 0; i < length; i++)
+    {
+        Object* bridgeRef = *bridgeHandleArray[i];
+        // FIXME Store these objects in a hashtable in order to optimize lookup
+        if (weakRef == bridgeRef)
+        {
+            LOG((LF_GC, LL_INFO100, LOG_HANDLE_OBJECT_CLASS("Null bridge Weak-", handle, "to unreachable ", weakRef)));
+            *handle = NULL;
+        }
+    }
+}
+
+void Ref_NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles)
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // We are in cooperative mode so no GC should happen while we null these handles.
+    // WeakReference access from managed code should wait for this to finish as part
+    // of bridge processing finish. Other GCHandle accesses could be racy with this.
+
+    int max_slots = getNumberOfSlots();
+    uint32_t handleType[] = { HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG };
+
+    HandleTableMap *walk = &g_HandleTableMap;
+    while (walk)
+    {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
+        {
+            if (walk->pBuckets[i] != NULL)
+            {
+                for (int j = 0; j < max_slots; j++)
+                {
+                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[j];
+                    if (hTable)
+                        HndEnumHandles(hTable, handleType, 2, NullBridgeObjectWeakRef, length, (uintptr_t)unreachableObjectHandles, false);
+                }
+            }
+        }
+        walk = walk->pNext;
+    }
+}
+
+void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintptr_t* pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Object** ppRef = (Object**)pObjRef;
+    if (!g_theGCHeap->IsPromoted(*ppRef))
+    {
+        RegisterBridgeObject(*ppRef, *pExtraInfo);
+        if (lp2 != 0)
+            RegisterPendingBridgeHandle((uintptr_t)pObjRef);
+    }
+}
+
+uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext* sc, size_t* numObjs)
+{
+    WRAPPER_NO_CONTRACT;
+
+    LOG((LF_GC | LF_CORPROF, LL_INFO10000, "Building bridge object graphs.\n"));
+    uint32_t flags = HNDGCF_NORMAL;
+    uint32_t type = HNDTYPE_CROSSREFERENCE;
+    bool shouldProcessBridgeObjects = ShouldProcessBridgeObjects();
+
+    BridgeResetData(shouldProcessBridgeObjects);
+
+    HandleTableMap* walk = &g_HandleTableMap;
+    while (walk) {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
+            if (walk->pBuckets[i] != NULL)
+            {
+                for (int uCPUindex = 0; uCPUindex < getNumberOfSlots(); uCPUindex++)
+                {
+                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
+                    if (hTable)
+                        // or have a local var for bridgeObjectsToPromote/size (instead of NULL) that's passed in as lp2
+                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), shouldProcessBridgeObjects, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                }
+            }
+        walk = walk->pNext;
+    }
+
+    // The callee here will free the allocated memory.
+    if (shouldProcessBridgeObjects)
+    {
+        MarkCrossReferencesArgs *args = ProcessBridgeObjects();
+
+        if (args != NULL)
+        {
+            GCToEEInterface::TriggerClientBridgeProcessing(args);
+        }
+    }
+
+    // Every registered bridge object is promoted whether or not the cross references were
+    // computed above, so skipping the work while the client is busy only delays reporting a
+    // dead peer, it never collects one early.
+    return GetRegisteredBridges(numObjs);
+}
+#endif // FEATURE_JAVAMARSHAL
+
 void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1614,6 +1604,9 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that updates pointers
@@ -1679,7 +1672,10 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     uint32_t flags = HNDGCF_NORMAL;
@@ -1792,6 +1788,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif
@@ -1804,7 +1801,10 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that ages the handles
@@ -1842,13 +1842,13 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
 
-
         HNDTYPE_STRONG,
 
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif
@@ -1861,7 +1861,10 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // reset the ages of these handles
@@ -1917,7 +1920,10 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_SIZEDREF,
 #endif
         HNDTYPE_DEPENDENT,
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // verify these handles

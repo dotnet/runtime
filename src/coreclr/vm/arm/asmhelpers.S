@@ -7,136 +7,22 @@
 .syntax unified
 .thumb
 
-// LPVOID __stdcall GetCurrentIP(void)//
+// void* GetCurrentIP(void)//
     LEAF_ENTRY GetCurrentIP, _TEXT
         mov     r0, lr
         bx      lr
     LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
     LEAF_ENTRY GetCurrentSP, _TEXT
         mov     r0, sp
         bx      lr
     LEAF_END GetCurrentSP, _TEXT
 
-//-----------------------------------------------------------------------------
-// This helper routine enregisters the appropriate arguments and makes the
-// actual call.
-//-----------------------------------------------------------------------------
-//void CallDescrWorkerInternal(CallDescrData * pCallDescrData)//
-        NESTED_ENTRY CallDescrWorkerInternal,_TEXT,NoHandler
-        PROLOG_PUSH         "{r4,r5,r7,lr}"
-        PROLOG_STACK_SAVE_OFFSET   r7, #8
-
-        mov     r5,r0 // save pCallDescrData in r5
-
-        ldr     r1, [r5,#CallDescrData__numStackSlots]
-        cbz     r1, LOCAL_LABEL(Ldonestack)
-
-        // Add frame padding to ensure frame size is a multiple of 8 (a requirement of the OS ABI).
-        // We push four registers (above) and numStackSlots arguments (below). If this comes to an odd number
-        // of slots we must pad with another. This simplifies to "if the low bit of numStackSlots is set,
-        // extend the stack another four bytes".
-        lsls    r2, r1, #2
-        and     r3, r2, #4
-        sub     sp, sp, r3
-
-        // This loop copies numStackSlots words
-        // from [pSrcEnd-4,pSrcEnd-8,...] to [sp-4,sp-8,...]
-        ldr     r0, [r5,#CallDescrData__pSrc]
-        add     r0,r0,r2
-LOCAL_LABEL(Lstackloop):
-        ldr     r2, [r0,#-4]!
-        str     r2, [sp,#-4]!
-        subs    r1, r1, #1
-        bne     LOCAL_LABEL(Lstackloop)
-LOCAL_LABEL(Ldonestack):
-
-        // If FP arguments are supplied in registers (r3 != NULL) then initialize all of them from the pointer
-        // given in r3. Do not use "it" since it faults in floating point even when the instruction is not executed.
-        ldr     r3, [r5,#CallDescrData__pFloatArgumentRegisters]
-        cbz     r3, LOCAL_LABEL(LNoFloatingPoint)
-        vldm    r3, {s0-s15}
-LOCAL_LABEL(LNoFloatingPoint):
-
-        // Copy [pArgumentRegisters, ..., pArgumentRegisters + 12]
-        // into r0, ..., r3
-
-        ldr     r4, [r5,#CallDescrData__pArgumentRegisters]
-        ldm     r4, {r0-r3}
-
-        CHECK_STACK_ALIGNMENT
-
-        // call pTarget
-        // Note that remoting expect target in r4.
-        ldr     r4, [r5,#CallDescrData__pTarget]
-        blx     r4
-LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
-
-        ldr     r3, [r5,#CallDescrData__fpReturnSize]
-
-        // Save FP return value if appropriate
-        cbz     r3, LOCAL_LABEL(LFloatingPointReturnDone)
-
-        // Float return case
-        // Do not use "it" since it faults in floating point even when the instruction is not executed.
-        cmp     r3, #4
-        bne     LOCAL_LABEL(LNoFloatReturn)
-        vmov    r0, s0
-        b       LOCAL_LABEL(LFloatingPointReturnDone)
-LOCAL_LABEL(LNoFloatReturn):
-
-        // Double return case
-        // Do not use "it" since it faults in floating point even when the instruction is not executed.
-        cmp     r3, #8
-        bne     LOCAL_LABEL(LNoDoubleReturn)
-        vmov    r0, r1, s0, s1
-        b       LOCAL_LABEL(LFloatingPointReturnDone)
-LOCAL_LABEL(LNoDoubleReturn):
-
-        add     r2, r5, #CallDescrData__returnValue
-
-        cmp     r3, #16
-        bne     LOCAL_LABEL(LNoFloatHFAReturn)
-        vstm    r2, {s0-s3}
-        b       LOCAL_LABEL(LReturnDone)
-LOCAL_LABEL(LNoFloatHFAReturn):
-
-        cmp     r3, #32
-        bne     LOCAL_LABEL(LNoDoubleHFAReturn)
-        vstm    r2, {d0-d3}
-        b       LOCAL_LABEL(LReturnDone)
-LOCAL_LABEL(LNoDoubleHFAReturn):
-
-        EMIT_BREAKPOINT // Unreachable
-
-LOCAL_LABEL(LFloatingPointReturnDone):
-
-        // Save return value into retbuf
-        str     r0, [r5, #(CallDescrData__returnValue + 0)]
-        str     r1, [r5, #(CallDescrData__returnValue + 4)]
-
-LOCAL_LABEL(LReturnDone):
-
-#ifdef _DEBUG
-        // trash the floating point registers to ensure that the HFA return values
-        // won't survive by accident
-        vldm    sp, {d0-d3}
-#endif
-
-        EPILOG_STACK_RESTORE_OFFSET   r7, #8
-        EPILOG_POP              "{r4,r5,r7,pc}"
-
-CallDescrWorkerInternalReturnAddressOffset:
-    .global CallDescrWorkerInternalReturnAddressOffset
-    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
-
-        NESTED_END CallDescrWorkerInternal,_TEXT
-
 // ------------------------------------------------------------------
 
 //
-// r12 = UMEntryThunk*
+// r12 = UMEntryThunkData*
 //
         NESTED_ENTRY TheUMEntryPrestub,_TEXT,NoHandler
 
@@ -187,8 +73,8 @@ ThePreStubPatchLabel:
         LEAF_END ThePreStubPatch, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-        NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+        NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
         PROLOG_PUSH "{r0-r4,r7,r8,lr}"                  // Spill general argument registers, return address and
         PROLOG_STACK_SAVE_OFFSET r7, #20
@@ -198,32 +84,42 @@ ThePreStubPatchLabel:
         CHECK_STACK_ALIGNMENT
 
         mov     r0, r12
-        bl      C_FUNC(NDirectImportWorker)
+        bl      C_FUNC(PInvokeImportWorker)
         mov     r12, r0
 
         EPILOG_VPOP {d0-d7}
         EPILOG_POP "{r0-r4,r7,r8,lr}"
 
-        // If we got back from NDirectImportWorker, the MD has been successfully
+        // If we got back from PInvokeImportWorker, the MD has been successfully
         // linked. Proceed to execute the original DLL call.
         bx r12
 
-        NESTED_END NDirectImportThunk, _TEXT
+        NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
-// void ResolveWorkerAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)
+// void ResolveWorkerAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
 //
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
         NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        // Match what the virtual dispatch slow path has pushed.
+        .save {r3}
 
-        add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+        PROLOG_PUSH  "{r0-r2}"
+
+        PROLOG_WITH_TRANSITION_BLOCK 0, 1, DoNotPushArgRegs
+
         mov         r2, r12                         // token
 
-        // indirection cell in r4 - should be consistent with REG_ARM_STUB_SPECIAL
-        bic         r1, r4, #3          // indirection cell
-        and         r3, r4, #3          // flags
+        // Load the indirection cell and flags
+        ldr         r12, [sp,#(__PWTB_TransitionBlock+12*4)]
+
+        // Spill the actual method argument
+        str         r3, [sp,#(__PWTB_TransitionBlock+12*4)]
+
+        add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+        bic         r1, r12, #3                     // indirection cell
+        and         r3, r12, #3                     // flags
 
         bl          C_FUNC(VSD_ResolveWorker)
 
@@ -235,7 +131,7 @@ ThePreStubPatchLabel:
         NESTED_END ResolveWorkerAsmStub, _TEXT
 
 // ------------------------------------------------------------------
-// void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)
+// void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
         NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
 
         // ARMSTUB TODO: implement chained lookup
@@ -598,28 +494,6 @@ LOCAL_LABEL(stackProbe_loop):
     LEAF_END_MARKED \name, _TEXT
     .endm
 
-    .macro JIT_BYREFWRITEBARRIER name, mp, post
-    LEAF_ENTRY \name, _TEXT
-        START_WRITE_BARRIER \name
-        .if(\mp)
-            dmb
-        .endif
-
-        ldr r2, [r1]
-        str r2, [r0]
-        CHECK_GC_HEAP_RANGE \name, r0, 1f
-        UPDATE_GC_SHADOW \name, r0, r2
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
-#endif
-        UPDATE_CARD_TABLE \name, r0, r2, \mp, \post, r2
-1:
-        add r0, #4
-        add r1, #4
-        bx lr
-    LEAF_END_MARKED \name, _TEXT
-    .endm
-
     .macro JIT_WRITEBARRIER_DESCRIPTOR name
 1:
         .word \name-1b
@@ -645,11 +519,6 @@ LOCAL_LABEL(stackProbe_loop):
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Pre,  0
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Post, 1
 
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_SP_Pre,  0, 0
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_SP_Post, 0, 1
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Pre,  1, 0
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Post, 1, 1
-
 //    .section .clrwb, "d"
 g_rgWriteBarrierDescriptors:
 
@@ -663,11 +532,6 @@ g_rgWriteBarrierDescriptors:
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Post
 
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Pre
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Post
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Pre
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Post
-
     // Sentinel value
     .word 0
 
@@ -675,21 +539,6 @@ g_rgWriteBarrierDescriptors:
 
     .global g_rgWriteBarrierDescriptors
 
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-    LEAF_ENTRY JIT_WriteBarrier_Callable
-
-    // Branch to the write barrier
-#if defined(__clang__)
-    ldr     r2, =JIT_WriteBarrier_Loc-(1f+4) // or R3? See targetarm.h
-1:
-    add     r2, pc
-#else
-    ldr     r2, =JIT_WriteBarrier_Loc
-#endif
-    ldr     pc, [r2]
-
-    LEAF_END JIT_WriteBarrier_Callable
 
 #ifdef FEATURE_READYTORUN
 
@@ -811,42 +660,6 @@ DelayLoad_Helper\suffix:
         NESTED_END OnHijackTripThread, _TEXT
 #endif
 
-// ------------------------------------------------------------------
-// The following helper will access ("probe") a word on each page of the stack
-// starting with the page right beneath sp down to the one pointed to by r4.
-// The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
-// The call to the helper will be emitted by JIT in the function/funclet prolog when stack frame is larger than an OS page.
-// On entry:
-//   r4 - points to the lowest address on the stack frame being allocated (i.e. [InitialSp - FrameSize])
-//   sp - points to some byte on the last probed page
-// On exit:
-//   r4 - is preserved
-//   r5 - is not preserved
-//
-// NOTE: this helper will probe at least one page below the one pointed to by sp.
-#define PROBE_PAGE_SIZE      4096
-#define PROBE_PAGE_SIZE_LOG2 12
-
-        LEAF_ENTRY JIT_StackProbe, _TEXT
-        PROLOG_PUSH "{r7}"
-        PROLOG_STACK_SAVE r7
-
-        mov r5, sp                         // r5 points to some byte on the last probed page
-        bfc r5, #0, #PROBE_PAGE_SIZE_LOG2  // r5 points to the **lowest address** on the last probed page
-        mov sp, r5
-
-ProbeLoop:
-                                           // Immediate operand for the following instruction can not be greater than 4095.
-        sub sp, #(PROBE_PAGE_SIZE - 4)     // sp points to the **fourth** byte on the **next page** to probe
-        ldr r5, [sp, #-4]!                 // sp points to the lowest address on the **last probed** page
-        cmp sp, r4
-        bhi ProbeLoop                      // If (sp > r4), then we need to probe at least one more page.
-
-        EPILOG_STACK_RESTORE r7
-        EPILOG_POP "{r7}"
-        EPILOG_BRANCH_REG lr
-        LEAF_END_MARKED JIT_StackProbe, _TEXT
-
 #ifdef FEATURE_TIERED_COMPILATION
 
     NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
@@ -863,30 +676,6 @@ ProbeLoop:
 
 #endif // FEATURE_TIERED_COMPILATION
 
-    LEAF_ENTRY JIT_PollGC, _TEXT
-#if defined(__clang__)
-        ldr     r2, =g_TrapReturningThreads-(1f+4)
-1:
-        add     r2, pc
-#else
-        ldr     r2, =g_TrapReturningThreads
-#endif
-        ldr     r2, [r2]
-        cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
-        bx lr
-LOCAL_LABEL(JIT_PollGCRarePath):
-#if defined(__clang__)
-        ldr     r2, =g_pPollGC-(1f+4)
-1:
-        add     r2, pc
-#else
-        ldr     r2, =g_pPollGC
-#endif
-        ldr     r2, [r2]
-        EPILOG_BRANCH_REG r2
-    LEAF_END JIT_PollGC, _TEXT
-
-
 //x0 -This pointer
 //x1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -897,3 +686,587 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     eor  r0, r0, r1
     EPILOG_BRANCH_REG r12
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   r0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r1
+        // r0 already contains exception object
+        // r1 contains pointer to TransitionBlock
+        bl      C_FUNC(IL_Throw_Impl)
+        // Should never return
+        EMIT_BREAKPOINT
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   r0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r1
+        // r0 already contains exception object
+        // r1 contains pointer to TransitionBlock
+        bl      C_FUNC(IL_ThrowExact_Impl)
+        // Should never return
+        EMIT_BREAKPOINT
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r0
+        // r0 contains pointer to TransitionBlock
+        bl      C_FUNC(IL_Rethrow_Impl)
+        // Should never return
+        EMIT_BREAKPOINT
+NESTED_END IL_Rethrow, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+LEAF_ENTRY Load_R0
+    ldr r0, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0
+
+LEAF_ENTRY Load_R0_R1
+    ldr r0, [r7], #8
+ALTERNATE_ENTRY Load_R1
+    ldr r1, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1
+
+LEAF_ENTRY Load_R0_R1_R2
+    ldr r0, [r7], #8
+ALTERNATE_ENTRY Load_R1_R2
+    ldr r1, [r7], #8
+ALTERNATE_ENTRY Load_R2
+    ldr r2, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2
+
+LEAF_ENTRY Load_R0_R1_R2_R3
+    ldr r0, [r7], #8
+ALTERNATE_ENTRY Load_R1_R2_R3
+    ldr r1, [r7], #8
+ALTERNATE_ENTRY Load_R2_R3
+    ldr r2, [r7], #8
+ALTERNATE_ENTRY Load_R3
+    ldr r3, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2_R3
+
+LEAF_ENTRY Load_R0_R1_4B
+    ldr r0, [r7], #4
+    ldr r1, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_4B
+
+LEAF_ENTRY Load_R0_R1_R2_4B
+    ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2_4B
+    ldr r1, [r7], #4
+    ldr r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2_4B
+
+LEAF_ENTRY Load_R0_R1_R2_R3_4B
+    ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2_R3_4B
+    ldr r1, [r7], #4
+ALTERNATE_ENTRY Load_R2_R3_4B
+    ldr r2, [r7], #4
+ALTERNATE_ENTRY Load_R3_4B
+    ldr r3, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2_R3_4B
+
+LEAF_ENTRY Store_R0
+    str r0, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0
+
+LEAF_ENTRY Store_R0_R1
+    str r0, [r7], #8
+ALTERNATE_ENTRY Store_R1
+    str r1, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1
+
+LEAF_ENTRY Store_R0_R1_R2
+    str r0, [r7], #8
+ALTERNATE_ENTRY Store_R1_R2
+    str r1, [r7], #8
+ALTERNATE_ENTRY Store_R2
+    str r2, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2
+
+LEAF_ENTRY Store_R0_R1_R2_R3
+    str r0, [r7], #8
+ALTERNATE_ENTRY Store_R1_R2_R3
+    str r1, [r7], #8
+ALTERNATE_ENTRY Store_R2_R3
+    str r2, [r7], #8
+ALTERNATE_ENTRY Store_R3
+    str r3, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2_R3
+
+LEAF_ENTRY Store_R0_R1_4B
+    str r0, [r7], #4
+    str r1, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_4B
+
+LEAF_ENTRY Store_R0_R1_R2_4B
+    str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2_4B
+    str r1, [r7], #4
+    str r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2_4B
+
+LEAF_ENTRY Store_R0_R1_R2_R3_4B
+    str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2_R3_4B
+    str r1, [r7], #4
+ALTERNATE_ENTRY Store_R2_R3_4B
+    str r2, [r7], #4
+ALTERNATE_ENTRY Store_R3_4B
+    str r3, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2_R3_4B
+
+LEAF_ENTRY InjectInterpStackAlign
+    add r7, r7, #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END InjectInterpStackAlign
+
+LEAF_ENTRY Load_Stack
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // number of stack slots
+    add r8, sp, r8
+LOCAL_LABEL(CopyLoop):
+    ldr r5, [r7], #8
+    str r5, [r8], #4
+    subs r9, r9, #4
+    bne LOCAL_LABEL(CopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_Stack
+
+LEAF_ENTRY Load_Stack_4B
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // number of stack slots
+    add r8, sp, r8
+LOCAL_LABEL(CopyLoop_4B):
+    ldr r5, [r7], #4
+    str r5, [r8], #4
+    subs r9, r9, #4
+    bne LOCAL_LABEL(CopyLoop_4B)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_Stack_4B
+
+NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetVoid, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI4, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    str r0, [r10]
+    str r1, [r10, 4]
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI8, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END CallJittedMethodRetDouble, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetBuffR0, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    mov r0, r2
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetBuffR0, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetBuffR1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    mov r1, r2
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetBuffR1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    sxtb r0, r0
+    str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    sxth r0, r0
+    str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    uxtb r0, r0
+    str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    uxth r0, r0
+    str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // IR bytecode address
+    mov r4, METHODDESC_REGISTER // InterpMethod
+
+    PROLOG_PUSH "{r0-r3}"
+
+    INLINE_GET_TLS_VAR C_FUNC(t_CurrentThreadInfo)
+    mov r6, r0
+
+    ldr r6, [r6, #OFFSETOF__ThreadLocalInfo__m_pThread]
+
+    ldr r5, [r6, #OFFSETOF__Thread__m_pInterpThreadContext]
+    cbnz r5, LOCAL_LABEL(HaveInterpThreadContext)
+
+LOCAL_LABEL(NoManagedThreadOrCallStub):
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub);
+    mov r5, r0
+
+LOCAL_LABEL(HaveInterpThreadContext):
+
+    ldr r7, [r4] // InterpMethod*
+    ldr r7, [r7, #OFFSETOF__InterpMethod__pCallStub]
+    cmp r7, #0
+    beq LOCAL_LABEL(NoManagedThreadOrCallStub)
+    add r6, r7, #OFFSETOF__CallStubHeader__Routines
+    ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer]
+    ldr r5, [r6], 4 // InterpThreadContext
+
+    EPILOG_POP "{r0-r3}"
+    CHECK_STACK_ALIGNMENT
+    blx r5
+
+    // Fill in the ContinuationContext register
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 8]
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    mov r2, 0
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetVoid, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    mov r2, 0
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r0, [r0]
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetI4, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    mov r2, 0
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r2, [r0]
+    ldr r1, [r0, 4]
+    mov r0, r2
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetI8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffR0, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 16]
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r0, [r0]
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetBuffR0, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffR1, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 16]
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r1, [r0]
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetBuffR1, _TEXT
+
+LEAF_ENTRY Store_Stack
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop):
+    ldr r5, [r9], #4
+    str r5, [r7], #8
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack
+
+LEAF_ENTRY Store_Stack_4B
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop_4B):
+    ldr r5, [r9], #4
+    str r5, [r7], #4
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop_4B)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack_4B
+
+
+// ------------------------------------------------------------------
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // r0
+//     void* pHandler,             // r1
+//     REGDISPLAY *pRD,            // r2
+//     ExInfo *pExInfo,            // r3
+//     bool isFilter               // [sp, #0]
+// );
+// ------------------------------------------------------------------
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+    // Original args: r0=throwable, r1=pHandler, r2=pRD, r3=pExInfo, isFilter on stack
+    // For ARM32, first 4 args go in r0-r3, args 5-6 go on stack
+
+    // First, allocate space for stack args (2 words for isFilter and TransitionBlock*)
+    sub         sp, sp, #8
+
+    // Put TransitionBlock* as 6th param (2nd stack arg)
+    add         r12, sp, #8 + __PWTB_TransitionBlock  // TransitionBlock*
+    str         r12, [sp, #4]
+
+    // Load isFilter from original stack location and store as 5th param (1st stack arg)
+    // After PROLOG_WITH_TRANSITION_BLOCK, original stack args are past the ArgumentRegisters
+    // The 5th param (isFilter) was pushed before our stack allocation
+    ldr         r12, [sp, #8 + __PWTB_ArgumentRegisters + SIZEOF__ArgumentRegisters]
+    str         r12, [sp, #0]
+
+    // r0-r3 remain unchanged
+
+    CHECK_STACK_ALIGNMENT
+    bl          C_FUNC(CallInterpreterFuncletWorker)
+
+    add         sp, sp, #8
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+// ------------------------------------------------------------------
+// Resume an interpreter continuation after an async await.
+// The worker function will restore callee-saved registers from the
+// TransitionBlock.
+//
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
+// ------------------------------------------------------------------
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+    // r0, r1 remain unchanged
+
+    add         r2, sp, #__PWTB_TransitionBlock     // TransitionBlock* as 3rd param (r2)
+
+    CHECK_STACK_ALIGNMENT
+    bl          C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
+
+#endif // FEATURE_INTERPRETER

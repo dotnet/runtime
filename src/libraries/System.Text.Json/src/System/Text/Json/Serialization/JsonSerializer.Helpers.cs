@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -40,7 +42,7 @@ namespace System.Text.Json
             // In order to improve performance of polymorphic root-level object serialization,
             // we bypass GetTypeInfoForRootType and cache JsonTypeInfo<object> in a dedicated property.
             // This lets any derived types take advantage of the cache in GetTypeInfoForRootType themselves.
-            return inputType == JsonTypeInfo.ObjectType
+            return inputType == typeof(object)
                 ? options.ObjectTypeInfo
                 : options.GetTypeInfoForRootType(inputType);
         }
@@ -52,7 +54,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type inputType)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             Debug.Assert(inputType != null);
 
             JsonTypeInfo? info = context.GetTypeInfo(inputType);
@@ -138,6 +140,63 @@ namespace System.Text.Json
             }
 
             return (T?)value;
+        }
+
+        private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode<T>(JsonTypeInfo<T> elementTypeInfo)
+        {
+            if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo is not null)
+            {
+                return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
+            }
+
+            var converter = new RootLevelListConverter<T>(elementTypeInfo);
+            var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
+            {
+                ElementTypeInfo = elementTypeInfo,
+            };
+
+            listTypeInfo.EnsureConfigured();
+            elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
+            return listTypeInfo;
+        }
+
+        private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode<T>(JsonTypeInfo<T> elementTypeInfo)
+        {
+            if (elementTypeInfo._asyncEnumerableArrayTypeInfo is not null)
+            {
+                return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
+            }
+
+            var converter = new ListOfTConverter<List<T>, T>();
+            var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
+            {
+                CreateObject = static () => new List<T?>(),
+                ElementTypeInfo = elementTypeInfo,
+            };
+
+            listTypeInfo.EnsureConfigured();
+            elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
+            return listTypeInfo;
+        }
+
+        private static JsonTypeInfo<IAsyncEnumerable<T>> GetOrAddIAsyncEnumerableTypeInfoForSerialize<T>(JsonTypeInfo<T> elementTypeInfo)
+        {
+            if (elementTypeInfo._asyncEnumerableRootLevelSerializer is not null)
+            {
+                return (JsonTypeInfo<IAsyncEnumerable<T>>)elementTypeInfo._asyncEnumerableRootLevelSerializer;
+            }
+
+            // Synthesize the IAsyncEnumerable<T> type info from the element type info so we don't depend on the
+            // resolver (e.g. a source-generated context) having registered IAsyncEnumerable<T> explicitly.
+            var converter = new IAsyncEnumerableOfTConverter<IAsyncEnumerable<T>, T>();
+            var asyncEnumerableTypeInfo = new JsonTypeInfo<IAsyncEnumerable<T>>(converter, elementTypeInfo.Options)
+            {
+                ElementTypeInfo = elementTypeInfo,
+            };
+
+            asyncEnumerableTypeInfo.EnsureConfigured();
+            elementTypeInfo._asyncEnumerableRootLevelSerializer = asyncEnumerableTypeInfo;
+            return asyncEnumerableTypeInfo;
         }
     }
 }

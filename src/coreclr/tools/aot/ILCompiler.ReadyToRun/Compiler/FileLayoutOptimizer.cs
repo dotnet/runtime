@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 
 using Internal.TypeSystem;
 
@@ -17,6 +18,8 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.PettisHansenSort;
+
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 #if !READYTORUN
 using MethodWithGCInfo = ILCompiler.DependencyAnalysis.MethodCodeNode;
@@ -36,6 +39,7 @@ namespace ILCompiler
 #endif
         PettisHansen,
         Random,
+        Explicit,
     }
 
     public enum FileLayoutAlgorithm
@@ -50,13 +54,15 @@ namespace ILCompiler
                                               MethodLayoutAlgorithm methodAlgorithm,
                                               FileLayoutAlgorithm fileAlgorithm,
                                               ProfileDataManager profileData,
-                                              NodeFactory nodeFactory)
+                                              NodeFactory nodeFactory,
+                                              string orderFile = null)
         {
             _logger = logger;
             _methodLayoutAlgorithm = methodAlgorithm;
             _fileLayoutAlgorithm = fileAlgorithm;
             _profileData = profileData;
             _nodeFactory = nodeFactory;
+            _orderFile = orderFile;
         }
 
         private Logger _logger;
@@ -64,6 +70,7 @@ namespace ILCompiler
         private FileLayoutAlgorithm _fileLayoutAlgorithm = FileLayoutAlgorithm.DefaultSort;
         private ProfileDataManager _profileData;
         private NodeFactory _nodeFactory;
+        private string _orderFile;
 
         public ImmutableArray<DependencyNodeCore<NodeFactory>> ApplyProfilerGuidedMethodSort(ImmutableArray<DependencyNodeCore<NodeFactory>> nodes)
         {
@@ -100,33 +107,55 @@ namespace ILCompiler
 
             if (_fileLayoutAlgorithm == FileLayoutAlgorithm.MethodOrder)
             {
+                const int MaxDependencyDepth = 5;
+                var dependencySinks = new DependencySink[MaxDependencyDepth + 1];
+                var visitedNonSortableNodeDepths = new Dictionary<DependencyNodeCore<NodeFactory>, int>();
+
                 // Sort the dependencies of methods by the method order
                 foreach (var method in sortedMethodsList)
                 {
                     ApplySortToDependencies(method, 0);
+                }
+
+                void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)
+                {
+                    if (depth > MaxDependencyDepth)
+                        return;
+
+                    if (node is SortableDependencyNode sortableNode)
+                    {
+                        if (sortableNode.CustomSort != Int32.MaxValue)
+                            return; // Node already sorted
+                        sortableNode.CustomSort += sortOrder++;
+                    }
+                    else
+                    {
+                        if (visitedNonSortableNodeDepths.TryGetValue(node, out int previousDepth) && previousDepth <= depth)
+                            return;
+
+                        // A shallower visit can reach dependencies missed at the depth limit.
+                        visitedNonSortableNodeDepths[node] = depth;
+                    }
+
+                    var dependencySink = dependencySinks[depth];
+                    if (dependencySink is null)
+                    {
+                        dependencySink = new DependencySink();
+                        dependencySinks[depth] = dependencySink;
+                    }
+
+                    node.AddStaticDependencies(dependencySink, _nodeFactory);
+                    using var dependencies = dependencySink.Drain();
+                    while (dependencies.MoveNext())
+                    {
+                        ApplySortToDependencies(dependencies.Dependency, depth + 1);
+                    }
                 }
             }
 
             var newNodesArray = nodes.ToArray();
             newNodesArray.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
             return newNodesArray.ToImmutableArray();
-
-            void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)
-            {
-                if (depth > 5)
-                    return;
-
-                if (node is SortableDependencyNode sortableNode)
-                {
-                    if (sortableNode.CustomSort != Int32.MaxValue)
-                        return; // Node already sorted
-                    sortableNode.CustomSort += sortOrder++;
-                }
-                foreach (var dependency in node.GetStaticDependencies(_nodeFactory))
-                {
-                    ApplySortToDependencies(dependency.Node, depth + 1);
-                }
-            }
         }
 
         private List<MethodWithGCInfo> ApplyMethodSort(List<MethodWithGCInfo> methods)
@@ -198,6 +227,33 @@ namespace ILCompiler
                         methods[i] = methods[j];
                         methods[j] = temp;
                     }
+                    break;
+
+                case MethodLayoutAlgorithm.Explicit:
+                    var nameMap = new Dictionary<string, MethodWithGCInfo>(methods.Count);
+                    var order = new Dictionary<MethodWithGCInfo, int>(methods.Count);
+
+                    for (int i = 0; i < methods.Count; i++)
+                    {
+                        nameMap[methods[i].GetMangledName(_nodeFactory.NameMangler)] = methods[i];
+                        order[methods[i]] = int.MaxValue;
+                    }
+
+                    using (StreamReader sr = new StreamReader(_orderFile))
+                    {
+                        int line = 0;
+                        while (!sr.EndOfStream)
+                        {
+                            string symbolName = sr.ReadLine();
+                            if (string.IsNullOrEmpty(symbolName)
+                                || !nameMap.TryGetValue(symbolName, out MethodWithGCInfo m))
+                                continue;
+
+                            order[m] = line++;
+                        }
+                    }
+
+                    methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => order[left].CompareTo(order[right]));
                     break;
 
                 default:

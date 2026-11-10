@@ -25,6 +25,10 @@ namespace System.Threading.RateLimiting
         /// <para>
         /// <see cref="RateLimitLease"/>s returned will aggregate metadata and for duplicates use the value of the first lease with the same metadata name.
         /// </para>
+        /// <para>
+        /// Disposing the returned <see cref="RateLimiter"/> does not dispose the inner <paramref name="limiters"/>.
+        /// Callers are expected to dispose the inner limiters themselves once they are no longer in use.
+        /// </para>
         /// </remarks>
         /// <param name="limiters">The <see cref="RateLimiter"/>s that will be called in order when acquiring resources.</param>
         /// <returns></returns>
@@ -37,6 +41,14 @@ namespace System.Threading.RateLimiting
             if (limiters.Length == 0)
             {
                 throw new ArgumentException("Must pass in at least 1 limiter.", nameof(limiters));
+            }
+
+            foreach (RateLimiter limiter in limiters)
+            {
+                if (limiter is ReplenishingRateLimiter)
+                {
+                    return new ChainedReplenishingRateLimiter(limiters);
+                }
             }
 
             return new ChainedRateLimiter(limiters);

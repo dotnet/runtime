@@ -14,6 +14,7 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include <minipal.h>
 #include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
@@ -48,42 +49,98 @@ public:
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
 // Holder for array of wide strings
-class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
+class ConstWStringArrayHolder final
 {
-    int m_cElements;
+    struct Traits
+    {
+        struct Type
+        {
+            LPCWSTR* values;
+            int count;
+        };
+
+        static Type Default() { return {}; }
+
+        static void Free(Type array) noexcept
+        {
+            if (array.values != nullptr)
+            {
+                for (int i = 0; i < array.count; i++)
+                {
+                    delete[] array.values[i];
+                }
+                delete[] array.values;
+            }
+        }
+    };
+
+    LifetimeHolder<Traits> m_array;
 
 public:
-    ConstWStringArrayHolder() :
-        NewArrayHolder<LPCWSTR>(),
-        m_cElements(0)
-    {
-    }
-
     void Set(LPCWSTR* value, int cElements)
     {
-        NewArrayHolder<LPCWSTR>::operator=(value);
-        m_cElements = cElements;
+        m_array = Traits::Type{ value, cElements };
     }
 
-    ~ConstWStringArrayHolder()
+    operator LPCWSTR*() const
     {
-        for (int i = 0; i < m_cElements; i++)
+        return static_cast<Traits::Type>(m_array).values;
+    }
+};
+
+// Returns true for known host properties that do not need to be stored as CLR configuration.
+// The runtime parses these into binder/AppDomain structures during AppDomain creation, so it
+// does not need to also keep the original raw strings around in the CLR config knobs.
+static bool IsKnownHostProperty(LPCSTR key)
+{
+    return strcmp(key, HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES) == 0
+        || strcmp(key, HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES) == 0
+        || strcmp(key, HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS) == 0
+        || strcmp(key, HOST_PROPERTY_APP_PATHS) == 0;
+}
+
+struct HostPropertyArrays final
+{
+    int count;
+    const char** keys;
+    LPCWSTR* keysW;
+    LPCWSTR* valuesW;
+};
+
+// Frees the key and value arrays and the wide-string copies of the known host probing-path
+// properties. The remaining strings are handed to the CLR configuration knobs, which retain
+// them for the process lifetime, so they are not freed here.
+struct HostPropertyArraysTraits final
+{
+    using Type = HostPropertyArrays;
+    static Type Default() { return {}; }
+    static void Free(Type arrays)
+    {
+        for (int i = 0; i < arrays.count; ++i)
         {
-            delete [] this->m_value[i];
+            if (IsKnownHostProperty(arrays.keys[i]))
+            {
+                delete[] arrays.keysW[i];
+                delete[] arrays.valuesW[i];
+            }
         }
+
+        delete[] arrays.keysW;
+        delete[] arrays.valuesW;
     }
 };
 
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
-    int length = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+    size_t cch = strlen(str) + 1;
+    size_t length = minipal_get_length_utf8_to_utf16(str, cch, 0);
     ASSERTE_ALL_BUILDS(length != 0);
 
     LPWSTR result = new (nothrow) WCHAR[length];
     ASSERTE_ALL_BUILDS(result != NULL);
 
-    length = MultiByteToWideChar(CP_UTF8, 0, str, -1, result, length);
+    length = minipal_convert_utf8_to_utf16(str, cch, (CHAR16_T*)result, length, 0);
     ASSERTE_ALL_BUILDS(length != 0);
 
     return result;
@@ -262,7 +319,7 @@ int coreclr_initialize(
         &hostContract);
 
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
+    DWORD error = PAL_InitializeCoreCLR(g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
@@ -294,8 +351,42 @@ int coreclr_initialize(
         Bundle::AppBundle = &bundle;
     }
 
-    // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
-    Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
+    // Take ownership of the converted (unfiltered) property arrays. The unfiltered arrays
+    // are passed to CreateAppDomainWithManager so the binder/AppDomain can parse them.
+    // Afterward, the arrays and the excluded strings are freed. The other property strings
+    // are handed to the CLR config knobs, which own them for the process lifetime.
+    LifetimeHolder<HostPropertyArraysTraits> hostPropertiesHolder{ HostPropertyArrays{ propertyCount, propertyKeys, propertyKeysW, propertyValuesW } };
+
+    // Build a filtered set of properties for the CLR config knobs that excludes probing path
+    // properties (TPA, NATIVE_DLL_SEARCH_DIRECTORIES, PLATFORM_RESOURCE_ROOTS, APP_PATHS).
+    // Those are parsed into binder/AppDomain structures during CreateAppDomainWithManager,
+    // so the runtime does not need a duplicate copy held forever in the CLR config knobs.
+    // The TPA list in particular can be tens of KB.
+    LPCWSTR* configKeysW = new (nothrow) LPCWSTR[propertyCount];
+    ASSERTE_ALL_BUILDS(configKeysW != nullptr);
+    LPCWSTR* configValuesW = new (nothrow) LPCWSTR[propertyCount];
+    ASSERTE_ALL_BUILDS(configValuesW != nullptr);
+
+    int configPropertyCount = 0;
+    for (int i = 0; i < propertyCount; ++i)
+    {
+        if (IsKnownHostProperty(propertyKeys[i]))
+            continue;
+
+        configKeysW[configPropertyCount] = propertyKeysW[i];
+        configValuesW[configPropertyCount] = propertyValuesW[i];
+        ++configPropertyCount;
+    }
+
+    // Configuration takes ownership of the filtered arrays and the strings they reference
+    Configuration::InitializeConfigurationKnobs(configPropertyCount, configKeysW, configValuesW);
+
+#ifdef TARGET_UNIX
+    if (Configuration::GetKnobBooleanValue(W("System.Runtime.CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))
+    {
+        PAL_EnableCrashReportBeforeSignalChaining();
+    }
+#endif
 
     STARTUP_FLAGS startupFlags;
     InitializeStartupFlags(&startupFlags);
@@ -306,7 +397,7 @@ int coreclr_initialize(
     hr = host->Start();
     IfFailRet(hr);
 
-    ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
+    ConstWStringHolder appDomainFriendlyNameW(StringToUnicode(appDomainFriendlyName));
     hr = host->CreateAppDomainWithManager(
         appDomainFriendlyNameW,
         0,
@@ -319,8 +410,7 @@ int coreclr_initialize(
 
     if (SUCCEEDED(hr))
     {
-        host.SuppressRelease();
-        *hostHandle = host;
+        *hostHandle = host.Detach();
 #ifdef FEATURE_GDBJIT
         HRESULT createDelegateResult;
         createDelegateResult = coreclr_create_delegate(*hostHandle,
@@ -432,9 +522,9 @@ int coreclr_create_delegate(
 {
     ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 
-    ConstWStringHolder entryPointAssemblyNameW = StringToUnicode(entryPointAssemblyName);
-    ConstWStringHolder entryPointTypeNameW = StringToUnicode(entryPointTypeName);
-    ConstWStringHolder entryPointMethodNameW = StringToUnicode(entryPointMethodName);
+    ConstWStringHolder entryPointAssemblyNameW(StringToUnicode(entryPointAssemblyName));
+    ConstWStringHolder entryPointTypeNameW(StringToUnicode(entryPointTypeName));
+    ConstWStringHolder entryPointMethodNameW(StringToUnicode(entryPointMethodName));
 
     HRESULT hr = host->CreateDelegate(
                             domainId,
@@ -486,7 +576,7 @@ int coreclr_execute_assembly(
     ConstWStringArrayHolder argvW;
     argvW.Set(StringArrayToUnicode(argc, argv), argc);
 
-    ConstWStringHolder managedAssemblyPathW = StringToUnicode(managedAssemblyPath);
+    ConstWStringHolder managedAssemblyPathW(StringToUnicode(managedAssemblyPath));
 
     HRESULT hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, (DWORD *)exitCode);
     IfFailRet(hr);

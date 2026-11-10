@@ -247,21 +247,21 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv4", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv4Sync : LocalEndPointTestIPv4<SocketHelperArraySync>
     {
         public LocalEndPointTestIPv4Sync(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv4", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv4SyncForceNonBlocking : LocalEndPointTestIPv4<SocketHelperSyncForceNonBlocking>
     {
         public LocalEndPointTestIPv4SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv4", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv4Apm : LocalEndPointTestIPv4<SocketHelperApm>
     {
         public LocalEndPointTestIPv4Apm(ITestOutputHelper output) : base(output) { }
@@ -280,21 +280,21 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv6", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv6Sync : LocalEndPointTestIPv6<SocketHelperArraySync>
     {
         public LocalEndPointTestIPv6Sync(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv6", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv6SyncForceNonBlocking : LocalEndPointTestIPv6<SocketHelperSyncForceNonBlocking>
     {
         public LocalEndPointTestIPv6SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv6", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv6Apm : LocalEndPointTestIPv6<SocketHelperApm>
     {
         public LocalEndPointTestIPv6Apm(ITestOutputHelper output) : base(output) { }

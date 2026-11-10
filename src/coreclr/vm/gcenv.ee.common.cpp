@@ -5,7 +5,6 @@
 #include "gcenv.h"
 #include <exinfo.h>
 
-#if defined(FEATURE_EH_FUNCLETS)
 #if defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
@@ -60,14 +59,24 @@ bool FindFirstInterruptiblePointStateCB(
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
     FindFirstInterruptiblePointState state;
     state.offs = offs;
     state.endOffs = endOffs;
     state.returnOffs = -1;
 
-    gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
+#ifdef FEATURE_INTERPRETER
+    if (pCF->GetCodeManager() == ExecutionManager::GetInterpreterCodeManager())
+    {
+        InterpreterGcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
+        gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
+    }
+    else
+#endif // FEATURE_INTERPRETER
+    {
+        GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
+        gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
+    }
 
     return state.returnOffs;
 }
@@ -86,66 +95,6 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 }
 
 #endif
-#endif // FEATURE_EH_FUNCLETS
-
-//-----------------------------------------------------------------------------
-// Determine whether we should report the generic parameter context
-//
-// This is meant to detect following situations:
-//
-// When a ThreadAbortException is raised
-// in the prolog of a managed method, before the location for the generics
-// context has been initialized; when such a TAE is raised, we are open to a
-// race with the GC (e.g. while creating the managed object for the TAE).
-// The GC would cause a stack walk, and if we report the stack location for
-// the generic param context at this time we'd crash.
-// The long term solution is to avoid raising TAEs in any non-GC safe points,
-// and to additionally ensure that we do not expose the runtime to TAE
-// starvation.
-//
-// When we're in the process of resolution of an interface method and the
-// interface method happens to have a default implementation. Normally,
-// such methods require a generic context, but since we didn't resolve the
-// method to an implementation yet, we don't have the right context (in fact,
-// there's no context provided by the caller).
-// See code:getMethodSigInternal
-//
-inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!pCF->IsFrameless() && pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
-    {
-        return !(dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg();
-    }
-
-    if (!pCF->IsFrameless() || !(pCF->IsActiveFrame() || pCF->IsInterrupted()))
-    {
-        return true;
-    }
-
-#ifndef USE_GC_INFO_DECODER
-
-    ICodeManager * pEECM = pCF->GetCodeManager();
-    if (pEECM != NULL && pEECM->IsInPrologOrEpilog(pCF->GetRelOffset(), pCF->GetGCInfoToken(), NULL))
-    {
-        return false;
-    }
-
-#else  // USE_GC_INFO_DECODER
-
-    GcInfoDecoder gcInfoDecoder(pCF->GetGCInfoToken(),
-            DECODE_PROLOG_LENGTH);
-    UINT32 prologLength = gcInfoDecoder.GetPrologSize();
-    if (pCF->GetRelOffset() < prologLength)
-    {
-        return false;
-    }
-
-#endif // USE_GC_INFO_DECODER
-
-    return true;
-}
 
 /*
  * CheckDoubleReporting()
@@ -200,13 +149,24 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     //
     assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
-    // for interior pointers, we optimize the case in which
-    //  it points into the current threads stack area
-    //
-    if (flags & GC_CALL_INTERIOR)
+    if ((flags & GC_CALL_PINNED) && !pCtx->sc->promotion)
+    {
+        // Do nothing. This is the relocate phase, for something that was pinned. It does not need
+        // to be relocated, and on interpreter builds, where we use conservative reporting in some situations,
+        // we MUST NOT attempt to do promotion here, as the GC is not expecting conservative reporting to report
+        // conservative roots during the relocate phase.
+    }
+    else if (flags & GC_CALL_INTERIOR)
+    {
+        // for interior pointers, we optimize the case in which
+        //  it points into the current threads stack area
+        //
         PromoteCarefully(pCtx->f, ppObj, pCtx->sc, flags);
+    }
     else
+    {
         (pCtx->f)(ppObj, pCtx->sc, flags);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -255,58 +215,11 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     gcctx->cf = pCF;
 
     bool fReportGCReferences = true;
-#if defined(FEATURE_EH_FUNCLETS)
+
     // We may have unwound this crawlFrame and thus, shouldn't report the invalid
     // references it may contain.
     fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
 
-    Thread *pThread = pCF->GetThread();
-    ExInfo *pExInfo = (ExInfo *)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
-    if (pCF->ShouldSaveFuncletInfo())
-    {
-        STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Saving info on funclet at SP: %p, PC: %p, FP: %p\n",
-            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()), GetFP(pCF->GetRegisterSet()->pCurrentContext));
-
-        _ASSERTE(pExInfo);
-        REGDISPLAY *pRD = pCF->GetRegisterSet();
-        pExInfo->m_lastReportedFunclet.IP = GetControlPC(pRD);
-        pExInfo->m_lastReportedFunclet.FP = GetFP(pRD->pCurrentContext);
-        pExInfo->m_lastReportedFunclet.Flags = pCF->GetCodeManagerFlags();
-    }
-
-    if (pCF->ShouldParentToFuncletReportSavedFuncletSlots())
-    {
-        STRESS_LOG4(LF_GCROOTS, LL_INFO1000, "Reporting slots in funclet parent frame method at SP: %p, PC: %p using original FP: %p, PC: %p\n",
-            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()), pExInfo->m_lastReportedFunclet.FP, pExInfo->m_lastReportedFunclet.IP);
-
-        _ASSERTE(!pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting());
-        _ASSERTE(pExInfo);
-
-        ICodeManager * pCM = pCF->GetCodeManager();
-        _ASSERTE(pCM != NULL);
-
-        CONTEXT context = {};
-        REGDISPLAY partialRD;
-        SetIP(&context, pExInfo->m_lastReportedFunclet.IP);
-        SetFP(&context, pExInfo->m_lastReportedFunclet.FP);
-        SetSP(&context, 0);
-
-        context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-        FillRegDisplay(&partialRD, &context);
-
-        EECodeInfo codeInfo(pExInfo->m_lastReportedFunclet.IP);
-        _ASSERTE(codeInfo.IsValid());
-
-        pCM->EnumGcRefs(&partialRD,
-                        &codeInfo,
-                        pExInfo->m_lastReportedFunclet.Flags | ReportFPBasedSlotsOnly,
-                        GcEnumObject,
-                        pData,
-                        NO_OVERRIDE_OFFSET);
-    }
-    else
-#endif // defined(FEATURE_EH_FUNCLETS)
     if (fReportGCReferences)
     {
         if (pCF->IsFrameless())
@@ -314,14 +227,14 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             ICodeManager * pCM = pCF->GetCodeManager();
             _ASSERTE(pCM != NULL);
 
-            unsigned flags = pCF->GetCodeManagerFlags();
+            unsigned flags = pCF->GetCodeManagerFlags() | GcRootScan;
 
     #ifdef TARGET_X86
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
-                pMD, GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
+                pMD, (void*)(size_t)GetControlPC(pCF->GetRegisterSet()), (void*)(size_t)GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
     #else
             STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM ControlPC = %p\n",
-                pMD, GetControlPC(pCF->GetRegisterSet()));
+                pMD, (void*)GetControlPC(pCF->GetRegisterSet()));
     #endif
 
             _ASSERTE(pMD != 0);
@@ -332,7 +245,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     #endif // _DEBUG
 
             DWORD relOffsetOverride = NO_OVERRIDE_OFFSET;
-#if defined(FEATURE_EH_FUNCLETS)
+
             if (pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting())
             {
                 // We're in a special case of unwinding from a funclet, and resuming execution in
@@ -350,9 +263,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 _ASSERTE(relOffsetOverride != NO_OVERRIDE_OFFSET);
 
                 STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n",
-                    relOffsetOverride, pMD, GetControlPC(pCF->GetRegisterSet()));
+                    relOffsetOverride, pMD, (void*)GetControlPC(pCF->GetRegisterSet()));
             }
-#endif // FEATURE_EH_FUNCLETS
 
             pCM->EnumGcRefs(pCF->GetRegisterSet(),
                             pCF->GetCodeInfo(),
@@ -375,7 +287,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     else
     {
         STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Skipping GC scanning in frame method at SP: %p, PC: %p\n",
-            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()));
+            (void*)GetRegdisplaySP(pCF->GetRegisterSet()), (void*)GetControlPC(pCF->GetRegisterSet()));
     }
 
     // If we're executing a LCG dynamic method then we must promote the associated resolver to ensure it
@@ -419,36 +331,38 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMD->GetLoaderAllocator());
             }
 
-            if (fReportGCReferences)
+            if (fReportGCReferences && !pCF->IsFrameless())
             {
                 GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
+                PTR_VOID paramTypeArg = NULL;
 
-                if (pCF->IsFrameless())
+                if (pMD->RequiresInstMethodDescArg())
+                    paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
+                else if (pMD->RequiresInstMethodTableArg())
+                    paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
+
+                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE)
                 {
-                    // We need to grab the Context Type here because there are cases where the MethodDesc
-                    // is shared, and thus indicates there should be an instantion argument, but the JIT
-                    // was still allowed to optimize it away and we won't grab it below because we're not
-                    // reporting any references from this frame.
-                    paramContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
-                }
-                else
-                {
-                    if (pMD->RequiresInstMethodDescArg())
-                        paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
-                    else if (pMD->RequiresInstMethodTableArg())
-                        paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
+                    if (pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame &&
+                        (dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg())
+                    {
+                        paramContextType = GENERIC_PARAM_CONTEXT_NONE;
+                    }
+                    else
+                    {
+                        paramTypeArg = pCF->GetParamTypeArg();
+                    }
                 }
 
-                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE && SafeToReportGenericParamContext(pCF))
+                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE)
                 {
                     // Handle the case where the method is a static shared generic method and we need to keep the type
                     // of the generic parameters alive
                     if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
                     {
-                        MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(pCF->GetParamTypeArg());
+                        MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(paramTypeArg);
                         // Async methods may be in a state when the context is not yet restored from continuation.
                         // We will allow that. The context is reachable via continuation in such case.
-                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMDReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMDReal->GetLoaderAllocator());
@@ -456,10 +370,9 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     }
                     else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
                     {
-                        MethodTable *pMTReal = dac_cast<PTR_MethodTable>(pCF->GetParamTypeArg());
+                        MethodTable *pMTReal = dac_cast<PTR_MethodTable>(paramTypeArg);
                         // Async methods may be in a state when the context is not yet restored from continuation.
                         // We will allow that. The context is reachable via continuation in such case.
-                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMTReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMTReal->GetLoaderAllocator());

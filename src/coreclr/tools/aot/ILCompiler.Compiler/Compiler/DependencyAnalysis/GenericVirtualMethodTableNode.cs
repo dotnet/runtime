@@ -8,15 +8,15 @@ using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a map of generic virtual method implementations.
     /// </summary>
-    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>> _gvmImplementations;
 
@@ -31,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__gvm_table"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -45,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
         /// </summary>
-        public static void GetGenericVirtualMethodImplementationDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
+        public static void AddGenericVirtualMethodImplementationDependencies(DependencySink dependencies, NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
         {
             Debug.Assert(!callingMethod.OwningType.IsInterface);
 
@@ -53,8 +52,10 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openCallingMethod);
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openImplementationMethod);
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openCallingMethod);
+            dependencies.Add(factory.NecessaryTypeSymbol(openCallingMethod.OwningType), "Owning type of GVM declaration");
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, factory, openImplementationMethod);
+            dependencies.Add(factory.NecessaryTypeSymbol(openImplementationMethod.OwningType), "Owning type of GVM implementation");
         }
 
         private void AddGenericVirtualMethodImplementation(MethodDesc callingMethod, MethodDesc implementationMethod)
@@ -130,8 +131,6 @@ namespace ILCompiler.DependencyAnalysis
             _gvmImplementations = null;
 
             byte[] streamBytes = nativeFormatWriter.Save();
-
-            _size = streamBytes.Length;
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

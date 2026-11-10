@@ -237,12 +237,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(authorityInfoAccessSyntax, AsnEncodingRules.DER);
-                AsnValueReader descriptions = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(authorityInfoAccessSyntax, AsnEncodingRules.DER);
+                ValueAsnReader descriptions = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 int count = 0;
-                AsnValueReader counter = descriptions;
+                ValueAsnReader counter = descriptions;
 
                 while (counter.HasData)
                 {

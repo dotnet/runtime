@@ -3,19 +3,30 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class SyncTableEntry : IData<SyncTableEntry>
+[CdacType(nameof(DataType.SyncTableEntry))]
+internal sealed partial class SyncTableEntry : IData<SyncTableEntry>
 {
-    static SyncTableEntry IData<SyncTableEntry>.Create(Target target, TargetPointer address)
-        => new SyncTableEntry(target, address);
+    [CustomInit(nameof(InitSyncBlock))] public partial SyncBlock? SyncBlock { get; }
+    [CustomInit(nameof(InitObject))] public partial Object? Object { get; }
 
-    public SyncTableEntry(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(SyncBlock), "pointer")]
+    private partial SyncBlock? InitSyncBlock(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
-
-        TargetPointer syncBlockPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(SyncBlock)].Offset);
-        if (syncBlockPointer != TargetPointer.Null)
-            SyncBlock = target.ProcessedData.GetOrAdd<SyncBlock>(syncBlockPointer);
+        TargetPointer syncBlockPointer = target.ReadPointerField(address, type, nameof(SyncBlock));
+        return syncBlockPointer != TargetPointer.Null
+            ? target.ProcessedData.GetOrAdd<SyncBlock>(syncBlockPointer)
+            : null;
     }
 
-    public SyncBlock? SyncBlock { get; init; }
+    [DataDescriptorDependency(nameof(Object), "pointer")]
+    private partial Object? InitObject(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
+        TargetPointer objectPointer = target.ReadPointerField(address, type, nameof(Object));
+        // Defensive check: if the lowest bit is set, this is a free sync block entry and the pointer is not valid.
+        return objectPointer != TargetPointer.Null && (objectPointer & 1) == 0
+            ? target.ProcessedData.GetOrAdd<Object>(objectPointer)
+            : null;
+    }
 }

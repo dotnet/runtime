@@ -115,7 +115,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
     }
 
     // If pMinAddr is BOT_MEMORY and pMaxAddr is TOP_MEMORY
-    // then we can call ClrVirtualAlloc instead
+    // then we can call VirtualAlloc instead
     if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
     {
         return (BYTE*)MapViewOfFile((HANDLE)mapperHandle,
@@ -193,6 +193,10 @@ bool VMToOSInterface::ReleaseDoubleMappedMemory(void *mapperHandle, void* pStart
 {
     LPVOID  result = VirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
     assert(result != NULL);
+    if (result == NULL)
+    {
+        return false;
+    }
     memset(pStart, 0, size);
     return UnmapViewOfFile(pStart);
 }
@@ -221,7 +225,7 @@ bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
     return false;
 }
 
-void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart)
+void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     return NULL;
 }

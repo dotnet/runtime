@@ -18,6 +18,7 @@
 typedef HRESULT ( __stdcall __RPC_FAR *PFNCTXCALLBACK)(void __RPC_FAR *pParam);
 
 #include <ctxtcall.h>
+#include "cdacdata.h"
 
 //================================================================
 // Forward declarations.
@@ -34,30 +35,25 @@ STDAPI_(LPSTREAM)   CreateMemStm(DWORD cb, BYTE** ppBuf);
 typedef DPTR(CtxEntry) PTR_CtxEntry;
 
 //==============================================================
-// An entry representing a CLR 1.0 context or an appartment.
+// An entry representing a CLR context or an apartment.
 class CtxEntry
 {
     // The CtxEntryCache needs to be able to see the internals
     // of the CtxEntry.
     friend CtxEntryCache;
 
-    // NewHolder<CtxEntry> needs to be able to call the destructor of CtxEntry.
-    // DISABLE Warning C4396, the inline specifier cannot be used when a friend declaration refers to a specialization of a function template
-#pragma warning(push)		// store original warning levels
-#pragma warning(disable: 4396)
-    friend void Delete<CtxEntry>(CtxEntry *);
-#pragma warning(pop)		// restore original warning levels
-
+    friend struct ::cdac_data<CtxEntry>;
 
 private:
-    // Disallow creation and deletion of the CtxEntries.
+    // Disallow creation of the CtxEntries.
     CtxEntry(LPVOID pCtxCookie, Thread* pSTAThread);
-    ~CtxEntry();
 
     // Initialization method called from the CtxEntryCache.
     VOID Init();
 
 public:
+    ~CtxEntry();
+
     // Add a reference to the CtxEntry.
     DWORD AddRef();
 
@@ -92,6 +88,13 @@ private:
     Thread*         m_pSTAThread;           // STA thread associated with the context, if any
 };
 
+template<>
+struct cdac_data<CtxEntry>
+{
+    static constexpr size_t STAThread = offsetof(CtxEntry, m_pSTAThread);
+    static constexpr size_t CtxCookie = offsetof(CtxEntry, m_pCtxCookie);
+};
+
 //==============================================================
 // IUnkEntry: represent a single COM component
 struct IUnkEntry
@@ -100,6 +103,8 @@ struct IUnkEntry
     friend CtxEntry;
     // RCW need to access IUnkEntry
     friend RCW;
+    // cdac_data<RCW> needs access to private fields of IUnkEntry
+    friend struct ::cdac_data<RCW>;
 
 #ifdef _DEBUG
     // Does not throw if m_pUnknown is no longer valid, debug only.
@@ -155,7 +160,7 @@ private :
     void Init(IUnknown* pUnk, BOOL bIsFreeThreaded, Thread *pThread DEBUGARG(RCW *pRCW));
 
     // Release the interface pointer held by the IUnkEntry.
-    VOID ReleaseInterface(RCW *pRCW);
+    VOID ReleaseInterface();
 
     // Free the IUnknown entry. ReleaseInterface must have been called.
     VOID Free();
@@ -252,6 +257,15 @@ struct InterfaceEntry
     // will not try and optimize reads and writes to them.
     Volatile<IE_METHODTABLE_PTR> m_pMT;                  // Interface asked for
     Volatile<IUnknown*>          m_pUnknown;             // Result of query
+
+    friend struct ::cdac_data<InterfaceEntry>;
+};
+
+template<>
+struct cdac_data<InterfaceEntry>
+{
+    static constexpr size_t MethodTable = offsetof(InterfaceEntry, m_pMT);
+    static constexpr size_t Unknown = offsetof(InterfaceEntry, m_pUnknown);
 };
 
 class CtxEntryCacheTraits : public DefaultSHashTraits<CtxEntry *>

@@ -33,26 +33,23 @@ namespace Internal.TypeSystem
 
         public abstract MethodNameAndSignature NameAndSignature { get; }
 
-        private bool? _isNonSharableCache;
-        public virtual bool IsNonSharableMethod
+        public virtual bool UnboxingStub
         {
             get
             {
-                if (!_isNonSharableCache.HasValue)
-                {
-                    _isNonSharableCache = ComputeIsNonSharableMethod();
-                }
-                return _isNonSharableCache.Value;
+                return false;
             }
         }
 
-        protected virtual bool ComputeIsNonSharableMethod()
+        public virtual bool AsyncVariant
         {
-            return !OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
-                        OwningType == (OwningType.ConvertToCanonForm(CanonicalFormKind.Specific) as DefType);
+            get
+            {
+                return false;
+            }
         }
 
-        public virtual bool UnboxingStub
+        public virtual bool ReturnDroppingAsyncThunk
         {
             get
             {

@@ -6,7 +6,7 @@
 
 gboolean interp_simd_enabled = FALSE;
 
-#ifdef HOST_BROWSER
+#if HOST_BROWSER || HOST_WASI
 
 int interp_simd_p_p_wasm_opcode_table [] = {
 };
@@ -17,7 +17,7 @@ int interp_simd_p_pp_wasm_opcode_table [] = {
 int interp_simd_p_ppp_wasm_opcode_table [] = {
 };
 
-#endif // HOST_BROWSER
+#endif // HOST_BROWSER || HOST_WASI
 
 PP_SIMD_Method interp_simd_p_p_table [] = {
 };

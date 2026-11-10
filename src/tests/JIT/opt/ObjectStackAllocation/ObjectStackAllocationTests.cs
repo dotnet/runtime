@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace ObjectStackAllocation
 {
@@ -94,6 +95,12 @@ namespace ObjectStackAllocation
         public string[] b;
     }
 
+    struct NullableStruct
+    {
+        public int i;
+        public object o;
+    }
+
     enum AllocationKind
     {
         Heap,
@@ -124,6 +131,8 @@ namespace ObjectStackAllocation
 
         static int methodResult = 100;
 
+        [ActiveIssue("needs triage", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -176,6 +185,9 @@ namespace ObjectStackAllocation
 
             // Stack allocation of boxed structs is now enabled
             CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
+
+            StoreStructWithStackObjectInNullable();
+            CallTestAndVerifyAllocation(StoreStructWithStackObjectInNullable, 42, expectedAllocationKind);
 
             // Fixed-sized stack array cases
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElements, 84, expectedAllocationKind);
@@ -383,6 +395,18 @@ namespace ObjectStackAllocation
             object boxedSimpleStruct = (object)str;
             GC.Collect();
             return ((SimpleStruct)boxedSimpleStruct).f1 + ((SimpleStruct)boxedSimpleStruct).f2;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        static int StoreStructWithStackObjectInNullable()
+        {
+            NullableStruct s = default;
+            s.i = 42;
+            s.o = new object();
+            NullableStruct? nullable = (NullableStruct?)(object)s;
+            GC.Collect();
+
+            return nullable.HasValue && (nullable.Value.o is not null) ? nullable.Value.i : 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

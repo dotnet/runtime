@@ -29,9 +29,8 @@ namespace ILCompiler.DependencyAnalysis
     /// * Generate N bytes of zeros.
     /// * Generate a relocation to Nth entry in the lookup table that supplements the dehydrated stream.
     /// </remarks>
-    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
 
         public override bool IsShareable => false;
 
@@ -42,8 +41,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
         public int Offset => 0;
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -60,6 +57,10 @@ namespace ILCompiler.DependencyAnalysis
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
+
+            // WASM function pointers are table indices, not linear-memory addresses.
+            RelocType fixupReloc = factory.Target.Architecture == TargetArchitecture.Wasm32
+                ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_RELPTR32;
 
             // Count the number of occurences of reloc targets. We'll sort the reloc targets by the number of
             // references to them so that we can assign the most efficient instruction encoding (1 byte) for
@@ -80,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             if (firstSymbol != null)
-                builder.EmitReloc(firstSymbol, RelocType.IMAGE_REL_BASED_RELPTR32, -firstSymbol.Offset);
+                builder.EmitReloc(firstSymbol, fixupReloc, -firstSymbol.Offset);
             else
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
@@ -106,6 +107,8 @@ namespace ILCompiler.DependencyAnalysis
             if (lastProfitableReloc > 0)
                 Array.Resize(ref relocSort, lastProfitableReloc);
             var relocs = new Dictionary<ISymbolNode, int>(relocSort);
+
+            ObjectDataBuilder.Reservation dehydratedDataLengthReservation = builder.ReserveInt();
 
             // Walk all the ObjectDatas and generate the dehydrated instruction stream.
             byte[] buff = new byte[4];
@@ -248,7 +251,7 @@ namespace ILCompiler.DependencyAnalysis
                             bool hasNextReloc;
                             do
                             {
-                                builder.EmitReloc(target, RelocType.IMAGE_REL_BASED_RELPTR32, checked((int)delta));
+                                builder.EmitReloc(target, fixupReloc, checked((int)delta));
                                 numRelocs++;
                                 hasNextReloc = false;
 
@@ -274,9 +277,9 @@ namespace ILCompiler.DependencyAnalysis
 
                                     unsafe
                                     {
-                                        fixed (byte* pData = &o.Data[reloc.Offset])
+                                        fixed (byte* pData = &o.Data[nextReloc.Offset])
                                         {
-                                            delta = Relocation.ReadValue(reloc.RelocType, pData);
+                                            delta = Relocation.ReadValue(nextReloc.RelocType, pData);
                                         }
                                     }
 
@@ -309,11 +312,11 @@ namespace ILCompiler.DependencyAnalysis
                 dehydratedSegmentPosition += o.Data.Length;
             }
 
-            _size = builder.CountBytes;
+            builder.EmitInt(dehydratedDataLengthReservation, builder.CountBytes);
 
             // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)
-                builder.EmitReloc(relocSort[i].Key, RelocType.IMAGE_REL_BASED_RELPTR32);
+                builder.EmitReloc(relocSort[i].Key, fixupReloc);
 
             return builder.ToObjectData();
         }

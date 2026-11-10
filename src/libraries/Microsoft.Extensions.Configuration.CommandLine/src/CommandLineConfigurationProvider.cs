@@ -54,11 +54,11 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                     {
                         keyStartIndex = 2;
                     }
-                    else if (currentArg.StartsWith("-"))
+                    else if (currentArg.StartsWith('-'))
                     {
                         keyStartIndex = 1;
                     }
-                    else if (currentArg.StartsWith("/"))
+                    else if (currentArg.StartsWith('/'))
                     {
                         // "/SomeSwitch" is equivalent to "--SomeSwitch" when interpreting switch mappings
                         // So we do a conversion to simplify later processing
@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             foreach (KeyValuePair<string, string> mapping in switchMappings)
             {
                 // Only keys start with "--" or "-" are acceptable
-                if (!mapping.Key.StartsWith("-") && !mapping.Key.StartsWith("--"))
+                if (!mapping.Key.StartsWith('-'))
                 {
                     throw new ArgumentException(
                         SR.Format(SR.Error_InvalidSwitchMapping, mapping.Key),

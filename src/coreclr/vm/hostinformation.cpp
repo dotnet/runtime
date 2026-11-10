@@ -13,8 +13,7 @@ void HostInformation::SetContract(_In_ host_runtime_contract* hostContract)
 {
     _ASSERTE(s_hostContract.size == 0 && hostContract != nullptr);
 
-    // Copy the contract values
-    s_hostContract = *hostContract;
+    memcpy(&s_hostContract, hostContract, min(hostContract->size, sizeof(s_hostContract)));
 }
 
 bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
@@ -23,29 +22,89 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
         return false;
 
     size_t len = MAX_PATH + 1;
-    char* dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len));
+    char* dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len) - 1); // OpenUTF8Buffer already includes a byte for the null terminator
+    // get_runtime_property returns the length including a null terminator
     size_t lenActual = s_hostContract.get_runtime_property(name, dest, len, s_hostContract.context);
-    value.CloseBuffer();
 
     // Doesn't exist or failed to get property
     if (lenActual == (size_t)-1 || lenActual == 0)
+    {
+        value.CloseBuffer(0);
         return false;
+    }
 
     if (lenActual <= len)
+    {
+        value.CloseBuffer(static_cast<COUNT_T>(lenActual) - 1);
         return true;
+    }
+
+    value.CloseBuffer();
 
     // Buffer was not large enough
     len = lenActual;
-    dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len));
+    dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len) - 1); // OpenUTF8Buffer already includes a byte for the null terminator
     lenActual = s_hostContract.get_runtime_property(name, dest, len, s_hostContract.context);
-    value.CloseBuffer();
 
-    return lenActual > 0 && lenActual <= len;
+    if (lenActual == (size_t)-1 || lenActual == 0 || lenActual > len)
+    {
+        value.CloseBuffer(0);
+        return false;
+    }
+
+    value.CloseBuffer(static_cast<COUNT_T>(lenActual) - 1);
+    return true;
+}
+
+bool HostInformation::GetAssemblyNames(const char* const** names, size_t* count)
+{
+    _ASSERTE(names != nullptr && count != nullptr);
+
+    size_t requiredSize = offsetof(host_runtime_contract, resolve_assembly_to_path) + sizeof(s_hostContract.resolve_assembly_to_path);
+    if (s_hostContract.size < requiredSize
+        || s_hostContract.get_assembly_names == nullptr
+        || s_hostContract.resolve_assembly_to_path == nullptr)
+    {
+        return false;
+    }
+
+    if (!s_hostContract.get_assembly_names(names, count, s_hostContract.context))
+        return false;
+
+    if (*count != 0 && *names == nullptr)
+        return false;
+
+    return true;
+}
+
+void HostInformation::ResolveAssemblyToPath(_In_z_ LPCWSTR simpleName, SString& path)
+{
+    size_t requiredSize = offsetof(host_runtime_contract, resolve_assembly_to_path) + sizeof(s_hostContract.resolve_assembly_to_path);
+    if (s_hostContract.size < requiredSize || s_hostContract.resolve_assembly_to_path == nullptr)
+        return;
+
+    StackSString utf8Name;
+    utf8Name.SetAndConvertToUTF8(simpleName);
+    const char* directory;
+    const char* fileName;
+    if (!s_hostContract.resolve_assembly_to_path(utf8Name.GetUTF8(), &directory, &fileName, s_hostContract.context))
+        return;
+
+    if (directory == nullptr || directory[0] == '\0' || fileName == nullptr || fileName[0] == '\0')
+        return;
+
+    path.SetUTF8(directory);
+    size_t directoryLength = strlen(directory);
+    if (directory[directoryLength - 1] != DIRECTORY_SEPARATOR_CHAR_A)
+        path.Append(DIRECTORY_SEPARATOR_CHAR_A);
+
+    path.AppendUTF8(fileName);
 }
 
 bool HostInformation::HasExternalProbe()
 {
-    return s_hostContract.external_assembly_probe != nullptr;
+    size_t requiredSize = offsetof(host_runtime_contract, external_assembly_probe) + sizeof(s_hostContract.external_assembly_probe);
+    return s_hostContract.size >= requiredSize && s_hostContract.external_assembly_probe != nullptr;
 }
 
 bool HostInformation::ExternalAssemblyProbe(_In_ const SString& path, _Out_ void** data, _Out_ int64_t* size)
@@ -56,4 +115,36 @@ bool HostInformation::ExternalAssemblyProbe(_In_ const SString& path, _Out_ void
     StackSString utf8Path;
     utf8Path.SetAndConvertToUTF8(path.GetUnicode());
     return s_hostContract.external_assembly_probe(utf8Path.GetUTF8(), data, size);
+}
+
+bool HostInformation::GetNativeCodeData(_In_ const SString& assemblyPath, _In_z_ const char* ownerCompositeName, _Out_ void** header, _Out_ size_t* image_size, _Out_ void** image_base)
+{
+    _ASSERT(header != nullptr);
+    _ASSERT(image_base != nullptr);
+    _ASSERT(image_size != nullptr);
+
+    size_t requiredSize = offsetof(host_runtime_contract, get_native_code_data) + sizeof(s_hostContract.get_native_code_data);
+    if (s_hostContract.size < requiredSize || s_hostContract.get_native_code_data == nullptr)
+        return false;
+
+    StackSString utf8Path;
+    utf8Path.SetAndConvertToUTF8(assemblyPath.GetUnicode());
+    host_runtime_contract_native_code_context context
+    {
+        sizeof(host_runtime_contract_native_code_context),
+        utf8Path.GetUTF8(),
+        ownerCompositeName
+    };
+    host_runtime_contract_native_code_data data = { sizeof(host_runtime_contract_native_code_data) };
+    if (!s_hostContract.get_native_code_data(&context, &data))
+        return false;
+
+    if (data.r2r_header_ptr == nullptr || data.image_size == 0 || data.image_base == nullptr)
+        return false;
+
+    _ASSERT(data.size >= offsetof(host_runtime_contract_native_code_data, image_base) + sizeof(data.image_base));
+    *header = data.r2r_header_ptr;
+    *image_size = data.image_size;
+    *image_base = data.image_base;
+    return true;
 }

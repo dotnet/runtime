@@ -232,7 +232,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public static void DebuggerAttributeTests()
         {
             ReadOnlyDictionary<int, int> dict = new ReadOnlyDictionary<int, int>(new Dictionary<int, int>{{1, 2}, {2, 4}, {3, 6}});
@@ -256,7 +256,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public static void DebuggerAttribute_NullDictionary_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() =>   DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ReadOnlyDictionary<int, int>)));
@@ -265,7 +265,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public static void DebuggerAttribute_NullDictionaryKeys_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ReadOnlyDictionary<int, int>.KeyCollection)));
@@ -391,6 +391,7 @@ namespace System.Collections.ObjectModel.Tests
         protected override bool IsGenericCompatibility { get { return false; } }
         protected override bool ItemsMustBeUnique { get { return true; } }
         protected override bool ItemsMustBeNonNull { get { return true; } }
+        protected override bool CurrentAfterFullEnumerationThrows { get { return false; } }
         protected override object GenerateItem()
         {
             return new KeyValuePair<string, int>(m_next_item.ToString(), m_next_item++);
@@ -429,6 +430,7 @@ namespace System.Collections.ObjectModel.Tests
         protected override bool IsGenericCompatibility { get { return false; } }
         protected override bool ItemsMustBeUnique { get { return true; } }
         protected override bool ItemsMustBeNonNull { get { return true; } }
+        protected override bool CurrentAfterFullEnumerationThrows { get { return false; } }
         protected override object GenerateItem()
         {
             return new KeyValuePair<string, int>(m_next_item.ToString(), m_next_item++);

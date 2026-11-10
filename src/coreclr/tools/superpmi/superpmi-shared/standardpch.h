@@ -63,6 +63,9 @@
 #include <limits.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <inttypes.h>
+#include <errno.h>
+#include <dn-stdio.h>
 
 #include <utility>
 #include <string>

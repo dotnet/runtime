@@ -20,6 +20,7 @@ using Xunit;
 using System.Buffers.Binary;
 using System.IO.MemoryMappedFiles;
 using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
+using System.ComponentModel;
 
 namespace Microsoft.NET.HostModel.AppHost.Tests
 {
@@ -260,10 +261,42 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 .Be(expectedPermissions);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ExecutableImage_ExistingNonExecutableFile()
+        {
+            using TestArtifact artifact = CreateTestDirectory();
+            string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+            string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
+            string appBinaryFilePath = "Test/App/Binary/Path.dll";
+
+            // A non-executable file already exists at the destination (-rw-r--r--).
+            File.WriteAllText(destinationFilePath, "pre-existing content");
+            File.SetUnixFileMode(destinationFilePath,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+
+            // -rwxr-xr-x
+            const UnixFileMode expectedPermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
+
+            HostWriter.CreateAppHost(
+                sourceAppHostMock,
+                destinationFilePath,
+                appBinaryFilePath,
+                windowsGraphicalUserInterface: true);
+
+            // assert that the generated app has executable permissions
+            // despite the non-executable permissions on the pre-existing destination file.
+            File.GetUnixFileMode(destinationFilePath)
+                .Should()
+                .Be(expectedPermissions);
+        }
+
         [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void CodeSignMachOAppHost(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
@@ -282,6 +315,45 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 // Validate that there is a signature present in the apphost Mach file
                 SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData("")]
+        [InlineData("dir with spaces")]
+        public void SigningExistingAppHostCreatesNewInode(string subdir)
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string testDirectory = Path.Combine(artifact.Location, subdir);
+                Directory.CreateDirectory(testDirectory);
+                string sourceAppHostMock = Binaries.AppHost.FilePath;
+                string destinationFilePath = Path.Combine(testDirectory, Binaries.AppHost.FileName);
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+                var firstInode = Inode.GetInode(destinationFilePath);
+
+                // Validate that there is a signature present in the apphost Mach file
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
+
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+                var secondInode = Inode.GetInode(destinationFilePath);
+
+                // Ensure the MacOS signature cache is cleared
+                Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
+
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
             }
         }
 

@@ -44,7 +44,17 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72951", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public async Task ExtractToDirectory_PassDirectoryAsArchiveFile_ThrowsUnauthorizedAccessException(bool async)
+        {
+            string directoryPath = GetTestFilePath();
+            Directory.CreateDirectory(directoryPath);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                CallZipFileExtractToDirectory(async, directoryPath, GetTestFilePath()));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public async Task ExtractToDirectoryUnicode(bool async)
         {
             string zipFileName = zfile("unicode.zip");
@@ -86,6 +96,75 @@ namespace System.IO.Compression.Tests
 
             DirectoryInfo destination = Directory.CreateDirectory(Path.Combine(GetTestFilePath(), "Bar"));
             await Assert.ThrowsAsync<IOException>(() => ZipFile.ExtractToDirectoryAsync(archivePath, destination.FullName));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractOutOfRoot_CaseInsensitiveSiblingDirectory(bool async)
+        {
+            // An entry that normalizes into a differently-cased sibling of the destination root must be
+            // rejected. On case-insensitive platforms (Windows, macOS, iOS, tvOS) the destination-root
+            // prefix check is case-insensitive, so extracting "../dest/pwn.txt" into a root named "Dest"
+            // would otherwise be treated as staying inside the root even though the file system can keep
+            // "Dest" and "dest" as distinct directories.
+            string root = GetTestFilePath();
+            DirectoryInfo destination = Directory.CreateDirectory(Path.Combine(root, "Dest"));
+
+            string archivePath = GetTestFilePath();
+            ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create);
+            archive.CreateEntry("../dest/pwn.txt");
+            await DisposeZipArchive(async, archive);
+
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, archivePath, destination.FullName));
+
+            Assert.False(File.Exists(Path.Combine(root, "dest", "pwn.txt")));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectory_InRootParentSegment_Allowed(bool async)
+        {
+            // A ".." segment that resolves back inside the destination root is benign and must still
+            // extract. Only a ".." that re-descends into a differently-cased sibling of the root (which
+            // would match the root case-insensitively but not ordinally) is rejected.
+            string archivePath = GetTestFilePath();
+            ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create);
+            ZipArchiveEntry entry = archive.CreateEntry("subdir/../readme.txt", CompressionLevel.Optimal);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            using (StreamWriter writer = new StreamWriter(entryStream))
+            {
+                writer.Write("This is a test.");
+            }
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            string destination = GetTestFilePath();
+            await CallZipFileExtractToDirectory(async, archivePath, destination);
+
+            Assert.True(File.Exists(Path.Combine(destination, "readme.txt")));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectory_CurrentDirectorySegment_Allowed(bool async)
+        {
+            // "." (current-directory) segments are harmless and appear in real archives; they must still
+            // extract successfully rather than being treated as a traversal attempt.
+            string archivePath = GetTestFilePath();
+            ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create);
+            ZipArchiveEntry entry = archive.CreateEntry("subdir/./readme.txt", CompressionLevel.Optimal);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            using (StreamWriter writer = new StreamWriter(entryStream))
+            {
+                writer.Write("This is a test.");
+            }
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            string destination = GetTestFilePath();
+            await CallZipFileExtractToDirectory(async, archivePath, destination);
+
+            Assert.True(File.Exists(Path.Combine(destination, "subdir", "readme.txt")));
         }
 
         /// <summary>

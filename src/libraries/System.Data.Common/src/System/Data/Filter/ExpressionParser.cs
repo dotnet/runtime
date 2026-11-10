@@ -712,7 +712,7 @@ namespace System.Data
                                                  opInfo._op == Operators.Multiply ||
                                                  opInfo._op == Operators.Divide ||
                                                  opInfo._op == Operators.Modulo,
-                                                 "Invalud Binary operation");
+                                                 "Invalid Binary operation");
 
                                     break;
                             }

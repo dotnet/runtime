@@ -1975,6 +1975,15 @@ mono_metadata_init (void)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
 	mono_metadata_update_init ();
+
+	char *compressed_bmap = g_getenv ("MONO_COMPRESSED_INTERFACE_BITMAP");
+	if (compressed_bmap) {
+		if (compressed_bmap [0] == '1')
+			mono_opt_compressed_interface_bitmap = TRUE;
+		else if (compressed_bmap [0] == '0')
+			mono_opt_compressed_interface_bitmap = FALSE;
+		g_free (compressed_bmap);
+	}
 }
 
 /*
@@ -5598,29 +5607,6 @@ mono_metadata_generic_context_equal (const MonoGenericContext *g1, const MonoGen
 	return g1->class_inst == g2->class_inst && g1->method_inst == g2->method_inst;
 }
 
-/*
- * mono_metadata_str_hash:
- *
- *   This should be used instead of g_str_hash for computing hash codes visible
- * outside this module, since g_str_hash () is not guaranteed to be stable
- * (its not the same in eglib for example).
- */
-guint
-mono_metadata_str_hash (gconstpointer v1)
-{
-	/* Same as g_str_hash () in glib */
-	/* note: signed/unsigned char matters - we feed UTF-8 to this function, so the high bit will give diferent results if we don't match. */
-	unsigned char *p = (unsigned char *) v1;
-	guint hash = *p;
-
-	while (*p++) {
-		if (*p)
-			hash = (hash << 5) - hash + *p;
-	}
-
-	return hash;
-}
-
 /**
  * mono_metadata_type_hash:
  * \param t1 a type
@@ -6129,6 +6115,17 @@ custom_modifier_copy (MonoAggregateModContainer *dest, uint8_t dest_offset, cons
 	return dest_offset;
 }
 
+static uint8_t
+get_combined_custom_modifier_count (const MonoType *type, const MonoType *cmods_source)
+{
+	size_t total_cmods = (size_t)mono_type_custom_modifier_count (type) +
+		(size_t)mono_type_custom_modifier_count (cmods_source);
+
+	g_assert (total_cmods < MONO_MAX_EXPECTED_CMODS);
+
+	return (uint8_t)total_cmods;
+}
+
 /* makes a dup of 'o' but also appends the custom modifiers from 'cmods_source' */
 static MonoType *
 do_metadata_type_dup_append_cmods (MonoImage *image, const MonoType *o, const MonoType *cmods_source)
@@ -6136,13 +6133,14 @@ do_metadata_type_dup_append_cmods (MonoImage *image, const MonoType *o, const Mo
 	g_assert (o != cmods_source);
 	g_assert (o->has_cmods);
 	g_assert (cmods_source->has_cmods);
+	uint8_t total_cmods = get_combined_custom_modifier_count (o, cmods_source);
+
 	if (!mono_type_is_aggregate_mods (o) &&
 	    !mono_type_is_aggregate_mods (cmods_source) &&
 	    mono_type_get_cmods (o)->image == mono_type_get_cmods (cmods_source)->image) {
 		/* the uniform case: all the cmods are from the same image. */
 		MonoCustomModContainer *o_cmods = mono_type_get_cmods (o);
 		MonoCustomModContainer *extra_cmods = mono_type_get_cmods (cmods_source);
-		uint8_t total_cmods = o_cmods->count + extra_cmods->count;
 		gboolean aggregate = FALSE;
 		size_t sizeof_dup = mono_sizeof_type_with_mods (total_cmods, aggregate);
 		MonoType *r = image ? (MonoType *)mono_image_alloc0 (image, (guint)sizeof_dup) : (MonoType *)g_malloc0 (sizeof_dup);
@@ -6179,10 +6177,6 @@ do_metadata_type_dup_append_cmods (MonoImage *image, const MonoType *o, const Mo
 		return r;
 	} else {
 		/* The aggregate case: either o_cmods or extra_cmods has aggregate cmods, or they're both simple but from different images. */
-		uint8_t total_cmods = 0;
-		total_cmods += mono_type_custom_modifier_count (o);
-		total_cmods += mono_type_custom_modifier_count (cmods_source);
-
 		gboolean aggregate = TRUE;
 		size_t sizeof_dup = mono_sizeof_type_with_mods (total_cmods, aggregate);
 
@@ -6196,14 +6190,6 @@ do_metadata_type_dup_append_cmods (MonoImage *image, const MonoType *o, const Mo
 		memcpy (r, o, mono_sizeof_type_with_mods (0, FALSE));
 		deep_type_dup_fixup (image, r, o);
 
-		/* Try not to blow up the stack. See comment on
-		 * MONO_MAX_EXPECTED_CMODS.  Since here we're appending all the
-		 * mods together, it's possible we'll end up with more than the
-		 * maximum allowed.  If that ever happens in practice, we
-		 * should redefine the bound and possibly make this function
-		 * fail dynamically instead of asserting.
-		 */
-		g_assert (total_cmods < MONO_MAX_EXPECTED_CMODS);
 		size_t r_container_size = mono_sizeof_aggregate_modifiers (total_cmods);
 		MonoAggregateModContainer *r_container_candidate = g_alloca (r_container_size);
 		memset (r_container_candidate, 0, r_container_size);

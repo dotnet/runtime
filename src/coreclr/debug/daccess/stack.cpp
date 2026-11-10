@@ -108,7 +108,7 @@ ClrDataStackWalk::GetContext(
         {
             T_CONTEXT tmpContext = m_context;
             UpdateContextFromRegDisp(&m_regDisp, &tmpContext);
-            CopyMemory(contextBuf, &tmpContext, contextBufSize);
+            CopyMemory(contextBuf, &tmpContext, min(contextBufSize, (ULONG32)sizeof(tmpContext)));
             status = S_OK;
         }
     }
@@ -119,7 +119,7 @@ ClrDataStackWalk::GetContext(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -157,7 +157,7 @@ ClrDataStackWalk::SetContext2(
     {
         // Copy the context to local state so
         // that its lifetime extends beyond this call.
-        CopyMemory(&m_context, context, contextSize);
+        CopyMemory(&m_context, context, min(contextSize, (ULONG32)sizeof(m_context)));
         m_thread->FillRegDisplay(&m_regDisp, &m_context);
         m_frameIter.ResetRegDisp(&m_regDisp, (flags & CLRDATA_STACK_SET_CURRENT_CONTEXT) != 0);
         m_stackPrev = (TADDR)GetRegdisplaySP(&m_regDisp);
@@ -171,7 +171,7 @@ ClrDataStackWalk::SetContext2(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -248,7 +248,7 @@ ClrDataStackWalk::Next(void)
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -282,7 +282,7 @@ ClrDataStackWalk::GetStackSizeSkipped(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -316,7 +316,7 @@ ClrDataStackWalk::GetFrameType(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -370,7 +370,7 @@ ClrDataStackWalk::GetFrame(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -453,7 +453,7 @@ ClrDataStackWalk::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -663,7 +663,7 @@ ClrDataFrame::GetContext(
 
     EX_TRY
     {
-        CopyMemory(contextBuf, &m_context, contextBufSize);
+        CopyMemory(contextBuf, &m_context, min(contextBufSize, (ULONG32)sizeof(m_context)));
         status = S_OK;
     }
     EX_CATCH
@@ -673,7 +673,7 @@ ClrDataFrame::GetContext(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -701,7 +701,7 @@ ClrDataFrame::GetFrameType(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -744,7 +744,7 @@ ClrDataFrame::GetAppDomain(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -778,7 +778,7 @@ ClrDataFrame::GetNumArguments(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -899,7 +899,7 @@ ClrDataFrame::GetArgumentByIndex(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -933,7 +933,7 @@ ClrDataFrame::GetNumLocalVariables(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1006,7 +1006,7 @@ ClrDataFrame::GetLocalVariableByIndex(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1032,7 +1032,7 @@ ClrDataFrame::GetNumTypeArguments(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1059,7 +1059,7 @@ ClrDataFrame::GetTypeArgumentByIndex(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1103,7 +1103,7 @@ ClrDataFrame::GetExactGenericArgsToken(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1135,7 +1135,7 @@ ClrDataFrame::GetCodeName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
 
@@ -1173,7 +1173,7 @@ ClrDataFrame::GetMethodInstance(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1221,7 +1221,7 @@ ClrDataFrame::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1257,8 +1257,10 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
         // (including IL stubs) do not have their local sig's available after JIT time.
         // IL methods with dynamically generated IL (for example, UnsafeAccessors) may
         // not have an IL header.
+        EECodeInfo codeInfo(GetControlPC(&m_regDisp));
+        PCODE nativeStart = codeInfo.IsValid() ? PINSTRToPCODE(codeInfo.GetStartAddress()) : (PCODE)NULL;
         COR_ILMETHOD* ilHeader = m_methodDesc->IsIL()
-            ? m_methodDesc->GetILHeader()
+            ? m_methodDesc->GetILHeaderForNativeCode(nativeStart)
             : NULL;
         if (ilHeader == NULL)
         {
@@ -1311,7 +1313,7 @@ ClrDataFrame::ValueFromDebugInfo(MetaSig* sig,
 {
     HRESULT status;
     ULONG32 numVarInfo;
-    NewArrayHolder<ICorDebugInfo::NativeVarInfo> varInfo(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> varInfo;
     ULONG32 codeOffset;
     ULONG32 valueFlags;
     ULONG32 i;

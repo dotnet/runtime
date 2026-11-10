@@ -24,6 +24,11 @@
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\EnvironmentPolyfills.cs" Link="Common\Polyfills\EnvironmentPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\OperatingSystemPolyfills.cs" Link="Common\Polyfills\OperatingSystemPolyfills.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.EventLog\src\Microsoft.Extensions.Logging.EventLog.csproj" />

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_cmov_Int_No_Op;
+
 #pragma warning disable
 
 using System;
@@ -1848,6 +1850,7 @@ public class testout1
         Sum += (ab_false[index] ? ab[index - 1] : ab[index - 1]);
         return Sum;
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -34,6 +34,7 @@ namespace System.Net.Test.Common
         private readonly Uri _uri;
         private readonly AuthenticationSchemes _authSchemes;
         private readonly bool _connectionCloseAfter407;
+        private readonly bool _killConnectionAfterAuth;
         private readonly bool _addViaRequestHeader;
         private readonly ManualResetEvent _serverStopped;
         private readonly List<ReceivedRequest> _requests;
@@ -54,6 +55,7 @@ namespace System.Net.Test.Common
             _uri = new Uri($"http://{ep.Address}:{ep.Port}/");
             _authSchemes = options.AuthenticationSchemes;
             _connectionCloseAfter407 = options.ConnectionCloseAfter407;
+            _killConnectionAfterAuth = options.KillConnectionAfterAuth;
             _addViaRequestHeader = options.AddViaRequestHeader;
             _serverStopped = new ManualResetEvent(false);
 
@@ -135,7 +137,7 @@ namespace System.Net.Test.Common
             string method = null;
             string line = null;
 
-            line = reader.ReadLine();
+            line = await reader.ReadLineAsync().ConfigureAwait(false);
             if (line == null)
             {
                 // Connection has been closed by client.
@@ -154,7 +156,7 @@ namespace System.Net.Test.Common
             string[] requestTokens = request.RequestLine.Split(' ');
             method = requestTokens[0];
             url = requestTokens[1];
-            while (!string.IsNullOrEmpty(line = reader.ReadLine()))
+            while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
             {
                 string[] headerParts = line.Split(':');
                 headers.Add(headerParts[0].Trim(), headerParts[1].Trim());
@@ -170,10 +172,14 @@ namespace System.Net.Test.Common
                 {
                     request.AuthorizationHeaderValueToken = authTokens[1];
                 }
+                if (_killConnectionAfterAuth)
+                {
+                    return false;
+                }
             }
             else if (_authSchemes != AuthenticationSchemes.None)
             {
-                Send407Response(writer);
+                await Send407ResponseAsync(writer).ConfigureAwait(false);
                 return !_connectionCloseAfter407;
             }
 
@@ -184,7 +190,7 @@ namespace System.Net.Test.Common
                 string remoteHost = tokens[0];
                 int remotePort = int.Parse(tokens[1]);
 
-                Send200Response(writer);
+                await Send200ResponseAsync(writer).ConfigureAwait(false);
                 await ProcessConnectMethod(clientSocket, (NetworkStream)reader.BaseStream, remoteHost, remotePort).ConfigureAwait(false);
 
                 return false; // connection can't be used for any more requests
@@ -206,7 +212,9 @@ namespace System.Net.Test.Common
                 requestMessage.Headers.Add("Via", ViaHeaderValue);
             }
 
-            var handler = new HttpClientHandler() { UseProxy = false };
+            // A forwarding proxy relays responses (including 3xx redirects) back to the client
+            // instead of following them itself, so disable auto-redirect on the outbound client.
+            var handler = new HttpClientHandler() { UseProxy = false, AllowAutoRedirect = false };
             using (HttpClient outboundClient = new HttpClient(handler))
             using (HttpResponseMessage response = await outboundClient.SendAsync(requestMessage).ConfigureAwait(false))
             {
@@ -221,11 +229,11 @@ namespace System.Net.Test.Common
                     sb.Append($"{header.Key}: {string.Join(", ", header.Value)}\r\n");
                 }
                 sb.Append("\r\n");
-                writer.Write(sb.ToString());
+                await writer.WriteAsync(sb.ToString()).ConfigureAwait(false);
 
                 // Forward the response body from the server to the client.
                 string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                writer.Write(responseBody);
+                await writer.WriteAsync(responseBody).ConfigureAwait(false);
 
                 return true;
             }
@@ -303,16 +311,16 @@ namespace System.Net.Test.Common
             }
         }
 
-        private void Send200Response(StreamWriter writer)
+        private static Task Send200ResponseAsync(StreamWriter writer)
         {
             string response =
                 "HTTP/1.1 200 OK\r\n" +
                 $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                 "Content-Length: 0\r\n\r\n";
-            writer.Write(response);
+            return writer.WriteAsync(response);
         }
 
-        private void Send407Response(StreamWriter writer)
+        private Task Send407ResponseAsync(StreamWriter writer)
         {
             string proxyAuthenticateHeaders = string.Empty;
             if ((_authSchemes & AuthenticationSchemes.Basic) != 0)
@@ -341,7 +349,7 @@ namespace System.Net.Test.Common
                 proxyAuthenticateHeaders +
                 (_connectionCloseAfter407 ? "Connection: close\r\n" : "") +
                 "Content-Length: 0\r\n\r\n";
-            writer.Write(response);
+            return writer.WriteAsync(response);
         }
 
         public static LoopbackProxyServer Create(Options options = null)
@@ -359,7 +367,12 @@ namespace System.Net.Test.Common
             if (!_disposed)
             {
                 _listener.Dispose();
-                _serverStopped.WaitOne();
+
+                // Blocking can't complete without another thread running the server loop.
+                if (PlatformDetection.IsMultithreadingSupported)
+                {
+                    _serverStopped.WaitOne();
+                }
                 _disposed = true;
             }
         }
@@ -377,6 +390,7 @@ namespace System.Net.Test.Common
         {
             public AuthenticationSchemes AuthenticationSchemes { get; set; } = AuthenticationSchemes.None;
             public bool ConnectionCloseAfter407 { get; set; } = false;
+            public bool KillConnectionAfterAuth { get; set; } = false;
             public bool AddViaRequestHeader { get; set; } = false;
         }
     }

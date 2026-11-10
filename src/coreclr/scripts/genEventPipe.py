@@ -181,12 +181,20 @@ def generateClrEventPipeWriteEventsImpl(
         "void Init" +
         providerPrettyName +
         "(void)\n{\n")
+    if runtimeFlavor.coreclr:
+        callbackExpr = ("\n#ifdef FEATURE_EVENT_TRACE\n" +
+            "        " + eventPipeCallbackCastExpr + "(" + callbackName + ")\n" +
+            "#else\n" +
+            "        nullptr\n" +
+            "#endif\n    ")
+    else:
+        callbackExpr = eventPipeCallbackCastExpr + "(" + callbackName + ")"
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
         " = " + createProviderFunc + "(" +
         providerPrettyName +
-        "Name, " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
+        "Name, " + callbackExpr + ");\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -1181,6 +1189,21 @@ bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long key
         return false;
 
     EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider;
+    if (!context.IsEnabled)
+        return false;
+
+    if (level > context.Level)
+        return false;
+
+    return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
+}
+
+bool DotNETRuntimeRundownProvider_IsEnabled(unsigned char level, unsigned long long keyword)
+{
+    if (!ep_enabled())
+        return false;
+
+    EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider;
     if (!context.IsEnabled)
         return false;
 

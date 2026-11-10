@@ -3,26 +3,15 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class RealCodeHeader : IData<RealCodeHeader>
+[CdacType(nameof(DataType.RealCodeHeader))]
+internal sealed partial class RealCodeHeader : IData<RealCodeHeader>
 {
-    static RealCodeHeader IData<RealCodeHeader>.Create(Target target, TargetPointer address)
-        => new RealCodeHeader(target, address);
+    [Field] public partial TargetPointer MethodDesc { get; }
+    [Field] public partial TargetPointer DebugInfo { get; }
+    [Field] public partial TargetPointer EHInfo { get; }
+    [Field] public partial TargetPointer GCInfo { get; }
+    [Field] public partial uint NumUnwindInfos { get; }
 
-    public RealCodeHeader(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
-        MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
-
-        // Only available if FEATURE_EH_FUNCLETS is enabled.
-        if (type.Fields.ContainsKey(nameof(NumUnwindInfos)))
-            NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
-
-        // Only available if FEATURE_EH_FUNCLETS is enabled.
-        if (type.Fields.ContainsKey(nameof(UnwindInfos)))
-            UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
-    }
-
-    public TargetPointer MethodDesc { get; init; }
-    public uint? NumUnwindInfos { get; init; }
-    public TargetPointer? UnwindInfos { get; init; }
+    [FieldAddress]
+    public partial TargetPointer UnwindInfos { get; }
 }

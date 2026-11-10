@@ -1,14 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: memberload.h
-//
-
-
-//
-
-//
-// ============================================================================
 
 #ifndef _MEMBERLOAD_H
 #define _MEMBERLOAD_H
@@ -17,7 +8,7 @@
 /*
  *  Include Files
  */
-#include "eecontract.h"
+#include <contract.h>
 #include "argslot.h"
 #include "vars.hpp"
 #include "cor.h"
@@ -28,17 +19,6 @@
 #include "typehandle.h"
 #include "methodtable.h"
 #include "typectxt.h"
-
-//
-// This enum represents the property methods that can be passed to FindPropertyMethod().
-//
-
-enum EnumPropertyMethods
-{
-    PropertyGet = 0,
-    PropertySet = 1,
-};
-
 
 //
 // This enum represents the event methods that can be passed to FindEventMethod().
@@ -215,7 +195,6 @@ public:
        FM_Flags flags = FM_Default);
 
     // typeHnd is the type handle associated with the class being looked up.
-    // It has additional information in the case of a domain neutral class (Arrays)
     static MethodDesc *FindMethod(
        MethodTable * pMT,
        LPCUTF8 pszName,
@@ -230,12 +209,6 @@ public:
     static MethodDesc *FindMethodByName(
        MethodTable * pMT,
        LPCUTF8 pszName,
-       FM_Flags flags = FM_Default);
-
-    static MethodDesc *FindPropertyMethod(
-       MethodTable * pMT,
-       LPCUTF8 pszName,
-       EnumPropertyMethods Method,
        FM_Flags flags = FM_Default);
 
     static MethodDesc *FindEventMethod(

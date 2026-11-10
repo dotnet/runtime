@@ -18,8 +18,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Sqrt<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IRootFunctions<T> =>
+            where T : IRootFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, SqrtOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, SqrtOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Sqrt(x)</summary>
         private readonly struct SqrtOperator<T> : IUnaryOperator<T, T>

@@ -170,7 +170,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (targetType == "page")
                             await AttachToTarget(new SessionId(args["sessionId"]?.ToString()), token);
                         else if (targetType == "worker")
-                            Contexts.CreateWorkerExecutionContext(new SessionId(args["sessionId"]?.ToString()), new SessionId(parms["sessionId"]?.ToString()), logger);
+                        {
+                            var workerSessionId = new SessionId(args["sessionId"]?.ToString());
+                            Contexts.CreateWorkerExecutionContext(workerSessionId, new SessionId(parms["sessionId"]?.ToString()), logger);
+                            await SendCommand(workerSessionId, "Runtime.runIfWaitingForDebugger", new JObject(), token);
+                        }
                         break;
                     }
 
@@ -245,7 +249,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (JustMyCode)
                         {
                             if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || !context.IsRuntimeReady)
+                            {
+                                // For worker sessions where runtime isn't ready yet,
+                                // resume instead of forwarding to IDE (which would leave worker stuck)
+                                if (context?.ParentContext != null)
+                                {
+                                    await SendResume(sessionId, token);
+                                    return true;
+                                }
                                 return false;
+                            }
                             //avoid pausing when justMyCode is enabled and it's a wasm function
                             if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
                             {
@@ -670,7 +683,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task SetJustMyCode(MessageId id, bool isEnabled, ExecutionContext context, CancellationToken token)
         {
-            if (JustMyCode != isEnabled && isEnabled == false)
+            if (JustMyCode != isEnabled && !isEnabled)
             {
                 JustMyCode = isEnabled;
                 if (await IsRuntimeAlreadyReadyAlready(id, token))
@@ -1305,7 +1318,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected async Task<bool> TryStepOnManagedCodeAndStepOutIfNotPossible(SessionId sessionId, ExecutionContext context, StepKind kind, CancellationToken token)
         {
             var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
-            if (step == false) //it will return false if it's the last managed frame and the runtime added the single step breakpoint in a MONO_WRAPPER_RUNTIME_INVOKE
+            if (!step) //it will return false if it's the last managed frame and the runtime added the single step breakpoint in a MONO_WRAPPER_RUNTIME_INVOKE
             {
                 context.ClearState();
                 await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);

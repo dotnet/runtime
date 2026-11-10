@@ -20,15 +20,15 @@ namespace System.Net
         private const int OperationReturnedSomethingId = AcceptSecuritContextId + 1;
         // Make sure to update the event IDs in NetEventSource.Security.cs if you add more events here
 
-        [Event(EnumerateSecurityPackagesId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(EnumerateSecurityPackagesId, Level = EventLevel.Informational)]
         public void EnumerateSecurityPackages(string? securityPackage) =>
             WriteEvent(EnumerateSecurityPackagesId, securityPackage);
 
-        [Event(SspiPackageNotFoundId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(SspiPackageNotFoundId, Level = EventLevel.Informational)]
         public void SspiPackageNotFound(string packageName) =>
             WriteEvent(SspiPackageNotFoundId, packageName);
 
-        [Event(AcquireDefaultCredentialId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(AcquireDefaultCredentialId, Level = EventLevel.Informational)]
         public void AcquireDefaultCredential(string packageName, Interop.SspiCli.CredentialUse intent) =>
             WriteEvent(AcquireDefaultCredentialId, packageName, intent);
 
@@ -36,7 +36,7 @@ namespace System.Net
         public void AcquireCredentialsHandle(string packageName, Interop.SspiCli.CredentialUse intent, object authdata) =>
             AcquireCredentialsHandle(packageName, intent, IdOf(authdata));
 
-        [Event(AcquireCredentialsHandleId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(AcquireCredentialsHandleId, Level = EventLevel.Informational)]
         public void AcquireCredentialsHandle(string packageName, Interop.SspiCli.CredentialUse intent, string authdata) =>
             WriteEvent(AcquireCredentialsHandleId, packageName, (int)intent, authdata);
 
@@ -44,7 +44,7 @@ namespace System.Net
         public void InitializeSecurityContext(SafeFreeCredentials? credential, SafeDeleteContext? context, string? targetName, Interop.SspiCli.ContextFlags inFlags) =>
             InitializeSecurityContext(IdOf(credential), IdOf(context), targetName, inFlags);
 
-        [Event(InitializeSecurityContextId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(InitializeSecurityContextId, Level = EventLevel.Informational)]
         private void InitializeSecurityContext(string credential, string context, string? targetName, Interop.SspiCli.ContextFlags inFlags) =>
             WriteEvent(InitializeSecurityContextId, credential, context, targetName, (int)inFlags);
 
@@ -52,19 +52,19 @@ namespace System.Net
         public void AcceptSecurityContext(SafeFreeCredentials? credential, SafeDeleteContext? context, Interop.SspiCli.ContextFlags inFlags) =>
             AcceptSecurityContext(IdOf(credential), IdOf(context), inFlags);
 
-        [Event(AcceptSecuritContextId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(AcceptSecuritContextId, Level = EventLevel.Informational)]
         private void AcceptSecurityContext(string credential, string context, Interop.SspiCli.ContextFlags inFlags) =>
             WriteEvent(AcceptSecuritContextId, credential, context, (int)inFlags);
 
-        [Event(OperationReturnedSomethingId, Keywords = Keywords.Default, Level = EventLevel.Informational, Message = "{0} returned {1}.")]
+        [Event(OperationReturnedSomethingId, Level = EventLevel.Informational, Message = "{0} returned {1}.")]
         public void OperationReturnedSomething(string operation, Interop.SECURITY_STATUS errorCode) =>
             WriteEvent(OperationReturnedSomethingId, operation, errorCode);
 
-        [Event(SecurityContextInputBufferId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(SecurityContextInputBufferId, Level = EventLevel.Informational)]
         public void SecurityContextInputBuffer(string context, int inputBufferSize, int outputBufferSize, Interop.SECURITY_STATUS errorCode) =>
             WriteEvent(SecurityContextInputBufferId, context, inputBufferSize, outputBufferSize, (int)errorCode);
 
-        [Event(SecurityContextInputBuffersId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(SecurityContextInputBuffersId, Level = EventLevel.Informational)]
         public void SecurityContextInputBuffers(string context, int inputBuffersSize, int outputBufferSize, Interop.SECURITY_STATUS errorCode) =>
             WriteEvent(SecurityContextInputBuffersId, context, inputBuffersSize, outputBufferSize, (int)errorCode);
 

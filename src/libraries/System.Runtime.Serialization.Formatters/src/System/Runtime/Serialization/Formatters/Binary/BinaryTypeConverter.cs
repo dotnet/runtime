@@ -17,20 +17,20 @@ namespace System.Runtime.Serialization.Formatters.Binary
             assemId = 0;
             typeInformation = null;
 
-            if (ReferenceEquals(type, Converter.s_typeofString))
+            if (ReferenceEquals(type, typeof(string)))
             {
                 binaryTypeEnum = BinaryTypeEnum.String;
             }
-            else if (((objectInfo == null) || ((objectInfo != null) && !objectInfo._isSi)) && (ReferenceEquals(type, Converter.s_typeofObject)))
+            else if (((objectInfo == null) || ((objectInfo != null) && !objectInfo._isSi)) && (ReferenceEquals(type, typeof(object))))
             {
                 // If objectInfo.Si then can be a surrogate which will change the type
                 binaryTypeEnum = BinaryTypeEnum.Object;
             }
-            else if (ReferenceEquals(type, Converter.s_typeofStringArray))
+            else if (ReferenceEquals(type, typeof(string[])))
             {
                 binaryTypeEnum = BinaryTypeEnum.StringArray;
             }
-            else if (ReferenceEquals(type, Converter.s_typeofObjectArray))
+            else if (ReferenceEquals(type, typeof(object[])))
             {
                 binaryTypeEnum = BinaryTypeEnum.ObjectArray;
             }
@@ -89,19 +89,19 @@ namespace System.Runtime.Serialization.Formatters.Binary
             BinaryTypeEnum binaryTypeEnum;
             typeInformation = null;
 
-            if (ReferenceEquals(type, Converter.s_typeofString))
+            if (ReferenceEquals(type, typeof(string)))
             {
                 binaryTypeEnum = BinaryTypeEnum.String;
             }
-            else if (ReferenceEquals(type, Converter.s_typeofObject))
+            else if (ReferenceEquals(type, typeof(object)))
             {
                 binaryTypeEnum = BinaryTypeEnum.Object;
             }
-            else if (ReferenceEquals(type, Converter.s_typeofObjectArray))
+            else if (ReferenceEquals(type, typeof(object[])))
             {
                 binaryTypeEnum = BinaryTypeEnum.ObjectArray;
             }
-            else if (ReferenceEquals(type, Converter.s_typeofStringArray))
+            else if (ReferenceEquals(type, typeof(string[])))
             {
                 binaryTypeEnum = BinaryTypeEnum.StringArray;
             }
@@ -214,17 +214,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     type = Converter.ToType(primitiveTypeEnum);
                     break;
                 case BinaryTypeEnum.String:
-                    type = Converter.s_typeofString;
+                    type = typeof(string);
                     break;
                 case BinaryTypeEnum.Object:
-                    type = Converter.s_typeofObject;
+                    type = typeof(object);
                     isVariant = true;
                     break;
                 case BinaryTypeEnum.ObjectArray:
-                    type = Converter.s_typeofObjectArray;
+                    type = typeof(object[]);
                     break;
                 case BinaryTypeEnum.StringArray:
-                    type = Converter.s_typeofStringArray;
+                    type = typeof(string[]);
                     break;
                 case BinaryTypeEnum.PrimitiveArray:
                     primitiveTypeEnum = (InternalPrimitiveTypeE)typeInformation!;
@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     {
                         typeString = typeInformation.ToString();
                         type = objectReader.GetType(assemblyInfo!, typeString!);
-                        if (ReferenceEquals(type, Converter.s_typeofObject))
+                        if (ReferenceEquals(type, typeof(object)))
                         {
                             isVariant = true;
                         }

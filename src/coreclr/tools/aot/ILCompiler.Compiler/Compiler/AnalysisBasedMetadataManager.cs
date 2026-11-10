@@ -147,7 +147,8 @@ namespace ILCompiler
             out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
             out Dictionary<FieldDesc, int> fieldMetadataMappings,
-            out List<StackTraceMapping> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping,
+            out List<ReflectionStackTraceMapping> reflectionStackTraceMapping)
         {
             ComputeMetadata(new Policy(_blockingPolicy, this), factory,
                 out metadataBlob,
@@ -156,7 +157,8 @@ namespace ILCompiler
                 out methodMetadataMappings,
                 out fieldMappings,
                 out fieldMetadataMappings,
-                out stackTraceMapping);
+                out stackTraceMapping,
+                out reflectionStackTraceMapping);
         }
 
         protected sealed override MetadataCategory GetMetadataCategory(MethodDesc method)
@@ -264,14 +266,8 @@ namespace ILCompiler
                 // (Multi-module or .NET Native style shared library.)
                 // We are currently missing type forwarders pointing to the other blobs.
                 var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
-                if (targetType == null)
-                {
-                    // No harm in generating a forwarder that didn't resolve.
-                    // We'll get matching behavior at runtime.
-                    return true;
-                }
 
-                return GeneratesMetadata(targetType);
+                return targetType is not null && GeneratesMetadata(targetType);
             }
 
             public bool GeneratesInterfaceImpl(MetadataType typeDef, MetadataType interfaceImpl)

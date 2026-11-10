@@ -12,12 +12,18 @@ namespace ThdList {
     using System.Threading;
     using System;
     using System.IO;
+    using TestLibrary;
 
     public class ThdList
     {
 
         public static int Main (System.String[] Args)
         {
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Console.WriteLine("Multithreading is not supported, skipping test.");
+                return 100;
+            }
 
             Console.Out.WriteLine("Test should return with ExitCode 100 ...");
             // console synchronization Console.SetOut(TextWriter.Synchronized(Console.Out));

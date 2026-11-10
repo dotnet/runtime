@@ -1,6 +1,5 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Optimize>True</Optimize>
     <DefineConstants>ASYNC1_VALUETASK;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

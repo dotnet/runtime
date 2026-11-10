@@ -17,10 +17,7 @@ using Xunit;
 public class Async2VaryingYields
 {
     [Fact]
-    public static void TestEntryPoint()
-    {
-        Task.Run(AsyncEntry).Wait();
-    }
+    public static Task TestEntryPoint() => Task.Run(AsyncEntry);
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     public static async Task AsyncEntry()

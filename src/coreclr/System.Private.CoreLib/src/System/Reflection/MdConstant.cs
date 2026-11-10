@@ -72,7 +72,12 @@ namespace System.Reflection
                         #endregion
                 }
 
-                return Enum.ToObject(fieldType, defaultValue);
+                if (!fieldType.ContainsGenericParameters)
+                {
+                    return Enum.ToObject(fieldType, defaultValue);
+                }
+
+                // Open generic enum instances are not expected to exist. Fall through to underlying primitive value.
             }
             else if (fieldType == typeof(DateTime))
             {
@@ -103,28 +108,26 @@ namespace System.Reflection
 
                 return new DateTime(defaultValue);
             }
-            else
+
+            return corElementType switch
             {
-                return corElementType switch
-                {
-                    CorElementType.ELEMENT_TYPE_VOID => DBNull.Value,
-                    CorElementType.ELEMENT_TYPE_CHAR => *(char*)&buffer,
-                    CorElementType.ELEMENT_TYPE_I1 => *(sbyte*)&buffer,
-                    CorElementType.ELEMENT_TYPE_U1 => *(byte*)&buffer,
-                    CorElementType.ELEMENT_TYPE_I2 => *(short*)&buffer,
-                    CorElementType.ELEMENT_TYPE_U2 => *(ushort*)&buffer,
-                    CorElementType.ELEMENT_TYPE_I4 => *(int*)&buffer,
-                    CorElementType.ELEMENT_TYPE_U4 => *(uint*)&buffer,
-                    CorElementType.ELEMENT_TYPE_I8 => buffer,
-                    CorElementType.ELEMENT_TYPE_U8 => (ulong)buffer,
-                    CorElementType.ELEMENT_TYPE_BOOLEAN => (*(int*)&buffer != 0),
-                    CorElementType.ELEMENT_TYPE_R4 => *(float*)&buffer,
-                    CorElementType.ELEMENT_TYPE_R8 => *(double*)&buffer,
-                    CorElementType.ELEMENT_TYPE_STRING => stringVal ?? string.Empty,
-                    CorElementType.ELEMENT_TYPE_CLASS => null,
-                    _ => throw new FormatException(SR.Arg_BadLiteralFormat),
-                };
-            }
+                CorElementType.ELEMENT_TYPE_VOID => DBNull.Value,
+                CorElementType.ELEMENT_TYPE_CHAR => *(char*)&buffer,
+                CorElementType.ELEMENT_TYPE_I1 => *(sbyte*)&buffer,
+                CorElementType.ELEMENT_TYPE_U1 => *(byte*)&buffer,
+                CorElementType.ELEMENT_TYPE_I2 => *(short*)&buffer,
+                CorElementType.ELEMENT_TYPE_U2 => *(ushort*)&buffer,
+                CorElementType.ELEMENT_TYPE_I4 => *(int*)&buffer,
+                CorElementType.ELEMENT_TYPE_U4 => *(uint*)&buffer,
+                CorElementType.ELEMENT_TYPE_I8 => buffer,
+                CorElementType.ELEMENT_TYPE_U8 => (ulong)buffer,
+                CorElementType.ELEMENT_TYPE_BOOLEAN => (*(int*)&buffer != 0),
+                CorElementType.ELEMENT_TYPE_R4 => *(float*)&buffer,
+                CorElementType.ELEMENT_TYPE_R8 => *(double*)&buffer,
+                CorElementType.ELEMENT_TYPE_STRING => stringVal ?? string.Empty,
+                CorElementType.ELEMENT_TYPE_CLASS => null,
+                _ => throw new FormatException(SR.Arg_BadLiteralFormat),
+            };
         }
     }
 }

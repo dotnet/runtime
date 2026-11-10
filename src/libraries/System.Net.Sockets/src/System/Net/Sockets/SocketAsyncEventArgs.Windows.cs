@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -56,9 +57,12 @@ namespace System.Net.Sockets
 
         // SocketAddress buffer
         private IntPtr _socketAddressPtr;
+        // Size of the native buffer pointed to by _socketAddressPtr, excluding the leading size header.
+        private int _socketAddressBufferSize;
 
         // SendPacketsElements property variables.
         private SafeFileHandle[]? _sendPacketsFileHandles;
+        private int[]? _sendPacketsElementsFileHandleIndices;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
@@ -285,7 +289,9 @@ namespace System.Net.Sockets
             }
         }
 
-        internal SocketError DoOperationConnect(SafeSocketHandle handle)
+#pragma warning disable IDE0060
+        internal SocketError DoOperationConnect(SafeSocketHandle handle, CancellationToken cancellationToken)
+#pragma warning restore IDE0060
         {
             // Called for connectionless protocols.
             SocketError socketError = SocketPal.Connect(handle, _socketAddress!.Buffer);
@@ -293,7 +299,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal unsafe SocketError DoOperationConnectEx(Socket socket, SafeSocketHandle handle)
+        internal unsafe SocketError DoOperationConnectEx(Socket socket, SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncCompletionOwnership == 0, $"Expected 0, got {_asyncCompletionOwnership}");
 
@@ -313,7 +319,7 @@ namespace System.Net.Sockets
                         out int bytesTransferred,
                         overlapped);
 
-                    return ProcessIOCPResult(success, bytesTransferred, ref overlapped, _buffer, cancellationToken: default);
+                    return ProcessIOCPResult(success, bytesTransferred, ref overlapped, _buffer, cancellationToken);
                 }
                 catch when (overlapped is not null)
                 {
@@ -543,7 +549,9 @@ namespace System.Net.Sockets
                 // Fill in WSAMessageBuffer.
                 Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned, 0);
                 pMessage->socketAddress = PtrSocketAddressBuffer();
-                pMessage->addressLength = (uint)SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
+                // Read back the size AllocateSocketAddressBuffer already declared, rather than recomputing it, so this can never
+                // exceed what was actually allocated for _socketAddressPtr.
+                pMessage->addressLength = (uint)*(int*)PtrSocketAddressSize();
                 fixed (void* ptrWSARecvMsgWSABufferArray = &wsaRecvMsgWSABufferArray[0])
                 {
                     pMessage->buffers = (IntPtr)ptrWSARecvMsgWSABufferArray;
@@ -693,22 +701,134 @@ namespace System.Net.Sockets
                     {
                         if (spe?.FilePath != null)
                         {
-                            // Create a FileStream to open the file.
+                            // Open the file and get its handle.
                             _sendPacketsFileHandles[index] =
                                 File.OpenHandle(spe.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-                            // Get the file handle from the stream.
                             index++;
                         }
                     }
                 }
                 catch
                 {
-                    // Got an exception opening a file - close any open streams, then throw.
+                    // Got an exception opening a file - close any open files, then throw.
                     for (int i = index - 1; i >= 0; i--)
                         _sendPacketsFileHandles[i].Dispose();
                     _sendPacketsFileHandles = null;
                     throw;
+                }
+
+                // Check if any files need partitioning due to >2GB size limitation on Windows
+                // This needs to be done after files are opened so we have the actual file size
+                bool needsPartitioning = false;
+                for (int i = 0; i < _sendPacketsFileHandles.Length; i++)
+                {
+                    long fileLength = RandomAccess.GetLength(_sendPacketsFileHandles[i]);
+                    if (fileLength > int.MaxValue)
+                    {
+                        needsPartitioning = true;
+                        break;
+                    }
+                }
+
+                if (needsPartitioning)
+                {
+                    // Expand the sendPacketsElementsCopy array to accommodate file partitioning
+                    List<SendPacketsElement> expandedElements = new List<SendPacketsElement>();
+                    List<int> fileHandleIndices = new List<int>();
+                    int fileIndex = 0;
+
+                    foreach (SendPacketsElement spe in sendPacketsElementsCopy)
+                    {
+                        if (spe == null)
+                        {
+                            continue;
+                        }
+
+                        if (spe.FilePath != null)
+                        {
+                            // This is a file element - check if it needs partitioning
+                            long fileLength = RandomAccess.GetLength(_sendPacketsFileHandles[fileIndex]);
+
+                            if (fileLength > int.MaxValue && spe.Count == 0)
+                            {
+                                // File needs partitioning - create multiple elements
+                                long offset = spe.OffsetLong;
+                                long remaining = fileLength - offset;
+
+                                while (remaining > 0)
+                                {
+                                    int chunkSize = (int)Math.Min(remaining, int.MaxValue);
+                                    expandedElements.Add(new SendPacketsElement(spe.FilePath, offset, chunkSize, endOfPacket: false));
+                                    fileHandleIndices.Add(fileIndex); // Track which file handle this element uses
+                                    offset += chunkSize;
+                                    remaining -= chunkSize;
+                                }
+                            }
+                            else
+                            {
+                                // File doesn't need partitioning or already has a specific count
+                                expandedElements.Add(spe);
+                                fileHandleIndices.Add(fileIndex); // Track which file handle this element uses
+                            }
+
+                            fileIndex++;
+                        }
+                        else
+                        {
+                            // Not a file element - keep as is
+                            expandedElements.Add(spe);
+                            fileHandleIndices.Add(-1); // Not a file element
+                        }
+                    }
+
+                    // Set endOfPacket on the last element
+                    if (expandedElements.Count > 0 && !expandedElements[expandedElements.Count - 1].EndOfPacket)
+                    {
+                        SendPacketsElement lastElement = expandedElements[expandedElements.Count - 1];
+                        if (lastElement.MemoryBuffer != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.MemoryBuffer.Value, endOfPacket: true);
+                        }
+                        else if (lastElement.FilePath != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.FilePath, lastElement.OffsetLong, lastElement.Count, endOfPacket: true);
+                        }
+                        else if (lastElement.FileStream != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.FileStream, lastElement.OffsetLong, lastElement.Count, endOfPacket: true);
+                        }
+                        else if (lastElement.Buffer != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.Buffer, lastElement.Offset, lastElement.Count, endOfPacket: true);
+                        }
+                    }
+
+                    sendPacketsElementsCopy = expandedElements.ToArray();
+                    _sendPacketsElementsFileHandleIndices = fileHandleIndices.ToArray();
+
+                    // Recount the elements since we may have expanded them
+                    sendPacketsElementsFileCount = 0;
+                    sendPacketsElementsFileStreamCount = 0;
+                    sendPacketsElementsBufferCount = 0;
+                    foreach (SendPacketsElement spe in sendPacketsElementsCopy)
+                    {
+                        if (spe != null)
+                        {
+                            if (spe.FilePath != null)
+                            {
+                                sendPacketsElementsFileCount++;
+                            }
+                            else if (spe.FileStream != null)
+                            {
+                                sendPacketsElementsFileStreamCount++;
+                            }
+                            else if (spe.MemoryBuffer != null && spe.Count > 0)
+                            {
+                                sendPacketsElementsBufferCount++;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -864,12 +984,23 @@ namespace System.Net.Sockets
         // Ensures appropriate SocketAddress buffer is allocated.
         private unsafe void AllocateSocketAddressBuffer()
         {
-            //_socketAddress!.Size = SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
-            int size = SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
+            // Size off the socket's own family, not _socketAddress!.Family: callers of the SocketAddress-accepting
+            // ReceiveFromAsync overload supply their own SocketAddress, whose Family isn't validated against the socket.
+            int size = SocketAddress.GetMaximumAddressSize(_currentSocket!.AddressFamily);
 
-            if (_socketAddressPtr == IntPtr.Zero)
+            // The buffer may be reused across operations for sockets of different address families (e.g. a
+            // SocketAsyncEventArgs reused across sockets), so grow it if the previously allocated size is too small.
+            if (_socketAddressPtr == IntPtr.Zero || size > _socketAddressBufferSize)
             {
-                _socketAddressPtr = (IntPtr)NativeMemory.Alloc((uint)(_socketAddress!.Size + sizeof(IntPtr)));
+                IntPtr newSocketAddressPtr = (IntPtr)NativeMemory.Alloc((uint)(size + sizeof(IntPtr)));
+
+                if (_socketAddressPtr != IntPtr.Zero)
+                {
+                    NativeMemory.Free((void*)_socketAddressPtr);
+                }
+
+                _socketAddressPtr = newSocketAddressPtr;
+                _socketAddressBufferSize = size;
             }
 
             *((int*)_socketAddressPtr) = size;
@@ -917,6 +1048,7 @@ namespace System.Net.Sockets
             {
                 NativeMemory.Free((void*)_socketAddressPtr);
                 _socketAddressPtr = IntPtr.Zero;
+                _socketAddressBufferSize = 0;
             }
 
             Debug.Assert(_singleBufferHandle.Equals(default(MemoryHandle)));
@@ -958,6 +1090,7 @@ namespace System.Net.Sockets
             int bufferIndex = 0;
             int descriptorIndex = 0;
             int fileIndex = 0;
+            int elementIndex = 0;
             foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
                 if (spe != null)
@@ -977,14 +1110,21 @@ namespace System.Net.Sockets
                     else if (spe.FilePath != null)
                     {
                         // This element is a file.
-                        sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileHandles![fileIndex].DangerousGetHandle();
+                        // If partitioning happened, look up the file handle index from the parallel array.
+                        // Otherwise, use the incrementing fileIndex.
+                        int handleIndex = _sendPacketsElementsFileHandleIndices?[elementIndex] ?? fileIndex;
+                        Debug.Assert(handleIndex >= 0, "File element should have a valid handle index.");
+                        sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileHandles![handleIndex].DangerousGetHandle();
                         sendPacketsDescriptorPinned[descriptorIndex].fileOffset = spe.OffsetLong;
                         sendPacketsDescriptorPinned[descriptorIndex].length = (uint)spe.Count;
                         sendPacketsDescriptorPinned[descriptorIndex].flags =
                             Interop.Winsock.TransmitPacketsElementFlags.File | (spe.EndOfPacket
                                 ? Interop.Winsock.TransmitPacketsElementFlags.EndOfPacket
                                 : 0);
-                        fileIndex++;
+                        if (_sendPacketsElementsFileHandleIndices == null)
+                        {
+                            fileIndex++; // Only increment if not using parallel array
+                        }
                         descriptorIndex++;
                     }
                     else if (spe.FileStream != null)
@@ -1003,6 +1143,7 @@ namespace System.Net.Sockets
                         descriptorIndex++;
                     }
                 }
+                elementIndex++;
             }
 
             _pinState = PinState.SendPackets;
@@ -1201,6 +1342,9 @@ namespace System.Net.Sockets
 
                 _sendPacketsFileHandles = null;
             }
+
+            // Clear the file handle indices array.
+            _sendPacketsElementsFileHandleIndices = null;
         }
 
         private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)

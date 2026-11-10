@@ -5,7 +5,7 @@ using System.Formats.Asn1.Tests.Reader;
 using System.Numerics;
 using Test.Cryptography;
 using Xunit;
-using X509KeyUsageCSharpStyle = System.Formats.Asn1.Tests.Reader.ReadNamedBitList.X509KeyUsageCSharpStyle;
+using X509KeyUsageCSharpStyle = System.Formats.Asn1.Tests.Reader.ReadNamedBitListBase.X509KeyUsageCSharpStyle;
 
 namespace System.Formats.Asn1.Tests.Writer
 {

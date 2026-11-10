@@ -5,45 +5,77 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
+[CdacType(nameof(DataType.ReadyToRunInfo))]
+internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
 {
-    static ReadyToRunInfo IData<ReadyToRunInfo>.Create(Target target, TargetPointer address)
-        => new ReadyToRunInfo(target, address);
+    [Field] public partial TargetPointer CompositeInfo { get; }
+    [Field] public partial TargetPointer ReadyToRunHeader { get; }
+    [Field] public partial uint NumRuntimeFunctions { get; }
+    // Absent when the runtime is built without FEATURE_COLD_R2R_CODE.
+    [Field] public partial uint? NumHotColdMap { get; }
+    // Absent on WASM.
+    [Field] public partial TargetPointer? DelayLoadMethodCallThunks { get; }
+    [Field] public partial TargetPointer DebugInfoSection { get; }
+    [Field] public partial TargetPointer ExceptionInfoSection { get; }
+    [Field] public partial TargetPointer Composite { get; }
+    [Field] public partial uint NumImportSections { get; }
 
-    private readonly Target _target;
+    // WASM-only: base virtual IP for this module's R2R function table (m_minVirtualIP).
+    [Field] public partial TargetPointer? MinVirtualIP { get; }
+    [CustomInit(nameof(InitRuntimeFunctions))] public partial TargetPointer RuntimeFunctions { get; }
+    [CustomInit(nameof(InitHotColdMap))] public partial TargetPointer HotColdMap { get; }
+    [CustomInit(nameof(InitImportSections))] public partial TargetPointer ImportSections { get; }
+    [CustomInit(nameof(InitEntryPointToMethodDescMap))] public partial TargetPointer EntryPointToMethodDescMap { get; }
+    [CustomInit(nameof(InitLoadedImageBase))] public partial TargetPointer LoadedImageBase { get; }
 
-    public ReadyToRunInfo(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(NumRuntimeFunctions), "uint32")]
+    [DataDescriptorDependency(nameof(RuntimeFunctions), "pointer")]
+    private partial TargetPointer InitRuntimeFunctions(Target target, TargetPointer address)
     {
-        _target = target;
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
-
-        CompositeInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(CompositeInfo)].Offset);
-
-        NumRuntimeFunctions = target.Read<uint>(address + (ulong)type.Fields[nameof(NumRuntimeFunctions)].Offset);
-        RuntimeFunctions = NumRuntimeFunctions > 0
-            ? target.ReadPointer(address + (ulong)type.Fields[nameof(RuntimeFunctions)].Offset)
+        return NumRuntimeFunctions > 0
+            ? target.ReadPointerField(address, type, nameof(RuntimeFunctions))
             : TargetPointer.Null;
+    }
 
-        NumHotColdMap = target.Read<uint>(address + (ulong)type.Fields[nameof(NumHotColdMap)].Offset);
-        Debug.Assert(NumHotColdMap % 2 == 0, "Hot/cold map should have an even number of entries (pairs of hot/cold runtime function indexes)");
-        HotColdMap = NumHotColdMap > 0
-            ? target.ReadPointer(address + (ulong)type.Fields[nameof(HotColdMap)].Offset)
+    [DataDescriptorDependency(nameof(NumHotColdMap), "uint32")]
+    [DataDescriptorDependency(nameof(HotColdMap), "pointer")]
+    private partial TargetPointer InitHotColdMap(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
+        uint count = NumHotColdMap ?? 0;
+        Debug.Assert(count % 2 == 0, "Hot/cold map should have an even number of entries (pairs of hot/cold runtime function indexes)");
+        return count > 0
+            ? target.ReadPointerField(address, type, nameof(HotColdMap))
             : TargetPointer.Null;
+    }
 
-        DelayLoadMethodCallThunks = target.ReadPointer(address + (ulong)type.Fields[nameof(DelayLoadMethodCallThunks)].Offset);
+    [DataDescriptorDependency(nameof(NumImportSections), "uint32")]
+    [DataDescriptorDependency(nameof(ImportSections), "pointer")]
+    private partial TargetPointer InitImportSections(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
+        return NumImportSections > 0
+            ? target.ReadPointer(address + (ulong)type.Fields[nameof(ImportSections)].Offset)
+            : TargetPointer.Null;
+    }
 
+    [DataDescriptorDependency(nameof(CompositeInfo), "pointer")]
+    [DataDescriptorDependency(nameof(EntryPointToMethodDescMap), "HashMap")]
+    private partial TargetPointer InitEntryPointToMethodDescMap(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
         // Map is from the composite info pointer (set to itself for non-multi-assembly composite images)
-        EntryPointToMethodDescMap = CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
-     }
+        return CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
+    }
 
-    internal TargetPointer CompositeInfo { get; }
-
-    public uint NumRuntimeFunctions { get; }
-    public TargetPointer RuntimeFunctions { get; }
-
-    public uint NumHotColdMap { get; }
-    public TargetPointer HotColdMap { get; }
-
-    public TargetPointer DelayLoadMethodCallThunks { get; }
-    public TargetPointer EntryPointToMethodDescMap { get; }
+    [DataDescriptorDependency(nameof(CompositeInfo), "pointer")]
+    [DataDescriptorDependency(nameof(LoadedImageBase), "pointer")]
+    private partial TargetPointer InitLoadedImageBase(Target target, TargetPointer address)
+    {
+        // Component assemblies of a multi-assembly composite image do not record the image base;
+        // read it from the composite info (set to itself for non-component images).
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
+        return target.ReadPointerField(CompositeInfo, type, nameof(LoadedImageBase));
+    }
 }

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>0</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(Configuration)' != 'Release' or '$(TargetOS)' != 'linux' or '$(TargetArchitecture)' != 'arm64' or '$(TargetsLinuxGlibc)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+      osName=`uname -s`
+      architecture=`uname -m`
+      if [ "$osName" != "Linux" ] || [ "$architecture" != "aarch64" ] || ! getconf GNU_LIBC_VERSION >/dev/null 2>&1; then
+        echo "Static TLS resolver test is only supported on Linux ARM64 with glibc."
+        exit 0
+      fi
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+  </ItemGroup>
+</Project>

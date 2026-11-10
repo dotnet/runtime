@@ -16,13 +16,13 @@ namespace System.Security.Cryptography
     public sealed partial class CngKey : IDisposable
     {
         private const int CachedKeySizeUninitializedSentinel = -1;
-        private volatile int _cachedKeySize = CachedKeySizeUninitializedSentinel;
+        private int _cachedKeySize = CachedKeySizeUninitializedSentinel;
 
-        private volatile CngAlgorithm? _cachedAlgorithm;
+        private CngAlgorithm? _cachedAlgorithm;
         private volatile bool _hasCachedAlgorithmGroup;
-        private volatile CngAlgorithmGroup? _cachedAlgorithmGroup;
+        private CngAlgorithmGroup? _cachedAlgorithmGroup;
         private volatile bool _hasCachedProvider;
-        private volatile CngProvider? _cachedProvider;
+        private CngProvider? _cachedProvider;
 
         /// <summary>
         ///     Algorithm group this key can be used with

@@ -163,6 +163,24 @@ namespace System.Diagnostics.Tests
 
         private static void Sleep(int milliseconds)
         {
+            if (PlatformDetection.IsBrowser)
+            {
+                // The browser's monotonic clock (performance.now) has a coarse, security-clamped
+                // resolution and blocking waits don't advance real time on the single browser thread,
+                // so a fixed-timeout WaitOne isn't guaranteed to move the Stopwatch past its resolution
+                // boundary. Spin until at least one TimeSpan tick of elapsed time is observable so that
+                // callers relying on a measurable delta (e.g. Elapsed > TimeSpan.Zero) behave reliably.
+                long start = Stopwatch.GetTimestamp();
+                long minTicks = Math.Max(1, Stopwatch.Frequency / TimeSpan.TicksPerSecond);
+                do
+                {
+                    s_sleepEvent.WaitOne(milliseconds);
+                }
+                while (Stopwatch.GetTimestamp() - start < minTicks);
+
+                return;
+            }
+
             s_sleepEvent.WaitOne(milliseconds);
         }
     }

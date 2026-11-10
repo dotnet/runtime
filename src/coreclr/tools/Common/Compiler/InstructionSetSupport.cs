@@ -20,17 +20,18 @@ namespace ILCompiler
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
 
         public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
-            this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
+            this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture, isVectorTOptimistic: false)
         {
         }
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture)
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture, bool isVectorTOptimistic)
         {
             _supportedInstructionSets = supportedInstructionSets;
             _unsupportedInstructionSets = unsupportedInstructionSets;
             _optimisticInstructionSets = optimisticInstructionSets;
             _targetArchitecture = architecture;
             _nonSpecifiableInstructionSets = nonSpecifiableInstructionSets;
+            IsVectorTOptimistic = isVectorTOptimistic;
         }
 
         public bool IsInstructionSetSupported(InstructionSet instructionSet)
@@ -55,16 +56,18 @@ namespace ILCompiler
 
         public TargetArchitecture Architecture => _targetArchitecture;
 
+        public bool IsVectorTOptimistic { get; }
+
         public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
         {
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
             // 64-bit ISA variants are not included in the mapping dictionary, so we use the containing type instead
-            if (potentialType.Name is "X64" or "Arm64")
+            if (potentialType.Name == "X64"u8 || potentialType.Name == "Arm64"u8)
             {
                 if (architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)
-                    potentialType = (MetadataType)potentialType.ContainingType;
+                    potentialType = potentialType.ContainingType;
                 else
                     return "";
             }
@@ -73,18 +76,18 @@ namespace ILCompiler
             string suffix = "";
             while (potentialType.ContainingType is MetadataType containingType)
             {
-                suffix = $"_{potentialType.Name}{suffix}";
+                suffix = $"_{potentialType.GetName()}{suffix}";
                 potentialType = containingType;
             }
 
             if (architecture is TargetArchitecture.X64 or TargetArchitecture.X86)
             {
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86"u8)
                     return "";
             }
             else if (architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm"u8)
                     return "";
             }
             else if (architecture is TargetArchitecture.LoongArch64)
@@ -95,12 +98,17 @@ namespace ILCompiler
             {
                 return "";
             }
+            else if (architecture is TargetArchitecture.Wasm32)
+            {
+                // TODO-WASM: return the correct intrinsic id once xplat intrinsics are implemented.
+                return "";
+            }
             else
             {
                 throw new InternalCompilerErrorException($"Unknown architecture '{architecture}'");
             }
 
-            return potentialType.Name + suffix;
+            return potentialType.GetName() + suffix;
         }
 
         public SimdVectorLength GetVectorTSimdVector()
@@ -153,6 +161,10 @@ namespace ILCompiler
             else if (_targetArchitecture == TargetArchitecture.RiscV64)
             {
                 return SimdVectorLength.None;
+            }
+            else if (_targetArchitecture == TargetArchitecture.Wasm32)
+            {
+                return SimdVectorLength.Vector128Bit;
             }
             else
             {

@@ -23,8 +23,8 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(method.HasInstantiation);
 
             // This is either a generic virtual method or a MethodImpl for a static interface method.
-            // We can't test for static MethodImpl so at least sanity check it's static and noninterface.
-            Debug.Assert(method.IsVirtual || (method.Signature.IsStatic && !method.OwningType.IsInterface));
+            // We can't test for static MethodImpl so at least sanity check it's static and nonabstract.
+            Debug.Assert(method.IsVirtual || (method.Signature.IsStatic && !method.IsAbstract));
 
             _method = method;
         }
@@ -34,11 +34,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__GVMImplNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = null;
-
-            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, factory, _method);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, _method);
 
             bool validInstantiation =
                 _method.IsSharedByGenericInstantiations || (      // Non-exact methods are always valid instantiations (always pass constraints check)
@@ -49,27 +47,27 @@ namespace ILCompiler.DependencyAnalysis
             if (validInstantiation)
             {
                 bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
+
+                sink.Add(factory.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
 
                 if (_method.IsSharedByGenericInstantiations)
                 {
-                    dependencies.Add(factory.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
-                    dependencies.Add(factory.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
+                    sink.Add(factory.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
+                    sink.Add(factory.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
+                    sink.Add(factory.ShadowNonConcreteMethod(_method), "GVM Dependency - shadow generic method");
                 }
                 else
                 {
-                    dependencies.Add(factory.ExactMethodInstantiationsHashtableEntry(_method), "GVM Dependency - runtime lookups");
+                    sink.Add(factory.ExactMethodInstantiationsHashtableEntry(_method), "GVM Dependency - runtime lookups");
                 }
             }
 
-            return dependencies;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
 
         public override bool HasDynamicDependencies => false;
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

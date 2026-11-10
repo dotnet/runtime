@@ -22,7 +22,9 @@ Enabling GC Hole Stress causes GCs to always occur in specific locations and tha
 - **0x2** &ndash; GC on transitions to Preemptive GC.
 - **0x4** &ndash; GC on every allowable JITed instr.
 - **0x8** &ndash; GC on every allowable R2R instr.
-- **0xF** &ndash; GC only on a unique stack trace.
+- **0x10** &ndash; GC only on a unique stack trace.
+
+R2R instruction stress is not supported on Apple platforms, where write/execute restrictions can prevent patching image-backed code.
 
 ### Common combinations
 

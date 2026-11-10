@@ -15,7 +15,6 @@ namespace System.Diagnostics
     {
         private readonly string _fileName;
         private readonly string _moduleName;
-        private FileVersionInfo? _fileVersionInfo;
 
         internal ProcessModule(string fileName, string moduleName)
         {
@@ -55,7 +54,7 @@ namespace System.Diagnostics
         /// <devdoc>
         ///     Returns version information about the module.
         /// </devdoc>
-        public FileVersionInfo FileVersionInfo => _fileVersionInfo ??= FileVersionInfo.GetVersionInfo(_fileName);
+        public FileVersionInfo FileVersionInfo => field ??= FileVersionInfo.GetVersionInfo(_fileName);
 
         public override string ToString() => $"{base.ToString()} ({ModuleName})";
     }

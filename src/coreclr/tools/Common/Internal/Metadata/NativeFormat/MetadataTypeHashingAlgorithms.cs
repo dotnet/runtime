@@ -1,114 +1,59 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using Debug = System.Diagnostics.Debug;
-using HashCodeBuilder = Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder;
-using TypeAttributes = System.Reflection.TypeAttributes;
-using TypeHashingAlgorithms = Internal.NativeFormat.TypeHashingAlgorithms;
-
 namespace Internal.Metadata.NativeFormat
 {
     internal static class MetadataTypeHashingAlgorithms
     {
-        private static void AppendNamespaceHashCode(ref HashCodeBuilder builder, NamespaceDefinitionHandle namespaceDefHandle, MetadataReader reader)
-        {
-            NamespaceDefinition namespaceDefinition = reader.GetNamespaceDefinition(namespaceDefHandle);
-
-            Handle parentHandle = namespaceDefinition.ParentScopeOrNamespace;
-            HandleType parentHandleType = parentHandle.HandleType;
-            if (parentHandleType == HandleType.NamespaceDefinition)
-            {
-                AppendNamespaceHashCode(ref builder, parentHandle.ToNamespaceDefinitionHandle(reader), reader);
-                string namespaceNamePart = reader.GetString(namespaceDefinition.Name);
-                builder.Append(namespaceNamePart);
-                builder.Append(".");
-            }
-            else
-            {
-                Debug.Assert(parentHandleType == HandleType.ScopeDefinition);
-                Debug.Assert(string.IsNullOrEmpty(reader.GetString(namespaceDefinition.Name)), "Root namespace with a name?");
-            }
-        }
-
-        private static void AppendNamespaceHashCode(ref HashCodeBuilder builder, NamespaceReferenceHandle namespaceRefHandle, MetadataReader reader)
-        {
-            NamespaceReference namespaceReference = reader.GetNamespaceReference(namespaceRefHandle);
-
-            Handle parentHandle = namespaceReference.ParentScopeOrNamespace;
-            HandleType parentHandleType = parentHandle.HandleType;
-            if (parentHandleType == HandleType.NamespaceReference)
-            {
-                AppendNamespaceHashCode(ref builder, parentHandle.ToNamespaceReferenceHandle(reader), reader);
-                string namespaceNamePart = reader.GetString(namespaceReference.Name);
-                builder.Append(namespaceNamePart);
-                builder.Append(".");
-            }
-            else
-            {
-                Debug.Assert(parentHandleType == HandleType.ScopeReference);
-                Debug.Assert(string.IsNullOrEmpty(reader.GetString(namespaceReference.Name)), "Root namespace with a name?");
-            }
-        }
-
         public static int ComputeHashCode(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
         {
-            HashCodeBuilder builder = new HashCodeBuilder("");
-
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
-            bool isNested = typeDef.Flags.IsNested();
-            if (!isNested)
+
+            int namespaceHashCode = 0;
+
+            Handle namespaceOrEnclosingType = typeDef.NamespaceOrEnclosingType;
+            if (namespaceOrEnclosingType.HandleType == HandleType.NamespaceDefinition)
             {
-                AppendNamespaceHashCode(ref builder, typeDef.NamespaceDefinition, reader);
+                NamespaceDefinition namespaceDefinition = reader.GetNamespaceDefinition(namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader));
+                namespaceHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(namespaceDefinition.Name));
             }
 
-            string typeName = reader.GetString(typeDef.Name);
-            builder.Append(typeName);
+            int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeDef.Name));
 
-            if (isNested)
+            int hashCode = VersionResilientHashCode.NameHashCode(namespaceHashCode, nameHashCode);
+
+            if (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
             {
-                int enclosingTypeHashCode = typeDef.EnclosingType.ComputeHashCode(reader);
-                return TypeHashingAlgorithms.ComputeNestedTypeHashCode(enclosingTypeHashCode, builder.ToHashCode());
+                int enclosingTypeHashCode = namespaceOrEnclosingType.ToTypeDefinitionHandle(reader).ComputeHashCode(reader);
+                return VersionResilientHashCode.NestedTypeHashCode(enclosingTypeHashCode, hashCode);
             }
 
-            return builder.ToHashCode();
+            return hashCode;
         }
 
         public static int ComputeHashCode(this TypeReferenceHandle typeRefHandle, MetadataReader reader)
         {
-            HashCodeBuilder builder = new HashCodeBuilder("");
-
             TypeReference typeRef = reader.GetTypeReference(typeRefHandle);
-            HandleType parentHandleType = typeRef.ParentNamespaceOrType.HandleType;
-            bool isNested = parentHandleType == HandleType.TypeReference;
-            if (!isNested)
+
+            int namespaceHashCode = 0;
+            Handle namespaceOrEnclosingType = typeRef.NamespaceOrEnclosingType;
+            if (namespaceOrEnclosingType.HandleType == HandleType.NamespaceReference)
             {
-                Debug.Assert(parentHandleType == HandleType.NamespaceReference);
-                AppendNamespaceHashCode(ref builder, typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(reader), reader);
+                NamespaceReference namespaceReference = reader.GetNamespaceReference(namespaceOrEnclosingType.ToNamespaceReferenceHandle(reader));
+                namespaceHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(namespaceReference.Name));
+            }
+            int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeRef.TypeName));
+
+            int hashCode = VersionResilientHashCode.NameHashCode(namespaceHashCode, nameHashCode);
+
+            if (namespaceOrEnclosingType.HandleType == HandleType.TypeReference)
+            {
+                int enclosingTypeHashCode = namespaceOrEnclosingType.ToTypeReferenceHandle(reader).ComputeHashCode(reader);
+                return VersionResilientHashCode.NestedTypeHashCode(enclosingTypeHashCode, hashCode);
             }
 
-            string typeName = reader.GetString(typeRef.TypeName);
-            builder.Append(typeName);
-
-            if (isNested)
-            {
-                int enclosingTypeHashCode = typeRef.ParentNamespaceOrType.ToTypeReferenceHandle(reader).ComputeHashCode(reader);
-                return TypeHashingAlgorithms.ComputeNestedTypeHashCode(enclosingTypeHashCode, builder.ToHashCode());
-            }
-
-            return builder.ToHashCode();
+            return hashCode;
         }
 
-        // This mask is the fastest way to check if a type is nested from its flags,
-        // but it should not be added to the BCL enum as its semantics can be misleading.
-        // Consider, for example, that (NestedFamANDAssem & NestedMask) == NestedFamORAssem.
-        // Only comparison of the masked value to 0 is meaningful, which is different from
-        // the other masks in the enum.
-        private const TypeAttributes NestedMask = (TypeAttributes)0x00000006;
-
-        private static bool IsNested(this TypeAttributes flags)
-        {
-            return (flags & NestedMask) != 0;
-        }
     }
 }

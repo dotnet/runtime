@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -29,11 +27,71 @@ namespace System
         public static void ThrowArgument_InputAndDestinationSpanMustNotOverlap() =>
             throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
 
-        public static void ThrowIfArrayTypeMismatch<T>(Array? array)
+        [DoesNotReturn]
+        public static void ThrowArgument_OverlappingTensorLayoutsNotSupported() =>
+            throw new ArgumentException(SR.Argument_OverlappingTensorLayoutsNotSupported, "destination");
+
+        public static void ThrowIfArrayTypeMismatch<T>(Array? array, bool isReadOnly)
         {
-            if ((array is not null) && (array.GetType().GetElementType() != typeof(T)))
+            if (array is null)
             {
-                ThrowArrayTypeMismatchException();
+                return;
+            }
+
+            Type elementType = array.GetType().GetElementType()!;
+            if (elementType == typeof(T))
+            {
+                return;
+            }
+
+            if (elementType.IsValueType)
+            {
+                // Array assignments allow enums and integers with the same reduced type.
+                if (ReducedType(elementType) == ReducedType(typeof(T)))
+                {
+                    return;
+                }
+            }
+            else if (isReadOnly && typeof(T).IsAssignableFrom(elementType))
+            {
+                return;
+            }
+
+            ThrowArrayTypeMismatchException();
+
+            static Type ReducedType(Type type)
+            {
+                if (type.IsEnum)
+                {
+                    type = Enum.GetUnderlyingType(type);
+                }
+
+                if (type == typeof(byte))
+                {
+                    return typeof(sbyte);
+                }
+
+                if (type == typeof(ushort))
+                {
+                    return typeof(short);
+                }
+
+                if (type == typeof(uint))
+                {
+                    return typeof(int);
+                }
+
+                if (type == typeof(ulong))
+                {
+                    return typeof(long);
+                }
+
+                if (type == typeof(nuint) || type == typeof(nint))
+                {
+                    return IntPtr.Size == 8 ? typeof(long) : typeof(int);
+                }
+
+                return type;
             }
         }
 
@@ -62,15 +120,21 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
+        internal static void ThrowArgument_TypeContainsReferences(Type targetType)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_TypeContainsReferences, targetType));
         }
 
         [DoesNotReturn]
         internal static void ThrowIndexOutOfRangeException()
         {
             throw new IndexOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_EnumerationNotPositioned()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_EnumerationNotPositioned);
         }
 
         [DoesNotReturn]
@@ -140,6 +204,12 @@ namespace System
         public static void ThrowArgument_DimensionsNotSame(string? paramNames)
         {
             throw new ArgumentException(SR.ThrowArgument_DimensionsNotSame, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_DestinationHasOverlappingElements(string paramName)
+        {
+            throw new ArgumentException(SR.ThrowArgument_DestinationHasOverlappingElements, paramName);
         }
 
         [DoesNotReturn]
@@ -260,12 +330,6 @@ namespace System
         internal static void ThrowArgument_CannotReshapeNonContiguousOrDense()
         {
             throw new ArgumentException(SR.Argument_CannotReshapeNonContiguousOrDense);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgument_MinGreaterThanMax()
-        {
-            throw new ArgumentException(SR.Argument_MinGreaterThanMax);
         }
 
         [DoesNotReturn]

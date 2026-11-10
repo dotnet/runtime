@@ -83,7 +83,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         {
             lhs += rhs;
             Assert.Equal(expected, lhs);
-            Assert.IsType(expected.GetType(), lhs);
+            Assert.IsType(expected.GetType(), (object)lhs);
         }
 
         [Theory, MemberData(nameof(PropertyAdditions))]

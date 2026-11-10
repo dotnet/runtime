@@ -32,17 +32,21 @@ namespace System
             }
         }
 
+        [DllImport("libc", SetLastError = true)]
+        internal static extern unsafe uint geteuid();
+
         public static unsafe bool IsProcessElevated()
         {
-            // Browser does not have the concept of an elevated process
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+            // Browser and WASI do not have the concept of an elevated process
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI")))
             {
                 return false;
             }
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                uint userId = Interop.Sys.GetEUid();
+                uint userId = geteuid();
                 return(userId == 0);
             }
 

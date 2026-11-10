@@ -178,6 +178,15 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // Reverse:
+    //   Reverse the order of the planned copies.
+    //
+    void Reverse()
+    {
+        m_entries.Reverse();
+    }
+
+    //------------------------------------------------------------------------
     // Finalize:
     //   Create IR to perform the full decomposed struct copy as specified by
     //   the entries that were added to the decomposition plan. Add the
@@ -267,10 +276,8 @@ private:
 
         SegmentList segments(dstLayout->GetNonPadding(m_compiler));
 
-        for (int i = 0; i < m_entries.Height(); i++)
+        for (const Entry& entry : m_entries.BottomUpOrder())
         {
-            const Entry& entry = m_entries.BottomRef(i);
-
             segments.Subtract(SegmentList::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
         }
 
@@ -426,10 +433,8 @@ private:
         assert((agg != nullptr) && (agg->Replacements.size() > 0));
         Replacement* firstRep = agg->Replacements.data();
 
-        for (int i = 0; i < m_entries.Height(); i++)
+        for (const Entry& entry : m_entries.BottomUpOrder())
         {
-            const Entry& entry = m_entries.BottomRef(i);
-
             assert(entry.ToReplacement != nullptr);
             assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < firstRep + agg->Replacements.size()));
             size_t replacementIndex = entry.ToReplacement - firstRep;
@@ -517,13 +522,12 @@ private:
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_store->OperIs(GT_STORE_BLK) &&
             m_store->AsBlk()->GetLayout()->HasGCPtr())
         {
-            for (int i = 0; i < m_entries.Height(); i++)
+            for (const Entry& entry : m_entries.BottomUpOrder())
             {
-                const Entry& entry = m_entries.BottomRef(i);
                 if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
                 {
                     Replacement* rep = entry.FromReplacement;
-                    if (rep->NeedsWriteBack)
+                    if (m_replacer->NeedsWriteBack(*rep))
                     {
                         statements->AddStatement(
                             Promotion::CreateWriteBack(m_compiler, m_src->AsLclVarCommon()->GetLclNum(), *rep));
@@ -573,9 +577,9 @@ private:
 
         if (addr != nullptr)
         {
-            for (int i = 0; i < m_entries.Height(); i++)
+            for (const Entry& entry : m_entries.BottomUpOrder())
             {
-                if (!CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
+                if (!CanSkipEntry(entry, dstDeaths, remainderStrategy))
                 {
                     numAddrUses++;
                 }
@@ -596,13 +600,12 @@ private:
                 {
                     needsNullCheck = true;
                     // See if our first indirection will subsume the null check (usual case).
-                    for (int i = 0; i < m_entries.Height(); i++)
+                    for (const Entry& entry : m_entries.BottomUpOrder())
                     {
-                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
+                        if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
                         {
                             continue;
                         }
-                        const Entry& entry = m_entries.BottomRef(i);
                         assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
                         needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
                         break;
@@ -699,10 +702,8 @@ private:
             srcDeaths = m_liveness->GetDeathsForStructLocal(m_src->AsLclVarCommon());
         }
 
-        for (int i = 0; i < m_entries.Height(); i++)
+        for (const Entry& entry : m_entries.BottomUpOrder())
         {
-            const Entry& entry = m_entries.BottomRef(i);
-
             if (entry.ToReplacement != nullptr)
             {
                 m_replacer->ClearNeedsReadBack(*entry.ToReplacement);
@@ -821,8 +822,8 @@ private:
         if (entry.FromReplacement != nullptr)
         {
             // Check if the remainder is going to handle it.
-            if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
-                (entry.ToReplacement == nullptr))
+            if ((remainderStrategy.Type == RemainderStrategy::FullBlock) &&
+                !m_replacer->NeedsWriteBack(*entry.FromReplacement) && (entry.ToReplacement == nullptr))
             {
 #ifdef DEBUG
                 if (dump)
@@ -879,9 +880,8 @@ private:
             }
 
             // It could also be one of the replacement locals we're going to write.
-            for (int i = 0; i < m_entries.Height(); i++)
+            for (const Entry& entry : m_entries.BottomUpOrder())
             {
-                const Entry& entry = m_entries.BottomRef(i);
                 if ((entry.ToReplacement != nullptr) && (entry.ToReplacement->LclNum == lclNum))
                 {
                     return false;
@@ -928,9 +928,8 @@ private:
             case RemainderStrategy::FullBlock:
                 return true;
             case RemainderStrategy::Primitive:
-                for (int i = 0; i < m_entries.Height(); i++)
+                for (const Entry& entry : m_entries.BottomUpOrder())
                 {
-                    const Entry& entry = m_entries.BottomRef(i);
                     if (entry.Offset + genTypeSize(entry.Type) <= remainderStrategy.PrimitiveOffset)
                     {
                         // Entry ends before remainder starts
@@ -1135,7 +1134,7 @@ private:
             if ((fullOffs != 0) || (m_addrBaseOffsFldSeq != nullptr))
             {
                 GenTreeIntCon* offsetNode = comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
-                offsetNode->gtFieldSeq    = m_addrBaseOffsFldSeq;
+                offsetNode->SetFieldSeq(m_addrBaseOffsFldSeq);
 
                 var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
                 addrUse            = comp->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
@@ -1169,12 +1168,19 @@ private:
         //
         GenTreeFlags GetIndirFlags(var_types type)
         {
-            if (genTypeSize(type) == 1)
+            GenTreeFlags flags = m_indirFlags;
+            if (!varTypeIsGC(type))
             {
-                return m_indirFlags & ~GTF_IND_UNALIGNED;
+                // These accesses are pieces of a whole struct copy, so they do not need to be atomic.
+                flags |= GTF_IND_ALLOW_NON_ATOMIC;
             }
 
-            return m_indirFlags;
+            if (genTypeSize(type) == 1)
+            {
+                flags &= ~GTF_IND_UNALIGNED;
+            }
+
+            return flags;
         }
     };
 
@@ -1267,7 +1273,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 if (fldSeq != nullptr)
                 {
-                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->GetFieldSeq());
                 }
 
                 *addr = op1;
@@ -1279,7 +1285,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 if (fldSeq != nullptr)
                 {
-                    *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+                    *fldSeq = m_fieldSeqStore->Append(intCon->GetFieldSeq(), *fldSeq);
                 }
 
                 *addr = op2;
@@ -1305,6 +1311,44 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
             break;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// gtPeelFieldAddrs: Peel any chain of instance GT_FIELD_ADDR nodes off the
+// specified address and return the underlying base node.
+//
+// Arguments:
+//   addr - The address node.
+//
+// Returns:
+//   The first node along the chain that is not an instance GT_FIELD_ADDR.
+//   For example, given FIELD_ADDR(FIELD_ADDR(LCL_VAR this, a), b), returns
+//   the LCL_VAR.
+//
+// Remarks:
+//   Static field addresses (where `IsInstance()` is false) are not peeled,
+//   since they carry a runtime helper call rather than a simple
+//   constant-offset addend.
+//
+GenTree* Compiler::gtPeelFieldAddrs(GenTree* addr) const
+{
+    while (addr->OperIs(GT_FIELD_ADDR) && addr->AsFieldAddr()->IsInstance())
+    {
+        addr = addr->AsFieldAddr()->GetFldObj();
+    }
+    return addr;
+}
+
+//------------------------------------------------------------------------
+// gtPeelFieldAddrs (const overload): see the non-const variant above.
+//
+// GenTreeFieldAddr::GetFldObj() returns a mutable GenTree* even from a const
+// receiver, so we localize the const_cast here rather than asking every
+// const-correct caller to perform one at the use site.
+//
+const GenTree* Compiler::gtPeelFieldAddrs(const GenTree* addr) const
+{
+    return gtPeelFieldAddrs(const_cast<GenTree*>(addr));
 }
 
 // HandleStructStore:
@@ -1357,7 +1401,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                 JITDUMP("*** Block operation partially overlaps with start replacement of destination V%02u (%s)\n",
                         dstFirstRep->LclNum, dstFirstRep->Description);
 
-                if (dstFirstRep->NeedsWriteBack)
+                if (NeedsWriteBack(*dstFirstRep))
                 {
                     // The value of the replacement will be partially assembled from its old value and this struct
                     // operation.
@@ -1381,7 +1425,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     JITDUMP("*** Block operation partially overlaps with end replacement of destination V%02u (%s)\n",
                             dstLastRep->LclNum, dstLastRep->Description);
 
-                    if (dstLastRep->NeedsWriteBack)
+                    if (NeedsWriteBack(*dstLastRep))
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
                         ClearNeedsWriteBack(*dstLastRep);
@@ -1405,7 +1449,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                 JITDUMP("*** Block operation partially overlaps with start replacement of source V%02u (%s)\n",
                         srcFirstRep->LclNum, srcFirstRep->Description);
 
-                if (srcFirstRep->NeedsWriteBack)
+                if (NeedsWriteBack(*srcFirstRep))
                 {
                     result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
                     ClearNeedsWriteBack(*srcFirstRep);
@@ -1422,7 +1466,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     JITDUMP("*** Block operation partially overlaps with end replacement of source V%02u (%s)\n",
                             srcLastRep->LclNum, srcLastRep->Description);
 
-                    if (srcLastRep->NeedsWriteBack)
+                    if (NeedsWriteBack(*srcLastRep))
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
                         ClearNeedsWriteBack(*srcLastRep);
@@ -1656,7 +1700,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
     while ((dstRep < dstEndRep) || (srcRep < srcEndRep))
     {
-        if ((srcRep < srcEndRep) && srcRep->NeedsReadBack)
+        if ((srcRep < srcEndRep) && NeedsReadBack(*srcRep))
         {
             JITDUMP("  Source replacement V%02u (%s) is stale. Will read it back before copy.\n", srcRep->LclNum,
                     srcRep->Description);
@@ -1664,7 +1708,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
             assert(srcLcl != nullptr);
             statements->AddStatement(Promotion::CreateReadBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
             ClearNeedsReadBack(*srcRep);
-            assert(!srcRep->NeedsWriteBack);
+            assert(!NeedsWriteBack(*srcRep));
         }
 
         if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
@@ -1735,5 +1779,13 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                     LastUseString(srcLcl, srcRep));
             srcRep++;
         }
+    }
+
+    if ((dstLcl != nullptr) && (srcLcl != nullptr) && (dstLcl->GetLclNum() == srcLcl->GetLclNum()) &&
+        (dstBaseOffs > srcBaseOffs) && (dstBaseOffs - srcBaseOffs < srcLcl->GetLayout(m_compiler)->GetSize()))
+    {
+        // Copy overlapping slices from high to low so stores do not overwrite later sources.
+        JITDUMP("  Reversing copy order for overlapping slices of the same local\n");
+        plan->Reverse();
     }
 }

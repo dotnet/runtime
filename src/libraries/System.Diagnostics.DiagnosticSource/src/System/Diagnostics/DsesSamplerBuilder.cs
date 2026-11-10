@@ -36,7 +36,7 @@ internal static class DsesSamplerBuilder
         };
     }
 
-    public static ActivitySamplingResult ParentRatioSampler(long idUpperBound, in ActivityContext parentContext, ActivityTraceId traceId)
+    public static unsafe ActivitySamplingResult ParentRatioSampler(long idUpperBound, in ActivityContext parentContext, ActivityTraceId traceId)
     {
         if (parentContext.TraceId != default)
         {

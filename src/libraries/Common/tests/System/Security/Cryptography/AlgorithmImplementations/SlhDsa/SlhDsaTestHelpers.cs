@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKeyPem());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPublicKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.PublicKeySizeInBytes)));
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.SecretKeySizeInBytes)));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPrivateKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.PrivateKeySizeInBytes)));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfo());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfoPem());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters, [], out _));
@@ -70,22 +70,22 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 Algorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 SubjectPublicKey = publicKey,
             };
 
-            AssertImportSubjectKeyPublicInfo(import => testEmbeddedCall(() => import(spki.Encode())));
+            AssertImportSubjectPublicKeyInfo(import => testEmbeddedCall(() => import(spki.Encode())));
         }
 
-        internal delegate SlhDsa ImportSubjectKeyPublicInfoCallback(byte[] spki);
-        internal static void AssertImportSubjectKeyPublicInfo(Action<ImportSubjectKeyPublicInfoCallback> test) =>
-            AssertImportSubjectKeyPublicInfo(test, test);
+        internal delegate SlhDsa ImportSubjectPublicKeyInfoCallback(byte[] spki);
+        internal static void AssertImportSubjectPublicKeyInfo(Action<ImportSubjectPublicKeyInfoCallback> test) =>
+            AssertImportSubjectPublicKeyInfo(test, test);
 
-        internal static void AssertImportSubjectKeyPublicInfo(
-            Action<ImportSubjectKeyPublicInfoCallback> testDirectCall,
-            Action<ImportSubjectKeyPublicInfoCallback> testEmbeddedCall)
+        internal static void AssertImportSubjectPublicKeyInfo(
+            Action<ImportSubjectPublicKeyInfoCallback> testDirectCall,
+            Action<ImportSubjectPublicKeyInfoCallback> testEmbeddedCall)
         {
             testDirectCall(spki => SlhDsa.ImportSubjectPublicKeyInfo(spki));
             testDirectCall(spki => SlhDsa.ImportSubjectPublicKeyInfo(spki.AsSpan()));
@@ -94,31 +94,31 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             testEmbeddedCall(spki => SlhDsa.ImportFromPem(PemEncoding.WriteString("PUBLIC KEY", spki).AsSpan()));
         }
 
-        internal static void AssertImportSecretKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] secretKey) =>
-            AssertImportSecretKey(test, test, algorithm, secretKey);
+        internal static void AssertImportPrivateKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] PrivateKey) =>
+            AssertImportPrivateKey(test, test, algorithm, PrivateKey);
 
-        internal static void AssertImportSecretKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] secretKey)
+        internal static void AssertImportPrivateKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] PrivateKey)
         {
-            testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, secretKey));
+            testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, PrivateKey));
 
-            if (secretKey?.Length == 0)
+            if (PrivateKey?.Length == 0)
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, Array.Empty<byte>().AsSpan()));
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, Array.Empty<byte>().AsSpan()));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, ReadOnlySpan<byte>.Empty));
             }
             else
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, secretKey.AsSpan()));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, PrivateKey.AsSpan()));
             }
 
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
-                PrivateKey = secretKey,
+                PrivateKey = PrivateKey,
             };
 
             AssertImportPkcs8PrivateKey(import =>
@@ -171,14 +171,17 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     SlhDsa.ImportEncryptedPkcs8PrivateKey(Encoding.UTF8.GetBytes(password), pkcs8.ToArray()));
             }
 
-            AssertImportFromEncryptedPem(importPem =>
-            {
-                testEmbeddedCall((string password, ReadOnlySpan<byte> pkcs8) =>
+            AssertImportFromEncryptedPem(
+                importPem =>
                 {
-                    string pem = PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", pkcs8);
-                    return importPem(pem, password);
-                });
-            });
+                    testEmbeddedCall(
+                        (string password, ReadOnlySpan<byte> pkcs8) =>
+                        {
+                            string pem = PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", pkcs8);
+                            return importPem(pem, password);
+                        });
+                },
+                passwordTypeToTest);
         }
 
         internal delegate SlhDsa ImportFromEncryptedPemCallback(string source, string password);
@@ -204,27 +207,29 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         internal static void AssertExportSlhDsaPublicKey(Action<Func<SlhDsa, byte[]>> callback)
         {
             callback(slhDsa => slhDsa.ExportSlhDsaPublicKey());
-            callback(slhDsa =>
-            {
-                byte[] buffer = new byte[slhDsa.Algorithm.PublicKeySizeInBytes];
-                slhDsa.ExportSlhDsaPublicKey(buffer.AsSpan());
-                return buffer;
-            });
+            callback(
+                slhDsa =>
+                {
+                    byte[] buffer = new byte[slhDsa.Algorithm.PublicKeySizeInBytes];
+                    slhDsa.ExportSlhDsaPublicKey(buffer.AsSpan());
+                    return buffer;
+                });
 
             AssertExportSubjectPublicKeyInfo(exportSpki =>
                 callback(slhDsa =>
                     SubjectPublicKeyInfoAsn.Decode(exportSpki(slhDsa), AsnEncodingRules.DER).SubjectPublicKey.Span.ToArray()));
         }
 
-        internal static void AssertExportSlhDsaSecretKey(Action<Func<SlhDsa, byte[]>> callback)
+        internal static void AssertExportSlhDsaPrivateKey(Action<Func<SlhDsa, byte[]>> callback)
         {
-            callback(slhDsa => slhDsa.ExportSlhDsaSecretKey());
-            callback(slhDsa =>
-            {
-                byte[] buffer = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-                slhDsa.ExportSlhDsaSecretKey(buffer.AsSpan());
-                return buffer;
-            });
+            callback(slhDsa => slhDsa.ExportSlhDsaPrivateKey());
+            callback(
+                slhDsa =>
+                {
+                    byte[] buffer = new byte[slhDsa.Algorithm.PrivateKeySizeInBytes];
+                    slhDsa.ExportSlhDsaPrivateKey(buffer.AsSpan());
+                    return buffer;
+                });
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 callback(slhDsa =>
@@ -239,6 +244,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             callback(slhDsa => DoTryUntilDone(slhDsa.TryExportPkcs8PrivateKey));
             callback(slhDsa => slhDsa.ExportPkcs8PrivateKey());
             callback(slhDsa => DecodePem(slhDsa.ExportPkcs8PrivateKeyPem()));
+
             static byte[] DecodePem(string pem)
             {
                 PemFields fields = PemEncoding.Find(pem.AsSpan());
@@ -372,7 +378,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             return buffer.AsSpan(0, written).ToArray();
         }
 
-        internal static string? AlgorithmToOid(SlhDsaAlgorithm algorithm)
+        internal static void WithDispose<T>(T disposable, Action<T> callback)
+            where T : IDisposable
+        {
+            using (disposable)
+            {
+                callback(disposable);
+            }
+        }
+
+        internal static string AlgorithmToOid(SlhDsaAlgorithm algorithm)
         {
             return algorithm?.Name switch
             {
@@ -388,19 +403,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 "SLH-DSA-SHAKE-192f" => "2.16.840.1.101.3.4.3.29",
                 "SLH-DSA-SHAKE-256s" => "2.16.840.1.101.3.4.3.30",
                 "SLH-DSA-SHAKE-256f" => "2.16.840.1.101.3.4.3.31",
-                _ => null,
+                _ => throw new XunitException($"Unknown algorithm: '{algorithm?.Name}'."),
             };
         }
-
-        internal const string Md5Oid = "1.2.840.113549.2.5";
-        internal const string Sha1Oid = "1.3.14.3.2.26";
-        internal const string Sha256Oid = "2.16.840.1.101.3.4.2.1";
-        internal const string Sha384Oid = "2.16.840.1.101.3.4.2.2";
-        internal const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
-        internal const string Sha3_256Oid = "2.16.840.1.101.3.4.2.8";
-        internal const string Sha3_384Oid = "2.16.840.1.101.3.4.2.9";
-        internal const string Sha3_512Oid = "2.16.840.1.101.3.4.2.10";
-        internal const string Shake128Oid = "2.16.840.1.101.3.4.2.11";
-        internal const string Shake256Oid = "2.16.840.1.101.3.4.2.12";
     }
 }

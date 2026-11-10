@@ -172,7 +172,8 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Represents an enumerator containing the set of splits around successful matches found by iteratively applying a regular expression pattern to the input span.
+        /// Represents an enumerator containing the set of splits around successful matches found by iteratively
+        /// applying a regular expression pattern to the input span.
         /// </summary>
         [StructLayout(LayoutKind.Auto)]
         public ref struct ValueSplitEnumerator : IEnumerator<Range>
@@ -268,9 +269,7 @@ namespace System.Text.RegularExpressions
                 return true;
             }
 
-            /// <summary>
-            /// Gets a <see cref="Range"/> for the split at the current position of the enumerator.
-            /// </summary>
+            /// <summary>Gets the <see cref="Range"/> element at the current position of the enumerator.</summary>
             public readonly Range Current => _currentSplit;
 
             /// <inheritdoc />

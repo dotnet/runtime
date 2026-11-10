@@ -11,10 +11,10 @@ using Xunit;
 public class Async2Struct
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
-        Async().Wait();
-        Async2().Wait();
+        await Async();
+        await Async2();
     }
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
@@ -32,7 +32,6 @@ public class Async2Struct
         AssertEqual(100, s.Value);
     }
 
-
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AssertEqual(int expected, int val)
     {
@@ -47,28 +46,22 @@ public class Async2Struct
 
         public async Task Test()
         {
-            // TODO: C# compiler is expected to do this, but not in the prototype.
-            S @this = this;
+            AssertEqual(100, this.Value);
+            this.Value++;
+            await this.InstanceCall();
+            AssertEqual(101, this.Value);
 
-            AssertEqual(100, @this.Value);
-            @this.Value++;
-            await @this.InstanceCall();
-            AssertEqual(101, @this.Value);
-
-            await @this.TaskButNotAsync();
-            AssertEqual(102, @this.Value);
+            await this.TaskButNotAsync();
+            AssertEqual(102, this.Value);
         }
 
         private async Task InstanceCall()
         {
-            // TODO: C# compiler is expected to do this, but not in the prototype.
-            S @this = this;
-
-            AssertEqual(101, @this.Value);
-            @this.Value++;
-            AssertEqual(102, @this.Value);
+            AssertEqual(101, this.Value);
+            this.Value++;
+            AssertEqual(102, this.Value);
             await Task.Yield();
-            AssertEqual(102, @this.Value);
+            AssertEqual(102, this.Value);
         }
 
         private Task TaskButNotAsync()

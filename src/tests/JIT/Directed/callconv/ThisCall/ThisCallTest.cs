@@ -7,6 +7,7 @@ using System.Text;
 using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 
 unsafe class ThisCallNative
 {
@@ -78,6 +79,9 @@ unsafe class ThisCallNative
 
 public unsafe class ThisCallTest
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/50440", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -91,11 +95,16 @@ public unsafe class ThisCallTest
             Test4ByteNonHFA(instance);
             TestEnum(instance);
             TestCLong(instance);
-            Test8ByteHFAReverse();
-            Test4ByteHFAReverse();
-            Test4ByteNonHFAReverse();
-            TestEnumReverse();
-            TestCLongReverse();
+            // Marshal.GetFunctionPointerForDelegate needs a stub created at run time, which CoreCLR
+            // on wasm cannot allocate.
+            if (!PlatformDetection.IsWasm)
+            {
+                Test8ByteHFAReverse();
+                Test4ByteHFAReverse();
+                Test4ByteNonHFAReverse();
+                TestEnumReverse();
+                TestCLongReverse();
+            }
             Test8ByteHFAUnmanagedCallersOnly();
             Test4ByteHFAUnmanagedCallersOnly();
             Test4ByteNonHFAUnmanagedCallersOnly();
@@ -303,7 +312,7 @@ public unsafe class ThisCallTest
         }
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.SizeF GetSize(ThisCallNative.C* c, int unused)
     {
         return new ThisCallNative.SizeF
@@ -313,7 +322,7 @@ public unsafe class ThisCallTest
         };
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.Width GetWidth(ThisCallNative.C* c)
     {
         return new ThisCallNative.Width
@@ -322,7 +331,7 @@ public unsafe class ThisCallTest
         };
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.IntWrapper GetHeightAsInt(ThisCallNative.C* c)
     {
         return new ThisCallNative.IntWrapper
@@ -331,13 +340,13 @@ public unsafe class ThisCallTest
         };
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.E GetE(ThisCallNative.C* c)
     {
         return c->dummy;
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static CLong GetWidthAsLong(ThisCallNative.C* c)
     {
         return new CLong((nint)c->width);

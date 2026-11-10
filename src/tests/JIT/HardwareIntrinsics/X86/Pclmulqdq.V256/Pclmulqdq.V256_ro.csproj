@@ -11,4 +11,7 @@
     <Compile Include="Program.Pclmulqdq.V256.cs" />
     <Compile Include="..\..\X86\Shared\Program.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

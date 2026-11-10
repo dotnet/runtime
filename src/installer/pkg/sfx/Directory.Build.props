@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <EnsureRuntimeIdentifierSet>true</EnsureRuntimeIdentifierSet>
+    <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
@@ -10,9 +11,8 @@
     <ProductBrandPrefix>Microsoft .NET</ProductBrandPrefix>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
-    <UseArcadeRpmTooling>true</UseArcadeRpmTooling>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
+  <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <GenerateInstallers>true</GenerateInstallers>
     <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildDebPackage>
     <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildRpmPackage>

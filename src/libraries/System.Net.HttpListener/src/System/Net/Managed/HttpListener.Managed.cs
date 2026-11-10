@@ -16,6 +16,10 @@ namespace System.Net
         private readonly List<HttpListenerContext> _contextQueue = new List<HttpListenerContext>();
         private readonly List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
         private readonly Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
+        // Set under the _asyncWaitQueue lock once Cleanup() has drained the queue, and cleared by Start().
+        // _state is only updated after Cleanup() returns, so BeginGetContext() checks this to avoid queuing
+        // an operation that nothing would ever complete.
+        private bool _asyncWaitQueueClosed;
         private bool _unsafeConnectionNtlmAuthentication;
 
         public HttpListenerTimeoutManager TimeoutManager
@@ -42,6 +46,11 @@ namespace System.Net
                         return;
 
                     HttpEndPointManager.AddListener(this);
+
+                    lock ((_asyncWaitQueue as ICollection).SyncRoot)
+                    {
+                        _asyncWaitQueueClosed = false;
+                    }
 
                     _state = State.Started;
                 }
@@ -250,6 +259,7 @@ namespace System.Net
                         ares.Complete(exc);
                     }
                     _asyncWaitQueue.Clear();
+                    _asyncWaitQueueClosed = true;
                 }
             }
         }
@@ -283,6 +293,14 @@ namespace System.Net
             // lock wait_queue early to avoid race conditions
             lock ((_asyncWaitQueue as ICollection).SyncRoot)
             {
+                // The listener was stopped or closed after the state check above, so complete the
+                // operation in the same way as Cleanup() would have if it had been queued in time.
+                if (_asyncWaitQueueClosed)
+                {
+                    ares.Complete(new ObjectDisposedException("listener"));
+                    return ares;
+                }
+
                 lock ((_contextQueue as ICollection).SyncRoot)
                 {
                     HttpListenerContext? ctx = GetContextFromQueue();

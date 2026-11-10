@@ -153,8 +153,20 @@ namespace System.Security.Cryptography.Xml
 
         public virtual byte[] GetDigestedOutput(HashAlgorithm hash)
         {
-            return hash.ComputeHash((Stream)GetOutput(typeof(Stream)));
+            EncryptedXml.EnterDecryptionOperation();
+            try
+            {
+                return hash.ComputeHash((Stream)GetOutput(typeof(Stream)));
+            }
+            finally
+            {
+                EncryptedXml.ExitDecryptionOperation();
+            }
         }
+
+        // Clears internal state after output has been obtained, so intermediate data
+        // can be garbage collected during transform chain processing.
+        internal virtual void ClearState() { }
 
         public XmlElement? Context
         {

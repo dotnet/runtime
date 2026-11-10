@@ -856,7 +856,7 @@ namespace System.Data.ProviderBase
                 // Only push the connection into the general pool if we didn't
                 //   already push it onto the transacted pool, put it into stasis,
                 //   or want to destroy it.
-                Debug.Assert(destroyObject == false);
+                Debug.Assert(!destroyObject);
                 PutNewObject(obj);
             }
             else if (destroyObject)

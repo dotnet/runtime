@@ -49,15 +49,23 @@ public:
             return typeContext.m_classInst;
         }
 
-#ifdef _DEBUG
-        // Typical instantiation (= open type). Non-NULL only when loading any non-typical instantiation.
-        // NULL if 'this' is a typical instantiation or a non-generic type.
-        MethodTable * dbg_pTypicalInstantiationMT;
+        // Typical instantiation (= open type) MethodTable. Non-NULL only when loading a
+        // non-typical instantiation of a generic type. NULL if 'this' is a typical
+        // instantiation or a non-generic type. Used to reuse the typical instantiation's
+        // DispatchMap for non-typical instantiations.
+        MethodTable * pTypicalInstantiationMT;
 
+        inline MethodTable * GetTypicalMethodTable() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return pTypicalInstantiationMT;
+        }
+
+#ifdef _DEBUG
         inline MethodTable * Debug_GetTypicalMethodTable() const
         {
             LIMITED_METHOD_CONTRACT;
-            return dbg_pTypicalInstantiationMT;
+            return pTypicalInstantiationMT;
         }
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
@@ -90,7 +98,6 @@ public:
           m_pAllocMemTracker(pAllocMemTracker)
     {
         LIMITED_METHOD_CONTRACT;
-        SetBMTData();
     }
 public:
     //==========================================================================
@@ -175,7 +182,7 @@ private:
     // or we explicitly pass around the data as arguments. </NOTE>
     //
     // <NICE> Get rid of all of these.</NICE>
-    mdTypeDef GetCl()    { WRAPPER_NO_CONTRACT; return bmtInternal->pType->GetTypeDefToken(); }
+    mdTypeDef GetCl()    { WRAPPER_NO_CONTRACT; return bmtInternal.pType->GetTypeDefToken(); }
     BOOL IsGlobalClass() { WRAPPER_NO_CONTRACT; return GetCl() == COR_GLOBAL_PARENT_TOKEN; }
     DWORD GetAttrClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetAttrClass(); }
     WORD GetNumHandleRegularStatics() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetNumHandleRegularStatics(); }
@@ -188,9 +195,8 @@ private:
 #ifdef FEATURE_COMINTEROP
     void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); }
 #endif // FEATURE_COMINTEROP
-    BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp->fIsEnum; }
-    BOOL HasNonPublicFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasNonPublicFields(); }
-    BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; }
+    BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp.fIsEnum; }
+    BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp.fIsValueClass; }
     BOOL IsUnsafeValueClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsUnsafeValueClass(); }
     BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); }
     BOOL HasLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasLayout(); }
@@ -207,9 +213,9 @@ private:
     LPCUTF8 GetDebugClassName() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetDebugClassName(); }
 #endif // _DEBUG
     Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); }
-    Module *GetModule() { WRAPPER_NO_CONTRACT; return bmtInternal->pModule; }
+    Module *GetModule() { WRAPPER_NO_CONTRACT; return bmtInternal.pModule; }
     ClassLoader *GetClassLoader() { WRAPPER_NO_CONTRACT; return GetModule()->GetClassLoader(); }
-    IMDInternalImport* GetMDImport()  { WRAPPER_NO_CONTRACT; return bmtInternal->pInternalImport; }
+    IMDInternalImport* GetMDImport()  { WRAPPER_NO_CONTRACT; return bmtInternal.pInternalImport; }
     FieldDesc *GetApproxFieldDescListRaw() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetFieldDescList(); }
     EEClassLayoutInfo *GetLayoutInfo() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetLayoutInfo(); }
 
@@ -222,7 +228,7 @@ private:
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
-    void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
+    void SetHasRVAStaticFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasRVAStaticFields(); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
@@ -480,7 +486,7 @@ private:
         bmtTypeHandle(
             bmtRTType * pRTType)
             : m_handle(HandleFromRTType(pRTType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
 
         //-----------------------------------------------------------------------------------------
         // Creates a type handle for a bmtMDType pointer. For ease of use, this conversion
@@ -488,7 +494,7 @@ private:
         bmtTypeHandle(
             bmtMDType * pMDType)
             : m_handle(HandleFromMDType(pMDType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -654,13 +660,20 @@ private:
     };  // class bmtTypeHandle
 
     // --------------------------------------------------------------------------------------------
-    // MethodSignature encapsulates the name and metadata signature of a method, as well as
-    // the scope (Module*) and substitution for the signature. It is intended to facilitate
-    // passing around this tuple of information as well as providing efficient comparison
-    // operations when looking for types.
+    // MethodSignature encapsulates the name and metadata signature of a method, as well as the
+    // scope (Module*) substitution and optional async promise type (Task vs. ValueTask).
+    // It is intended to facilitate passing around this tuple of information as well as providing
+    // efficient comparison operations.
     //
     // Meant to be passed around by reference or by value. Please make sure this is declared
     // on the stack or properly deleted after use.
+
+    enum AsyncVariantKind
+    {
+        None      = 0,  // this is not a signature of an async variant method
+        Task      = 1,  // this is a signature of an async variant for a Task[<T>] returning method
+        ValueTask = 2   // this is a signature of an async variant for a ValueTask[<T>] returning method
+    };
 
     class MethodSignature
     {
@@ -674,6 +687,7 @@ private:
             const Substitution * pSubst)
             : m_pModule(pModule),
               m_tok(tok),
+              m_asyncVariantKind(None),
               m_szName(NULL),
               m_pSig(NULL),
               m_cSig(0),
@@ -694,10 +708,12 @@ private:
         MethodSignature(
             Module *             pModule,
             mdToken              tok,
+            bool                 isValueTaskVariant,
             Signature            sig,
             const Substitution * pSubst)
             : m_pModule(pModule),
               m_tok(tok),
+              m_asyncVariantKind(isValueTaskVariant ? AsyncVariantKind::ValueTask : AsyncVariantKind::Task),
               m_szName(NULL),
               m_pSig(sig.GetRawSig()),
               m_cSig(sig.GetRawSigLen()),
@@ -724,6 +740,7 @@ private:
             const Substitution * pSubst = NULL)
             : m_pModule(pModule),
               m_tok(mdTokenNil),
+              m_asyncVariantKind(None),
               m_szName(szName),
               m_pSig(pSig),
               m_cSig(cSig),
@@ -744,6 +761,7 @@ private:
             const MethodSignature & s)
             : m_pModule(s.m_pModule),
               m_tok(s.m_tok),
+              m_asyncVariantKind(s.m_asyncVariantKind),
               m_szName(s.m_szName),
               m_pSig(s.m_pSig),
               m_cSig(s.m_cSig),
@@ -810,6 +828,13 @@ private:
             const MethodSignature & sig2);
 
         //-----------------------------------------------------------------------------------------
+        // Returns true if the signatures have the same async variant kinds.
+        static bool
+        SameAsyncVariantKind(
+            const MethodSignature& sig1,
+            const MethodSignature& sig2);
+
+        //-----------------------------------------------------------------------------------------
         // Returns true if the metadata signatures (PCCOR_SIGNATURE) are equivalent. (Type equivalence permitted)
         static bool
         SignaturesEquivalent(
@@ -861,6 +886,7 @@ private:
         //-----------------------------------------------------------------------------------------
         Module *                m_pModule;
         mdToken                 m_tok;
+        AsyncVariantKind        m_asyncVariantKind;
         mutable LPCUTF8         m_szName;   // mutable because it is lazily evaluated.
         mutable PCCOR_SIGNATURE m_pSig;     // mutable because it is lazily evaluated.
         mutable size_t          m_cSig;     // mutable because it is lazily evaluated.
@@ -973,7 +999,7 @@ private:
             DWORD dwImplAttrs,
             DWORD dwRVA,
             Signature sig,
-            AsyncMethodKind thunkKind,
+            AsyncMethodFlags asyncMethodFlags,
             MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
@@ -1063,7 +1089,21 @@ private:
         // Returns the metadata declaration attributes for this method.
         DWORD
         GetDeclAttrs() const
-            { LIMITED_METHOD_CONTRACT; return m_dwDeclAttrs; }
+            {
+                LIMITED_METHOD_CONTRACT;
+
+                DWORD dwDeclAttrs = m_dwDeclAttrs;
+                if (hasAsyncFlags(m_asyncMethodFlags, AsyncMethodFlags::ReturnDroppingThunk))
+                {
+                    // A return-dropping thunk is synthesized by the runtime and always has an implementation -
+                    // it calls the ordinary async variant virtually and drops the result.
+                    // The metadata method that the thunk is derived from may be abstract (i.e. when the covariant
+                    // override that needs the thunk is abstract), but the thunk itself never is.
+                    dwDeclAttrs &= ~mdAbstract;
+                }
+
+                return dwDeclAttrs;
+            }
 
         //-----------------------------------------------------------------------------------------
         // Returns the metadata implementation attributes for this method.
@@ -1079,23 +1119,19 @@ private:
 
         bool IsAsyncVariant() const
         {
-            return GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantThunk ||
-                GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantImpl;
+            return hasAsyncFlags(GetAsyncMethodFlags(), AsyncMethodFlags::IsAsyncVariant);
         }
 
-        void SetAsyncMethodKind(AsyncMethodKind kind)
+        void SetAsyncMethodFlags(AsyncMethodFlags flags)
         {
-            m_asyncMethodKind = kind;
+            m_asyncMethodFlags = flags;
         }
 
-        AsyncMethodKind GetAsyncMethodKind() const
+        AsyncMethodFlags GetAsyncMethodFlags() const
         {
             LIMITED_METHOD_CONTRACT;
-            return m_asyncMethodKind;
+            return m_asyncMethodFlags;
         }
-
-        bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
-        void              SetAsyncOtherVariant(bmtMDMethod* pAsyncOtherVariant) { m_asyncOtherVariant = pAsyncOtherVariant; }
 
     private:
         //-----------------------------------------------------------------------------------------
@@ -1105,10 +1141,9 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
-        AsyncMethodKind   m_asyncMethodKind;
+        AsyncMethodFlags  m_asyncMethodFlags;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
-        bmtMDMethod*      m_asyncOtherVariant = NULL;
 
         MethodDesc *      m_pMD;                // MethodDesc created and assigned to this method
         MethodDesc *      m_pUnboxedMD;         // Unboxing MethodDesc if this is a virtual method on a valuetype
@@ -1127,14 +1162,14 @@ private:
         bmtMethodHandle(
             bmtRTMethod * pRTMethod)
             : m_handle(HandleFromRTMethod(pRTMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Constructor taking a bmtMDMethod*.
         bmtMethodHandle(
             bmtMDMethod * pMDMethod)
             : m_handle(HandleFromMDMethod(pMDMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -1400,7 +1435,14 @@ private:
             : m_curSlotIdx(0),
               m_maxSlotIdx(maxSlotIdx),
               m_rgSlots(new (pStackingAllocator) bmtMethodSlot[maxSlotIdx])
-            { CONTRACTL { THROWS; } CONTRACTL_END; }
+        {
+            CONTRACTL
+            {
+                THROWS;
+                MODE_ANY;
+            }
+            CONTRACTL_END;
+        }
 
         //-----------------------------------------------------------------------------------------
         // Subscript operator
@@ -2009,11 +2051,7 @@ private:
                 if ((*this)[i]->GetMethodSignature().GetToken() == tok)
                 {
                     auto result = (*this)[i];
-                    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
-                    {
-                        return result->GetAsyncOtherVariant();
-                    }
-                    else
+                    if ((variantLookup == AsyncVariantLookup::Async) == result->IsAsyncVariant())
                     {
                         return result;
                     }
@@ -2091,7 +2129,6 @@ private:
         bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
-        bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
 
         // These data members are specific to regular statics
         DWORD RegularStaticFieldStart[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];            // Byte offset where to start placing fields of this size
@@ -2265,52 +2302,30 @@ private:
     AllocateFromLowFrequencyHeap(S_SIZE_T cbMem);
 
     // --------------------------------------------------------------------------------------------
-    // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
-    // parameters needed for BuildMethodTable
+    // Transient working state owned by the builder. See the record definitions for details.
 
-    // Look at the struct definitions for a detailed list of all parameters available
-    // to BuildMethodTable.
-
-    LoaderAllocator *bmtAllocator;
-    bmtErrorInfo *bmtError;
-    bmtProperties *bmtProp;
-    bmtVtable *bmtVT;
-    bmtParentInfo *bmtParent;
-    bmtInterfaceInfo *bmtInterface;
-    bmtMetaDataInfo *bmtMetaData;
-    bmtMethodInfo *bmtMethod;
-    bmtMethAndFieldDescs *bmtMFDescs;
-    bmtFieldPlacement *bmtFP;
-    bmtInternalInfo *bmtInternal;
-    bmtGCSeriesInfo *bmtGCSeries;
-    bmtMethodImplInfo *bmtMethodImpl;
-    const bmtGenericsInfo *bmtGenerics;
-    bmtEnumFieldInfo *bmtEnumFields;
-    bmtLayoutInfo* bmtLayout;
-
-    void SetBMTData(
-        LoaderAllocator *bmtAllocator = NULL,
-        bmtErrorInfo *bmtError = NULL,
-        bmtProperties *bmtProp = NULL,
-        bmtVtable *bmtVT = NULL,
-        bmtParentInfo *bmtParent = NULL,
-        bmtInterfaceInfo *bmtInterface = NULL,
-        bmtMetaDataInfo *bmtMetaData = NULL,
-        bmtMethodInfo *bmtMethod = NULL,
-        bmtMethAndFieldDescs *bmtMFDescs = NULL,
-        bmtFieldPlacement *bmtFP = NULL,
-        bmtInternalInfo *bmtInternal = NULL,
-        bmtGCSeriesInfo *bmtGCSeries = NULL,
-        bmtMethodImplInfo *bmtMethodImpl = NULL,
-        const bmtGenericsInfo *bmtGenerics = NULL,
-        bmtEnumFieldInfo *bmtEnumFields = NULL,
-        bmtLayoutInfo *bmtLayout = NULL);
+    LoaderAllocator *bmtAllocator = NULL;
+    bmtErrorInfo bmtError{};
+    bmtProperties bmtProp{};
+    bmtVtable bmtVT{};
+    bmtParentInfo bmtParent{};
+    bmtInterfaceInfo bmtInterface{};
+    bmtMetaDataInfo bmtMetaData{};
+    bmtMethodInfo bmtMethod{};
+    bmtMethAndFieldDescs bmtMFDescs{};
+    bmtFieldPlacement bmtFP{};
+    bmtInternalInfo bmtInternal{};
+    bmtGCSeriesInfo bmtGCSeries{};
+    bmtMethodImplInfo bmtMethodImpl{};
+    const bmtGenericsInfo *bmtGenerics = NULL;
+    bmtEnumFieldInfo bmtEnumFields{NULL};
+    bmtLayoutInfo bmtLayout{};
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
     inline bmtRTType *
     GetParentType()
-        { WRAPPER_NO_CONTRACT; return bmtInternal->pType->GetParentType(); }
+        { WRAPPER_NO_CONTRACT; return bmtInternal.pType->GetParentType(); }
 
     // --------------------------------------------------------------------------------------------
     // Takes care of checking against NULL on the pointer returned by GetParentType. Returns true
@@ -2319,14 +2334,14 @@ private:
     inline bool
     HasParent()
     {
-        LIMITED_METHOD_CONTRACT; return bmtInternal->pParentMT != NULL;
+        LIMITED_METHOD_CONTRACT; return bmtInternal.pParentMT != NULL;
     }
 
     // --------------------------------------------------------------------------------------------
     inline MethodTable *
     GetParentMethodTable()
     {
-        LIMITED_METHOD_CONTRACT; return bmtInternal->pParentMT;
+        LIMITED_METHOD_CONTRACT; return bmtInternal.pParentMT;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -2364,8 +2379,8 @@ private:
     };  // class DeclaredMethodIterator
     friend class DeclaredMethodIterator;
 
-    inline SLOT_INDEX NumDeclaredMethods() { LIMITED_METHOD_CONTRACT; return bmtMethod->GetDeclaredMethodCount(); }
-    inline DWORD NumDeclaredFields() { LIMITED_METHOD_CONTRACT; return bmtEnumFields->dwNumDeclaredFields; }
+    inline SLOT_INDEX NumDeclaredMethods() { LIMITED_METHOD_CONTRACT; return bmtMethod.GetDeclaredMethodCount(); }
+    inline DWORD NumDeclaredFields() { LIMITED_METHOD_CONTRACT; return bmtEnumFields.dwNumDeclaredFields; }
 
     // --------------------------------------------------------------------------------------------
     // Used to report an error building this type.
@@ -2385,15 +2400,15 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
-        bmtError->resIDWhy = idResWhy;
-        bmtError->dMethodDefInError = tokMethodDef;
-        bmtError->szMethodNameForError = NULL;
-        bmtError->cl = GetCl();
-        BuildMethodTableThrowException(hr, *bmtError);
+        bmtError.resIDWhy = idResWhy;
+        bmtError.dMethodDefInError = tokMethodDef;
+        bmtError.szMethodNameForError = NULL;
+        bmtError.cl = GetCl();
+        BuildMethodTableThrowException(hr, bmtError);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -2407,15 +2422,15 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
-        bmtError->resIDWhy = idResWhy;
-        bmtError->dMethodDefInError = mdMethodDefNil;
-        bmtError->szMethodNameForError = szMethodName;
-        bmtError->cl = GetCl();
-        BuildMethodTableThrowException(hr, *bmtError);
+        bmtError.resIDWhy = idResWhy;
+        bmtError.dMethodDefInError = mdMethodDefNil;
+        bmtError.szMethodNameForError = szMethodName;
+        bmtError.cl = GetCl();
+        BuildMethodTableThrowException(hr, bmtError);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -2457,20 +2472,17 @@ private:
     // NOTE: See DevDiv bug 795 for details.
 
     void ExpandApproxInterface(
-        bmtInterfaceInfo *          bmtInterface, // out parameter, various parts cumulatively written to.
         const Substitution *        pNewInterfaceSubstChain,
         MethodTable *               pNewInterface,
         InterfaceDeclarationScope   declScope
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
     void ExpandApproxDeclaredInterfaces(
-        bmtInterfaceInfo *          bmtInterface, // out parameter, various parts cumulatively written to.
         bmtTypeHandle               thType,
         InterfaceDeclarationScope   declScope
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
     void ExpandApproxInheritedInterfaces(
-        bmtInterfaceInfo *      bmtInterface, // out parameter, various parts cumulatively written to.
         bmtRTType *             pParentType);
 
     void LoadApproxInterfaceMap();
@@ -2660,21 +2672,13 @@ private:
     VOID
     InitializeFieldDescs(
         FieldDesc *,
-        bmtInternalInfo*,
-        const bmtGenericsInfo*,
-        bmtMetaDataInfo*,
-        bmtEnumFieldInfo*,
-        bmtErrorInfo*,
         MethodTable***,
-        bmtMethAndFieldDescs*,
-        bmtFieldPlacement*,
         unsigned * totalDeclaredSize);
 
     // --------------------------------------------------------------------------------------------
-    // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
-    void
-    VerifySelfReferencingStaticValueTypeFields_WithRVA(
-        MethodTable ** pByValueClassCache);
+    // Returns the CorElementType for the type referenced by typeDefOrRef, which must not be
+    // byreflike, and must be a valuetype of some form (enum or valuetype)
+    CorElementType GetCorElementTypeOfTypeDefOrRefForStaticField(Module* module, mdToken typeDefOrRef);
 
     // --------------------------------------------------------------------------------------------
     // Returns TRUE if dwByValueClassToken refers to the type being built; otherwise returns FALSE.
@@ -2701,11 +2705,11 @@ private:
         DWORD               dwImplFlags,
         DWORD               dwMemberAttrs,
         BOOL                fEnC,
-        DWORD               RVA,          // Only needed for NDirect case
-        IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
+        DWORD               RVA,          // Only needed for PInvoke case
+        IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
-        AsyncMethodKind     asyncKind
+        AsyncMethodFlags    asyncFlags
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));
@@ -2758,20 +2762,47 @@ private:
     PlaceInterfaceMethods();
 
     // --------------------------------------------------------------------------------------------
+    // Describes how the DispatchMap for the type being built relates to its typical instantiation.
+    enum class DispatchMapReuseKind
+    {
+        // There is no typical instantiation to reuse from (the type is an interface or is itself a
+        // typical type definition). The DispatchMap must be built normally, which requires running
+        // PlaceInterfaceMethods.
+        BuildNormally,
+
+        // The typical instantiation has its own DispatchMap. Because the encoded map is
+        // instantiation-independent, it can be reused directly instead of being rebuilt.
+        ReuseTypicalMap,
+
+        // The typical instantiation has no DispatchMap of its own, so this non-typical instantiation
+        // is known to have an empty DispatchMap as well. PlaceInterfaceMethods can be skipped and no
+        // DispatchMap needs to be built.
+        KnownEmpty,
+    };
+
+    // --------------------------------------------------------------------------------------------
+    // Determines how the DispatchMap for the type being built relates to its typical instantiation
+    // (see DispatchMapReuseKind). When the result is ReuseTypicalMap, *ppTypicalMTForReuse is set to
+    // the typical instantiation's MethodTable whose DispatchMap can be reused; otherwise it is set to
+    // NULL.
+    DispatchMapReuseKind
+    GetTypicalMethodTableForDispatchMapReuse(MethodTable **ppTypicalMTForReuse);
+
+    // --------------------------------------------------------------------------------------------
     // For every MethodImpl pair (represented by Entry) in bmtMethodImpl, place the body in the
     // appropriate interface or virtual slot.
     VOID
     PlaceMethodImpls();
 
     // --------------------------------------------------------------------------------------------
-    // This will take the array of bmtMetaData->rgMethodImplTokens and further resolve the tokens
+    // This will take the array of bmtMetaData.rgMethodImplTokens and further resolve the tokens
     // to their corresponding bmtMDMethod or bmtRTMethod pointers and then populate the array
     // in bmtMethodImpl, which will be used by PlaceMethodImpls
     VOID
     ProcessMethodImpls();
 
     // --------------------------------------------------------------------------------------------
-    // This will take the array of bmtMetaData->rgMethodImplTokens and further resolve the tokens
+    // This will take the array of bmtMetaData.rgMethodImplTokens and further resolve the tokens
     // to their corresponding bmtMDMethod or bmtRTMethod pointers and then populate the array
     // in bmtMethodImpl for the methodimpls which can resolve to more than one declaration method,
     // which will be used by PlaceMethodImpls
@@ -3000,6 +3031,12 @@ private:
         bmtFieldLayoutTag* pFieldLayout);
 
     VOID    HandleGCForExplicitLayout();
+
+    VOID HandleCStructLayout(
+        MethodTable **);
+
+    VOID HandleCUnionLayout(
+        MethodTable **);
 
     VOID    CheckForHFA(MethodTable ** pByValueClassCache);
 
