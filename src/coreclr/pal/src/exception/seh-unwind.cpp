@@ -758,7 +758,7 @@ RaiseException(IN DWORD dwExceptionCode,
     exceptionRecord->ExceptionCode = dwExceptionCode;
     exceptionRecord->ExceptionFlags = dwExceptionFlags;
     exceptionRecord->ExceptionRecord = NULL;
-    exceptionRecord->ExceptionAddress = NULL; // will be set by RtlpRaiseException
+    exceptionRecord->ExceptionAddress = NULL;
     exceptionRecord->NumberParameters = nNumberOfArguments;
     if (nNumberOfArguments)
     {
@@ -766,22 +766,7 @@ RaiseException(IN DWORD dwExceptionCode,
                    nNumberOfArguments * sizeof(ULONG_PTR));
     }
 
-    // Capture the context of RaiseException.
     ZeroMemory(contextRecord, sizeof(CONTEXT));
-    // WASM-TODO: reconsider this
-#ifndef TARGET_WASM
-    contextRecord->ContextFlags = CONTEXT_FULL;
-    CONTEXT_CaptureContext(contextRecord);
-
-    // Report the caller of RaiseException as the location the exception was raised at.
-    CONTEXTSetPC(contextRecord, (DWORD64)__builtin_return_address(0));
-    contextRecord->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
-#if defined(CONTEXT_UNWOUND_TO_CALL)
-    contextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-#endif
-#endif // !TARGET_WASM
-
-    exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
 
     RtlpRaiseException(exceptionRecord, contextRecord);
 
