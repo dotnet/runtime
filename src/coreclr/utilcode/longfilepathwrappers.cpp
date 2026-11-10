@@ -31,7 +31,6 @@ public:
         static BOOL IsDevice(const SString & path);
         static void NormalizeDirectorySeparators(SString& path);
 };
-#endif // HOST_WINDOWS
 
 DWORD
 SearchPathWrapper(
@@ -56,7 +55,6 @@ SearchPathWrapper(
 
     EX_TRY
     {
-#ifdef HOST_WINDOWS
         LongPathString Existingpath(LongPathString::Literal, lpPath);
         if (lpPath != NULL)
         {
@@ -69,7 +67,6 @@ SearchPathWrapper(
                 lpPath = Existingpath.GetUnicode();
             }
         }
-#endif // HOST_WINDOWS
 
         if (!getPath)
         {
@@ -128,6 +125,7 @@ SearchPathWrapper(
     return ret;
 
 }
+#endif // HOST_WINDOWS
 
 DWORD
 GetModuleFileNameWrapper(

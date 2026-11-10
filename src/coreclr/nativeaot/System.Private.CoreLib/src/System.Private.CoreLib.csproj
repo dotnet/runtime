@@ -533,11 +533,8 @@
       <Link>Common\TransitionBlock.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' != 'true'">
-    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' == 'true'">
-    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Portable\AsmOffsetsPortable.cs" />
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\AsmOffsets.cs" />
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />

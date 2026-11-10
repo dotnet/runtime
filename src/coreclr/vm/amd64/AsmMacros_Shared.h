@@ -6,6 +6,9 @@
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
 
+// CallEHFunclet loads the preserved registers of the parent frame from the CONTEXT
+#define LOAD_FUNCLET_REGISTER(base, reg, scratch) mov reg, [base + OFFSETOF__CONTEXT__##reg]
+
 .macro TAILCALL_GC_POLL_RARE
         PREPARE_EXTERNAL_VAR g_pPollGC, rax
         mov     rax, [rax]

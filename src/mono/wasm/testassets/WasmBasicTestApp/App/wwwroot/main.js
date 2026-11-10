@@ -75,6 +75,15 @@ if (logLevel !== null && logMask !== null) {
 
 // Modify runtime start based on test case
 switch (testCase) {
+    case "ConfigLoadedCallbacks":
+        dotnet.withConfigLoaded(async () => {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            testOutput("ConfigLoaded: first");
+        });
+        dotnet.withConfigLoaded(() => {
+            testOutput("ConfigLoaded: second");
+        });
+        break;
     case "SatelliteAssembliesTest":
         if (params.get("loadAllSatelliteResources") === "true") {
             dotnet.withConfig({ loadAllSatelliteResources: true });
@@ -441,6 +450,10 @@ try {
             exit(0);
             break;
         }
+        case "ConfigLoadedCallbacks":
+            testOutput("ConfigLoaded: ready");
+            exit(0);
+            break;
         case "SatelliteAssembliesTest":
             await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);
