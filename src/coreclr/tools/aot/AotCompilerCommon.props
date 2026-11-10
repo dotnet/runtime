@@ -50,7 +50,7 @@
                       Private="false"
                       SkipGetTargetFrameworkProperties="true"
                       Targets="Build"
-                      AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)" />
+                      AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties);Configuration=$(CoreCLRConfiguration)" />
     <ProjectReference Include="@(ProjectToBuild->WithMetadataValue('CoreClrNativeBuild', 'CrossComponents'))"
                       Condition="'$(CrossHostArch)' != ''"
                       ReferenceOutputAssembly="false"
