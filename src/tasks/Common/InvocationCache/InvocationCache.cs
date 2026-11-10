@@ -61,26 +61,17 @@ internal sealed partial class InvocationCache
         _importance = importance;
     }
 
-    internal static PendingInvocation? PrepareInvocation(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
-        Func<InvocationDescription?> describeInvocation,
+    internal PendingInvocation? PrepareInvocation(InvocationDescription invocation,
         Action<IReadOnlyList<string>, IReadOnlyList<string>> replayOutput, out InvocationResult? restoredResult)
     {
         restoredResult = null;
-        InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
-        if (cache is null)
-            return null;
-
-        InvocationDescription? invocation = describeInvocation();
-        if (invocation is null)
-            return null;
-
-        cache.ValidateOutputs(invocation.Outputs);
+        ValidateOutputs(invocation.Outputs);
 
         DateTime outputTimestampUtc = DateTime.UtcNow;
-        if (!TryComputeKey(log, configuration.ToolName, invocation, out string key))
+        if (!TryComputeKey(_log, _toolName, invocation, out string key))
             return null;
 
-        return cache.PrepareInvocation(outputTimestampUtc,
+        return PrepareInvocation(outputTimestampUtc,
             new InvocationCacheRequest(key, invocation.Outputs), replayOutput, out restoredResult);
     }
 

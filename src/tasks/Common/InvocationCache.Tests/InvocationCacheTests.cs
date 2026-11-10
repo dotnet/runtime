@@ -779,7 +779,7 @@ public class InvocationCacheTests
     [InlineData(true, false, true)]
     [InlineData(true, true, true)]
     [InlineData(true, true, false)]
-    public void SharedPreparationGatesDescriptionAndUsesCapturedArguments(bool configured, bool eligible, bool cached)
+    public void CachedToolTaskGatesDescriptionAndPassesToolArguments(bool configured, bool eligible, bool cached)
         => RemoteExecutor.Invoke(static (enabled, supported, stored) =>
     {
         bool isConfigured = bool.Parse(enabled);
@@ -796,29 +796,14 @@ public class InvocationCacheTests
         var events = new List<string>();
         DateTime preparedAt = default;
 
-        InvocationCache.PendingInvocation? pending = InvocationCache.PrepareInvocation(test.Log, s_cacheConfiguration,
-            describeInvocation: () => DescribeInvocation("compiler path", "response contents", "command contents"),
-            replayOutput: static (_, _) => { }, out InvocationResult? restoredResult);
-        InvocationResult result;
-        if (restoredResult is { } restored)
-        {
-            Assert.Null(pending);
-            result = restored;
-        }
-        else
-        {
-            if (pending is not null)
-                events.Add("capture");
-            int exitCode = ExecuteNormally("compiler path", "response contents", "command contents");
-            result = pending?.Complete(exitCode) ?? new InvocationResult(exitCode);
-        }
+        var task = new CachedTestToolTask(test.BuildEngine, DescribeInvocation, ExecuteNormally);
+        int exitCode = task.Run();
         DateTime completedAt = DateTime.UtcNow;
 
-        Assert.Equal(isConfigured && isEligible, pending is not null || restoredResult.HasValue);
-        Assert.Equal(isConfigured && isEligible && hasEntry ? 0 : 42, result.ExitCode);
+        Assert.Equal(isConfigured && isEligible && hasEntry ? 0 : 42, exitCode);
         Assert.Equal(isConfigured
             ? isEligible
-                ? hasEntry ? new[] { "describe" } : new[] { "describe", "capture", "execute" }
+                ? hasEntry ? new[] { "describe" } : new[] { "describe", "execute" }
                 : new[] { "describe", "execute" }
             : new[] { "execute" }, events);
         if (isConfigured && isEligible && hasEntry)
@@ -860,8 +845,6 @@ public class InvocationCacheTests
         bool hasEntry = bool.Parse(stored);
         bool logReplayError = bool.Parse(errorPolicy);
         using var test = new CacheTestDirectory();
-        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
-        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         test.WriteSource("image.dll", "computed");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
         string[] standardOutput = { "stdout {0}", "" };
@@ -871,8 +854,7 @@ public class InvocationCacheTests
         int executions = 0;
         int replays = 0;
 
-        InvocationCache.PendingInvocation? pending = InvocationCache.PrepareInvocation(test.Log, s_cacheConfiguration,
-            describeInvocation: () => invocation,
+        InvocationCache.PendingInvocation? pending = test.Cache.PrepareInvocation(invocation,
             replayOutput: (restoredStandardOutput, restoredStandardError) =>
             {
                 replays++;
@@ -914,14 +896,11 @@ public class InvocationCacheTests
     public void SharedPreparationPropagatesReplayExceptions() => RemoteExecutor.Invoke(static () =>
     {
         using var test = new CacheTestDirectory();
-        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
-        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         test.WriteSource("image.dll", "cached");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
         test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs, new[] { "stdout" });
         IOException exception = Assert.Throws<IOException>(() =>
-            InvocationCache.PrepareInvocation(test.Log, s_cacheConfiguration,
-                describeInvocation: () => invocation,
+            test.Cache.PrepareInvocation(invocation,
                 replayOutput: (_, _) =>
                 {
                     Assert.Equal("cached", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
@@ -932,15 +911,15 @@ public class InvocationCacheTests
     }).Dispose();
 
     [Fact]
-    public void SharedPreparationPropagatesDescriptionExceptions() => RemoteExecutor.Invoke(static () =>
+    public void CachedToolTaskPropagatesDescriptionExceptions() => RemoteExecutor.Invoke(static () =>
     {
         using var test = new CacheTestDirectory();
         Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
         Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
-            InvocationCache.PrepareInvocation(test.Log, s_cacheConfiguration,
-                describeInvocation: () => throw new InvalidOperationException("description"),
-                replayOutput: static (_, _) => { }, out _));
+        var task = new CachedTestToolTask(test.BuildEngine,
+            describe: static (_, _, _) => throw new InvalidOperationException("description"),
+            execute: static (_, _, _) => throw new InvalidOperationException("execution"));
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => task.Run());
 
         Assert.Equal("description", exception.Message);
         Assert.False(Directory.Exists(test.Entry));
@@ -957,8 +936,6 @@ public class InvocationCacheTests
     public void SharedPreparationRejectsInvalidOutputsBeforeCleanup(string shape) => RemoteExecutor.Invoke(static value =>
     {
         using var test = new CacheTestDirectory();
-        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
-        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         test.WriteSource("image.dll", "cached");
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
         Directory.CreateDirectory(test.Output);
@@ -978,8 +955,7 @@ public class InvocationCacheTests
         };
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), outputs);
         ArgumentException exception = Assert.Throws<ArgumentException>(() =>
-            InvocationCache.PrepareInvocation(test.Log, s_cacheConfiguration,
-                describeInvocation: () => invocation,
+            test.Cache.PrepareInvocation(invocation,
                 replayOutput: static (_, _) => { }, out _));
 
         Assert.Equal(nameof(outputs), exception.ParamName);
@@ -991,14 +967,11 @@ public class InvocationCacheTests
     public void SharedPreparationBypassesUnreadableInputWithoutCacheCleanup() => RemoteExecutor.Invoke(static () =>
     {
         using var test = new CacheTestDirectory();
-        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
-        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         Directory.CreateDirectory(test.Output);
         string stale = Path.Combine(test.Output, "stale.dll");
         File.WriteAllText(stale, "untouched");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(test.Source), Array.Empty<string>(), test.OutputOutputs);
-        InvocationCache.PendingInvocation? pending = InvocationCache.PrepareInvocation(test.Log, s_cacheConfiguration,
-            describeInvocation: () => invocation,
+        InvocationCache.PendingInvocation? pending = test.Cache.PrepareInvocation(invocation,
             replayOutput: static (_, _) => { }, out InvocationResult? restoredResult);
 
         Assert.Null(pending);
@@ -1266,13 +1239,11 @@ public class InvocationCacheTests
         int executions = 0;
 
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
-        InvocationCache.PendingInvocation? pending = InvocationCache.PrepareInvocation(test.Log, s_cacheConfiguration,
-            describeInvocation: () => isEligible ? invocation : null,
-            replayOutput: static (_, _) => { }, out InvocationResult? restoredResult);
-        int exitCode = restoredResult?.ExitCode ?? ExecuteNormally();
+        var task = new CachedTestToolTask(test.BuildEngine,
+            describe: (_, _, _) => isEligible ? invocation : null,
+            execute: (_, _, _) => ExecuteNormally());
+        int exitCode = task.Run();
 
-        Assert.Null(pending);
-        Assert.Null(restoredResult);
         Assert.Equal(42, exitCode);
         Assert.Equal(1, executions);
         Assert.False(File.Exists(stale));
@@ -1541,6 +1512,34 @@ public class InvocationCacheTests
     private sealed class CacheTask : Microsoft.Build.Utilities.Task
     {
         public override bool Execute() => true;
+    }
+
+    private sealed class CachedTestToolTask : CachedToolTask
+    {
+        private readonly Func<string, string, string, InvocationDescription?> _describe;
+        private readonly Func<string, string, string, int> _execute;
+
+        internal CachedTestToolTask(IBuildEngine buildEngine,
+            Func<string, string, string, InvocationDescription?> describe,
+            Func<string, string, string, int> execute)
+        {
+            BuildEngine = buildEngine;
+            _describe = describe;
+            _execute = execute;
+        }
+
+        internal int Run() => ExecuteTool("compiler path", "response contents", "command contents");
+
+        protected override string ToolName => "Test";
+        protected override string GenerateFullPathToTool() => ToolName;
+        private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
+
+        private protected override InvocationDescription? DescribeInvocation(
+            string pathToTool, string responseFileCommands, string commandLineCommands)
+            => _describe(pathToTool, responseFileCommands, commandLineCommands);
+
+        protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
+            => _execute(pathToTool, responseFileCommands, commandLineCommands);
     }
 
     private sealed class CacheBuildEngine : IBuildEngine

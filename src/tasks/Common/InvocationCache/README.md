@@ -15,7 +15,10 @@ Derive from `CachedToolTask` and compile the shared sources into the task assemb
 - `ExecuteToolCore` when the task needs tool-specific output preparation before calling the base
   implementation. It runs only on misses and bypasses.
 
-The base class calls `InvocationCache.PrepareInvocation` with lazy description and replay callbacks.
+The base class calls `InvocationCache.TryCreateFromEnvironment` first. Only if a cache is available
+does it call `DescribeInvocation`, passing a supported description and replay callback to that cache's
+instance `PrepareInvocation` method. Preparation owns output validation, timestamping, hashing, and
+restoration.
 On an eligible miss, the cache returns a `PendingInvocation` owning separate ordered stdout and stderr
 lists. The base class appends received lines to those buffers while normal logging continues, then calls
 `Complete` with the tool exit code. Completion returns an `InvocationResult` using the same buffers and

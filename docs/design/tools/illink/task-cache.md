@@ -23,7 +23,10 @@ maintenance commands.
 and `ExecuteToolCore`. The description supplies input paths, effective
 arguments/context, and one `InvocationOutputs.FromDirectory` declaration. Eligibility and metadata
 inspection stay in ILLink; content hashing and cache operations stay in the shared layer.
-The base class calls `InvocationCache.PrepareInvocation` with description and replay callbacks.
+The base class calls `InvocationCache.TryCreateFromEnvironment` before describing the invocation.
+If a cache is available and the description is supported, it calls the cache's instance
+`PrepareInvocation` method with that description and a replay callback. Preparation owns output
+validation, timestamping, hashing, and restoration.
 On a miss, the cache returns a pending invocation owning stdout/stderr capture buffers. The base class
 runs the tool, feeds received lines into those buffers, and completes the invocation with its exit code.
 Completion returns an `InvocationResult` containing the exit code and the captured sequences.

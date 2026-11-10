@@ -28,9 +28,13 @@ public abstract class CachedToolTask : ToolTask
     {
         try
         {
-            _pendingInvocation = InvocationCache.PrepareInvocation(Log, CacheConfiguration,
-                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
-                ReplayOutput, out InvocationResult? restoredResult);
+            InvocationResult? restoredResult = null;
+            InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(Log, CacheConfiguration);
+            if (cache is not null &&
+                DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands) is { } invocation)
+            {
+                _pendingInvocation = cache.PrepareInvocation(invocation, ReplayOutput, out restoredResult);
+            }
             InvocationResult result;
             if (restoredResult is { } restored)
             {
