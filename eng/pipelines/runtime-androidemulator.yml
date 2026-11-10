@@ -7,7 +7,7 @@ trigger: none
 
 parameters:
   - name: runAndroidContainerTests
-    displayName: Run CoreCLR and library API 29 parity validation only
+    displayName: Run CoreCLR and library API 29 container parity validation
     type: boolean
     default: false
 
@@ -18,9 +18,36 @@ variables:
   # GitHub /azp comments can select a pipeline definition but cannot pass YAML parameters.
   # API-specific container definitions point to this YAML so the API level can be selected by name.
   - name: isAndroidContainerTestBuild
-    value: ${{ or(parameters.runAndroidContainerTests, eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-29')) }}
-  - name: androidContainerHelixQueue
-    value: (Android.29.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-29-amd64@sha256:193e6d0ce33f6d8b9c10170ef8a197683c0fa4fe75fe5f1e3199318e8fb84d03
+    value: ${{ or(parameters.runAndroidContainerTests, in(variables['Build.DefinitionName'], 'runtime-androidemulator-container', 'runtime-androidemulator-container-24', 'runtime-androidemulator-container-29', 'runtime-androidemulator-container-31', 'runtime-androidemulator-container-35')) }}
+  # Pin new images to their published digests before enabling their pipeline definitions.
+  - ${{ if eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-24') }}:
+    - name: androidApiLevel
+      value: 24
+    - name: androidLegacyHelixQueue
+      value: Ubuntu.2204.Amd64.Android.24.Open
+    - name: androidContainerHelixQueue
+      value: (Android.24.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-24-amd64
+  - ${{ elseif eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-31') }}:
+    - name: androidApiLevel
+      value: 31
+    - name: androidLegacyHelixQueue
+      value: Ubuntu.2204.Amd64.Android.31.Open
+    - name: androidContainerHelixQueue
+      value: (Android.31.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-31-amd64
+  - ${{ elseif eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-35') }}:
+    - name: androidApiLevel
+      value: 35
+    - name: androidLegacyHelixQueue
+      value: Ubuntu.2204.Amd64.Android.35.Open
+    - name: androidContainerHelixQueue
+      value: (Android.35.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-35-amd64
+  - ${{ else }}:
+    - name: androidApiLevel
+      value: 29
+    - name: androidLegacyHelixQueue
+      value: Ubuntu.2204.Amd64.Android.29.Open
+    - name: androidContainerHelixQueue
+      value: (Android.29.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-29-amd64@sha256:193e6d0ce33f6d8b9c10170ef8a197683c0fa4fe75fe5f1e3199318e8fb84d03
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -56,17 +83,17 @@ extends:
             jobParameters:
               buildConfig: Release
               runtimeFlavor: coreclr
-              nameSuffix: API29_Parity_CoreCLR
+              nameSuffix: API${{ variables.androidApiLevel }}_Parity_CoreCLR
               buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c Release /p:ArchiveTests=true
               timeoutInMinutes: 480
               helixQueues:
-                - Ubuntu.2204.Amd64.Android.29.Open
+                - $(androidLegacyHelixQueue)
                 - $(androidContainerHelixQueue)
               postBuildSteps:
                 - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
                   parameters:
-                    displayName: Run CoreCLR tests on API 29 legacy and container queues
+                    displayName: Run CoreCLR tests on API ${{ variables.androidApiLevel }} legacy and container queues
                     creator: $(Build.DefinitionName)
                     helixBuild: $(Build.BuildNumber)
                     helixSource: ci/dotnet/runtime/$(Build.SourceBranch)
@@ -81,7 +108,7 @@ extends:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     creator: $(Build.DefinitionName)
-                    testRunNamePrefixSuffix: CoreCLR_Release_API29_Parity_Libraries
+                    testRunNamePrefixSuffix: CoreCLR_Release_API${{ variables.androidApiLevel }}_Parity_Libraries
                     useHelixMonitor: true
 
       - ${{ if ne(variables.isAndroidContainerTestBuild, true) }}:

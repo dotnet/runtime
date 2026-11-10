@@ -179,34 +179,40 @@ To build and run the test on Android with CoreCLR, run the following command fro
 ### Testing in a container
 
 The `runtime-androidemulator` pipeline has an opt-in `runAndroidContainerTests`
-parameter for API 29 parity validation. It builds CoreCLR, the
-full CoreCLR inner-loop runtime test suite and the library test archives once.
-Each payload is submitted through its normal Helix path to both
-`Ubuntu.2204.Amd64.Android.29.Open` and the KVM-enabled container queue using a
-pinned Android API 29 image. Library submission uses the normal inner-loop test
-scope, including networking, IO and globalization rather than only Numerics.
-On the container queue each work item starts its own container and emulator;
-the legacy queue retains its host-managed emulator. The default emulator and
-device jobs are unchanged.
+parameter for API 29 parity validation. API-specific pipeline definitions use
+the same lane for APIs 24, 29, 31 and 35. The lane builds CoreCLR, the full
+CoreCLR inner-loop runtime test suite and the library test archives once. Each
+payload is submitted through its normal Helix path to both the matching legacy
+queue and the KVM-enabled container queue. Library submission uses the normal
+inner-loop test scope, including networking, IO and globalization rather than
+only Numerics. On the container queue each work item starts its own container
+and emulator; the legacy queue retains its host-managed emulator. The default
+emulator and device jobs are unchanged.
 
 Helix job names identify the destination queue; library runs also use the
-`CoreCLR_Release_API29_Parity_Libraries` prefix/suffix. Compare individual test
-identities and outcomes, skipped tests, work-item failures and durations across
-the two queues. A green run alone does not establish parity, and test-result
-comparison is not automated by this pipeline. This lane does not cover
-NativeAOT or other Android API levels.
+`CoreCLR_Release_API<level>_Parity_Libraries` prefix/suffix. Compare individual
+test identities and outcomes, skipped tests, work-item failures and durations
+across the two queues. A green run alone does not establish parity, and
+test-result comparison is not automated by this pipeline. This lane does not
+cover NativeAOT.
 
-On a pull request, an authorized collaborator can request the same validation
-with:
+On a pull request, an authorized collaborator can request API 29 using the
+default container definition or request a specific API level:
 
 ```
+/azp run runtime-androidemulator-container
+/azp run runtime-androidemulator-container-24
 /azp run runtime-androidemulator-container-29
+/azp run runtime-androidemulator-container-31
+/azp run runtime-androidemulator-container-35
 ```
 
 Azure Pipelines comment triggers select a pipeline by name but do not accept
 YAML parameters, so the API level is part of the transition pipeline name.
-Each API level must have a published, pinned container image before a
-corresponding pipeline definition is added.
+The default container definition selects API 29. Each API level must have a
+published container image before the corresponding pipeline definition is
+enabled, and the image should be pinned to an immutable digest after
+publication.
 
 The container image supplies the Android SDK, system image and AVD.
 `eng/testing/Android/start-emulator.sh` and `stop-emulator.sh` own the work-item
