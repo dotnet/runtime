@@ -45,16 +45,16 @@ namespace Microsoft.DotNet.ILAssembler
         {
             int lastDotIndex = dottedName.LastIndexOf('.');
 
-            if (lastDotIndex > 0 && dottedName[lastDotIndex - 1] == '.')
-            {
-                // Handle cases like "a.b..ctor".
-                lastDotIndex -= 1;
-            }
-
             // A dot at position 0 is part of the name (e.g., ".GlobalStruct"), not a namespace separator
             if (lastDotIndex <= 0)
             {
                 return (string.Empty, dottedName);
+            }
+
+            if (dottedName[lastDotIndex - 1] == '.')
+            {
+                // COMPAT: Preserve the last dot as part of the name to correctly handle cases like "a.b..T".
+                lastDotIndex -= 1;
             }
 
             return (
