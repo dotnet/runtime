@@ -10,6 +10,69 @@ using Xunit;
 
 public class Async2ValueTaskSource
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static Task ConsumedSourceIsNotRetained(bool throwFromGetResult)
+    {
+        WeakReference sourceReference = new WeakReference(null);
+        TaskCompletionSource suspension = new TaskCompletionSource();
+        Task task = CheckConsumedSource(suspension.Task, sourceReference, throwFromGetResult);
+        Assert.False(task.IsCompleted);
+        suspension.SetResult();
+        return task;
+    }
+
+    private static async Task CheckConsumedSource(Task suspension, WeakReference sourceReference, bool throwFromGetResult)
+    {
+        try
+        {
+            await AwaitCollectibleSource(suspension, sourceReference, throwFromGetResult);
+            Assert.False(throwFromGetResult);
+        }
+        catch (InvalidOperationException) when (throwFromGetResult)
+        {
+        }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        Assert.False(sourceReference.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task AwaitCollectibleSource(Task suspension, WeakReference sourceReference, bool throwFromGetResult)
+    {
+        CollectibleSource source = new CollectibleSource(suspension, throwFromGetResult);
+        sourceReference.Target = source;
+        await new ValueTask(source, 0);
+    }
+
+    private sealed class CollectibleSource : IValueTaskSource
+    {
+        private readonly Task _suspension;
+        private readonly bool _throwFromGetResult;
+
+        public CollectibleSource(Task suspension, bool throwFromGetResult)
+        {
+            _suspension = suspension;
+            _throwFromGetResult = throwFromGetResult;
+        }
+
+        public ValueTaskSourceStatus GetStatus(short token) => ValueTaskSourceStatus.Pending;
+
+        public void GetResult(short token)
+        {
+            if (_throwFromGetResult)
+            {
+                throw new InvalidOperationException();
+            }
+        }
+
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
+            _suspension.GetAwaiter().UnsafeOnCompleted(() => continuation(state));
+    }
+
     [Fact]
     public static async Task AwaitValueTaskDefaultContext()
     {

@@ -174,24 +174,13 @@ void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
     {
         ILStubEHClauseBuilder& clause = *m_pOwner->m_pBuildingEHClauseStack;
 
-        if (clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL)
+        if (clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+             clause.handlerBeginLabel != NULL && clause.kind == ILStubEHClause::kTypedCatch)
         {
-            // Catch handlers, filters and filter handlers start with an exception on the stack
-            bool startsWithException = false;
-            if (clause.kind == ILStubEHClause::kTypedCatch || clause.kind == ILStubEHClause::kFilter)
+            if (clause.handlerBeginLabel->m_pCodeStreamOfLabel == this &&
+                clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr)
             {
-                startsWithException |= clause.handlerBeginLabel != NULL &&
-                    clause.handlerBeginLabel->m_pCodeStreamOfLabel == this &&
-                    clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr;
-            }
-            if (clause.kind == ILStubEHClause::kFilter)
-            {
-                startsWithException |= clause.filterBeginLabel->m_pCodeStreamOfLabel == this &&
-                    clause.filterBeginLabel->m_idxLabeledInstruction == idxCurInstr;
-            }
-
-            if (startsWithException)
-            {
+                // Catch clauses start with an exception on the stack
                 pInstrBuffer[idxCurInstr].iStackDelta++;
             }
         }
@@ -860,7 +849,6 @@ void ILStubLinker::WriteEHClauses(COR_ILMETHOD_SECT_EH* pSect)
         {
         case ILStubEHClause::kTypedCatch: flags = COR_ILEXCEPTION_CLAUSE_NONE; break;
         case ILStubEHClause::kFinally: flags = COR_ILEXCEPTION_CLAUSE_FINALLY; break;
-        case ILStubEHClause::kFilter: flags = COR_ILEXCEPTION_CLAUSE_FILTER; break;
         default: UNREACHABLE_MSG("unexpected EH clause kind");
         }
 
@@ -875,14 +863,7 @@ void ILStubLinker::WriteEHClauses(COR_ILMETHOD_SECT_EH* pSect)
         clause.TryLength = static_cast<DWORD>(tryEnd - tryBegin);
         clause.HandlerOffset = static_cast<DWORD>(handlerBegin);
         clause.HandlerLength = static_cast<DWORD>(handlerEnd - handlerBegin);
-        if (builder.kind == ILStubEHClause::kFilter)
-        {
-            clause.FilterOffset = static_cast<DWORD>(builder.filterBeginLabel->GetCodeOffset());
-        }
-        else
-        {
-            clause.ClassToken = builder.typeToken;
-        }
+        clause.ClassToken = builder.typeToken;
     }
 
     pSect->Fat.Kind = CorILMethod_Sect_EHTable | CorILMethod_Sect_FatFormat;
@@ -1093,7 +1074,6 @@ void ILCodeStream::BeginTryBlock()
     pClause->kind = ILStubEHClause::kNone;
     pClause->tryBeginLabel = NULL;
     pClause->tryEndLabel = NULL;
-    pClause->filterBeginLabel = NULL;
     pClause->handlerBeginLabel = NULL;
     pClause->handlerEndLabel = NULL;
     pClause->typeToken = 0;
@@ -1175,36 +1155,6 @@ void ILCodeStream::BeginFinallyBlock()
 void ILCodeStream::EndFinallyBlock()
 {
     EndHandler(ILStubEHClause::kFinally);
-}
-
-void ILCodeStream::BeginFilterBlock()
-{
-    _ASSERTE(m_pOwner->m_pBuildingEHClauseStack != NULL);
-    ILStubEHClauseBuilder& clause = *m_pOwner->m_pBuildingEHClauseStack;
-
-    _ASSERTE(clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
-             clause.filterBeginLabel == NULL && clause.kind == ILStubEHClause::kNone);
-
-    clause.kind = ILStubEHClause::kFilter;
-    clause.filterBeginLabel = NewCodeLabel();
-    EmitLabel(clause.filterBeginLabel);
-}
-
-void ILCodeStream::BeginFilterHandlerBlock()
-{
-    _ASSERTE(m_pOwner->m_pBuildingEHClauseStack != NULL);
-    ILStubEHClauseBuilder& clause = *m_pOwner->m_pBuildingEHClauseStack;
-
-    _ASSERTE(clause.filterBeginLabel != NULL && clause.handlerBeginLabel == NULL &&
-             clause.kind == ILStubEHClause::kFilter);
-
-    clause.handlerBeginLabel = NewCodeLabel();
-    EmitLabel(clause.handlerBeginLabel);
-}
-
-void ILCodeStream::EndFilterHandlerBlock()
-{
-    EndHandler(ILStubEHClause::kFilter);
 }
 
 void ILCodeStream::EmitADD()
@@ -1468,11 +1418,6 @@ void ILCodeStream::EmitDUP     ()
     WRAPPER_NO_CONTRACT;
     Emit(CEE_DUP, 1, 0);
 }
-void ILCodeStream::EmitENDFILTER()
-{
-    WRAPPER_NO_CONTRACT;
-    Emit(CEE_ENDFILTER, -1, 0);
-}
 void ILCodeStream::EmitENDFINALLY()
 {
     WRAPPER_NO_CONTRACT;
@@ -1722,11 +1667,6 @@ void ILCodeStream::EmitLDLOCA  (DWORD dwLocalNum)
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_LDLOCA, 1, dwLocalNum);
-}
-void ILCodeStream::EmitISINST(int token)
-{
-    WRAPPER_NO_CONTRACT;
-    Emit(CEE_ISINST, 0, token);
 }
 void ILCodeStream::EmitLDNULL()
 {

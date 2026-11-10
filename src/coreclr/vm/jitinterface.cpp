@@ -6455,15 +6455,15 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         // keeps the JIT from asking for the stub's IL (see code:CEEInfo::canInline).
         result |= CORINFO_FLG_DONT_INLINE;
     }
+    else if (pMD->IsAsyncThunkMethod() && !pMD->IsAsyncVariantMethod())
+    {
+        // Keep the exception handler in the diagnostics-hidden thunk. Inlining it would
+        // record the caller both when capturing and when rethrowing synchronous exceptions.
+        result |= CORINFO_FLG_DONT_INLINE;
+    }
     // AggressiveInlining only makes sense for IL methods.
     else if (pMD->IsIL() && IsMiAggressiveInlining(ilMethodImplAttribs))
     {
-        result |= CORINFO_FLG_FORCEINLINE;
-    }
-    else if (pMD->IsAsyncThunkMethod() && !pMD->IsAsyncVariantMethod())
-    {
-        // Task-returning thunks for runtime async methods are small, and inlining them into
-        // non-async callers removes a frame and its EH setup from every call.
         result |= CORINFO_FLG_FORCEINLINE;
     }
 
