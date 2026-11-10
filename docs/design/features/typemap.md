@@ -183,6 +183,7 @@ An assembly name mentioned in the `TypeMapAssemblyTargetAttribute` does not need
 An entry in an External Type Map is included when the "trim target" type is referenced in one of the following ways:
 
 - The argument to the `ldtoken` IL instruction.
+  - If a trimming tool can determine that an `ldtoken` reference is used solely to test type equality or inequality against another statically referenced type (both comparison operands are produced by `ldtoken` sequences), it can omit map entries that would be retained only because of such references. Comparisons against runtime-provided `System.Type` values (for example the result of `Object.GetType()`) do not qualify: such values can originate from reflection or from the type map itself, so the referenced type keeps its entries.
 - The argument to the `unbox` IL instruction.
 - The argument to the `unbox.any` IL instruction.
 - The argument to the `isinst` IL instruction.
