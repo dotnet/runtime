@@ -33,6 +33,12 @@ Next, to configure the long paths for Windows itself, follow the instructions pr
 
 If long paths are not enabled, you might start running into issues since trying to clone the repo. Especially with libraries that have very long filenames, you might get errors like `Unable to create file: Filename too long` during the cloning process.
 
+MSVC's compiler can still reject long object output paths even when Windows long paths are enabled.
+CoreCLR's Windows Ninja build uses existing 8.3 directory aliases for its intermediate directory to
+work around this compiler limitation. It does not create aliases or change filesystem settings.
+Short names are not guaranteed on NTFS and are unavailable on ReFS; a shorter checkout path may
+still be necessary when aliases are unavailable or the resulting paths remain too long.
+
 ### Visual Studio
 
 Download and install the [latest version of Visual Studio](https://visualstudio.microsoft.com/downloads/) (minimum version required is VS 2022 17.8). The **Community Edition** is available free of charge. Note that as we ramp up on a given release, the libraries code may start using preview language features. While older versions of the IDE may still succeed in building the projects, the IDE may report mismatched diagnostics in the *Errors and Warnings* window. Using the latest public preview of Visual Studio fixes these cases and helps ensure the IDE experience is well behaved and displays what we would expect it to properly.
