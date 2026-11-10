@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -104,22 +106,29 @@ namespace ILLink.RoslynAnalyzer.Tests
         [Fact]
         public async Task ConcurrentAnalysesProduceConsistentDiagnostics()
         {
-            const string source = """
-                using System.Diagnostics.CodeAnalysis;
-                namespace Probe { public class Type { } }
-                public class Target
-                {
-                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-                    public System.Type Valid;
-                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-                    public Probe.Type Invalid;
-                }
-                """;
-
+            const int SourceCount = 32;
+            SyntaxTree[] sources = Enumerable.Range(0, SourceCount)
+                .Select(index => CSharpSyntaxTree.ParseText($$"""
+                    using System.Diagnostics.CodeAnalysis;
+                    public class Target{{index}}
+                    {
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                        public System.Type Valid;
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                        public Probe.Type Invalid;
+                    }
+                    """, new CSharpParseOptions(LanguageVersion.Preview)))
+                .ToArray();
+            var (compilation, _, exceptions) = TestCaseCompilation.CreateCompilation(
+                "namespace Probe { public class Type { } }",
+                consoleApplication: false,
+                TestCaseUtils.UseMSBuildProperties(MSBuildPropertyOptionNames.EnableTrimAnalyzer),
+                additionalSources: sources);
             string[][] results = await Task.WhenAll(
-                Enumerable.Range(0, 8).Select(_ => GetDiagnosticIdsAsync(source)));
+                Enumerable.Range(0, 8).Select(_ => GetDiagnosticIdsAsync(compilation)));
+            Assert.Empty(exceptions);
             foreach (string[] diagnostics in results)
-                Assert.Equal(["IL2097"], diagnostics);
+                Assert.Equal(Enumerable.Repeat("IL2097", SourceCount), diagnostics);
         }
 
         private static async Task<string[]> GetDiagnosticIdsAsync(string source)
@@ -128,8 +137,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                 source,
                 consoleApplication: false,
                 TestCaseUtils.UseMSBuildProperties(MSBuildPropertyOptionNames.EnableTrimAnalyzer));
-            ImmutableArray<Diagnostic> diagnostics = await compilation.GetAnalyzerDiagnosticsAsync();
+            string[] diagnostics = await GetDiagnosticIdsAsync(compilation);
             Assert.Empty(exceptions);
+            return diagnostics;
+        }
+
+        private static async Task<string[]> GetDiagnosticIdsAsync(CompilationWithAnalyzers compilation)
+        {
+            ImmutableArray<Diagnostic> diagnostics = await compilation.GetAnalyzerDiagnosticsAsync();
             return diagnostics.Select(diagnostic => diagnostic.Id)
                 .OrderBy(id => id, StringComparer.Ordinal)
                 .ToArray();
