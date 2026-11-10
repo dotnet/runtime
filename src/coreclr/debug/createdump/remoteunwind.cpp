@@ -3,7 +3,7 @@
 
 /*++
 Module Name:
-    remote-unwind.cpp
+    remoteunwind.cpp
 
 Abstract:
     Implementation of out of context unwind using libunwind8
@@ -34,105 +34,23 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --*/
 
-#ifdef HOST_UNIX
-
-#include "config.h"
-#include "pal/palinternal.h"
-#include "pal_assert.h"
-#include "pal_endian.h"
-#include "pal.h"
-#include <inttypes.h>
-#include <dlfcn.h>
+#include "createdump.h"
 
 #ifdef __APPLE__
-#include <mach/mach.h>
 #include <mach-o/loader.h>
-#include <mach-o/nlist.h>
-#include <mach-o/dyld_images.h>
-#include "compact_unwind_encoding.h"
+#include <mach-o/compact_unwind_encoding.h>
 #define MACOS_ARM64_POINTER_AUTH_MASK 0x7fffffffffffull
 #endif
 
 #include <libunwind.h>
 
-#define TRACE_VERBOSE
-
-#include "crosscomp.h"
-
-#define CONTEXT T_CONTEXT
-
-#else // HOST_UNIX
-
-#include <windows.h>
-#include <inttypes.h>
-#include <libunwind.h>
-#include "debugmacros.h"
-#include "crosscomp.h"
-
-#define CONTEXT T_CONTEXT
-
-typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
-
-#ifdef TARGET_64BIT
-#define ElfW(foo) Elf64_ ## foo
-#else // TARGET_64BIT
-#define ElfW(foo) Elf32_ ## foo
-#endif // TARGET_64BIT
-
-#define PALAPI
-
-#endif // HOST_UNIX
-
 #ifdef HAVE_UNW_GET_ACCESSORS
-
-#ifdef HOST_UNIX
-#include <link.h>
-#endif // HOST_UNIX
-
-#include <elf.h>
-
-#if defined(TARGET_ARM)
-#define PRIx PRIx32
-#define PRIu PRIu32
-#define PRId PRId32
-#define PRIA "08"
-#define PRIxA PRIA PRIx
-#elif defined(TARGET_64BIT)
-#define PRIx PRIx64
-#define PRIu PRIu64
-#define PRId PRId64
-#define PRIA "016"
-#define PRIxA PRIA PRIx
-#endif
-
-#ifndef ElfW
-#define ElfW(foo) Elf_ ## foo
-#endif
 #define Ehdr   ElfW(Ehdr)
 #define Phdr   ElfW(Phdr)
-#define Shdr   ElfW(Shdr)
-#define Nhdr   ElfW(Nhdr)
 #define Dyn    ElfW(Dyn)
-
-#ifndef FEATURE_USE_SYSTEM_LIBUNWIND
-extern "C" int
-unw_get_proc_info_in_range(
-    unw_word_t start_ip,
-    unw_word_t end_ip,
-    unw_word_t eh_frame_table,
-    unw_word_t eh_frame_table_len,
-    unw_word_t exidx_frame_table,
-    unw_word_t exidx_frame_table_len,
-    unw_addr_space_t as,
-    unw_word_t ip,
-    unw_proc_info_t *pi,
-    int need_unwind_info,
-    void *arg);
-#endif // FEATURE_USE_SYSTEM_LIBUNWIND
-
 #endif // HAVE_UNW_GET_ACCESSORS
 
-#if defined(__APPLE__) || defined(HAVE_UNW_GET_ACCESSORS)
+#ifdef HAVE_UNW_GET_ACCESSORS
 
 typedef struct _libunwindInfo
 {
@@ -141,8 +59,6 @@ typedef struct _libunwindInfo
     ULONG64 FunctionStart;
     UnwindReadMemoryCallback ReadMemory;
 } libunwindInfo;
-
-#ifdef HOST_UNIX
 
 #define EXTRACT_BITS(value, mask)   ((value >> __builtin_ctz(mask)) & (((1 << __builtin_popcount(mask))) - 1))
 
@@ -260,7 +176,7 @@ ReadValue16(
         return false;
     }
     *addr += sizeof(value);
-    *valp = VAL16(value);
+    *valp = value;
     return true;
 }
 
@@ -275,7 +191,7 @@ ReadValue32(
         return false;
     }
     *addr += sizeof(value);
-    *valp = VAL32(value);
+    *valp = value;
     return true;
 }
 
@@ -290,7 +206,7 @@ ReadValue64(
         return false;
     }
     *addr += sizeof(value);
-    *valp = VAL64(value);
+    *valp = value;
     return true;
 }
 
@@ -499,8 +415,6 @@ ReadEncodedPointer(
     *valp = value;
     return true;
 }
-
-#endif // HOST_UNIX
 
 #if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
 
@@ -1555,7 +1469,7 @@ ReadCompactEncodingRegister(const libunwindInfo* info, unw_word_t* addr, DWORD64
     if (!info->ReadMemory((PVOID)*addr, &value, sizeof(value))) {
         return false;
     }
-    *reg = VAL64(value);
+    *reg = value;
     *addr -= sizeof(uint64_t);
     return true;
 }
@@ -2113,12 +2027,11 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         }
     }
 
-#if HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__) || !defined(HOST_UNIX)
+#if HAVE_GET_PROC_INFO_IN_RANGE
     return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
-#else // HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__) || !defined(HOST_UNIX)
+#else // HAVE_GET_PROC_INFO_IN_RANGE
 
-    // This branch is executed when using llvm-libunwind (macOS and similar platforms)
-    // or HP-libunwind version 1.6 and earlier.
+    // This branch is executed when using the system HP-libunwind version 1.6 and earlier.
 
     if (ehFrameHdrAddr == 0) {
         _ASSERTE(!"ELF: No PT_GNU_EH_FRAME program header");
@@ -2180,7 +2093,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
     info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
-#endif // HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
+#endif // HAVE_GET_PROC_INFO_IN_RANGE
 
 #endif // __APPLE__
 }
@@ -2216,7 +2129,7 @@ static unw_accessors_t unwind_accessors = init_unwind_accessors();
 
 /*++
 Function:
-    PAL_VirtualUnwindOutOfProc
+    VirtualUnwindOutOfProc
 
     Unwind the stack given the context for a "remote" target using the
     provided read memory callback.
@@ -2231,8 +2144,7 @@ Parameters:
     isSignalFrame - output parameter: set to true if the unwound-to frame is a signal trampoline
 --*/
 BOOL
-PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
+VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
 {
     unw_addr_space_t addrSpace = 0;
     unw_cursor_t cursor;
@@ -2334,8 +2246,7 @@ exit:
 }
 
 BOOL
-PALAPI
-PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
+GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
 {
     _ASSERTE(ehFrameStart != nullptr);
     _ASSERTE(ehFrameSize != nullptr);
@@ -2343,7 +2254,6 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
     *ehFrameStart = 0;
     *ehFrameSize = 0;
 
-#ifdef HOST_UNIX
     libunwindInfo info;
     info.BaseAddress = baseAddress;
     info.Context = nullptr;
@@ -2462,25 +2372,20 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
     *ehFrameStart = ehFramePtr;
     *ehFrameSize = totalSize;
     return TRUE;
-#else
-    return FALSE;
-#endif // HOST_UNIX
 }
 
 #else
 
 BOOL
-PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
+VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
 {
     return FALSE;
 }
 
 BOOL
-PALAPI
-PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
+GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
 {
     return FALSE;
 }
 
-#endif // defined(__APPLE__) || defined(HAVE_UNW_GET_ACCESSORS)
+#endif // HAVE_UNW_GET_ACCESSORS
