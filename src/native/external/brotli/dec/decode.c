@@ -1117,7 +1117,7 @@ static BrotliDecoderErrorCode DecodeContextMap(uint32_t context_map_size,
 
 /* Decodes a command or literal and updates block type ring-buffer.
    Reads 3..54 bits. */
-static BROTLI_INLINE BROTLI_BOOL DecodeBlockTypeAndLength(
+static BROTLI_INLINE BrotliDecoderErrorCode DecodeBlockTypeAndLength(
     int safe, BrotliDecoderState* s, int tree_type) {
   uint32_t max_block_type = s->num_block_types[tree_type];
   const HuffmanCode* type_tree = &s->block_type_trees[
@@ -1128,7 +1128,7 @@ static BROTLI_INLINE BROTLI_BOOL DecodeBlockTypeAndLength(
   uint32_t* ringbuffer = &s->block_type_rb[tree_type * 2];
   uint32_t block_type;
   if (max_block_type <= 1) {
-    return BROTLI_FALSE;
+    return BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH;
   }
 
   /* Read 0..15 + 3..39 bits. */
@@ -1138,11 +1138,13 @@ static BROTLI_INLINE BROTLI_BOOL DecodeBlockTypeAndLength(
   } else {
     BrotliBitReaderState memento;
     BrotliBitReaderSaveState(br, &memento);
-    if (!SafeReadSymbol(type_tree, br, &block_type)) return BROTLI_FALSE;
+    if (!SafeReadSymbol(type_tree, br, &block_type)) {
+      return BROTLI_DECODER_NEEDS_MORE_INPUT;
+    }
     if (!SafeReadBlockLength(s, &s->block_length[tree_type], len_tree, br)) {
       s->substate_read_block_length = BROTLI_STATE_READ_BLOCK_LENGTH_NONE;
       BrotliBitReaderRestoreState(br, &memento);
-      return BROTLI_FALSE;
+      return BROTLI_DECODER_NEEDS_MORE_INPUT;
     }
   }
 
@@ -1158,7 +1160,7 @@ static BROTLI_INLINE BROTLI_BOOL DecodeBlockTypeAndLength(
   }
   ringbuffer[0] = ringbuffer[1];
   ringbuffer[1] = block_type;
-  return BROTLI_TRUE;
+  return BROTLI_DECODER_SUCCESS;
 }
 
 static BROTLI_INLINE void DetectTrivialLiteralBlockTypes(
@@ -1194,62 +1196,68 @@ static BROTLI_INLINE void PrepareLiteralDecoding(BrotliDecoderState* s) {
 
 /* Decodes the block type and updates the state for literal context.
    Reads 3..54 bits. */
-static BROTLI_INLINE BROTLI_BOOL DecodeLiteralBlockSwitchInternal(
+static BROTLI_INLINE BrotliDecoderErrorCode DecodeLiteralBlockSwitchInternal(
     int safe, BrotliDecoderState* s) {
-  if (!DecodeBlockTypeAndLength(safe, s, 0)) {
-    return BROTLI_FALSE;
+  BrotliDecoderErrorCode result = DecodeBlockTypeAndLength(safe, s, 0);
+  if (result != BROTLI_DECODER_SUCCESS) {
+    return result;
   }
   PrepareLiteralDecoding(s);
-  return BROTLI_TRUE;
+  return BROTLI_DECODER_SUCCESS;
 }
 
-static void BROTLI_NOINLINE DecodeLiteralBlockSwitch(BrotliDecoderState* s) {
-  DecodeLiteralBlockSwitchInternal(0, s);
+static BROTLI_NOINLINE BrotliDecoderErrorCode
+DecodeLiteralBlockSwitch(BrotliDecoderState* s) {
+  return DecodeLiteralBlockSwitchInternal(0, s);
 }
 
-static BROTLI_BOOL BROTLI_NOINLINE SafeDecodeLiteralBlockSwitch(
+static BROTLI_NOINLINE BrotliDecoderErrorCode SafeDecodeLiteralBlockSwitch(
     BrotliDecoderState* s) {
   return DecodeLiteralBlockSwitchInternal(1, s);
 }
 
 /* Block switch for insert/copy length.
    Reads 3..54 bits. */
-static BROTLI_INLINE BROTLI_BOOL DecodeCommandBlockSwitchInternal(
+static BROTLI_INLINE BrotliDecoderErrorCode DecodeCommandBlockSwitchInternal(
     int safe, BrotliDecoderState* s) {
-  if (!DecodeBlockTypeAndLength(safe, s, 1)) {
-    return BROTLI_FALSE;
+  BrotliDecoderErrorCode result = DecodeBlockTypeAndLength(safe, s, 1);
+  if (result != BROTLI_DECODER_SUCCESS) {
+    return result;
   }
   s->htree_command = s->insert_copy_hgroup.htrees[s->block_type_rb[3]];
-  return BROTLI_TRUE;
+  return BROTLI_DECODER_SUCCESS;
 }
 
-static void BROTLI_NOINLINE DecodeCommandBlockSwitch(BrotliDecoderState* s) {
-  DecodeCommandBlockSwitchInternal(0, s);
+static BROTLI_NOINLINE BrotliDecoderErrorCode
+DecodeCommandBlockSwitch(BrotliDecoderState* s) {
+  return DecodeCommandBlockSwitchInternal(0, s);
 }
 
-static BROTLI_BOOL BROTLI_NOINLINE SafeDecodeCommandBlockSwitch(
+static BROTLI_NOINLINE BrotliDecoderErrorCode SafeDecodeCommandBlockSwitch(
     BrotliDecoderState* s) {
   return DecodeCommandBlockSwitchInternal(1, s);
 }
 
 /* Block switch for distance codes.
    Reads 3..54 bits. */
-static BROTLI_INLINE BROTLI_BOOL DecodeDistanceBlockSwitchInternal(
+static BROTLI_INLINE BrotliDecoderErrorCode DecodeDistanceBlockSwitchInternal(
     int safe, BrotliDecoderState* s) {
-  if (!DecodeBlockTypeAndLength(safe, s, 2)) {
-    return BROTLI_FALSE;
+  BrotliDecoderErrorCode result = DecodeBlockTypeAndLength(safe, s, 2);
+  if (result != BROTLI_DECODER_SUCCESS) {
+    return result;
   }
   s->dist_context_map_slice = s->dist_context_map +
       (s->block_type_rb[5] << BROTLI_DISTANCE_CONTEXT_BITS);
   s->dist_htree_index = s->dist_context_map_slice[s->distance_context];
-  return BROTLI_TRUE;
+  return BROTLI_DECODER_SUCCESS;
 }
 
-static void BROTLI_NOINLINE DecodeDistanceBlockSwitch(BrotliDecoderState* s) {
-  DecodeDistanceBlockSwitchInternal(0, s);
+static BROTLI_NOINLINE BrotliDecoderErrorCode
+DecodeDistanceBlockSwitch(BrotliDecoderState* s) {
+  return DecodeDistanceBlockSwitchInternal(0, s);
 }
 
-static BROTLI_BOOL BROTLI_NOINLINE SafeDecodeDistanceBlockSwitch(
+static BROTLI_NOINLINE BrotliDecoderErrorCode SafeDecodeDistanceBlockSwitch(
     BrotliDecoderState* s) {
   return DecodeDistanceBlockSwitchInternal(1, s);
 }
@@ -1719,6 +1727,9 @@ static BROTLI_INLINE BROTLI_BOOL CheckInputAmount(
   return BrotliCheckInputAmount(br, num);
 }
 
+/* NB: METHOD should return BROTLI_FALSE only in case there is not enough input;
+       in case of "unsafe" execution, when input is guaranteed to be sufficient,
+       result is ignored. */
 #define BROTLI_SAFE(METHOD)                       \
   {                                               \
     if (safe) {                                   \
@@ -1729,6 +1740,22 @@ static BROTLI_INLINE BROTLI_BOOL CheckInputAmount(
     } else {                                      \
       METHOD;                                     \
     }                                             \
+  }
+
+/* NB: METHOD should return BROTLI_DECODER_SUCCESS, BROTLI_DECODER_ERROR_*, or
+   BROTLI_DECODER_NEEDS_MORE_INPUT; the later two break the processing. */
+#define BROTLI_SAFE_WITH_STATUS(METHOD)         \
+  {                                             \
+    BrotliDecoderErrorCode status;              \
+    if (safe) {                                 \
+      status = Safe##METHOD;                    \
+    } else {                                    \
+      status = METHOD;                          \
+    }                                           \
+    if (status != BROTLI_DECODER_SUCCESS) {     \
+      result = status;                          \
+      goto saveStateAndReturn;                  \
+    }                                           \
   }
 
 static BROTLI_INLINE BrotliDecoderErrorCode ProcessCommandsInternal(
@@ -1769,7 +1796,7 @@ CommandBegin:
     goto saveStateAndReturn;
   }
   if (BROTLI_PREDICT_FALSE(s->block_length[1] == 0)) {
-    BROTLI_SAFE(DecodeCommandBlockSwitch(s));
+    BROTLI_SAFE_WITH_STATUS(DecodeCommandBlockSwitch(s));
     goto CommandBegin;
   }
   /* Read the insert/copy length in the command. */
@@ -1797,7 +1824,7 @@ CommandInner:
         goto saveStateAndReturn;
       }
       if (BROTLI_PREDICT_FALSE(s->block_length[0] == 0)) {
-        BROTLI_SAFE(DecodeLiteralBlockSwitch(s));
+        BROTLI_SAFE_WITH_STATUS(DecodeLiteralBlockSwitch(s));
         PreloadSymbol(safe, s->literal_htree, br, &bits, &value);
         if (!s->trivial_literal_context) goto CommandInner;
       }
@@ -1833,7 +1860,7 @@ CommandInner:
         goto saveStateAndReturn;
       }
       if (BROTLI_PREDICT_FALSE(s->block_length[0] == 0)) {
-        BROTLI_SAFE(DecodeLiteralBlockSwitch(s));
+        BROTLI_SAFE_WITH_STATUS(DecodeLiteralBlockSwitch(s));
         if (s->trivial_literal_context) goto CommandInner;
       }
       context = BROTLI_CONTEXT(p1, p2, s->context_lookup);
@@ -1880,7 +1907,7 @@ CommandPostDecodeLiterals:
   } else {
     /* Read distance code in the command, unless it was implicitly zero. */
     if (BROTLI_PREDICT_FALSE(s->block_length[2] == 0)) {
-      BROTLI_SAFE(DecodeDistanceBlockSwitch(s));
+      BROTLI_SAFE_WITH_STATUS(DecodeDistanceBlockSwitch(s));
     }
     BROTLI_SAFE(ReadDistance(s, br));
   }

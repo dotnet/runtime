@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Formats.Cbor
@@ -206,22 +205,7 @@ namespace System.Formats.Cbor
 
         public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)
         {
-            HashCode hash = default;
-#if NETCOREAPP
-            hash.AddBytes(encoding);
-#else
-            while (encoding.Length >= sizeof(int))
-            {
-                hash.Add(MemoryMarshal.Read<int>(encoding));
-                encoding = encoding.Slice(sizeof(int));
-            }
-
-            foreach (byte b in encoding)
-            {
-                hash.Add(b);
-            }
-#endif
-            return hash.ToHashCode();
+            return Marvin.ComputeHash32(encoding, Marvin.DefaultSeed);
         }
 
         public static bool AreEqualKeyEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
