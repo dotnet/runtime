@@ -14,7 +14,8 @@ namespace Microsoft.NET.Build.Tasks;
 /// </summary>
 public abstract class CachedToolTask : ToolTask
 {
-    private InvocationCache.PendingInvocation? _pendingInvocation;
+    private List<string>? _capturedStandardOutput;
+    private List<string>? _capturedStandardError;
 
     private protected abstract InvocationCacheConfiguration CacheConfiguration { get; }
 
@@ -26,39 +27,39 @@ public abstract class CachedToolTask : ToolTask
         var result = new InvocationResult(-1);
         try
         {
-            InvocationResult? restoredResult = null;
             InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(Log, CacheConfiguration);
             if (cache is not null &&
-                DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands) is { } invocation)
+                DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands) is { } invocation &&
+                cache.TryExecuteCached(invocation, ExecuteAndCapture, out InvocationResult cachedResult))
             {
-                _pendingInvocation = cache.PrepareInvocation(invocation, out restoredResult);
-            }
-            if (restoredResult is { } restored)
-            {
-                result = restored;
+                result = cachedResult;
             }
             else
             {
-                // Preserve partial output if execution throws.
-                if (_pendingInvocation is { } pending)
-                    result = new InvocationResult(-1, pending.StandardOutput, pending.StandardError);
-                int exitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
-                result = _pendingInvocation?.Complete(exitCode) ?? new InvocationResult(exitCode);
+                result = new InvocationResult(ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands));
             }
         }
         finally
         {
-            try
-            {
-                ReplayOutput(result.StandardOutput, result.StandardError);
-            }
-            finally
-            {
-                _pendingInvocation = null;
-            }
+            // Execution may throw before returning its captured output.
+            IReadOnlyList<string> standardOutput = _capturedStandardOutput ?? result.StandardOutput;
+            IReadOnlyList<string> standardError = _capturedStandardError ?? result.StandardError;
+            _capturedStandardOutput = null;
+            _capturedStandardError = null;
+            ReplayOutput(standardOutput, standardError);
         }
 
         return result.ExitCode == 0 && base.HasLoggedErrors ? -1 : result.ExitCode;
+
+        InvocationResult ExecuteAndCapture()
+        {
+            var standardOutput = new List<string>();
+            var standardError = new List<string>();
+            _capturedStandardOutput = standardOutput;
+            _capturedStandardError = standardError;
+            int exitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
+            return new InvocationResult(exitCode, standardOutput, standardError);
+        }
     }
 
     /// <summary>
@@ -73,14 +74,14 @@ public abstract class CachedToolTask : ToolTask
 
     protected override Process StartToolProcess(Process process)
     {
-        if (_pendingInvocation is { } pending)
+        if (_capturedStandardOutput is { } standardOutput && _capturedStandardError is { } standardError)
         {
             // Replace live logging, but preserve ToolTask's EOF notifications.
             process.OutputDataReceived -= ReceiveStandardOutputData;
             process.OutputDataReceived += (_, args) =>
             {
                 if (args.Data is not null)
-                    pending.StandardOutput.Add(args.Data);
+                    standardOutput.Add(args.Data);
                 else
                     ReceiveStandardOutputData(process, args);
             };
@@ -88,7 +89,7 @@ public abstract class CachedToolTask : ToolTask
             process.ErrorDataReceived += (_, args) =>
             {
                 if (args.Data is not null)
-                    pending.StandardError.Add(args.Data);
+                    standardError.Add(args.Data);
                 else
                     ReceiveStandardErrorData(process, args);
             };

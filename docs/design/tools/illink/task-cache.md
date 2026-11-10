@@ -25,15 +25,15 @@ arguments/context, and one `InvocationOutputs.FromDirectory` declaration. Eligib
 inspection stay in ILLink; content hashing and cache operations stay in the shared layer.
 The base class calls `InvocationCache.TryCreateFromEnvironment` before describing the invocation.
 If a cache is available and the description is supported, it calls the cache's instance
-`PrepareInvocation` method with that description. Preparation owns output
-validation, timestamping, hashing, and restoration.
-On a miss, the cache returns a pending invocation owning stdout/stderr capture buffers. The base class
-runs the tool, feeds received lines into those buffers, and completes the invocation with its exit code.
-Completion returns an `InvocationResult` containing the exit code and the captured sequences.
+`TryExecuteCached` method with that description and an execution callback. The cache owns output
+validation, timestamping, hashing, restoration, and storage.
+On a miss, the cache invokes the callback. The base class allocates stdout/stderr capture buffers,
+runs the tool, and returns an `InvocationResult` containing its exit code and those same buffers.
+The cache reads the returned buffers and declared output files to store successful execution.
 On a hit, the cache returns a result only after restoration succeeds.
 `CachedToolTask` replays the returned output on both hits and misses through its inherited `ToolTask`
 logging methods and current stream policy; the cache has no stream logging-policy settings.
-If the cache declines an invocation,
+If the cache declines an invocation, it returns false without invoking the callback;
 the base class calls `ExecuteToolCore` directly without capture.
 Replay receives only the stdout/stderr sequences. The base class determines the final task exit code
 from the execution result and logged errors, without modifying the cache result.
@@ -108,10 +108,10 @@ key. Compiler-owned warning settings remain part of the arguments and key. A war
 MSBuild fails the task, but successful tool execution is still stored. Subsequent hits reapply current
 logging policy to the captured output.
 
-The cache allocates capture lists only on eligible misses and returns them in a pending invocation.
-The base class borrows that state while calling `ExecuteToolCore` and clears it afterward, including
-on exceptions. The base class replaces the ordinary process-output handlers during capture, forwarding
-end-of-stream notifications to `ToolTask` so it can finish draining the readers. Completion stores
+The base class allocates and fills capture lists only on eligible misses.
+It exposes those lists to its process handlers while calling `ExecuteToolCore` and clears its references
+afterward, including on exceptions. The base class replaces the ordinary process-output handlers during
+capture, forwarding end-of-stream notifications to `ToolTask` so it can finish draining the readers. The cache stores
 successful tool results before replay applies logging policy; no logging-based exit-code override is
 needed during execution. Partial output is replayed even if execution throws. Storage and replay use
 separate stdout and stderr sequences in that order, so callback scheduling does not affect the cached

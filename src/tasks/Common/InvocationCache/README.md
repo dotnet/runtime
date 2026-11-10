@@ -16,17 +16,17 @@ Derive from `CachedToolTask` and compile the shared sources into the task assemb
   implementation. It runs only on misses and bypasses.
 
 The base class calls `InvocationCache.TryCreateFromEnvironment` first. Only if a cache is available
-does it call `DescribeInvocation`, passing a supported description to that cache's
-instance `PrepareInvocation` method. Preparation owns output validation, timestamping, hashing, and
-restoration.
-On an eligible miss, the cache returns a `PendingInvocation` owning separate ordered stdout and stderr
-lists. The base class captures received lines into those buffers instead of logging them, then calls
-`Complete` with the tool exit code. Completion returns an `InvocationResult` using the same buffers and
-stores successful execution. Per-stream output must be deterministic for the same key.
+does it call `DescribeInvocation`, passing a supported description and an execution callback to that
+cache's instance `TryExecuteCached` method. The cache owns output validation, timestamping, hashing,
+restoration, and storage. On an eligible miss, it invokes the callback. The base class allocates
+separate ordered stdout and stderr lists and captures received lines instead of logging them.
+The callback returns an `InvocationResult` containing the tool exit code and those same buffers;
+the cache stores successful execution without copying the buffers. Per-stream output must be
+deterministic for the same key.
 
-On a hit, preparation returns no pending invocation and its `restoredResult` output contains the restored
-result. On a bypass, both are null; the base class executes normally without capture. Only eligible
-misses allocate capture buffers, and pending capture state is released even when execution throws.
+On a hit, `TryExecuteCached` returns the restored result without invoking the callback.
+On a bypass, it returns false without executing; the base class executes normally without capture.
+Only eligible misses allocate capture buffers, and capture state is released even when execution throws.
 
 `CachedToolTask` replays returned output on both hits and misses through its ordinary `ToolTask`
 logging path, using current importance and stderr-as-error policy rather than policy cached from

@@ -61,54 +61,31 @@ internal sealed partial class InvocationCache
         _importance = importance;
     }
 
-    internal PendingInvocation? PrepareInvocation(InvocationDescription invocation, out InvocationResult? restoredResult)
+    internal bool TryExecuteCached(InvocationDescription invocation, Func<InvocationResult> execute,
+        out InvocationResult result)
     {
-        restoredResult = null;
+        result = new InvocationResult(-1);
         ValidateOutputs(invocation.Outputs);
 
         DateTime outputTimestampUtc = DateTime.UtcNow;
         if (!TryComputeKey(_log, _toolName, invocation, out string key))
-            return null;
+            return false;
 
-        return PrepareInvocation(outputTimestampUtc,
-            new InvocationCacheRequest(key, invocation.Outputs), out restoredResult);
+        result = ExecuteCached(outputTimestampUtc, new InvocationCacheRequest(key, invocation.Outputs), execute);
+        return true;
     }
 
-    internal PendingInvocation? PrepareInvocation(DateTime outputTimestampUtc, InvocationCacheRequest request,
-        out InvocationResult? restoredResult)
+    internal InvocationResult ExecuteCached(DateTime outputTimestampUtc, InvocationCacheRequest request,
+        Func<InvocationResult> execute)
     {
-        restoredResult = null;
         if (TryRestore(request.Key, request.Outputs, outputTimestampUtc, out InvocationResult result))
-        {
-            restoredResult = result;
-            return null;
-        }
-
-        return new PendingInvocation(this, request);
-    }
-
-    internal sealed class PendingInvocation
-    {
-        private readonly InvocationCache _cache;
-        private readonly InvocationCacheRequest _request;
-
-        internal List<string> StandardOutput { get; } = new();
-        internal List<string> StandardError { get; } = new();
-
-        internal PendingInvocation(InvocationCache cache, InvocationCacheRequest request)
-        {
-            _cache = cache;
-            _request = request;
-        }
-
-        internal InvocationResult Complete(int exitCode)
-        {
-            var result = new InvocationResult(exitCode, StandardOutput, StandardError);
-            if (exitCode == 0)
-                _cache.Store(_request.Key, _request.Outputs, StandardOutput, StandardError);
-
             return result;
-        }
+
+        result = execute();
+        if (result.ExitCode == 0)
+            Store(request.Key, request.Outputs, result.StandardOutput, result.StandardError);
+
+        return result;
     }
 
     internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc,

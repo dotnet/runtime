@@ -1942,6 +1942,70 @@ namespace ILLink.Tasks.Tests
             }, mode).Dispose();
         }
 
+        [Fact]
+        public void TaskReplaysOutputAndClearsCaptureAfterExecutionException()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                using var test = new OutputDirectoryTest();
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                string tool = Path.Combine(test.Root, "OutputTool.dll");
+                WriteOutputTool(tool);
+                File.Copy(Path.ChangeExtension(typeof(TaskArgumentTests).Assembly.Location, ".runtimeconfig.json"),
+                    Path.ChangeExtension(tool, ".runtimeconfig.json"));
+                string cacheDirectory = Path.Combine(test.Root, "cache");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+                var task = new ThrowingExecutionTask
+                {
+                    BuildEngine = test.BuildEngine,
+                    ToolPath = test.Task.ToolPath,
+                    ToolExe = test.Task.ToolExe,
+                    ILLinkPath = tool,
+                    AssemblyPaths = new ITaskItem[] { new TaskItem(input) },
+                    RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") },
+                    OutputDirectory = new TaskItem(test.Output),
+                    ThrowAfterExecution = true
+                };
+
+                InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => task.Execute());
+
+                Assert.Equal("execute", exception.Message);
+                AssertOutput();
+                Assert.False(Directory.Exists(cacheDirectory));
+                test.BuildEngine.Messages.Clear();
+                test.BuildEngine.Warnings.Clear();
+
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "false");
+                task.ThrowAfterExecution = false;
+                Assert.True(task.Execute());
+                AssertOutput();
+
+                void AssertOutput()
+                {
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stdout {0}");
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}");
+                    Assert.Equal("IL2026", Assert.Single(test.BuildEngine.Warnings).Code);
+                    Assert.Empty(test.BuildEngine.Errors);
+                }
+            }).Dispose();
+        }
+
+        private sealed class ThrowingExecutionTask : ILLink
+        {
+            internal bool ThrowAfterExecution { get; set; }
+
+            protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
+            {
+                int exitCode = base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
+                if (ThrowAfterExecution)
+                    throw new InvalidOperationException("execute");
+
+                return exitCode;
+            }
+        }
+
         private sealed class DeferredOutputBuildEngine : MockBuildEngine, IBuildEngine
         {
             internal string CacheDirectory { get; set; }

@@ -457,7 +457,7 @@ public class InvocationCacheTests
             standardError: standardError ? new[] { "warning IL2026: warning" } : null);
         InvocationResult result = RunInvocation(test.Cache, CacheTestDirectory.Timestamp,
             new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
-            _ => throw new InvalidOperationException("The tool must not run on a hit."), out bool cacheHit);
+            () => throw new InvalidOperationException("The tool must not run on a hit."), out bool cacheHit);
 
         Assert.True(cacheHit);
         Assert.Equal(0, result.ExitCode);
@@ -581,16 +581,18 @@ public class InvocationCacheTests
             string key = new string((char)('b' + i), 64);
             Assert.Equal(0, RunInvocation(test.Cache, CacheTestDirectory.Timestamp,
                 new InvocationCacheRequest(key, source),
-                execute: pending =>
+                execute: () =>
                 {
+                    var standardOutput = new List<string>();
+                    var standardError = new List<string>();
                     foreach (var line in interleavings[i])
                     {
                         if (line.IsStandardError)
-                            pending.StandardError.Add(line.Line);
+                            standardError.Add(line.Line);
                         else
-                            pending.StandardOutput.Add(line.Line);
+                            standardOutput.Add(line.Line);
                     }
-                    return 0;
+                    return new InvocationResult(0, standardOutput, standardError);
                 }, out bool cacheHit).ExitCode);
             Assert.False(cacheHit);
             string entry = Path.Combine(test.Entries, key);
@@ -838,7 +840,7 @@ public class InvocationCacheTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SharedPreparationReturnsCapturedOutputOnMissAndHit(bool cached)
+    public void SharedExecutionReturnsTaskOwnedOutputOnMissAndHit(bool cached)
         => RemoteExecutor.Invoke(static stored =>
     {
         bool hasEntry = bool.Parse(stored);
@@ -850,27 +852,16 @@ public class InvocationCacheTests
         if (hasEntry)
             test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs, standardOutput, standardError);
         int executions = 0;
-        InvocationCache.PendingInvocation? pending = test.Cache.PrepareInvocation(invocation,
-            out InvocationResult? restoredResult);
-        InvocationResult result;
-        if (restoredResult is { } restored)
+        InvocationResult? executedResult = null;
+        Assert.True(test.Cache.TryExecuteCached(invocation, () =>
         {
-            Assert.Null(pending);
-            result = restored;
-        }
-        else
-        {
-            var capture = Assert.IsType<InvocationCache.PendingInvocation>(pending);
             Assert.False(Directory.Exists(test.Cache.CacheDirectory));
             executions++;
             Directory.CreateDirectory(test.Output);
             File.WriteAllText(Path.Combine(test.Output, "image.dll"), "computed");
-            capture.StandardOutput.AddRange(standardOutput);
-            capture.StandardError.AddRange(standardError);
-            result = capture.Complete(0);
-            Assert.Same(capture.StandardOutput, result.StandardOutput);
-            Assert.Same(capture.StandardError, result.StandardError);
-        }
+            executedResult = new InvocationResult(0, new List<string>(standardOutput), new List<string>(standardError));
+            return executedResult.Value;
+        }, out InvocationResult result));
 
         Assert.Equal(hasEntry ? 0 : 1, executions);
         Assert.Equal(0, result.ExitCode);
@@ -878,6 +869,11 @@ public class InvocationCacheTests
         Assert.Empty(test.BuildEngine.Warnings);
         Assert.Equal(standardOutput, result.StandardOutput);
         Assert.Equal(standardError, result.StandardError);
+        if (executedResult is { } executed)
+        {
+            Assert.Same(executed.StandardOutput, result.StandardOutput);
+            Assert.Same(executed.StandardError, result.StandardError);
+        }
     }, cached.ToString()).Dispose();
 
     [Fact]
@@ -925,7 +921,7 @@ public class InvocationCacheTests
     [InlineData("nested-files")]
     [InlineData("file-in-cache")]
     [InlineData("cache-in-file")]
-    public void SharedPreparationRejectsInvalidOutputsBeforeCleanup(string shape) => RemoteExecutor.Invoke(static value =>
+    public void SharedExecutionRejectsInvalidOutputsBeforeCleanup(string shape) => RemoteExecutor.Invoke(static value =>
     {
         using var test = new CacheTestDirectory();
         test.WriteSource("image.dll", "cached");
@@ -947,7 +943,8 @@ public class InvocationCacheTests
         };
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), outputs);
         ArgumentException exception = Assert.Throws<ArgumentException>(() =>
-            test.Cache.PrepareInvocation(invocation, out _));
+            test.Cache.TryExecuteCached(invocation,
+                static () => throw new InvalidOperationException("The tool must not run with invalid outputs."), out _));
 
         Assert.Equal(nameof(outputs), exception.ParamName);
         Assert.Equal("untouched", File.ReadAllText(stale));
@@ -955,18 +952,21 @@ public class InvocationCacheTests
     }, shape).Dispose();
 
     [Fact]
-    public void SharedPreparationBypassesUnreadableInputWithoutCacheCleanup() => RemoteExecutor.Invoke(static () =>
+    public void SharedExecutionBypassesUnreadableInputWithoutCacheCleanup() => RemoteExecutor.Invoke(static () =>
     {
         using var test = new CacheTestDirectory();
         Directory.CreateDirectory(test.Output);
         string stale = Path.Combine(test.Output, "stale.dll");
         File.WriteAllText(stale, "untouched");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(test.Source), Array.Empty<string>(), test.OutputOutputs);
-        InvocationCache.PendingInvocation? pending = test.Cache.PrepareInvocation(invocation,
-            out InvocationResult? restoredResult);
+        bool executed = test.Cache.TryExecuteCached(invocation,
+            static () => throw new InvalidOperationException("The tool must not run through the cache on bypass."),
+            out InvocationResult result);
 
-        Assert.Null(pending);
-        Assert.Null(restoredResult);
+        Assert.False(executed);
+        Assert.Equal(-1, result.ExitCode);
+        Assert.Empty(result.StandardOutput);
+        Assert.Empty(result.StandardError);
         Assert.Equal("untouched", File.ReadAllText(stale));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("input identity could not be computed") is true);
@@ -1075,14 +1075,14 @@ public class InvocationCacheTests
         var request = new InvocationCacheRequest(CacheTestDirectory.Key, InvocationOutputs.FromFiles(image, symbols));
         int executions = 0;
 
-        InvocationResult Run() => RunInvocation(test.Cache, CacheTestDirectory.Timestamp, request, _ =>
+        InvocationResult Run() => RunInvocation(test.Cache, CacheTestDirectory.Timestamp, request, () =>
         {
             executions++;
             Assert.Equal("stale image", File.ReadAllText(image));
             Assert.Equal("stale symbols", File.ReadAllText(symbols));
             File.Delete(image);
             File.Delete(symbols);
-            return 0;
+            return new InvocationResult(0);
         }, out _);
 
         Assert.Equal(0, Run().ExitCode);
@@ -1266,7 +1266,7 @@ public class InvocationCacheTests
         File.WriteAllText(symbols, "stale symbols");
 
         InvocationResult Run(out bool cacheHit) => RunInvocation(test.Cache, CacheTestDirectory.Timestamp, request,
-            _ =>
+            () =>
             {
                 events.Add("execute");
                 Assert.Equal("stale image", File.ReadAllText(image));
@@ -1282,7 +1282,7 @@ public class InvocationCacheTests
                 }
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(image, "computed");
-                return 0;
+                return new InvocationResult(0);
             }, out cacheHit);
 
         InvocationResult cold = Run(out bool coldCacheHit);
@@ -1318,14 +1318,13 @@ public class InvocationCacheTests
         var events = new List<string>();
 
         InvocationResult Run(out bool cacheHit) => RunInvocation(test.Cache, CacheTestDirectory.Timestamp, request,
-            execute: pending =>
+            execute: () =>
             {
                 events.Add("execute");
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(image, "computed");
-                pending.StandardOutput.AddRange(new[] { "warning IL2026: warning", "" });
-                pending.StandardError.AddRange(new[] { "stderr text", "" });
-                return 0;
+                return new InvocationResult(0,
+                    new[] { "warning IL2026: warning", "" }, new[] { "stderr text", "" });
             }, out cacheHit);
 
         InvocationResult cold = Run(out bool coldCacheHit);
@@ -1358,16 +1357,14 @@ public class InvocationCacheTests
         int executions = 0;
         InvocationResult result = RunInvocation(test.Cache, CacheTestDirectory.Timestamp,
             new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
-            pending =>
+            () =>
             {
                 executions++;
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(Path.Combine(test.Output, "image.dll"), "produced");
                 if (logError)
                     test.Log.LogError("Expected logging error.");
-                pending.StandardOutput.Add("tool stdout");
-                pending.StandardError.Add("tool stderr");
-                return exitCode;
+                return new InvocationResult(exitCode, new[] { "tool stdout" }, new[] { "tool stderr" });
             }, out bool cacheHit);
 
         Assert.Equal(exitCode, result.ExitCode);
@@ -1386,7 +1383,7 @@ public class InvocationCacheTests
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
             RunInvocation(test.Cache, CacheTestDirectory.Timestamp,
                 new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
-                _ =>
+                () =>
                 {
                     executions++;
                     throw new InvalidOperationException("execute");
@@ -1411,14 +1408,14 @@ public class InvocationCacheTests
 
         Assert.Equal(0, RunInvocation(test.Cache, CacheTestDirectory.Timestamp,
             new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
-            _ =>
+            () =>
             {
                 executions++;
                 Assert.Equal("stale", File.ReadAllText(stale));
                 Directory.Delete(test.Output, recursive: true);
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(Path.Combine(test.Output, "image.dll"), "recomputed");
-                return 0;
+                return new InvocationResult(0);
             }, out bool cacheHit).ExitCode);
 
         Assert.False(cacheHit);
@@ -1429,19 +1426,17 @@ public class InvocationCacheTests
     }
 
     private static InvocationResult RunInvocation(InvocationCache cache, DateTime outputTimestampUtc,
-        InvocationCacheRequest request, Func<InvocationCache.PendingInvocation, int> execute, out bool cacheHit)
+        InvocationCacheRequest request, Func<InvocationResult> execute, out bool cacheHit)
     {
-        InvocationCache.PendingInvocation? pending = cache.PrepareInvocation(outputTimestampUtc, request,
-            out InvocationResult? restoredResult);
-        cacheHit = restoredResult.HasValue;
-        if (restoredResult is { } restored)
+        bool executed = false;
+        InvocationResult result = cache.ExecuteCached(outputTimestampUtc, request, () =>
         {
-            Assert.Null(pending);
-            return restored;
-        }
+            executed = true;
+            return execute();
+        });
+        cacheHit = !executed;
 
-        var capture = Assert.IsType<InvocationCache.PendingInvocation>(pending);
-        return capture.Complete(execute(capture));
+        return result;
     }
 
     private static void RunOnOtherThread(Action action)
