@@ -210,7 +210,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
-    NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+    NewHolder<LoaderHeapBlock> pNewBlock{ new (nothrow) LoaderHeapBlock };
     if (pNewBlock == NULL)
     {
         return FALSE;
@@ -218,7 +218,6 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
 
     m_dwTotalAlloc += dwSizeToCommit;
 
-    pNewBlock.SuppressRelease();
     pDataHolder.Detach();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -227,7 +226,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     pNewBlock->m_fReleaseMemory = fReleaseMemory;
 
     // Add to the linked list
-    m_pFirstBlock = pNewBlock;
+    m_pFirstBlock = pNewBlock.Detach();
 
     m_pPtrToEndOfCommittedRegion = (BYTE *) (pData) + (dwSizeToCommit);         \
     m_pAllocPtr                  = (BYTE *) (pData);                            \

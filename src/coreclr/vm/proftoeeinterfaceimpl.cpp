@@ -7517,7 +7517,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** pp
         return E_OUTOFMEMORY;
     }
 
-    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
+    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Detach();
 
     return hr;
 }
@@ -9451,7 +9451,7 @@ HRESULT ProfToEEInterfaceImpl::EnumJITedFunctions(ICorProfilerFunctionEnum ** pp
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Extract();
+    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Detach();
 
     return S_OK;
 }
@@ -9507,7 +9507,7 @@ HRESULT ProfToEEInterfaceImpl::EnumJITedFunctions2(ICorProfilerFunctionEnum ** p
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Extract();
+    *ppEnum = (ICorProfilerFunctionEnum *)pJitEnum.Detach();
 
     return S_OK;
 }
@@ -9573,7 +9573,7 @@ HRESULT ProfToEEInterfaceImpl::EnumModules(ICorProfilerModuleEnum ** ppEnum)
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerModuleEnum *) pModuleEnum.Extract();
+    *ppEnum = (ICorProfilerModuleEnum *) pModuleEnum.Detach();
 
     return S_OK;
 }
@@ -10270,7 +10270,7 @@ HRESULT ProfToEEInterfaceImpl::EnumThreads(
     }
 
     // Ownership transferred to [out] param.  Caller must Release() when done with this.
-    *ppEnum = (ICorProfilerThreadEnum *) pThreadEnum.Extract();
+    *ppEnum = (ICorProfilerThreadEnum *) pThreadEnum.Detach();
 
     return S_OK;
 }

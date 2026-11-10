@@ -81,33 +81,20 @@ internal sealed partial class GrammarActions
 
     private (string Namespace, string Name) GetTypeDefinitionName(string fullName)
     {
-        int lastDot = fullName.LastIndexOf('.');
-        if (lastDot == 0)
+        string? currentNamespace = _currentTypeDefinition.Count == 0 ? _currentNamespace.PeekOrDefault() : null;
+        if (string.IsNullOrEmpty(currentNamespace))
         {
-            lastDot = -1;
+            return NameHelpers.SplitDottedNameToNamespaceAndName(fullName);
         }
 
-        string typeNamespace;
-        if (_currentTypeDefinition.Count != 0)
+        if (!fullName.Contains('.') && !currentNamespace.EndsWith('.'))
         {
-            typeNamespace = lastDot == -1 ? string.Empty : fullName.Substring(0, lastDot);
-        }
-        else if (lastDot == -1)
-        {
-            typeNamespace = _currentNamespace.PeekOrDefault() ?? string.Empty;
-        }
-        else
-        {
-            string containingNamespace = fullName.Substring(0, lastDot);
-            string? currentNamespace = _currentNamespace.PeekOrDefault();
-            typeNamespace = string.IsNullOrEmpty(currentNamespace)
-                ? containingNamespace
-                : $"{currentNamespace}.{containingNamespace}";
+            return (currentNamespace, fullName);
         }
 
-        return (
-            typeNamespace,
-            lastDot == -1 ? fullName : fullName.Substring(lastDot + 1));
+        // COMPAT: Native ilasm composes the full name before splitting it,
+        // so atypical dots can change the namespace/name boundary specified in the source.
+        return NameHelpers.SplitDottedNameToNamespaceAndName(currentNamespace + "." + fullName);
     }
 
     private void InitializeTypeDefinition(
