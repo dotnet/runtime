@@ -9,6 +9,14 @@
 // we need dedicated index in order to tell OpenSSL how to copy the pointer during SSL_SESSION_dup.
 extern int g_ssl_sess_cert_index;
 
+typedef struct
+{
+    int32_t pending;
+    int32_t finishedReceived;
+} SslPostHandshakeAuthState;
+
+extern int g_ssl_post_handshake_auth_state_index;
+
 /*
 These values should be kept in sync with System.Security.Authentication.SslProtocols.
 */
@@ -304,6 +312,11 @@ Shims the SSL_renegotiate_pending method.
 Returns 1 when negotiation is requested; 0 once a handshake has finished.
 */
 PALEXPORT int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl);
+
+/*
+Returns 1 while TLS 1.3 post-handshake authentication is waiting for the peer's Finished message.
+*/
+PALEXPORT int32_t CryptoNative_IsSslPostHandshakeAuthPending(SSL* ssl);
 
 /*
 Returns the number of application-data bytes already decrypted by SSL_peek.

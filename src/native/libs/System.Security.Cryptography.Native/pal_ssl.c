@@ -27,6 +27,10 @@ c_static_assert(PAL_SSL_ERROR_WANT_RETRY_VERIFY == SSL_ERROR_WANT_RETRY_VERIFY);
 c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
 c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
+#ifndef TLS1_3_VERSION
+#define TLS1_3_VERSION 0x0304
+#endif
+
 #define DOTNET_DEFAULT_CIPHERSTRING \
     "ECDHE-ECDSA-AES256-GCM-SHA384:" \
     "ECDHE-ECDSA-AES128-GCM-SHA256:" \
@@ -442,22 +446,98 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
     return result;
 }
 
+static SslPostHandshakeAuthState* GetPostHandshakeAuthState(SSL* ssl)
+{
+    return (SslPostHandshakeAuthState*)SSL_get_ex_data(ssl, g_ssl_post_handshake_auth_state_index);
+}
+
+static void SslMessageCallback(
+    int write,
+    int version,
+    int contentType,
+    const void* buffer,
+    size_t length,
+    SSL* ssl,
+    void* arg)
+{
+    (void)arg;
+
+    SslPostHandshakeAuthState* state = GetPostHandshakeAuthState(ssl);
+    if (state != NULL &&
+        state->pending &&
+        !write &&
+        version == TLS1_3_VERSION &&
+        contentType == SSL3_RT_HANDSHAKE &&
+        length > 0 &&
+        *(const uint8_t*)buffer == SSL3_MT_FINISHED)
+    {
+        state->finishedReceived = 1;
+    }
+}
+
+static int32_t StartPostHandshakeAuthTracking(SSL* ssl)
+{
+    SslPostHandshakeAuthState* state = GetPostHandshakeAuthState(ssl);
+    if (state == NULL)
+    {
+        state = OPENSSL_malloc(sizeof(SslPostHandshakeAuthState));
+        if (state == NULL)
+        {
+            return 0;
+        }
+
+        memset(state, 0, sizeof(SslPostHandshakeAuthState));
+        if (!SSL_set_ex_data(ssl, g_ssl_post_handshake_auth_state_index, state))
+        {
+            OPENSSL_free(state);
+            return 0;
+        }
+    }
+
+    state->pending = 1;
+    state->finishedReceived = 0;
+    SSL_set_msg_callback(ssl, SslMessageCallback);
+    return 1;
+}
+
+static void StopPostHandshakeAuthTracking(SSL* ssl)
+{
+    SslPostHandshakeAuthState* state = GetPostHandshakeAuthState(ssl);
+    if (state != NULL)
+    {
+        state->pending = 0;
+        state->finishedReceived = 0;
+    }
+
+    SSL_set_msg_callback(ssl, NULL);
+}
+
+static int32_t IsPostHandshakeAuthFinished(SSL* ssl)
+{
+    SslPostHandshakeAuthState* state = GetPostHandshakeAuthState(ssl);
+    return state != NULL && state->pending && state->finishedReceived;
+}
+
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
 
 #if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     // TLS1.3 uses different API for renegotiation/delayed client cert request
-    #ifndef TLS1_3_VERSION
-    #define TLS1_3_VERSION 0x0304
-    #endif
     if (SSL_version(ssl) == TLS1_3_VERSION)
     {
-        // Post-handshake auth reqires SSL_VERIFY_PEER to be set
+        // Post-handshake auth requires SSL_VERIFY_PEER to be set
         CryptoNative_SslSetVerifyPeer(ssl, 0);
+        if (!StartPostHandshakeAuthTracking(ssl))
+        {
+            *error = SSL_ERROR_SSL;
+            return 0;
+        }
+
         int ret = SSL_verify_client_post_handshake(ssl);
         if (ret != 1)
         {
+            StopPostHandshakeAuthTracking(ssl);
             *error = CryptoNative_SslGetError(ssl, ret);
         }
         return ret;
@@ -488,6 +568,18 @@ int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
     ERR_clear_error();
 
     return SSL_renegotiate_pending(ssl) != 0;
+}
+
+int32_t CryptoNative_IsSslPostHandshakeAuthPending(SSL* ssl)
+{
+    if (!IsPostHandshakeAuthFinished(ssl))
+    {
+        SslPostHandshakeAuthState* state = GetPostHandshakeAuthState(ssl);
+        return state != NULL && state->pending;
+    }
+
+    StopPostHandshakeAuthTracking(ssl);
+    return 0;
 }
 
 int32_t CryptoNative_SslPending(SSL* ssl)
@@ -534,9 +626,9 @@ int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode, int32_t proces
         if (peekResult <= 0)
         {
             int peekError = SSL_get_error(ssl, peekResult);
-            if (peekError != SSL_ERROR_WANT_READ)
+            if (peekError != SSL_ERROR_WANT_READ &&
+                !(peekError == SSL_ERROR_ZERO_RETURN && IsPostHandshakeAuthFinished(ssl)))
             {
-                // SSL_do_handshake can report success after SSL_peek processes close_notify.
                 *errorCode = peekError;
                 errno = savedErrno;
                 return peekResult;

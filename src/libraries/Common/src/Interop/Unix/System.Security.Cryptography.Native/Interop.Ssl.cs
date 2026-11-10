@@ -110,6 +110,10 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsSslRenegotiatePending(SafeSslHandle ssl);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslPostHandshakeAuthPending")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsSslPostHandshakeAuthPending(SafeSslHandle ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslPending")]
         internal static partial int SslPending(SafeSslHandle ssl);
 
@@ -492,13 +496,10 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeSslHandle : SafeDeleteSslContext
     {
-        private const int MaxFinishedSize = 64;
-
         private SafeBioHandle? _readBio;
         private SafeBioHandle? _writeBio;
         private bool _isServer;
         private bool _handshakeCompleted;
-        private byte[]? _peerFinishedBeforePostHandshakeAuth;
 
         private WeakGCHandle<SslAuthenticationOptions> _authOptionsHandle;
         // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
@@ -546,50 +547,11 @@ namespace Microsoft.Win32.SafeHandles
             _handshakeCompleted = true;
         }
 
-        internal unsafe void BeginPostHandshakeAuthentication()
+        internal bool IsPostHandshakeAuthenticationPending()
         {
-            // save the current peer finished message before starting post-handshake authentication,
-            // we detect that PHA is finished by comparing the current peer finished message with the one saved before starting PHA.
-
-            int length = Interop.Ssl.SslGetPeerFinished(this, IntPtr.Zero, 0);
-            if (length <= 0 || length > MaxFinishedSize)
-            {
-                throw new AuthenticationException(SR.net_ssl_io_frame);
-            }
-
-            byte[] finished = new byte[length];
-            fixed (byte* buffer = finished)
-            {
-                if (Interop.Ssl.SslGetPeerFinished(this, (IntPtr)buffer, finished.Length) != length)
-                {
-                    throw new AuthenticationException(SR.net_ssl_io_frame);
-                }
-            }
-            _peerFinishedBeforePostHandshakeAuth = finished;
-        }
-
-        internal unsafe bool IsPostHandshakeAuthenticationPending()
-        {
-            if (_peerFinishedBeforePostHandshakeAuth is not byte[] previous)
-            {
-                return false;
-            }
-
             // RFC 8446 section 4.6.2: even an empty Certificate response ends with Finished.
             // SSL_renegotiate_pending and SSL_is_init_finished do not track TLS 1.3 PHA.
-            Span<byte> finished = stackalloc byte[MaxFinishedSize];
-            int length;
-            fixed (byte* buffer = finished)
-            {
-                length = Interop.Ssl.SslGetPeerFinished(this, (IntPtr)buffer, finished.Length);
-            }
-
-            if (length != previous.Length || (uint)length > (uint)finished.Length)
-            {
-                throw new AuthenticationException(SR.net_ssl_io_frame);
-            }
-
-            if (finished.Slice(0, length).SequenceEqual(previous))
+            if (Interop.Ssl.IsSslPostHandshakeAuthPending(this))
             {
                 if (Interop.Ssl.SslPending(this) > 0)
                 {
@@ -599,8 +561,6 @@ namespace Microsoft.Win32.SafeHandles
                 return true;
             }
 
-            // PHA completed, no need to hold onto the previous finished message anymore.
-            _peerFinishedBeforePostHandshakeAuth = null;
             return false;
         }
 

@@ -684,7 +684,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
+        internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
         {
             int ret = Interop.Ssl.SslRenegotiate(sslContext, out Ssl.SslErrorCode errorCode);
 
@@ -708,11 +708,6 @@ internal static partial class Interop
 
                 return new SecurityStatusPal(palErrorCode, ex);
             }
-            if (MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)Ssl.SslGetVersion(sslContext)).SequenceEqual("TLSv1.3"u8))
-            {
-                sslContext.BeginPostHandshakeAuthentication();
-            }
-
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
