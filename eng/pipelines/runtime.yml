@@ -85,6 +85,32 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Debug
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: StaticGraph
+            # Restore with the regular build driver because Arcade's toolset bootstrap
+            # projects aren't graph/isolate-safe, then build the clr subset directly.
+            buildArgs: -s clr -c Debug --restore
+            timeoutInMinutes: 180
+            postBuildSteps:
+            - script: |
+                set -ex
+                $(Build.SourcesDirectory)/.dotnet/dotnet msbuild $(Build.SourcesDirectory)/Build.proj \
+                  /t:Build /p:Subset=clr /p:Configuration=Debug /p:RuntimeConfiguration=Debug \
+                  /p:Restore=false /p:Build=true /p:Ninja=true /p:TargetArchitecture=x64 /p:BuildArchitecture=x64 \
+                  /p:ContinuousIntegrationBuild=true /p:FeatureDynamicCodeCompiled=true \
+                  /graphBuild /isolateProjects /m:2 /nr:false
+              displayName: Build clr subset with static graph (/graphBuild /isolateProjects)
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - linux_musl_arm

@@ -34,14 +34,6 @@
       Condition="'$(TargetsWasm)' != 'true' or '$(CrossHostArch)' != ''"
       />
 
-    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      ExcludeFromSingleFile="$(PublishSingleFile)"
-      Link="%(FileName)%(Extension)"
-      Condition="'$(CopyAllJitLibrariesToAotCompilerOutput)' == 'true'"
-      />
-
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(SingleJitLibrarySourceName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
@@ -50,4 +42,40 @@
       Condition="'$(CrossHostArch)' != '' and '$(CopyAllJitLibrariesToAotCompilerOutput)' != 'true'"
       />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(Restore)' != 'true'">
+    <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
+                      Condition="'$(CrossHostArch)' == '' and '$(ClrRuntimeBuildSubsets)' != ''"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build"
+                      AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)" />
+    <ProjectReference Include="@(ProjectToBuild->WithMetadataValue('CoreClrNativeBuild', 'CrossComponents'))"
+                      Condition="'$(CrossHostArch)' != ''"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="GetTargetPath" Targets="Build" />
+    <ProjectReferenceTargets Include="PublishItemsOutputGroup" Targets="GetCopyToOutputDirectoryItems" />
+  </ItemGroup>
+
+  <!-- Expand the wildcard after the native producer runs, not during graph construction. -->
+  <Target Name="IncludeAotCompilerJitLibraries"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="ResolveProjectReferences"
+          Condition="'$(CopyAllJitLibrariesToAotCompilerOutput)' == 'true'">
+    <ItemGroup>
+      <_AotCompilerJitLibrary Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)" />
+      <Content Include="@(_AotCompilerJitLibrary)"
+               CopyToOutputDirectory="PreserveNewest"
+               CopyToPublishDirectory="PreserveNewest"
+               ExcludeFromSingleFile="$(PublishSingleFile)"
+               Link="%(_AotCompilerJitLibrary.FileName)%(_AotCompilerJitLibrary.Extension)" />
+    </ItemGroup>
+  </Target>
 </Project>

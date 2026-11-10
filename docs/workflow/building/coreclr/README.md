@@ -8,6 +8,7 @@
   - [Cross Compilation](#cross-compilation)
 - [Other Features](#other-features)
   - [Build Drivers](#build-drivers)
+  - [Static Graph Builds](#static-graph-builds)
   - [Extra Flags](#extra-flags)
   - [Native ARM64 Building on Windows](#native-arm64-building-on-windows)
   - [Debugging Information for macOS](#debugging-information-for-macos)
@@ -117,6 +118,29 @@ To use *Ninja* instead of *Make* on non-Windows:
 ```bash
 ./build.sh -subset clr -ninja
 ```
+
+### Static Graph Builds
+
+The `clr` subset supports MSBuild's static graph scheduler and project isolation.
+Project references, package selection, and native-library discovery are shared
+with ordinary builds; `/graphBuild` selects the scheduler, not a separate build
+implementation.
+
+Restore through the regular build driver first, because the Arcade toolset
+bootstrap is not project-isolation compatible. For example, on Linux x64:
+
+```bash
+./build.sh -s clr -c Debug --restore
+./.dotnet/dotnet msbuild Build.proj \
+  /t:Build /p:Subset=clr /p:Configuration=Debug /p:RuntimeConfiguration=Debug \
+  /p:Restore=false /p:Build=true /p:Ninja=true \
+  /p:TargetArchitecture=x64 /p:BuildArchitecture=x64 \
+  /p:FeatureDynamicCodeCompiled=true /graphBuild /isolateProjects /m:2 /nr:false
+```
+
+This is limited to the `clr` subset; it does not enable isolated graph builds
+for other subsets such as `libs` or `host`. CI validates the graph invocation
+in a separate Linux x64 Debug leg alongside the ordinary builds.
 
 ### Extra Flags
 

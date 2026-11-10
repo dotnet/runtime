@@ -14,4 +14,8 @@
   <Import Project="ilasm.props" />
   <Import Project="$(CoreClrProjectRoot)tools\aot\NativeAotToolRuntimeSettings.props" />
 
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="PublishItemsOutputGroup" Targets="GetCopyToOutputDirectoryItems" />
+  </ItemGroup>
+
 </Project>

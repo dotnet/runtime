@@ -77,5 +77,4 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(versioning.targets))" />
 </Project>
