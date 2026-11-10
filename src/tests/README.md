@@ -36,13 +36,3 @@ flags:
 
 Many subdirectories under `src/tests/` have their own `README.md` with
 area-specific authoring and run guidance — read them before making changes.
-
-## WASI execution
-
-The generated WASI `.sh` wrappers launch tests under `wasmtime`, which must be
-on `PATH` for local execution. CoreCLR wrappers run `corerun` with the managed
-test assembly; NativeAOT wrappers run the compiled `native/<test>.wasm` directly.
-Both use the same sandbox directory mappings, environment forwarding, timeout,
-and result-upload support. Helix submissions provision wasmtime as a correlation
-payload; NativeAOT WASI submissions do not use the desktop `nativeaottest.sh`
-launcher or require a host .NET runtime.
