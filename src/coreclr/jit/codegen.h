@@ -1212,6 +1212,7 @@ protected:
 #ifdef TARGET_WASM
     void           genCodeForFrameSize(GenTree* tree);
     cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
+    void           genWasmZeroInit(size_t size);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
