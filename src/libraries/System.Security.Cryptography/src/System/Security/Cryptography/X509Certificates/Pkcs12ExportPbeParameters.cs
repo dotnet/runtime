@@ -4,7 +4,7 @@
 namespace System.Security.Cryptography.X509Certificates
 {
     /// <summary>
-    /// Specifies the export Password Based Enryption (PBE) parameters with PKCS12 / PFX.
+    /// Specifies the export Password Based Encryption (PBE) parameters with PKCS12 / PFX.
     /// </summary>
     /// <seealso cref="X509Certificate.ExportPkcs12(Pkcs12ExportPbeParameters,string)" />
     public enum Pkcs12ExportPbeParameters

@@ -454,16 +454,13 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
 
     ULONG32 cchLocalImagePath = MAX_LONGPATH;
     ULONG32 cchLocalImagePathRequired;
-    NewArrayHolder<WCHAR> pwszLocalFilePath = NULL;
+    WStringHolder pwszLocalFilePath;
     IMDInternalImport * pMDII = NULL;
 
     const HRESULT E_NSF_BUFFER = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     HRESULT hr = E_NSF_BUFFER;
     for(unsigned i=0; i<2 && hr == E_NSF_BUFFER; i++)
     {
-        if (pwszLocalFilePath != NULL)
-            pwszLocalFilePath.Release();
-
         if (NULL == (pwszLocalFilePath = new (nothrow) WCHAR[cchLocalImagePath+1]))
             ThrowHR(E_OUTOFMEMORY);
 
@@ -2272,7 +2269,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 {
                     hr = pNewObjectValue->QueryInterface(__uuidof(ICorDebugObjectValue), (void**)pObject);
                     if (SUCCEEDED(hr))
-                        pNewObjectValue.SuppressRelease();
+                        pNewObjectValue.Detach();
                 }
             }
         }
@@ -5002,7 +4999,7 @@ void CordbProcess::RawDispatchEvent(
                 IfFailThrow(E_UNEXPECTED);
             }
 
-            NewArrayHolder<WCHAR> wszCategory(new WCHAR[cchCategory + 1]);
+            WStringHolder wszCategory(new WCHAR[cchCategory + 1]);
             ULONG32 cbRead;
             ULONG32 cbExpected = cchCategory * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
@@ -5012,7 +5009,7 @@ void CordbProcess::RawDispatchEvent(
                 &cbRead));
             wszCategory[cchCategory] = W('\0');
 
-            NewArrayHolder<WCHAR> wszContent(new WCHAR[cchContent + 1]);
+            WStringHolder wszContent(new WCHAR[cchContent + 1]);
             cbExpected = cchContent * sizeof(WCHAR);
             IfFailThrow(m_pDACDataTarget->ReadVirtual(
                 pEvent->FirstLogMessage.szContent,
@@ -11046,7 +11043,7 @@ HRESULT CordbProcess::Filter(
             //    fired before the thread is created.
             //
             NewArrayHolder<BYTE> pManagedEventBuffer(new BYTE[CorDBIPC_BUFFER_SIZE]);
-            DebuggerIPCEvent * pManagedEvent = reinterpret_cast<DebuggerIPCEvent *>(pManagedEventBuffer.GetValue());
+            DebuggerIPCEvent * pManagedEvent = reinterpret_cast<DebuggerIPCEvent *>(static_cast<BYTE*>(pManagedEventBuffer));
 
             bool fOwner = CopyManagedEventFromTarget(pRecord, pManagedEvent);
             if (fOwner)

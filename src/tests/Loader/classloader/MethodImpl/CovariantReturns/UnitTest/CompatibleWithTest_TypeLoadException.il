@@ -507,9 +507,12 @@
 
     .method public static void RunTestD2() noinlining
     {
+        // Make the instance escape so its allocation and type load cannot be optimized away.
         newobj instance void class D2::.ctor()
+        dup
         callvirt instance int32 class D2::MD2()
         pop
+        call void [System.Console]System.Console::WriteLine(object)
         ldstr "Unexpectedly succeeded"
         call void [System.Console]System.Console::WriteLine(string)
         ret

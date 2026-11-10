@@ -185,6 +185,8 @@
     <MicrosoftWixToolsetUtilWixextVersion>6.0.3-dotnet.6</MicrosoftWixToolsetUtilWixextVersion>
     <MicrosoftWixToolsetBalWixextVersion>6.0.3-dotnet.6</MicrosoftWixToolsetBalWixextVersion>
     <MicrosoftWixToolsetHeatVersion>6.0.3-dotnet.6</MicrosoftWixToolsetHeatVersion>
+    <!-- Unicode Character Database version consumed from System.Private.Runtime.UnicodeData -->
+    <UnicodeUcdVersion>18.0</UnicodeUcdVersion>
   </PropertyGroup>
 
 </Project>

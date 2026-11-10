@@ -228,7 +228,7 @@ size_t GCHeap::GetCurrentObjSize()
     return (totalSurvivedSize + gc_heap::get_total_allocated());
 }
 
-size_t GCHeap::GetLastGCStartTime(int generation)
+int64_t GCHeap::GetLastGCStartTime(int generation)
 {
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = gc_heap::g_heaps[0];
@@ -236,10 +236,10 @@ size_t GCHeap::GetLastGCStartTime(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return (size_t)(dd_time_clock (hp->dynamic_data_of (generation)) / 1000);
+    return static_cast<int64_t>(dd_time_clock (hp->dynamic_data_of (generation)) / 1000);
 }
 
-size_t GCHeap::GetLastGCDuration(int generation)
+int64_t GCHeap::GetLastGCDuration(int generation)
 {
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = gc_heap::g_heaps[0];
@@ -247,12 +247,12 @@ size_t GCHeap::GetLastGCDuration(int generation)
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
+    return static_cast<int64_t>(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
 
-size_t GCHeap::GetNow()
+int64_t GCHeap::GetNow()
 {
-    return (size_t)(GetHighPrecisionTimeStamp() / 1000);
+    return static_cast<int64_t>(GetHighPrecisionTimeStamp() / 1000);
 }
 
 bool GCHeap::IsGCInProgressHelper (bool bConsiderGCStart)

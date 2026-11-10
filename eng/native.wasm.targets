@@ -44,6 +44,13 @@
     <BrowserHostStackSize Condition="'$(BrowserHostStackSize)' == ''">2MB</BrowserHostStackSize>
   </PropertyGroup>
 
+  <!-- Baseline wasm features for wasm-opt. emcc strips the target_features section, so wasm-opt must be told
+       what the module uses; sign-ext and mutable-globals are already binaryen defaults. Runtime-specific
+       features (relaxed SIMD, threads) and optimization/debug/strip options are added by each consumer. -->
+  <ItemGroup>
+    <_WasmOptBaselineFeatureFlag Include="--enable-exception-handling;--enable-reference-types;--enable-multivalue;--enable-simd;--enable-bulk-memory;--enable-nontrapping-float-to-int" />
+  </ItemGroup>
+
   <!-- Remaining settings baked into the prebuilt CoreCLR runtime pack. These are only consumed by
        the CoreCLR app relink registry below, so keep the BrowserHost names distinct from the
        app-facing properties they are compared against. -->

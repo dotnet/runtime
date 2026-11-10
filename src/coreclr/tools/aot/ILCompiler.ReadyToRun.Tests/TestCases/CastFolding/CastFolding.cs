@@ -87,6 +87,9 @@ public static class CastFolding
     public static bool StructIsOtherStruct(SourceStruct s) => (object)s is TargetStruct;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool StructIsEnum(SourceStruct s) => (object)s is Enum;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool StructIsInterface(ControlStruct s) => (object)s is INotImplemented;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
