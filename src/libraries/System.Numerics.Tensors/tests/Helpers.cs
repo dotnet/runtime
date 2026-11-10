@@ -80,13 +80,13 @@ namespace System.Numerics.Tensors.Tests
             }
             else if (typeof(T) == typeof(NFloat))
             {
-                if (IntPtr.Size == 8 && doubleTolerance != null)
+                if (NFloat.Size == 8 && doubleTolerance != null)
                 {
                     return (T?)(object)(NFloat)doubleTolerance;
                 }
-                else if (IntPtr.Size == 4 && floatTolerance != null)
+                else if (NFloat.Size == 4 && floatTolerance != null)
                 {
-                    return (T?)(object)(NFloat)doubleTolerance;
+                    return (T?)(object)(NFloat)floatTolerance;
                 }
             }
 #endif
