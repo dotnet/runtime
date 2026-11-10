@@ -50,7 +50,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define Dyn    ElfW(Dyn)
 #endif // HAVE_UNW_GET_ACCESSORS
 
-#if defined(__APPLE__) || defined(HAVE_UNW_GET_ACCESSORS)
+#ifdef HAVE_UNW_GET_ACCESSORS
 
 typedef struct _libunwindInfo
 {
@@ -2027,12 +2027,11 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         }
     }
 
-#if HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__)
+#if HAVE_GET_PROC_INFO_IN_RANGE
     return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
-#else // HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__)
+#else // HAVE_GET_PROC_INFO_IN_RANGE
 
-    // This branch is executed when using llvm-libunwind (macOS and similar platforms)
-    // or HP-libunwind version 1.6 and earlier.
+    // This branch is executed when using the system HP-libunwind version 1.6 and earlier.
 
     if (ehFrameHdrAddr == 0) {
         _ASSERTE(!"ELF: No PT_GNU_EH_FRAME program header");
@@ -2094,7 +2093,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
     info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
-#endif // HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__)
+#endif // HAVE_GET_PROC_INFO_IN_RANGE
 
 #endif // __APPLE__
 }
@@ -2389,4 +2388,4 @@ GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCa
     return FALSE;
 }
 
-#endif // defined(__APPLE__) || defined(HAVE_UNW_GET_ACCESSORS)
+#endif // HAVE_UNW_GET_ACCESSORS
