@@ -126,6 +126,13 @@ internal sealed class DeferredWasmCallProcessor
             return fallback;
         }
 
+        // Optional native libraries must remain lazily bound, so their stubs
+        // cannot enter the direct-call graph or its eager closure.
+        if (method.Method.IsPInvoke && !_compilation.CompilationModuleGroup.IsDirectPInvoke(method.Method))
+        {
+            return fallback;
+        }
+
         return _targets.GetOrAdd(
             (method, signature), static (key, fallback) => new DeferredWasmCallNode(fallback, key.Signature), import);
     }

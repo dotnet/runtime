@@ -35,6 +35,58 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OptionalPInvokeTargetsAreNotEager(bool directModule)
+    {
+        List<string> additionalArgs =
+        [
+            TestPaths.SystemPrivateCoreLibPath,
+            "--parallelism", "2", "--codegenopt", "JitNoInline=1",
+        ];
+        if (directModule)
+        {
+            additionalArgs.Add("--directpinvoke:libSystem.Globalization.Native");
+        }
+
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(OptionalPInvokeTargetsAreNotEager),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(OptionalPInvokeTargetsAreNotEager),
+            [
+                new(nameof(OptionalPInvokeTargetsAreNotEager), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = additionalArgs,
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            SignatureFormattingOptions formattingOptions = new();
+            List<bool> globalizationTargets = new();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.PInvokeTarget &&
+                        entry.Signature.ToString(formattingOptions).Contains("Globalization.", StringComparison.Ordinal))
+                    {
+                        globalizationTargets.Add((section.Flags & ReadyToRunImportSectionFlags.Eager) != 0);
+                    }
+                }
+            }
+            Assert.NotEmpty(globalizationTargets);
+            Assert.Equal(directModule, globalizationTargets.Contains(true));
+        }
+    }
+
     [Theory]
     [InlineData("--two-phase-compilation")]
     [InlineData("--deferred-wasm-calls")]
