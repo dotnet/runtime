@@ -423,7 +423,7 @@ namespace System.Runtime.Serialization
                 }
                 if (classContract == null)
                 {
-                    DataContract objectContract = PrimitiveDataContract.GetPrimitiveDataContract(Globals.TypeOfObject)!;
+                    DataContract objectContract = PrimitiveDataContract.GetPrimitiveDataContract(typeof(object))!;
                     if (reader.IsStartElement(objectContract.TopLevelElementName!, objectContract.TopLevelElementNamespace!))
                         return true;
                 }

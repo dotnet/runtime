@@ -58,6 +58,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" Link="Common\Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" Link="Common\Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateHardLink.cs" Link="Common\Interop\Windows\Kernel32\Interop.CreateHardLink.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Kernel32\Interop.FILE_TIME.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs" />

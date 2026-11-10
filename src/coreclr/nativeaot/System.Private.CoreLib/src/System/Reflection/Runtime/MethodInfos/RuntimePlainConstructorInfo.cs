@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Metadata.NativeFormat;
@@ -150,7 +149,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _lazyParameters ??= RuntimeMethodHelpers.GetRuntimeParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out _);
+                return _lazyParameters ??= RuntimeParameterInfo.GetParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>());
             }
         }
 

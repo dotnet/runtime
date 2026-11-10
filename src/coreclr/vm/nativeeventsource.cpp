@@ -58,9 +58,8 @@ extern "C" LPWSTR QCALLTYPE EventSource_GetClrConfig(LPCWSTR configName, QCallEx
 
 // These are native QCalls that call into corresponding FireEtw* events for events that want to be emitted from the managed
 // side using NativeRuntimeEventSource.
-// You need to add them to src/libraries/System.Private.CoreLib/src/System/Diagnostics/Tracing/XplatEventLogger.cs and
-// change genRuntimeEventSources.py script to not emit the body that throws NotImplementedException for the event that
-// want to be fired from managed code.
+// Add managed imports in NativeRuntimeEventSource.Events.NativeSinks.Internal.cs and mark the corresponding
+// events as manually handled in NativeRuntimeEventSourceGenerator.cs.
 // See https://github.com/dotnet/runtime/pull/47829 for an example of how to do this.
 extern "C" void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID, QCallExceptionStatus* qcallError)
 {
@@ -224,6 +223,26 @@ extern "C" void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_
     BEGIN_QCALL;
 
     FireEtwWaitHandleWaitStop(ClrInstanceID);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogIncreaseMemoryPressure(uint64_t BytesAllocated, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwIncreaseMemoryPressure(BytesAllocated, GetClrInstanceId());
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogDecreaseMemoryPressure(uint64_t BytesFreed, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwDecreaseMemoryPressure(BytesFreed, GetClrInstanceId());
 
     END_QCALL;
 }

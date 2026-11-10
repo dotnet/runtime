@@ -327,9 +327,8 @@ namespace System.IO.Compression.Tests
             // the window portion [0, s_bufferSize), so the tail [s_bufferSize, end) must
             // never be touched regardless of how many iterations the loop takes.
             const int sentinelSize = 64;
-            byte[] buffer = new byte[s_bufferSize + sentinelSize];
-            Array.Fill<byte>(buffer, 0xDE);
-
+            byte[] buffer = Array.CreateFilled<byte>(s_bufferSize + sentinelSize, 0xDE);
+            
             await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
                 int read;
@@ -406,7 +405,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        public static async Task ZipArchiveEntry_CorruptedStream_UnCompressedSizeBiggerThanExpected_NothingShouldBreak(bool async)
+        public static async Task ZipArchiveEntry_CorruptedStream_UncompressedSizeBiggerThanActualData_ThrowsInvalidDataException(bool async)
         {
             MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip"));
 
@@ -420,9 +419,7 @@ namespace System.IO.Compression.Tests
             {
                 Stream source = await OpenEntryStream(async, e);
 
-                await source.CopyToAsync(ms);
-                Assert.True(e.Length > ms.Length);           // Even uncompressed size is bigger than decompressed size there should be no error
-                Assert.True(e.CompressedLength < ms.Length);
+                await Assert.ThrowsAsync<InvalidDataException>(() => source.CopyToAsync(ms));
 
                 await DisposeStream(async, source);
             }

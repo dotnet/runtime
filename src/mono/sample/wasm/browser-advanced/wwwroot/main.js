@@ -44,27 +44,27 @@ try {
                 }]
             }
         })
+        .withConfigLoaded((config) => {
+            // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
+            console.log('user code onConfigLoaded');
+            // config is loaded and could be tweaked before the rest of the runtime startup sequence
+            config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
+            config.browserProfilerOptions = {
+                sampleIntervalMs: 5.15,
+                callSpec: "N:Sample" // needs to match AOT profile
+            };
+        })
+        .withDotnetReady(() => {
+            // This is called after all assets are loaded.
+            console.log('user code onDotnetReady');
+        })
         .withModuleConfig({
-            onConfigLoaded: (config) => {
-                // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
-                console.log('user code Module.onConfigLoaded');
-                // config is loaded and could be tweaked before the rest of the runtime startup sequence
-                config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
-                config.browserProfilerOptions = {
-                    sampleIntervalMs: 5.15,
-                    callSpec: "N:Sample" // needs to match AOT profile
-                };
-            },
             preInit: [() => { console.log('user code Module.preInit'); }],
             preRun: [() => { console.log('user code Module.preRun'); }],
             onRuntimeInitialized: () => {
                 console.log('user code Module.onRuntimeInitialized');
                 // here we could use API passed into this callback
                 // Module.FS.chdir("/");
-            },
-            onDotnetReady: () => {
-                // This is called after all assets are loaded.
-                console.log('user code Module.onDotnetReady');
             },
             postRun: [() => { console.log('user code Module.postRun'); }],
             out: (text) => { console.log("ADVANCED:" + text) },

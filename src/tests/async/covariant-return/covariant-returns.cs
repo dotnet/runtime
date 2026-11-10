@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -271,6 +272,83 @@ namespace AsyncInterfaceGenericMethod
         {
             await Run();
             await RunValueType();
+        }
+    }
+}
+
+namespace AbstractCovariantReturn
+{
+    // A covariant Task -> Task<T> override may be abstract.
+    // The runtime still has to provide an async variant that matches the void-returning
+    // async variant of the base, otherwise concrete derived types cannot be loaded.
+    public class Program
+    {
+        internal static string Trace;
+
+        [Fact]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This test intentionally exercises Assembly.GetTypes().")]
+        public static void TestAssemblyGetTypes()
+        {
+            _ = typeof(Program).Assembly.GetTypes();
+        }
+
+        [Fact]
+        public static void TestAbstractCovariantOverride()
+        {
+            Trace = null;
+            Base b = new Derived();
+            CallBase(b).GetAwaiter().GetResult();
+            Assert.Equal("Derived.M1;", Trace);
+
+            Trace = null;
+            Assert.Equal(42, CallMid(new Derived()).GetAwaiter().GetResult());
+            Assert.Equal("Derived.M1;", Trace);
+        }
+
+        [Fact]
+        public static void TestAbstractCovariantOverrideProperty()
+        {
+            Base b = new Derived();
+            Assert.Equal(42, CallBaseProperty(b).GetAwaiter().GetResult());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task CallBase(Base b) => await b.M1();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<int> CallMid(Mid<int> m) => await m.M1();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<int> CallBaseProperty(Base b)
+        {
+            await b.Task;
+            return await ((Mid<int>)b).Task;
+        }
+
+        public abstract class Base
+        {
+            public abstract Task M1();
+
+            public abstract Task Task { get; }
+        }
+
+        public abstract class Mid<T> : Base
+        {
+            public abstract override Task<T> M1();
+
+            public abstract override Task<T> Task { get; }
+        }
+
+        public sealed class Derived : Mid<int>
+        {
+            public override Task<int> M1()
+            {
+                Trace += "Derived.M1;";
+                return System.Threading.Tasks.Task.FromResult(42);
+            }
+
+            public override Task<int> Task => System.Threading.Tasks.Task.FromResult(42);
         }
     }
 }

@@ -6,6 +6,11 @@ M:System.Runtime.Serialization.SerializationInfo.StartDeserialization
 T:System.Diagnostics.DebugProvider
 M:System.Diagnostics.Debug.GetProvider
 M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)
+T:System.Threading.UnixHandleAsyncContext
+T:System.Threading.UnixHandleAsyncContext.AsyncResult
+T:System.Threading.UnixHandleAsyncContext.OnCompletedResult
+T:System.Threading.UnixHandleAsyncContext.SyncResult
+T:System.Threading.UnixHandleAsyncContext.Operation
 M:System.Threading.Thread.AssureBlockingPossible
 F:System.Threading.Thread.ThrowOnBlockingWaitOnJSInteropThread
 F:System.Threading.Thread.WarnOnBlockingWaitOnJSInteropThread

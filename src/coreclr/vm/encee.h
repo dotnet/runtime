@@ -258,8 +258,10 @@ private:
     // Called when a new field has been added to the module's metadata
     HRESULT AddField(mdFieldDef token);
 
+#ifdef FEATURE_REMAP_FUNCTION
     // JIT the new version of a function for EnC
     PCODE JitUpdatedFunction(MethodDesc *pMD, T_CONTEXT *pContext);
+#endif // FEATURE_REMAP_FUNCTION
 
 public:
     // Remap execution to the latest version of an edited method

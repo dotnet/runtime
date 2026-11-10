@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: ReadyToRunInfo.cpp
-//
-
 //
 // Runtime support for Ready to Run
 // ===========================================================================
@@ -420,12 +419,12 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == (FILE *)(-1))
     {
         // Initialize Ready to Run logging. Any errors cause logging to be disabled.
-        NewArrayHolder<WCHAR> wszReadyToRunLogFile;
+        WStringHolder wszReadyToRunLogFile;
         if (SUCCEEDED(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunLogFile, &wszReadyToRunLogFile)) && wszReadyToRunLogFile)
         {
             // Append process ID to the log file name, so multiple processes can log at the same time.
             StackSString fullname;
-            fullname.Append(wszReadyToRunLogFile.GetValue());
+            fullname.Append(wszReadyToRunLogFile);
 
             WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
             DWORD pid = GetCurrentProcessId();
@@ -649,12 +648,36 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
 
+    // Single-threaded runtimes lay out [ThreadStatic] fields as regular statics, so the image's static field
+    // layout is only valid if it was compiled for the same threading model.
+#ifdef FEATURE_MULTITHREADING
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) != 0)
+    {
+        DoLog("Ready to Run disabled - image was compiled for a single-threaded runtime");
+        return NULL;
+    }
+#else
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) == 0)
+    {
+        DoLog("Ready to Run disabled - image was not compiled for a single-threaded runtime");
+        return NULL;
+    }
+#endif // FEATURE_MULTITHREADING
+
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
     {
         DoLog("Ready to Run disabled - unsupported header version");
         return NULL;
     }
+
+#ifdef TARGET_WASM
+    if (pHeader->MajorVersion < 32)
+    {
+        DoLog("Ready to Run disabled - unsupported Wasm frame identity encoding");
+        return NULL;
+    }
+#endif // TARGET_WASM
 
     LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
 
@@ -803,7 +826,9 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
+#ifdef FEATURE_INLINE_TRACKING
     m_pPersistentInlineTrackingMap(NULL),
+#endif // FEATURE_INLINE_TRACKING
     m_pNextR2RForUnrelatedCode(NULL)
 {
     STANDARD_VM_CONTRACT;
@@ -964,44 +989,37 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_availableTypesHashtable = NativeHashtable(parser);
     }
 
-    // For format version 5.2 and later, there is an optional table of instrumentation data
 #ifdef FEATURE_PGO
-    if (IsImageVersionAtLeast(5, 2))
+    IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
+    if (pPgoInstrumentationDataDir)
     {
-        IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
-        if (pPgoInstrumentationDataDir)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
-            m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
-        }
-
-        // Force the Pgo manager infrastructure to be initialized
-        pLoaderAllocator->GetOrCreatePgoManager();
+        NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
+        m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
     }
+
+    // Force the Pgo manager infrastructure to be initialized
+    pLoaderAllocator->GetOrCreatePgoManager();
 #endif
 
-    if (IsImageVersionAtLeast(18, 3))
+    IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
+    if (pExternalTypeMapsDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
-        if (pExternalTypeMapsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
-            m_externalTypeMaps = NativeHashtable(parser);
-        }
+        NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
+        m_externalTypeMaps = NativeHashtable(parser);
+    }
 
-        IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
-        if (pProxyTypeMapsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
-            m_proxyTypeMaps = NativeHashtable(parser);
-        }
+    IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
+    if (pProxyTypeMapsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
+        m_proxyTypeMaps = NativeHashtable(parser);
+    }
 
-        IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
-        if (pTypeMapAssemblyTargetsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
-            m_typeMapAssemblyTargets = NativeHashtable(parser);
-        }
+    IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
+    if (pTypeMapAssemblyTargetsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
+        m_typeMapAssemblyTargets = NativeHashtable(parser);
     }
 
     if (!m_isComponentAssembly)
@@ -1013,40 +1031,23 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-    if (IsImageVersionAtLeast(6, 3))
+#ifdef FEATURE_INLINE_TRACKING
+    IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
+    if (pCrossModuleInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
-        if (pCrossModuleInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
-            CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
-                pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
-        }
+        const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
+        CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
+            pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
     }
 
-    // For format version 4.1 and later, there is an optional inlining table
-    if (IsImageVersionAtLeast(4, 1))
+    IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
+    if (pInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
-        }
+        const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
+        PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
+            pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
     }
-
-    // For format version 2.1 and later, there is an optional inlining table
-    if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
-    {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                                                    pamTracker, &m_pPersistentInlineTrackingMap);
-        }
-    }
+#endif // FEATURE_INLINE_TRACKING
 
     // For format version 3.1 and later, there is an optional attributes section
     IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);
@@ -1275,7 +1276,12 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 
     // Use the entry point hashtable to check if another thread already registered a MethodDesc
     if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+    {
+#ifdef HAVE_GCCOVER
+        MethodDesc::SetupGcCoverageForPrecompiledCode(stubEntryPoint);
+#endif // HAVE_GCCOVER
         return;
+    }
 
     MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
         pLoaderAllocator,
@@ -1299,6 +1305,9 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
     {
         amTracker.SuppressRelease();
     }
+#ifdef HAVE_GCCOVER
+    MethodDesc::SetupGcCoverageForPrecompiledCode(stubEntryPoint);
+#endif // HAVE_GCCOVER
 }
 
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
@@ -1324,12 +1333,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
-    // Return-dropping async thunks are VM-synthesized. They share the same metadata
-    // token and signature shape as a regular async variant, so the R2R lookup below
+    // Return-dropping and covariant forwarding async thunks are VM-synthesized. They share the
+    // same metadata token and signature shape as a regular async variant, so the R2R lookup below
     // would incorrectly bind the thunk to the non-thunk's compiled code and bypass
     // the virtual dispatch the thunk performs. Crossgen2 does not emit R2R code for
     // these thunks; fall back to transient IL generation in the prestub.
-    if (pMD->IsReturnDroppingThunk())
+    if (pMD->IsReturnDroppingThunk() || pMD->IsCovariantForwardingThunk())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
@@ -1442,6 +1451,11 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
 #endif
 #endif
+
+#ifdef HAVE_GCCOVER
+    // Instrument before any caller can publish or execute the entry point.
+    MethodDesc::SetupGcCoverageForPrecompiledCode(pEntryPoint);
+#endif // HAVE_GCCOVER
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -2441,25 +2455,6 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
         return pImport->EnumGetCount(&hEnumTyPars) != 0;
     }
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
-}
-
-HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const
-{
-    bool foundResult;
-    bool result;
-    HRESULT hr;
-    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
-    if (!foundResult)
-    {
-        HENUMInternalHolder hEnumTyPars(pImport);
-        IfFailRet(hEnumTyPars.EnumInitNoThrow(mdtGenericParam, input));
-        result = (pImport->EnumGetCount(&hEnumTyPars) != 0);
-    }
-    else
-        result = !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
-
-    *pIsGeneric = result;
-    return S_OK;
 }
 
 uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const

@@ -43,29 +43,6 @@ FCIMPL0(void, RhDebugBreak)
 }
 FCIMPLEND
 
-// Busy spin for the given number of iterations.
-EXTERN_C void QCALLTYPE RhSpinWait(int32_t iterations)
-{
-    ASSERT(iterations > 0);
-
-    // limit the spin count in coop mode.
-    ASSERT_MSG(iterations <= 1024 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "This is too long wait for coop mode. You must p/invoke with GC transition.");
-
-    YieldProcessorNormalizationInfo normalizationInfo;
-    YieldProcessorNormalized(normalizationInfo, iterations);
-}
-
-// Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C UInt32_BOOL QCALLTYPE RhYield()
-{
-    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
-    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "You must p/invoke to RhYield");
-
-    return PalSwitchToThread();
-}
-
 // Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference
 // to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
 // that is less than, equal to or greater than the number of elements in the array). If there are more modules

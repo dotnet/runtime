@@ -24,6 +24,7 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
         private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
+#if FEATURE_MULTITHREADING
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalSetProfileRoot(string directoryPath);
@@ -31,6 +32,7 @@ namespace System.Runtime.Loader
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
+#endif
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
@@ -185,13 +187,17 @@ namespace System.Runtime.Loader
         // Set the root directory path for profile optimization.
         public void SetProfileOptimizationRoot(string directoryPath)
         {
+#if FEATURE_MULTITHREADING
             InternalSetProfileRoot(directoryPath);
+#endif
         }
 
         // Start profile optimization for the specified profile name.
         public void StartProfileOptimization(string? profile)
         {
+#if FEATURE_MULTITHREADING
             InternalStartProfile(profile, _nativeAssemblyLoadContext);
+#endif
         }
 
         private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)

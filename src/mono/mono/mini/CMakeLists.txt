@@ -119,6 +119,8 @@ set(mini_common_sources
     interp-stubs.c
     aot-runtime.h
     ee.h
+    hostinformation.h
+    hostinformation.c
     mini-runtime.h
     llvmonly-runtime.h
     llvmonly-runtime.c
@@ -564,6 +566,10 @@ if(NOT DISABLE_EXECUTABLES)
     if(MONO_SET_RPATH_ORIGIN)
       set_target_properties(mono-sgen PROPERTIES INSTALL_RPATH "$ORIGIN")
     endif()
+  endif()
+
+  if(HOST_OSX AND NOT HOST_MACCAT AND NOT MONO_CROSS_COMPILE_EXECUTABLE_NAME)
+    set_macos_bundle_identifier(mono-sgen com.microsoft.dotnet.mono-sgen)
   endif()
   
   set(MONOSGEN_LINKABLE_LIBS "")

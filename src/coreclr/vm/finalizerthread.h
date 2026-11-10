@@ -65,7 +65,9 @@ public:
 
     static VOID FinalizerThreadWorkerIteration(void *args);
 
+#ifdef FEATURE_MULTITHREADING
     static DWORD WINAPI FinalizerThreadStart(void *args);
+#endif // FEATURE_MULTITHREADING
 
     static void FinalizerThreadCreate();
 };

@@ -109,35 +109,30 @@ namespace ILLink.RoslynAnalyzer
 
         public static bool IsTypeOf(this ITypeSymbol symbol, string @namespace, string name)
         {
-            return symbol.ContainingNamespace?.GetDisplayName() == @namespace && symbol.MetadataName == name;
+            return symbol.MetadataName == name && symbol.ContainingNamespace?.GetDisplayName() == @namespace;
         }
 
         public static bool IsTypeOf(this ITypeSymbol symbol, WellKnownType wellKnownType)
         {
-            return wellKnownType switch
+            switch (symbol.SpecialType)
             {
-                WellKnownType.System_Type =>
-                    symbol.MetadataName == "Type" && IsSystemNamespace(symbol.ContainingNamespace),
-                WellKnownType.System_Reflection_IReflect =>
-                    symbol.MetadataName == "IReflect" && symbol.ContainingNamespace is { Name: "Reflection" } reflection &&
-                    IsSystemNamespace(reflection.ContainingNamespace),
-                _ => symbol.TryGetWellKnownType() == wellKnownType
-            };
-        }
+                case SpecialType.System_String:
+                    return wellKnownType == WellKnownType.System_String;
+                case SpecialType.System_Nullable_T:
+                    return wellKnownType == WellKnownType.System_Nullable_T;
+                case SpecialType.System_Array:
+                    return wellKnownType == WellKnownType.System_Array;
+                case SpecialType.System_Object:
+                    return wellKnownType == WellKnownType.System_Object;
+            }
 
-        private static bool IsSystemNamespace(INamespaceSymbol? @namespace) =>
-            @namespace is { Name: "System", ContainingNamespace.IsGlobalNamespace: true };
-
-        public static WellKnownType? TryGetWellKnownType(this ITypeSymbol symbol)
-        {
-            return symbol.SpecialType switch
+            if ((uint)wellKnownType >= (uint)WellKnownType.NextAvailable)
             {
-                SpecialType.System_String => WellKnownType.System_String,
-                SpecialType.System_Nullable_T => WellKnownType.System_Nullable_T,
-                SpecialType.System_Array => WellKnownType.System_Array,
-                SpecialType.System_Object => WellKnownType.System_Object,
-                _ => WellKnownTypeExtensions.GetWellKnownType(symbol.ContainingNamespace?.GetDisplayName() ?? "", symbol.MetadataName)
-            };
+                return false;
+            }
+
+            (string @namespace, string name) = wellKnownType.GetNamespaceAndName();
+            return symbol.IsTypeOf(@namespace, name);
         }
     }
 }

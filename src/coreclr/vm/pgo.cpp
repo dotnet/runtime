@@ -161,7 +161,7 @@ void CallFClose(FILE* file)
 
 typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
 
-void PgoManager::WritePgoData()
+void PgoManager::LogInstrumentationData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
     {
@@ -182,6 +182,13 @@ void PgoManager::WritePgoData()
             return true;
         });
     }
+}
+
+void PgoManager::WritePgoData()
+{
+#ifndef PERFTRACING_DISABLE_THREADS
+    LogInstrumentationData();
+#endif
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) == 0)
     {
@@ -722,6 +729,8 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     prevSchema.Offset = offsetOfInstrumentationDataFromStartOfDataRegion;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
     {
+        // The data region is only size_t aligned, and readers re-derive this layout from offset 0.
+        _ASSERTE(InstrumentationKindToAlignment(pSchema[iSchema].InstrumentationKind) <= sizeof(size_t));
         LayoutPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
         prevSchema = pSchema[iSchema];
     }
@@ -1131,7 +1140,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
             r2rReader.instrumentationData.Append(0);
         }
         size_t schemaDataSize = r2rReader.schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
-        NewArrayHolder<BYTE> allocatedData = new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize];
+        NewArrayHolder<BYTE> allocatedData(new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize]);
 
         *pInstrumentationData = (BYTE*)allocatedData;
         *pCountSchemaItems = r2rReader.schemaArray.GetCount();
@@ -1141,8 +1150,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
         memcpy(*ppSchema, r2rReader.schemaArray.OpenRawBuffer(), schemaDataSize);
         r2rReader.schemaArray.CloseRawBuffer();
 
-        allocatedData.SuppressRelease();
-        *pAllocatedData = allocatedData;
+        *pAllocatedData = allocatedData.Detach();
         return S_OK;
     }
 }

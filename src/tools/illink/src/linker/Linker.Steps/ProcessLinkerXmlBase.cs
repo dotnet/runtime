@@ -103,7 +103,7 @@ namespace Mono.Linker.Steps
 
         protected virtual AllowedAssemblies AllowedAssemblySelector { get => _resource != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
 
-        bool ShouldProcessAllAssemblies(XPathNavigator nav, [NotNullWhen(false)] out AssemblyNameReference? assemblyName)
+        bool ShouldProcessAllAssemblies(XPathNavigator nav, out AssemblyNameReference? assemblyName)
         {
             assemblyName = null;
             if (GetFullName(nav) == AllAssembliesFullName)
@@ -117,8 +117,7 @@ namespace Mono.Linker.Steps
         {
             foreach (XPathNavigator assemblyNav in nav.SelectChildren("assembly", ""))
             {
-                // Errors for invalid assembly names should show up even if this element will be
-                // skipped due to feature conditions.
+                // Do not hide assembly-identity parsing errors behind feature conditions.
                 bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyNameReference? name);
                 if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
                 {
@@ -131,9 +130,9 @@ namespace Mono.Linker.Steps
                 {
                     Debug.Assert(!processAllAssemblies);
                     Debug.Assert(_resource != null);
-                    if (_resource.Value.Assembly.Name.Name != name!.Name)
+                    if (name is null || _resource.Value.Assembly.Name.Name != name.Name)
                     {
-                        LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _resource.Value.Assembly.Name.Name, name.ToString());
+                        LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _resource.Value.Assembly.Name.Name, name?.ToString() ?? GetFullName(assemblyNav));
                         continue;
                     }
                     assemblyToProcess = _resource.Value.Assembly;
@@ -151,11 +150,11 @@ namespace Mono.Linker.Steps
                 else
                 {
                     Debug.Assert(!processAllAssemblies);
-                    AssemblyDefinition? assembly = assemblyToProcess ?? _context.TryResolve(name!);
+                    AssemblyDefinition? assembly = assemblyToProcess ?? (name is null ? null : _context.TryResolve(name));
 
                     if (assembly == null)
                     {
-                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name);
+                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name?.Name ?? LinkContext.GetSimpleAssemblyName(GetFullName(assemblyNav)).ToString());
                         continue;
                     }
 
@@ -497,9 +496,9 @@ namespace Mono.Linker.Steps
 
         protected virtual void ProcessProperty(TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature) { }
 
-        protected virtual AssemblyNameReference GetAssemblyName(XPathNavigator nav)
+        protected virtual AssemblyNameReference? GetAssemblyName(XPathNavigator nav)
         {
-            return AssemblyNameReference.Parse(GetFullName(nav));
+            return LinkContext.TryParseAssemblyName(GetFullName(nav));
         }
 
         protected static string GetFullName(XPathNavigator nav)

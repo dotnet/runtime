@@ -74,7 +74,7 @@ namespace System.Threading
                 if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                 {
                     // Look up the hash code in the SyncTable
-                    int hashCode = SyncTable.GetHashCode(hashOrIndex);
+                    int hashCode = SyncTable.GetHashCode(GetSyncEntryIndex(pHeader));
                     if (hashCode != 0)
                     {
                         return hashCode;
@@ -110,7 +110,7 @@ namespace System.Threading
                 if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                 {
                     // Look up the hash code in the SyncTable
-                    return SyncTable.GetHashCode(hashOrIndex);
+                    return SyncTable.GetHashCode(GetSyncEntryIndex(pHeader));
                 }
 
                 // The hash code has not yet been set.
@@ -123,7 +123,7 @@ namespace System.Threading
         /// </summary>
         private static unsafe int AssignHashCode(object o, int* pHeader)
         {
-            int newHash = RuntimeHelpers.GetNewHashCode() & MASK_HASHCODE_INDEX;
+            int newHash = Random.Shared.Next() & MASK_HASHCODE_INDEX;
             // Never use the zero hash code.  SyncTable treats the zero value as "not assigned".
             if (newHash == 0)
             {
@@ -160,31 +160,30 @@ namespace System.Threading
                 // contention, try again
             }
 
-            if (!GetSyncEntryIndex(*pHeader, out int syncIndex))
-            {
-                // Assign a new sync entry
-                syncIndex = SyncTable.AssignEntry(o, pHeader);
-            }
+            int syncIndex = HasSyncEntryIndex(*pHeader) ?
+                GetSyncEntryIndex(pHeader) :
+                SyncTable.AssignEntry(o, pHeader);
 
             // Set the hash code in SyncTable. This call will resolve the potential race.
             return SyncTable.SetHashCode(syncIndex, newHash);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool HasSyncEntryIndex(int header)
+        public static bool HasSyncEntryIndex(int header)
         {
             return (header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX;
         }
 
-        /// <summary>
-        /// Extracts the sync entry index or the hash code from the header value.  Returns true
-        /// if the header value stores the sync entry index.
-        /// </summary>
+        /// <remarks>
+        /// Header reads that feed lock-free SyncTable lookups must have acquire semantics so that
+        /// table growth and entry initialization are visible after observing a sync entry index.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GetSyncEntryIndex(int header, out int index)
+        public static unsafe int GetSyncEntryIndex(int* pHeader)
         {
-            index = header & MASK_HASHCODE_INDEX;
-            return HasSyncEntryIndex(header);
+            int header = Volatile.Read(ref *pHeader);
+            Debug.Assert(HasSyncEntryIndex(header));
+            return header & MASK_HASHCODE_INDEX;
         }
 
         /// <summary>
@@ -201,9 +200,9 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                if (GetSyncEntryIndex(*pHeader, out int syncIndex))
+                if (HasSyncEntryIndex(*pHeader))
                 {
-                    return syncIndex;
+                    return GetSyncEntryIndex(pHeader);
                 }
 
                 // Assign a new sync entry
@@ -526,14 +525,14 @@ namespace System.Threading
                         }
                     }
 
-                    if (!GetSyncEntryIndex(oldBits, out int syncIndex))
+                    if (!HasSyncEntryIndex(oldBits))
                     {
                         // someone else owns or noone.
                         throw new SynchronizationLockException();
                     }
 
                     // Get the fat lock. Must be done while still pinning the obj.
-                    fatLock = SyncTable.GetLockObject(syncIndex);
+                    fatLock = SyncTable.GetLockObject(GetSyncEntryIndex(pHeader));
                     break;
                 }
             }
@@ -562,9 +561,9 @@ namespace System.Threading
                     return true;
                 }
 
-                if (GetSyncEntryIndex(oldBits, out int syncIndex))
+                if (HasSyncEntryIndex(oldBits))
                 {
-                    return SyncTable.GetLockObject(syncIndex).GetIsHeldByCurrentThread(currentThreadID);
+                    return SyncTable.GetLockObject(GetSyncEntryIndex(pHeader)).GetIsHeldByCurrentThread(currentThreadID);
                 }
 
                 // someone else owns or noone.

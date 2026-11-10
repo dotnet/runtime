@@ -61,6 +61,122 @@ public class Program
         return 100;
     }
 
+    [ConditionalTheory(typeof(Utilities), nameof(Utilities.IsNotMonoRuntime),
+        nameof(Utilities.IsNotNativeAot), nameof(Utilities.HasAssemblyFiles))]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void GenericContextKeepsAssemblyAlive(bool methodContext, bool collectInCatch)
+    {
+        WeakReference assembly = InvokeWithGenericContext(methodContext, collectInCatch);
+        for (int i = 0; i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(assembly.IsAlive);
+        Console.WriteLine($"{nameof(GenericContextKeepsAssemblyAlive)}({methodContext}, {collectInCatch}) passed.");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference InvokeWithGenericContext(bool methodContext, bool collectInCatch)
+    {
+        DynamicMethod invoker = new DynamicMethod("InvokeGenericContext", typeof(Array),
+            new[] { typeof(IntPtr), typeof(Action), typeof(bool) }, typeof(Program).Module);
+        ILGenerator il = invoker.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Ldarg_2);
+        il.Emit(OpCodes.Ldarg_0);
+        il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(Array),
+            new[] { typeof(Action), typeof(bool) }, null);
+        il.Emit(OpCodes.Ret);
+        Func<IntPtr, Action, bool, Array> invoke = invoker.CreateDelegate<Func<IntPtr, Action, bool, Array>>();
+
+        // A raw entry point avoids keeping the instantiation alive through a MethodInfo or delegate.
+        IntPtr entryPoint = LoadGenericContextTarget(methodContext, out AssemblyLoadContext context, out WeakReference assembly);
+        Array result = invoke(entryPoint, () =>
+        {
+            context.Unload();
+            context = null;
+            for (int i = 0; i < 3; i++)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.True(assembly.IsAlive);
+        }, collectInCatch);
+
+        Assert.Equal("SpanAccessor", result.GetType().GetElementType().Name);
+
+        return assembly;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static IntPtr LoadGenericContextTarget(bool methodContext, out AssemblyLoadContext context, out WeakReference assembly)
+    {
+        context = new TestALC(AssemblyLoadContext.GetLoadContext(typeof(Program).Assembly));
+        Assembly payload = context.LoadFromAssemblyPath(Path.Combine(
+            Path.GetDirectoryName(typeof(Program).Assembly.Location), "ByRefLocalsUnloaded.dll"));
+        assembly = new WeakReference(payload);
+        Type argument = payload.GetType("SpanAccessor", throwOnError: true);
+        MethodInfo method = methodContext
+            ? typeof(Program).GetMethod(nameof(GenericMethod), BindingFlags.Static | BindingFlags.NonPublic).MakeGenericMethod(argument)
+            : typeof(GenericContext<>).MakeGenericType(argument).GetMethod(nameof(GenericContext<object>.Run));
+        RuntimeHelpers.PrepareMethod(method.MethodHandle);
+
+        return method.MethodHandle.GetFunctionPointer();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Array GenericMethod<T>(Action collect, bool collectInCatch)
+    {
+        if (collectInCatch)
+        {
+            try
+            {
+                throw new InvalidOperationException();
+            }
+            catch (InvalidOperationException)
+            {
+                collect();
+            }
+        }
+        else
+        {
+            collect();
+        }
+
+        return new T[1];
+    }
+
+    private static class GenericContext<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Array Run(Action collect, bool collectInCatch)
+        {
+            if (collectInCatch)
+            {
+                try
+                {
+                    throw new InvalidOperationException();
+                }
+                catch (InvalidOperationException)
+                {
+                    collect();
+                }
+            }
+            else
+            {
+                collect();
+            }
+
+            return new T[1];
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int HoldAssembliesAliveThroughByRefFields(out GCHandle gch1, out GCHandle gch2)
     {

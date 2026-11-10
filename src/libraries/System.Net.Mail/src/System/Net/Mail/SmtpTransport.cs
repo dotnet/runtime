@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Mime;
+using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -79,7 +80,17 @@ namespace System.Net.Mail
             }
         }
 
-        internal X509CertificateCollection ClientCertificates => field ??= new X509CertificateCollection();
+        internal SslClientAuthenticationOptions SslOptions
+        {
+            get => field ??= new SslClientAuthenticationOptions();
+            set
+            {
+                field = value;
+                InvalidateCachedConnection();
+            }
+        }
+
+        internal X509CertificateCollection ClientCertificates => SslOptions.ClientCertificates ??= new X509CertificateCollection();
 
         internal bool ServerSupportsEai
         {
@@ -122,8 +133,9 @@ namespace System.Net.Mail
 
             if (EnableSsl)
             {
-                _connection.EnableSsl = true;
-                _connection.ClientCertificates = ClientCertificates;
+                SslClientAuthenticationOptions sslOptions = SslOptions.ShallowClone();
+                sslOptions.TargetHost ??= host;
+                _connection.SslOptions = sslOptions;
             }
 
             return _connection.GetConnectionAsync<TIOAdapter>(host, port, cancellationToken);

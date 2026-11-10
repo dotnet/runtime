@@ -13,11 +13,6 @@ namespace System.ComponentModel.Composition.Hosting
 {
     internal static class CompositionServices
     {
-        internal static readonly Type InheritedExportAttributeType = typeof(InheritedExportAttribute);
-        internal static readonly Type ExportAttributeType = typeof(ExportAttribute);
-        internal static readonly Type AttributeType = typeof(Attribute);
-        internal static readonly Type ObjectType = typeof(object);
-
         private static readonly string[] reservedMetadataNames = new string[]
         {
             CompositionConstants.PartCreationPolicyMetadataName
@@ -174,7 +169,7 @@ namespace System.ComponentModel.Composition.Hosting
             Type contractType = import.GetContractTypeFromImport(importType);
 
             // For our importers we treat object as not having a type identity
-            if (contractType == CompositionServices.ObjectType)
+            if (contractType == typeof(object))
             {
                 return null;
             }
@@ -280,7 +275,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     Type attrType = attr.GetType();
                     // Perf optimization, relies on short circuit evaluation, often a property attribute is an ExportAttribute
-                    if ((attrType != CompositionServices.ExportAttributeType) && attrType.IsAttributeDefined<MetadataAttributeAttribute>(true))
+                    if ((attrType != typeof(ExportAttribute)) && attrType.IsAttributeDefined<MetadataAttributeAttribute>(true))
                     {
                         bool allowsMultiple = false;
                         AttributeUsageAttribute? usage = attrType.GetFirstAttribute<AttributeUsageAttribute>(true);
@@ -292,7 +287,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                         foreach (PropertyInfo pi in attrType.GetProperties())
                         {
-                            if (pi.DeclaringType == CompositionServices.ExportAttributeType || pi.DeclaringType == CompositionServices.AttributeType)
+                            if (pi.DeclaringType == typeof(ExportAttribute) || pi.DeclaringType == typeof(Attribute))
                             {
                                 // Don't contribute metadata properies from the base attribute types.
                                 continue;
@@ -365,8 +360,6 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private Type? _arrayType;
             private bool _containsNulls;
-            private static readonly Type ObjectType = typeof(object);
-            private static readonly Type TypeType = typeof(Type);
             private readonly Collection<object?> _innerList = new Collection<object?>();
 
             public void Add(object? item, Type? itemType)
@@ -374,7 +367,7 @@ namespace System.ComponentModel.Composition.Hosting
                 _containsNulls |= (item == null);
 
                 // if we've been passed typeof(object), we basically have no type inmformation
-                if (itemType == ObjectType)
+                if (itemType == typeof(object))
                 {
                     itemType = null;
                 }
@@ -388,7 +381,7 @@ namespace System.ComponentModel.Composition.Hosting
                 // Types are special, because the are abstract classes, so if the item casts to Type, we assume System.Type
                 if (item is Type)
                 {
-                    itemType = TypeType;
+                    itemType = typeof(Type);
                 }
 
                 // only try to call this if we got a meaningful type
@@ -416,7 +409,7 @@ namespace System.ComponentModel.Composition.Hosting
                     // in metadata right now, it's a moot point
                     if (_arrayType != itemType)
                     {
-                        _arrayType = ObjectType;
+                        _arrayType = typeof(object);
                     }
                 }
             }
@@ -426,12 +419,12 @@ namespace System.ComponentModel.Composition.Hosting
                 if (_arrayType == null)
                 {
                     // if the array type has not been set, assume Object
-                    _arrayType = ObjectType;
+                    _arrayType = typeof(object);
                 }
                 else if (_containsNulls && _arrayType.IsValueType)
                 {
                     // if the array type is a value type and we have seen nulls, then assume Object
-                    _arrayType = ObjectType;
+                    _arrayType = typeof(object);
                 }
 
                 Array array = Array.CreateInstance(_arrayType, _innerList.Count);

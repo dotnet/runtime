@@ -339,7 +339,8 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Registers an <see cref="IValidateOptions{TOptions}"/> type for an options type.
+        /// Registers an <see cref="IValidateOptions{TOptions}"/> or
+        /// <see cref="IAsyncValidateOptions{TOptions}"/> implementation for an options type.
         /// </summary>
         /// <typeparam name="TValidateOptions">The validation type.</typeparam>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
@@ -350,6 +351,10 @@ namespace Microsoft.Extensions.Options
         /// This method is the preferred way to register a validator type because it preserves the builder's options
         /// name for startup validation. A validator registered directly as <see cref="IValidateOptions{TOptions}"/>
         /// is conservatively treated as applying to every options name.
+        /// When the validator implements <see cref="IAsyncValidateOptions{TOptions}"/>, the built-in asynchronous
+        /// options creation path invokes <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/> instead of
+        /// invoking both validation methods. Synchronous options creation continues to invoke
+        /// <see cref="IValidateOptions{TOptions}.Validate"/>.
         /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>()
             where TValidateOptions : class, IValidateOptions<TOptions>
@@ -590,6 +595,15 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="validation">The asynchronous validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate(Func<TOptions, CancellationToken, Task<bool>> validation)
             => Validate(validation: validation, failureMessage: DefaultValidationFailureMessage);
 
@@ -599,6 +613,15 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The asynchronous validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate(Func<TOptions, CancellationToken, Task<bool>> validation, string failureMessage)
         {
             ArgumentNullException.ThrowIfNull(validation);
@@ -614,6 +637,15 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep">The dependency used by the validation function.</typeparam>
         /// <param name="validation">The asynchronous validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, CancellationToken, Task<bool>> validation) where TDep : notnull
             => Validate(validation: validation, failureMessage: DefaultValidationFailureMessage);
 
@@ -624,6 +656,15 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The asynchronous validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, CancellationToken, Task<bool>> validation, string failureMessage) where TDep : notnull
         {
             ArgumentNullException.ThrowIfNull(validation);
@@ -644,6 +685,15 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep2">The second dependency used by the validation function.</typeparam>
         /// <param name="validation">The asynchronous validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2>(Func<TOptions, TDep1, TDep2, CancellationToken, Task<bool>> validation)
             where TDep1 : notnull
             where TDep2 : notnull
@@ -657,6 +707,15 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The asynchronous validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2>(Func<TOptions, TDep1, TDep2, CancellationToken, Task<bool>> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull
@@ -681,6 +740,15 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep3">The third dependency used by the validation function.</typeparam>
         /// <param name="validation">The asynchronous validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(Func<TOptions, TDep1, TDep2, TDep3, CancellationToken, Task<bool>> validation)
             where TDep1 : notnull
             where TDep2 : notnull
@@ -696,6 +764,15 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The asynchronous validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(Func<TOptions, TDep1, TDep2, TDep3, CancellationToken, Task<bool>> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull
@@ -723,6 +800,15 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep4">The fourth dependency used by the validation function.</typeparam>
         /// <param name="validation">The asynchronous validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, CancellationToken, Task<bool>> validation)
             where TDep1 : notnull
             where TDep2 : notnull
@@ -740,6 +826,15 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The asynchronous validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, CancellationToken, Task<bool>> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull
@@ -770,6 +865,15 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep5">The fifth dependency used by the validation function.</typeparam>
         /// <param name="validation">The asynchronous validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, CancellationToken, Task<bool>> validation)
             where TDep1 : notnull
             where TDep2 : notnull
@@ -789,6 +893,15 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The asynchronous validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// The delegate is invoked by asynchronous options validation, including built-in startup validation enabled
+        /// by <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>, which can
+        /// seed the initial built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> caches.
+        /// Synchronous options creation cannot invoke or await this delegate and reports that synchronous validation
+        /// is unsupported when the validator applies to the requested options name. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> implementation and options-monitor reloads remain synchronous and
+        /// do not invoke this delegate.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, CancellationToken, Task<bool>> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull

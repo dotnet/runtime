@@ -431,50 +431,6 @@ int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
     return 0;
 }
 
-int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
-{
-    (void)port;
-    return Error_ENOTSUP;
-}
-
-int32_t SystemNative_CloseSocketEventPort(intptr_t port)
-{
-    (void)port;
-    return Error_ENOTSUP;
-}
-
-int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer)
-{
-    (void)count;
-    (void)buffer;
-    return Error_ENOTSUP;
-}
-
-int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer)
-{
-    (void)buffer;
-    return Error_ENOTSUP;
-}
-
-int32_t SystemNative_TryChangeSocketEventRegistration(
-    intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data)
-{
-    (void)port;
-    (void)socket;
-    (void)currentEvents;
-    (void)newEvents;
-    (void)data;
-    return Error_ENOTSUP;
-}
-
-int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count)
-{
-    (void)port;
-    (void)buffer;
-    (void)count;
-    return Error_ENOTSUP;
-}
-
 int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
 {
     return 0; // false

@@ -1371,10 +1371,11 @@ public:
         return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
+    // Returns true if vn is a non-handle integral constant that fits in T.
     template <typename T>
     bool IsVNIntegralConstant(ValueNum vn, T* value)
     {
-        if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
+        if (!IsVNConstantNonHandle(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
             *value = 0;
             return false;
@@ -1406,14 +1407,36 @@ public:
 
     ValueNumPair EvalMathFuncUnary(var_types typ, NamedIntrinsic mthFunc, ValueNumPair arg0VNP)
     {
-        return ValueNumPair(EvalMathFuncUnary(typ, mthFunc, arg0VNP.GetLiberal()),
-                            EvalMathFuncUnary(typ, mthFunc, arg0VNP.GetConservative()));
+        ValueNum liberalFuncVN = EvalMathFuncUnary(typ, mthFunc, arg0VNP.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (arg0VNP.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = EvalMathFuncUnary(typ, mthFunc, arg0VNP.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
 
     ValueNumPair EvalMathFuncBinary(var_types typ, NamedIntrinsic mthFunc, ValueNumPair arg0VNP, ValueNumPair arg1VNP)
     {
-        return ValueNumPair(EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal()),
-                            EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
+        ValueNum liberalFuncVN = EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (arg0VNP.BothEqual() && arg1VNP.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -1551,6 +1574,11 @@ public:
     static bool isReservedVN(ValueNum);
 
 private:
+#if defined(FEATURE_HW_INTRINSICS)
+    bool IsVectorPerElementMask(
+        ValueNum vn, var_types simdBaseType, unsigned simdSize, SmallValueNumSet& knownMasks, unsigned depth);
+#endif // FEATURE_HW_INTRINSICS
+
     struct VNDefFuncAppFlexible
     {
         VNFunc   m_func;

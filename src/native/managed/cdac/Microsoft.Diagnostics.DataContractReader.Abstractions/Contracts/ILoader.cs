@@ -101,7 +101,7 @@ public interface ILoader : IContract
     TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();
-    IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle, uint? hash = null) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle) => throw new NotImplementedException();
 
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();

@@ -2940,10 +2940,11 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 
     if (recentAssignedRef != nullptr)
     {
-        // We can't spill a register that's active at the current location.
-        // We should already have determined this with isRegBusy before calling this method.
-        assert(!isRefPositionActive(recentAssignedRef, refLocation));
-        return true;
+        bool isActive = isRefPositionActive(recentAssignedRef, refLocation);
+        bool isHome   = isHomeReg(physRegRecord);
+        // An active interval can only be displaced from a stale copy register.
+        assert(!(isActive && isHome));
+        return !(isActive && isHome);
     }
     // recentAssignedRef can only be null if this is a parameter that has not yet been
     // moved to a register (or stack), in which case we can't spill it yet.
@@ -4166,6 +4167,14 @@ bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
     isAssigned |= isSecondHalfReg(regRec, interval);
 #endif
     return isAssigned;
+}
+
+// Returns whether regRec is the recorded home of its assigned interval.
+// The interval need not be active.
+bool LinearScan::isHomeReg(RegRecord* regRec)
+{
+    Interval* interval = regRec->assignedInterval;
+    return (interval != nullptr) && isAssignedToInterval(interval, regRec);
 }
 
 void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap)
@@ -8131,6 +8140,15 @@ void LinearScan::resolveRegisters()
                 {
                     if (treeNode != nullptr)
                     {
+#ifdef TARGET_XARCH
+                        // A narrow producer can still need a full-width reload or register copy.
+                        // Record it before codegen decides where calls need vzeroupper.
+                        if (varTypeIsSIMD(treeNode))
+                        {
+                            SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                        }
+#endif // TARGET_XARCH
+
                         if (currentRefPosition->spillAfter)
                         {
                             treeNode->gtFlags |= GTF_SPILL;
@@ -8207,6 +8225,19 @@ void LinearScan::resolveRegisters()
                         unreached();
                     }
                 }
+
+#ifdef TARGET_XARCH
+                // A local store only dirties upper state when it copies to a different register.
+                // Its final destination is not known until local reference resolution above.
+                if (varTypeIsSIMD(treeNode) && treeNode->OperIsLocalStore() && (treeNode->GetRegNum() != REG_NA))
+                {
+                    GenTree* source = treeNode->AsLclVarCommon()->Data();
+                    if (!source->isContained() && (source->GetRegNum() != treeNode->GetRegNum()))
+                    {
+                        SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                    }
+                }
+#endif // TARGET_XARCH
             }
         }
 

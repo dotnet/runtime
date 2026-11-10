@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -38,11 +39,9 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList result = null;
-            factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, _targetField);
-            return result;
+            factory.MetadataManager.GetDependenciesDueToLdToken(sink, factory, _targetField);
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)

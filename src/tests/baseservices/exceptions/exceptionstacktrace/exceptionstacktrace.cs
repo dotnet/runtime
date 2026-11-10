@@ -17,6 +17,54 @@ public static class Program
     static Exception theException = new Exception("My exception");
     static int recursion;
 
+    [ConditionalTheory(typeof(Utilities), nameof(Utilities.IsReflectionEmitSupported))]
+    [InlineData(17)]
+    [InlineData(257)]
+    public static void StackTracesAfterCollectibleMethodTableGrowth(int methodCount)
+    {
+        for (int generation = 0; generation < 3; generation++)
+        {
+            WeakReference type = CreateAndTraceCollectibleMethods(methodCount);
+            for (int attempt = 0; type.IsAlive && attempt < 10; attempt++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+
+            Assert.False(type.IsAlive);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference CreateAndTraceCollectibleMethods(int methodCount)
+    {
+        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName("CollectibleStackTraces"), AssemblyBuilderAccess.RunAndCollect);
+        TypeBuilder builder = assembly.DefineDynamicModule("Methods").DefineType("ThrowingMethods");
+        ConstructorInfo constructor = typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes);
+        for (int index = 0; index < methodCount; index++)
+        {
+            MethodBuilder method = builder.DefineMethod(
+                "Throw" + index, MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+            method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+            ILGenerator il = method.GetILGenerator();
+            il.Emit(OpCodes.Newobj, constructor);
+            il.Emit(OpCodes.Throw);
+        }
+
+        Type type = builder.CreateType();
+        for (int index = 0; index < methodCount; index++)
+        {
+            string name = "Throw" + index;
+            Action action = type.GetMethod(name).CreateDelegate<Action>();
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(action);
+            Assert.Contains("ThrowingMethods." + name + "()", exception.ToString());
+        }
+
+        return new WeakReference(type);
+    }
+
     private static void VerifyStackTrace(Exception e, string[] templateStackTrace)
     {
         string[] stackTrace = e.StackTrace.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);

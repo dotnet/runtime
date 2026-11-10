@@ -148,7 +148,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #endif
 #else // _MSC_VER
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__x86_64__)
 
 #if __has_builtin(__builtin_ia32_pause)
  // clang added this intrinsic in 3.8
@@ -188,10 +188,10 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define MemoryBarrier __sync_synchronize
 #endif // __riscv
 
-#ifdef HOST_BROWSER
+#ifdef HOST_WASM
   #define YieldProcessor()
   #define MemoryBarrier __sync_synchronize
-#endif // HOST_BROWSER
+#endif // HOST_WASM
 
 #endif // _MSC_VER
 

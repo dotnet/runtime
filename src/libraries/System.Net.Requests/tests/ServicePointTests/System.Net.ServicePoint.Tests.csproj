@@ -4,7 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ServicePointManagerTest.cs" />

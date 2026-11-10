@@ -24,6 +24,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
         READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
+        READYTORUN_FLAG_SingleThreaded = 0x00002000,           // The image targets a single-threaded runtime and lays out [ThreadStatic] fields as regular statics.
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -37,9 +38,10 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunImportSectionFlags : ushort
     {
-        None     = 0x0000,
-        Eager    = 0x0001, // Section at module load time.
-        PCode    = 0x0004, // Section contains pointers to code
+        None  = 0x0000,
+        Eager = 0x0001, // Section before module activation.
+        PCode = 0x0004, // Section contains pointers to code
+        GCRefMap = 0x0008, // Each signature is prefixed by its argument GC reference map.
     }
 
     /// <summary>
@@ -200,6 +202,8 @@ namespace Internal.ReadyToRunConstants
         InjectStringThunks = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
 
         StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
+
+        MethodEntry_ReadyToRun = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
@@ -380,6 +384,7 @@ namespace Internal.ReadyToRunConstants
         InitClass                   = 0x116,
         InitInstClass               = 0x117,
         R2RToInterpreter            = 0x118,
+        WasmProfSamplepoint         = 0x119,
 
         // **********************************************************************************************
         //
@@ -409,6 +414,24 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        // NativeAOT allocation helpers
+        NewFast,
+        NewFinalizable,
+        NewFastAlign8,
+        NewFinalizableAlign8,
+        NewFastMisalign,
+        NewPtrArrayFast,
+        NewArrayFastAlign8,
+        NewArrayFast,
+
+        // NativeAOT interface dispatch helpers
+        InterfaceDispatch,
+        InterfaceDispatchGuarded,
+        ResolveInterfaceMethodFast,
+        ResolveInterfaceMethod,
+
+        TlsGetAddr,
     }
 
     // Enum used for HFA type recognition.

@@ -38,7 +38,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetNativeCode(IntPtr m);
 
-        internal static IntPtr GetNativeCodeInternal(IntPtr methodHandleValue)
+        // Returns the code start address that diagnostic tools use to identify the method.
+        internal static IntPtr GetDiagnosticCodeStart(IntPtr methodHandleValue)
         {
             return GetNativeCode(methodHandleValue);
         }

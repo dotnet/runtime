@@ -38,12 +38,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             }
             else
             {
-                var builder = ImmutableArray.CreateBuilder<MultiValue>();
+                var builder = ImmutableArray.CreateBuilder<MultiValue>(arguments.Length);
                 foreach (var argument in arguments)
                 {
                     builder.Add(argument.DeepCopy());
                 }
-                Arguments = builder.ToImmutableArray();
+                Arguments = builder.MoveToImmutable();
             }
             Operation = operation;
             OwningSymbol = owningSymbol;
@@ -60,7 +60,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             Debug.Assert(SymbolEqualityComparer.Default.Equals(OwningSymbol, other.OwningSymbol));
             Debug.Assert(Arguments.Length == other.Arguments.Length);
 
-            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>();
+            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>(Arguments.Length);
             for (int i = 0; i < Arguments.Length; i++)
             {
                 argumentsBuilder.Add(lattice.Meet(Arguments[i], other.Arguments[i]));
@@ -69,7 +69,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             return new TrimAnalysisMethodCallPattern(
                 CalledMethod,
                 lattice.Meet(Instance, other.Instance),
-                argumentsBuilder.ToImmutable(),
+                argumentsBuilder.MoveToImmutable(),
                 Operation,
                 OwningSymbol,
                 featureContextLattice.Meet(FeatureContext, other.FeatureContext));

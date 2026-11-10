@@ -310,6 +310,21 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentNullException>("decompressionOptions", () => new ZstandardStream(input, (ZstandardDecompressionOptions)null!));
         }
 
+        [Fact]
+        public void ZstandardStream_WithCompressionOptions_NullOptions_ThrowsArgumentNullException()
+        {
+            using MemoryStream output = new();
+            Assert.Throws<ArgumentNullException>("compressionOptions", () => new ZstandardStream(output, (ZstandardCompressionOptions)null!));
+        }
+
+        [Fact]
+        public void ZstandardStream_InvalidCompressionLevel_ThrowsArgumentOutOfRangeException()
+        {
+            using MemoryStream output = new();
+            Assert.Throws<ArgumentOutOfRangeException>("compressionLevel", () => new ZstandardStream(output, (CompressionLevel)999));
+            Assert.Throws<ArgumentOutOfRangeException>("compressionLevel", () => new ZstandardStream(output, (CompressionLevel)999, leaveOpen: true));
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

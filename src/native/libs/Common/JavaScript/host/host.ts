@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtrPtr, VoidPtr } from "../types";
+import type { AssetEntryInternal, CharPtrPtr, VoidPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
 import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 
@@ -24,7 +24,9 @@ export function initializeCoreCLR(): number {
     }
 
     const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
-    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly
+        .filter(asset => !(asset as AssetEntryInternal).isCompositeImage)
+        .map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
     const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);

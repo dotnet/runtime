@@ -57,6 +57,8 @@ namespace System.Net.Sockets
 
         // SocketAddress buffer
         private IntPtr _socketAddressPtr;
+        // Size of the native buffer pointed to by _socketAddressPtr, excluding the leading size header.
+        private int _socketAddressBufferSize;
 
         // SendPacketsElements property variables.
         private SafeFileHandle[]? _sendPacketsFileHandles;
@@ -547,7 +549,9 @@ namespace System.Net.Sockets
                 // Fill in WSAMessageBuffer.
                 Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned, 0);
                 pMessage->socketAddress = PtrSocketAddressBuffer();
-                pMessage->addressLength = (uint)SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
+                // Read back the size AllocateSocketAddressBuffer already declared, rather than recomputing it, so this can never
+                // exceed what was actually allocated for _socketAddressPtr.
+                pMessage->addressLength = (uint)*(int*)PtrSocketAddressSize();
                 fixed (void* ptrWSARecvMsgWSABufferArray = &wsaRecvMsgWSABufferArray[0])
                 {
                     pMessage->buffers = (IntPtr)ptrWSARecvMsgWSABufferArray;
@@ -980,12 +984,23 @@ namespace System.Net.Sockets
         // Ensures appropriate SocketAddress buffer is allocated.
         private unsafe void AllocateSocketAddressBuffer()
         {
-            //_socketAddress!.Size = SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
-            int size = SocketAddress.GetMaximumAddressSize(_socketAddress!.Family);
+            // Size off the socket's own family, not _socketAddress!.Family: callers of the SocketAddress-accepting
+            // ReceiveFromAsync overload supply their own SocketAddress, whose Family isn't validated against the socket.
+            int size = SocketAddress.GetMaximumAddressSize(_currentSocket!.AddressFamily);
 
-            if (_socketAddressPtr == IntPtr.Zero)
+            // The buffer may be reused across operations for sockets of different address families (e.g. a
+            // SocketAsyncEventArgs reused across sockets), so grow it if the previously allocated size is too small.
+            if (_socketAddressPtr == IntPtr.Zero || size > _socketAddressBufferSize)
             {
-                _socketAddressPtr = (IntPtr)NativeMemory.Alloc((uint)(_socketAddress!.Size + sizeof(IntPtr)));
+                IntPtr newSocketAddressPtr = (IntPtr)NativeMemory.Alloc((uint)(size + sizeof(IntPtr)));
+
+                if (_socketAddressPtr != IntPtr.Zero)
+                {
+                    NativeMemory.Free((void*)_socketAddressPtr);
+                }
+
+                _socketAddressPtr = newSocketAddressPtr;
+                _socketAddressBufferSize = size;
             }
 
             *((int*)_socketAddressPtr) = size;
@@ -1033,6 +1048,7 @@ namespace System.Net.Sockets
             {
                 NativeMemory.Free((void*)_socketAddressPtr);
                 _socketAddressPtr = IntPtr.Zero;
+                _socketAddressBufferSize = 0;
             }
 
             Debug.Assert(_singleBufferHandle.Equals(default(MemoryHandle)));

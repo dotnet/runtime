@@ -97,7 +97,9 @@ export function httpAbort(controller: HttpController): void {
 // Never resolves; rejects as soon as the fetch does. A failed fetch abandons the readable end of the
 // TransformStream, which leaves an in-flight write() pending forever, so writes race against this.
 function rejectWhenFetchFails(controller: HttpController): Promise<never> {
-    return controller.responsePromise!.then(() => new Promise<never>(() => { }), (err) => { throw err; });
+    return controller.responsePromise!.then(() => new Promise<never>(() => { }), (err) => {
+        throw err;
+    });
 }
 
 export function httpTransformStreamWrite(controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {

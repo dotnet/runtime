@@ -208,9 +208,43 @@
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
+    <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
+    <ItemGroup>
+      <_EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
+      <_EmccIncomingModuleJSAPI Include="arguments" />
+      <_EmccIncomingModuleJSAPI Include="canvas" />
+      <_EmccIncomingModuleJSAPI Include="dynamicLibraries" />
+      <_EmccIncomingModuleJSAPI Include="elementPointerLock" />
+      <_EmccIncomingModuleJSAPI Include="instantiateWasm" />
+      <_EmccIncomingModuleJSAPI Include="locateFile" />
+      <_EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
+      <_EmccIncomingModuleJSAPI Include="noExitRuntime" />
+      <_EmccIncomingModuleJSAPI Include="noInitialRun" />
+      <_EmccIncomingModuleJSAPI Include="onAbort" />
+      <_EmccIncomingModuleJSAPI Include="onExit" />
+      <_EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
+      <_EmccIncomingModuleJSAPI Include="postRun" />
+      <_EmccIncomingModuleJSAPI Include="preInit" />
+      <_EmccIncomingModuleJSAPI Include="preRun" />
+      <_EmccIncomingModuleJSAPI Include="print" />
+      <_EmccIncomingModuleJSAPI Include="printErr" />
+      <_EmccIncomingModuleJSAPI Include="setStatus" />
+      <_EmccIncomingModuleJSAPI Include="statusMessage" />
+      <_EmccIncomingModuleJSAPI Include="stderr" />
+      <_EmccIncomingModuleJSAPI Include="stdin" />
+      <_EmccIncomingModuleJSAPI Include="stdout" />
+      <_EmccIncomingModuleJSAPI Include="thisProgram" />
+      <_EmccIncomingModuleJSAPI Include="wasm" />
+      <_EmccIncomingModuleJSAPI Include="websocket" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
+      <!-- not an emscripten default; set on the worker from the message which starts a pthread -->
+      <_EmccIncomingModuleJSAPI Include="wasmMemory" />
+    </ItemGroup>
     <PropertyGroup>
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
+      <_EmccIncomingModuleJSAPIs>"[@(_EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPIs>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
       <!-- reserve at least enough space to complete initializing sgen without growing the heap -->
       <EmccInitialHeapSize>33554432</EmccInitialHeapSize>
@@ -232,6 +266,8 @@
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
+      <!-- INCOMING_MODULE_JS_API only matters with emscripten assertions (Debug); in Release let emscripten use its default list. -->
+      <_EmccLinkFlags Condition="'$(Configuration)' == 'Debug'" Include="-s INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPIs)" />
       <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
       <_EmccLinkFlags Include="-s WASM_BIGINT=1" />
@@ -271,6 +307,7 @@
     "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')],
+    "EmccDefaultIncomingModuleJSAPI": [@(_EmccIncomingModuleJSAPI -> '%22%(Identity)%22', ',')],
     "PropertiesThatTriggerRelinking": [
       { "identity": "InvariantTimezone",            "defaultValueInRuntimePack": "$(InvariantTimezone)" },
       { "identity": "InvariantGlobalization",       "defaultValueInRuntimePack": "$(InvariantGlobalization)" },

@@ -8,6 +8,7 @@
 #include "spmiutil.h"
 #include "config.h"
 #include <stdio.h>
+#include <minipal/utf8.h>
 #ifdef TARGET_UNIX
 #include <sys/types.h>
 #include <dirent.h>
@@ -44,21 +45,12 @@ LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
     return newpath;
 }
 
-char* verbMerge::ConvertWideCharToMultiByte(LPCWSTR wstr)
+WCHAR* verbMerge::ConvertFromUtf8(LPCSTR str)
 {
-    unsigned int codePage   = CP_UTF8;
-    int          sizeNeeded = WideCharToMultiByte(codePage, 0, wstr, -1, NULL, 0, NULL, NULL);
-    char*        encodedStr = new char[sizeNeeded];
-    WideCharToMultiByte(codePage, 0, wstr, -1, encodedStr, sizeNeeded, NULL, NULL);
-    return encodedStr;
-}
-
-WCHAR* verbMerge::ConvertMultiByteToWideChar(LPCSTR str)
-{
-    unsigned int codePage   = CP_UTF8;
-    int          sizeNeeded = MultiByteToWideChar(codePage, 0, str, -1, NULL, 0);
-    WCHAR*       encodedStr = new WCHAR[sizeNeeded];
-    MultiByteToWideChar(codePage, 0, str, -1, encodedStr, sizeNeeded);
+    size_t length     = strlen(str) + 1;
+    size_t sizeNeeded = minipal_get_length_utf8_to_utf16(str, length, 0);
+    WCHAR* encodedStr = new WCHAR[sizeNeeded];
+    minipal_convert_utf8_to_utf16(str, length, (CHAR16_T*)encodedStr, sizeNeeded, 0);
     return encodedStr;
 }
 
@@ -69,52 +61,41 @@ WCHAR* verbMerge::ConvertMultiByteToWideChar(LPCSTR str)
 // 'buffer' is memory that can be used to do reading/buffering.
 //
 // static
-int verbMerge::AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize)
+int verbMerge::AppendFileRaw(FILE* hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize)
 {
     int result = 0; // default to zero == success
 
-    char* fileNameAsChar = ConvertWideCharToMultiByte(fileFullPath);
-    LogInfo("Appending file '%s'", fileNameAsChar);
+    std::string fileNameAsChar = ConvertToUtf8(fileFullPath);
+    LogInfo("Appending file '%s'", fileNameAsChar.c_str());
 
-    HANDLE hFileIn = CreateFileW(fileFullPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                                 FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileIn == INVALID_HANDLE_VALUE)
+    FILE* hFileIn;
+    if (u16_fopen_s(&hFileIn, fileFullPath, W("rb")) != 0)
     {
-        // If you use a relative path, you can get GetLastError()==3, if the absolute path is longer
-        // than MAX_PATH.
-        LogError("Failed to open input file '%s'. GetLastError()=%u", fileNameAsChar, GetLastError());
+        LogError("Failed to open input file '%s'. errno=%d", fileNameAsChar.c_str(), errno);
         return -1;
     }
 
-    LARGE_INTEGER fileSize;
-    if (GetFileSizeEx(hFileIn, &fileSize) == 0)
+    int64_t fileSize = fgetsize(hFileIn);
+    if (fileSize < 0)
     {
-        LogError("GetFileSizeEx on '%s' failed. GetLastError()=%u", fileNameAsChar, GetLastError());
+        LogError("fgetsize on '%s' failed. errno=%d", fileNameAsChar.c_str(), errno);
         result = -1;
         goto CLEAN_UP;
     }
 
-    for (LONGLONG offset = 0; offset < fileSize.QuadPart; offset += bufferSize)
+    for (LONGLONG offset = 0; offset < fileSize; offset += bufferSize)
     {
-        DWORD bytesRead = -1;
-        BOOL  res       = ReadFile(hFileIn, buffer, (DWORD)bufferSize, &bytesRead, nullptr);
-        if (!res)
+        size_t bytesRead = fread(buffer, 1, bufferSize, hFileIn);
+        if (ferror(hFileIn))
         {
-            LogError("Failed to read '%s' from offset %lld. GetLastError()=%u", fileNameAsChar, offset, GetLastError());
+            LogError("Failed to read '%s' from offset %lld. errno=%d", fileNameAsChar.c_str(), offset, errno);
             result = -1;
             goto CLEAN_UP;
         }
-        DWORD bytesWritten = -1;
-        BOOL  res2         = WriteFile(hFileOut, buffer, bytesRead, &bytesWritten, nullptr);
-        if (!res2)
-        {
-            LogError("Failed to write output file at offset %lld. GetLastError()=%u", offset, GetLastError());
-            result = -1;
-            goto CLEAN_UP;
-        }
+        size_t bytesWritten = fwrite(buffer, 1, bytesRead, hFileOut);
         if (bytesRead != bytesWritten)
         {
-            LogError("Failed to read/write matching bytes %u!=%u", bytesRead, bytesWritten);
+            LogError("Failed to write output file at offset %lld. errno=%d", offset, errno);
             result = -1;
             goto CLEAN_UP;
         }
@@ -122,11 +103,9 @@ int verbMerge::AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned cha
 
 CLEAN_UP:
 
-    delete[] fileNameAsChar;
-
-    if (CloseHandle(hFileIn) == 0)
+    if (fclose(hFileIn) != 0)
     {
-        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("fclose failed. errno=%d", errno);
         result = -1;
     }
 
@@ -139,17 +118,16 @@ CLEAN_UP:
 // 'buffer' is memory that can be used to do reading/buffering.
 //
 // static
-int verbMerge::AppendFile(HANDLE hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize)
+int verbMerge::AppendFile(FILE* hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize)
 {
     int result = 0; // default to zero == success
 
     if (dedup)
     {
-        // Need to conver the fileFullPath to non-Unicode.
-        char* fileFullPathAsChar = ConvertWideCharToMultiByte(fileFullPath);
-        LogInfo("Appending file '%s'", fileFullPathAsChar);
-        bool ok = m_removeDups.CopyAndRemoveDups(fileFullPathAsChar, hFileOut);
-        delete[] fileFullPathAsChar;
+        // Need to convert the fileFullPath to non-Unicode.
+        std::string fileFullPathAsChar = ConvertToUtf8(fileFullPath);
+        LogInfo("Appending file '%s'", fileFullPathAsChar.c_str());
+        bool ok = m_removeDups.CopyAndRemoveDups(fileFullPathAsChar.c_str(), hFileOut);
         if (!ok)
         {
             LogError("Failed to remove dups");
@@ -329,7 +307,7 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
                 continue;
 
             // Call the filter with &FindData like the Windows code below.
-            FindData findData(dirEntryType, ConvertMultiByteToWideChar(pEntry->d_name));
+            FindData findData(dirEntryType, ConvertFromUtf8(pEntry->d_name));
             if (filter(&findData))
             {
                 // Prepend it to the list.
@@ -454,7 +432,7 @@ CLEAN_UP:
 // Append all files in the given directory matching the file pattern.
 //
 // static
-int verbMerge::AppendAllInDir(HANDLE              hFileOut,
+int verbMerge::AppendAllInDir(FILE*              hFileOut,
                               LPCWSTR             dir,
                               LPCWSTR             file,
                               unsigned char*      buffer,
@@ -513,26 +491,23 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 
 #else  // TARGET_WINDOWS
         struct stat fileStat;
-        char *fileFullPathUtf8 = ConvertWideCharToMultiByte(fileFullPath);
-        int st = stat(fileFullPathUtf8, &fileStat);
+        std::string fileFullPathUtf8 = ConvertToUtf8(fileFullPath);
+        int st = stat(fileFullPathUtf8.c_str(), &fileStat);
         if (st != 0)
         {
-            LogError("Failed to stat file '%s'. errno=%d", fileFullPathUtf8, errno);
+            LogError("Failed to stat file '%s'. errno=%d", fileFullPathUtf8.c_str(), errno);
             result = -1;
             delete[] fileFullPath;
-            delete[] fileFullPathUtf8;
             goto CLEAN_UP;
         }
-        delete[] fileFullPathUtf8;
         uint64_t fileSize = fileStat.st_size;
 #endif // TARGET_WINDOWS
 
         // Is it zero length? If so, skip it.
         if (fileSize == 0)
         {
-            char* fileFullPathAsChar = ConvertWideCharToMultiByte(fileFullPath);
-            LogInfo("Skipping zero-length file '%s'", fileFullPathAsChar);
-            delete[] fileFullPathAsChar;
+            std::string fileFullPathAsChar = ConvertToUtf8(fileFullPath);
+            LogInfo("Skipping zero-length file '%s'", fileFullPathAsChar.c_str());
         }
         else
         {
@@ -623,19 +598,13 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
         }
     }
 
-    int    nameLength              = (int)strlen(nameOfOutputFile) + 1;
-    LPWSTR nameOfOutputFileAsWchar = new WCHAR[nameLength];
-    MultiByteToWideChar(CP_ACP, 0, nameOfOutputFile, -1, nameOfOutputFileAsWchar, nameLength);
+    LPWSTR nameOfOutputFileAsWchar = ConvertFromUtf8(nameOfOutputFile);
+    LPWSTR patternAsWchar          = ConvertFromUtf8(pattern);
 
-    int    patternLength  = (int)strlen(pattern) + 1;
-    LPWSTR patternAsWchar = new WCHAR[patternLength];
-    MultiByteToWideChar(CP_ACP, 0, pattern, -1, patternAsWchar, patternLength);
-
-    HANDLE hFileOut = CreateFileW(nameOfOutputFileAsWchar, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileOut == INVALID_HANDLE_VALUE)
+    FILE* hFileOut = fopen(nameOfOutputFile, "wb");
+    if (hFileOut == nullptr)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", nameOfOutputFile, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", nameOfOutputFile, errno);
         return -1;
     }
 
@@ -708,9 +677,9 @@ CLEAN_UP:
     delete[] patternAsWchar;
     delete[] buffer;
 
-    if (CloseHandle(hFileOut) == 0)
+    if (fclose(hFileOut) != 0)
     {
-        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("fclose failed. errno=%d", errno);
         result = -1;
     }
 
@@ -720,7 +689,7 @@ CLEAN_UP:
         int st = remove(nameOfOutputFile);
         if (st != 0)
         {
-            LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());
+            LogError("Failed to delete file after MCS /merge failed. errno=%d", errno);
         }
     }
     else

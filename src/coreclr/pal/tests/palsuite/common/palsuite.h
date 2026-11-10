@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================================
-**
 ** Source:  palsuite.h
 **
 ** Purpose: Define constants and implement functions that are useful to
 **          multiple function categories. If common functions are useful
 **          only amongst the test cases for a particular function, a separate
 **          header file is placed in the root of those test cases.
-**
-**
 **==========================================================================*/
 
 #ifndef __PALSUITE_H__
@@ -145,52 +142,11 @@ extern HANDLE hToken[NUM_TOKENS];
  * 0 is returned on Error.
  */
 int
-mkAbsoluteFilenameW (
-    LPWSTR dirName,
-    DWORD dwDirLength,
-    LPCWSTR fileName,
-    DWORD dwFileLength,
-    LPWSTR absPathName );
-
-/*
- * Take two wide strings representing file and directory names
- * (dirName, fileName), join the strings with the appropriate path
- * delimiter and populate a wide character buffer (absPathName) with
- * the resulting string.
- *
- * Returns: The number of wide characters in the resulting string.
- * 0 is returned on Error.
- */
-int
 mkAbsoluteFilenameA (
     LPSTR dirName,
     DWORD dwDirLength,
     LPCSTR fileName,
     DWORD dwFileLength,
     LPSTR absPathName );
-
-BOOL
-CreatePipe(
-        OUT PHANDLE hReadPipe,
-        OUT PHANDLE hWritePipe,
-        IN LPSECURITY_ATTRIBUTES lpPipeAttributes,
-        IN DWORD nSize);
-
-BOOL
-DeleteFileW(
-        IN LPCWSTR lpFileName);
-
-#define wcstod        PAL_wcstod
-#define wcstoul       PAL_wcstoul
-#define wcscat        PAL_wcscat
-#define wcscpy        PAL_wcscpy
-#define wcslen        PAL_wcslen
-#define wcsncmp       PAL_wcsncmp
-#define wcschr        PAL_wcschr
-#define wcsrchr        PAL_wcsrchr
-#define wcspbrk       PAL_wcspbrk
-#define wcsstr        PAL_wcsstr
-#define wcscmp        PAL_wcscmp
-#define wcsncpy       PAL_wcsncpy
 
 #endif

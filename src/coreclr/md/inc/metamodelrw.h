@@ -4,11 +4,9 @@
 //*****************************************************************************
 // MetaModelRW.h -- header file for Read/Write compressed CLR metadata.
 //
-
-//
 // Used by Emitters and by E&C.
-//
 //*****************************************************************************
+
 #ifndef _METAMODELRW_H_
 #define _METAMODELRW_H_
 
@@ -197,7 +195,9 @@ public:
 typedef CMetaDataHashBase CMemberRefHash;
 typedef CMetaDataHashBase CLookUpHash;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 class MDTOKENMAP;
+#endif
 class MDInternalRW;
 
 template <class MiniMd> class CLiteWeightStgdb;
@@ -771,19 +771,6 @@ public:
         LPCUTF8     szName,                 // Name of item.
         mdToken     tkParent);              // Token of parent, if any.
 
-    HashSearchResult FindNamedItemFromHash(
-        ULONG     ixTbl,    // Table with the item.
-        LPCUTF8   szName,   // Name of item.
-        mdToken   tkParent, // Token of parent, if any.
-        mdToken * ptk);     // Return if found.
-
-    __checkReturn
-    HRESULT CompareNamedItems(              // S_OK match, S_FALSE no match.
-        ULONG       ixTbl,                  // Table with the item.
-        mdToken     tk,                     // Token to check.
-        LPCUTF8     szName,                 // Name of item.
-        mdToken     tkParent);              // Token of parent, if any.
-
     FORCEINLINE ULONG HashNamedItem(mdToken tkPar, LPCUTF8 szName)
     {   return HashBytes((const BYTE *) &tkPar, sizeof(mdToken)) + HashStringA(szName); }
 
@@ -872,14 +859,6 @@ public:
     HRESULT FindMethodImplHelper(// return HRESULT
         mdTypeDef   td,                     // TypeDef token for the Class.
         HENUMInternal *phEnum);             // fill in the enum
-
-    //*****************************************************************************
-    // Find helper for a GenericParams
-    //*****************************************************************************
-    __checkReturn
-    HRESULT FindGenericParamHelper(         // Return HRESULT
-        mdToken     tkOwner,                // Token for the GenericParams' owner
-        HENUMInternal *phEnum);             // Fill in the enum.
 
     //*****************************************************************************
     // Find helper for a Generic Constraints
@@ -1268,8 +1247,10 @@ public:
     FORCEINLINE TOKENMAP *GetMemberRefToMemberDefMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetMemberRefToMemberDefMap() : NULL; };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     FORCEINLINE MDTOKENMAP *GetTokenMovementMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetTokenMovementMap() : NULL; };
+#endif
 
     FORCEINLINE TokenRemapManager *GetTokenRemapManager() { return m_pTokenRemapManager; };
 

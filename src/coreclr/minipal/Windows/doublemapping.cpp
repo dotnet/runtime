@@ -115,7 +115,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
     }
 
     // If pMinAddr is BOT_MEMORY and pMaxAddr is TOP_MEMORY
-    // then we can call ClrVirtualAlloc instead
+    // then we can call VirtualAlloc instead
     if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
     {
         return (BYTE*)MapViewOfFile((HANDLE)mapperHandle,

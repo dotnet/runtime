@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 #if !NETFRAMEWORK
 using System.Runtime.InteropServices;
 #endif
@@ -29,13 +30,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         private static string? GetDefaultDotNetReferenceAssembliesPath(IFileSystem fileSystem)
         {
-            if (
-#if NETFRAMEWORK
-                System.Environment.OSVersion.Platform == System.PlatformID.Win32NT
-#else
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-#endif
-                )
+            if (OperatingSystem.IsWindows())
             {
                 return null;
             }

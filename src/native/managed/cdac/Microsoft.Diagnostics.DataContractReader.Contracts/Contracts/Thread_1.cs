@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
-    private readonly TargetPointer _threadStoreAddr;
+    private readonly CachedValue<TargetPointer> _threadStore;
 
     [Flags]
     private enum TLSIndexType
@@ -49,7 +49,12 @@ internal readonly struct Thread_1 : IThread
     internal Thread_1(Target target)
     {
         _target = target;
-        _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
+        _threadStore = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore)));
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _threadStore.Clear();
     }
 
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
@@ -66,7 +71,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreData IThread.GetThreadStoreData()
     {
-        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
         return new ThreadStoreData(
             threadStore.ThreadCount,
             threadStore.FirstThreadLink,
@@ -76,7 +81,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreCounts IThread.GetThreadCounts()
     {
-        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
         return new ThreadStoreCounts(
             threadStore.UnstartedCount,
             threadStore.BackgroundCount,
@@ -201,6 +206,20 @@ internal readonly struct Thread_1 : IThread
     {
         TargetPointer idDispenserPtr = _target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
         TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
+        if (idDispenser == TargetPointer.Null)
+        {
+            if (id != 1)
+                return TargetPointer.Null;
+
+            Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
+            TargetPointer threadPointer = threadStore.FirstThreadLink;
+            if (threadPointer == TargetPointer.Null)
+                return TargetPointer.Null;
+
+            Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+            return thread.Id == id ? threadPointer : TargetPointer.Null;
+        }
+
         Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
         TargetPointer threadPtr = TargetPointer.Null;
         if (id <= idDispenserObj.HighestId)
@@ -212,7 +231,9 @@ internal readonly struct Thread_1 : IThread
     {
         // Get the thread's TLS base address
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        TargetPointer threadLocalDataPtr = thread.ThreadLocalDataPtr;
+        // ThreadLocalDataPtr is absent on runtimes built without multithreading support,
+        // where thread statics are laid out as regular statics.
+        TargetPointer threadLocalDataPtr = thread.ThreadLocalDataPtr ?? TargetPointer.Null;
         if (threadLocalDataPtr == TargetPointer.Null)
             return TargetPointer.Null;
 

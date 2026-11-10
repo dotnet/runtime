@@ -270,13 +270,13 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? SetsRequiredMembersAttributeType => GetOrResolveType("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", ref _SetsRequiredMembersAttributeType);
         private Option<INamedTypeSymbol?> _SetsRequiredMembersAttributeType;
 
-        public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType);
+        public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType, requireCoreLibrary: true);
         private Option<INamedTypeSymbol?> _UnsafeAccessorAttributeType;
 
-        // OverloadResolutionPriorityAttribute was added in .NET 9; its presence indicates
+        // OverloadResolutionPriorityAttribute was added in .NET 9; its framework definition indicates
         // the runtime also supports generic type parameters in UnsafeAccessor.
         public bool SupportsGenericUnsafeAccessors => UnsafeAccessorAttributeType is not null
-            && GetOrResolveType("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute", ref _OverloadResolutionPriorityAttributeType) is not null;
+            && GetOrResolveType("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute", ref _OverloadResolutionPriorityAttributeType, requireCoreLibrary: true) is not null;
         private Option<INamedTypeSymbol?> _OverloadResolutionPriorityAttributeType;
 
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
@@ -396,7 +396,7 @@ namespace System.Text.Json.SourceGeneration
         private INamedTypeSymbol? GetOrResolveType(Type type, ref Option<INamedTypeSymbol?> field)
             => GetOrResolveType(type.FullName!, ref field);
 
-        private INamedTypeSymbol? GetOrResolveType(string fullyQualifiedName, ref Option<INamedTypeSymbol?> field)
+        private INamedTypeSymbol? GetOrResolveType(string fullyQualifiedName, ref Option<INamedTypeSymbol?> field, bool requireCoreLibrary = false)
         {
             if (field.HasValue)
             {
@@ -404,6 +404,12 @@ namespace System.Text.Json.SourceGeneration
             }
 
             INamedTypeSymbol? type = Compilation.GetBestTypeByMetadataName(fullyQualifiedName);
+            if (requireCoreLibrary && type is not null &&
+                !SymbolEqualityComparer.Default.Equals(type.ContainingAssembly, ObjectType.ContainingAssembly))
+            {
+                type = null;
+            }
+
             field = new(type);
             return type;
         }

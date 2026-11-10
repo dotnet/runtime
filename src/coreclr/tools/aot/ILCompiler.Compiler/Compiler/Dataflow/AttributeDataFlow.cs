@@ -60,7 +60,7 @@ namespace ILCompiler.Dataflow
                     builder.Add(argument.Value);
                 }
 
-                ProcessAttributeDataflow(method, builder.ToImmutableArray(), ref result);
+                ProcessAttributeDataflow(method, builder.MoveToImmutable(), ref result);
             }
 
             // Named arguments next

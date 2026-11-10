@@ -231,6 +231,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionHandling.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCFrameRegistration.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
@@ -274,6 +275,11 @@
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
+
+  <ItemGroup Condition="'$(FeatureMultithreading)' != 'true'">
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\Thread.Multithreading.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

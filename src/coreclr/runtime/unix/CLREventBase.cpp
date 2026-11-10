@@ -132,7 +132,7 @@ bool CLREventBase::CreateManualEventNoThrow(bool initialState)
     return CreateEventNoThrow(true, initialState);
 }
 
-void CLREventBase::CloseEvent()
+void CLREventBase::CloseEvent() noexcept
 {
     if (IsValid())
     {

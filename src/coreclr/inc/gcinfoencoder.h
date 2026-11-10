@@ -43,7 +43,7 @@
     - ReversePInvokeFrameSlot (if any)
     - SizeOfStackOutgoingAndScratchArea (#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA)
     - NumCallSites (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-    - NumInterruptibleRanges
+    - NumInterruptibleRanges (fat header only; omitted if !HAS_INTERRUPTIBLE_RANGES)
 
  2. Call sites offsets (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
  3. Fully-interruptible ranges

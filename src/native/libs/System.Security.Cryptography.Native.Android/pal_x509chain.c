@@ -10,12 +10,16 @@
 
 struct X509ChainContext_t
 {
+    jobject /*KeyStore*/ keyStore;
+    jobject /*X509CertSelector*/ targetSelector;
+    jobject /*CertStore*/ certStore;
     jobject /*PKIXBuilderParameters*/ params;
     jobject /*CertPath*/ certPath;
     jobject /*TrustAnchor*/ trustAnchor;
 
     jobject /*ArrayList<Throwable>*/ errorList;
     jobject /*ArrayList<Throwable>*/ revocationErrorList;
+    bool useTargetedTrust;
 };
 
 struct ValidationError_t
@@ -25,9 +29,93 @@ struct ValidationError_t
     PAL_X509ChainStatusFlags chainStatus;
 };
 
+static jobject OpenSystemTrustStore(JNIEnv* env)
+{
+    jobject ret = NULL;
+    INIT_LOCALS(loc, type, store);
+
+    loc[type] = make_java_string(env, "AndroidCAStore");
+    loc[store] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[type]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[store], g_KeyStoreLoad, NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = loc[store];
+    loc[store] = NULL;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
+static int32_t FindTrustedCertificate(JNIEnv* env, jobject store, jobject candidate, jobject* trustedCertificate)
+{
+    int32_t ret = FAIL;
+    *trustedCertificate = NULL;
+    INIT_LOCALS(loc, alias, trustedCert);
+
+    // AndroidCAStore resolves exact certificate aliases without enumerating all roots.
+    // https://android.googlesource.com/platform/external/conscrypt/+/759b12405125c6a9ed9a1b6f6c72839cf53e17a4/platform/src/main/java/org/conscrypt/TrustedCertificateKeyStoreSpi.java
+    loc[alias] = (*env)->CallObjectMethod(env, store, g_KeyStoreGetCertificateAlias, candidate);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = SUCCESS;
+    if (loc[alias] == NULL)
+        goto cleanup;
+
+    jboolean isCertificateEntry = (*env)->CallBooleanMethod(env, store, g_KeyStoreIsCertificateEntry, loc[alias]);
+    if (CheckJNIExceptions(env))
+    {
+        ret = FAIL;
+        goto cleanup;
+    }
+    if (!isCertificateEntry)
+        goto cleanup;
+
+    loc[trustedCert] = (*env)->CallObjectMethod(env, store, g_KeyStoreGetCertificate, loc[alias]);
+    if (CheckJNIExceptions(env))
+    {
+        ret = FAIL;
+        goto cleanup;
+    }
+    if (loc[trustedCert] == NULL)
+        goto cleanup;
+
+    jboolean matches = (*env)->CallBooleanMethod(env, loc[trustedCert], g_X509CertEquals, candidate);
+    if (CheckJNIExceptions(env))
+    {
+        ret = FAIL;
+        goto cleanup;
+    }
+    if (matches)
+    {
+        *trustedCertificate = loc[trustedCert];
+        loc[trustedCert] = NULL;
+    }
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
+int32_t X509ChainIsSystemTrusted(JNIEnv* env, jobject cert)
+{
+    int32_t ret = -1;
+    INIT_LOCALS(loc, store, trustedCert);
+    loc[store] = OpenSystemTrustStore(env);
+    if (loc[store] == NULL)
+        goto cleanup;
+    if (FindTrustedCertificate(env, loc[store], cert, &loc[trustedCert]) != SUCCESS)
+        goto cleanup;
+    ret = loc[trustedCert] != NULL ? 1 : 0;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
 X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certificate*/ cert,
                                                              jobject* /*X509Certificate[]*/ extraStore,
-                                                             int32_t extraStoreLen)
+                                                             int32_t extraStoreLen,
+                                                             bool useCustomRootTrust)
 {
     abort_if_invalid_pointer_argument (cert);
 
@@ -39,16 +127,45 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     JNIEnv* env = GetJNIEnv();
 
     X509ChainContext* ret = NULL;
-    INIT_LOCALS(loc, keyStoreType, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore, errorList);
+    INIT_LOCALS(loc, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore,
+                errorList, anchors, trustedCert, anchor);
+    bool useTargetedTrust = false;
 
-    // String keyStoreType = "AndroidCAStore";
-    // KeyStore keyStore = KeyStore.getInstance(keyStoreType);
-    // keyStore.load(null, null);
-    loc[keyStoreType] = make_java_string(env, "AndroidCAStore");
-    loc[keyStore] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[keyStoreType]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, loc[keyStore], g_KeyStoreLoad, NULL, NULL);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (!useCustomRootTrust)
+    {
+        loc[keyStore] = OpenSystemTrustStore(env);
+        if (loc[keyStore] == NULL)
+            goto cleanup;
+
+        loc[anchors] = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, extraStoreLen);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+        // Supplied certificates are hints, not authority: resolve them against the live store,
+        // including disabled-system-CA checks, before creating trust anchors.
+        for (int i = -1; i < extraStoreLen; ++i)
+        {
+            ReleaseLRef(env, loc[trustedCert]);
+            ReleaseLRef(env, loc[anchor]);
+            loc[trustedCert] = loc[anchor] = NULL;
+
+            jobject candidate = i < 0 ? cert : extraStore[i];
+            if (i >= 0 && (*env)->IsSameObject(env, candidate, cert))
+                continue;
+
+            if (FindTrustedCertificate(env, loc[keyStore], candidate, &loc[trustedCert]) != SUCCESS)
+                goto cleanup;
+            if (loc[trustedCert] == NULL)
+                continue;
+
+            loc[anchor] = (*env)->NewObject(env, g_TrustAnchorClass, g_TrustAnchorCtor, loc[trustedCert], NULL);
+            ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+            (*env)->CallBooleanMethod(env, loc[anchors], g_HashSetAdd, loc[anchor]);
+            ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        }
+
+        useTargetedTrust = (*env)->CallIntMethod(env, loc[anchors], g_CollectionSize) > 0;
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
 
     // X509CertSelector targetSel = new X509CertSelector();
     // targetSel.setCertificate(cert);
@@ -57,10 +174,23 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     (*env)->CallVoidMethod(env, loc[targetSel], g_X509CertSelectorSetCertificate, cert);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // PKIXBuilderParameters params = new PKIXBuilderParameters(keyStore, targetSelector);
-    loc[params] = (*env)->NewObject(
-        env, g_PKIXBuilderParametersClass, g_PKIXBuilderParametersCtor, loc[keyStore], loc[targetSel]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (!useCustomRootTrust)
+    {
+        if (useTargetedTrust)
+        {
+            loc[params] = (*env)->NewObject(
+                env, g_PKIXBuilderParametersClass, g_PKIXBuilderParametersCtorFromTrustAnchors,
+                loc[anchors], loc[targetSel]);
+        }
+        else
+        {
+            loc[params] = (*env)->NewObject(
+                env, g_PKIXBuilderParametersClass, g_PKIXBuilderParametersCtor,
+                loc[keyStore], loc[targetSel]);
+        }
+
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
 
     // ArrayList<Certificate> certList = new ArrayList<Certificate>();
     // certList.add(cert);
@@ -88,16 +218,32 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
         env, g_CertStoreClass, g_CertStoreGetInstance, loc[certStoreType], loc[certStoreParams]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // params.addCertStore(certStore);
-    (*env)->CallVoidMethod(env, loc[params], g_PKIXBuilderParametersAddCertStore, loc[certStore]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (loc[params] != NULL)
+    {
+        (*env)->CallVoidMethod(env, loc[params], g_PKIXBuilderParametersAddCertStore, loc[certStore]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
 
     loc[errorList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ret = xcalloc(1, sizeof(X509ChainContext));
+    ret->keyStore = AddGRef(env, loc[keyStore]);
+    ON_EXCEPTION_PRINT_AND_GOTO(context_cleanup);
+    ret->targetSelector = AddGRef(env, loc[targetSel]);
+    ON_EXCEPTION_PRINT_AND_GOTO(context_cleanup);
+    ret->certStore = AddGRef(env, loc[certStore]);
+    ON_EXCEPTION_PRINT_AND_GOTO(context_cleanup);
     ret->params = AddGRef(env, loc[params]);
+    ON_EXCEPTION_PRINT_AND_GOTO(context_cleanup);
     ret->errorList = AddGRef(env, loc[errorList]);
+    ON_EXCEPTION_PRINT_AND_GOTO(context_cleanup);
+    ret->useTargetedTrust = useTargetedTrust;
+    goto cleanup;
+
+context_cleanup:
+    AndroidCryptoNative_X509ChainDestroyContext(ret);
+    ret = NULL;
 
 cleanup:
     RELEASE_LOCALS(loc, env);
@@ -110,6 +256,9 @@ void AndroidCryptoNative_X509ChainDestroyContext(X509ChainContext* ctx)
         return;
 
     JNIEnv* env = GetJNIEnv();
+    ReleaseGRef(env, ctx->keyStore);
+    ReleaseGRef(env, ctx->targetSelector);
+    ReleaseGRef(env, ctx->certStore);
     ReleaseGRef(env, ctx->params);
     ReleaseGRef(env, ctx->certPath);
     ReleaseGRef(env, ctx->trustAnchor);
@@ -118,12 +267,65 @@ void AndroidCryptoNative_X509ChainDestroyContext(X509ChainContext* ctx)
     free(ctx);
 }
 
-int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeInMsFromUnixEpoch)
+static int32_t ResetToFullTrustStore(JNIEnv* env, X509ChainContext* ctx)
+{
+    int32_t ret = FAIL;
+    jobject paramsRef = NULL;
+    jobject errorListRef = NULL;
+    INIT_LOCALS(loc, params, errorList);
+
+    // Recreate all mutable PKIX state, including revocation checkers, for the fallback.
+    loc[params] = (*env)->NewObject(
+        env, g_PKIXBuilderParametersClass, g_PKIXBuilderParametersCtor, ctx->keyStore, ctx->targetSelector);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[params], g_PKIXBuilderParametersAddCertStore, ctx->certStore);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[errorList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    paramsRef = AddGRef(env, loc[params]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    errorListRef = AddGRef(env, loc[errorList]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ReleaseGRef(env, ctx->params);
+    ReleaseGRef(env, ctx->errorList);
+    ReleaseGRef(env, ctx->revocationErrorList);
+    ctx->params = paramsRef;
+    ctx->errorList = errorListRef;
+    paramsRef = errorListRef = NULL;
+    ctx->revocationErrorList = NULL;
+    ctx->useTargetedTrust = false;
+    ret = SUCCESS;
+
+cleanup:
+    ReleaseGRef(env, paramsRef);
+    ReleaseGRef(env, errorListRef);
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
+int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx,
+                                          int64_t timeInMsFromUnixEpoch,
+                                          bool useFullTrustStore,
+                                          bool* usedTargetedTrust)
 {
     abort_if_invalid_pointer_argument (ctx);
+    abort_if_invalid_pointer_argument (usedTargetedTrust);
     JNIEnv* env = GetJNIEnv();
 
-    int32_t ret = FAIL;
+    *usedTargetedTrust = false;
+    if (useFullTrustStore && ctx->useTargetedTrust && ResetToFullTrustStore(env, ctx) != SUCCESS)
+    {
+        // -1 makes managed code throw for an operational failure; FAIL reports a recorded path-building rejection.
+        return -1;
+    }
+
+    *usedTargetedTrust = ctx->useTargetedTrust;
+    ReleaseGRef(env, ctx->certPath);
+    ReleaseGRef(env, ctx->trustAnchor);
+    ctx->certPath = ctx->trustAnchor = NULL;
+
+    int32_t ret = -1;
     INIT_LOCALS(loc, date, builderType, builder, result, ex, certPath, trustAnchor);
 
     jobject params = ctx->params;
@@ -152,8 +354,10 @@ int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeIn
     if (TryGetJNIException(env, &loc[ex], false /*printException*/))
     {
         (*env)->CallBooleanMethod(env, ctx->errorList, g_ArrayListAdd, loc[ex]);
-        // Clear any exception raised while recording the build failure so it doesn't leak to managed code.
+        // The build exception is already cleared. If recording it throws, keep ret = -1 (operational failure).
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        // Only a successfully recorded path-building rejection returns FAIL.
+        ret = FAIL;
         goto cleanup;
     }
 
@@ -163,7 +367,9 @@ int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeIn
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ctx->certPath = AddGRef(env, loc[certPath]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ctx->trustAnchor = AddGRef(env, loc[trustAnchor]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ret = SUCCESS;
 
 cleanup:
@@ -487,7 +693,7 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, anchors, anchor);
+    INIT_LOCALS(loc, anchors, anchor, params);
 
     // HashSet<TrustAnchor> anchors = new HashSet<TrustAnchor>(customTrustStoreLen);
     // for (Certificate cert : customTrustStore) {
@@ -506,9 +712,15 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
         loc[anchor] = NULL;
     }
 
-    // params.setTrustAnchors(anchors);
-    (*env)->CallVoidMethod(env, ctx->params, g_PKIXBuilderParametersSetTrustAnchors, loc[anchors]);
+    loc[params] = (*env)->NewObject(
+        env, g_PKIXBuilderParametersClass, g_PKIXBuilderParametersCtorFromTrustAnchors, loc[anchors], ctx->targetSelector);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[params], g_PKIXBuilderParametersAddCertStore, ctx->certStore);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    jobject paramsRef = AddGRef(env, loc[params]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ReleaseGRef(env, ctx->params);
+    ctx->params = paramsRef;
     ret = SUCCESS;
 
 cleanup:

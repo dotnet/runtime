@@ -183,6 +183,22 @@ namespace System.Reflection.Context.Custom
         {
             MethodInfo? method = base.GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
 
+            return AddNewPropertyAccessors(method, name, bindingAttr, binder, types, modifiers);
+        }
+
+        protected override MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+        {
+            MethodInfo? method = base.GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
+
+            // The accessors of new properties are never generic.
+            if (genericParameterCount != 0)
+                return method;
+
+            return AddNewPropertyAccessors(method, name, bindingAttr, binder, types, modifiers);
+        }
+
+        private MethodInfo? AddNewPropertyAccessors(MethodInfo? method, string name, BindingFlags bindingAttr, Binder? binder, Type[]? types, ParameterModifier[]? modifiers)
+        {
             bool getIgnoreCase = (bindingAttr & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase;
             bool getDeclaredOnly = (bindingAttr & BindingFlags.DeclaredOnly) == BindingFlags.DeclaredOnly;
             bool getInstance = (bindingAttr & BindingFlags.Instance) == BindingFlags.Instance;

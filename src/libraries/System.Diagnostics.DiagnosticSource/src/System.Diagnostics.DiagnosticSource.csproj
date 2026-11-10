@@ -178,7 +178,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" PrivateAssets="All" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" PrivateAssets="All" />
   </ItemGroup>
 
   <Target Name="_GenerateThisAssemblyInfo"

@@ -273,3 +273,11 @@ jobs:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
           displayName: Collect vslogs on exit
           condition: always()
+
+    - template: /eng/pipelines/coreclr/templates/prune-roslyn-cache.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+
+    - template: /eng/pipelines/coreclr/templates/purge-illink-cache.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}

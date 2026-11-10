@@ -8251,7 +8251,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     assert(offs >= 0);
 
-    if ((varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx)) ||
+    if ((varx >= 0 && m_compiler->lvaLocalIsOnUnknownSizeFrame(varx)) ||
         (varx < 0 && codeGen->regSet.tmpIsUnknownSizeTemp(varx)))
     {
         // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
@@ -8593,7 +8593,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     regNumber reg2          = REG_NA;
     ssize_t   imm           = 0;
 
-    if ((varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx)) ||
+    if ((varx >= 0 && m_compiler->lvaLocalIsOnUnknownSizeFrame(varx)) ||
         (varx < 0 && codeGen->regSet.tmpIsUnknownSizeTemp(varx)))
     {
         // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
@@ -10753,6 +10753,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 ins = INS_adrp;
                 fmt = IF_DI_1E;
                 dst = emitOutputShortAddress(dst, ins, fmt, relPageAddr, addrReg);
+                emitGCregDeadUpd(addrReg, dst);
 
                 ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
                 assert(isValidUimm<12>(imm12));
@@ -11811,6 +11812,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Local jmp/load case
                 assert(id->idIsBound());
                 dst = emitOutputLJ(ig, dst, id);
+                if (fmt == IF_LARGEADR)
+                {
+                    // ADRP overwrites the destination before ADD computes the full address.
+                    emitGCregDeadUpd(id->idReg1(), odst + sizeof(code_t));
+                }
             }
             sz = sizeof(instrDescJmp);
             break;

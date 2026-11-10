@@ -10,7 +10,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Runtime.CompilerServices;
@@ -125,6 +124,17 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             {
                 return new QSignatureTypeHandle(_reader, _property.Signature.GetPropertySignature(_reader).Type);
             }
+        }
+
+        internal override QSignatureTypeHandle GetParameterTypeHandle(int position)
+        {
+            foreach (Handle parameterType in _property.Signature.GetPropertySignature(_reader).Parameters)
+            {
+                if (position-- == 0)
+                    return new QSignatureTypeHandle(_reader, parameterType);
+            }
+
+            throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
         }
 
         protected sealed override bool GetDefaultValueIfAny(bool raw, out object? defaultValue)

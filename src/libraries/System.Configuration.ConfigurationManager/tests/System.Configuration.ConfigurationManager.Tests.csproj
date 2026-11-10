@@ -106,8 +106,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
-    <!-- Apple mobile trimming descriptor for Mono runtime -->
-    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <!-- System.Configuration creates its hosts and sections through reflection, which trimming can't see. -->
+    <TrimmerRootDescriptor Condition="('$(TargetsAppleMobile)' == 'true' or '$(TargetsWasi)' == 'true') and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />

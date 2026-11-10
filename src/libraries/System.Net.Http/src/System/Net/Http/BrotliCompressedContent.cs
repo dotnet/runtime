@@ -13,7 +13,6 @@ namespace System.Net.Http
     /// Provides HTTP content that compresses the inner content using the Brotli content coding.
     /// </summary>
     [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("wasi")]
     public sealed class BrotliCompressedContent : HttpContent
     {
         private const string Encoding = "br";
