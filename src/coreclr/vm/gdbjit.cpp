@@ -646,14 +646,16 @@ struct jit_descriptor
   struct jit_code_entry *relevant_entry;
   struct jit_code_entry *first_entry;
 };
+extern "C"
+{
 // GDB puts a breakpoint in this function.
 // To prevent from inlining we add noinline attribute and inline assembler statement.
-extern "C"
-void __attribute__((noinline)) __jit_debug_register_code() { __asm__(""); };
+DLLEXPORT void __attribute__((noinline)) __jit_debug_register_code() { __asm__(""); };
 
 /* Make sure to specify the version statically, because the
    debugger may check the version before we can set it.  */
-struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
+DLLEXPORT struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
+}
 static CrstStatic g_jitDescriptorCrst;
 
 // END of GDB JIT interface
@@ -2335,6 +2337,7 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
 #if defined(TARGET_ARM)
     const unsigned int code_alignment_factor = 2;
     const int data_alignment_factor = -4;
+    const UINT8 return_address_register = 14; // lr
 
     UINT8 cieCode[] = {
         // DW_CFA_def_cfa 13[sp], 0
@@ -2356,11 +2359,12 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
 #elif defined(TARGET_AMD64)
     const unsigned int code_alignment_factor = 1;
     const int data_alignment_factor = -8;
+    const UINT8 return_address_register = 16; // rip
 
     UINT8 cieCode[] = {
       // DW_CFA_def_cfa 7(rsp), 8
       0x0c, 0x07, 0x08,
-      // DW_CFA_offset 16, -16 (= -8 * 2)
+      // DW_CFA_offset 16, -8 (= -8 * 1)
       (0x02 << 6) | 0x10, 0x01,
     };
 
@@ -2377,6 +2381,7 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
 #elif defined(TARGET_ARM64)
     const unsigned int code_alignment_factor = 1;
     const int data_alignment_factor = -4;
+    const UINT8 return_address_register = 30; // lr
 
     UINT8 cieCode[] = {
       // DW_CFA_def_cfa 31(sp), 0
@@ -2417,7 +2422,7 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
     Leb128Encode(code_alignment_factor, reinterpret_cast<char *>(&pCIE->code_alignment_factor), 1);
     Leb128Encode(data_alignment_factor, reinterpret_cast<char *>(&pCIE->data_alignment_factor), 1);
 
-    pCIE->return_address_register = 0;
+    pCIE->return_address_register = return_address_register;
 
     memcpy(&pCIE->instructions, cieCode, sizeof(cieCode));
 
@@ -2688,6 +2693,7 @@ bool NotifyGdb::EmitSymtab(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, P
     Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
     elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
     symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_info = 1; // Index of the first non-local symbol
     symtab->Header()->sh_entsize = sizeof(Elf_Sym);
     elfBuilder.CloseSection();
 
@@ -2897,6 +2903,7 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
     Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
     elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
     symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_info = 1; // Index of the first non-local symbol
     symtab->Header()->sh_entsize = sizeof(Elf_Sym);
     elfBuilder.CloseSection();
 

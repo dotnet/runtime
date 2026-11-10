@@ -302,6 +302,19 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
+  # The generator scripts take a single input file (the second argument is a symbol prefix).
+  list(LENGTH INPUT_LIST inputCount)
+  if (inputCount GREATER 1)
+    set(combinedInput ${outputFilename}.src)
+    add_custom_command(
+      OUTPUT ${combinedInput}
+      COMMAND ${CMAKE_COMMAND} -E cat ${INPUT_LIST} >${combinedInput}
+      DEPENDS ${INPUT_LIST}
+      COMMENT "Combining exports sources into ${combinedInput}"
+    )
+    set(INPUT_LIST ${combinedInput})
+  endif()
+
   # Win32 may be false when cross compiling
   if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.ps1)
