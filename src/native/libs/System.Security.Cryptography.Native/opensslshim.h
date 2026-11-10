@@ -38,6 +38,7 @@
 
 #include "pal_crypto_config.h"
 #include "pal_compiler.h"
+#define OPENSSL_VERSION_4_1_RTM 0x40100000L
 #define OPENSSL_VERSION_4_0_RTM 0x40000000L
 #define OPENSSL_VERSION_3_0_2_RTM 0x3000002FL
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
