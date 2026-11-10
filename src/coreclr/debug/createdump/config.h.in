@@ -4,3 +4,5 @@
 #pragma once
 
 #cmakedefine HAVE_PROCESS_VM_READV
+#cmakedefine HAVE_UNW_GET_ACCESSORS
+#cmakedefine01 HAVE_GET_PROC_INFO_IN_RANGE
