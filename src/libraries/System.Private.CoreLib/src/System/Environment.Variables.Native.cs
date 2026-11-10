@@ -61,12 +61,23 @@ namespace System
 
         private static void SetEnvironmentVariableCore(string variable, string? value)
         {
-            // Unsetting a variable that is not set is not an error. Otherwise, the variable name
-            // has been validated, so the only possible failure is running out of memory.
-            if (SetEnvironmentVariableNative(variable, value) == Interop.BOOL.FALSE && value != null)
+            switch (SetEnvironmentVariableNative(variable, value))
             {
-                throw new OutOfMemoryException();
+                case SetEnvironmentVariableResult.Success:
+                    return;
+                case SetEnvironmentVariableResult.InvalidArgument:
+                    throw new ArgumentException(SR.Arg_ArgumentException, nameof(variable));
+                default:
+                    throw new OutOfMemoryException();
             }
+        }
+
+        // Keep in sync with Environment_SetEnvironmentVariable in src/coreclr/runtime/MiscNativeHelpers.cpp.
+        private enum SetEnvironmentVariableResult
+        {
+            Success = 0, // Includes unsetting a variable that is not set.
+            InvalidArgument = 1,
+            OutOfMemory = 2,
         }
 
         public static unsafe IDictionary GetEnvironmentVariables()
@@ -122,7 +133,7 @@ namespace System
         private static partial int GetEnvironmentVariableNative(string name, ref byte buffer, int bufferSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_SetEnvironmentVariable", StringMarshalling = StringMarshalling.Utf8)]
-        private static partial Interop.BOOL SetEnvironmentVariableNative(string name, string? value);
+        private static partial SetEnvironmentVariableResult SetEnvironmentVariableNative(string name, string? value);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetEnvironmentStrings")]
         private static unsafe partial byte* GetEnvironmentStringsNative();

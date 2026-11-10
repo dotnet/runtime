@@ -30,7 +30,10 @@ void ProcessEnvironment_FreeStrings(CHAR16_T* strings);
 #ifndef TARGET_WINDOWS
 // UTF-8 versions of the functions above.
 bool ProcessEnvironment_TryGetVariableUtf8(const char* name, char* buffer, uint32_t bufferSize, uint32_t* length);
-bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value);
+
+// Returns 0 on success, ENOENT when unsetting a variable that is not set, EINVAL for an invalid name,
+// or ENOMEM when out of memory.
+int ProcessEnvironment_SetVariableUtf8(const char* name, const char* value);
 char* ProcessEnvironment_GetStringsUtf8();
 void ProcessEnvironment_FreeStringsUtf8(char* strings);
 

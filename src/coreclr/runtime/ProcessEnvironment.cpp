@@ -48,6 +48,7 @@ void ProcessEnvironment_FreeStrings(CHAR16_T* strings)
 #include <minipal/strings.h>
 #include <minipal/utf8.h>
 
+#include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -142,11 +143,11 @@ static char* GetValueCopy(const char* name)
     return result;
 }
 
-bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value)
+int ProcessEnvironment_SetVariableUtf8(const char* name, const char* value)
 {
     if (name == nullptr || name[0] == '\0' || strchr(name, '=') != nullptr)
     {
-        return false;
+        return EINVAL;
     }
 
     char* entry = nullptr;
@@ -157,7 +158,7 @@ bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value)
         entry = (char*)malloc(nameLength + valueLength + 2);
         if (entry == nullptr)
         {
-            return false;
+            return ENOMEM;
         }
 
         memcpy(entry, name, nameLength);
@@ -165,7 +166,7 @@ bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value)
         memcpy(entry + nameLength + 1, value, valueLength + 1);
     }
 
-    bool result = false;
+    int result = ENOMEM;
     pthread_mutex_lock(&s_envLock);
     if (EnsureEnvironmentLocked())
     {
@@ -177,7 +178,11 @@ bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value)
                 free(s_env[index]);
                 memmove(&s_env[index], &s_env[index + 1], (s_envCount - index) * sizeof(char*));
                 s_envCount--;
-                result = true;
+                result = 0;
+            }
+            else
+            {
+                result = ENOENT;
             }
         }
         else if (index < s_envCount)
@@ -185,7 +190,7 @@ bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value)
             free(s_env[index]);
             s_env[index] = entry;
             entry = nullptr;
-            result = true;
+            result = 0;
         }
         else
         {
@@ -205,7 +210,7 @@ bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value)
                 s_env[s_envCount++] = entry;
                 s_env[s_envCount] = nullptr;
                 entry = nullptr;
-                result = true;
+                result = 0;
             }
         }
     }
@@ -346,7 +351,7 @@ bool ProcessEnvironment_SetVariable(const CHAR16_T* name, const CHAR16_T* value)
         }
     }
 
-    bool result = ProcessEnvironment_SetVariableUtf8(nameUtf8, valueUtf8);
+    bool result = ProcessEnvironment_SetVariableUtf8(nameUtf8, valueUtf8) == 0;
     free(nameUtf8);
     free(valueUtf8);
     return result;

@@ -8,6 +8,7 @@
 #include <minipal/cpuid.h>
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/time.h>
+#include <errno.h>
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 extern "C" void QCALLTYPE X86Base_CpuId(int cpuInfo[4], int functionId, int subFunctionId)
@@ -55,9 +56,20 @@ extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const char* name
     return (int32_t)length;
 }
 
+// Returns 0 on success, including when unsetting a variable that is not set, 1 for an invalid name,
+// or 2 when out of memory.
 extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value)
 {
-    return ProcessEnvironment_SetVariableUtf8(name, value) ? 1 : 0;
+    switch (ProcessEnvironment_SetVariableUtf8(name, value))
+    {
+        case 0:
+        case ENOENT:
+            return 0;
+        case EINVAL:
+            return 1;
+        default:
+            return 2;
+    }
 }
 
 // Returns a double-null-terminated block of UTF-8 "name=value" strings.

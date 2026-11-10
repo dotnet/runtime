@@ -96,10 +96,16 @@ namespace Tracing.Tests.ProcessEnvironmentValidation
             Utils.Assert(Environment.GetEnvironmentVariable(FromManaged) == "abc", "A value must be truncated at an embedded null");
             Environment.SetEnvironmentVariable(FromManaged, null);
 
+            if (!OperatingSystem.IsWindows())
+            {
+                SetEnvironmentVariable(pid, FromIpc + "=INVALID", "ipc", expectSuccess: false);
+                Utils.Assert(Environment.GetEnvironmentVariable(FromIpc) is null, "A variable name containing '=' must be rejected");
+            }
+
             Logger.logger.Log("Environment is in sync between managed code and the diagnostic server");
         }
 
-        private static void SetEnvironmentVariable(int pid, string name, string value)
+        private static void SetEnvironmentVariable(int pid, string name, string value, bool expectSuccess = true)
         {
             using var payload = new MemoryStream();
             using (var writer = new BinaryWriter(payload, Encoding.Unicode, leaveOpen: true))
@@ -113,8 +119,10 @@ namespace Tracing.Tests.ProcessEnvironmentValidation
             using Stream stream = ConnectionHelper.GetStandardTransport(pid);
             IpcMessage response = IpcClient.SendMessage(stream, message);
 
+            // 0x00 = OK, 0xFF = Error
+            byte expectedCommandId = expectSuccess ? (byte)0x00 : (byte)0xFF;
             Utils.Assert(response.Header.CommandSet == 0xFF, $"Response must have Server command set. Expected: 0xFF, Received: 0x{response.Header.CommandSet:X2}"); // server
-            Utils.Assert(response.Header.CommandId == 0x00, $"Response must have OK command id. Expected: 0x00, Received: 0x{response.Header.CommandId:X2}"); // OK
+            Utils.Assert(response.Header.CommandId == expectedCommandId, $"Unexpected response command id. Expected: 0x{expectedCommandId:X2}, Received: 0x{response.Header.CommandId:X2}");
 
             static void WriteString(BinaryWriter writer, string value)
             {
