@@ -3,6 +3,7 @@
 
 using System.Threading.Tasks;
 using System.Net.Security.Kerberos;
+using System.Net.Test.Common;
 using Xunit;
 using Xunit.Abstractions;
 
