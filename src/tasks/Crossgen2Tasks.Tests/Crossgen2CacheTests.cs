@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -192,7 +193,7 @@ public class Crossgen2CacheTests
             Assert.False(File.Exists(output));
         };
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
 
         Assert.Equal(source == "none", task.Execute());
         Assert.Equal(source == "none" ? 1 : 0, task.Executions);
@@ -249,10 +250,7 @@ public class Crossgen2CacheTests
         miss.EmitWarning = bool.Parse(emit);
         Assert.True(miss.Execute());
         Assert.Equal(bool.Parse(emit) && !bool.Parse(show), miss.WarningsDetected);
-        if (miss.ShowCompilerWarnings)
-        {
-            Assert.False(Directory.Exists(fixture.Cache));
-        }
+        Assert.True(Directory.Exists(fixture.Cache));
         byte[] image = File.ReadAllBytes(fixture.Output);
         byte[] map = File.ReadAllBytes(fixture.Map);
         File.Delete(fixture.Output);
@@ -263,65 +261,80 @@ public class Crossgen2CacheTests
         hit.EmitWarning = miss.EmitWarning;
         hit.WarningsDetected = !miss.WarningsDetected;
         Assert.True(hit.Execute());
-        Assert.Equal(miss.ShowCompilerWarnings ? 1 : 0, hit.Executions);
+        Assert.Equal(0, hit.Executions);
         Assert.Equal(0, hit.ExitCode);
         Assert.Equal(image, File.ReadAllBytes(fixture.Output));
         Assert.Equal(map, File.ReadAllBytes(fixture.Map));
         Assert.Equal(miss.WarningsDetected, hit.WarningsDetected);
         Assert.Equal(miss.Engine.Warnings, hit.Engine.Warnings);
-        if (miss.ShowCompilerWarnings)
-        {
-            Assert.Equal(
-                miss.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)),
-                hit.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)));
-        }
-        else
-        {
-            Assert.DoesNotContain(hit.Engine.Messages, message => message.Contains("warning:", StringComparison.Ordinal));
-        }
+        Assert.Equal(
+            miss.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)),
+            hit.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)));
         Assert.InRange(File.GetLastWriteTimeUtc(fixture.Output), before.AddSeconds(-1), DateTime.UtcNow.AddSeconds(1));
         Assert.Equal("do not delete", File.ReadAllText(neighbor));
     }, showWarnings.ToString(), emitWarning.ToString()).Dispose();
 
     [CachePlatformTheory]
+    [InlineData("show-warnings")]
+    [InlineData("hide-warnings")]
+    [InlineData("stderr-error")]
+    [InlineData("stderr-message")]
+    [InlineData("output-importance")]
+    public void WarningPolicyChangesReuseProcessResult(string policy) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler miss = fixture.Create();
+        miss.EmitWarning = true;
+        miss.WarningOnStandardError = value.StartsWith("stderr-", StringComparison.Ordinal);
+        miss.ShowCompilerWarnings = value == "hide-warnings";
+        miss.LogStandardErrorAsError = value == "stderr-message";
+        Assert.Equal(value != "stderr-message", miss.Execute());
+        Assert.True(Directory.Exists(fixture.Cache));
+
+        MockCompiler hit = fixture.Create();
+        hit.ShowCompilerWarnings = value == "show-warnings";
+        hit.LogStandardErrorAsError = value == "stderr-error";
+        hit.StandardOutputImportance = "High";
+        bool expectedWarningState = !hit.ShowCompilerWarnings && !hit.LogStandardErrorAsError;
+        hit.WarningsDetected = !expectedWarningState;
+
+        Assert.Equal(value != "stderr-error", hit.Execute());
+        Assert.Equal(0, hit.Executions);
+        Assert.Equal(expectedWarningState, hit.WarningsDetected);
+        if (value == "stderr-error")
+        {
+            Assert.Single(hit.Engine.Errors);
+            Assert.Equal(-1, hit.ExitCode);
+        }
+        else if (hit.ShowCompilerWarnings)
+        {
+            Assert.Single(hit.Engine.Warnings);
+        }
+        else
+        {
+            Assert.Contains("warning: example compiler warning", hit.Engine.Messages);
+        }
+    }, policy).Dispose();
+
+    [CachePlatformTheory]
     [InlineData(false)]
     [InlineData(true)]
-    public void InvalidTaskOutputsDoNotLeakWarningStateIntoFallbackExecution(bool truncated) => RemoteExecutor.Invoke(value =>
+    public void InvalidDiagnosticsDoNotLeakWarningStateIntoFallbackExecution(bool truncated) => RemoteExecutor.Invoke(value =>
     {
         using var fixture = new Fixture();
         MockCompiler miss = fixture.Create();
         miss.EmitWarning = true;
         Assert.True(miss.Execute());
         string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory)).Single();
-        string manifestPath = Path.Combine(entry, "manifest");
-        long metadataPosition;
-        using (var reader = new BinaryReader(File.OpenRead(manifestPath)))
+        string diagnosticsPath = Path.Combine(entry, "diagnostics");
+        using (var writer = new BinaryWriter(File.Create(diagnosticsPath)))
         {
-            Assert.Equal(InvocationCacheEntry.FormatVersion, reader.ReadInt32());
-            Assert.True(reader.ReadBoolean());
-            int count = reader.ReadInt32();
-            for (int i = 0; i < count; i++)
+            if (bool.Parse(value))
             {
-                reader.ReadString();
-                if (reader.ReadBoolean())
-                {
-                    reader.ReadInt64();
-                    reader.ReadBytes(32);
-                }
-            }
-            metadataPosition = reader.BaseStream.Position;
-        }
-        using (var writer = new BinaryWriter(File.OpenWrite(manifestPath)))
-        {
-            writer.BaseStream.Position = metadataPosition;
-            if (!bool.Parse(value))
-            {
-                writer.Write(true);
+                writer.Write(1);
                 writer.Write((byte)0);
             }
-            writer.BaseStream.SetLength(writer.BaseStream.Position);
         }
-        File.WriteAllBytes(Path.Combine(entry, "manifest.sha256"), SHA256.HashData(File.ReadAllBytes(manifestPath)));
 
         MockCompiler fallback = fixture.Create();
         fallback.WarningsDetected = true;
@@ -458,9 +471,6 @@ public class Crossgen2CacheTests
     [InlineData("pdb-add")]
     [InlineData("pdb-remove")]
     [InlineData("reference-order")]
-    [InlineData("options")]
-    [InlineData("stderr-policy")]
-    [InlineData("output-importance")]
     [InlineData("explicit-jit")]
     public void IdentityChanges(string change) => RemoteExecutor.Invoke(value =>
     {
@@ -485,15 +495,6 @@ public class Crossgen2CacheTests
                 break;
             case "reference-order":
                 changed.ImplementationAssemblyReferences = changed.ImplementationAssemblyReferences.Reverse().ToArray();
-                break;
-            case "options":
-                changed.ShowCompilerWarnings = true;
-                break;
-            case "stderr-policy":
-                changed.LogStandardErrorAsError = false;
-                break;
-            case "output-importance":
-                changed.StandardOutputImportance = "High";
                 break;
             case "explicit-jit":
                 changed.Crossgen2Tool.SetMetadata("JitPath", fixture.Jit);
@@ -599,7 +600,7 @@ public class Crossgen2CacheTests
         using var fixture = new Fixture();
         MockCompiler task = fixture.Create();
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
         task.ImplementationAssemblyReferences = new[] { new TaskItem(fixture.Reference) };
         if (value == "input")
         {
@@ -659,7 +660,7 @@ public class Crossgen2CacheTests
         using var fixture = new Fixture();
         MockCompiler task = fixture.Create();
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
         string directory = Path.Combine(fixture.Root, "symbols");
         Directory.CreateDirectory(directory);
         Directory.CreateDirectory(directory + " ");
@@ -697,7 +698,7 @@ public class Crossgen2CacheTests
         using var fixture = new Fixture();
         MockCompiler task = fixture.Create();
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
         string protectedPath = source switch
         {
             "reference" => fixture.Reference,
@@ -811,7 +812,7 @@ public class Crossgen2CacheTests
             task.ReadyToRunCompositeBuildReferences = Array.Empty<ITaskItem>();
         }
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
         byte[] before = File.ReadAllBytes(protectedPath);
         byte[] declaredBefore = File.ReadAllBytes(declaredPath);
         string directory = Environment.CurrentDirectory;
@@ -880,7 +881,7 @@ public class Crossgen2CacheTests
             task.ReadyToRunCompositeUnrootedBuildInput = input == "unrooted" ? new[] { wildcard } : Array.Empty<ITaskItem>();
         }
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
         byte[] before = File.ReadAllBytes(protectedPath);
         byte[] assemblyBefore = File.ReadAllBytes(assembly);
 
@@ -968,7 +969,7 @@ public class Crossgen2CacheTests
             task.ReadyToRunCompositeUnrootedBuildInput = input == "unrooted" ? new[] { new TaskItem(assembly) } : Array.Empty<ITaskItem>();
         }
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
 
         Assert.False(task.Execute());
         Assert.Equal(0, task.Executions);
@@ -1088,13 +1089,13 @@ public class Crossgen2CacheTests
     [CachePlatformTheory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FailuresAreNotCached(bool logError) => RemoteExecutor.Invoke(value =>
+    public void ProcessFailuresAreNotCached(bool logError) => RemoteExecutor.Invoke(value =>
     {
         using var fixture = new Fixture();
         MockCompiler failure = fixture.Create();
-        failure.Result = bool.Parse(value) ? 0 : 7;
+        failure.Result = 7;
         failure.EmitError = bool.Parse(value);
-        Assert.Equal(bool.Parse(value), failure.Execute());
+        Assert.False(failure.Execute());
         Assert.NotEmpty(failure.Engine.Errors);
         Assert.False(Directory.Exists(fixture.Cache));
         MockCompiler retry = fixture.Create();
@@ -1248,12 +1249,9 @@ public class Crossgen2CacheTests
         File.WriteAllText(fixture.Output, "image");
         string key = new string('a', 64);
         InvocationOutputs outputs = InvocationOutputs.FromFiles(fixture.Output, fixture.Map);
-        Parallel.For(0, 8, _ => cache.Store(key, outputs,
-            writer => writer.Write(true)));
-        bool warningsDetected = false;
-        Assert.True(cache.TryRestore(key, outputs, DateTime.UtcNow,
-            reader => warningsDetected = reader.ReadBoolean()));
-        Assert.True(warningsDetected);
+        Parallel.For(0, 8, _ => cache.Store(key, outputs, new[] { "warning: cached compiler warning" }));
+        Assert.True(cache.TryRestore(key, outputs, DateTime.UtcNow, out InvocationResult result));
+        Assert.Equal(new[] { "warning: cached compiler warning" }, result.StandardOutput);
         Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory), "*.tmp"));
     }).Dispose();
 
@@ -1364,7 +1362,7 @@ public class Crossgen2CacheTests
         {
             Assert.Throws<InvalidDataException>(() => Crossgen2Cache.DescribeInvocation(new[] { fixture.Tool, fixture.Jit, fixture.Support },
                 fixture.Input, task.ImplementationAssemblyReferences, task.Crossgen2PgoFiles,
-                paths, "", "", "", fixture.Root));
+                paths, "", "", fixture.Root));
         }
     }, location).Dispose();
 
@@ -1460,7 +1458,7 @@ public class Crossgen2CacheTests
         task.CompilationEntry.SetMetadata("EmitSymbols", "false");
         task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.ShowCompilerWarnings = mode == "bypassed";
+        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
         string directory = Environment.CurrentDirectory;
         try
         {
@@ -1586,7 +1584,7 @@ public class Crossgen2CacheTests
         {
             MockCompiler task = fixture.Create("System.Linq.dll");
             task.RealTool = true;
-            task.ShowCompilerWarnings = mode == "bypassed";
+            task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
             task.Crossgen2Tool.ItemSpec = Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")!;
             task.CompilationEntry.ItemSpec = declaredInput;
             task.CompilationEntry.SetMetadata("EmitSymbols", (value != "input").ToString());
@@ -1765,6 +1763,7 @@ public class Crossgen2CacheTests
         internal int Result { get; set; }
         internal bool EmitWarning { get; set; }
         internal bool EmitError { get; set; }
+        internal bool WarningOnStandardError { get; set; }
         internal bool ProduceMap { get; set; } = true;
         internal bool RealTool { get; set; }
         internal Action? BeforeExecute { get; set; }
@@ -1782,15 +1781,26 @@ public class Crossgen2CacheTests
             {
                 File.WriteAllText(CompilationEntry.GetMetadata("OutputPDBImage"), "map");
             }
-            if (EmitWarning)
+            if (EmitWarning || EmitError)
             {
-                LogEventsFromTextOutput("warning: example compiler warning", MessageImportance.Normal);
-            }
-            if (EmitError)
-            {
-                Log.LogError("example compiler error");
+                return base.ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
             }
             return Result;
+        }
+
+        protected override Process StartToolProcess(Process process)
+        {
+            if (!RealTool)
+            {
+                string message = EmitError ? "error: example compiler error" : "warning: example compiler warning";
+                string redirect = EmitError || WarningOnStandardError ? " >&2" : "";
+                process.StartInfo.FileName = OperatingSystem.IsWindows()
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe") : "/bin/sh";
+                process.StartInfo.Arguments = OperatingSystem.IsWindows()
+                    ? $"/d /c \"{(EmitError || WarningOnStandardError ? "1>&2 " : "")}echo {message}& exit /b {Result}\""
+                    : $"-c \"echo '{message}'{redirect}; exit {Result}\"";
+            }
+            return base.StartToolProcess(process);
         }
     }
 

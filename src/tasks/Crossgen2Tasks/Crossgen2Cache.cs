@@ -47,7 +47,7 @@ internal static class Crossgen2Cache
     }
 
     internal static InvocationDescription DescribeInvocation(string[] compilerDependencies, string input, ITaskItem[] references,
-        ITaskItem[]? profiles, string[] outputs, string response, string command, string diagnosticPolicy, string workingDirectory)
+        ITaskItem[]? profiles, string[] outputs, string response, string command, string workingDirectory)
     {
         var inputs = new HashSet<string>(PathComparer);
         var files = new List<string>();
@@ -84,8 +84,7 @@ internal static class Crossgen2Cache
             Path.GetFullPath(workingDirectory),
             Environment.GetEnvironmentVariable("DOTNET_PROCESSOR_COUNT") ?? "",
             response ?? "",
-            command ?? "",
-            diagnosticPolicy
+            command ?? ""
         }, InvocationOutputs.FromFiles(outputs));
 
         void AddFile(string path)

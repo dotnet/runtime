@@ -102,7 +102,7 @@ full SHA-256 content hashes. It includes:
   identity matches the assembly. Non-portable, corrupt, and mismatched input PDBs
   bypass caching rather than invoking unmodeled COM/.NET Framework symbol readers.
   This restriction does not exclude native PDB outputs.
-* Effective normalized command/response strings, diagnostic policy, absolute
+* Effective normalized command/response strings, absolute
   output/working paths, host OS/architecture, cultures, and `DOTNET_PROCESSOR_COUNT`.
 
 Caching requires an on-disk task assembly. If it is embedded in a single-file
@@ -193,36 +193,39 @@ remains supported in the meantime.
 
 ### Diagnostics, storage, and failures
 
-Only exit-code-zero results without task-logged errors are stored.
-`ShowCompilerWarnings=true` bypasses caching so requested diagnostics and their MSBuild
-warning-as-error handling are not skipped. Hits do not replay compiler text. `WarningsDetected` is
-stored and restored separately as a Boolean task output; it remains available
-to callers without replaying the warning messages. Normal execution resets this
-output before running the compiler, including after a failed restoration.
-External tool side effects are not replayed. Shared cache status/failure messages
-are low-importance diagnostics. Tool failures retain normal exit/error reporting.
+Only exit-code-zero compiler results are stored, independently of whether current
+logging policy fails the task. The shared `CachedToolTask` captures raw stdout/stderr
+on eligible misses and replays those lines through normal task logging on both
+misses and hits. `ShowCompilerWarnings`, output importance, and stderr-as-error
+settings do not affect the cache key; current logging and MSBuild warning-as-error
+policy apply every time. `WarningsDetected` is reset before cache lookup and
+recomputed by the task's normal text-output handler, not serialized separately.
+Eligible misses defer compiler text until execution completes; hits and misses
+replay stdout followed by stderr, preserving line order within each stream.
+Disabled or unsupported invocations retain ordinary live logging.
+Other external tool side effects are not replayed. Shared cache status/failure
+messages are low-importance diagnostics. Tool failures retain normal exit/error reporting.
 Invalid output declarations, including overlap between the cache directory and an
 owned output file, fail the task before output preparation rather than falling back
 to compilation.
 
 Entries live under `<cache>/v1/<lowercase-SHA-256>/` with indexed files in `outputs/`,
 a binary manifest containing the format version, output-contract kind, file count,
-storage names, presence flags, output lengths and hashes, and optional task output
-metadata (crossgen2's `WarningsDetected`). A manifest checksum protects this entire record.
+storage names, presence flags, output lengths and hashes, and the length and hash
+of a separate `diagnostics` file containing the raw stdout/stderr lines.
+A manifest checksum protects this entire record.
 The shared storage implementation under `src/tasks/Common/InvocationCache` is
 compiled into the task assembly; it captures and restores the declared file set,
 including absence. Files are not classified as required or optional: a successful
 execution's observed presence/content or absence is the result to reproduce.
 ILLink uses the same storage sources with an
 owned-directory contract and the same manifest encoding and checksum.
-The shared `InvocationCache.ExecuteCached` helper also handles restore-or-execute decisions and
-stores only successful executions without logged errors. The task retains
-eligibility, invocation description, and task output serialization. Shared code
+Both tasks derive from the shared `CachedToolTask`, which owns process-output capture
+and logging replay. `InvocationCache` handles restore-or-execute decisions and
+returns the process exit code and raw output; logging policy is applied outside
+that boundary. The task retains eligibility and invocation description. Shared code
 computes the key; the task prepares outputs before actual compiler execution.
-Participating tasks use the same `ExecuteTool` convention: a single helper call
-passing an `InvocationCacheConfiguration` and parameterless callbacks that capture
-tool arguments and call the named `DescribeInvocation` and `ExecuteNormally`
-methods. The shared helper does not impose ToolTask's argument shape. `DescribeInvocation`
+`DescribeInvocation`
 returns an `InvocationDescription` with typed `InvocationInputs` and
 `InvocationOutputs` declarations plus argument/context strings. Both declarations
 use `FromFiles` for individual file paths; outputs also support `FromDirectory`
@@ -237,10 +240,10 @@ caller supplies `"Crossgen2"` only once in its static readonly configuration.
 That configuration contains environment-variable names, not resolved values;
 shared execution reads the current environment lazily. It is separate from the
 cache-independent invocation description.
-`ExecuteNormally` uses no cache types or helpers and does not branch on eligibility.
-Named cache-only callbacks read or write task output metadata. There is no
-task-specific cleanup callback, diagnostic capture/replay, invocation-start hook,
-or post-restore hook.
+`ExecuteToolCore` uses no cache types or helpers and does not branch on eligibility.
+The task resets `WarningsDetected` in `ExecuteTool` before delegating to the shared
+base class, so hits, misses, and bypasses start with the same state.
+There are no task-specific metadata serialization or replay callbacks.
 Both ILLink's owned-directory preparation and crossgen's declared-file preparation
 belong to normal execution, regardless of cache configuration. Expected preparation
 I/O/access failures log an error and return failure without executing or storing.

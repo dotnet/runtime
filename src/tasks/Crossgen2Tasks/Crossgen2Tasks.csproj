@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\InvocationCache\CachedToolTask.cs" Link="InvocationCache\CachedToolTask.cs" />
     <Compile Include="..\Common\InvocationCache\InvocationCache.Configuration.cs" Link="InvocationCache\InvocationCache.Configuration.cs" />
     <Compile Include="..\Common\InvocationCache\InvocationCache.cs" Link="InvocationCache\InvocationCache.cs" />
     <Compile Include="..\Common\InvocationCache\InvocationCache.Identity.cs" Link="InvocationCache\InvocationCache.Identity.cs" />

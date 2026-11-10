@@ -12,7 +12,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Build.Tasks
 {
-    public class RunReadyToRunCompiler : ToolTask
+    public class RunReadyToRunCompiler : CachedToolTask
     {
         private static readonly InvocationCacheConfiguration s_cacheConfiguration =
             new("Crossgen2", "CROSSGEN2_EXPERIMENTAL_CACHE", "CROSSGEN2_EXPERIMENTAL_CACHE_PATH");
@@ -543,18 +543,19 @@ namespace Microsoft.NET.Build.Tasks
         }
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-            => InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
-                describeInvocation: () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
-                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands),
-                readMetadata: ReadCachedTaskOutputs,
-                writeMetadata: WriteCachedTaskOutputs);
+        {
+            WarningsDetected = false;
+            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+        }
+
+        private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
 
 #nullable enable annotations
-        private InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
+        private protected override InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
-                if (ShowCompilerWarnings || !ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
+                if (!ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
                     !string.IsNullOrEmpty(DotNetHostPath) || UseCommandProcessor ||
                     EnvironmentVariables?.Length > 0 ||
                     !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")) ||
@@ -566,7 +567,7 @@ namespace Microsoft.NET.Build.Tasks
                     !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
                     !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
                 {
-                    Crossgen2Cache.Report(Log, "bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without compiler warning display, unrecognized extra arguments or environment overrides)");
+                    Crossgen2Cache.Report(Log, "bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
                     return null;
                 }
 
@@ -576,7 +577,6 @@ namespace Microsoft.NET.Build.Tasks
                 return Crossgen2Cache.DescribeInvocation(invocation.CompilerDependencies,
                     _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
                     invocation.Outputs, responseFileCommands, commandLineCommands,
-                    string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
                     GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
             }
             catch (Exception ex) when (Crossgen2Cache.IsCacheFailure(ex))
@@ -588,9 +588,8 @@ namespace Microsoft.NET.Build.Tasks
 
 #nullable disable annotations
 
-        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
+        protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            WarningsDetected = false;
             try
             {
                 if (!IsPdbCompilation)
@@ -663,12 +662,8 @@ namespace Microsoft.NET.Build.Tasks
             }
         }
 
-        private void ReadCachedTaskOutputs(BinaryReader reader) => WarningsDetected = reader.ReadBoolean();
-
-        private void WriteCachedTaskOutputs(BinaryWriter writer) => writer.Write(WarningsDetected);
-
         internal virtual int ExecuteCompiler(string pathToTool, string responseFileCommands, string commandLineCommands)
-            => base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            => base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
 
         // Extra arguments can name hidden input files or override the modeled output paths, which the cache
         // cannot fingerprint from the argument string alone. These are the real-world (in-repo) extra arguments
