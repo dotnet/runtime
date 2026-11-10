@@ -722,16 +722,12 @@ void ILStubCache::FreeCollectibleStubsCompileTimeState()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    CrstHolder ch(&m_crst);
-
-    // SArray iterators are declared THROWS, but they don't allocate here.
-    CONTRACT_VIOLATION(ThrowsViolation);
-
+    // This method doesn't take m_crst, because it's only called from LoaderAllocator::Terminate,
+    // when nothing can create or use the stubs anymore. The array itself is freed with the LoaderAllocator.
     // Stubs that were compiled have already freed their state, FreeCompileTimeState is a no-op for them.
-    // The array itself is freed with the LoaderAllocator, the only caller is LoaderAllocator::Terminate.
-    for (SArray<ILStubResolver*>::Iterator i = m_collectibleStubResolvers.Begin(); i != m_collectibleStubResolvers.End(); ++i)
+    for (COUNT_T i = 0; i < m_collectibleStubResolvers.GetCount(); i++)
     {
-        (*i)->FreeCompileTimeState();
+        m_collectibleStubResolvers[i]->FreeCompileTimeState();
     }
 #endif // DACCESS_COMPILE
 }
