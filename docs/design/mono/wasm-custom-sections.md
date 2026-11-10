@@ -18,11 +18,10 @@ Specs:
 | Section     | Purpose                                                                 | How it is produced |
 |-------------|-------------------------------------------------------------------------|--------------------|
 | `producers` | Static telemetry about the toolchain that produced the module.          | Assembly source is passed to Emscripten and merged by `wasm-ld` into the module's `producers` section. |
-| `build_id`  | A value used to correlate a module with its symbols/sources.            | Stamped into a project-local final module by a managed MSBuild task. |
+| `build_id`  | A per-file value used to correlate a module with its symbols/sources.   | Native linking or the Webcil writer computes it when producing the file. |
 
-`producers` is linker-driven so `wasm-ld` can merge entries from every tool. `build_id` is stamped
-after selecting either the runtime-pack module or a relinked module, so it does not require a native
-toolchain.
+`producers` is linker-driven so `wasm-ld` can merge entries from every tool. Each producer also owns
+the identity of the file it creates.
 
 ## Scope
 
@@ -32,15 +31,13 @@ toolchain.
 
 Behavior:
 
-- When the app sets `$(WasmNativeBuildId)` to a hex string, that build-wide ID is stamped into every
-  emitted Wasm file: `dotnet.native.wasm`, regular Webcil, and R2R Webcil.
-- Without an explicit ID, each Webcil module uses its own SHA-256 content hash while
-  `dotnet.native.wasm` has no application-stamped build ID.
-- Shared runtime-pack files are copied to project-local intermediate paths before being modified.
-  Runtime-pack files in the NuGet cache are never changed.
-- The managed stamping task runs before static-web-asset fingerprinting, integrity calculation,
-  compression, and bundling.
-- Setting `$(WasmNativeBuildId)` does not force a native build or require `wasm-tools`.
+- Native linking asks wasm-ld to generate a deterministic build ID for each `dotnet.native.wasm`.
+  Runtime-pack modules therefore arrive in applications with their original ID intact, while an
+  application native relink creates a new ID for the new binary.
+- When `wasm-opt` rewrites a relinked native module, the build recomputes its ID from the final
+  module with the previous `build_id` section removed.
+- Regular and R2R Webcil modules use their own SHA-256 content hashes.
+- Application builds preserve IDs already present in runtime-pack Wasm files.
 
 ## `producers`
 
@@ -72,38 +69,21 @@ single section merged by `wasm-ld` through Emscripten's post-link processing.
 - Full repo builds generate an intermediate source while linking the prebuilt Mono/CoreCLR
   browser runtime, which runs before the runtime pack is assembled. Application relinks consume the
   shipped runtime-pack source.
-- `src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/WasmStampBuildId.cs` – copies the selected
-  native module to a project-local path and replaces or appends its `build_id`.
 - MSBuild wiring:
   - Mono: `src/mono/browser/build/BrowserWasmApp.targets` (+ shared logic in
     `src/mono/wasm/build/WasmApp.Common.targets`).
   - CoreCLR: `src/mono/browser/build/BrowserWasmApp.CoreCLR.targets`.
 
-## JavaScript exposure
-
-`build_id` is **not** read back from the compiled module. The generated boot configuration carries
-the normalized value and the loader exposes it on `runtimeBuildInfo.buildId` for both relinked and
-non-relinked applications.
-
-```js
-const { runtimeBuildInfo } = await dotnet.create();
-console.log(runtimeBuildInfo.buildId); // "" when no build_id was stamped
-```
-
 ## Default runtime pack
 
-Runtime-pack Wasm files remain unchanged in the NuGet cache. When an application sets
-`$(WasmNativeBuildId)`, the build copies shared native and Webcil modules to project-local output
-before stamping them. When the property is empty, `runtimeBuildInfo.buildId` is `""`, native Wasm
-has no application-stamped build ID, and Webcil modules retain their per-module content hashes.
-When native relinking already produced a project-local module, the build stamps that module in place.
+Runtime-pack Wasm files already contain per-file IDs and remain unchanged in the NuGet cache and
+application output. Native relinking and Webcil conversion produce new files with new IDs.
 
 ## MSBuild properties
 
 | Property                     | Default | Meaning |
 |------------------------------|---------|---------|
 | `WasmEmitProducersSection`   | `true` on .NET 12+ | Emit/merge the `producers` section from the runtime-pack assembly source. |
-| `WasmNativeBuildId`          | (unset) | .NET 12+: build-wide hex string stamped into every emitted Wasm file without forcing a native build. Empty leaves native Wasm unstamped and uses per-module hashes for Webcil. |
 
 ## Open questions / future work
 

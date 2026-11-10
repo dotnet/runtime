@@ -111,6 +111,10 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmRegenerateBuildId"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
   <!-- Import shared native.wasm.targets, which defines GenerateEmccExports (exported functions/methods
        and the INCOMING_MODULE_JS_API allowlist) plus the Emscripten SDK, ICU, and the relink registry.
@@ -971,6 +975,7 @@
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
+      <_EmccLinkStepArgs Include="-Wl,--build-id" />
 
       <!-- Emscripten strips producers by default. Assemble the source and preserve the section wasm-ld merges from it. -->
       <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-Wno-unused-command-line-argument" />
@@ -1024,6 +1029,8 @@
     </Exec>
     <!-- Do not leave an unoptimized link output that looks up to date to the next incremental build. -->
     <Delete Files="$(_WasmRelinkedWasmPath)" Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' != '0'" />
+    <WasmRegenerateBuildId WasmPath="$(_WasmRelinkedWasmPath)"
+                           Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' == '0'" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmRelinkedWasmPath)" />

@@ -683,7 +683,6 @@ type RuntimeAPI = {
     runtimeBuildInfo: {
         productVersion: string;
         gitHash: string;
-        buildId: string;
         buildConfiguration: string;
         wasmEnableThreads: boolean;
         wasmEnableSIMD: boolean;

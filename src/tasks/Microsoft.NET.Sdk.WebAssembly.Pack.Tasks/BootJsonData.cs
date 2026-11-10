@@ -25,9 +25,6 @@ public class BootJsonData
     public string mainAssemblyName { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
-    public string buildId { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
     public string applicationEnvironment { get; set; }
 
     /// <summary>

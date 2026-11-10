@@ -37,13 +37,6 @@ public class ConvertDllsToWebcil : Task
 
     public int WebcilVersion { get; set; }
 
-    /// <summary>
-    /// Optional build_id (hex string, with or without a leading <c>0x</c>) stamped into every produced
-    /// webcil module when <see cref="EmitMetadataSections"/> is enabled. When empty and metadata is enabled,
-    /// each webcil gets a content hash so it is self-identifying.
-    /// </summary>
-    public string? WasmNativeBuildId { get; set; }
-
     /// <summary>Product version recorded in the producers section of each webcil module.</summary>
     public string? ProductVersion { get; set; }
 
@@ -101,20 +94,6 @@ public class ConvertDllsToWebcil : Task
             return true;
         }
 
-        byte[]? buildId = null;
-        if (EmitMetadataSections)
-        {
-            try
-            {
-                buildId = WasmCustomSectionWriter.ParseBuildId(WasmNativeBuildId);
-            }
-            catch (ArgumentException ex)
-            {
-                Log.LogError(ex.Message);
-                return false;
-            }
-        }
-
         if (!Directory.Exists(OutputPath))
             Directory.CreateDirectory(OutputPath);
 
@@ -147,7 +126,7 @@ public class ConvertDllsToWebcil : Task
 
             try
             {
-                TaskItem webcilItem = ConvertDll(tmpDir, candidate, buildId);
+                TaskItem webcilItem = ConvertDll(tmpDir, candidate);
                 webcilCandidates.Add(webcilItem);
             }
             catch (Exception ex)
@@ -164,7 +143,7 @@ public class ConvertDllsToWebcil : Task
         return true;
     }
 
-    private TaskItem ConvertDll(string tmpDir, ITaskItem candidate, byte[]? buildId)
+    private TaskItem ConvertDll(string tmpDir, ITaskItem candidate)
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
@@ -214,10 +193,7 @@ public class ConvertDllsToWebcil : Task
         bool outputHasExpectedFlavor = OutputHasExpectedWebcilFlavor(finalWebcil, useR2R: !string.IsNullOrEmpty(r2rWebcilPath));
         if (!string.IsNullOrEmpty(r2rWebcilPath))
         {
-            bool stageR2RWebcil = !outputHasExpectedFlavor
-                || Utils.IsNewerThan(r2rWebcilPath, finalWebcil)
-                || (forceWebcilConversion && buildId is null);
-            if (stageR2RWebcil)
+            if (forceWebcilConversion || !outputHasExpectedFlavor || Utils.IsNewerThan(r2rWebcilPath, finalWebcil))
             {
                 if (!Directory.Exists(candidatePath))
                     Directory.CreateDirectory(candidatePath);
@@ -255,16 +231,6 @@ public class ConvertDllsToWebcil : Task
         else
         {
             Log.LogMessage(MessageImportance.Low, $"Skipping {dllFilePath} as it is older than the output file {finalWebcil}");
-        }
-
-        if (buildId is not null)
-        {
-            byte[] module = File.ReadAllBytes(finalWebcil);
-            byte[] output = WasmCustomSectionWriter.ReplaceBuildId(module, buildId);
-            string tmpWebcil = Path.Combine(tmpDir, Guid.NewGuid().ToString("N") + Utils.WebcilInWasmExtension);
-            File.WriteAllBytes(tmpWebcil, output);
-            if (!Utils.MoveIfDifferent(tmpWebcil, finalWebcil))
-                File.Delete(tmpWebcil);
         }
 
         _fileWrites.Add(finalWebcil);

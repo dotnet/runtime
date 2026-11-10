@@ -6,8 +6,8 @@
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Microsoft.NET.WebAssembly.Webcil;
@@ -29,7 +29,6 @@ public static class WasmCustomSectionWriter
     public const string ProducersFieldProcessedBy = "processed-by";
     public const string ProducersFieldSdk = "sdk";
 
-    private const uint WasmMagic = 0x6d736100u; // "\0asm"
     private const byte CustomSectionId = 0;
 
     /// <summary>
@@ -77,88 +76,6 @@ public static class WasmCustomSectionWriter
         WriteCustomSection(output, payload.ToArray());
     }
 
-    /// <summary>
-    /// Replaces any existing <c>build_id</c> custom section in <paramref name="moduleBytes"/>.
-    /// </summary>
-    public static byte[] ReplaceBuildId(byte[] moduleBytes, byte[] buildId)
-    {
-        if (moduleBytes is null)
-            ThrowArgumentNull(nameof(moduleBytes));
-        if (buildId is null)
-            ThrowArgumentNull(nameof(buildId));
-        if (buildId.Length == 0)
-            throw new ArgumentException("Build ID cannot be empty.", nameof(buildId));
-
-        if (moduleBytes.Length < 8 || BinaryPrimitives.ReadUInt32LittleEndian(moduleBytes.AsSpan(0, 4)) != WasmMagic)
-            throw new InvalidDataException("Not a WebAssembly module (bad magic).");
-
-        uint version = BinaryPrimitives.ReadUInt32LittleEndian(moduleBytes.AsSpan(4, 4));
-        if (version != 1)
-            throw new InvalidDataException($"Unsupported WebAssembly module version {version}.");
-
-        const int bodyStart = 8; // magic (4) + version (4)
-
-        using var output = new MemoryStream(moduleBytes.Length + buildId.Length + 32);
-        output.Write(moduleBytes, 0, bodyStart);
-
-        int pos = bodyStart;
-        while (pos < moduleBytes.Length)
-        {
-            int recordStart = pos;
-            byte id = moduleBytes[pos++];
-            uint size = ReadULEB128(moduleBytes, ref pos, moduleBytes.Length);
-            if (size > int.MaxValue)
-                throw new InvalidDataException("WebAssembly section is too large.");
-
-            int payloadStart = pos;
-            int payloadEnd = checked(payloadStart + (int)size);
-            if (payloadEnd > moduleBytes.Length)
-                throw new InvalidDataException("Truncated WebAssembly section.");
-
-            bool isBuildId = false;
-            if (id == CustomSectionId)
-            {
-                int p = payloadStart;
-                isBuildId = ReadName(moduleBytes, ref p, payloadEnd) == BuildIdSectionName;
-            }
-
-            if (!isBuildId)
-                output.Write(moduleBytes, recordStart, payloadEnd - recordStart);
-
-            pos = payloadEnd;
-        }
-
-        WriteBuildIdSection(output, buildId);
-        return output.ToArray();
-    }
-
-    public static byte[]? ParseBuildId(string? value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return null;
-
-        string hex = value!.Trim();
-        if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            hex = hex.Substring(2);
-
-        if (hex.Length == 0 || (hex.Length % 2) != 0)
-            throw InvalidBuildId(value);
-
-        var bytes = new byte[hex.Length / 2];
-        for (int i = 0; i < bytes.Length; i++)
-        {
-#if NETFRAMEWORK
-            bool parsed = byte.TryParse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bytes[i]);
-#else
-            bool parsed = byte.TryParse(hex.AsSpan(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bytes[i]);
-#endif
-            if (!parsed)
-                throw InvalidBuildId(value);
-        }
-
-        return bytes;
-    }
-
     public static void WriteBuildIdSection(Stream output, byte[] buildId)
     {
         if (output is null)
@@ -177,6 +94,51 @@ public static class WasmCustomSectionWriter
         WriteCustomSection(output, payload.ToArray());
     }
 
+    public static byte[] RegenerateBuildId(byte[] moduleBytes)
+    {
+        if (moduleBytes is null)
+            ThrowArgumentNull(nameof(moduleBytes));
+        if (moduleBytes.Length < 8 || BinaryPrimitives.ReadUInt32LittleEndian(moduleBytes.AsSpan(0, 4)) != 0x6d736100u)
+            throw new InvalidDataException("Not a WebAssembly module (bad magic).");
+        if (BinaryPrimitives.ReadUInt32LittleEndian(moduleBytes.AsSpan(4, 4)) != 1)
+            throw new InvalidDataException("Unsupported WebAssembly module version.");
+
+        using var module = new MemoryStream(moduleBytes.Length);
+        module.Write(moduleBytes, 0, 8);
+
+        int position = 8;
+        while (position < moduleBytes.Length)
+        {
+            int sectionStart = position;
+            byte sectionId = moduleBytes[position++];
+            uint size = ReadULEB128(moduleBytes, ref position, moduleBytes.Length);
+            if (size > int.MaxValue)
+                throw new InvalidDataException("WebAssembly section is too large.");
+            int payloadEnd = checked(position + (int)size);
+            if (payloadEnd > moduleBytes.Length)
+                throw new InvalidDataException("Truncated WebAssembly section.");
+
+            bool isBuildId = false;
+            if (sectionId == CustomSectionId)
+            {
+                int namePosition = position;
+                uint nameLength = ReadULEB128(moduleBytes, ref namePosition, payloadEnd);
+                if (nameLength <= payloadEnd - namePosition)
+                    isBuildId = Encoding.UTF8.GetString(moduleBytes, namePosition, (int)nameLength) == BuildIdSectionName;
+            }
+
+            if (!isBuildId)
+                module.Write(moduleBytes, sectionStart, payloadEnd - sectionStart);
+
+            position = payloadEnd;
+        }
+
+        byte[] content = module.ToArray();
+        using SHA256 sha256 = SHA256.Create();
+        WriteBuildIdSection(module, sha256.ComputeHash(content));
+        return module.ToArray();
+    }
+
     private static void WriteCustomSection(Stream output, byte[] payload)
     {
         output.WriteByte(CustomSectionId);
@@ -191,45 +153,11 @@ public static class WasmCustomSectionWriter
     [DoesNotReturn]
     private static void ThrowArgumentNull(string paramName) => throw new ArgumentNullException(paramName);
 
-    private static ArgumentException InvalidBuildId(string value)
-        => new($"WasmNativeBuildId '{value}' is not a valid hex string.");
-
-    private static string ReadName(byte[] bytes, ref int pos, int end)
-    {
-        uint len = ReadULEB128(bytes, ref pos, end);
-        if (len > int.MaxValue || len > end - pos)
-            throw new InvalidDataException("Truncated WebAssembly name.");
-
-        string s = Encoding.UTF8.GetString(bytes, pos, checked((int)len));
-        pos += checked((int)len);
-        return s;
-    }
-
     private static void WriteName(Stream output, string value)
     {
         byte[] utf8 = Encoding.UTF8.GetBytes(value);
         WriteULEB128(output, (uint)utf8.Length);
         output.Write(utf8, 0, utf8.Length);
-    }
-
-    private static uint ReadULEB128(byte[] bytes, ref int pos, int end)
-    {
-        uint val = 0;
-        int shift = 0;
-        while (true)
-        {
-            if (pos >= end)
-                throw new InvalidDataException("Truncated ULEB128 value.");
-
-            byte b = bytes[pos++];
-            val |= (b & 0x7fu) << shift;
-            if ((b & 0x80u) == 0)
-                break;
-            shift += 7;
-            if (shift >= 35)
-                throw new OverflowException("ULEB128 value too large.");
-        }
-        return val;
     }
 
     private static void WriteULEB128(Stream output, uint value)
@@ -243,5 +171,25 @@ public static class WasmCustomSectionWriter
             output.WriteByte(b);
         }
         while (value != 0);
+    }
+
+    private static uint ReadULEB128(byte[] bytes, ref int position, int end)
+    {
+        uint value = 0;
+        int shift = 0;
+        while (true)
+        {
+            if (position >= end)
+                throw new InvalidDataException("Truncated ULEB128 value.");
+
+            byte current = bytes[position++];
+            value |= (current & 0x7fu) << shift;
+            if ((current & 0x80u) == 0)
+                return value;
+
+            shift += 7;
+            if (shift >= 35)
+                throw new InvalidDataException("ULEB128 value is too large.");
+        }
     }
 }

@@ -48,6 +48,7 @@
                             _CoreCLRWasmInitialize;
                             AcquireEmscriptenSdk;
                             _CoreCLRSetupEmscripten;
+                            _CoreCLRResolveWasmOpt;
                             _CoreCLRPrepareForNativeBuild;
                             _CoreCLRWriteLinkRsp;
                             _CoreCLRLinkNative;

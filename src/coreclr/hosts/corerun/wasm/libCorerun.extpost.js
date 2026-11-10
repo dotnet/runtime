@@ -14,7 +14,6 @@ export function selfRun(moduleConfig) {
         runtimeBuildInfo: {
             productVersion: "corerun",
             gitHash: null,
-            buildId: "",
             buildConfiguration: "corerun",
             wasmEnableThreads: false,
             wasmEnableSIMD: true,

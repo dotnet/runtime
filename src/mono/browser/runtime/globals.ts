@@ -38,11 +38,6 @@ export let _runtimeModuleLoaded = false; // please keep it in place also as roll
 export function passEmscriptenInternals (internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
     runtimeHelpers.emscriptenBuildOptions = emscriptenBuildOptions;
 
-    const buildId = loaderHelpers.config.buildId;
-    if (buildId) {
-        exportedRuntimeAPI.runtimeBuildInfo.buildId = buildId;
-    }
-
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;

@@ -90,8 +90,6 @@ public class GenerateWasmBootJson : Task
 
     public string? UseMonoRuntime { get; set; }
 
-    public string? BuildId { get; set; }
-
     public bool FingerprintAssets { get; set; }
 
     public string ApplicationEnvironment { get; set; }
@@ -139,7 +137,6 @@ public class GenerateWasmBootJson : Task
 
         var result = new BootJsonData
         {
-            buildId = BuildId,
             resources = new ResourcesData(),
         };
 

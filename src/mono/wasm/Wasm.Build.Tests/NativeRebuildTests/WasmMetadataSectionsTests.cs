@@ -4,7 +4,6 @@
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using Microsoft.NET.Sdk.WebAssembly;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -22,9 +21,6 @@ namespace Wasm.Build.NativeRebuild.Tests
     [TestCategory("native")]
     public class WasmMetadataSectionsTests : NativeRebuildTestsBase
     {
-        // Arbitrary even-length lowercase hex; $(WasmNativeBuildId) is normalized to lowercase.
-        private const string PinnedBuildId = "1a2b3c4d5e6f7788";
-
         public WasmMetadataSectionsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
@@ -34,40 +30,40 @@ namespace Wasm.Build.NativeRebuild.Tests
         private static string NativeRuntimeProducer => IsCoreClrRuntime ? "CoreCLR" : "Mono";
 
         [Theory]
-        [InlineData(Configuration.Release)]
-        [InlineData(Configuration.Debug)]
-        public void NativeWasm_Relink_WithBuildId_EmitsProducersAndBuildId(Configuration config)
+        [InlineData(Configuration.Release, false)]
+        [InlineData(Configuration.Debug, true)]
+        public void NativeWasm_Relink_EmitsProducersAndBuildId(Configuration config, bool runWasmOpt)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_relink_id");
             PublishProject(info, config,
-                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmBuildNative=true -p:WasmNativeBuildId={PinnedBuildId}"),
+                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmBuildNative=true -p:WasmRunWasmOpt={runWasmOpt}"),
                 isNativeBuild: true);
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
             AssertProducers(wasm, NativeRuntimeProducer);
-            Assert.Equal(PinnedBuildId, GetBuildIdHex(wasm));
-            AssertBuildIdInBootConfig(config);
+            byte[]? buildId = ReadBuildId(wasm);
+            Assert.NotNull(buildId);
+            Assert.NotEmpty(buildId!);
         }
 
         [TestCategory("no-workload")]
         [Theory]
         [InlineData(Configuration.Release)]
-        public void NativeWasm_WithoutRelink_WithBuildId_EmitsBuildId(Configuration config)
+        public void NativeWasm_WithoutRelink_PreservesRuntimePackBuildId(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_no_relink_id");
-            PublishProject(info, config,
-                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmNativeBuildId={PinnedBuildId}"),
-                isNativeBuild: false);
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:_WasmDevel=true"), isNativeBuild: false);
 
             string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
-            Assert.Equal(PinnedBuildId, GetBuildIdHex(wasm));
-            AssertBuildIdInBootConfig(config);
+            byte[]? buildId = ReadBuildId(wasm);
+            Assert.NotNull(buildId);
+            Assert.NotEmpty(buildId!);
         }
 
         [Theory]
         [InlineData(Configuration.Release, true)]
         [InlineData(Configuration.Release, false)]
-        public void NativeWasm_Relink_WithoutBuildId_EmitsConfiguredProducers(Configuration config, bool emitProducers)
+        public void NativeWasm_Relink_EmitsConfiguredProducers(Configuration config, bool emitProducers)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, $"meta_relink_noid_{emitProducers}");
             PublishProject(info, config,
@@ -80,8 +76,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             else
                 Assert.Null(ReadCustomSection(wasm, "producers"));
 
-            // No build_id is emitted unless $(WasmNativeBuildId) is set.
-            Assert.Null(ReadCustomSection(wasm, "build_id"));
+            byte[]? buildId = ReadBuildId(wasm);
+            Assert.NotNull(buildId);
+            Assert.NotEmpty(buildId!);
         }
 
         [TestCategory("no-workload")]
@@ -96,7 +93,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
             AssertProducers(webcil, "WebCIL");
 
-            // Without an explicit id, each webcil gets a SHA-256 content hash (32 bytes).
+            // Each webcil gets a SHA-256 content hash (32 bytes).
             byte[]? buildId = ReadBuildId(webcil);
             Assert.NotNull(buildId);
             Assert.Equal(32, buildId!.Length);
@@ -110,53 +107,9 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         [TestCategory("no-workload")]
-        [ConditionalTheory(typeof(BuildTestBase), nameof(UseWebcil))]
-        [InlineData(Configuration.Release)]
-        public void Webcil_WithNativeBuildId_UsesPinnedBuildId(Configuration config)
-        {
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_webcil_id");
-            PublishProject(info, config,
-                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmNativeBuildId=0X{PinnedBuildId.ToUpperInvariant()}"),
-                isNativeBuild: false);
-
-            string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
-            AssertProducers(webcil, "WebCIL");
-            string? webcilBuildId = GetBuildIdHex(webcil);
-            Assert.Equal(PinnedBuildId, webcilBuildId);
-
-            string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
-            string frameworkWebcil = FindWasmAsset(frameworkDirectory, "System.Private.CoreLib");
-            string? frameworkBuildId = GetBuildIdHex(frameworkWebcil);
-            Assert.Equal(PinnedBuildId, frameworkBuildId);
-
-            string nativeWasm = FindWasmAsset(frameworkDirectory, "dotnet.native");
-            Assert.Equal(PinnedBuildId, GetBuildIdHex(nativeWasm));
-            AssertBuildIdInBootConfig(config);
-        }
-
-        [TestCategory("no-workload")]
-        [Theory]
-        [InlineData("not-hex", "non_hex")]
-        [InlineData("0x", "empty_prefix")]
-        [InlineData("aa0xbb", "embedded_prefix")]
-        [InlineData("123", "odd_length")]
-        public void InvalidBuildId_FailsWithoutWorkload(string buildId, string testId)
-        {
-            const Configuration config = Configuration.Release;
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, $"meta_invalid_id_{testId}");
-            (_, string output) = PublishProject(
-                info,
-                config,
-                new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmNativeBuildId={buildId}"),
-                isNativeBuild: false);
-
-            Assert.Contains($"WasmNativeBuildId '{buildId}' is not a valid hex string.", output);
-        }
-
-        [TestCategory("no-workload")]
         [Theory]
         [InlineData(Configuration.Release)]
-        public void PreviousTargetFramework_IgnoresMetadataProperties(Configuration config)
+        public void PreviousTargetFramework_IgnoresWebcilMetadata(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_previous_tfm");
             string testRoot = Directory.GetParent(_projectDir)!.FullName;
@@ -170,12 +123,10 @@ namespace Wasm.Build.NativeRebuild.Tests
                 new PublishOptions(
                     TargetFramework: PreviousTargetFramework,
                     AssertAppBundle: false,
-                    ExtraMSBuildArgs: "-p:_WasmDevel=true -p:WasmNativeBuildId=not-hex"),
+                    ExtraMSBuildArgs: "-p:_WasmDevel=true"),
                 isNativeBuild: false);
 
             string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true, PreviousTargetFramework);
-            string nativeWasm = FindWasmAsset(frameworkDirectory, "dotnet.native");
-            Assert.Null(ReadCustomSection(nativeWasm, "build_id"));
 
             if (UseWebcil)
             {
@@ -184,9 +135,6 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Assert.Null(ReadCustomSection(webcil, "build_id"));
             }
 
-            WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
-            BootJsonData bootJson = provider.GetBootJson(provider.GetBootConfigPath(frameworkDirectory));
-            Assert.Null(bootJson.buildId);
         }
 
         [TestCategory("no-workload")]
@@ -212,6 +160,15 @@ namespace Wasm.Build.NativeRebuild.Tests
             Assert.Contains(".ascii \".NET\"", source);
             Assert.Contains($".ascii \"{runtimePackVersion}\"", source);
             Assert.Null(package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.o"));
+
+            ZipArchiveEntry? nativeWasmEntry = package.GetEntry("runtimes/browser-wasm/native/dotnet.native.wasm");
+            Assert.NotNull(nativeWasmEntry);
+            using Stream nativeWasmStream = nativeWasmEntry.Open();
+            using var nativeWasm = new MemoryStream(checked((int)nativeWasmEntry.Length));
+            nativeWasmStream.CopyTo(nativeWasm);
+            byte[]? nativeBuildId = ReadBuildId(nativeWasm.ToArray());
+            Assert.NotNull(nativeBuildId);
+            Assert.NotEmpty(nativeBuildId!);
         }
 
         // -------------------- helpers --------------------
@@ -223,14 +180,6 @@ namespace Wasm.Build.NativeRebuild.Tests
                 return nonFingerprintedPath;
 
             return Assert.Single(Directory.GetFiles(frameworkDirectory, $"{baseName}.*.wasm"));
-        }
-
-        private void AssertBuildIdInBootConfig(Configuration config)
-        {
-            string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
-            WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
-            BootJsonData bootJson = provider.GetBootJson(provider.GetBootConfigPath(frameworkDirectory));
-            Assert.Equal(PinnedBuildId, bootJson.buildId);
         }
 
         private static void AssertProducers(string wasmPath, string expectedProcessedBy)
@@ -264,6 +213,17 @@ namespace Wasm.Build.NativeRebuild.Tests
         private static byte[]? ReadBuildId(string wasmPath)
         {
             byte[]? payload = ReadCustomSection(wasmPath, "build_id");
+            if (payload is null)
+                return null;
+
+            int pos = 0;
+            uint len = ReadULEB128(payload, ref pos);
+            return payload[pos..(pos + (int)len)];
+        }
+
+        private static byte[]? ReadBuildId(byte[] wasm)
+        {
+            byte[]? payload = ReadCustomSection(wasm, "build_id");
             if (payload is null)
                 return null;
 

@@ -33,7 +33,6 @@ export function dotnetInitializeModule(): RuntimeAPI {
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: GitHash,
-            buildId: "",
             buildConfiguration: BuildConfiguration,
             wasmEnableThreads: false,
             wasmEnableSIMD: true,

@@ -60,7 +60,6 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: runtimeHelpers.gitHash,
-            buildId: "",
             buildConfiguration: BuildConfiguration,
             wasmEnableThreads: WasmEnableThreads,
             wasmEnableSIMD: WasmEnableSIMD,
