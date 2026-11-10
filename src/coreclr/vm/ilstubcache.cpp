@@ -724,7 +724,6 @@ void ILStubCache::FreeCollectibleStubsCompileTimeState()
 #ifndef DACCESS_COMPILE
     // This method doesn't take m_crst, because it's only called from LoaderAllocator::Terminate,
     // when nothing can create or use the stubs anymore. The array itself is freed with the LoaderAllocator.
-    // Stubs that were compiled have already freed their state, FreeCompileTimeState is a no-op for them.
     for (COUNT_T i = 0; i < m_collectibleStubResolvers.GetCount(); i++)
     {
         m_collectibleStubResolvers[i]->FreeCompileTimeState();
