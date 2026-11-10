@@ -3149,6 +3149,10 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            if (!CanEncodeTypeInSignature(type))
+            {
+                throw new RequiresRuntimeJitException(type.ToString());
+            }
             // Continuations require special handling to encode the layout of the type.
             // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
             // PrecodeHelper(
@@ -3160,8 +3164,6 @@ namespace Internal.JitInterface
                 ppIndirection = (void*)ObjectToHandle(import);
                 return null;
             }
-            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
-                throw new RequiresRuntimeJitException(type.ToString());
 
             Import typeHandleImport = GetTypeHandleImport(type);
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
