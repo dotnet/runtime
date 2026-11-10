@@ -10,7 +10,6 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
-using Internal;
 
 #if NATIVEAOT
 using Internal.Runtime;
@@ -781,7 +780,7 @@ namespace System.Runtime.CompilerServices
 
         // Represents execution of a chain of suspended and resuming runtime
         // async functions.
-        private class RuntimeAsyncTask<T> : Task<T>
+        private sealed class RuntimeAsyncTask<T> : Task<T>
         {
             // The base Task's m_action field (unused for invoking a delegate by this promise-style task)
             // stores state about what this task is awaiting, avoiding the need for an additional field.
@@ -810,6 +809,38 @@ namespace System.Runtime.CompilerServices
             // Invoked by the awaited task's completion (Task.RunContinuations) or directly when the
             // awaited task had already completed by the time we tried to register.
             internal override void ExecuteRuntimeAsyncAwaitContinuation(Task completedTask, bool canInline)
+            {
+                if (Task.t_currentTask is { } currentTask)
+                {
+                    ExecuteRuntimeAsyncAwaitContinuationWithCurrentTask(completedTask, canInline, currentTask);
+                }
+                else
+                {
+                    ExecuteRuntimeAsyncAwaitContinuationCore(completedTask, canInline);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private void ExecuteRuntimeAsyncAwaitContinuationWithCurrentTask(Task completedTask, bool canInline, Task currentTask)
+            {
+                // Clearing the completing task must not hide a non-default scheduler from the
+                // inlining checks, including those performed later by the dispatcher.
+                TaskScheduler? scheduler = TaskScheduler.InternalCurrent;
+                canInline &= scheduler is null || scheduler == TaskScheduler.Default;
+
+                try
+                {
+                    Task.t_currentTask = null;
+                    ExecuteRuntimeAsyncAwaitContinuationCore(completedTask, canInline);
+                }
+                finally
+                {
+                    Task.t_currentTask = currentTask;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void ExecuteRuntimeAsyncAwaitContinuationCore(Task completedTask, bool canInline)
             {
                 object? continuationContext = m_action;
 
@@ -1000,9 +1031,8 @@ namespace System.Runtime.CompilerServices
             {
                 if (m_action is ValueTaskSourceContinuation vtsCont)
                 {
-                    Debug.Assert(!vtsCont.IsPending);
+                    Debug.Assert(!vtsCont.IsPending && vtsCont.Source is null);
                     m_action = null;
-                    vtsCont.Source = null;
                     awaitState.CachedValueTaskSourceContinuation = vtsCont;
                 }
             }
@@ -1089,10 +1119,10 @@ namespace System.Runtime.CompilerServices
             // Completes the operation with the result stored in m_result. The result was already written
             // there by the final continuation and nothing else can complete this task, so the result-less
             // completion can be used, publishing the result with a single atomic state transition.
-            internal virtual bool TrySetRuntimeAsyncResult() => TrySetResult();
+            private bool TrySetRuntimeAsyncResult() => TrySetResult();
 
             // Completes the operation with the specified exception (canceled if it's an OperationCanceledException).
-            internal virtual bool TrySetRuntimeAsyncException(Exception ex) =>
+            private bool TrySetRuntimeAsyncException(Exception ex) =>
                 ex is OperationCanceledException oce ?
                     TrySetCanceled(oce.CancellationToken, oce) :
                     TrySetException(ex);
@@ -1252,8 +1282,7 @@ namespace System.Runtime.CompilerServices
 
                 if (m_action is not null && notifierKind != SuspensionNotifierKind.ValueTaskSource)
                 {
-                    // Only reuse a ValueTaskSourceContinuation for consecutive source awaits; don't keep
-                    // its consumed source alive across waits on something else.
+                    // Only keep the empty ValueTaskSourceContinuation installed for consecutive source awaits.
                     ReleaseValueTaskSourceContinuation(ref state);
                 }
 
@@ -2012,167 +2041,6 @@ namespace System.Runtime.CompilerServices
             RuntimeAsyncTask<VoidTaskResult> result = new();
             FinalizeRuntimeAsyncTask(ref state, result);
             return new ValueTask(result);
-        }
-
-        // Used instead of CreateRuntimeAsyncValueTask by thunks for methods attributed with
-        // [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))], mirroring that builder's pooling.
-        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
-        private static ValueTask<T?> CreatePooledRuntimeAsyncValueTask<T>(ref RuntimeAsyncAwaitState state)
-        {
-            if ((AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out _)) || Task.s_asyncDebuggingEnabled)
-            {
-                // Diagnostics track the operation by its Task identity, so don't reuse it.
-                return CreateRuntimeAsyncValueTask<T>(ref state);
-            }
-
-            PooledRuntimeAsyncValueTaskSource<T?> source = PooledRuntimeAsyncValueTaskSource<T?>.RentFromCache();
-            short token = source.Version;
-            FinalizeRuntimeAsyncTask(ref state, source.Task);
-            return new ValueTask<T?>(source, token);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
-        private static ValueTask CreatePooledRuntimeAsyncValueTask(ref RuntimeAsyncAwaitState state)
-        {
-            if ((AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out _)) || Task.s_asyncDebuggingEnabled)
-            {
-                return CreateRuntimeAsyncValueTask(ref state);
-            }
-
-            PooledRuntimeAsyncValueTaskSource<VoidTaskResult> source = PooledRuntimeAsyncValueTaskSource<VoidTaskResult>.RentFromCache();
-            short token = source.Version;
-            FinalizeRuntimeAsyncTask(ref state, source.Task);
-            return new ValueTask(source, token);
-        }
-
-        // A RuntimeAsyncTask that's never exposed or completed as a Task. Its Task-ness is used only to dispatch
-        // continuations; its completion is instead reported to the owning pooled value task source.
-        private sealed class PooledRuntimeAsyncTask<T> : RuntimeAsyncTask<T>
-        {
-            internal readonly PooledRuntimeAsyncValueTaskSource<T> _source;
-
-            internal PooledRuntimeAsyncTask(PooledRuntimeAsyncValueTaskSource<T> source) => _source = source;
-
-            internal override bool TrySetRuntimeAsyncResult()
-            {
-                T result = m_result!;
-                m_result = default;
-                _source.SetResult(result);
-                return true;
-            }
-
-            internal override bool TrySetRuntimeAsyncException(Exception ex)
-            {
-                m_result = default;
-                _source.SetException(ex);
-                return true;
-            }
-        }
-
-        // The IValueTaskSource backing a ValueTask returned from a pooling runtime async method. It can't itself be
-        // the RuntimeAsyncTask, as ValueTask treats any Task it wraps as a Task. It's reused (along with its task)
-        // once its result has been consumed.
-        private sealed class PooledRuntimeAsyncValueTaskSource<T> : IValueTaskSource<T>, IValueTaskSource
-        {
-            // Kept free of static initializers so that accessing it doesn't require class initialization checks.
-            [ThreadStatic]
-            private static PooledRuntimeAsyncValueTaskSource<T>? t_tlsCache;
-
-            internal readonly PooledRuntimeAsyncTask<T> Task;
-
-            private ManualResetValueTaskSourceCore<T> _valueTaskSource;
-
-            private PooledRuntimeAsyncValueTaskSource() => Task = new PooledRuntimeAsyncTask<T>(this);
-
-            public short Version => _valueTaskSource.Version;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal static PooledRuntimeAsyncValueTaskSource<T> RentFromCache()
-            {
-                PooledRuntimeAsyncValueTaskSource<T>? source = t_tlsCache;
-                if (source is not null)
-                {
-                    t_tlsCache = null;
-                }
-                else
-                {
-                    ref PooledRuntimeAsyncValueTaskSource<T>? slot = ref PerCoreCacheSlot;
-                    if (slot is null ||
-                        (source = Interlocked.Exchange(ref slot, null)) is null)
-                    {
-                        source = new PooledRuntimeAsyncValueTaskSource<T>();
-                    }
-                }
-
-                return source;
-            }
-
-            private void ReturnToCache()
-            {
-                _valueTaskSource.Reset();
-
-                if (t_tlsCache is null)
-                {
-                    t_tlsCache = this;
-                }
-                else
-                {
-                    ref PooledRuntimeAsyncValueTaskSource<T>? slot = ref PerCoreCacheSlot;
-                    if (slot is null)
-                    {
-                        Volatile.Write(ref slot, this);
-                    }
-                }
-            }
-
-            private static ref PooledRuntimeAsyncValueTaskSource<T>? PerCoreCacheSlot
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    int i = (int)((uint)Thread.GetCurrentProcessorId() % (uint)Environment.ProcessorCount);
-                    return ref Unsafe.As<object?, PooledRuntimeAsyncValueTaskSource<T>?>(ref PerCoreCache.s_cache[i].Object);
-                }
-            }
-
-            private static class PerCoreCache
-            {
-                // Per-core cache of sources, with each element padded to a cache line to minimize false sharing.
-                internal static readonly PaddedReference[] s_cache = new PaddedReference[Environment.ProcessorCount];
-            }
-
-            internal void SetResult(T result) => _valueTaskSource.SetResult(result);
-
-            internal void SetException(Exception ex) => _valueTaskSource.SetException(ex);
-
-            public ValueTaskSourceStatus GetStatus(short token) => _valueTaskSource.GetStatus(token);
-
-            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
-                _valueTaskSource.OnCompleted(continuation, state, token, flags);
-
-            T IValueTaskSource<T>.GetResult(short token)
-            {
-                try
-                {
-                    return _valueTaskSource.GetResult(token);
-                }
-                finally
-                {
-                    ReturnToCache();
-                }
-            }
-
-            void IValueTaskSource.GetResult(short token)
-            {
-                try
-                {
-                    _valueTaskSource.GetResult(token);
-                }
-                finally
-                {
-                    ReturnToCache();
-                }
-            }
         }
 
         private static Task<T?> TaskFromException<T>(Exception ex)

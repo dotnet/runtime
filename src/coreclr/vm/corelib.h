@@ -647,8 +647,6 @@ DEFINE_METHOD(ASYNC_HELPERS,      CREATE_RUNTIME_ASYNC_TASK, CreateRuntimeAsyncT
 DEFINE_METHOD(ASYNC_HELPERS,      CREATE_RUNTIME_ASYNC_TASK_1, CreateRuntimeAsyncTask, GM_RefRuntimeAsyncAwaitState_RetTaskOfT)
 DEFINE_METHOD(ASYNC_HELPERS,      CREATE_RUNTIME_ASYNC_VALUE_TASK, CreateRuntimeAsyncValueTask, SM_RefRuntimeAsyncAwaitState_RetValueTask)
 DEFINE_METHOD(ASYNC_HELPERS,      CREATE_RUNTIME_ASYNC_VALUE_TASK_1, CreateRuntimeAsyncValueTask, GM_RefRuntimeAsyncAwaitState_RetValueTaskOfT)
-DEFINE_METHOD(ASYNC_HELPERS,      CREATE_POOLED_RUNTIME_ASYNC_VALUE_TASK, CreatePooledRuntimeAsyncValueTask, SM_RefRuntimeAsyncAwaitState_RetValueTask)
-DEFINE_METHOD(ASYNC_HELPERS,      CREATE_POOLED_RUNTIME_ASYNC_VALUE_TASK_1, CreatePooledRuntimeAsyncValueTask, GM_RefRuntimeAsyncAwaitState_RetValueTaskOfT)
 
 DEFINE_METHOD(ASYNC_HELPERS,      TASK_FROM_EXCEPTION, TaskFromException, SM_Exception_RetTask)
 DEFINE_METHOD(ASYNC_HELPERS,      TASK_FROM_EXCEPTION_1, TaskFromException, GM_Exception_RetTaskOfT)

@@ -22,25 +22,22 @@ namespace System.Runtime.CompilerServices
             // This is never linked into a continuation chain or resumed. Instead, the suspended
             // RuntimeAsyncTask holds it while awaiting the source, and the dispatcher calls GetResult
             // to store the result directly into the awaiting continuation. The RuntimeAsyncTask keeps
-            // holding it after that, so that awaiting the same source again (as is common in loops)
-            // needn't store anything that requires a write barrier.
+            // the empty continuation installed for reuse, but must not retain the consumed source.
 
             [StackTraceHidden]
             public void GetResult(ref byte returnValue)
             {
-                Debug.Assert(IsPending && Source != null);
+                Debug.Assert(IsPending && Source is not null);
+                object source = Source;
+                Source = null;
                 IsPending = false;
-                _getResult(Source, _token, ref returnValue);
+                _getResult(source, _token, ref returnValue);
             }
 
             public void Initialize(object source, short token, delegate*<object, short, ref byte, void> getResult)
             {
-                Debug.Assert(!IsPending);
-                if (Source != source)
-                {
-                    Source = source;
-                }
-
+                Debug.Assert(!IsPending && Source is null);
+                Source = source;
                 _token = token;
                 _getResult = getResult;
                 IsPending = true;

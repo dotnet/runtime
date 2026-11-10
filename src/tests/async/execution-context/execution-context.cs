@@ -9,7 +9,115 @@ using Xunit;
 
 public class Async2ExecutionContext
 {
+    [ThreadStatic]
+    private static bool t_inCompletingScheduler;
+
     public static AsyncLocal<long?> s_local = new AsyncLocal<long?>();
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    public static async Task TaskAwaitDoesNotInheritCompletingTask(int completionKind, bool suppressThrowing)
+    {
+        TaskCompletionSource suspension = new TaskCompletionSource();
+        Task waiter = ObserveTaskAwait(suspension.Task, completionKind, suppressThrowing);
+        Task completer = Task.Factory.StartNew(() =>
+        {
+            int? currentTaskId = Task.CurrentId;
+            Assert.NotNull(currentTaskId);
+            CompleteTask(suspension, completionKind);
+            Assert.Equal(currentTaskId, Task.CurrentId);
+        }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+
+        await Task.WhenAll(waiter, completer);
+    }
+
+    private static async Task ObserveTaskAwait(Task suspension, int completionKind, bool suppressThrowing)
+    {
+        bool threw = false;
+        try
+        {
+            await suspension.ConfigureAwait(suppressThrowing ? ConfigureAwaitOptions.SuppressThrowing : ConfigureAwaitOptions.None);
+        }
+        catch (InvalidOperationException) when (completionKind == 1 && !suppressThrowing)
+        {
+            threw = true;
+        }
+        catch (OperationCanceledException) when (completionKind == 2 && !suppressThrowing)
+        {
+            threw = true;
+        }
+
+        Assert.Equal(completionKind != 0 && !suppressThrowing, threw);
+        Assert.Null(Task.CurrentId);
+        Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static async Task TaskAwaitDoesNotInlineOnCompletingScheduler(bool suppressThrowing)
+    {
+        ConcurrentExclusiveSchedulerPair pair = new ConcurrentExclusiveSchedulerPair();
+        TaskCompletionSource suspension = new TaskCompletionSource();
+        Task waiter = ObserveCompletingScheduler(suspension.Task, suppressThrowing);
+        Task completer = Task.Factory.StartNew(() =>
+        {
+            int? currentTaskId = Task.CurrentId;
+            Assert.NotNull(currentTaskId);
+            Assert.Same(pair.ExclusiveScheduler, TaskScheduler.Current);
+            t_inCompletingScheduler = true;
+            try
+            {
+                CompleteTask(suspension, suppressThrowing ? 1 : 0);
+            }
+            finally
+            {
+                t_inCompletingScheduler = false;
+            }
+            Assert.Equal(currentTaskId, Task.CurrentId);
+            Assert.Same(pair.ExclusiveScheduler, TaskScheduler.Current);
+        }, CancellationToken.None, TaskCreationOptions.None, pair.ExclusiveScheduler);
+
+        try
+        {
+            await Task.WhenAll(waiter, completer);
+        }
+        finally
+        {
+            pair.Complete();
+        }
+        await pair.Completion;
+    }
+
+    private static async Task ObserveCompletingScheduler(Task suspension, bool suppressThrowing)
+    {
+        await suspension.ConfigureAwait(suppressThrowing ? ConfigureAwaitOptions.SuppressThrowing : ConfigureAwaitOptions.None);
+        Assert.False(t_inCompletingScheduler);
+        Assert.Null(Task.CurrentId);
+        Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+    }
+
+    private static void CompleteTask(TaskCompletionSource suspension, int completionKind)
+    {
+        switch (completionKind)
+        {
+            case 0:
+                suspension.SetResult();
+                break;
+            case 1:
+                suspension.SetException(new InvalidOperationException());
+                break;
+            default:
+                Assert.Equal(2, completionKind);
+                suspension.SetCanceled();
+                break;
+        }
+    }
 
     [Fact]
     public static async Task Test()

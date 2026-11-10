@@ -8,6 +8,65 @@ using Xunit;
 
 public class RuntimeAsyncDiagnosticIPStackTrace
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void SynchronousExceptionDoesNotDuplicateCaller(bool isValueTask, bool isGeneric)
+    {
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => InvokeSynchronouslyThrowingAsync(isValueTask, isGeneric));
+        string stackTrace = exception.StackTrace;
+        Assert.NotNull(stackTrace);
+
+        string callerFrame = $"{nameof(RuntimeAsyncDiagnosticIPStackTrace)}.{nameof(InvokeSynchronouslyThrowingAsync)}(";
+        int firstFrame = stackTrace.IndexOf(callerFrame, StringComparison.Ordinal);
+        Assert.True(firstFrame >= 0, stackTrace);
+        Assert.Equal(-1, stackTrace.IndexOf(callerFrame, firstFrame + callerFrame.Length, StringComparison.Ordinal));
+        Assert.DoesNotContain("--- End of stack trace from previous location ---", stackTrace);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [RuntimeAsyncMethodGeneration(false)]
+    private static void InvokeSynchronouslyThrowingAsync(bool isValueTask, bool isGeneric)
+    {
+        if (isValueTask)
+        {
+            if (isGeneric)
+            {
+                _ = ThrowValueTaskOfInt().GetAwaiter().GetResult();
+            }
+            else
+            {
+                ThrowValueTask().GetAwaiter().GetResult();
+            }
+        }
+        else
+        {
+            if (isGeneric)
+            {
+                _ = ThrowTaskOfInt().GetAwaiter().GetResult();
+            }
+            else
+            {
+                ThrowTask().GetAwaiter().GetResult();
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task ThrowTask() => throw new InvalidOperationException();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task<int> ThrowTaskOfInt() => throw new InvalidOperationException();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async ValueTask ThrowValueTask() => throw new InvalidOperationException();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async ValueTask<int> ThrowValueTaskOfInt() => throw new InvalidOperationException();
+
     [Fact]
     public static async Task TestEntryPoint()
     {
@@ -41,6 +100,7 @@ public class RuntimeAsyncDiagnosticIPStackTrace
                 nameof(ThrowAfterResume),
                 nameof(Level4),
                 nameof(Level3),
+                nameof(NoInlineForwarder),
                 nameof(Level2),
                 nameof(Level1),
             ];
@@ -60,7 +120,10 @@ public class RuntimeAsyncDiagnosticIPStackTrace
     private static async Task Level1(Task suspension) => await Level2(suspension);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task Level2(Task suspension) => await Level3(suspension);
+    private static async Task Level2(Task suspension) => await NoInlineForwarder(suspension);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task NoInlineForwarder(Task suspension) => Level3(suspension);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Level3(Task suspension) => await Level4(suspension);
