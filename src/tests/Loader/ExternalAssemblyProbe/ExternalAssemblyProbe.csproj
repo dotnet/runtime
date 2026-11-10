@@ -12,4 +12,7 @@
 
     <CLRTestEnvironmentVariable Include="APP_ASSEMBLIES" Value="EXTERNAL" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

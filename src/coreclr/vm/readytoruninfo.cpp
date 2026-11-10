@@ -419,12 +419,12 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == (FILE *)(-1))
     {
         // Initialize Ready to Run logging. Any errors cause logging to be disabled.
-        NewArrayHolder<WCHAR> wszReadyToRunLogFile;
+        WStringHolder wszReadyToRunLogFile;
         if (SUCCEEDED(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunLogFile, &wszReadyToRunLogFile)) && wszReadyToRunLogFile)
         {
             // Append process ID to the log file name, so multiple processes can log at the same time.
             StackSString fullname;
-            fullname.Append(wszReadyToRunLogFile.GetValue());
+            fullname.Append(wszReadyToRunLogFile);
 
             WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
             DWORD pid = GetCurrentProcessId();
@@ -648,12 +648,36 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
 
+    // Single-threaded runtimes lay out [ThreadStatic] fields as regular statics, so the image's static field
+    // layout is only valid if it was compiled for the same threading model.
+#ifdef FEATURE_MULTITHREADING
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) != 0)
+    {
+        DoLog("Ready to Run disabled - image was compiled for a single-threaded runtime");
+        return NULL;
+    }
+#else
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) == 0)
+    {
+        DoLog("Ready to Run disabled - image was not compiled for a single-threaded runtime");
+        return NULL;
+    }
+#endif // FEATURE_MULTITHREADING
+
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
     {
         DoLog("Ready to Run disabled - unsupported header version");
         return NULL;
     }
+
+#ifdef TARGET_WASM
+    if (pHeader->MajorVersion < 32)
+    {
+        DoLog("Ready to Run disabled - unsupported Wasm frame identity encoding");
+        return NULL;
+    }
+#endif // TARGET_WASM
 
     LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
 
@@ -1252,7 +1276,12 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 
     // Use the entry point hashtable to check if another thread already registered a MethodDesc
     if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+    {
+#ifdef HAVE_GCCOVER
+        MethodDesc::SetupGcCoverageForPrecompiledCode(stubEntryPoint);
+#endif // HAVE_GCCOVER
         return;
+    }
 
     MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
         pLoaderAllocator,
@@ -1276,6 +1305,9 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
     {
         amTracker.SuppressRelease();
     }
+#ifdef HAVE_GCCOVER
+    MethodDesc::SetupGcCoverageForPrecompiledCode(stubEntryPoint);
+#endif // HAVE_GCCOVER
 }
 
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
@@ -1301,12 +1333,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
-    // Return-dropping async thunks are VM-synthesized. They share the same metadata
-    // token and signature shape as a regular async variant, so the R2R lookup below
+    // Return-dropping and covariant forwarding async thunks are VM-synthesized. They share the
+    // same metadata token and signature shape as a regular async variant, so the R2R lookup below
     // would incorrectly bind the thunk to the non-thunk's compiled code and bypass
     // the virtual dispatch the thunk performs. Crossgen2 does not emit R2R code for
     // these thunks; fall back to transient IL generation in the prestub.
-    if (pMD->IsReturnDroppingThunk())
+    if (pMD->IsReturnDroppingThunk() || pMD->IsCovariantForwardingThunk())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
@@ -1419,6 +1451,11 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
 #endif
 #endif
+
+#ifdef HAVE_GCCOVER
+    // Instrument before any caller can publish or execute the entry point.
+    MethodDesc::SetupGcCoverageForPrecompiledCode(pEntryPoint);
+#endif // HAVE_GCCOVER
 
 #ifdef PROFILING_SUPPORTED
         {

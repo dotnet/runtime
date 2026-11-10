@@ -516,13 +516,6 @@ namespace
         (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10));
     }
 
-    NOINLINE static void CallFunc_This_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
-    {
-        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, int32_t, PCODE) = *(void (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
-        (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPoint);
-    }
-
     static void CallFunc_F64_F64_F64_F64_F64_F64_F64_F64_F64_I32_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         void (*fptr)(double, double, double, double, double, double, double, double, double, int32_t, int32_t, int32_t) = (void (*)(double, double, double, double, double, double, double, double, double, int32_t, int32_t, int32_t))pcode;
@@ -559,6 +552,12 @@ namespace
     {
         void (*fptr)(int32_t) = (void (*)(int32_t))pcode;
         (*fptr)(ARG_I32(0));
+    }
+
+    static void CallFunc_I32_S8_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2));
     }
 
     static void CallFunc_I32_S8_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -754,13 +753,13 @@ const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "MvS8iiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid },
-    { "MvTp", (void*)&CallFunc_This_RetVoid_PE },
     { "Mvdddddddddiii", (void*)&CallFunc_F64_F64_F64_F64_F64_F64_F64_F64_F64_I32_I32_I32_RetVoid },
     { "Mvdii", (void*)&CallFunc_F64_I32_I32_RetVoid },
     { "Mvdiiii", (void*)&CallFunc_F64_I32_I32_I32_I32_RetVoid },
     { "Mvdiip", (void*)&CallFunc_F64_I32_I32_RetVoid_PE },
     { "Mvfiip", (void*)&CallFunc_F32_I32_I32_RetVoid_PE },
     { "Mvi", (void*)&CallFunc_I32_RetVoid },
+    { "MviS8i", (void*)&CallFunc_I32_S8_I32_RetVoid },
     { "MviS8ii", (void*)&CallFunc_I32_S8_I32_I32_RetVoid },
     { "Mvii", (void*)&CallFunc_I32_I32_RetVoid },
     { "MviiS8S8ii", (void*)&CallFunc_I32_I32_S8_S8_I32_I32_RetVoid },

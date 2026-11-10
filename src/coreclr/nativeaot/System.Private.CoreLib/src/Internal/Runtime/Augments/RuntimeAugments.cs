@@ -616,30 +616,40 @@ namespace Internal.Runtime.Augments
             moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
             if (moduleBase == IntPtr.Zero)
                 return null;
-#if TARGET_UNIX
+#if TARGET_WINDOWS
+            char* pModuleName;
+            int numChars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleName);
+            string modulePath = new string(pModuleName, 0, numChars);
+#else
             // RhGetModuleFileName on Unix calls dladdr that accepts any ip. Avoid the redundant lookup
             // and pass the ip into RhGetModuleFileName directly. Also, older versions of Musl have a bug
             // that leads to crash with the redundant lookup.
             byte* pModuleNameUtf8;
             int numUtf8Chars = RuntimeImports.RhGetModuleFileName(ip, out pModuleNameUtf8);
             string modulePath = System.Text.Encoding.UTF8.GetString(pModuleNameUtf8, numUtf8Chars);
-#else // TARGET_UNIX
-            char* pModuleName;
-            int numChars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleName);
-            string modulePath = new string(pModuleName, 0, numChars);
-#endif // TARGET_UNIX
+#endif
             return modulePath;
         }
 
-        // if functionPointer points at an import or unboxing stub, find the target of the stub
-        public static IntPtr GetCodeTarget(IntPtr functionPointer)
-        {
-            return RuntimeImports.RhGetCodeTarget(functionPointer);
-        }
+        // Resolve wrapper stubs, optionally including unboxing stubs that supply an instantiation argument.
+        // Return the original pointer if no matching wrapper is found.
+        public static IntPtr GetTargetOfWrapperStub(IntPtr functionPointer, bool includeInstantiatingStubs)
+            => GetTargetOfWrapperStub(functionPointer, includeInstantiatingStubs, out _);
 
-        public static IntPtr GetTargetOfUnboxingAndInstantiatingStub(IntPtr functionPointer)
+        public static IntPtr GetTargetOfWrapperStub(IntPtr functionPointer, bool includeInstantiatingStubs, out bool isInstantiatingStub)
         {
-            return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
+#if TARGET_WASM
+            return UnboxingStubMap.GetTarget(functionPointer, includeInstantiatingStubs, out isInstantiatingStub);
+#else
+            isInstantiatingStub = false;
+            IntPtr target = RuntimeImports.RhGetCodeTarget(functionPointer);
+            if (target != functionPointer || !includeInstantiatingStubs)
+                return target;
+
+            target = RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
+            isInstantiatingStub = target != IntPtr.Zero;
+            return isInstantiatingStub ? target : functionPointer;
+#endif
         }
 
         //==============================================================================================

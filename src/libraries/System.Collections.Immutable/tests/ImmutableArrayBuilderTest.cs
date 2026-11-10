@@ -95,6 +95,19 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void AddRangeICollectionUsesCopyTo()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(1);
+            builder.Add(1);
+
+            var items = new CopyToTrackingCollection<int>(2, 3);
+            builder.AddRange(items); // exceeds capacity
+
+            Assert.Equal(1, items.CopyToCallCount);
+            Assert.Equal(new[] { 1, 2, 3 }, builder);
+        }
+
+        [Fact]
         public void Add()
         {
             ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(0);
@@ -332,6 +345,22 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(100, new ImmutableArray<int>()));
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void InsertRangeICollectionUsesCopyTo(int index)
+        {
+            var builder = ImmutableArray.CreateBuilder<int>();
+            builder.AddRange(1, 2);
+
+            var items = new CopyToTrackingCollection<int>(5, 6);
+            builder.InsertRange(index, items);
+
+            Assert.Equal(1, items.CopyToCallCount);
+            Assert.Equal(new[] { 1, 2 }.Take(index).Concat(new[] { 5, 6 }).Concat(new[] { 1, 2 }.Skip(index)), builder);
+        }
+
         [Fact]
         public void Remove()
         {
@@ -433,6 +462,69 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { 1, 3, 5, 7 }, builder);
 
             AssertExtensions.Throws<ArgumentNullException>("match", () => builder.RemoveAll(match: null));
+        }
+
+        [Theory]
+        [InlineData(4, 0, 0)]
+        [InlineData(4, 4, 0)]
+        [InlineData(4, 0, 1)]
+        [InlineData(4, 1, 2)]
+        [InlineData(4, 3, 1)]
+        [InlineData(4, 0, 4)]
+        [InlineData(70, 0, 65)]
+        [InlineData(70, 1, 65)]
+        [InlineData(70, 5, 65)]
+        public void RemoveRange_ClearsElements(int count, int index, int length)
+        {
+            Verify(Enumerable.Range(1, count).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => i.ToString()).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => new KeyValuePair<int, string>(i, i.ToString())).ToArray());
+
+            void Verify<T>(T[] items)
+            {
+                T[] expected = items.Take(index).Concat(items.Skip(index + length)).ToArray();
+                AssertRemovedElementsCleared(items, expected, builder => builder.RemoveRange(index, length));
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(70)]
+        public void RemoveAllAndEnumerableRemoveRange_ClearsElements(int count)
+        {
+            Verify(Enumerable.Range(1, count).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => i.ToString()).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => new KeyValuePair<int, string>(i, i.ToString())).ToArray());
+
+            void Verify<T>(T[] items)
+            {
+                foreach (T[] removed in new[] { Array.Empty<T>(), items, items.Where((_, i) => i % 2 == 0).ToArray() })
+                {
+                    T[] expected = items.Where(item => !removed.Contains(item)).ToArray();
+                    AssertRemovedElementsCleared(items, expected, builder => builder.RemoveRange(removed));
+                    AssertRemovedElementsCleared(items, expected, builder => builder.RemoveRange(removed, EqualityComparer<T>.Default));
+                    AssertRemovedElementsCleared(items, expected, builder => builder.RemoveAll(item => removed.Contains(item)));
+                }
+            }
+        }
+
+        private static void AssertRemovedElementsCleared<T>(T[] items, T[] expected, Action<ImmutableArray<T>.Builder> remove)
+        {
+            foreach (int capacity in new[] { items.Length, items.Length + 8 })
+            {
+                ImmutableArray<T>.Builder builder = ImmutableArray.CreateBuilder<T>(capacity);
+                builder.AddRange(items);
+
+                remove(builder);
+                Assert.Equal(expected, builder);
+
+                builder.Count = items.Length;
+                var expanded = new T[items.Length];
+                Array.Copy(expected, expanded, expected.Length);
+                Assert.Equal(expanded, builder);
+            }
         }
 
         [Fact]

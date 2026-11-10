@@ -44,6 +44,10 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
             }
+            else if (PlatformDetection.IsCoreClrInterpreter)
+            {
+                Assert.True(RuntimeFeature.IsDynamicCodeSupported);
+            }
             else
             {
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);

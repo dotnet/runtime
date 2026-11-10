@@ -14,6 +14,11 @@ namespace System.Net.Security
     /// Represents a stateful authentication exchange that uses the Negotiate, NTLM or Kerberos security protocols
     /// to authenticate the client or server, in client-server communication.
     /// </summary>
+    /// <remarks>
+    /// NTLM is a legacy authentication protocol and should be used only when required for
+    /// compatibility with existing systems. Prefer Kerberos or another modern authentication
+    /// protocol when possible. Negotiate can select NTLM when Kerberos is unavailable.
+    /// </remarks>
     public sealed class NegotiateAuthentication : IDisposable
     {
         private readonly NegotiateAuthenticationPal _pal;

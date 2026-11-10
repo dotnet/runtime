@@ -236,10 +236,10 @@ if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNodeJS" ]; then
 fi
 
 ################################################################################
-# Call run.py to run tests.
+# Call run.cs to run tests.
 ################################################################################
 
-runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
+runtestArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
 
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
@@ -249,30 +249,30 @@ if [ "$buildArch" = "wasm" -a -z "$buildOS" ]; then
 fi
 
 if [ -n "$buildOS" ]; then
-    runtestPyArguments+=("-os" "$buildOS")
+    runtestArguments+=("-os" "$buildOS")
 fi
 
 if [ "$buildOS" = "android" ]; then
-    runtestPyArguments+=("-os" "android")
+    runtestArguments+=("-os" "android")
 fi
 
 if [[ -n "$testRootDir" ]]; then
-    runtestPyArguments+=("-test_location" "$testRootDir")
+    runtestArguments+=("-test_location" "$testRootDir")
     echo "Test Location                 : ${testRootDir}"
 fi
 
 if [[ -n "$coreRootDir" ]]; then
-    runtestPyArguments+=("-core_root" "$coreRootDir")
+    runtestArguments+=("-core_root" "$coreRootDir")
     echo "CORE_ROOT                     : ${coreRootDir}"
 fi
 
 if [[ -n "$logsDir" ]]; then
-    runtestPyArguments+=("-logs_dir" "$logsDir")
+    runtestArguments+=("-logs_dir" "$logsDir")
     echo "Logs directory                : ${logsDir}"
 fi
 
 if [[ -n "${testEnv}" ]]; then
-    runtestPyArguments+=("-test_env" "${testEnv}")
+    runtestArguments+=("-test_env" "${testEnv}")
     echo "Test Env                      : ${testEnv}"
 fi
 
@@ -280,90 +280,84 @@ echo ""
 
 if [[ -n "$longgc" ]]; then
     echo "Running Long GC tests"
-    runtestPyArguments+=("--long_gc")
+    runtestArguments+=("--long_gc")
 fi
 
 if [[ -n "$gcsimulator" ]]; then
     echo "Running GC simulator tests"
-    runtestPyArguments+=("--gcsimulator")
+    runtestArguments+=("--gcsimulator")
 fi
 
 if [[ -n "$ilasmroundtrip" ]]; then
     echo "Running Ilasm round trip"
-    runtestPyArguments+=("--ilasmroundtrip")
+    runtestArguments+=("--ilasmroundtrip")
 fi
 
 if (($verbose!=0)); then
-    runtestPyArguments+=("--verbose")
+    runtestArguments+=("--verbose")
 fi
 
 if [ "$runSequential" -ne 0 ]; then
     echo "Run tests sequentially."
-    runtestPyArguments+=("--sequential")
+    runtestArguments+=("--sequential")
 fi
 
 if [[ -n "$printLastResultsOnly" ]]; then
-    runtestPyArguments+=("--analyze_results_only")
+    runtestArguments+=("--analyze_results_only")
 fi
 
 if [[ -n "$RunCrossGen2" ]]; then
-    runtestPyArguments+=("--run_crossgen2_tests")
+    runtestArguments+=("--run_crossgen2_tests")
 fi
 
 if [[ -n "$CrossGen2SynthesizePgo" ]]; then
-    runtestPyArguments+=("--synthesize_pgo")
+    runtestArguments+=("--synthesize_pgo")
 fi
 
 if [[ "$limitedCoreDumps" == "ON" ]]; then
-    runtestPyArguments+=("--limited_core_dumps")
+    runtestArguments+=("--limited_core_dumps")
 fi
 
 if [[ "$runincontext" -ne 0 ]]; then
     echo "Running in an unloadable AssemblyLoadContext"
-    runtestPyArguments+=("--run_in_context")
+    runtestArguments+=("--run_in_context")
 fi
 
 if [[ "$tieringtest" -ne 0 ]]; then
     echo "Running to encourage tier1 rejitting"
-    runtestPyArguments+=("--tieringtest")
+    runtestArguments+=("--tiering_test")
 fi
 
 if [[ "$nativeaottest" -ne 0 ]]; then
     echo "Running NativeAOT compiled tests"
-    runtestPyArguments+=("--run_nativeaot_tests")
+    runtestArguments+=("--run_nativeaot_tests")
 fi
 
 if [[ -n "$RunInterpreter" ]]; then
     echo "Running tests with the interpreter"
-    runtestPyArguments+=("--interpreter")
+    runtestArguments+=("--interpreter")
 fi
 
 if [[ -n "$RunWithNodeJS" ]]; then
     echo "Running tests with NodeJS"
-    runtestPyArguments+=("--node")
+    runtestArguments+=("--node")
 fi
 
 if [[ -n "$runnerFilter" ]]; then
     echo "Runner filter                 : ${runnerFilter}"
-    runtestPyArguments+=("--runner_filter" "$runnerFilter")
+    runtestArguments+=("--runner_filter" "$runnerFilter")
 fi
 
 if [[ -n "$activeIssueDetails" ]]; then
-    runtestPyArguments+=("--active_issue_details")
+    runtestArguments+=("--active_issue_details")
 fi
 
 if [[ -n "$treeSubtree" ]]; then
     echo "Running tests under subtree   : ${treeSubtree}"
-    runtestPyArguments+=("--tree" "$treeSubtree")
+    runtestArguments+=("--tree" "$treeSubtree")
 fi
 
-# Default to python3 if it is installed
-__Python=python
-if command -v python3 &>/dev/null; then
-    __Python=python3
-fi
-
-# Run the tests using cross platform run.py
-echo "$__Python $repoRootDir/src/tests/run.py ${runtestPyArguments[@]}"
-$__Python "$repoRootDir/src/tests/run.py" "${runtestPyArguments[@]}"
+# Run the tests using the cross-platform file-based app.
+echo "$repoRootDir/dotnet.sh $repoRootDir/src/tests/run.cs -- ${runtestArguments[*]}"
+"$repoRootDir/dotnet.sh" "$repoRootDir/src/tests/run.cs" -- "${runtestArguments[@]}"
 exit "$?"

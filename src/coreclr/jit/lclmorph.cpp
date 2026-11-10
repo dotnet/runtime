@@ -118,7 +118,7 @@ public:
             return GenTree::VisitResult::Continue;
         };
 
-        call->VisitPhysicalLocalDefNodes(m_compiler, moveToEnd);
+        call->VisitCallLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------
@@ -270,30 +270,6 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
             }
 
             m_map->Set(lcl->GetLclNum(), true, LocalDefinitionsMap::Overwrite);
-
-            LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
-            if (m_compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()) && lclDsc->lvPromoted)
-            {
-                // fgRetypeImplicitByRefArgs created a new promoted
-                // struct local to represent this arg. The stores will
-                // be rewritten by morph.
-                assert(lclDsc->lvFieldLclStart != 0);
-                m_map->Set(lclDsc->lvFieldLclStart, true, LocalDefinitionsMap::Overwrite);
-                lclDsc = m_compiler->lvaGetDesc(lclDsc->lvFieldLclStart);
-            }
-
-            if (lclDsc->lvPromoted)
-            {
-                for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
-                {
-                    unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
-                    m_map->Set(fieldLclNum, true, LocalDefinitionsMap::Overwrite);
-                }
-            }
-            else if (lclDsc->lvIsStructField)
-            {
-                m_map->Set(lclDsc->lvParentLcl, true, LocalDefinitionsMap::Overwrite);
-            }
 
             return Compiler::WALK_CONTINUE;
         }
@@ -1533,7 +1509,8 @@ private:
                 CallArg* asyncResumedDef = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
                 if ((asyncResumedDef != nullptr) && (val.Node() == asyncResumedDef->GetNode()))
                 {
-                    defSize = TARGET_POINTER_SIZE;
+                    callUser->GetAsyncInfo().DefinesResumedIndicator = true;
+                    defSize                                          = TARGET_POINTER_SIZE;
                 }
             }
 
@@ -1991,6 +1968,12 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {
+                // Preserve RHS side effects before reading the vector for a partial store.
+                if (isDef && ((indir->Data()->gtFlags & GTF_OBS_EFFECT) != 0))
+                {
+                    return IndirTransform::LclFld;
+                }
+
                 // We have three cases we want to handle:
                 // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
@@ -2076,9 +2059,9 @@ private:
     bool MorphStructField(GenTreeIndir* node, GenTree* user)
     {
         GenTree* addr = node->Addr();
-        if (node->IsVolatile() && (!addr->OperIs(GT_FIELD_ADDR) || ((addr->gtFlags & GTF_FLD_DEREFERENCED) == 0)))
+        if (node->IsVolatile())
         {
-            // TODO-Bug: transforming volatile indirections like this is not legal. The above condition is a quirk.
+            // A volatile indirection must stay an indirection, so the address escapes and the struct gets exposed.
             return false;
         }
 

@@ -612,11 +612,11 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
 
 * `$values` **Not valid**
 
-* `$.*` **Not valid**
+* Other property names starting with `$` are valid ordinary properties unless they exactly match a recognized metadata property name. Matching is case-sensitive.
 
-* `\u0024.*` **valid**
+* `$type` is recognized as metadata unless a custom polymorphic discriminator property name is configured. In that case, the custom name is recognized instead.
 
-* `\u0024id*` **valid** but not considered metadata.
+* Escaped property names are unescaped before metadata matching. For example, `\u0024id` is equivalent to `$id`, while `\u0024custom` is an ordinary property.
 
 Note: For Dictionary keys on serialize, should we allow serializing keys `$id`, `$ref` and `$values`? If we allow it, then there is a potential round-tripping issue.
 Sample of similar issue with `DictionaryKeyPolicy`:
@@ -645,7 +645,7 @@ public static void TestDictionary_Collision()
 Resolution for above issue:
 On serialization, when a JSON property name, that is either a dictionary key or a CLR class property, starts with a '$' character, we must write the escaped character "\u0024" instead.
 
-On deserialization, metadata will be digested by using only the raw bytes, so no encoded characters are allowed in metadata; to read JSON properties that start with a '$' you will need to pass it with the escaped '$' (\u0024) or turn the feature off.
+On deserialization, escaping does not distinguish metadata from ordinary properties. Property names are unescaped before matching, and a leading `$` alone does not make a property metadata.
 
 
 ## JSON Object if Enumerable - On Deserialize

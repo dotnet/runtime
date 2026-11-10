@@ -331,7 +331,7 @@ Assembly * Assembly::Create(
     // Validate the assembly about to be created is suitable for execution.
     pPEAssembly->ValidateForExecution();
 
-    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
+    NewHolder<Assembly> pAssembly{ new Assembly(pPEAssembly, pLoaderAllocator) };
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -360,9 +360,7 @@ Assembly * Assembly::Create(
     }
     EX_END_HOOK;
 #endif
-    pAssembly.SuppressRelease();
-
-    return pAssembly;
+    return pAssembly.Detach();
 } // Assembly::Create
 
 Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive)
@@ -376,10 +374,11 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     }
     CONTRACTL_END;
 
-    // This must be before creation of the AllocMemTracker so that the destructor for the AllocMemTracker happens before the destructor for pLoaderAllocator.
+    // This must be before creation of the AllocMemTracker so that the destructor for the AllocMemTracker happens before the destructor for loaderAllocatorHolder.
     // That is necessary as the allocation of Assembly objects and other related details is done on top of heaps located in
     // the loader allocator objects.
-    NewHolder<LoaderAllocator> pLoaderAllocator;
+    NewHolder<LoaderAllocator> loaderAllocatorHolder;
+    LoaderAllocator* pLoaderAllocator = NULL;
 
     AllocMemTracker amTracker;
     AllocMemTracker *pamTracker = &amTracker;
@@ -451,6 +450,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
             AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
+            loaderAllocatorHolder = pCollectibleLoaderAllocator;
             pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
@@ -471,11 +471,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         else
         {
             pLoaderAllocator = pBinderLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderLoaderAllocator;
-        }
-
-        if (!createdNewAssemblyLoaderAllocator)
-        {
-            pLoaderAllocator.SuppressRelease();
         }
 
         // Create the assembly
@@ -505,6 +500,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         // Finish loading process
         // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
         pAssem->Begin();
+        pAssem->BeforeTypeLoad();
         pAssem->DeliverSyncEvents();
         pAssem->DeliverAsyncEvents();
         pAssem->FinishLoad();
@@ -524,7 +520,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         {
             // Atomically transfer ownership to the managed heap
             pLoaderAllocator->ActivateManagedTracking();
-            pLoaderAllocator.SuppressRelease();
+            loaderAllocatorHolder.Detach();
         }
 
         // Set the assembly module to be tenured now that we know it won't be deleted
@@ -777,7 +773,9 @@ Module * Assembly::FindModuleByTypeRef(
                 // Either we're not supposed to load, or we're doing a GC or stackwalk
                 // in which case we shouldn't need to load.  So just look up the module
                 // and return what we find.
-                return pModule->LookupModule(tkType);
+                Module* pLoadedModule = pModule->LookupModule(tkType);
+                _ASSERTE_ALL_BUILDS(pLoadedModule != NULL || loadFlag != Loader::Load);
+                return pLoadedModule;
             }
 
 #ifndef DACCESS_COMPILE
@@ -1585,6 +1583,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1933,6 +1932,7 @@ void Assembly::RequireLoadLevel(FileLoadLevel targetLevel)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1952,6 +1952,7 @@ void Assembly::SetError(Exception *ex)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2102,29 +2103,22 @@ void Assembly::BeforeTypeLoad()
     }
     CONTRACTL_END;
 
-#ifdef PROFILING_SUPPORTED
     // After this point, it is possible to load types.
     // We need to notify the profiler now because the profiler may need to inject methods into
     // the module, and to do so reliably, it must have the chance to do so before
     // any types are loaded from the module.
-    //
-    // In the past we only allowed injecting types/methods on non-NGEN images so notifying here
-    // worked ok, but for NGEN images this is pretty ugly. Rejitting often occurs in this callback,
-    // but then during fixup the results of LoadedMethodDesc iterator would change and we would
-    // need to re-iterate everything. Aside from Rejit other code often wasn't designed to handle
-    // running before Fixup. A concrete example VS recently hit, calling GetClassLayout using
-    // a MethodTable which doesn't need restore but its parent pointer isn't fixed up yet.
-    // We've already set the rules so that profilers can't modify the member list of types in NGEN images
-    // so it doesn't matter if types are pre-loaded. We only need the guarantee that code for the
-    // loaded types won't execute yet. For NGEN images we deliver the load notification in
-    // FILE_LOAD_DELIVER_EVENTS.
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetModule()->NotifyProfilerLoadFinished(S_OK);
-    }
+    _ASSERTE(!IsProfilerNotified());
 
-#endif
+    // This flag also marks the assembly as available to code versioning enumerators.
+    SetProfilerNotified();
+
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+    GetModule()->CaptureInitialTypeCounts();
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
+
+#ifdef PROFILING_SUPPORTED
+    GetModule()->NotifyProfilerLoadFinished(S_OK);
+#endif // PROFILING_SUPPORTED
 }
 
 void Assembly::EagerFixups()
@@ -2278,14 +2272,6 @@ void Assembly::DeliverSyncEvents()
     CONTRACTL_END;
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
-
-#ifdef PROFILING_SUPPORTED
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetModule()->NotifyProfilerLoadFinished(S_OK);
-    }
-#endif
 
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
@@ -2570,7 +2556,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             if (count == 1)
             {
                 pFriendAssemblies->AddSubjectAssembly(pFriendAssemblyName);
-                pFriendAssemblyName.SuppressRelease();
+                pFriendAssemblyName.Detach();
                 // Below checks are unnecessary for IgnoresAccessChecks
                 continue;
             }
@@ -2580,7 +2566,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
 
             pFriendAssemblies->AddFriendAssembly(pFriendAssemblyName);
 
-            pFriendAssemblyName.SuppressRelease();
+            pFriendAssemblyName.Detach();
         }
     }
 

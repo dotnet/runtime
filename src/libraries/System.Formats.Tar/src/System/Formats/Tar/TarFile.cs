@@ -630,22 +630,23 @@ namespace System.Formats.Tar
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
 
             bool overwriteFiles = options.OverwriteFiles;
-            TarHardLinkMode hardLinkMode = options.HardLinkMode;
 
             using TarReader reader = new TarReader(source, leaveOpen);
 
-            SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
-            var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
+            var extractState = new TarHelpers.ExtractState()
+            {
+                HardLinkMode = options.HardLinkMode,
+            };
+
             TarEntry? entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, ref extractState);
                 }
             }
-            TarHelpers.SetPendingModes(pendingModes);
-            TarHelpers.SetPendingModificationTimes(directoryModificationTimes);
+            extractState.Apply(destinationDirectoryFullPath);
         }
 
         // Asynchronously extracts the contents of a tar file into the specified directory.
@@ -677,10 +678,12 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             bool overwriteFiles = options.OverwriteFiles;
-            TarHardLinkMode hardLinkMode = options.HardLinkMode;
 
-            SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
-            var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
+            var extractState = new TarHelpers.ExtractState()
+            {
+                HardLinkMode = options.HardLinkMode,
+            };
+
             TarReader reader = new TarReader(source, leaveOpen);
             await using (reader.ConfigureAwait(false))
             {
@@ -689,12 +692,14 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, cancellationToken).ConfigureAwait(false);
+                        // Pass extractState by ref in a synchronous statement; the ref is used only synchronously
+                        // (a ref argument cannot be part of an awaited expression).
+                        Task extractTask = entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, ref extractState, cancellationToken);
+                        await extractTask.ConfigureAwait(false);
                     }
                 }
             }
-            TarHelpers.SetPendingModes(pendingModes);
-            TarHelpers.SetPendingModificationTimes(directoryModificationTimes);
+            extractState.Apply(destinationDirectoryFullPath);
         }
 
         [Conditional("DEBUG")]

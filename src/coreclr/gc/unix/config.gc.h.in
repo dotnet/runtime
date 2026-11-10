@@ -7,7 +7,6 @@
 #cmakedefine01 HAVE_SYS_TIME_H
 #cmakedefine01 HAVE_SYS_MMAN_H
 #cmakedefine01 HAVE_SYS_MEMBARRIER_H
-#cmakedefine01 HAVE_PTHREAD_THREADID_NP
 #cmakedefine01 HAVE_PTHREAD_GETTHREADID_NP
 #cmakedefine01 HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
 #cmakedefine01 HAVE_MAP_HUGETLB
@@ -32,6 +31,5 @@
 #cmakedefine01 HAVE_XSW_USAGE
 #cmakedefine01 HAVE_XSWDEV
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
-#cmakedefine01 HAVE_PROCFS_STATM
 
 #endif // __CONFIG_H__

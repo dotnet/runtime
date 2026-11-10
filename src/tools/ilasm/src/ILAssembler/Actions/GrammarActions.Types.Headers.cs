@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {
@@ -64,41 +64,37 @@ internal sealed partial class GrammarActions
 
         if (!isNewType)
         {
-            MergeTypeDefinition(context, header, typeDefinition);
+            // A reference that precedes the first declaration creates the entity without declaring it.
+            if (typeDefinition.IsDefined)
+            {
+                MergeTypeDefinition(context, header, typeDefinition);
+            }
+            else
+            {
+                InitializeTypeDefinition(context, header, typeDefinition);
+            }
         }
 
+        typeDefinition.IsDefined = true;
         return typeDefinition;
     }
 
     private (string Namespace, string Name) GetTypeDefinitionName(string fullName)
     {
-        int lastDot = fullName.LastIndexOf('.');
-        if (lastDot == 0)
+        string? currentNamespace = _currentTypeDefinition.Count == 0 ? _currentNamespace.PeekOrDefault() : null;
+        if (string.IsNullOrEmpty(currentNamespace))
         {
-            lastDot = -1;
+            return NameHelpers.SplitDottedNameToNamespaceAndName(fullName);
         }
 
-        string typeNamespace;
-        if (_currentTypeDefinition.Count != 0)
+        if (!fullName.Contains('.') && !currentNamespace.EndsWith('.'))
         {
-            typeNamespace = lastDot == -1 ? string.Empty : fullName.Substring(0, lastDot);
-        }
-        else if (lastDot == -1)
-        {
-            typeNamespace = _currentNamespace.PeekOrDefault() ?? string.Empty;
-        }
-        else
-        {
-            string containingNamespace = fullName.Substring(0, lastDot);
-            string? currentNamespace = _currentNamespace.PeekOrDefault();
-            typeNamespace = string.IsNullOrEmpty(currentNamespace)
-                ? containingNamespace
-                : $"{currentNamespace}.{containingNamespace}";
+            return (currentNamespace, fullName);
         }
 
-        return (
-            typeNamespace,
-            lastDot == -1 ? fullName : fullName.Substring(lastDot + 1));
+        // COMPAT: Native ilasm composes the full name before splitting it,
+        // so atypical dots can change the namespace/name boundary specified in the source.
+        return NameHelpers.SplitDottedNameToNamespaceAndName(currentNamespace + "." + fullName);
     }
 
     private void InitializeTypeDefinition(
@@ -164,9 +160,20 @@ internal sealed partial class GrammarActions
             fallbackBase = null;
         }
 
-        typeDefinition.BaseType ??= _entityRegistry.ResolveImplicitBaseType(fallbackBase);
+        if (IsSystemObjectDefinition(typeDefinition))
+        {
+            // Like native ilasm, System.Object in the core library has no base (ECMA-335 I.8.9.9).
+            typeDefinition.BaseType = null;
+        }
+        else
+        {
+            typeDefinition.BaseType ??= _entityRegistry.ResolveImplicitBaseType(fallbackBase);
+        }
+        // System.Enum is a reference type despite extending System.ValueType (ECMA-335 I.8.9.9).
+        bool isSystemEnum = _entityRegistry.IsCoreLibrary &&
+            typeDefinition is { ContainingType: null, Namespace: "System", Name: "Enum" };
         if (!typeDefinition.Attributes.HasFlag(TypeAttributes.Sealed) &&
-            (requireSealed || _entityRegistry.SystemValueTypeType.Equals(typeDefinition.BaseType)))
+            (requireSealed || (!isSystemEnum && _entityRegistry.IsSystemValueType(typeDefinition.BaseType))))
         {
             IToken location = header.NameToken ?? context.Start;
             _diagnostics.Add(
@@ -175,7 +182,6 @@ internal sealed partial class GrammarActions
                     DiagnosticSeverity.Error,
                     string.Format(DiagnosticMessageTemplates.UnsealedValueType, typeDefinition.Name),
                     Location.From(location, _documents)));
-            typeDefinition.Attributes |= TypeAttributes.Sealed;
         }
     }
 
@@ -224,7 +230,7 @@ internal sealed partial class GrammarActions
                     header.GenericParameters);
             }
 
-            if (header.BaseType is not null)
+            if (header.BaseType is not null && !IsSystemObjectDefinition(typeDefinition))
             {
                 EntityRegistry.TypeEntity baseType = ResolveTypeSpecification(header.BaseType);
                 typeDefinition.BaseType ??= baseType;
@@ -237,6 +243,10 @@ internal sealed partial class GrammarActions
             _currentTypeDefinition.Pop();
         }
     }
+
+    private bool IsSystemObjectDefinition(EntityRegistry.TypeDefinitionEntity typeDefinition)
+        => _entityRegistry.IsCoreLibrary &&
+            typeDefinition is { ContainingType: null, Namespace: "System", Name: "Object" };
 
     private void AddInterfaceImplementations(
         EntityRegistry.TypeDefinitionEntity typeDefinition,

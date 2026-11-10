@@ -16,11 +16,12 @@ internal static partial class Interop
         private static partial SafeX509ChainContextHandle X509ChainCreateContext(
             SafeX509Handle cert,
             IntPtr[] extraStore,
-            int extraStoreLen);
+            int extraStoreLen,
+            [MarshalAs(UnmanagedType.U1)] bool useCustomRootTrust);
 
-        internal static SafeX509ChainContextHandle X509ChainCreateContext(SafeX509Handle cert, IntPtr[] extraStore)
+        internal static SafeX509ChainContextHandle X509ChainCreateContext(SafeX509Handle cert, IntPtr[] extraStore, bool useCustomRootTrust)
         {
-            SafeX509ChainContextHandle chainContext = X509ChainCreateContext(cert, extraStore, extraStore.Length);
+            SafeX509ChainContextHandle chainContext = X509ChainCreateContext(cert, extraStore, extraStore.Length, useCustomRootTrust);
 
             if (chainContext.IsInvalid)
             {
@@ -35,10 +36,28 @@ internal static partial class Interop
         internal static partial void X509ChainDestroyContext(IntPtr ctx);
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainBuild")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool X509ChainBuild(
+        private static partial int X509ChainBuild(
             SafeX509ChainContextHandle ctx,
-            long timeInMsFromUnixEpoch);
+            long timeInMsFromUnixEpoch,
+            [MarshalAs(UnmanagedType.U1)] bool useFullTrustStore,
+            out byte usedTargetedTrust);
+
+        internal static bool X509ChainBuild(
+            SafeX509ChainContextHandle ctx,
+            long timeInMsFromUnixEpoch,
+            bool useFullTrustStore,
+            out bool usedTargetedTrust)
+        {
+            int result = X509ChainBuild(ctx, timeInMsFromUnixEpoch, useFullTrustStore, out byte targetedTrust);
+            usedTargetedTrust = targetedTrust != 0;
+
+            if (result < 0)
+            {
+                throw new CryptographicException();
+            }
+
+            return result == SUCCESS;
+        }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetCertificateCount")]
         private static partial int X509ChainGetCertificateCount(SafeX509ChainContextHandle ctx);

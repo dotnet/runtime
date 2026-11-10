@@ -19,7 +19,7 @@ byte[] GetWatsonBuckets(TargetPointer threadPointer);
 | --- | --- | --- | --- |
 | `Exception` | `_watsonBuckets` | `pointer` | Pointer to exception Watson buckets |
 | `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | `pointer` | Pointer to Watson unhandled buckets on non-Unix |
-| `ExceptionInfo` | `ThrownObject` | `pointer` | Handle to the thrown exception object |
+| `ExceptionInfo` | `ThrownObject` | `pointer` | The thrown exception object (an object reference, not a handle) |
 | `Thread` | `ExceptionTracker` | `pointer` | Pointer to exception tracking information |
 | `Thread` | `UEWatsonBucketTrackerBuckets` | `pointer` | Pointer to thread Watson buckets data (optional, Windows only) |
 

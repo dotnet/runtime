@@ -48,7 +48,7 @@ namespace System.Net.Quic.Tests
     }
 
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotOSXMono))]
     public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -60,6 +60,7 @@ namespace System.Net.Quic.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [SkipOnCoreClr("Object lifetime assertions are unreliable under JIT stress", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task QuicRootedObjectGetReleased()
         {
             async Task<(WeakReference<QuicListener>, WeakReference<QuicConnection>, WeakReference<QuicConnection>, WeakReference<QuicStream>, WeakReference<QuicStream>)> GetWeakReferencesAsync()

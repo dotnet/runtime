@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -264,20 +265,24 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal("9B1C96B2000BA1F84A40605AC70C46C8FE339796BC7F82EDCA9A71CEF69A396B", okm.ByteArrayToHex());
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(Sha3TestCases))]
-        public void Sha3Tests(HkdfTestCase test)
+        public void Sha3_Supported(HkdfTestCase test)
         {
-            if (PlatformDetection.SupportsSha3)
-            {
-                byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
-                Assert.Equal(test.Okm, okm);
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() =>
-                    DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info));
-            }
+            SkipTestException.ThrowUnless(SupportsSha3);
+
+            byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
+            Assert.Equal(test.Okm, okm);
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(Sha3TestCases))]
+        public void Sha3_Unupported(HkdfTestCase test)
+        {
+            SkipTestException.ThrowWhen(SupportsSha3);
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info));
         }
 
         public static IEnumerable<object[]> GetHkdfTestCases()
@@ -323,7 +328,7 @@ namespace System.Security.Cryptography.Tests
                 yield return new object[] { HashAlgorithmName.MD5, 128 / 8 - 1 };
             }
 
-            if (PlatformDetection.SupportsSha3)
+            if (SupportsSha3)
             {
                 yield return new object[] { HashAlgorithmName.SHA3_256, SHA3_256.HashSizeInBytes - 1 };
                 yield return new object[] { HashAlgorithmName.SHA3_384, SHA3_384.HashSizeInBytes - 1 };
@@ -589,6 +594,12 @@ namespace System.Security.Cryptography.Tests
                 };
             }
         }
+
+        public static bool SupportsSha3 => PlatformDetection.SupportsSha3 ||
+            OperatingSystem.IsMacOSVersionAtLeast(26) ||
+            OperatingSystem.IsMacCatalystVersionAtLeast(26) ||
+            OperatingSystem.IsIOSVersionAtLeast(26) ||
+            OperatingSystem.IsTvOSVersionAtLeast(26);
 
         public struct HkdfTestCase
         {

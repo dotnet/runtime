@@ -3,7 +3,7 @@
     <!-- No test-specific corerun on wasm: the delegate p/invoke scenarios trap with a wasm
          function signature mismatch. Native-dependent tests skip instead.
          Tracked by https://github.com/dotnet/runtime/issues/131811 -->
-    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</WasmBuildTestCorerun>
+    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">false</WasmBuildTestCorerun>
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

@@ -274,6 +274,7 @@ namespace System.Net.Tests
             Assert.True(
                 strictSecondLegResult.StatusCode == HttpStatusCode.Unauthorized,
                 $"Expected the changed policy to reject authentication with Unauthorized: {strictSecondLegResult}");
+            Assert.True(strictSecondLegResult.HasNtlmChallenge, $"Expected a fresh NTLM challenge: {strictSecondLegResult}");
         }
 
         [Fact]
@@ -644,7 +645,8 @@ namespace System.Net.Tests
             return new NtlmHandshakeResult(
                 IsAuthenticated: false,
                 StatusCode: failedResponse.StatusCode,
-                Failure: null);
+                Failure: null,
+                HasNtlmChallenge: failedResponse.Headers.Exists(header => header.Equals("WWW-Authenticate: NTLM", StringComparison.OrdinalIgnoreCase)));
         }
 
         private byte[] CreateNtlmRequest(string authBlob, bool strict)
@@ -748,7 +750,7 @@ namespace System.Net.Tests
             }
         }
 
-        private sealed record NtlmHandshakeResult(bool IsAuthenticated, HttpStatusCode? StatusCode, string? Failure);
+        private sealed record NtlmHandshakeResult(bool IsAuthenticated, HttpStatusCode? StatusCode, string? Failure, bool HasNtlmChallenge = false);
 
         private sealed record ResponseHeaders(HttpStatusCode StatusCode, List<string> Headers);
 

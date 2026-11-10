@@ -606,7 +606,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     LPCUTF8     pszName = NULL;         // Library name in UTF8.
     ULONG       cbName;                 // Length of name, UTF8 characters.
     LPWSTR      pName;                  // Pointer to library name.
-    ULONG       cchName;                // Length of name, wide chars.
+    size_t      cchName;                // Length of name, wide chars.
     LPWSTR      pch=0;                  // Pointer into lib name.
     const void  *pSN=NULL;              // Pointer to public key.
     DWORD       cbSN=0;                 // Size of public key.
@@ -621,7 +621,12 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     // Get the name, and determine its length.
     pszName = pAssembly->GetSimpleName();
     cbName=(ULONG)strlen(pszName);
+#ifdef TARGET_WINDOWS
+    // The GUID is generated from the converted name, so the conversion must not change
     cchName = MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, 0,0);
+#else
+    cchName = minipal_get_length_utf8_to_utf16(pszName, cbName+1, 0);
+#endif
 
     // See if there is a public key.
     EX_TRY
@@ -686,7 +691,11 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     IfFailGo(rDef.ReSizeNoThrow(cbCur + cchName*sizeof(WCHAR) + sizeof(szTypeLibKeyName)-1 + cbSN + sizeof(ver)+sizeof(USHORT)));
 
     // Put it all together.  Name first.
-    MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]),cchName);
+#ifdef TARGET_WINDOWS
+    MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]), (int)cchName);
+#else
+    minipal_convert_utf8_to_utf16(pszName, cbName+1, (CHAR16_T*)(&rDef[cbCur]), cchName, 0);
+#endif
     pName = (LPWSTR)(&rDef[cbCur]);
     for (pch=pName; *pch; ++pch)
         if (*pch == '.' || *pch == ' ')
@@ -694,7 +703,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     else
         if (iswupper(*pch))
             *pch = towlower(*pch);
-    cbCur += (cchName-1)*sizeof(WCHAR);
+    cbCur += (ULONG)((cchName - 1) * sizeof(WCHAR));
     memcpy(&rDef[cbCur], szTypeLibKeyName, sizeof(szTypeLibKeyName)-1);
     cbCur += sizeof(szTypeLibKeyName)-1;
 
@@ -2163,7 +2172,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
 
 //--------------------------------------------------------------------------------
 // Helper to get the GUID of a class interface.
-void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
+GUID GenerateClassItfGuid(TypeHandle InterfaceType)
 {
     CONTRACTL
     {
@@ -2171,7 +2180,6 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!InterfaceType.IsNull());
-        PRECONDITION(CheckPointer(pGuid));
     }
     CONTRACTL_END;
 
@@ -2197,8 +2205,8 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     szName = reinterpret_cast<LPWSTR>(rName.Ptr());
 
     // Generate guid from name.
-    CorGuidFromNameW(pGuid, szName, cchName);
-} // void GenerateClassItfGuid()
+    return CorGuidFromNameW(szName, cchName);
+} // GUID GenerateClassItfGuid()
 
 HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
 {
@@ -2221,7 +2229,7 @@ HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     {
         EX_TRY
         {
-            GenerateClassItfGuid(InterfaceType, pGuid);
+            *pGuid = GenerateClassItfGuid(InterfaceType);
         }
         EX_CATCH
         {
@@ -2272,7 +2280,7 @@ HRESULT GetTypeLibGuidForAssembly(Assembly *pAssembly, GUID *pGuid)
         }
 
         // Turn into guid
-        CorGuidFromNameW(pGuid, (LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
+        *pGuid = CorGuidFromNameW((LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
 }
 
 ErrExit:
@@ -2919,7 +2927,7 @@ void IUInvokeDispMethod(
     ReleaseHolderAnyMode<IDispatch> pDisp;
     ReleaseHolderAnyMode<IDispatchEx> pDispEx;
     VariantPtrHolder    pVarResult;
-    NewArrayHolder<DispParamHolder> params  = NULL;
+    NewArrayHolder<DispParamHolder> params;
 
     //
     // Function initialization.
@@ -3150,7 +3158,7 @@ void IUInvokeDispMethod(
 
                 if (!fGotIt)
                 {
-                    NewArrayHolder<PinningHandleHolder> ahndPinnedObjs = new PinningHandleHolder[cNamesToConvert];
+                    NewArrayHolder<PinningHandleHolder> ahndPinnedObjs{ new PinningHandleHolder[cNamesToConvert] };
                     ahndPinnedObjs[0] = GetAppDomain()->CreatePinningHandle((OBJECTREF)*pStrName);
 
                     // Copy the named arguments into the array of names to convert.
@@ -3438,10 +3446,10 @@ static void GetComClassHelper(
         // represent it.
         //
 
-        NewHolder<ComClassFactory> pComClsFac = new ComClassFactory(pClassFactInfo->m_clsid);
+        NewHolder<ComClassFactory> pComClsFac{ new ComClassFactory(pClassFactInfo->m_clsid) };
         pComClsFac->SetManagedVersion();
 
-        NewArrayHolder<WCHAR> wszRefServer = NULL;
+        WStringHolder wszRefServer;
         if (pClassFactInfo->m_strServerName)
         {
             size_t len = u16_strlen(pClassFactInfo->m_strServerName)+1;
@@ -3459,8 +3467,8 @@ static void GetComClassHelper(
         // Make sure the hash code is working.
         _ASSERTE (pClassFactHash->GetValue(pClassFactInfo, (HashDatum *)&hRef));
 
-        wszRefServer.SuppressRelease();
-        pComClsFac.SuppressRelease();
+        wszRefServer.Detach();
+        pComClsFac.Detach();
     }
 }
 
@@ -3552,7 +3560,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
             pNewFactory = pClassMT->GetComClassFactory();
         }
 
-        pClsFac = pNewFactory.Extract();
+        pClsFac = pNewFactory.Detach();
     }
 
     return pClsFac;

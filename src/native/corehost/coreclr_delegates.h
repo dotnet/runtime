@@ -55,13 +55,13 @@ typedef int (CORECLR_DELEGATE_CALLTYPE *get_function_pointer_fn)(
     const char_t *delegate_type_name /* Assembly qualified delegate type name or null,
                                         or UNMANAGEDCALLERSONLY_METHOD if the method is marked with
                                         the UnmanagedCallersOnlyAttribute. */,
-    void         *load_context       /* Extensibility parameter (currently unused and must be 0) */,
+    void         *load_context       /* Assembly load context specification or null for the default context */,
     void         *reserved           /* Extensibility parameter (currently unused and must be 0) */,
     /*out*/ void **delegate          /* Pointer where to store the function pointer result */);
 
 typedef int (CORECLR_DELEGATE_CALLTYPE *load_assembly_fn)(
     const char_t *assembly_path     /* Fully qualified path to assembly */,
-    void         *load_context      /* Extensibility parameter (currently unused and must be 0) */,
+    void         *load_context      /* Assembly load context specification or null for the default context */,
     void         *reserved          /* Extensibility parameter (currently unused and must be 0) */);
 
 typedef int (CORECLR_DELEGATE_CALLTYPE *load_assembly_bytes_fn)(
@@ -69,7 +69,7 @@ typedef int (CORECLR_DELEGATE_CALLTYPE *load_assembly_bytes_fn)(
     size_t     assembly_bytes_len   /* Byte length of the assembly to load */,
     const void *symbols_bytes       /* Optional. Bytes of the symbols for the assembly */,
     size_t     symbols_bytes_len    /* Optional. Byte length of the symbols for the assembly */,
-    void       *load_context        /* Extensibility parameter (currently unused and must be 0) */,
+    void       *load_context        /* Assembly load context specification or null for the default context */,
     void       *reserved            /* Extensibility parameter (currently unused and must be 0) */);
 
 #ifdef __cplusplus

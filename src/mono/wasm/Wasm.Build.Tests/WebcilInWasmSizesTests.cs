@@ -59,6 +59,26 @@ public class WebcilInWasmSizesTests
         Assert.Equal(0x42, tableSize);
     }
 
+    [Fact]
+    public void WasiR2RComposition_SeparatesFunctionAndTableSlotCounts()
+    {
+        using var directory = new TempDirectory();
+        string compositePath = Path.Combine(directory.Path, "composite.wasm");
+        File.WriteAllBytes(compositePath, BuildWasiR2RComposite(
+            functionCount: 2,
+            functionIndices: [1, 0, 1, 1, 0]));
+
+        WasiR2RComposition.InspectComposite(
+            compositePath,
+            out int functionCount,
+            out int tableSlotCount,
+            out int payloadSize);
+
+        Assert.Equal(2, functionCount);
+        Assert.Equal(5, tableSlotCount);
+        Assert.Equal(4, payloadSize);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData(0)]
@@ -342,6 +362,11 @@ public class WebcilInWasmSizesTests
     }
 
     private const byte SectionCustom = 0x00;
+    private const byte SectionType = 0x01;
+    private const byte SectionFunction = 0x03;
+    private const byte SectionExport = 0x07;
+    private const byte SectionElement = 0x09;
+    private const byte SectionCode = 0x0a;
     private const byte SectionData = 0x0b;
 
     // Builds a minimal webcil-in-wasm module: a data section with segment 0 holding payloadSize
@@ -382,12 +407,76 @@ public class WebcilInWasmSizesTests
         return WrapModule(SectionData, body);
     }
 
-    private static byte[] WrapModule(byte sectionCode, List<byte> sectionBody)
+    private static byte[] BuildWasiR2RComposite(int functionCount, uint[] functionIndices)
     {
         var module = new List<byte> { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 };
+
+        AddSection(module, SectionType,
+        [
+            0x01, // one type
+            0x60, // function
+            0x00, // no parameters
+            0x00, // no results
+        ]);
+
+        var functions = new List<byte>();
+        WriteULEB(functions, (uint)functionCount);
+        for (int i = 0; i < functionCount; i++)
+            WriteULEB(functions, 0);
+        AddSection(module, SectionFunction, functions);
+
+        var exports = new List<byte>();
+        WriteULEB(exports, 1);
+        WriteName(exports, "patchWebcilHeader");
+        exports.Add(0x00); // function
+        WriteULEB(exports, 0);
+        AddSection(module, SectionExport, exports);
+
+        var elements = new List<byte>();
+        WriteULEB(elements, 1);
+        WriteULEB(elements, 0); // active table-0 function-index segment
+        elements.Add(0x41); // i32.const
+        WriteULEB(elements, 1);
+        elements.Add(0x0b); // end
+        WriteULEB(elements, (uint)functionIndices.Length);
+        foreach (uint functionIndex in functionIndices)
+            WriteULEB(elements, functionIndex);
+        AddSection(module, SectionElement, elements);
+
+        var code = new List<byte>();
+        WriteULEB(code, (uint)functionCount);
+        for (int i = 0; i < functionCount; i++)
+        {
+            WriteULEB(code, 2);
+            code.Add(0x00); // no locals
+            code.Add(0x0b); // end
+        }
+        AddSection(module, SectionCode, code);
+
+        var data = new List<byte>();
+        WriteULEB(data, 1);
+        WriteULEB(data, 0); // active memory-0 segment
+        data.Add(0x41); // i32.const
+        WriteULEB(data, 0);
+        data.Add(0x0b); // end
+        WriteULEB(data, 4);
+        data.AddRange([0x57, 0x62, 0x49, 0x4c]);
+        AddSection(module, SectionData, data);
+
+        return module.ToArray();
+    }
+
+    private static void AddSection(List<byte> module, byte sectionCode, List<byte> sectionBody)
+    {
         module.Add(sectionCode);
         WriteULEB(module, (uint)sectionBody.Count);
         module.AddRange(sectionBody);
+    }
+
+    private static byte[] WrapModule(byte sectionCode, List<byte> sectionBody)
+    {
+        var module = new List<byte> { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 };
+        AddSection(module, sectionCode, sectionBody);
         return module.ToArray();
     }
 
@@ -520,6 +609,13 @@ public class WebcilInWasmSizesTests
         buffer.Add((byte)((value >> 8) & 0xff));
         buffer.Add((byte)((value >> 16) & 0xff));
         buffer.Add((byte)((value >> 24) & 0xff));
+    }
+
+    private static void WriteName(List<byte> buffer, string value)
+    {
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(value);
+        WriteULEB(buffer, (uint)bytes.Length);
+        buffer.AddRange(bytes);
     }
 
     private static void WriteULEB(List<byte> buffer, uint value)

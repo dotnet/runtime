@@ -24,6 +24,8 @@ Enabling GC Hole Stress causes GCs to always occur in specific locations and tha
 - **0x8** &ndash; GC on every allowable R2R instr.
 - **0x10** &ndash; GC only on a unique stack trace.
 
+R2R instruction stress is not supported on Apple platforms, where write/execute restrictions can prevent patching image-backed code.
+
 ### Common combinations
 
 **0x1 | 0x2** &ndash; 0x3 are "in the VM". Failures in 0x1 or 0x2 can be due to VM-related reasons, like lack of GC reporting/pinning in interop frames.

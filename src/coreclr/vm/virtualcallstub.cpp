@@ -98,24 +98,25 @@ struct CachedIndirectionCellBlockListNode
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
+
+    // A declaration map can protect dictionary dispatch cells even without an import map.
+    MethodTable* pOwnerMT = ownerType.GetMethodTable();
+    MethodDesc* pMethod = pOwnerMT->GetMethodDescForSlot(methodSlot);
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage();
+    PTR_BYTE declarationMap = pMethod->GetGCRefMap();
+    pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pMethod, pOwnerMT, FALSE, pMethod->GetMethodInstantiation(), TRUE);
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
 
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
@@ -555,6 +556,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
         initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
         m_initialReservedMemForHeaps = (BYTE *) initReservedMem;
+        m_initialReservedMemForHeapsSize = dwTotalReserveMemSize;
 
         if (initReservedMem == NULL)
             COMPlusThrowOM();
@@ -636,25 +638,25 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<counter_block> m_counters_holder(new counter_block);
 
     //
-    // On success of every allocation, assign the objects and suppress the release
+    // On success of every allocation, transfer ownership to the manager.
     //
 
-    indcell_heap     = indcell_heap_holder;     indcell_heap_holder.SuppressRelease();
+    indcell_heap     = indcell_heap_holder.Detach();
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    lookup_heap      = lookup_heap_holder;      lookup_heap_holder.SuppressRelease();
-    dispatch_heap    = dispatch_heap_holder;    dispatch_heap_holder.SuppressRelease();
-    resolve_heap     = resolve_heap_holder;     resolve_heap_holder.SuppressRelease();
-    vtable_heap      = vtable_heap_holder;      vtable_heap_holder.SuppressRelease();
-    cache_entry_heap = cache_entry_heap_holder; cache_entry_heap_holder.SuppressRelease();
+    lookup_heap      = lookup_heap_holder.Detach();
+    dispatch_heap    = dispatch_heap_holder.Detach();
+    resolve_heap     = resolve_heap_holder.Detach();
+    vtable_heap      = vtable_heap_holder.Detach();
+    cache_entry_heap = cache_entry_heap_holder.Detach();
 
-    resolvers        = resolvers_holder;        resolvers_holder.SuppressRelease();
-    dispatchers      = dispatchers_holder;      dispatchers_holder.SuppressRelease();
-    lookups          = lookups_holder;          lookups_holder.SuppressRelease();
-    vtableCallers    = vtableCallers_holder;    vtableCallers_holder.SuppressRelease();
-    cache_entries    = cache_entries_holder;    cache_entries_holder.SuppressRelease();
+    resolvers        = resolvers_holder.Detach();
+    dispatchers      = dispatchers_holder.Detach();
+    lookups          = lookups_holder.Detach();
+    vtableCallers    = vtableCallers_holder.Detach();
+    cache_entries    = cache_entries_holder.Detach();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-    m_counters       = m_counters_holder;       m_counters_holder.SuppressRelease();
+    m_counters       = m_counters_holder.Detach();
 
     // Create the initial failure counter block
     m_counters->next = NULL;
@@ -757,7 +759,7 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // This was the block reserved by Init for the heaps.
     // For the collectible case, the VSD logic does not allocate the memory.
     if (m_initialReservedMemForHeaps && !m_loaderAllocator->IsCollectible())
-        ClrVirtualFree (m_initialReservedMemForHeaps, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(m_initialReservedMemForHeaps, m_initialReservedMemForHeapsSize);
 
     // Free critical section
     m_indCellLock.Destroy();
@@ -942,11 +944,6 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     // Forwarded to from RangeSectionStubManager
     return FALSE;
 }
-
-/* for use by debugger.
-*/
-
-extern "C" void STDCALL StubDispatchFixupPatchLabel();
 
 BOOL VirtualCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
 {
@@ -1168,6 +1165,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(target != NULL);
     } CONTRACTL_END;
 
@@ -1638,17 +1636,15 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     PCODE target = (PCODE)NULL;
 
-    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
         INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
         UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
@@ -1686,8 +1682,8 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->Push(CURRENT_THREAD);
 
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     // For Virtual Delegates the m_siteAddr is a field of a managed object
     // Thus we have to report it as an interior pointer,
@@ -1723,8 +1719,8 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     GCPROTECT_END();
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pSDFrame->Pop(CURRENT_THREAD);
@@ -1759,16 +1755,14 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     PCODE target = (PCODE)NULL;
 
-    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
     if (pObj == NULL) {
         pSDFrame->Push(CURRENT_THREAD);
         INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
         UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
@@ -1776,8 +1770,8 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     pSDFrame->Push(CURRENT_THREAD);
 
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     GCPROTECT_BEGIN(pObj);
 
@@ -1812,8 +1806,8 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     GCPROTECT_END();
     GCPROTECT_END();
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pSDFrame->Pop(CURRENT_THREAD);
@@ -2074,14 +2068,14 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                             MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
                             size_t stackArgumentsSize;
                             {
                                 ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
                                 stackArgumentsSize = pMD->SizeOfArgStack();
                             }
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
                             bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
                             {
@@ -2089,7 +2083,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                 pResolveHolder = GenerateResolveStub(pResolverFcn,
                                                                 pBackPatchFcn,
                                                                 token.To_SIZE_T()
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                                                  , stackArgumentsSize
 #endif
                                                              );
@@ -2319,6 +2313,7 @@ VirtualCallStubManager::Resolver(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(TypeHandle(pMT).CheckFullyLoaded());
     } CONTRACTL_END;
@@ -2480,6 +2475,26 @@ VirtualCallStubManager::Resolver(
             CONSISTENCY_CHECK((!implSlot.IsNull() || pMT->IsInterface()) && "Valid method implementation was not found.");
             COMPlusThrow(kEntryPointNotFoundException);
         }
+    }
+
+    // Typed tokens identify the call declaration without a hierarchy search. Its contextual
+    // receiver map also protects the implementation's method-entry transitions.
+    pMD = implSlot.GetMethodDesc();
+    if (pMD != nullptr)
+    {
+        PTR_BYTE declarationMap = nullptr;
+        if (token.IsTypedToken())
+        {
+            MethodTable* pDeclarationMT = GetTypeFromToken(token);
+            // A missing slot would make GetMethodDescForSlot_NoThrow enumerate definitions.
+            if (pDeclarationMT->GetCanonicalMethodTable()->GetSlot(token.GetSlotNumber()) != 0)
+            {
+                MethodDesc* pDeclaration = pDeclarationMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
+                if (pDeclaration != nullptr)
+                    declarationMap = pDeclaration->GetGCRefMap();
+            }
+        }
+        pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
     }
 
     *ppTarget = implSlot.GetTarget();
@@ -2918,6 +2933,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
@@ -2969,7 +2985,7 @@ addrOfPatcher is who to call if the fail piece is being called too often by disp
 ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addrOfResolver,
                                                            PCODE            addrOfPatcher,
                                                            size_t           dispatchToken
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                                            , size_t         stackArgumentsSize
 #endif
                                                            )
@@ -3037,7 +3053,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                        addrOfResolver, addrOfPatcher,
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
                        g_resolveCache->GetCacheBaseAddr(), counterAddr
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                        , stackArgumentsSize
 #endif
                        );
@@ -3062,6 +3078,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfResolver != NULL);
     } CONTRACTL_END;
 

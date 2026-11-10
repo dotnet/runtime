@@ -300,7 +300,8 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             }
 
             //TestC14NWriterWithManyAttributes
-            int numberOfAttributes = 1000;
+            // Stay below the default per-element C14N limit while preserving the interoperability stress test.
+            const int numberOfAttributes = 500;
             int seed = (int)DateTime.Now.Ticks;
             Random rndGen = new Random(seed);
             StringBuilder sb = new StringBuilder();

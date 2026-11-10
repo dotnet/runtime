@@ -1,30 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-;-----------------------------------------------------------------------------
-; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
-; name (e.g. C++ decorated names).
-    MACRO
-      SETALIAS   $name, $symbol
-        GBLS    $name
-$name   SETS    "|$symbol|"
-    MEND
+#include "arm64/AsmMacros_Windows.h"
 
-;-----------------------------------------------------------------------------
-; Basic extension of Assembler Macros- For Consistency
-
-    MACRO
-        EPILOG_BRANCH_REG $reg
-
-        EPILOG_NOP br $reg
-    MEND
-;-----------------------------------------------------------------------------
-
-    MACRO
-        EPILOG_BRANCH $_target
-
-        EPILOG_NOP b $_target
-    MEND
 ;-----------------------------------------------------------------------------
 ; The following group of macros assist in implementing prologs and epilogs for methods that set up some
 ; subclass of TransitionFrame. They ensure that the SP is 16-byte aligned at the conclusion of the prolog
@@ -159,39 +137,12 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
     MEND
 
 ;-----------------------------------------------------------------------------
-; Macro used to end a function with explicit _End label
-    MACRO
-    LEAF_END_MARKED $FuncName
-
-    LCLS __EndLabelName
-__EndLabelName SETS "$FuncName":CC:"_End"
-    EXPORT $__EndLabelName
-$__EndLabelName
-
-    LEAF_END $FuncName
-
-    ; make sure this symbol gets its own address
-    nop
-
-    MEND
-;-----------------------------------------------------------------------------
-; Macro use for enabling C++ to know where to patch code at runtime.
-    MACRO
-    PATCH_LABEL $FuncName
-$FuncName
-    EXPORT $FuncName
-
-    MEND
-
-;-----------------------------------------------------------------------------
 ; Macros used for shared allocation helpers
 
     SETALIAS t_runtime_thread_locals, ?t_runtime_thread_locals@@3URuntimeThreadLocals@@A
 
     MACRO
     INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
-
-        EXTERN $t_runtime_thread_locals
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, $t_runtime_thread_locals
     MEND
@@ -273,105 +224,6 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         add     $Target, sp, #192
     MEND
 
-#define GC_ALLOC_FINALIZE 1
-
-;-----------------------------------------------------------------------------
-; Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
-; out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
-; before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
-; is misaligned.
-;
-    MACRO
-        CHECK_STACK_ALIGNMENT
-
-#ifdef _DEBUG
-        add     x9, sp, xzr
-        tst     x9, #15
-        beq     %F0
-        EMIT_BREAKPOINT
-0
-#endif
-    MEND
-
-;-----------------------------------------------------------------------------
-; The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-; base address to be passed in $reg
-;
-
-; Reserve 72 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
-    MACRO
-       SAVE_ARGUMENT_REGISTERS $reg, $offset
-
-       GBLA __PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET
-
-       IF "$offset" != ""
-__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
-
-        str                    x8, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET)]
-        stp                    x0, x1, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 8)]
-        stp                    x2, x3, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 24)]
-        stp                    x4, x5, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 40)]
-        stp                    x6, x7, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 56)]
-
-    MEND
-
-; Reserve 128 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
-    MACRO
-       SAVE_FLOAT_ARGUMENT_REGISTERS $reg, $offset
-
-       GBLA __PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET
-
-       IF "$offset" != ""
-__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
-
-        stp                    q0, q1, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
-        stp                    q2, q3, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
-        stp                    q4, q5, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 64)]
-        stp                    q6, q7, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 96)]
-    MEND
-
-    MACRO
-       RESTORE_ARGUMENT_REGISTERS $reg, $offset
-
-       GBLA __PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET
-
-       IF "$offset" != ""
-__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
-
-        ldr                    x8, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET)]
-        ldp                    x0, x1, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 8)]
-        ldp                    x2, x3, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 24)]
-        ldp                    x4, x5, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 40)]
-        ldp                    x6, x7, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 56)]
-
-    MEND
-
-    MACRO
-       RESTORE_FLOAT_ARGUMENT_REGISTERS $reg, $offset
-
-       GBLA __PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET
-
-       IF "$offset" != ""
-__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA $offset
-       ELSE
-__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
-       ENDIF
-
-        ldp                    q0, q1, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
-        ldp                    q2, q3, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
-        ldp                    q4, q5, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 64)]
-        ldp                    q6, q7, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 96)]
-    MEND
-
 ; ------------------------------------------------------------------
 ; Macro to generate Redirection Stubs
 ;
@@ -436,42 +288,12 @@ $__RedirectionStubEndFuncName
 
 ;; -----------------------------------------------------------------------------
 ;;
-;; Macro to get a pointer to a threadlocal symbol for the currently executing thread
-;;
-
-__tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
-
-    MACRO
-        INLINE_GET_TLS_VAR $destReg, $trashReg, $variable
-
-        EXTERN _tls_index
-
-        ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
-        ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
-        LCLS TrashRegister32Bit
-TrashRegister32Bit SETS "$trashReg"
-TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
-
-        adrp        $destReg, _tls_index
-        ldr         $TrashRegister32Bit, [$destReg, _tls_index]
-        ldr         $destReg, [xpr, #__tls_array]
-        ldr         $destReg, [$destReg, $TrashRegister32Bit uxtw #3]
-        add         $destReg, $destReg, #0, lsl #0xC
-        RELOC       0xA, $variable                          ;; IMAGE_REL_ARM64_SECREL_HIGH12A
-        add         $destReg, $destReg, #0, lsl #0
-        RELOC       0x9, $variable                          ;; IMAGE_REL_ARM64_SECREL_LOW12A
-    MEND
-
-;; -----------------------------------------------------------------------------
-;;
 ;; Macro to get a pointer to the Thread* object for the currently executing thread
 ;;
     SETALIAS t_CurrentThreadInfo, ?t_CurrentThreadInfo@@3UThreadLocalInfo@@A
 
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
-
-        EXTERN $t_CurrentThreadInfo
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, $t_CurrentThreadInfo
         ldr $destReg, [$destReg]                            ;; return t_CurrentThreadInfo.m_pThread

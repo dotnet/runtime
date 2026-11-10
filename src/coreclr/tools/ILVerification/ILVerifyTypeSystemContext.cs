@@ -28,6 +28,8 @@ namespace ILVerify
             _resolver = resolver;
         }
 
+        public bool AllowIgnoresAccessChecksTo { get; init; }
+
         public override ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound = true)
         {
             return CacheResolvedAssemblyOrNetmodule(_resolver.ResolveAssembly(name), name.Name, null, throwIfNotFound);
