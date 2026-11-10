@@ -71,7 +71,6 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     m_asyncContinuationsManager = NULL;
 
-    m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
     m_fMarked = false;
@@ -1045,9 +1044,6 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
 {
     STANDARD_VM_CONTRACT;
 
-    GCInterface::AddMemoryPressure(30000);
-    m_fGCPressure = true;
-
     GCX_COOP();
 
     //
@@ -1369,13 +1365,6 @@ void LoaderAllocator::Terminate()
 
     // Must run before the heaps are destroyed.
     m_ILStubCache.FreeCollectibleStubsCompileTimeState();
-
-    if (m_fGCPressure)
-    {
-        GCX_PREEMP();
-        GCInterface::RemoveMemoryPressure(30000);
-        m_fGCPressure = false;
-    }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pUMEntryThunkCache;
