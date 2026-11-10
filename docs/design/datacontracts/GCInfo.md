@@ -219,10 +219,11 @@ epilog-at-end `1`, EBP-frame `2`, interruptible `4`, double-aligned `8`, securit
 `512`, and explicit argument-table offset `1024`. Transition flags are interior
 `1`, pointer argument `2`, and receiver `4`. `ArgumentOffset` and `Count` retain
 decoded argument indices/counts; for a call they contain its pointer and interior
-argument masks. Explicit huge-call roots are included in `GetSlotLifetimes`.
+argument masks. For an `InteriorMask` record, `ArgumentOffset` contains the mask.
+Explicit huge-call roots are included in `GetSlotLifetimes`.
 Raw encoding bytes are not exposed.
 Dynamic localloc and funclet argument bases still require per-frame execution
-state and remain a limitation of this prototype's static lifetime projection.
+state and remain a limitation of the static lifetime projection.
 
 <!-- BEGIN GENERATED: usage contract=GCInfo version=c1 -->
 ### Data descriptors used

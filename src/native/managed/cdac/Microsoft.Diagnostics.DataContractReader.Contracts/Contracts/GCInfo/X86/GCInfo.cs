@@ -783,10 +783,10 @@ public record X86GCInfo : IGCInfoDecoder
     /// <see cref="LiveSlot"/> per live register / pushed pointer.
     /// </summary>
     /// <remarks>
-    /// For fully-interruptible methods every transition strictly before
-    /// <paramref name="instructionOffset"/> contributes to the current state. For
-    /// partially-interruptible methods the JIT only emits transitions at call sites; the live
-    /// state at the queried offset is whatever the most-recent call-site transition described.
+    /// For fully-interruptible methods argument transitions include <paramref name="instructionOffset"/>.
+    /// Register transitions also include it on active frames; non-leaf frames use the pre-call
+    /// register state. For partially-interruptible methods register and argument roots come only
+    /// from a call record at the queried offset.
     /// Mirrors the byte-stream walks in scanArgRegTableI / scanArgRegTable (gc_unwind_x86.inl).
     /// </remarks>
     private void EnumerateTransitionLiveSlots(
@@ -799,11 +799,9 @@ public record X86GCInfo : IGCInfoDecoder
         RegMask liveRegs = RegMask.NONE;
         RegMask liveIptrRegs = RegMask.NONE;
 
-        // Pushed pointer args, keyed by push-index (depth at PUSH time, 0-indexed). Bit 0 is the
-        // first push (highest stack address). The SP-relative byte offset is computed at emit
-        // time once finalDepth is known: addr = ESP_call + (finalDepth - 1 - pushIndex) * 4
-        // (mirrors `pPendingArgFirst - i*sizeof(DWORD)` in EnumGcRefsX86). The translation must
-        // be deferred because subsequent pushes/pops change finalDepth.
+        // Pointer arguments are keyed by decoded slot index, including non-pointer slots in
+        // the indexing. Resolve locations after walking: ESP-relative offsets depend on final
+        // depth, while ordinary EBP frames use a stable frame-relative argument base.
         SortedDictionary<int, uint> pushedPtrs = new();
 
         // Total pushed pointer-size slots (incl. non-ptr args). Mirrors `argCnt` in scanArgRegTableI.
@@ -862,9 +860,9 @@ public record X86GCInfo : IGCInfoDecoder
                     case IPtrMask:
                     case ThisPointerRegister:
                     case GcTransitionCall:
-                        // ThisPointerRegister is informational for GC slot enumeration. IPtrMask is reserved for future
-                        // interior-pointer-bitmap support. GcTransitionCall at offset !=
-                        // instructionOffset is also ignored.
+                        // Receiver records are informational. Interior masks have already been
+                        // applied to call records by the decoder; other call offsets do not
+                        // describe the state at instructionOffset.
                         break;
                     default:
                         throw new InvalidOperationException($"Unsupported x86 GC transition: {transition.GetType().Name}");
@@ -886,8 +884,6 @@ public record X86GCInfo : IGCInfoDecoder
             result.Add(new LiveSlot(IsRegister: true, RegisterNumber: RegMaskToRegisterNumber(r), SpOffset: 0, SpBase: 0, GcFlags: gcFlags));
         }
 
-        // Emit pushed pointer args as positive SP-relative offsets. Bit 0 (first push) ends up at
-        // the highest offset; the last push at offset 0.
         foreach (KeyValuePair<int, uint> pushed in pushedPtrs)
         {
             result.Add(GetPushedPointerSlot(depthSlots, pushed.Key, pushed.Value));
@@ -1091,6 +1087,7 @@ public record X86GCInfo : IGCInfoDecoder
             if (offset < 0 || (uint)offset > MethodSize || ((uint)offset == MethodSize && !Header.Interruptible))
                 throw new BadImageFormatException($"X86 GC transition offset {offset} is outside code size {MethodSize}.");
             boundaries.Add((uint)offset);
+            // Call roots describe only the call offset, not the interval until the next transition.
             if (!Header.Interruptible)
                 boundaries.Add((uint)offset + 1);
         }

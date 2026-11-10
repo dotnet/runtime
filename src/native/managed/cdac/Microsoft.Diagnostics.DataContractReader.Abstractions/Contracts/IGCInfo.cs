@@ -76,9 +76,10 @@ public enum X86GCTransitionKind : uint
 }
 
 /// <summary>
-/// X86 diagnostic transition. StackDepthChange is in bytes; Count and ArgumentOffset are
-/// encoded slot counts/indices. Flags: 1 = interior, 2 = pointer, 4 = receiver.
-/// EBP pointer push/pop records have zero stack delta because non-pointer pushes are not encoded.
+/// X86 diagnostic transition. StackDepthChange is in bytes; EBP push/pop records report zero,
+/// while bulk StackDepth records retain their byte delta. ArgumentOffset is a push index,
+/// pop/kill count, call argument mask, or InteriorMask bitmap. Count is an argument count or,
+/// for Call records, the interior-argument mask. Flags: 1 = interior, 2 = pointer argument, 4 = receiver.
 /// </summary>
 public readonly record struct X86GCTransition(
     uint CodeOffset, X86GCTransitionKind Kind, int StackDepthChange,

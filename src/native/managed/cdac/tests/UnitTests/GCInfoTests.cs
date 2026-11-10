@@ -354,6 +354,7 @@ public unsafe class GCInfoTests
     [InlineData(5u, true)]
     public void X86PoppingNonPointerArgumentPreservesPointerBelowIt(uint version, bool ebpFrame)
     {
+        // 0xB1 pushes a non-pointer; the first 0xC9 pop must preserve the pointer below it.
         byte[] encoded = ebpFrame
             ? [64, 0x81, 0xBE, 0xBF, 0x40, 0x81, 0xB1, 0xC9, 0xC9, 0xFF]
             : [64, 0x81, 0x40, 0x81, 0xB1, 0xC9, 0xC9, 0xFF];
@@ -380,6 +381,7 @@ public unsafe class GCInfoTests
     [InlineData(5u, true)]
     public void X86BulkNonPointerStackAdjustmentPreservesPointerBelowIt(uint version, bool ebpFrame)
     {
+        // 0xF9 adds three non-pointer slots; 0xD9 removes those before the final pointer pop.
         byte[] encoded = ebpFrame
             ? [64, 0x81, 0xBE, 0xBF, 0x40, 0x81, 0xF9, 3, 0xD9, 0xC9, 0xFF]
             : [64, 0x81, 0x40, 0x81, 0xF9, 3, 0xD9, 0xC9, 0xFF];
@@ -556,6 +558,8 @@ public unsafe class GCInfoTests
     [InlineData(5u)]
     public void X86PinnedAndInteriorRootsScenarioProjectsLifetimes(uint version)
     {
+        // Captured from SosHarnessScenarios.RootsScenario, including pinned/interior locals
+        // and an EAX death at the method-end offset.
         (IGCInfo gcInfo, IGCInfoHandle handle, SOSDacImpl impl) = CreateX86GCInfo(
             [0x82, 0x25, 0xD2, 0x80, 0xDB, 0xC6, 0xC7, 0x93, 0xF7, 0x40, 0x09, 0x09,
              0x04, 0x04, 0x04, 0x06, 0x05, 0x05, 0x04, 0x04, 0x04,

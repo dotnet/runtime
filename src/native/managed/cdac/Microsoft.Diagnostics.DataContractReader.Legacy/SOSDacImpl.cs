@@ -7761,6 +7761,7 @@ public sealed unsafe partial class SOSDacImpl
                     IsRegister = slot.IsRegister ? 1 : 0,
                     RegisterNumber = slot.RegisterNumber,
                     SpOffset = slot.SpOffset,
+                    // Contract SP/frame bases (1/2) map to Interface18's 0/1; caller-SP has no representation.
                     BaseRegister = slot.IsRegister ? 0u : slot.BaseRegister switch
                     {
                         1 => 0u,

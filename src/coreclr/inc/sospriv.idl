@@ -766,9 +766,10 @@ typedef struct _SOSGCInfoX86Transition
     unsigned int Kind; // 0=live, 1=dead, 2=push, 3=pop, 4=kill, 5=stack delta,
                        // 6=this register, 7=interior mask, 8=call.
     int StackDepthChange; // Bytes pushed (positive) or popped (negative); kill does not pop.
+                          // EBP push/pop records report zero; bulk stack deltas are in bytes.
     unsigned int RegisterNumber; // ICorDebugInfo register number, or UINT_MAX if absent.
-    unsigned int ArgumentOffset; // Encoded push index, pop/kill count, or call argument mask.
-    unsigned int Count; // Encoded argument count, or call interior-argument mask.
+    unsigned int ArgumentOffset; // Push index, pop/kill count, or Call/InteriorMask bitmap.
+    unsigned int Count; // Argument count, or Call interior-argument mask.
     unsigned int Flags; // 1=interior, 2=pointer argument, 4=this.
 } SOSGCInfoX86Transition;
 

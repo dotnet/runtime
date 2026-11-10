@@ -362,6 +362,7 @@ public class GCArgTable
             for (int i = 0; i < callPndTabCnt; i++)
             {
                 uint pndOffs = _target.GCDecodeUnsigned(ref offset);
+                // The low two bits are flags, not part of the offset; only bit 0 (interior) is valid.
                 uint lowBits = pndOffs & 3u;
                 if (lowBits > 1)
                     throw new BadImageFormatException($"Invalid X86 pending argument flags {lowBits}.");
