@@ -1186,36 +1186,17 @@ namespace System.Text.Json
         {
             Debug.Assert(span.Length > 0 && span[0] == literal[0]);
 
-            int indexOfFirstMismatch = 0;
-
-            for (int i = 1; i < literal.Length; i++)
-            {
-                if (span.Length > i)
-                {
-                    if (span[i] != literal[i])
-                    {
-                        _bytePositionInLine += i;
-                        ThrowInvalidLiteral(span);
-                    }
-                }
-                else
-                {
-                    indexOfFirstMismatch = i;
-                    break;
-                }
-            }
-
-            Debug.Assert(indexOfFirstMismatch > 0 && indexOfFirstMismatch < literal.Length);
-
-            if (IsLastSpan)
+            int indexOfFirstMismatch = FindMismatch(span, literal);
+            if (indexOfFirstMismatch < span.Length || IsLastSpan)
             {
                 _bytePositionInLine += indexOfFirstMismatch;
-                ThrowInvalidLiteral(span);
+                throw GetInvalidLiteral(span);
             }
+
             return false;
         }
 
-        private void ThrowInvalidLiteral(ReadOnlySpan<byte> span)
+        private JsonException GetInvalidLiteral(ReadOnlySpan<byte> span)
         {
             byte firstByte = span[0];
 
@@ -1233,7 +1214,9 @@ namespace System.Text.Json
                     resource = ExceptionResource.ExpectedNull;
                     break;
             }
-            ThrowHelper.ThrowJsonReaderException(ref this, resource, bytes: span);
+            // Use the same bounded excerpt whether or not the input crosses a segment boundary.
+            span = span.Slice(0, Math.Min(span.Length, JsonConstants.MaximumLiteralLength));
+            return ThrowHelper.GetJsonReaderException(ref this, resource, nextByte: default, bytes: span);
         }
 
         private bool ConsumeNumber()
