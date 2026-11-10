@@ -72,9 +72,6 @@
 
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
-
-    <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
-         See BrowserWasmApp.targets for details. -->
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">

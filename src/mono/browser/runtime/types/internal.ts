@@ -255,11 +255,11 @@ export type RuntimeHelpers = {
 }
 
 export type DiagnosticHelpers = {
-    ds_rt_websocket_create: (urlPtr: CharPtr) => number,
-    ds_rt_websocket_send: (client_socket: number, buffer: VoidPtr, bytes_to_write: number) => number,
-    ds_rt_websocket_poll: (client_socket: number) => number,
-    ds_rt_websocket_recv: (client_socket: number, buffer: VoidPtr, bytes_to_read: number) => number,
-    ds_rt_websocket_close: (client_socket: number) => number,
+    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
+    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
+    ds_rt_websocket_poll:(client_socket :number) => number,
+    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
+    ds_rt_websocket_close:(client_socket :number) => number,
 }
 
 export type AOTProfilerOptions = {
