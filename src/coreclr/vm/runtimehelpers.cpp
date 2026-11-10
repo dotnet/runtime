@@ -251,7 +251,7 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(ExceptionNative_ThrowFieldAccessException)
     DllImportEntry(ExceptionNative_ThrowMethodAccessException)
     DllImportEntry(Exception_GetExceptionCount)
-    DllImportEntry(Exception_IsImmutableAgileException)
+    DllImportEntry(Exception_IsImmutableException)
     DllImportEntry(Exception_PrepareForForeignExceptionRaise)
     DllImportEntry(FileLoadException_GetMessageForHR)
 #ifdef TARGET_UNIX

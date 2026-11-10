@@ -35,7 +35,7 @@ public:
 
 extern "C"
 {
-    FCDECL1(FC_BOOL_RET, Exception_IsImmutableAgileException, Object* pExceptionUNSAFE);
+    FCDECL1(FC_BOOL_RET, Exception_IsImmutableException, Object* pExceptionUNSAFE);
     FCDECL0(VOID, Exception_PrepareForForeignExceptionRaise);
     // Note: these are on the PInvoke class to hide these from the user.
     FCDECL0(EXCEPTION_POINTERS*, Marshal_GetExceptionPointers);

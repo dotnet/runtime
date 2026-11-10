@@ -215,7 +215,7 @@ function C linkage while retaining the appropriate `FCDECL`/`FCIMPL` calling con
 This example shows an FCall method that takes a managed object (`Object*`) as a raw pointer. These raw inputs are considered "unsafe" and must be validated or converted if they’re used in a GC-sensitive context.
 
 ```C++
-FCIMPL1(FC_BOOL_RET, Exception_IsImmutableAgileException, Object* pExceptionUNSAFE)
+FCIMPL1(FC_BOOL_RET, Exception_IsImmutableException, Object* pExceptionUNSAFE)
 {
     FCALL_CONTRACT;
 

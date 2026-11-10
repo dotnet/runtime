@@ -440,7 +440,7 @@ extern "C" {
     void RuntimeHelper_ExceptionNative_ThrowEntryPointNotFoundException (void *, void *, void *, void *) __asm__("ExceptionNative_ThrowEntryPointNotFoundException");
     void RuntimeHelper_ExceptionNative_ThrowFieldAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowFieldAccessException");
     void RuntimeHelper_ExceptionNative_ThrowMethodAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowMethodAccessException");
-    int32_t RuntimeHelper_Exception_IsImmutableAgileException (uintptr_t, void *, uintptr_t) __asm__("Exception_IsImmutableAgileException");
+    int32_t RuntimeHelper_Exception_IsImmutableException (uintptr_t, void *, uintptr_t) __asm__("Exception_IsImmutableException");
     void RuntimeHelper_Exception_PrepareForForeignExceptionRaise (uintptr_t, uintptr_t) __asm__("Exception_PrepareForForeignExceptionRaise");
     void RuntimeHelper_FileLoadException_GetMessageForHR (int32_t, void *, void *) __asm__("FileLoadException_GetMessageForHR");
     int32_t RuntimeHelper_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
@@ -944,7 +944,7 @@ static const Entry s_RuntimeHelpers[] = {
     { "ExceptionNative_ThrowEntryPointNotFoundException", (void*)&RuntimeHelper_ExceptionNative_ThrowEntryPointNotFoundException },
     { "ExceptionNative_ThrowFieldAccessException", (void*)&RuntimeHelper_ExceptionNative_ThrowFieldAccessException },
     { "ExceptionNative_ThrowMethodAccessException", (void*)&RuntimeHelper_ExceptionNative_ThrowMethodAccessException },
-    { "Exception_IsImmutableAgileException", (void*)&RuntimeHelper_Exception_IsImmutableAgileException },
+    { "Exception_IsImmutableException", (void*)&RuntimeHelper_Exception_IsImmutableException },
     { "Exception_PrepareForForeignExceptionRaise", (void*)&RuntimeHelper_Exception_PrepareForForeignExceptionRaise },
     { "FileLoadException_GetMessageForHR", (void*)&RuntimeHelper_FileLoadException_GetMessageForHR },
     { "FreeEnvironmentStringsW", (void*)&RuntimeHelper_FreeEnvironmentStringsW },

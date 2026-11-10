@@ -44,7 +44,7 @@
 // EXCEPTION NATIVE
 //
 //
-FCIMPL1(FC_BOOL_RET, Exception_IsImmutableAgileException, Object* pExceptionUNSAFE)
+FCIMPL1(FC_BOOL_RET, Exception_IsImmutableException, Object* pExceptionUNSAFE)
 {
     FCALL_CONTRACT;
 
