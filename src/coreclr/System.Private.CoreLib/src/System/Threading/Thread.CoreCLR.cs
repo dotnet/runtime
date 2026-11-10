@@ -57,6 +57,8 @@ namespace System.Threading
         private bool _isDead;
         private bool _isThreadPool;
 
+        private Thread() { }
+
         internal static Exception GetQCallSpecialException(nint status)
         {
             Exception? exception = null;

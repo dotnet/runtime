@@ -938,6 +938,9 @@ DEFINE_METHOD(THREAD,               POLLGC_WORKER,                           Pol
 DEFINE_FIELD(THREAD,                CURRENT_THREAD,                          s_currentThread)
 #endif // FEATURE_MULTITHREADING
 DEFINE_METHOD(THREAD,               ON_THREAD_EXITING,                       OnThreadExited,                       SM_PtrThread_PtrException_RetVoid)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(THREAD,               CTOR,                                    .ctor,                                IM_RetVoid)
+#endif // FOR_ILLINK
 
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
