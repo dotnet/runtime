@@ -12,3 +12,13 @@
         ld.d    $t0, $t0, 0
         EPILOG_BRANCH_REG $t0
 .endm
+
+// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+// reg and index are the register numbers; the CONTEXT holds the integer and floating point registers in order.
+.macro LOAD_FUNCLET_REGISTER base, reg, scratch
+        ld.d    $r\reg, \base, (OFFSETOF__CONTEXT__Fp + (\reg - 22) * 8)
+.endm
+
+.macro LOAD_FUNCLET_FP_REGISTER base, index
+        fld.d   $f\index, \base, (OFFSETOF__CONTEXT__F + \index * 32)
+.endm
