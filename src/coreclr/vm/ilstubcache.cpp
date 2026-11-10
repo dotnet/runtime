@@ -724,15 +724,15 @@ void ILStubCache::FreeCollectibleStubsCompileTimeState()
 #ifndef DACCESS_COMPILE
     CrstHolder ch(&m_crst);
 
-    // SArray iterators and Clear are declared THROWS, but none of them allocates here.
+    // SArray iterators are declared THROWS, but they don't allocate here.
     CONTRACT_VIOLATION(ThrowsViolation);
 
     // Stubs that were compiled have already freed their state, FreeCompileTimeState is a no-op for them.
+    // The array itself is freed with the LoaderAllocator, the only caller is LoaderAllocator::Terminate.
     for (SArray<ILStubResolver*>::Iterator i = m_collectibleStubResolvers.Begin(); i != m_collectibleStubResolvers.End(); ++i)
     {
         (*i)->FreeCompileTimeState();
     }
-    m_collectibleStubResolvers.Clear();
 #endif // DACCESS_COMPILE
 }
 

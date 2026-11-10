@@ -1350,7 +1350,6 @@ BYTE *LoaderAllocator::GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE *
     return buffer;
 }
 
-// in retail should be called from AppDomain::Terminate
 void LoaderAllocator::Terminate()
 {
     CONTRACTL {
