@@ -157,6 +157,66 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void DelegateCtorMapsCheckSignatureLayouts()
+    {
+        CompiledAssembly dependency = new()
+        {
+            AssemblyName = "DelegateLayoutDependency",
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(DelegateCtorMapsCheckSignatureLayouts),
+            SourceResourceNames = ["DelegateCtor/LayoutChecks.cs"],
+            References = [dependency],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(DelegateCtorMapsCheckSignatureLayouts),
+            [
+                new(nameof(DelegateCtorMapsCheckSignatureLayouts),
+                    [new CrossgenAssembly(input), new CrossgenAssembly(dependency) { Kind = Crossgen2InputKind.Reference }])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            SignatureFormattingOptions formatting = new();
+            foreach ((string name, bool needsCheck) in new[]
+            {
+                ("CreateParameter", true),
+                ("CreateReturn", true),
+                ("CreateByRef", false),
+            })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                IEnumerable<FixupCell> checks = (method.Fixups ?? Array.Empty<FixupCell>())
+                    .Where(fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout &&
+                        fixup.Signature.ToString(formatting).Contains("Webcil.WasmDelegateResult", StringComparison.Ordinal));
+                if (needsCheck)
+                    Assert.Single(checks);
+                else
+                    Assert.Empty(checks);
+            }
+
+            List<ReadyToRunImportSection.ImportSectionEntry> entries = reader.ImportSections
+                .SelectMany(section => section.Entries)
+                .ToList();
+            foreach (string target in new[] { "ParameterTarget", "ReturnTarget", "ByRefTarget" })
+            {
+                ReadyToRunImportSection.ImportSectionEntry entry = Assert.Single(entries, entry =>
+                    entry.Signature.FixupKind == ReadyToRunFixupKind.DelegateCtor &&
+                    entry.Signature.ToString(formatting).Contains(target, StringComparison.Ordinal));
+                Assert.True(entry.GCRefMapSize > 0);
+            }
+        }
+    }
+
     [Fact]
     public void CallSignaturesDoNotRequireTypeHandleFixups()
     {
