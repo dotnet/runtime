@@ -5,6 +5,14 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)..'))" />
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
 
+  <!-- The native sides are compiled against the C++ standard library that the build selects, as the CMake-built
+       binaries are (see eng/common/cross/toolchain.cmake), so they're linked with it too. The ABI library (libstdc++)
+       comes with LinkStandardCPlusPlusLibrary. -->
+  <ItemGroup Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true' and '$(TargetCxxStandardLibrary)' == 'libc++'">
+    <NativeSystemLibrary Include=":libc++.a" Condition="'$(TargetCxxStandardLibraryStatic)' == 'true'" />
+    <NativeSystemLibrary Include="c++" Condition="'$(TargetCxxStandardLibraryStatic)' != 'true'" />
+  </ItemGroup>
+
   <!-- On Windows, the symbols go to PDB\, like those of the native binaries. -->
   <Target Name="PublishSymbolsToPdbDirectory"
           BeforeTargets="_ComputeResolvedFilesToPublishTypes"
