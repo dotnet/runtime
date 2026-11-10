@@ -74,9 +74,8 @@ namespace System.Reflection
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
             Debug.Assert(alc != null);
 
-            // An assembly can have no load context, such as a Reflection.Emit assembly on Mono;
-            // an interface from one uses the base type's.
-            AssemblyLoadContext interfaceAlc = AssemblyLoadContext.GetLoadContext(interfaceType.Assembly) ?? alc;
+            AssemblyLoadContext? interfaceAlc = AssemblyLoadContext.GetLoadContext(interfaceType.Assembly);
+            Debug.Assert(interfaceAlc != null);
 
             ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap
                 .GetOrAdd(alc, static _ => new ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly>())

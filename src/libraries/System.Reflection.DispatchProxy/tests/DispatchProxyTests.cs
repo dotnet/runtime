@@ -592,6 +592,7 @@ namespace DispatchProxyTests
 
 #if NET
         [Fact]
+        [SkipOnMono("AssemblyLoadContext.GetLoadContext returns null for a Reflection.Emit assembly on Mono")]
         public static void Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods_Generic_And_Non_Generic_Tests()
         {
             // C# cannot emit raise_Xxx method for the event, so we must use System.Reflection.Emit to generate such event.
