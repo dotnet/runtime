@@ -256,14 +256,11 @@ namespace Mono.Linker.Steps
             if (!_context.IsOptimizationEnabled(CodeOptimizations.IPConstantPropagation, method))
                 return null;
 
-            // A library build must not decide feature switch values on behalf of the app.
-            // Skip analyzing AppContext-style feature switch getters when no --feature value was
-            // supplied. Trivial constant bodies (e.g. CoreLib's IsMultithreadingSupported compiled
-            // as `=> false` under #if) are an exception: folding them uses the value already baked
-            // into that assembly flavor, not a linker choice of an unset switch.
+            // A library build must not decide feature switch values on behalf of the app. Even a getter
+            // with a constant body can be substituted at application publish time, so don't analyze
+            // feature switch getters when no --feature value was supplied.
             if (_context.HasLibraryRootAssembly &&
-                _context.Annotations.MemberActions.IsFeatureSwitchWithoutSetting(method) &&
-                !HasTrivialBooleanConstantBody(method))
+                _context.Annotations.MemberActions.IsFeatureSwitchWithoutSetting(method))
                 return null;
 
             var analyzer = new ConstantExpressionMethodAnalyzer(this);
@@ -271,52 +268,6 @@ namespace Mono.Linker.Steps
                 return new MethodResult(analyzer.Result, analyzer.SideEffectFreeResult);
 
             return null;
-        }
-
-        bool HasTrivialBooleanConstantBody(MethodDefinition method)
-        {
-            if (!method.HasBody || method.ReturnType.MetadataType != MetadataType.Boolean)
-                return false;
-
-            Instruction? constant = null;
-            foreach (var instruction in _context.GetMethodIL(method).Instructions)
-            {
-                switch (instruction.OpCode.Code)
-                {
-                    case Code.Nop:
-                    case Code.Ret:
-                        continue;
-                    case Code.Ldc_I4_0:
-                    case Code.Ldc_I4_1:
-                        if (constant != null)
-                            return false;
-                        constant = instruction;
-                        break;
-                    case Code.Ldc_I4_S:
-                        {
-                            if (constant != null)
-                                return false;
-                            int shortValue = instruction.Operand switch {
-                                byte b => b,
-                                sbyte sb => sb,
-                                _ => -1
-                            };
-                            if (shortValue is not (0 or 1))
-                                return false;
-                            constant = instruction;
-                            break;
-                        }
-                    case Code.Ldc_I4:
-                        if (constant != null || instruction.Operand is not int intValue || intValue is not (0 or 1))
-                            return false;
-                        constant = instruction;
-                        break;
-                    default:
-                        return false;
-                }
-            }
-
-            return constant != null;
         }
 
         static bool HasSideEffects(MethodDefinition method)

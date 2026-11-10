@@ -391,6 +391,11 @@
     <PropertyGroup>
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
       <ILLinkArgs Condition="'$(_ILLinkUseImplementationReferences)' == 'true'">$(ILLinkArgs) --ignore-substitutions true</ILLinkArgs>
+      <!-- Feature switches without a value aren't decided on behalf of the app. Single-threaded flavors can't be
+           made multithreaded at publish time though, so decide that one for them. -->
+      <ILLinkArgs Condition="('$(_ILLinkUseImplementationReferences)' == 'true' or '$(MSBuildProjectName)' == 'System.Private.CoreLib') and
+                             ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and
+                             '$(WasmEnableThreads)' != 'true'">$(ILLinkArgs) --feature System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported false</ILLinkArgs>
     </PropertyGroup>
 
     <ILLink AssemblyPaths="@(_ILLinkAssemblyToTrim)"

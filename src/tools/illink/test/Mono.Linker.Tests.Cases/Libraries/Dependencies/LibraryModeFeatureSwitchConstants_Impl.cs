@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
         [FeatureSwitchDefinition("Mono.Linker.Tests.Cases.Libraries.Dependencies.LibraryModeFeatureSwitchConstants_Impl.IsMultithreadingSupported")]
         public static bool IsMultithreadingSupported => false;
 
-        public static int GetProcessorCount() => 42;
+        public static int GetProcessorCount() => System.Environment.ProcessorCount;
 
         public static int GetProcessorCountIfSupported()
         {

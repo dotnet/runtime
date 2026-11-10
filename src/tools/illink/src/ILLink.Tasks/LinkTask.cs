@@ -428,6 +428,19 @@ namespace ILLink.Tasks
                     continue;
                 }
 
+                if (option == "--feature")
+                {
+                    if (!TryReadArgument(ref arguments, out string feature) ||
+                        string.IsNullOrEmpty(feature) ||
+                        !TryReadArgument(ref arguments, out value) ||
+                        value is not ("true" or "false"))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
                 if (option is not ("--link-attributes" or "--substitutions" or "-d") ||
                     !TryReadArgument(ref arguments, out string path) ||
                     string.IsNullOrEmpty(path))

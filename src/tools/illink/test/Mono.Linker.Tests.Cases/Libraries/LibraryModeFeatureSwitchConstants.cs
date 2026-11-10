@@ -13,20 +13,23 @@ namespace Mono.Linker.Tests.Cases.Libraries
     [KeptAttributeAttribute(typeof(IgnoreTestCaseAttribute), By = Tool.Trimmer)]
     [SetupLinkerArgument("-a", "test", "library")]
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]
+    [SetupLinkerArgument("--feature", "Mono.Linker.Tests.Cases.Libraries.LibraryModeFeatureSwitchConstants.ExplicitlySetSwitch", "false")]
     [SetupCompileBefore("impl.dll", new[] { "Dependencies/LibraryModeFeatureSwitchConstants_Impl.cs" })]
     [SetupLinkerAction("link", "impl")]
-    // Trivial constant FeatureSwitchDefinition getters must fold in library mode (including when
-    // they come from a referenced implementation), so the whole implementation assembly becomes unused.
-    [RemovedAssembly("impl.dll")]
-    [RemovedAssemblyReference("test", "impl")]
+    // Feature switches without a --feature value can still be substituted when the app is published, so library
+    // mode must not fold them, even when their getters have constant bodies or come from a referenced implementation.
+    [KeptAssembly("impl.dll")]
+    [KeptMemberInAssembly("impl.dll", typeof(LibraryModeFeatureSwitchConstants_Impl),
+        "get_IsMultithreadingSupported()", "GetProcessorCount()", "GetProcessorCountIfSupported()")]
     public class LibraryModeFeatureSwitchConstants
     {
         [Kept]
         public static void Main()
         {
-            TestTrivialConstantFolds();
-            TestReferencedTrivialConstantFolds();
-            TestNonTrivialUnsetRetains();
+            TestConstantSwitchRetains();
+            TestReferencedConstantSwitchRetains();
+            TestNonConstantSwitchRetains();
+            TestExplicitlySetSwitchFolds();
         }
 
         [Kept]
@@ -34,45 +37,31 @@ namespace Mono.Linker.Tests.Cases.Libraries
         {
         }
 
-        // Mirrors CoreLib's IsMultithreadingSupported under #if FEATURE_MULTITHREADING:
-        // a FeatureSwitchDefinition getter compiled as a platform constant must still fold in
-        // library mode so dependent helpers (QCalls) can be trimmed.
+        [Kept]
+        [KeptAttributeAttribute(typeof(FeatureSwitchDefinitionAttribute))]
         [FeatureSwitchDefinition("Mono.Linker.Tests.Cases.Libraries.LibraryModeFeatureSwitchConstants.IsMultithreadingSupported")]
-        static bool IsMultithreadingSupported => false;
-
-        // Must not be kept once the trivial feature switch folds to false.
-        static int GetProcessorCount() => 42;
+        static bool IsMultithreadingSupported
+        {
+            [Kept]
+            get => false;
+        }
 
         [Kept]
-        [ExpectedInstructionSequence(new[] {
-            "nop",
-            "ldc.i4.0",
-            "stloc.0",
-            "ldloc.0",
-            "brfalse.s il_6",
-            "ret"
-        })]
-        public static void TestTrivialConstantFolds()
+        static int GetProcessorCount() => Environment.ProcessorCount;
+
+        [Kept]
+        public static void TestConstantSwitchRetains()
         {
             if (IsMultithreadingSupported)
                 GetProcessorCount();
         }
 
         [Kept]
-        [ExpectedInstructionSequence(new[] {
-            "nop",
-            "ldc.i4.1",
-            "call System.Void Mono.Linker.Tests.Cases.Libraries.LibraryModeFeatureSwitchConstants::Use(System.Int32)",
-            "nop",
-            "ret"
-        })]
-        public static void TestReferencedTrivialConstantFolds()
+        public static void TestReferencedConstantSwitchRetains()
         {
             Use(LibraryModeFeatureSwitchConstants_Impl.GetProcessorCountIfSupported());
         }
 
-        // Non-trivial AppContext-based switches without an explicit --feature must not be decided
-        // for the app: both paths stay.
         [Kept]
         [KeptAttributeAttribute(typeof(FeatureSwitchDefinitionAttribute))]
         [FeatureSwitchDefinition("Mono.Linker.Tests.Cases.Libraries.LibraryModeFeatureSwitchConstants.AppConfigurableSwitch")]
@@ -83,7 +72,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
         }
 
         [Kept]
-        public static void TestNonTrivialUnsetRetains()
+        public static void TestNonConstantSwitchRetains()
         {
             if (AppConfigurableSwitch)
                 EnabledPath();
@@ -99,6 +88,28 @@ namespace Mono.Linker.Tests.Cases.Libraries
         [Kept]
         static void DisabledPath()
         {
+        }
+
+        [FeatureSwitchDefinition("Mono.Linker.Tests.Cases.Libraries.LibraryModeFeatureSwitchConstants.ExplicitlySetSwitch")]
+        static bool ExplicitlySetSwitch => true;
+
+        static void ExplicitlyDisabledPath()
+        {
+        }
+
+        [Kept]
+        [ExpectedInstructionSequence(new[] {
+            "nop",
+            "ldc.i4.0",
+            "stloc.0",
+            "ldloc.0",
+            "brfalse.s il_6",
+            "ret"
+        })]
+        public static void TestExplicitlySetSwitchFolds()
+        {
+            if (ExplicitlySetSwitch)
+                ExplicitlyDisabledPath();
         }
 
         [Kept]
