@@ -227,6 +227,12 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
                 return false;
             }
 
+            // The operand itself may only be safe to evaluate under the condition.
+            if ((op1->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+            {
+                return false;
+            }
+
             found                 = true;
             foundOperation->block = block;
             foundOperation->stmt  = stmt;

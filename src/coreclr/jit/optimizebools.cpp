@@ -1000,8 +1000,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         return false;
     }
 
-    // Ensure there are no additional side effects.
-    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & GTF_OBS_EFFECT) != 0)
+    // Ensure there are no additional side effects, and that the second condition
+    // is not only safe to evaluate when the first one is false.
+    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & (GTF_OBS_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
         return false;
     }
@@ -1216,7 +1217,7 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 #endif
     // The second condition must not contain side effects
     //
-    if (m_c2->gtFlags & GTF_GLOB_EFFECT)
+    if ((m_c2->gtFlags & (GTF_GLOB_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
         return false;
     }
