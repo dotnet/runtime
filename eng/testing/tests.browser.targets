@@ -170,12 +170,6 @@
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
     <WasmXHarnessMaxParallelThreads Condition="'$(WasmEnableThreads)' == 'true' and '$(WasmXHarnessMaxParallelThreads)' == ''">8</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
-  <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
-    <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="false" Trim="true" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-    <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="true" Trim="true" />
-  </ItemGroup>
 
   <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
     <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasm $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
