@@ -14,11 +14,12 @@
 .endm
 
 // CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
-// reg and index are the register numbers; the CONTEXT holds the integer and floating point registers in order.
+// reg is the register number; the CONTEXT holds the integer registers in order.
 .macro LOAD_FUNCLET_REGISTER base, reg, scratch
         ld.d    $r\reg, \base, (OFFSETOF__CONTEXT__Fp + (\reg - 22) * 8)
 .endm
 
+// The layout of the floating point registers in the CONTEXT depends on whether LSX or LASX state was captured,
+// so they are not loaded. Funclets do not depend on the values of the floating point callee-saved registers.
 .macro LOAD_FUNCLET_FP_REGISTER base, index
-        fld.d   $f\index, \base, (OFFSETOF__CONTEXT__F + \index * 32)
 .endm
