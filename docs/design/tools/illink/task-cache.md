@@ -25,14 +25,15 @@ arguments/context, and one `InvocationOutputs.FromDirectory` declaration. Eligib
 inspection stay in ILLink; content hashing and cache operations stay in the shared layer.
 The base class calls `InvocationCache.TryCreateFromEnvironment` before describing the invocation.
 If a cache is available and the description is supported, it calls the cache's instance
-`PrepareInvocation` method with that description and a replay callback. Preparation owns output
+`PrepareInvocation` method with that description. Preparation owns output
 validation, timestamping, hashing, and restoration.
 On a miss, the cache returns a pending invocation owning stdout/stderr capture buffers. The base class
 runs the tool, feeds received lines into those buffers, and completes the invocation with its exit code.
 Completion returns an `InvocationResult` containing the exit code and the captured sequences.
-On a hit, the cache restores a result and invokes replay only after restoration succeeds.
-`CachedToolTask` owns capture and replay through its inherited `ToolTask` logging methods and current
-stream policy; the cache has no stream logging-policy settings. If the cache declines an invocation,
+On a hit, the cache returns a result only after restoration succeeds.
+`CachedToolTask` replays the returned output on both hits and misses through its inherited `ToolTask`
+logging methods and current stream policy; the cache has no stream logging-policy settings.
+If the cache declines an invocation,
 the base class calls `ExecuteToolCore` directly without capture.
 Replay receives only the stdout/stderr sequences. The base class determines the final task exit code
 from the execution result and logged errors, without modifying the cache result.
@@ -99,9 +100,9 @@ Copy the complete output tree without filename exceptions. The MSBuild target ow
 skip decision when the directory is missing. Old in-directory `Link.semaphore` files receive no
 special migration or exclusion. Assume outputs are not symbolic links.
 
-`CachedToolTask` captures original stdout/stderr lines on eligible misses at `ToolTask.StartToolProcess`,
-before `ToolTask` applies logging policy. Hits replay them through the ordinary task logging path, preserving
-warning codes, text, locations, and subcategories. Current stream importance, stderr-as-error,
+`CachedToolTask` captures original stdout/stderr lines on eligible misses at `ToolTask.StartToolProcess`
+instead of logging them live. Both hits and misses replay them through the ordinary task logging path,
+preserving warning codes, text, locations, and subcategories. Current stream importance, stderr-as-error,
 and MSBuild warning promotion, exceptions, and warning-as-message policy apply without changing the
 key. Compiler-owned warning settings remain part of the arguments and key. A warning promoted by
 MSBuild fails the task, but successful tool execution is still stored. Subsequent hits reapply current
@@ -109,10 +110,13 @@ logging policy to the captured output.
 
 The cache allocates capture lists only on eligible misses and returns them in a pending invocation.
 The base class borrows that state while calling `ExecuteToolCore` and clears it afterward, including
-on exceptions. Each stream is captured into its own ordered list by its reader, and `ToolTask` drains
-both readers before completion stores the result. Storage and replay use separate stdout and stderr sequences in
-that order, so callback scheduling does not affect the cached transcript. Uncached logging retains `ToolTask`'s
-ordinary interleaving. Task reuse, misses, and restore failures start with fresh capture state.
+on exceptions. The base class replaces the ordinary process-output handlers during capture, forwarding
+end-of-stream notifications to `ToolTask` so it can finish draining the readers. Completion stores
+successful tool results before replay applies logging policy; no logging-based exit-code override is
+needed during execution. Partial output is replayed even if execution throws. Storage and replay use
+separate stdout and stderr sequences in that order, so callback scheduling does not affect the cached
+transcript. Bypassed invocations retain `ToolTask`'s ordinary live logging and interleaving.
+Task reuse, misses, and restore failures start with fresh capture state.
 Normal tool execution retains `ToolTask` subprocess cancellation behavior; shared cache operations
 do not observe cancellation.
 

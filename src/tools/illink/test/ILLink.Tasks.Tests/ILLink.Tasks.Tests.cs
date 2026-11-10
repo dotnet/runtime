@@ -1854,7 +1854,8 @@ namespace ILLink.Tasks.Tests
         {
             RemoteExecutor.Invoke(static mode =>
             {
-                using var test = new OutputDirectoryTest();
+                var engine = new DeferredOutputBuildEngine();
+                using var test = new OutputDirectoryTest(engine);
                 string input = Path.Combine(test.Root, "Input.dll");
                 WriteTestAssembly(input);
                 string tool = Path.Combine(test.Root, "OutputTool.dll");
@@ -1862,6 +1863,7 @@ namespace ILLink.Tasks.Tests
                 File.Copy(Path.ChangeExtension(typeof(TaskArgumentTests).Assembly.Location, ".runtimeconfig.json"),
                     Path.ChangeExtension(tool, ".runtimeconfig.json"));
                 string cacheDirectory = Path.Combine(test.Root, "cache");
+                engine.CacheDirectory = cacheDirectory;
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
                 ILLink task = CreateTask();
@@ -1938,6 +1940,30 @@ namespace ILLink.Tasks.Tests
                     OutputDirectory = new TaskItem(test.Output)
                 };
             }, mode).Dispose();
+        }
+
+        private sealed class DeferredOutputBuildEngine : MockBuildEngine, IBuildEngine
+        {
+            internal string CacheDirectory { get; set; }
+
+            void IBuildEngine.LogMessageEvent(BuildMessageEventArgs e)
+            {
+                if (e.Message is "stdout {0}" or "stderr {0}")
+                    Assert.True(Directory.Exists(CacheDirectory));
+                base.LogMessageEvent(e);
+            }
+
+            void IBuildEngine.LogWarningEvent(BuildWarningEventArgs e)
+            {
+                Assert.True(Directory.Exists(CacheDirectory));
+                base.LogWarningEvent(e);
+            }
+
+            void IBuildEngine.LogErrorEvent(BuildErrorEventArgs e)
+            {
+                Assert.True(Directory.Exists(CacheDirectory));
+                base.LogErrorEvent(e);
+            }
         }
 
         private static void WriteOutputTool(string path)

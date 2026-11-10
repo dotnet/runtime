@@ -836,14 +836,12 @@ public class InvocationCacheTests
     }, configured.ToString(), eligible.ToString(), cached.ToString()).Dispose();
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void SharedPreparationReplaysOnlyRestoredResults(bool cached, bool logError)
-        => RemoteExecutor.Invoke(static (stored, errorPolicy) =>
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedPreparationReturnsCapturedOutputOnMissAndHit(bool cached)
+        => RemoteExecutor.Invoke(static stored =>
     {
         bool hasEntry = bool.Parse(stored);
-        bool logReplayError = bool.Parse(errorPolicy);
         using var test = new CacheTestDirectory();
         test.WriteSource("image.dll", "computed");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
@@ -852,18 +850,8 @@ public class InvocationCacheTests
         if (hasEntry)
             test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs, standardOutput, standardError);
         int executions = 0;
-        int replays = 0;
-
         InvocationCache.PendingInvocation? pending = test.Cache.PrepareInvocation(invocation,
-            replayOutput: (restoredStandardOutput, restoredStandardError) =>
-            {
-                replays++;
-                Assert.Equal("computed", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
-                Assert.Equal(standardOutput, restoredStandardOutput);
-                Assert.Equal(standardError, restoredStandardError);
-                if (logReplayError)
-                    test.Log.LogError("Expected replay error.");
-            }, out InvocationResult? restoredResult);
+            out InvocationResult? restoredResult);
         InvocationResult result;
         if (restoredResult is { } restored)
         {
@@ -885,27 +873,31 @@ public class InvocationCacheTests
         }
 
         Assert.Equal(hasEntry ? 0 : 1, executions);
-        Assert.Equal(hasEntry ? 1 : 0, replays);
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal(hasEntry && logReplayError, test.Log.HasLoggedErrors);
+        Assert.False(test.Log.HasLoggedErrors);
+        Assert.Empty(test.BuildEngine.Warnings);
         Assert.Equal(standardOutput, result.StandardOutput);
         Assert.Equal(standardError, result.StandardError);
-    }, cached.ToString(), logError.ToString()).Dispose();
+    }, cached.ToString()).Dispose();
 
     [Fact]
-    public void SharedPreparationPropagatesReplayExceptions() => RemoteExecutor.Invoke(static () =>
+    public void CachedToolTaskPropagatesReplayExceptions() => RemoteExecutor.Invoke(static () =>
     {
         using var test = new CacheTestDirectory();
+        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
+        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         test.WriteSource("image.dll", "cached");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
         test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs, new[] { "stdout" });
-        IOException exception = Assert.Throws<IOException>(() =>
-            test.Cache.PrepareInvocation(invocation,
-                replayOutput: (_, _) =>
-                {
-                    Assert.Equal("cached", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
-                    throw new IOException("replay");
-                }, out _));
+        var task = new CachedTestToolTask(test.BuildEngine,
+            describe: (_, _, _) => invocation,
+            execute: static (_, _, _) => throw new InvalidOperationException("execution"),
+            logOutput: _ =>
+            {
+                Assert.Equal("cached", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+                throw new IOException("replay");
+            });
+        IOException exception = Assert.Throws<IOException>(() => task.Run());
 
         Assert.Equal("replay", exception.Message);
     }).Dispose();
@@ -955,8 +947,7 @@ public class InvocationCacheTests
         };
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), outputs);
         ArgumentException exception = Assert.Throws<ArgumentException>(() =>
-            test.Cache.PrepareInvocation(invocation,
-                replayOutput: static (_, _) => { }, out _));
+            test.Cache.PrepareInvocation(invocation, out _));
 
         Assert.Equal(nameof(outputs), exception.ParamName);
         Assert.Equal("untouched", File.ReadAllText(stale));
@@ -972,7 +963,7 @@ public class InvocationCacheTests
         File.WriteAllText(stale, "untouched");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(test.Source), Array.Empty<string>(), test.OutputOutputs);
         InvocationCache.PendingInvocation? pending = test.Cache.PrepareInvocation(invocation,
-            replayOutput: static (_, _) => { }, out InvocationResult? restoredResult);
+            out InvocationResult? restoredResult);
 
         Assert.Null(pending);
         Assert.Null(restoredResult);
@@ -1441,7 +1432,7 @@ public class InvocationCacheTests
         InvocationCacheRequest request, Func<InvocationCache.PendingInvocation, int> execute, out bool cacheHit)
     {
         InvocationCache.PendingInvocation? pending = cache.PrepareInvocation(outputTimestampUtc, request,
-            replayOutput: static (_, _) => { }, out InvocationResult? restoredResult);
+            out InvocationResult? restoredResult);
         cacheHit = restoredResult.HasValue;
         if (restoredResult is { } restored)
         {
@@ -1518,14 +1509,16 @@ public class InvocationCacheTests
     {
         private readonly Func<string, string, string, InvocationDescription?> _describe;
         private readonly Func<string, string, string, int> _execute;
+        private readonly Action<string>? _logOutput;
 
         internal CachedTestToolTask(IBuildEngine buildEngine,
             Func<string, string, string, InvocationDescription?> describe,
-            Func<string, string, string, int> execute)
+            Func<string, string, string, int> execute, Action<string>? logOutput = null)
         {
             BuildEngine = buildEngine;
             _describe = describe;
             _execute = execute;
+            _logOutput = logOutput;
         }
 
         internal int Run() => ExecuteTool("compiler path", "response contents", "command contents");
@@ -1540,6 +1533,12 @@ public class InvocationCacheTests
 
         protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
             => _execute(pathToTool, responseFileCommands, commandLineCommands);
+
+        protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
+        {
+            _logOutput?.Invoke(singleLine);
+            base.LogEventsFromTextOutput(singleLine, messageImportance);
+        }
     }
 
     private sealed class CacheBuildEngine : IBuildEngine

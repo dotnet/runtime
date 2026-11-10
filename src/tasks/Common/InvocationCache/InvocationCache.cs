@@ -61,8 +61,7 @@ internal sealed partial class InvocationCache
         _importance = importance;
     }
 
-    internal PendingInvocation? PrepareInvocation(InvocationDescription invocation,
-        Action<IReadOnlyList<string>, IReadOnlyList<string>> replayOutput, out InvocationResult? restoredResult)
+    internal PendingInvocation? PrepareInvocation(InvocationDescription invocation, out InvocationResult? restoredResult)
     {
         restoredResult = null;
         ValidateOutputs(invocation.Outputs);
@@ -72,16 +71,15 @@ internal sealed partial class InvocationCache
             return null;
 
         return PrepareInvocation(outputTimestampUtc,
-            new InvocationCacheRequest(key, invocation.Outputs), replayOutput, out restoredResult);
+            new InvocationCacheRequest(key, invocation.Outputs), out restoredResult);
     }
 
     internal PendingInvocation? PrepareInvocation(DateTime outputTimestampUtc, InvocationCacheRequest request,
-        Action<IReadOnlyList<string>, IReadOnlyList<string>> replayOutput, out InvocationResult? restoredResult)
+        out InvocationResult? restoredResult)
     {
         restoredResult = null;
         if (TryRestore(request.Key, request.Outputs, outputTimestampUtc, out InvocationResult result))
         {
-            replayOutput(result.StandardOutput, result.StandardError);
             restoredResult = result;
             return null;
         }

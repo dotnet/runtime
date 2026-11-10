@@ -10,7 +10,7 @@ using Microsoft.Build.Utilities;
 namespace Microsoft.NET.Build.Tasks;
 
 /// <summary>
-/// Runs cacheable tools while preserving normal <see cref="ToolTask"/> logging and replaying restored diagnostics.
+/// Runs cacheable tools and replays captured diagnostics through normal <see cref="ToolTask"/> logging.
 /// </summary>
 public abstract class CachedToolTask : ToolTask
 {
@@ -21,11 +21,9 @@ public abstract class CachedToolTask : ToolTask
     private protected abstract InvocationDescription? DescribeInvocation(
         string pathToTool, string responseFileCommands, string commandLineCommands);
 
-    // Defer ToolTask's logging-based exit-code adjustment until after cache completion.
-    protected override bool HasLoggedErrors => _pendingInvocation is null && base.HasLoggedErrors;
-
     protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
     {
+        var result = new InvocationResult(-1);
         try
         {
             InvocationResult? restoredResult = null;
@@ -33,25 +31,34 @@ public abstract class CachedToolTask : ToolTask
             if (cache is not null &&
                 DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands) is { } invocation)
             {
-                _pendingInvocation = cache.PrepareInvocation(invocation, ReplayOutput, out restoredResult);
+                _pendingInvocation = cache.PrepareInvocation(invocation, out restoredResult);
             }
-            InvocationResult result;
             if (restoredResult is { } restored)
             {
                 result = restored;
             }
             else
             {
+                // Preserve partial output if execution throws.
+                if (_pendingInvocation is { } pending)
+                    result = new InvocationResult(-1, pending.StandardOutput, pending.StandardError);
                 int exitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
                 result = _pendingInvocation?.Complete(exitCode) ?? new InvocationResult(exitCode);
             }
-
-            return result.ExitCode == 0 && base.HasLoggedErrors ? -1 : result.ExitCode;
         }
         finally
         {
-            _pendingInvocation = null;
+            try
+            {
+                ReplayOutput(result.StandardOutput, result.StandardError);
+            }
+            finally
+            {
+                _pendingInvocation = null;
+            }
         }
+
+        return result.ExitCode == 0 && base.HasLoggedErrors ? -1 : result.ExitCode;
     }
 
     /// <summary>
@@ -68,17 +75,22 @@ public abstract class CachedToolTask : ToolTask
     {
         if (_pendingInvocation is { } pending)
         {
-            // Capture before ToolTask applies stream logging policy, including LogStandardErrorAsError.
-            // Each stream has one reader; ToolTask drains both before execution returns.
+            // Replace live logging, but preserve ToolTask's EOF notifications.
+            process.OutputDataReceived -= ReceiveStandardOutputData;
             process.OutputDataReceived += (_, args) =>
             {
                 if (args.Data is not null)
                     pending.StandardOutput.Add(args.Data);
+                else
+                    ReceiveStandardOutputData(process, args);
             };
+            process.ErrorDataReceived -= ReceiveStandardErrorData;
             process.ErrorDataReceived += (_, args) =>
             {
                 if (args.Data is not null)
                     pending.StandardError.Add(args.Data);
+                else
+                    ReceiveStandardErrorData(process, args);
             };
         }
 

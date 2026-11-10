@@ -16,11 +16,11 @@ Derive from `CachedToolTask` and compile the shared sources into the task assemb
   implementation. It runs only on misses and bypasses.
 
 The base class calls `InvocationCache.TryCreateFromEnvironment` first. Only if a cache is available
-does it call `DescribeInvocation`, passing a supported description and replay callback to that cache's
+does it call `DescribeInvocation`, passing a supported description to that cache's
 instance `PrepareInvocation` method. Preparation owns output validation, timestamping, hashing, and
 restoration.
 On an eligible miss, the cache returns a `PendingInvocation` owning separate ordered stdout and stderr
-lists. The base class appends received lines to those buffers while normal logging continues, then calls
+lists. The base class captures received lines into those buffers instead of logging them, then calls
 `Complete` with the tool exit code. Completion returns an `InvocationResult` using the same buffers and
 stores successful execution. Per-stream output must be deterministic for the same key.
 
@@ -28,10 +28,12 @@ On a hit, preparation returns no pending invocation and its `restoredResult` out
 result. On a bypass, both are null; the base class executes normally without capture. Only eligible
 misses allocate capture buffers, and pending capture state is released even when execution throws.
 
-The cache invokes the replay callback only after successfully restoring an entry. `CachedToolTask`
-replays through its ordinary `ToolTask` logging path, using current importance and stderr-as-error
-policy rather than policy cached from execution. These settings are not passed to the cache. Normal
-execution logs its output as the tool runs and must not be replayed.
+`CachedToolTask` replays returned output on both hits and misses through its ordinary `ToolTask`
+logging path, using current importance and stderr-as-error policy rather than policy cached from
+execution. These settings are not passed to the cache. Cacheable executions defer tool-output logging
+until execution completes; bypasses keep normal live logging. Partial captured output is also replayed
+when execution throws. Capture must remain pre-policy: store raw lines, not already promoted or
+suppressed MSBuild events.
 
 Replay receives only the stdout/stderr sequences and returns nothing. The cache result is unchanged;
 `CachedToolTask` checks logged errors when determining the final task exit code.
@@ -67,13 +69,13 @@ presence, lengths, and SHA-256 hashes, followed by the diagnostics length and SH
 contain two separate sequences, stdout followed by stderr, each with a count and its original lines.
 Empty streams have an explicit zero count. Lines are replayed in the same fixed stream order,
 preserving line order within each stream. Cross-stream callback timing
-does not affect the stored diagnostics or their integrity records; uncached logging retains the
+does not affect the stored diagnostics or their integrity records; bypassed logging retains the
 tool task's ordinary interleaving. Validate all records and files before modifying outputs; replay
-begins only after restoration succeeds.
+on hits begins only after restoration succeeds.
 
-The cache invokes replay only after cache operations succeed; `CachedToolTask` owns how the lines are
-logged. Logging failures must not rerun the tool, since partial replay cannot be undone, and replay
-that logs errors fails the task. Successful tool executions are stored even when current logging
+The cache returns diagnostic data without replaying it. `CachedToolTask` owns replay after restoration
+or execution completes. Logging failures must not rerun the tool, since partial replay cannot be undone.
+Replay that logs errors fails the task. Successful tool executions are stored even when current logging
 policy fails the task; subsequent hits reapply that policy to the captured output.
 
 The experimental format remains version 1. Consumers include their task assembly contents in the
