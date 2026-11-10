@@ -1,7 +1,0 @@
-<Project>
-  <!-- Minipal shares the native test infrastructure but is outside its merged runner. -->
-  <PropertyGroup>
-    <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
-  </PropertyGroup>
-  <Import Project="$(MSBuildThisFileDirectory)..\native\Directory.Build.props" />
-</Project>

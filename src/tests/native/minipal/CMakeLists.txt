@@ -7,7 +7,7 @@ endif()
 
 include_directories(${CLR_SRC_NATIVE_DIR})
 
-set(NATIVE_TEST_COMMON_DIR ../native/common)
+set(NATIVE_TEST_COMMON_DIR ../common)
 set(CORECLR_MINIPAL_DIR ${CLR_REPO_ROOT_DIR}/src/coreclr/minipal)
 
 if(CLR_CMAKE_HOST_WIN32)

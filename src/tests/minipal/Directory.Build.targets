@@ -1,4 +1,0 @@
-<Project>
-  <!-- The minipal tests use the native test driver of the EventPipe and container tests. -->
-  <Import Project="$(MSBuildThisFileDirectory)..\native\Directory.Build.targets" />
-</Project>

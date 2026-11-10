@@ -1,6 +1,6 @@
 # Native Component Tests
 
-This directory mirrors components in `src/native`. These are ordinary runtime
+This directory tests native runtime components. These are ordinary runtime
 tests: a managed CoreCLR or NativeAOT launcher starts a native test executable
 as a separate process and checks its result. Managed EventPipe runtime-behavior
 tests remain under `src/tests/tracing/eventpipe`.
@@ -10,21 +10,23 @@ tests remain under `src/tests/tracing/eventpipe`.
 | `common/` | Shared native-test runner and managed process helper |
 | `containers/` | Tests for `src/native/containers`, including SIMD hash tables |
 | `eventpipe/` | Tests for `src/native/eventpipe` using a standalone native test host |
+| `minipal/` | Tests for `src/native/minipal` and `src/coreclr/minipal` |
 
 ## Build and output layout
 
-Use the normal runtime-test build with `-Tree native` to select both suites, or
-`-Tree native\containers` / `-Tree native\eventpipe` to select one. See the
-[runtime-test instructions](../README.md) for baseline and build requirements.
-Mobile and WebAssembly targets are not supported.
+Use the normal runtime-test build with `-Tree native` to select all suites, or
+`-Tree native\containers` / `-Tree native\eventpipe` / `-Tree native\minipal`
+to select one. See the [runtime-test instructions](../README.md) for baseline
+and build requirements. Mobile and WebAssembly targets are not supported.
 
 The `native.csproj` merged runner discovers the component test projects for
 normal CI execution and Helix deployment. Each component test retains process
 isolation, so its native driver is packaged beside its managed launcher.
 
 For Windows x64 Checked, the runnable tests are deployed under
-`artifacts\tests\coreclr\windows.x64.Checked\native\containers\NativeContainerTests`
-and `artifacts\tests\coreclr\windows.x64.Checked\native\eventpipe\NativeEventPipeTests`.
+`artifacts\tests\coreclr\windows.x64.Checked\native\containers\NativeContainerTests`,
+`artifacts\tests\coreclr\windows.x64.Checked\native\eventpipe\NativeEventPipeTests`,
+and `artifacts\tests\coreclr\windows.x64.Checked\native\minipal\NativeMinipalTests`.
 Each directory contains the CoreCLR launcher and its native driver. NativeAOT
 places its launcher in the usual `native` subdirectory, and uses the driver in
 the parent directory.
