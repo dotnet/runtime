@@ -92,11 +92,6 @@
 
 #include "MiscNativeHelpers.h"
 
-#ifdef TARGET_BROWSER
-extern "C" void* QCall_memmove(void* dest, const void* src, size_t len);
-extern "C" void* QCall_memset(void* dest, int value, size_t len);
-#endif // TARGET_BROWSER
-
 #if !defined(TARGET_WASM) || !GEN_PINVOKE
 // Keep entries sorted by name using strcmp ordering for binary search.
 static const Entry s_RuntimeHelpers[] =
@@ -839,16 +834,10 @@ static const Entry s_RuntimeHelpers[] =
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86Base_CpuId)
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-#ifdef TARGET_BROWSER
-    {"memmove", (void*)&QCall_memmove},
-#else
     DllImportEntry(memmove)
-#endif // TARGET_BROWSER
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832
     {"memset", (void*)&std::memset},
-#elif defined(TARGET_BROWSER)
-    {"memset", (void*)&QCall_memset},
 #else // TARGET_SUNOS
     DllImportEntry(memset)
 #endif // TARGET_SUNOS
