@@ -4958,19 +4958,39 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         }
     }
 
-    // estimate the cost from lost codesize reduction if we do not perform the CSE
-    if (candidate->Size() > cse_use_cost)
+    // Equal VNs need not have equally expensive trees. Price the expressions
+    // actually removed at uses, not the candidate's first occurrence (often a def).
+    // Earlier CSEs may also have reduced these trees' costs.
+    CSEdsc*  dsc      = candidate->CseDsc();
+    unsigned useCount = 0;
+    for (treeStmtLst* occurrence = &dsc->csdTreeList; occurrence != nullptr; occurrence = occurrence->tslNext)
     {
-        CSEdsc* dsc = candidate->CseDsc(); // We need to retrieve the actual use count, not the
-        // weighted count
-        extra_no_cost = candidate->Size() - cse_use_cost;
-        extra_no_cost = extra_no_cost * dsc->csdUseCount * 2;
+        GenTree* tree = occurrence->tslTree;
+        if (!IS_CSE_USE(tree->gtCSEnum))
+        {
+            continue;
+        }
+        unsigned index = GET_CSE_INDEX(tree->gtCSEnum);
+        if (index != candidate->CseIndex())
+        {
+            continue;
+        }
+        useCount++;
+        if (CodeOptKind() == Compiler::SMALL_CODE)
+        {
+            no_cse_cost += tree->GetCostSz();
+        }
+        else
+        {
+            no_cse_cost += occurrence->tslBlock->getBBWeight(m_compiler) * tree->GetCostEx();
+        }
+        if (tree->GetCostSz() > cse_use_cost)
+        {
+            extra_no_cost += (tree->GetCostSz() - cse_use_cost) * 2;
+        }
     }
+    assert(useCount == dsc->csdUseCount);
 
-    /* no_cse_cost  is the cost estimate when we decide not to make a CSE */
-    /* yes_cse_cost is the cost estimate when we decide to make a CSE     */
-
-    no_cse_cost  = candidate->UseCount() * candidate->Cost();
     yes_cse_cost = (candidate->DefCount() * cse_def_cost) + (candidate->UseCount() * cse_use_cost);
 
     no_cse_cost += extra_no_cost;
