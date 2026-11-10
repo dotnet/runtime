@@ -2143,11 +2143,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
         ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+        TargetPointer module = GetModule(methodTable);
+        AsyncMethodFlags methodFlags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(methodDescHandle);
+        bool matchSlot = methodDesc.Slot != ushort.MaxValue &&
+            methodFlags.HasFlag(AsyncMethodFlags.IsAsyncVariant) &&
+            !methodFlags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk);
 
         foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
         {
             MethodDesc candidate = _methodDescs[candidateHandle.Address];
-            if (candidate.Slot != methodDesc.Slot)
+            if (matchSlot ? candidate.Slot != methodDesc.Slot :
+                candidate.Token != methodDesc.Token ||
+                GetModule(GetTypeHandle(candidate.MethodTable)) != module)
                 continue;
 
             AsyncMethodFlags flags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(candidateHandle);
