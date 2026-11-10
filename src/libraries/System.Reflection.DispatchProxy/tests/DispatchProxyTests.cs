@@ -614,6 +614,7 @@ namespace DispatchProxyTests
         [InlineData(true, true)]
         [InlineData(false, false)]
         [InlineData(false, true)]
+        [SkipOnMono("AssemblyLoadContext.GetLoadContext returns null for a Reflection.Emit assembly on Mono")]
         public static void Invoke_Method_With_Optional_Custom_Modifier_Invokes_Correct_Method(bool onReturn, bool useGenericCreate)
         {
             // System.Reflection.Emit generates the method so that an optional custom modifier sits on its return type or parameter.
