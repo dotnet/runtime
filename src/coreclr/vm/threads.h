@@ -2207,6 +2207,8 @@ public:
 
     #define UNWIND_FLOATS 0x20000
 
+    #define GC_ROOT_SCAN 0x40000
+
     StackWalkAction StackWalkFramesEx(
                         PREGDISPLAY pRD,        // virtual register set at crawl start
                         PSTACKWALKFRAMESCALLBACK pCallback,

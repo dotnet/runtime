@@ -69,6 +69,9 @@
         '$(WasmBuildNative)' == 'true' or
         '$(EmccInitialHeapSize)' != '' or
         '$(EmccMaximumHeapSize)' != '' " >true</_WasmNativeWorkloadNeeded>
+    <!-- Not a relink trigger: CoreCLR runs wasm-opt from the workload's Emscripten SDK over the relinked runtime
+         and over ReadyToRun images, so requesting it requires the workload. -->
+    <_WasmNativeWorkloadNeeded Condition="'$(WasmRunWasmOpt)' == 'true' and '$(UseMonoRuntime)' == 'false'">true</_WasmNativeWorkloadNeeded>
 
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
