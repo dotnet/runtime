@@ -130,3 +130,8 @@ if (CLR_CMAKE_HOST_APPLE)
 endif()
 
 install_clr(TARGETS createdump DESTINATIONS . sharedFramework COMPONENT runtime)
+
+if(CLR_CMAKE_TARGET_LINUX)
+    # NativeAOT smoke tests also exercise the external createdump fallback.
+    install_clr(TARGETS createdump DESTINATIONS . COMPONENT nativeaot)
+endif()
