@@ -15,6 +15,42 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </summary>
 internal sealed class CachingContractRegistry : ContractRegistry
 {
+    private IException? _exception;
+    private IExternalMemoryHandles? _externalMemoryHandles;
+    private ILoader? _loader;
+    private IEcmaMetadata? _ecmaMetadata;
+    private IObject? _object;
+    private IThread? _thread;
+    private IWindowsErrorReporting? _windowsErrorReporting;
+    private IRuntimeTypeSystem? _runtimeTypeSystem;
+    private IDacStreams? _dacStreams;
+    private IExecutionManager? _executionManager;
+    private ICodeVersions? _codeVersions;
+    private IPlatformMetadata? _platformMetadata;
+    private IFeatureFlags? _featureFlags;
+    private IPrecodeStubs? _precodeStubs;
+    private IReJIT? _reJIT;
+    private IStackWalk? _stackWalk;
+    private IRuntimeInfo? _runtimeInfo;
+    private IComWrappers? _comWrappers;
+    private IDebugInfo? _debugInfo;
+    private ISHash? _sHash;
+    private IGC? _gc;
+    private IGCInfo? _gcInfo;
+    private INotifications? _notifications;
+    private ICallingConvention? _callingConvention;
+    private ICodeNotifications? _codeNotifications;
+    private ISignature? _signature;
+    private ISyncBlock? _syncBlock;
+    private IBuiltInCOM? _builtInCOM;
+    private IObjectiveCMarshal? _objectiveCMarshal;
+    private IConditionalWeakTable? _conditionalWeakTable;
+    private IManagedTypeSource? _managedTypeSource;
+    private IAuxiliarySymbols? _auxiliarySymbols;
+    private IDebugger? _debugger;
+    private IStressLog? _stressLog;
+    private IRuntimeMutableTypeSystem? _runtimeMutableTypeSystem;
+
     public delegate bool TryGetContractVersionDelegate(string contractName, [NotNullWhen(true)] out string? version);
 
     private readonly Dictionary<Type, IContract> _contracts = [];
@@ -33,6 +69,44 @@ internal sealed class CachingContractRegistry : ContractRegistry
             register(this);
         }
     }
+
+    // These built-in contracts are accessed frequently enough that caching them here and avoiding the
+    // registry dictionary lookup significantly improves performance.
+    public override IException Exception => _exception ??= GetContract<IException>();
+    public override IExternalMemoryHandles ExternalMemoryHandles => _externalMemoryHandles ??= GetContract<IExternalMemoryHandles>();
+    public override ILoader Loader => _loader ??= GetContract<ILoader>();
+    public override IEcmaMetadata EcmaMetadata => _ecmaMetadata ??= GetContract<IEcmaMetadata>();
+    public override IObject Object => _object ??= GetContract<IObject>();
+    public override IThread Thread => _thread ??= GetContract<IThread>();
+    public override IWindowsErrorReporting WindowsErrorReporting => _windowsErrorReporting ??= GetContract<IWindowsErrorReporting>();
+    public override IRuntimeTypeSystem RuntimeTypeSystem => _runtimeTypeSystem ??= GetContract<IRuntimeTypeSystem>();
+    public override IDacStreams DacStreams => _dacStreams ??= GetContract<IDacStreams>();
+    public override IExecutionManager ExecutionManager => _executionManager ??= GetContract<IExecutionManager>();
+    public override ICodeVersions CodeVersions => _codeVersions ??= GetContract<ICodeVersions>();
+    public override IPlatformMetadata PlatformMetadata => _platformMetadata ??= GetContract<IPlatformMetadata>();
+    public override IFeatureFlags FeatureFlags => _featureFlags ??= GetContract<IFeatureFlags>();
+    public override IPrecodeStubs PrecodeStubs => _precodeStubs ??= GetContract<IPrecodeStubs>();
+    public override IReJIT ReJIT => _reJIT ??= GetContract<IReJIT>();
+    public override IStackWalk StackWalk => _stackWalk ??= GetContract<IStackWalk>();
+    public override IRuntimeInfo RuntimeInfo => _runtimeInfo ??= GetContract<IRuntimeInfo>();
+    public override IComWrappers ComWrappers => _comWrappers ??= GetContract<IComWrappers>();
+    public override IDebugInfo DebugInfo => _debugInfo ??= GetContract<IDebugInfo>();
+    public override ISHash SHash => _sHash ??= GetContract<ISHash>();
+    public override IGC GC => _gc ??= GetContract<IGC>();
+    public override IGCInfo GCInfo => _gcInfo ??= GetContract<IGCInfo>();
+    public override INotifications Notifications => _notifications ??= GetContract<INotifications>();
+    public override ICallingConvention CallingConvention => _callingConvention ??= GetContract<ICallingConvention>();
+    public override ICodeNotifications CodeNotifications => _codeNotifications ??= GetContract<ICodeNotifications>();
+    public override ISignature Signature => _signature ??= GetContract<ISignature>();
+    public override ISyncBlock SyncBlock => _syncBlock ??= GetContract<ISyncBlock>();
+    public override IBuiltInCOM BuiltInCOM => _builtInCOM ??= GetContract<IBuiltInCOM>();
+    public override IObjectiveCMarshal ObjectiveCMarshal => _objectiveCMarshal ??= GetContract<IObjectiveCMarshal>();
+    public override IConditionalWeakTable ConditionalWeakTable => _conditionalWeakTable ??= GetContract<IConditionalWeakTable>();
+    public override IManagedTypeSource ManagedTypeSource => _managedTypeSource ??= GetContract<IManagedTypeSource>();
+    public override IAuxiliarySymbols AuxiliarySymbols => _auxiliarySymbols ??= GetContract<IAuxiliarySymbols>();
+    public override IDebugger Debugger => _debugger ??= GetContract<IDebugger>();
+    public override IStressLog StressLog => _stressLog ??= GetContract<IStressLog>();
+    public override IRuntimeMutableTypeSystem RuntimeMutableTypeSystem => _runtimeMutableTypeSystem ??= GetContract<IRuntimeMutableTypeSystem>();
 
     public override void Register<TContract>(string version, Func<Target, TContract> creator)
     {
