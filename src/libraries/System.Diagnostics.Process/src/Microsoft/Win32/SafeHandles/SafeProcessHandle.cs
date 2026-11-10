@@ -164,12 +164,13 @@ namespace Microsoft.Win32.SafeHandles
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        internal static SafeProcessHandle Start(ProcessStartInfo startInfo, bool fallbackToNull
+        internal static SafeProcessHandle Start(
 #if TARGET_WINDOWS
-            , Interop.Kernel32.SafeJobHandle? processTreeJob = null
+            ProcessStartInfo startInfo, bool fallbackToNull, Interop.Kernel32.SafeJobHandle? processTreeJob = null
+#else
+            ProcessStartInfo startInfo, bool fallbackToNull
 #endif
             )
-
         {
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
@@ -207,9 +208,11 @@ namespace Microsoft.Win32.SafeHandles
                 ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
             }
 
-            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles
+            return StartCore(
 #if TARGET_WINDOWS
-                , processTreeJob
+                startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles, processTreeJob
+#else
+                startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles
 #endif
                 );
         }

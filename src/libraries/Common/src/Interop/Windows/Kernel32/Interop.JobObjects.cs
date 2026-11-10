@@ -36,7 +36,7 @@ internal static partial class Interop
 
             internal void Terminate()
             {
-                if (!TerminateJobObject(this, uint.MaxValue))
+                if (!TerminateJobObject(this, -1))
                 {
                     throw new Win32Exception(Marshal.GetLastPInvokeError());
                 }
@@ -125,7 +125,7 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TerminateJobObject(SafeJobHandle hJob, uint uExitCode);
+        internal static partial bool TerminateJobObject(SafeJobHandle hJob, int uExitCode);
 
         internal const int PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D;
     }

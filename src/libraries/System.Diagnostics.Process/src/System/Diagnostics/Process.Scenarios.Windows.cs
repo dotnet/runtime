@@ -14,6 +14,7 @@ namespace System.Diagnostics
         {
             using SafeJobHandle job = SafeJobHandle.Create(Interop.Kernel32.JOB_OBJECT_LIMIT_BREAKAWAY_OK);
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo, fallbackToNull: startInfo.StartDetached, processTreeJob: job);
+
             return processHandle.WaitForExitOrKillOnTimeout(timeout, job.Terminate);
         }
 
@@ -21,6 +22,7 @@ namespace System.Diagnostics
         {
             using SafeJobHandle job = SafeJobHandle.Create(Interop.Kernel32.JOB_OBJECT_LIMIT_BREAKAWAY_OK);
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo, fallbackToNull: startInfo.StartDetached, processTreeJob: job);
+
             return await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken, job.Terminate).ConfigureAwait(false);
         }
 

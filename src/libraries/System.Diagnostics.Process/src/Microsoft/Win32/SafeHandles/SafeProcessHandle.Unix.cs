@@ -57,7 +57,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Sets a value indicating whether the process has been terminated due to timeout or cancellation.
         /// </summary>
-        internal bool Canceled
+        private bool Canceled
         {
             set => GetWaitState()._canceled = value;
         }
