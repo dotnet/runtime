@@ -17,14 +17,14 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
     UINT32,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return 0;
 }
 
 extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64, QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
 }
 
@@ -33,7 +33,7 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(
     EventPipeSessionInfo *,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return FALSE;
 }
@@ -44,7 +44,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
     void *,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return 0;
 }
@@ -59,21 +59,21 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     UINT32,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return 0;
 }
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(LPCWSTR, QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return 0;
 }
 
 extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(INT_PTR, QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
 }
 
@@ -82,7 +82,7 @@ extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(
     GUID *activityId,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
 
     Thread *thread = GetThreadNULLOk();
@@ -133,7 +133,7 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     LPCGUID,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
 }
 
@@ -142,14 +142,14 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_GetNextEvent(
     EventPipeEventInstanceData *,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return FALSE;
 }
 
 extern "C" BOOL QCALLTYPE EventPipeInternal_SignalSession(UINT64, QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return FALSE;
 }
@@ -159,7 +159,7 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(
     INT32,
     QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return FALSE;
 }
@@ -167,7 +167,7 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(
 #if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
 extern "C" CLR_BOOL QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus *qcallError)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
     *qcallError = 0;
     return FALSE;
 }
