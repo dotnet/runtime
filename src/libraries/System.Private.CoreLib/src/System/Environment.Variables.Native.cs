@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,33 +13,49 @@ namespace System
     // ICorProfilerInfo11::SetEnvironmentVariable or the diagnostic server, are visible here and vice versa.
     public static partial class Environment
     {
-        private static unsafe string? GetEnvironmentVariableCore(string variable)
+        private static string? GetEnvironmentVariableCore(string variable)
         {
-            var builder = new ValueStringBuilder(stackalloc char[128]);
-
-            int length;
-            while ((length = GetEnvironmentVariableNative(variable, ref builder.GetPinnableReference(), builder.Capacity)) > builder.Capacity)
+            Span<byte> buffer = stackalloc byte[256];
+            byte[]? rented = null;
+            try
             {
-                builder.EnsureCapacity(length);
-            }
+                while (true)
+                {
+                    int length = GetEnvironmentVariableNative(variable, ref MemoryMarshal.GetReference(buffer), buffer.Length);
+                    if (length < 0)
+                    {
+                        return null;
+                    }
 
-            if (length < 0)
+                    if (length < buffer.Length)
+                    {
+                        return Encoding.UTF8.GetString(buffer.Slice(0, length));
+                    }
+
+                    // The value did not fit, and length is the required size. Retry in case the value changed.
+                    if (rented != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(rented);
+                    }
+                    buffer = rented = ArrayPool<byte>.Shared.Rent(length);
+                }
+            }
+            finally
             {
-                builder.Dispose();
-                return null;
+                if (rented != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
             }
-
-            builder.Length = length;
-            return builder.ToString();
         }
 
-        /// <summary>GetEnvironmentVariableCore that avoids using the ArrayPool. Environment variables must be less than 128 characters in length or won't be found.</summary>
-        internal static unsafe string? GetEnvironmentVariableCore_NoArrayPool(string variable)
+        /// <summary>GetEnvironmentVariableCore that avoids using the ArrayPool. Environment variable values must be less than 256 bytes in UTF-8 or won't be found.</summary>
+        internal static string? GetEnvironmentVariableCore_NoArrayPool(string variable)
         {
-            Span<char> span = stackalloc char[128];
-            int length = GetEnvironmentVariableNative(variable, ref MemoryMarshal.GetReference(span), span.Length);
-            return length >= 0 && length <= span.Length ?
-                span.Slice(0, length).ToString() :
+            Span<byte> buffer = stackalloc byte[256];
+            int length = GetEnvironmentVariableNative(variable, ref MemoryMarshal.GetReference(buffer), buffer.Length);
+            return length >= 0 && length < buffer.Length ?
+                Encoding.UTF8.GetString(buffer.Slice(0, length)) :
                 null;
         }
 
@@ -54,10 +71,9 @@ namespace System
 
         public static unsafe IDictionary GetEnvironmentVariables()
         {
-            // The block has the same format as GetEnvironmentStrings on Windows:
-            //     [Variable=value\0]* \0
-            char* stringPtr = GetEnvironmentStringsNative();
-            if (stringPtr == null)
+            // The block is a sequence of null-terminated UTF-8 "name=value" strings, followed by an empty string.
+            byte* block = GetEnvironmentStringsNative();
+            if (block == null)
             {
                 throw new OutOfMemoryException();
             }
@@ -66,21 +82,21 @@ namespace System
             {
                 var results = new Hashtable();
 
-                char* currentPtr = stringPtr;
+                byte* current = block;
                 while (true)
                 {
-                    ReadOnlySpan<char> variable = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(currentPtr);
+                    ReadOnlySpan<byte> variable = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(current);
                     if (variable.IsEmpty)
                     {
                         break;
                     }
 
                     // Skip entries that begin with = or have no =, which can happen when the environment block is corrupted.
-                    int i = variable.IndexOf('=');
+                    int i = variable.IndexOf((byte)'=');
                     if (i > 0)
                     {
-                        string key = new string(variable.Slice(0, i));
-                        string value = new string(variable.Slice(i + 1));
+                        string key = Encoding.UTF8.GetString(variable.Slice(0, i));
+                        string value = Encoding.UTF8.GetString(variable.Slice(i + 1));
                         try
                         {
                             // Add may throw if the environment block was corrupted leading to duplicate entries.
@@ -91,27 +107,27 @@ namespace System
                         catch (ArgumentException) { }
                     }
 
-                    currentPtr += variable.Length + 1;
+                    current += variable.Length + 1;
                 }
 
                 return results;
             }
             finally
             {
-                FreeEnvironmentStringsNative(stringPtr);
+                FreeEnvironmentStringsNative(block);
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetEnvironmentVariable", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial int GetEnvironmentVariableNative(string name, ref char buffer, int bufferSize);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetEnvironmentVariable", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int GetEnvironmentVariableNative(string name, ref byte buffer, int bufferSize);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_SetEnvironmentVariable", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_SetEnvironmentVariable", StringMarshalling = StringMarshalling.Utf8)]
         private static partial Interop.BOOL SetEnvironmentVariableNative(string name, string? value);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetEnvironmentStrings")]
-        private static unsafe partial char* GetEnvironmentStringsNative();
+        private static unsafe partial byte* GetEnvironmentStringsNative();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FreeEnvironmentStrings")]
-        private static unsafe partial void FreeEnvironmentStringsNative(char* strings);
+        private static unsafe partial void FreeEnvironmentStringsNative(byte* strings);
     }
 }

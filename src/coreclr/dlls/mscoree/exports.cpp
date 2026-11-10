@@ -331,7 +331,6 @@ int coreclr_initialize(
     }
 
     CLRConfig::SetEnvironmentCallbacks(ProcessEnvironment_GetVariable, ProcessEnvironment_GetStrings, ProcessEnvironment_FreeStrings);
-    PAL_SetGetEnvironmentCallback(ProcessEnvironment_GetEnviron);
 #endif
 
     if (hostContract != nullptr)

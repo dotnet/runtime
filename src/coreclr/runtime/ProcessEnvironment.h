@@ -7,8 +7,8 @@
 #include <minipal/types.h>
 #include <stdint.h>
 
-// The runtime's view of the process environment. On Unix, this is a lock-protected copy of the
-// environment because setenv is not safe to call while other threads may be reading the environment.
+// The runtime's view of the process environment. On Unix, setting a variable switches to a lock-protected
+// copy of the environment because setenv is not safe to call while other threads may be reading it.
 // It exists so that changes made through ICorProfilerInfo11::SetEnvironmentVariable and the diagnostic
 // server are visible to managed code and runtime configuration, and vice versa. Do not add other uses.
 
@@ -28,15 +28,17 @@ CHAR16_T* ProcessEnvironment_GetStrings();
 void ProcessEnvironment_FreeStrings(CHAR16_T* strings);
 
 #ifndef TARGET_WINDOWS
+// UTF-8 versions of the functions above.
+bool ProcessEnvironment_TryGetVariableUtf8(const char* name, char* buffer, uint32_t bufferSize, uint32_t* length);
+bool ProcessEnvironment_SetVariableUtf8(const char* name, const char* value);
+char* ProcessEnvironment_GetStringsUtf8();
+void ProcessEnvironment_FreeStringsUtf8(char* strings);
+
 // Same contract as GetEnvironmentVariableA.
 uint32_t ProcessEnvironment_GetVariableUtf8(const char* name, char* buffer, uint32_t bufferSize);
 
 // Returns a copy of the value, or null if the variable is not set. Free it with free().
 char* ProcessEnvironment_GetVariableCopyUtf8(const char* name);
-
-// Returns the environment to pass to execve for a child process. It is not synchronized
-// and does not allocate, so it is meant to be called between fork and exec.
-char** ProcessEnvironment_GetEnviron();
 #endif // !TARGET_WINDOWS
 
 #endif // __PROCESSENVIRONMENT_H__

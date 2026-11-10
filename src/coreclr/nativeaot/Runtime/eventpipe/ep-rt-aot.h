@@ -1122,27 +1122,12 @@ ep_rt_temp_path_get (
     EP_ASSERT (buffer != NULL);
     EP_ASSERT (buffer_len > 0);
 
+    // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
     char *tmpdir = minipal_environ_getenv ("TMPDIR");
-    char *tmp = NULL;
-    char *temp = NULL;
-    const ep_char8_t *path = tmpdir;
-    if (path == NULL)
-    {
-        tmp = minipal_environ_getenv ("TMP");
-        path = tmp;
-        if (path == NULL)
-        {
-            temp = minipal_environ_getenv ("TEMP");
-            path = temp;
-            if (path == NULL)
-                path = "/tmp/";
-        }
-    }
+    const ep_char8_t *path = (tmpdir != NULL && tmpdir[0] != '\0') ? tmpdir : "/tmp/";
 
     int32_t result = snprintf (buffer, buffer_len, path[strlen(path) - 1] == '/' ? "%s" : "%s/", path);
     free (tmpdir);
-    free (tmp);
-    free (temp);
     if (result <= 0 || (uint32_t)result >= buffer_len)
         ep_raise_error ();
 

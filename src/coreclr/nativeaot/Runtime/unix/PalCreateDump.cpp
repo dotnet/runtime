@@ -27,7 +27,6 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
-#include "ProcessEnvironment.h"
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
@@ -266,7 +265,7 @@ CreateCrashDump(
             dup2(child_write_pipe, STDERR_FILENO);
         }
         // Execute the createdump program
-        if (execve(argv[0], (char* const *)argv, ProcessEnvironment_GetEnviron()) == -1)
+        if (execv(argv[0], (char* const *)argv) == -1)
         {
             if (errno == ENOENT)
             {

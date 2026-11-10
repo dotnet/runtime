@@ -42,12 +42,12 @@ extern "C" int32_t QCALLTYPE Thread_GetOptimalMaxSpinWaitsPerSpinIteration()
 }
 
 #ifdef TARGET_UNIX
-// Returns -1 if the variable is not set, the length of the value if it fits in the buffer,
-// or the required buffer size including the null terminator otherwise.
-extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const CHAR16_T* name, CHAR16_T* buffer, int32_t bufferSize)
+// Names and values are UTF-8. Returns -1 if the variable is not set, the length of the value in bytes
+// if it fits in the buffer, or the required buffer size including the null terminator otherwise.
+extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const char* name, char* buffer, int32_t bufferSize)
 {
     uint32_t length;
-    if (!ProcessEnvironment_TryGetVariable(name, buffer, (uint32_t)bufferSize, &length))
+    if (!ProcessEnvironment_TryGetVariableUtf8(name, buffer, (uint32_t)bufferSize, &length))
     {
         return -1;
     }
@@ -55,18 +55,19 @@ extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const CHAR16_T* 
     return (int32_t)length;
 }
 
-extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const CHAR16_T* name, const CHAR16_T* value)
+extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value)
 {
-    return ProcessEnvironment_SetVariable(name, value) ? 1 : 0;
+    return ProcessEnvironment_SetVariableUtf8(name, value) ? 1 : 0;
 }
 
-extern "C" CHAR16_T* QCALLTYPE Environment_GetEnvironmentStrings()
+// Returns a double-null-terminated block of UTF-8 "name=value" strings.
+extern "C" char* QCALLTYPE Environment_GetEnvironmentStrings()
 {
-    return ProcessEnvironment_GetStrings();
+    return ProcessEnvironment_GetStringsUtf8();
 }
 
-extern "C" void QCALLTYPE Environment_FreeEnvironmentStrings(CHAR16_T* strings)
+extern "C" void QCALLTYPE Environment_FreeEnvironmentStrings(char* strings)
 {
-    ProcessEnvironment_FreeStrings(strings);
+    ProcessEnvironment_FreeStringsUtf8(strings);
 }
 #endif // TARGET_UNIX

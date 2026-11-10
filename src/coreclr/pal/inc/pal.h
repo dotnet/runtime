@@ -246,19 +246,6 @@ VOID
 PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
-
-/// <summary>
-/// Used by the runtime to provide the environment that the createdump process is launched with.
-/// The callback is invoked between fork and exec, so it must not allocate or take locks.
-/// </summary>
-typedef char** (*PGETENVIRONMENT_CALLBACK)();
-
-PALIMPORT
-VOID
-PALAPI
-PAL_SetGetEnvironmentCallback(
-    IN PGETENVIRONMENT_CALLBACK callback);
-
 /// <summary>
 /// Callback invoked when a signal is received that will terminate the process.
 /// The callback should log the managed callstack for the signal.

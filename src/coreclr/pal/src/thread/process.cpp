@@ -169,10 +169,6 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
-
-// Function that provides the environment for the createdump process.
-Volatile<PGETENVIRONMENT_CALLBACK> g_getEnvironmentCallback = nullptr;
-
 // Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
 Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
 
@@ -505,23 +501,6 @@ PAL_SetCreateDumpCallback(
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
 }
-
-/*++
-Function:
-  PAL_SetGetEnvironmentCallback
-
-Abstract:
-  Sets a callback that provides the environment that createdump is launched with.
---*/
-PALIMPORT
-VOID
-PALAPI
-PAL_SetGetEnvironmentCallback(
-    IN PGETENVIRONMENT_CALLBACK callback)
-{
-    g_getEnvironmentCallback = callback;
-}
-
 /*++
 Function:
   PAL_SetLogManagedCallstackForSignalCallback
@@ -1563,8 +1542,7 @@ PROCLaunchCreateDump(
         else
         {
             // Execute the createdump program
-            PGETENVIRONMENT_CALLBACK getEnvironment = g_getEnvironmentCallback;
-            if (execve(argv[0], (char**)argv, getEnvironment != nullptr ? getEnvironment() : minipal_environ_get()) == -1)
+            if (execve(argv[0], (char**)argv, minipal_environ_get()) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 _exit(EXIT_FAILURE);
