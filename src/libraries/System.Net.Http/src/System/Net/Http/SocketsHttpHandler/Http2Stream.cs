@@ -965,6 +965,13 @@ namespace System.Net.Http
                         return;
                     }
 
+                    // The server completed the response and stopped the upload with NO_ERROR.
+                    // Further resets must not discard the response while the upload observes cancellation.
+                    if (_requestBodyAbandoned)
+                    {
+                        return;
+                    }
+
                     // If the server told us the request has not been processed (via Last-Stream-ID on GOAWAY),
                     // but we've already received some response data from the server, then the server lied to us.
                     // In this case, don't allow the request to be retried.

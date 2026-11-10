@@ -3218,6 +3218,93 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(ProtocolErrors.STREAM_CLOSED, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(ProtocolErrors.STREAM_CLOSED, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(ProtocolErrors.CANCEL, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(ProtocolErrors.INTERNAL_ERROR, HttpCompletionOption.ResponseContentRead)]
+        public async Task PostAsyncNonDuplex_ServerCompletesResponseThenResetsWithNoErrorAndAgain_ResponseStillSucceeds(ProtocolErrors secondResetError, HttpCompletionOption completionOption)
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                var reachedGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                CancellationToken bodyCancellationToken = default;
+                // Fill the initial flow-control window to flush the request before blocking the next read.
+                int remaining = DefaultInitialWindowSize;
+                using var request = new HttpRequestMessage(HttpMethod.Post, server.Address)
+                {
+                    Version = HttpVersion.Version20,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = new StreamContent(new DelegateStream(
+                        canReadFunc: () => true,
+                        readAsyncFunc: async (buffer, offset, count, token) =>
+                        {
+                            if (remaining > 0)
+                            {
+                                int bytesRead = Math.Min(count, remaining);
+                                buffer.AsSpan(offset, bytesRead).Clear();
+                                remaining -= bytesRead;
+                                return bytesRead;
+                            }
+
+                            bodyCancellationToken = token;
+                            reachedGate.SetResult();
+                            // Delay observing cancellation until both resets have been processed.
+                            await gate.Task;
+                            token.ThrowIfCancellationRequested();
+                            return 0;
+                        }))
+                };
+                Http2LoopbackConnection connection = null;
+                Task<HttpResponseMessage> responseTask = null;
+                try
+                {
+                    responseTask = client.SendAsync(request, completionOption);
+                    connection = await server.EstablishConnectionAsync();
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+                    await reachedGate.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    await connection.SendResponseDataAsync(streamId, "Hello world"u8.ToArray(), endStream: true);
+                    await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.NO_ERROR, streamId));
+                    await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)secondResetError, streamId));
+
+                    // A matching PING ACK ensures that both preceding resets have been processed.
+                    const long PingPayload = 42;
+                    await connection.WriteFrameAsync(new PingFrame(PingPayload, FrameFlags.None, 0));
+                    Frame frame;
+                    do
+                    {
+                        frame = await connection.ReadFrameAsync(TestHelper.PassingTestTimeout);
+                        Assert.NotNull(frame);
+                    }
+                    while (frame.Type != FrameType.Ping);
+                    PingFrame pingAck = Assert.IsType<PingFrame>(frame);
+                    Assert.True(pingAck.AckFlag);
+                    Assert.Equal(PingPayload, pingAck.Data);
+                    Assert.True(bodyCancellationToken.IsCancellationRequested);
+                    Assert.False(responseTask.IsCompleted);
+
+                    gate.SetResult();
+                    HttpResponseMessage response = await responseTask;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal("Hello world", await response.Content.ReadAsStringAsync());
+                }
+                finally
+                {
+                    gate.TrySetResult();
+                    connection?.Close();
+                    client.CancelPendingRequests();
+                    if (responseTask is not null)
+                    {
+                        await IgnoreExceptions(async () => (await responseTask).Dispose());
+                    }
+                }
+            }
+        }
+
+        [Theory]
         [InlineData(true, HttpStatusCode.Forbidden)]
         [InlineData(false, HttpStatusCode.Forbidden)]
         [InlineData(true, HttpStatusCode.OK)]
