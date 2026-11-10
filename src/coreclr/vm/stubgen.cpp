@@ -3409,7 +3409,7 @@ ILCodeStream* ILStubLinker::NewCodeStream(CodeStreamType codeStreamType)
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<ILCodeStream> pNewCodeStream = new ILCodeStream(this, codeStreamType);
+    NewHolder<ILCodeStream> pNewCodeStream(new ILCodeStream(this, codeStreamType));
 
     if (NULL == m_pCodeStreamList)
     {
@@ -3422,8 +3422,7 @@ ILCodeStream* ILStubLinker::NewCodeStream(CodeStreamType codeStreamType)
         pTail->m_pNextStream = pNewCodeStream;
     }
 
-    pNewCodeStream.SuppressRelease();
-    return pNewCodeStream;
+    return pNewCodeStream.Detach();
 }
 
 int ILCodeStream::GetToken(MethodDesc* pMD)

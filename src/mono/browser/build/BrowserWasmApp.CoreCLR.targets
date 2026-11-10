@@ -129,6 +129,13 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
           Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
+  <!-- Wasm features for wasm-opt over the relinked dotnet.native.wasm: the shared baseline from
+       native.wasm.targets plus CoreCLR's optional features. -->
+  <ItemGroup>
+    <_WasmOptFeatureFlag Include="@(_WasmOptBaselineFeatureFlag)" />
+    <_WasmOptFeatureFlag Include="--enable-relaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+  </ItemGroup>
+
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
     <ProjectCapability Include="DotNetCoreWeb"/>
@@ -420,6 +427,7 @@
     <_CoreCLRWasmBuildAppCoreDependsOn>
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
+      _CoreCLRResolveWasmOpt;
       _CoreCLRGatherWasmFiles;
       _CoreCLRPrepareForNativeBuild;
       _CoreCLRGenerateManagedToNative;
@@ -469,6 +477,8 @@
       <_WasmCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_WasmCompileRsp>
       <_WasmCompileRspGenerated>$(_WasmIntermediateOutputPath)emcc-compile-generated.rsp</_WasmCompileRspGenerated>
       <_WasmLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_WasmLinkRsp>
+      <_WasmOptArgsFile>$(_WasmIntermediateOutputPath)wasm-opt-args.txt</_WasmOptArgsFile>
+      <_WasmRelinkedWasmPath>$(_WasmIntermediateOutputPath)dotnet.native.wasm</_WasmRelinkedWasmPath>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)')"
@@ -549,6 +559,15 @@
     </ItemGroup>
   </Target>
 
+  <!-- Resolve wasm-opt from the Emscripten SDK for the opt-in WasmRunWasmOpt passes. -->
+  <Target Name="_CoreCLRResolveWasmOpt" Condition="'$(WasmRunWasmOpt)' == 'true'">
+    <PropertyGroup>
+      <_WasmOptPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizePath('$(EmscriptenUpstreamBinPath)', 'wasm-opt$(_ExeExt)'))</_WasmOptPath>
+    </PropertyGroup>
+    <Error Condition="'$(_WasmOptPath)' == '' or !Exists('$(_WasmOptPath)')"
+           Text="WasmRunWasmOpt=true requires wasm-opt from the Emscripten SDK, but it was not found at '$(_WasmOptPath)'." />
+  </Target>
+
   <!-- ======================== Prepare for Native Build ======================== -->
 
   <Target Name="_CoreCLRPrepareForNativeBuild">
@@ -573,6 +592,10 @@
       <EmccStackSize Condition="'$(EmccStackSize)' == ''">2MB</EmccStackSize>
 
       <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">false</DisableParallelEmccCompile>
+
+      <!-- Opt-in post-link wasm-opt pass over the relinked dotnet.native.wasm. Unlike the Mono path, this
+           is not implied by WasmNativeStrip while CoreCLR wasm codegen is still changing. -->
+      <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
       <_WasmCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_WasmCompileOutputMessageImportance>
       <_WasmCompileOutputMessageImportance Condition="'$(EmccVerbose)' != 'true'">Low</_WasmCompileOutputMessageImportance>
     </PropertyGroup>
@@ -592,6 +615,24 @@
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
       <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+    </ItemGroup>
+
+    <!-- Re-encoding without any pass grows the module, so default to -Oz unless the project's
+         WasmOptConfigurationFlags already pick an -O level. -->
+    <ItemGroup Condition="'$(WasmRunWasmOpt)' == 'true'">
+      <_WasmOptUserOptimizationFlag Remove="@(_WasmOptUserOptimizationFlag)" />
+      <_WasmOptUserOptimizationFlag Include="@(WasmOptConfigurationFlags)" Condition="$([System.String]::Copy('%(WasmOptConfigurationFlags.Identity)').StartsWith('-O'))" />
+
+      <_WasmOptArgs Remove="@(_WasmOptArgs)" />
+      <_WasmOptArgs Include="@(_WasmOptFeatureFlag)" />
+      <_WasmOptArgs Include="--strip-dwarf" Condition="'$(WasmNativeStrip)' == 'true'" />
+      <!-- wasm-opt drops the name section and DWARF unless asked to keep debug info. -->
+      <_WasmOptArgs Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true' and '$(WasmNativeStrip)' != 'true'" />
+      <_WasmOptArgs Include="-Oz" Condition="@(_WasmOptUserOptimizationFlag->Count()) == 0" />
+      <_WasmOptArgs Include="@(WasmOptConfigurationFlags)" />
+      <!-- Optimization removes and reorders functions, so regenerate the symbol map from the names
+           the link keeps via profiling-funcs. This must be the last pass. -->
+      <_WasmOptArgs Include="--symbolmap=&quot;$(_WasmIntermediateOutputPath)dotnet.native.js.symbols&quot;" />
     </ItemGroup>
 
     <ItemGroup>
@@ -894,6 +935,8 @@
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s LLD_REPORT_UNDEFINED" />
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
       <_EmccLinkStepArgs Include="--emit-symbol-map" />
+      <!-- Keep function names for wasm-opt to rebuild the symbol map; it drops them from its output. -->
+      <_EmccLinkStepArgs Condition="'$(WasmRunWasmOpt)' == 'true'" Include="--profiling-funcs" />
 
       <!-- Assertions for debug -->
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s ASSERTIONS=1" />
@@ -932,11 +975,15 @@
       <_WasmLinkDependencies Include="@(_CoreCLRNativeLibs)" />
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
+      <_WasmLinkDependencies Include="$(_WasmOptArgsFile)" />
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(_EmccLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <!-- wasm-opt rewrites dotnet.native.wasm in place, so changing its settings must rerun the link. -->
+    <WriteLinesToFile Lines="WasmRunWasmOpt=$(WasmRunWasmOpt);@(_WasmOptArgs)" File="$(_WasmOptArgsFile)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasmLinkRsp)" />
+      <FileWrites Include="$(_WasmOptArgsFile)" />
     </ItemGroup>
   </Target>
 
@@ -944,7 +991,7 @@
 
   <Target Name="_CoreCLRLinkNative"
           Inputs="@(_WasmLinkDependencies)"
-          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm;$(_WasmIntermediateOutputPath)dotnet.native.js.symbols"
+          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmRelinkedWasmPath);$(_WasmIntermediateOutputPath)dotnet.native.js.symbols"
           Returns="@(FileWrites)">
 
     <Message Text="Linking CoreCLR WASM with initial memory $(WasmInitialHeapSize) bytes." Importance="High" />
@@ -957,8 +1004,19 @@
       <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
     </Exec>
 
+    <Message Text="Running wasm-opt with @(_WasmOptArgs, ' ')" Importance="High" Condition="'$(WasmRunWasmOpt)' == 'true'" />
+    <Exec Command="&quot;$(_WasmOptPath)&quot; @(_WasmOptArgs, ' ') &quot;$(_WasmRelinkedWasmPath)&quot; -o &quot;$(_WasmRelinkedWasmPath)&quot;"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          ContinueOnError="ErrorAndContinue"
+          Condition="'$(WasmRunWasmOpt)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode" />
+    </Exec>
+    <!-- Do not leave an unoptimized link output that looks up to date to the next incremental build. -->
+    <Delete Files="$(_WasmRelinkedWasmPath)" Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' != '0'" />
+
     <ItemGroup>
-      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
+      <FileWrites Include="$(_WasmRelinkedWasmPath)" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" />
     </ItemGroup>
@@ -973,7 +1031,7 @@
       <WasmNativeAsset Remove="@(WasmNativeAsset)" Condition="'%(FileName)%(Extension)' == 'dotnet.native.js'" />
       <WasmNativeAsset Remove="@(WasmNativeAsset)" Condition="'%(FileName)%(Extension)' == 'dotnet.native.js.symbols'" />
 
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
+      <WasmNativeAsset Include="$(_WasmRelinkedWasmPath)" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols"
                        Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />

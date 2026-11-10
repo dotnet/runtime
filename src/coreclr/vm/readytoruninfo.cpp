@@ -419,12 +419,12 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == (FILE *)(-1))
     {
         // Initialize Ready to Run logging. Any errors cause logging to be disabled.
-        NewArrayHolder<WCHAR> wszReadyToRunLogFile;
+        WStringHolder wszReadyToRunLogFile;
         if (SUCCEEDED(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunLogFile, &wszReadyToRunLogFile)) && wszReadyToRunLogFile)
         {
             // Append process ID to the log file name, so multiple processes can log at the same time.
             StackSString fullname;
-            fullname.Append(wszReadyToRunLogFile.GetValue());
+            fullname.Append(wszReadyToRunLogFile);
 
             WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
             DWORD pid = GetCurrentProcessId();

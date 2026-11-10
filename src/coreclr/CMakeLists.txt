@@ -44,10 +44,6 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_MMAN)
   add_compile_definitions(_WASI_EMULATED_GETPID)
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
-  # Cross-compile try_run() answers — wasm32 binaries cannot execute on
-  # the build host, so pre-seed the cache.
-  set(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1 CACHE STRING "" FORCE)
-  set(HAVE_PROCFS_STATM_EXITCODE 1 CACHE STRING "" FORCE)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
