@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (!_decoded)
                 {
-                    DecodeX509EnhancedKeyUsageExtension(RawData, out _enhancedKeyUsages);
+                    _enhancedKeyUsages = DecodeX509EnhancedKeyUsageExtension(RawData);
                     _decoded = true;
                 }
 
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
             return writer.Encode();
         }
 
-        private static void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
+        private static OidCollection DecodeX509EnhancedKeyUsageExtension(byte[] encoded)
         {
             // https://tools.ietf.org/html/rfc5924#section-4.1
             //
@@ -90,12 +90,14 @@ namespace System.Security.Cryptography.X509Certificates
                 ValueAsnReader reader = new(encoded, AsnEncodingRules.BER);
                 ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
-                usages = new OidCollection();
+                OidCollection usages = new();
 
                 while (sequenceReader.HasData)
                 {
                     usages.Add(new Oid(sequenceReader.ReadObjectIdentifier(), null));
                 }
+
+                return usages;
             }
             catch (AsnContentException e)
             {

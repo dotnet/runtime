@@ -17,6 +17,10 @@
     <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="Build" Targets="InitializeSourceRootMappedPaths" />
+  </ItemGroup>
+
   <!-- Link the CLI (parsing, output writing and Program, which the tests run in process) so it can be tested without referencing the self-contained executable project. -->
   <ItemGroup>
     <Compile Include="..\..\src\ilasm\Program.cs">

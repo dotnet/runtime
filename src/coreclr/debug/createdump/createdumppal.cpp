@@ -14,35 +14,6 @@ DEFINE_GUID(IID_IUnknown, 0x00000000, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x
 bool g_arm64_atomics_present = false;
 #endif
 
-#define TEMP_DIRECTORY_PATH "/tmp/"
-
-// Used to construct the default dump path.
-DWORD
-PALAPI
-GetTempPathA(
-    IN DWORD nBufferLength,
-    OUT LPSTR lpBuffer)
-{
-    DWORD dwPathLen = 0;
-    const char *tempDir = getenv("TMPDIR");
-    if (tempDir == nullptr)
-    {
-        tempDir = TEMP_DIRECTORY_PATH;
-    }
-    size_t tempDirLen = strlen(tempDir);
-    if (tempDirLen < nBufferLength)
-    {
-        dwPathLen = tempDirLen;
-        strcpy_s(lpBuffer, nBufferLength, tempDir);
-    }
-    else
-    {
-        // Get the required length
-        dwPathLen = tempDirLen + 1;
-    }
-    return dwPathLen;
-}
-
 //
 // Used in pal\inc\rt\safecrt.h's _invalid_parameter handler
 //

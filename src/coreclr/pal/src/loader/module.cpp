@@ -21,17 +21,14 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
-#include "pal/file.hpp"
 #include "pal/palinternal.h"
 #include "pal/module.h"
 #include "pal/process.h"
-#include "pal/file.h"
 #include "pal/utils.h"
 #include "pal/init.h"
 #include "pal/environ.h"
-#include "pal/virtual.h"
-#include "pal/map.hpp"
 #include "pal/stackstring.hpp"
+#include <minipal/utf8.h>
 
 #include <sys/param.h>
 #include <errno.h>
@@ -39,6 +36,7 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include <limits.h>
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <minipal/ospagesize.h>
 
 #if defined(TARGET_WASI)
 #include "pal/wasi/pal_wasi_missing.h"
@@ -78,6 +76,9 @@ using namespace CorUnix;
 
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
+// Upper bound on ACP bytes produced per WCHAR by WideCharToMultiByte.
+static const int MaxWCharToAcpLengthFactor = 3;
+
 /* static variables ***********************************************************/
 
 /* critical section that regulates access to the module list */
@@ -89,8 +90,6 @@ MODSTRUCT *pal_module = nullptr;
 
 char * g_szCoreCLRPath = nullptr;
 bool g_running_in_exe = false;
-
-int MaxWCharToAcpLength = 3;
 
 /* static function declarations ***********************************************/
 
@@ -189,7 +188,7 @@ LoadLibraryExW(
         goto done;
     }
 
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    lpstr = pathstr.OpenStringBuffer((minipal_u16_strlen((const CHAR16_T*)lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
     if (nullptr == lpstr)
     {
         goto done;
@@ -239,7 +238,7 @@ GetProcAddress(
        because of the address range reserved for ordinals contain can
        be a valid string address on non-Windows systems
     */
-    if ((DWORD_PTR)lpProcName < GetVirtualPageSize())
+    if ((DWORD_PTR)lpProcName < minipal_getpagesize())
     {
         ASSERT("Attempt to locate symbol by ordinal?!\n");
     }
@@ -383,6 +382,7 @@ GetModuleFileNameA(
     INT name_length;
     DWORD retval = 0;
     LPWSTR wide_name = nullptr;
+    size_t converted = 0;
 
     PERF_ENTRY(GetModuleFileNameA);
     ENTRY("GetModuleFileNameA (hModule=%p, lpFileName=%p, nSize=%u)\n",
@@ -406,9 +406,8 @@ GetModuleFileNameA(
 
     /* Convert module name to Ascii, place it in the supplied buffer */
 
-    name_length = WideCharToMultiByte(CP_ACP, 0, wide_name, -1, lpFileName,
-                                      nSize, nullptr, nullptr);
-    if (name_length == 0)
+    converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)wide_name, minipal_u16_strlen((const CHAR16_T*)wide_name) + 1, lpFileName, nSize, 0);
+    if (converted == 0)
     {
         TRACE("Buffer too small to copy module's file name.\n");
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
@@ -416,6 +415,7 @@ GetModuleFileNameA(
     }
 
     TRACE("File name of module %p is %s\n", hModule, lpFileName);
+    name_length = (INT)converted;
     retval = name_length;
 done:
     UnlockModuleList();
@@ -473,7 +473,7 @@ GetModuleFileNameW(
 
     /* Copy module name into supplied buffer */
 
-    name_length = PAL_wcslen(wide_name);
+    name_length = minipal_u16_strlen((const CHAR16_T*)wide_name);
     if (name_length >= (INT)nSize)
     {
         TRACE("Buffer too small (%u) to copy module's file name (%u).\n", nSize, name_length);
@@ -559,7 +559,7 @@ PAL_LoadLibraryDirect(
         goto done;
     }
 
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    lpstr = pathstr.OpenStringBuffer((minipal_u16_strlen((const CHAR16_T*)lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
     if (nullptr == lpstr)
     {
         goto done;
@@ -707,116 +707,6 @@ PAL_UnregisterModule(
 
     LOGEXIT("PAL_UnregisterModule returns\n");
     PERF_EXIT(PAL_UnregisterModule);
-}
-
-/*++
-    PAL_LOADLoadPEFile
-
-    Map a PE format file into memory like Windows LoadLibrary() would do.
-    Doesn't apply base relocations if the function is relocated.
-
-Parameters:
-    IN hFile - file to map
-    IN offset - offset within hFile where the PE "file" is located
-
-Return value:
-    non-NULL - the base address of the mapped image
-    NULL - error, with last error set.
---*/
-PVOID
-PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile, size_t offset)
-{
-    ENTRY("PAL_LOADLoadPEFile (hFile=%p, offset=%zx)\n", hFile, offset);
-
-    void* loadedBase = MAPMapPEFile(hFile, offset);
-
-#ifdef _DEBUG
-    if (loadedBase != nullptr)
-    {
-        char* envVar = EnvironGetenv("PAL_ForcePEMapFailure");
-        if (envVar)
-        {
-            if (strlen(envVar) > 0)
-            {
-                TRACE("Forcing failure of PE file map, and retry\n");
-                PAL_LOADUnloadPEFile(loadedBase); // unload it
-                loadedBase = MAPMapPEFile(hFile, offset); // load it again
-            }
-
-            free(envVar);
-        }
-    }
-#endif // _DEBUG
-
-    LOGEXIT("PAL_LOADLoadPEFile returns %p\n", loadedBase);
-    return loadedBase;
-}
-
-/*++
-    PAL_LOADUnloadPEFile
-
-    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADUnloadPEFile(PVOID ptr)
-{
-    BOOL retval = FALSE;
-
-    ENTRY("PAL_LOADUnloadPEFile (ptr=%p)\n", ptr);
-
-    if (nullptr == ptr)
-    {
-        ERROR( "Invalid pointer value\n" );
-    }
-    else
-    {
-        retval = MAPUnmapPEFile(ptr);
-    }
-
-    LOGEXIT("PAL_LOADUnloadPEFile returns %d\n", retval);
-    return retval;
-}
-
-/*++
-    PAL_LOADMarkSectionAsNotNeeded
-
-    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADMarkSectionAsNotNeeded(void * ptr)
-{
-    BOOL retval = FALSE;
-
-    ENTRY("PAL_LOADMarkSectionAsNotNeeded (ptr=%p)\n", ptr);
-
-    if (nullptr == ptr)
-    {
-        ERROR( "Invalid pointer value\n" );
-    }
-    else
-    {
-        retval = MAPMarkSectionAsNotNeeded(ptr);
-    }
-
-    LOGEXIT("PAL_LOADMarkSectionAsNotNeeded returns %d\n", retval);
-    return retval;
 }
 
 /*++
@@ -1404,15 +1294,15 @@ static bool LOADConvertLibraryPathWideStringToMultibyteString(
     _ASSERTE(multibyteLibraryPathLengthRef != nullptr);
     _ASSERTE(wideLibraryPath != nullptr);
 
-    size_t length = (PAL_wcslen(wideLibraryPath)+1) * MaxWCharToAcpLength;
-    *multibyteLibraryPathLengthRef = WideCharToMultiByte(CP_ACP, 0, wideLibraryPath, -1, multibyteLibraryPath,
-                                                        length, nullptr, nullptr);
+    size_t length = (minipal_u16_strlen((const CHAR16_T*)wideLibraryPath)+1) * MaxWCharToAcpLengthFactor;
+    size_t converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)wideLibraryPath, minipal_u16_strlen((const CHAR16_T*)wideLibraryPath) + 1, multibyteLibraryPath, length, 0);
+    *multibyteLibraryPathLengthRef = (INT)converted;
 
     if (*multibyteLibraryPathLengthRef == 0)
     {
         DWORD dwLastError = GetLastError();
 
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
 
         SetLastError(ERROR_INVALID_PARAMETER);
         return false;

@@ -8,9 +8,8 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class MemberReferenceTests
     {

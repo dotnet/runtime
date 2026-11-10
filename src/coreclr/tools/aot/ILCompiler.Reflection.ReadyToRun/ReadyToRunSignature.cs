@@ -1422,7 +1422,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         builder.Append("Not Overridden");
                     }
 
-                    if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
+                    if (fixupType == ReadyToRunFixupKind.Check_VirtualFunctionOverride)
                         builder.Append(" (CHECK_VIRTUAL_FUNCTION_OVERRIDE)");
                     else
                         builder.Append(" (VERIFY_VIRTUAL_FUNCTION_OVERRIDE)");
@@ -1812,6 +1812,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
+                    break;
+
+                case ReadyToRunHelper.WasmProfSamplepoint:
+                    builder.Append("WASM_PROF_SAMPLEPOINT");
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:

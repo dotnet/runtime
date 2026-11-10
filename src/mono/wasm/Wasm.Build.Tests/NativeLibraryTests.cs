@@ -20,6 +20,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("wasm-opt")]
         public Task ProjectWithNativeReference(Configuration config, bool aot) =>
             ProjectWithNativeReferenceCore(config, aot);
 
@@ -41,7 +42,7 @@ namespace Wasm.Build.Tests
             string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
             if (readyToRun)
-                extraProperties += "<PublishReadyToRun>true</PublishReadyToRun>";
+                extraProperties += "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>false</PublishReadyToRunComposite>";
             string insertAtEnd = readyToRun
                 ? """
                     <Target Name="PrintReadyToRunPInvokeModules" AfterTargets="_WasmConfigureReadyToRunPInvokes">

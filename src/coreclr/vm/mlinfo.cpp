@@ -472,7 +472,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
     CONTRACTL_END;
 
     CustomMarshalerInfo *pCMInfo = NULL;
-    NewHolder<CustomMarshalerInfo> pNewCMInfo(NULL);
+    NewHolder<CustomMarshalerInfo> pNewCMInfo;
 
     TypeHandle hndCustomMarshalerType;
 
@@ -519,13 +519,10 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
         // Add the custom marshaler helper to the hash table.
         m_CMInfoHashTable.InsertValue(&Key, pNewCMInfo);
 
-        // If we create the CM info, then add it to the linked list.
-        pNewCMInfo.SuppressRelease();
-
         // Release the lock and return the custom marshaler info.
     }
 
-    return pNewCMInfo;
+    return pNewCMInfo.Detach();
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -2357,7 +2354,7 @@ void MarshalInfo::GenerateArgumentIL(PInvokeStubLinker* psl,
 
     CONSISTENCY_CHECK(amostat == HANDLEASNORMAL);
 
-    NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
+    NewHolder<ILMarshaler> pMarshaler{ CreateILMarshaler(m_type, psl) };
     DWORD dwMarshalFlags = CalculateArgumentMarshalFlags(m_byref, m_in, m_out, fMngToNative);
 
     if (!pMarshaler->SupportsArgumentMarshal(dwMarshalFlags, &resID))
@@ -2449,7 +2446,7 @@ void MarshalInfo::GenerateReturnIL(PInvokeStubLinker* psl,
             return;
         }
 
-        NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
+        NewHolder<ILMarshaler> pMarshaler{ CreateILMarshaler(m_type, psl) };
         DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative);
 
         if (!pMarshaler->SupportsReturnMarshal(dwMarshalFlags, &resID))
@@ -2504,7 +2501,7 @@ void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     }
 
     UINT resID = IDS_EE_BADMARSHAL_RESTRICTION;
-    NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
+    NewHolder<ILMarshaler> pMarshaler{ CreateILMarshaler(m_type, psl) };
 
     if (!pMarshaler->SupportsFieldMarshal(&resID))
     {
@@ -3080,15 +3077,9 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 #if defined(FEATURE_COMINTEROP)
 DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
-    NewHolder<DispParamMarshaler> pDispParamMarshaler = NULL;
+    NewHolder<DispParamMarshaler> pDispParamMarshaler;
 
     switch (m_type)
     {
@@ -3140,8 +3131,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
             break;
     }
 
-    pDispParamMarshaler.SuppressRelease();
-    return pDispParamMarshaler;
+    return pDispParamMarshaler.Detach();
 }
 
 DispatchWrapperType MarshalInfo::GetDispWrapperType()

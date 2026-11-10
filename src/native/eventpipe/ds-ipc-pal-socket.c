@@ -312,7 +312,7 @@ ipc_socket_set_default_umask (void)
 {
 #if defined(DS_IPC_PAL_AF_UNIX) && (defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__))
 	// This will set the default permission bit to 600
-	return umask (~(S_IRUSR | S_IWUSR));
+	return umask (~(S_IRUSR | S_IWUSR) & (S_IRWXU | S_IRWXG | S_IRWXO));
 #else
 	return 0;
 #endif

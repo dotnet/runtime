@@ -167,7 +167,13 @@ namespace
 
         {
             std::lock_guard<std::mutex> lock{ g_context_lock };
-            g_context.reset(context_local.release());
+            g_context.reset(context_local.release(), [](hostpolicy_context_t* context)
+            {
+                // Before runtime load, release the context when its last owner goes away.
+                // After runtime load, retain it for callbacks and values that should survive for the process lifetime.
+                if (context->coreclr == nullptr)
+                    delete context;
+            });
         }
 
         return StatusCode::Success;

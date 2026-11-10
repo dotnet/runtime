@@ -65,12 +65,19 @@ internal class Program
         TestInitBlock.Run();
         TestDataflow.Run();
         TestConversions.Run();
-        TestVTables.Run();
-        TestVTableManipulation.Run();
+        // ComWrappers are disabled on WASM
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            TestVTables.Run();
+            TestVTableManipulation.Run();
+        }
         TestVTableNegativeScenarios.Run();
         TestByRefFieldAddressEquality.Run();
         TestComInterfaceEntry.Run();
-        TestPreinitializedBclTypes.Run();
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            TestPreinitializedComWrappers.Run();
+        }
         TestArrayLoadBounds.Run();
         TestFloatNaNComparison.Run();
         TestDivisionOverflow.Run();
@@ -721,11 +728,18 @@ class TestDelegate
 
     static Func<int> s_lambda = () => 2020;
 
+    static Func<string> s_objectTypeName = GetTypeName<object>;
+    static Func<string> s_stringTypeName = GetTypeName<string>;
+
+    static string GetTypeName<T>() => typeof(T).Name;
+
     public static void Run()
     {
         Assert.IsPreinitialized(typeof(TestDelegate));
         Assert.AreEqual(42, s_delegate());
         Assert.AreEqual(2020, s_lambda());
+        Assert.AreEqual(nameof(Object), s_objectTypeName());
+        Assert.AreEqual(nameof(String), s_stringTypeName());
     }
 }
 
@@ -2240,7 +2254,7 @@ unsafe class TestComInterfaceEntry
     }
 }
 
-unsafe class TestPreinitializedBclTypes
+unsafe class TestPreinitializedComWrappers
 {
     // Verify that (given that all of the other tests have passed), that a select number of BCL types
     // that depend on this optimization for high-performance scenarios are preinitialized.

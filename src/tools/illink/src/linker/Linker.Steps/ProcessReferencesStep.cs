@@ -37,7 +37,7 @@ namespace Mono.Linker.Steps
 
                 // For the remaining references, we need to resolve them (which looks for IsTrimmable attribute)
                 // to determine the action.
-                var assembly = Context.TryResolve(assemblyName);
+                var assembly = Context.Resolver.ResolveReference(assemblyPath);
                 if (assembly == null)
                 {
                     Context.LogError(null, DiagnosticId.ReferenceAssemblyCouldNotBeLoaded, assemblyPath);

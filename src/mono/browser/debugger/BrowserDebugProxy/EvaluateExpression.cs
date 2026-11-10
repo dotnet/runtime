@@ -232,6 +232,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
+        private static string FormatCSharpStringLiteral(string value)
+            => SyntaxFactory.Literal(value ?? string.Empty).Text;
+
+        private static string FormatCSharpCharacterLiteral(char value)
+            => SyntaxFactory.Literal(value).Text;
+
         public static string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
         {
             string typeRet;
@@ -243,15 +249,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "string":
                     {
-                        var str = value?.Value<string>();
-                        str = str.Replace("\"", "\\\"");
-                        valueRet = $"\"{str}\"";
+                        valueRet = FormatCSharpStringLiteral(value?.Value<string>());
                         typeRet = "string";
                         break;
                     }
                 case "symbol":
                     {
-                        valueRet = $"'{value?.Value<char>()}'";
+                        valueRet = FormatCSharpCharacterLiteral(value.Value<char>());
                         typeRet = "char";
                         break;
                     }
@@ -283,11 +287,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "object":
                             default:
                                 valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
-                                        + $"type = \"{type}\""
-                                        + $", description = \"{variable["description"].Value<string>()}\""
-                                        + $", className = \"{variable["className"].Value<string>()}\""
-                                        + (subType != null ? $", subtype = \"{subType}\"" : "")
-                                        + (objectId != null ? $", objectId = \"{objectId}\"" : "")
+                                        + $"type = {FormatCSharpStringLiteral(type)}"
+                                        + $", description = {FormatCSharpStringLiteral(variable["description"]?.Value<string>())}"
+                                        + $", className = {FormatCSharpStringLiteral(variable["className"]?.Value<string>())}"
+                                        + (subType != null ? $", subtype = {FormatCSharpStringLiteral(subType)}" : "")
+                                        + (objectId != null ? $", objectId = {FormatCSharpStringLiteral(objectId.ToString())}" : "")
                                         + "})";
                                 typeRet = "object";
                                 break;
@@ -306,7 +310,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 => ("Newtonsoft.Json.Linq.JObject.FromObject(new {"
                 + $"type = \"object\","
                 + $"description = \"object\","
-                + $"className = \"{className}\","
+                + $"className = {FormatCSharpStringLiteral(className)},"
                 + $"subtype = \"null\""
                 + "})",
                 "object");
@@ -488,13 +492,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (objectId.IsValueType)
                     {
-                        variableDefStrings.Add($"string {definition.IdName} = \"{definition.Obj["description"].Value<string>()}\";");
+                        variableDefStrings.Add($"string {definition.IdName} = {FormatCSharpStringLiteral(definition.Obj["description"]?.Value<string>())};");
                     }
                     else
                     {
                         var typeIds = await resolver.GetContext().SdbAgent.GetTypeIdsForObject(objectId.Value, withParents: true, token);
                         var toString = await resolver.GetContext().SdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId.Value, BindingFlags.DeclaredOnly, invokeToStringInObject: true, token);
-                        variableDefStrings.Add($"string {definition.IdName} = \"{toString}\";");
+                        variableDefStrings.Add($"string {definition.IdName} = {FormatCSharpStringLiteral(toString)};");
                     }
                 }
                 else

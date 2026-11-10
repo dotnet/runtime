@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -133,6 +134,12 @@ namespace System.Net.Sockets.Tests
 
                         server.Send(new byte[] { 42 }, SocketFlags.None);
                         server.Send(new byte[] { 43 }, SocketFlags.OutOfBand);
+
+                        // SIOCATMARK is already 0 before any data arrives, so wait for the OOB data itself.
+                        // Select, not Poll: macOS poll() does not report OOB data as POLLPRI; Select uses select() there.
+                        var errorList = new List<Socket> { client };
+                        Socket.Select(null, null, errorList, TimeSpan.FromSeconds(10));
+                        Assert.Single(errorList);
 
                         // OOB data received, but read pointer not at mark.
                         Assert.True(SpinWait.SpinUntil(() =>

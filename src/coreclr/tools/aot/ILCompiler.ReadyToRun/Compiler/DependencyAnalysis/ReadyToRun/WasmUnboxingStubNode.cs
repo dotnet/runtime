@@ -88,12 +88,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return result != 0 ? result : _hasReturnBuffer.CompareTo(otherNode._hasReturnBuffer);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
-            dependencies.Add(_targetType, "Wasm unboxing stub requires target type node");
-            dependencies.Add(factory.WasmTypeNode(_signature), "Wasm unboxing stub requires entry type node");
-            return dependencies;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            sink.Add(_targetType, "Wasm unboxing stub requires target type node");
+            sink.Add(factory.WasmTypeNode(_signature), "Wasm unboxing stub requires entry type node");
         }
 
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter instructionEncoder, bool relocsOnly)
@@ -203,22 +202,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
-            DependencyList dependencies = new DependencyList();
-            dependencies.Add(_stub, "Wasm unboxing stub for target method");
-            dependencies.Add(context.CompiledMethodNode(_targetMethod), "Target method for Wasm unboxing stub");
-            dependencies.Add(context.WasmR2RToInterpreterThunk(WasmLowering.GetSignature(_targetMethod)), "Interpreter fallback for Wasm unboxing target");
-            dependencies.Add(context.WasmInterpreterToR2RThunk(_signature), "Interpreter-to-R2R thunk for Wasm unboxing stub target");
-            return dependencies;
+            sink.Add(_stub, "Wasm unboxing stub for target method");
+            sink.Add(context.CompiledMethodNode(_targetMethod), "Target method for Wasm unboxing stub");
+            sink.Add(context.WasmR2RToInterpreterThunk(WasmLowering.GetSignature(_targetMethod)), "Interpreter fallback for Wasm unboxing target");
+            sink.Add(context.WasmInterpreterToR2RThunk(_signature), "Interpreter-to-R2R thunk for Wasm unboxing stub target");
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
+        public override void SearchDynamicDependencies(
             List<DependencyNodeCore<NodeFactory>> markedNodes,
             int firstNode,
-            NodeFactory context) => null;
+            DependencySink sink,
+            NodeFactory context) { }
 
         protected override string GetName(NodeFactory factory) => $"Wasm unboxing stub target for {_targetMethod}";
     }

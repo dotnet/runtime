@@ -267,7 +267,8 @@ namespace System.Net.Sockets
             {
                 // Zero byte read is performed to know when data is available.
                 // We don't have to call receive, our caller is interested in the event.
-                if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress.Length == 0)
+                // WASI poll events don't identify the ready direction, so readiness is checked by TryCompleteReceive.
+                if (!OperatingSystem.IsWasi() && Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress.Length == 0)
                 {
                     BytesTransferred = 0;
                     ReceivedFlags = SocketFlags.None;
@@ -609,9 +610,16 @@ namespace System.Net.Sockets
 
             if (_isHandleNonBlocking)
             {
-                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                try
                 {
-                    _isHandleNonBlocking = false;
+                    if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                    {
+                        _isHandleNonBlocking = false;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Concurrent disposal is allowed; restoring blocking mode is only an optimization.
                 }
             }
         }

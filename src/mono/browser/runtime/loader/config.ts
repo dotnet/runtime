@@ -241,7 +241,9 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
 
         try {
-            await loaderHelpers.callbacks.configLoaded?.(loaderHelpers.config, exportedRuntimeAPI);
+            for (const callback of [...loaderHelpers.callbacks.configLoaded]) {
+                await callback(loaderHelpers.config, exportedRuntimeAPI);
+            }
         } catch (err: any) {
             mono_log_error("onConfigLoaded() failed", err);
             throw err;

@@ -161,11 +161,11 @@ extern jmethodID g_CollectionCertStoreParametersCtor;
 // java/security/cert/PKIXBuilderParameters
 extern jclass    g_PKIXBuilderParametersClass;
 extern jmethodID g_PKIXBuilderParametersCtor;
+extern jmethodID g_PKIXBuilderParametersCtorFromTrustAnchors;
 extern jmethodID g_PKIXBuilderParametersAddCertStore;
 extern jmethodID g_PKIXBuilderParametersAddCertPathChecker;
 extern jmethodID g_PKIXBuilderParametersSetDate;
 extern jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
-extern jmethodID g_PKIXBuilderParametersSetTrustAnchors;
 
 // java/security/cert/PKIXCertPathBuilderResult
 extern jclass    g_PKIXCertPathBuilderResultClass;
@@ -234,7 +234,9 @@ extern jmethodID g_KeyStoreAliases;
 extern jmethodID g_KeyStoreContainsAlias;
 extern jmethodID g_KeyStoreDeleteEntry;
 extern jmethodID g_KeyStoreGetCertificate;
+extern jmethodID g_KeyStoreGetCertificateAlias;
 extern jmethodID g_KeyStoreGetEntry;
+extern jmethodID g_KeyStoreIsCertificateEntry;
 extern jmethodID g_KeyStoreLoad;
 extern jmethodID g_KeyStoreSetCertificateEntry;
 extern jmethodID g_KeyStoreSetKeyEntry;

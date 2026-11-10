@@ -213,9 +213,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
     }
@@ -259,6 +257,8 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
 
+    // LCG signatures contain only types supplied by the managed API, which are already loaded.
+    pNewMD->SetNativeImageDependenciesPrepared();
 
     // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
     // It will never throw here for jump stubs since it will always reuse the existing jump stub,
@@ -319,7 +319,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     }
     CONTRACTL_END;
 
-    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()));
+    NewHolder<HostCodeHeap> pCodeHeap{ new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()) };
 
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
@@ -331,10 +331,9 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - base addr 0x%p, size available 0x%zx, nibble map ptr 0x%p\n",
                             (HostCodeHeap*)pCodeHeap, pCodeHeap->m_pBaseAddr, pCodeHeap->m_TotalBytesAvailable, pCodeHeap->m_pHeapList->pHdrMap));
 
-    pCodeHeap.SuppressRelease();
-
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap created {0x%p}\n", (HostCodeHeap*)pCodeHeap));
     _ASSERTE((pHp != NULL) || pInfo->IsSpecificMemoryRangeRequested());
+    pCodeHeap.Detach();
     return pHp;
 }
 
@@ -370,7 +369,7 @@ HostCodeHeap::~HostCodeHeap()
         delete[] m_pHeapList->pHdrMap;
 
     if (m_pBaseAddr)
-        ExecutableAllocator::Instance()->Release(m_pBaseAddr);
+        ExecutableAllocator::Instance()->Release(m_pBaseAddr, m_TotalBytesAvailable);
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap destroyed {0x%p}\n", this));
 }
 
@@ -1172,7 +1171,7 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         getCodeInfo.InvokeThrowing(&gc.Resolver, &stackSize, &initLocals, &EHSize, &gc.DataArray);
 
         DWORD codeSize = gc.DataArray->GetNumComponents();
-        NewArrayHolder<BYTE> code(new BYTE[codeSize]);
+        NewArrayHolder<BYTE> code{ new BYTE[codeSize] };
         memcpy(code, gc.DataArray->GetDataPtr(), codeSize);
         m_CodeSize = codeSize;
         _ASSERTE(FitsIn<unsigned short>(stackSize));
@@ -1180,8 +1179,7 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         m_Options = (initLocals) ? CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
         _ASSERTE(FitsIn<unsigned short>(EHSize));
         m_EHSize = static_cast<unsigned short>(EHSize);
-        m_Code = (BYTE*)code;
-        code.SuppressRelease();
+        m_Code = code.Detach();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: CodeInfo {0x%p} on resolver %p\n", m_Code, this));
 
         GCPROTECT_END();
@@ -1225,11 +1223,11 @@ LCGMethodResolver::GetLocalSig()
         getLocalsSignature.InvokeThrowing(&gc.Resolver, &gc.DataArray);
 
         DWORD localSigSize = gc.DataArray->GetNumComponents();
-        NewArrayHolder<COR_SIGNATURE> localSig(new COR_SIGNATURE[localSigSize]);
+        NewArrayHolder<COR_SIGNATURE> localSig{ new COR_SIGNATURE[localSigSize] };
         memcpy((void *)localSig, gc.DataArray->GetDataPtr(), localSigSize);
 
         m_LocalSig = SigPointer((PCCOR_SIGNATURE)localSig, localSigSize);
-        localSig.SuppressRelease();
+        localSig.Detach();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: LocalSig {0x%p} on resolver %p\n", m_LocalSig.GetPtr(), this));
 
         GCPROTECT_END();
@@ -1628,20 +1626,20 @@ void* ChunkAllocator::New(size_t size)
     if (size + (sizeof(void*) * 2) < CHUNK_SIZE)
     {
         // make the allocation
-        NewArrayHolder<BYTE> newBlock(new BYTE[CHUNK_SIZE]);
+        NewArrayHolder<BYTE> newBlock{ new BYTE[CHUNK_SIZE] };
         pNewBlock = (BYTE*)newBlock;
         ((size_t*)pNewBlock)[1] = CHUNK_SIZE - size - (sizeof(void*) * 2);
         LOG((LF_BCL, LL_INFO10, "Level1 - DM - Allocator [0x%p] - new block {0x%p}\n", this, pNewBlock));
-        newBlock.SuppressRelease();
+        newBlock.Detach();
     }
     else
     {
         // request bigger than default size this is going to be a single block
-        NewArrayHolder<BYTE> newBlock(new BYTE[size + (sizeof(void*) * 2)]);
+        NewArrayHolder<BYTE> newBlock{ new BYTE[size + (sizeof(void*) * 2)] };
         pNewBlock = (BYTE*)newBlock;
         ((size_t*)pNewBlock)[1] = 0; // no available bytes left
         LOG((LF_BCL, LL_INFO10, "Level1 - DM - Allocator [0x%p] - new BIG block {0x%p}\n", this, pNewBlock));
-        newBlock.SuppressRelease();
+        newBlock.Detach();
     }
 
     // all we have left to do is to link the block.

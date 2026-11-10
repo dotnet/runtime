@@ -2940,10 +2940,11 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 
     if (recentAssignedRef != nullptr)
     {
-        // We can't spill a register that's active at the current location.
-        // We should already have determined this with isRegBusy before calling this method.
-        assert(!isRefPositionActive(recentAssignedRef, refLocation));
-        return true;
+        bool isActive = isRefPositionActive(recentAssignedRef, refLocation);
+        bool isHome   = isHomeReg(physRegRecord);
+        // An active interval can only be displaced from a stale copy register.
+        assert(!(isActive && isHome));
+        return !(isActive && isHome);
     }
     // recentAssignedRef can only be null if this is a parameter that has not yet been
     // moved to a register (or stack), in which case we can't spill it yet.
@@ -4166,6 +4167,14 @@ bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
     isAssigned |= isSecondHalfReg(regRec, interval);
 #endif
     return isAssigned;
+}
+
+// Returns whether regRec is the recorded home of its assigned interval.
+// The interval need not be active.
+bool LinearScan::isHomeReg(RegRecord* regRec)
+{
+    Interval* interval = regRec->assignedInterval;
+    return (interval != nullptr) && isAssignedToInterval(interval, regRec);
 }
 
 void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap)

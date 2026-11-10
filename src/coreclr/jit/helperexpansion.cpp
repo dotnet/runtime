@@ -828,6 +828,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     if ((helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
     {
         return false;
@@ -993,9 +995,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fgMorphArgs(tlsRefCall);
 
         tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
-#ifdef UNIX_X86_ABI
-        tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Code sequence to access thread local variable on linux/arm64:
         //
@@ -1718,21 +1717,22 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     const int MaxU8BufferSizeInBytes = 256;
     uint8_t   bufferU8[MaxU8BufferSizeInBytes];
 
-    const int srcLenU8 = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
-                                                            MaxU8BufferSizeInBytes, 0);
-    if (srcLenU8 <= 0)
+    const size_t convertedLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
+                                                              MaxU8BufferSizeInBytes, 0);
+    if (convertedLen == 0)
     {
         // E.g. output buffer is too small
-        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned <= 0\n")
+        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned 0\n")
         return false;
     }
 
-    // The API is expected to return [1..MaxU8BufferSizeInBytes] real length of the UTF-8 value
-    // stored in bufferU8
-    assert((unsigned)srcLenU8 <= MaxU8BufferSizeInBytes);
+    // Narrow for the unsigned JIT helpers below. minipal_convert_utf16_to_utf8 cannot write
+    // more than MaxU8BufferSizeInBytes into the buffer.
+    const unsigned srcLenU8 = (unsigned)convertedLen;
+    assert(srcLenU8 <= (unsigned)MaxU8BufferSizeInBytes);
 
     // Now that we know the exact UTF8 buffer length we can check if it's unrollable
-    if (srcLenU8 > (int)getUnrollThreshold(UnrollKind::Memcpy))
+    if (srcLenU8 > getUnrollThreshold(UnrollKind::Memcpy))
     {
         JITDUMP("ReadUtf8: srcLenU8 is out of unrollable range\n")
         return false;
@@ -2151,7 +2151,6 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 2) If VM can tell us the exact class for this "cast to" class - use it.
-    //    Just make sure the class is truly exact.
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
@@ -2159,26 +2158,8 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS] = {};
     const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
-    bool      allTrulyExact   = true;
-    for (int i = 0; i < numExactClasses; i++)
-    {
-        // TODO-InlineCast: we shouldn't need isExactType check, otherwise we skip cases like this:
-        //
-        // if (obj is IMyInterface) { ... }
-        //
-        // class MyClass : IMyInterface
-        // class MySubClass : MyClass
-        //
-        // (and both classes are the only ones implementing the interface)
-        //
-        if (!comp->info.compCompHnd->isExactType(exactClasses[i]))
-        {
-            allTrulyExact = false;
-            break;
-        }
-    }
 
-    if ((numExactClasses > 0) && allTrulyExact)
+    if (numExactClasses > 0)
     {
         // We know all exact classes, but we don't know the likelihoods
         // TODO-InlineCast: check if we also have PGO data around (a rare case for getExactClasses,

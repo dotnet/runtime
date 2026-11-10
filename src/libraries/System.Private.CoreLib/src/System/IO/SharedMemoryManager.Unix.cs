@@ -372,10 +372,8 @@ namespace System.IO
     {
         private const UnixFileMode PermissionsMask_OwnerUser_ReadWrite = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         private const UnixFileMode PermissionsMask_OwnerUser_ReadWriteExecute = PermissionsMask_OwnerUser_ReadWrite | UnixFileMode.UserExecute;
-        private const UnixFileMode PermissionsMask_NonOwnerUsers_Write = UnixFileMode.GroupWrite | UnixFileMode.OtherWrite;
         private const UnixFileMode PermissionsMask_AllUsers_ReadWrite = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
         private const UnixFileMode PermissionsMask_AllUsers_ReadWriteExecute = PermissionsMask_AllUsers_ReadWrite | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-        private const UnixFileMode PermissionsMask_Sticky = UnixFileMode.StickyBit;
 
         private const int TransientRetryCount = 10;
 
@@ -499,45 +497,7 @@ namespace System.IO
 
                 if (!directoryHandle.IsInvalid)
                 {
-                    if (Interop.Sys.FStat(directoryHandle, out Interop.Sys.FileStatus fileStatus) != 0)
-                    {
-                        Interop.ErrorInfo fstatError = Interop.Sys.GetLastErrorInfo();
-                        directoryHandle.Dispose();
-                        if ((fstatError.Error == Interop.Error.ENOENT || fstatError.Error == Interop.Error.EACCES) &&
-                            RetryOnTransientPermissionFailure(ref transientRetryCount))
-                        {
-                            continue;
-                        }
-
-                        throw Interop.GetExceptionForIoErrno(fstatError, directoryPath);
-                    }
-
-                    // For system directories (such as TEMP_DIRECTORY_PATH), require sufficient permissions only for the
-                    // owner user. For instance, "docker run --mount ..." to mount /tmp to some directory on the host mounts the
-                    // destination directory with the same permissions as the source directory, which may not include some permissions for
-                    // other users. In the docker container, other user permissions are typically not relevant and relaxing the permissions
-                    // requirement allows for that scenario to work without having to work around it by first giving sufficient permissions
-                    // for all users.
-                    //
-                    // If the directory is being used for user-scoped shared memory data, also ensure that either it has the sticky bit or
-                    // it's owned by the current user and without write access for other users.
-                    if ((fileStatus.Mode & (int)PermissionsMask_OwnerUser_ReadWriteExecute) == (int)PermissionsMask_OwnerUser_ReadWriteExecute
-                        && (
-                            !id.IsUserScope ||
-                            (fileStatus.Mode & (int)PermissionsMask_Sticky) == (int)PermissionsMask_Sticky ||
-                            (fileStatus.Uid == id.Uid && (fileStatus.Mode & (int)PermissionsMask_NonOwnerUsers_Write) == 0)
-                        ))
-                    {
-                        return directoryHandle;
-                    }
-
-                    directoryHandle.Dispose();
-                    if (RetryOnTransientPermissionFailure(ref transientRetryCount))
-                    {
-                        continue;
-                    }
-
-                    throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrect, directoryPath, fileStatus.Uid, Convert.ToString(fileStatus.Mode, 8)));
+                    return directoryHandle;
                 }
 
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
@@ -781,70 +741,8 @@ namespace System.IO
                     throw Interop.GetExceptionForIoErrno(openError, directoryPathForError);
                 }
 
-                if (ValidateDirectory(directoryHandle, directoryPathForError, id, ref transientRetryCount))
-                {
-                    return directoryHandle;
-                }
-
-                directoryHandle.Dispose();
+                return directoryHandle;
             }
-        }
-
-        private static bool ValidateDirectory(
-            SafeFileHandle directoryHandle,
-            string directoryPathForError,
-            SharedMemoryId id,
-            ref int transientRetryCount)
-        {
-            if (Interop.Sys.FStat(directoryHandle, out Interop.Sys.FileStatus fileStatus) != 0)
-            {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                if ((error.Error == Interop.Error.ENOENT || error.Error == Interop.Error.EACCES) &&
-                    RetryOnTransientPermissionFailure(ref transientRetryCount))
-                {
-                    return false;
-                }
-
-                throw Interop.GetExceptionForIoErrno(error, directoryPathForError);
-            }
-
-            UnixFileMode permissionsMask = id.IsUserScope
-                ? PermissionsMask_OwnerUser_ReadWriteExecute
-                : PermissionsMask_AllUsers_ReadWriteExecute;
-
-            // For non-system directories (such as SharedFilesPath/UserUnscopedRuntimeTempDirectoryName),
-            // require the sufficient permissions, so that shared memory files may be shared according to its scope.
-
-            // For user-scoped directories, verify the owner UID.
-            if (id.IsUserScope && fileStatus.Uid != id.Uid)
-            {
-                if (RetryOnTransientPermissionFailure(ref transientRetryCount))
-                {
-                    return false;
-                }
-
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryNotOwnedByUid, directoryPathForError, id.Uid));
-            }
-
-            // Verify the permissions correct.
-            if ((fileStatus.Mode & (int)permissionsMask) == (int)permissionsMask)
-            {
-                return true;
-            }
-
-            if (RetryOnTransientPermissionFailure(ref transientRetryCount))
-            {
-                return false;
-            }
-
-            // We were not able to verify the necessary permissions.
-            // Throw an exception with a message that is specific to the scope of the shared memory data.
-            if (id.IsUserScope)
-            {
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrectUserScope, directoryPathForError, Convert.ToString(fileStatus.Mode, 8)));
-            }
-
-            throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryOwnerPermissionsIncorrect, directoryPathForError, Convert.ToString(fileStatus.Mode, 8)));
         }
 
         private static bool RetryOnTransientPermissionFailure(ref int transientRetryCount)

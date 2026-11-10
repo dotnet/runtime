@@ -47,9 +47,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 pattern = schemaType is JsonSchemaType.Integer
                     ? @"^-?(?:0|[1-9]\d*)$"
-                    : isIeeeFloatingPoint
-                        ? @"^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$"
-                        : @"^-?(?:0|[1-9]\d*)(?:\.\d+)?$";
+                    : @"^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$";
 
                 schemaType |= JsonSchemaType.String;
             }

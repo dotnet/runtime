@@ -27,4 +27,10 @@
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="Build;Pack" Targets="Build"
+                             Condition="'$(BuildPackageLibraryReferences)' == 'true' and '$(DesignTimeBuild)' != 'true'" />
+    <ProjectReferenceTargets Include="Build;Pack" Targets="GetFilesToPackage" />
+  </ItemGroup>
 </Project>

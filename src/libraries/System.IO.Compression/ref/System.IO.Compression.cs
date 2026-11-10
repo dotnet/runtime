@@ -286,7 +286,6 @@ namespace System.IO.Compression
         public override void WriteByte(byte value) { }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardCompressionOptions
     {
         public ZstandardCompressionOptions() { }
@@ -310,7 +309,6 @@ namespace System.IO.Compression
         public int WindowLog2 { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardDecoder : System.IDisposable
     {
         public ZstandardDecoder() { }
@@ -327,7 +325,6 @@ namespace System.IO.Compression
         public static bool TryGetMaxDecompressedLength(System.ReadOnlySpan<byte> data, out long length) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardDecompressionOptions
     {
         public ZstandardDecompressionOptions() { }
@@ -335,7 +332,6 @@ namespace System.IO.Compression
         public int MaxWindowLog2 { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardDictionary : System.IDisposable
     {
         internal ZstandardDictionary() { }
@@ -346,7 +342,6 @@ namespace System.IO.Compression
         public static byte[] Train(System.ReadOnlySpan<byte> samples, System.ReadOnlySpan<int> sampleLengths, int maxDictionarySize) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardEncoder : System.IDisposable
     {
         public ZstandardEncoder() { }
@@ -367,7 +362,6 @@ namespace System.IO.Compression
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.ZstandardDictionary dictionary, int windowLog2) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardStream : System.IO.Stream
     {
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }

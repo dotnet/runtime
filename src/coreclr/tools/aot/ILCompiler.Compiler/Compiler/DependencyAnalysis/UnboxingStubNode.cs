@@ -15,6 +15,10 @@ namespace ILCompiler.DependencyAnalysis
     {
         public MethodDesc Method { get; }
 
+        public bool IsInstantiating => Method.RequiresInstMethodTableArg();
+
+        bool INodeWithTypeSignature.HasGenericContextArg => Method.RequiresInstMethodDescArg();
+
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
             if (factory.Target.IsWasm)

@@ -79,7 +79,9 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     MethodDesc * pFunc = GetFunction();
     _ASSERTE(pFunc != NULL);
 
-    UpdateRegDisplayHelper(pRD, pFunc->CbStackPop());
+    // The map supplies the stack-pop size without requiring signature value-type layouts.
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
+    UpdateRegDisplayHelper(pRD, pGCRefMap != nullptr ? CbStackPopUsingGCRefMap(pGCRefMap) : pFunc->CbStackPop());
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
@@ -258,7 +260,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     DWORD stackArgSize = 0;
 
-#if !defined(UNIX_X86_ABI)
     TADDR datum = dac_cast<TADDR>(m_Datum);
 
     datum &= ~(TADDR)InlinedCallFrameMarker::Mask;
@@ -275,7 +276,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
         stackArgSize = pMD->GetStackArgumentSize();
     }
-#endif
 
     /* The return address is just above the "ESP" */
     SetRegdisplayPCTAddr(pRD, PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this, m_pCallerReturnAddress));
@@ -372,7 +372,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
 #endif  // FEATURE_HIJACK
 
-#ifndef UNIX_X86_ABI
 void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
@@ -397,7 +396,6 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
-#endif // !UNIX_X86_ABI
 
 void DynamicHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -682,43 +680,21 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef UNIX_X86_ABI
-    BEGIN_DYNAMIC_HELPER_EMIT(18);
-#else
     BEGIN_DYNAMIC_HELPER_EMIT(12);
-#endif
 
-#ifdef UNIX_X86_ABI
-	// sub esp, 8
-	*p++ = 0x83;
-	*p++ = 0xec;
-	*p++ = 0x8;
-#else
     // pop eax
     *p++ = 0x58;
-#endif
 
     // push arg
     *p++ = 0x68;
     SET_UNALIGNED_32(p, arg);
     p += 4;
 
-#ifdef UNIX_X86_ABI
-    // mov eax, target
-    *p++ = 0xB8;
-    SET_UNALIGNED_32(p, target);
-    p += 4;
-#else
     // push eax
     *p++ = 0x50;
-#endif
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-#ifdef UNIX_X86_ABI
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub));
-#else
     SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
-#endif
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -728,21 +704,10 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef UNIX_X86_ABI
-    BEGIN_DYNAMIC_HELPER_EMIT(23);
-#else
     BEGIN_DYNAMIC_HELPER_EMIT(17);
-#endif
 
-#ifdef UNIX_X86_ABI
-	// sub esp, 4
-	*p++ = 0x83;
-	*p++ = 0xec;
-	*p++ = 0x4;
-#else
     // pop eax
     *p++ = 0x58;
-#endif
 
     // push arg
     *p++ = 0x68;
@@ -754,22 +719,11 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     SET_UNALIGNED_32(p, arg2);
     p += 4;
 
-#ifdef UNIX_X86_ABI
-    // mov eax, target
-    *p++ = 0xB8;
-    SET_UNALIGNED_32(p, target);
-    p += 4;
-#else
     // push eax
     *p++ = 0x50;
-#endif
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-#ifdef UNIX_X86_ABI
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub));
-#else
     SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
-#endif
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
