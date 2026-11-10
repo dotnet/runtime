@@ -12,7 +12,7 @@
 
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
-  <ItemGroup Condition="'$(Restore)' != 'true' and '$(PackageTargetRuntime)' != '' and '$(IsLineupPackage)' != 'true'">
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != '' and '$(IsLineupPackage)' != 'true'">
     <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
                       Condition="'$(PackCrossComponent)' != 'true' and '$(ClrRuntimeBuildSubsets)' != ''"
                       ReferenceOutputAssembly="false"

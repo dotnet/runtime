@@ -11,7 +11,7 @@
   
   <Import Project="..\Directory.Build.targets" />
 
-  <ItemGroup Condition="'$(Restore)' != 'true' and '$(ClrRuntimeBuildSubsets)' != ''">
+  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
     <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
                       ReferenceOutputAssembly="false"
                       Private="false"

@@ -43,7 +43,7 @@
       />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Restore)' != 'true'">
+  <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
                       Condition="'$(CrossHostArch)' == '' and '$(ClrRuntimeBuildSubsets)' != ''"
                       ReferenceOutputAssembly="false"
