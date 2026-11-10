@@ -34,47 +34,6 @@ namespace System.Collections.Tests
 
         #endregion
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(17)]
-        [InlineData(100)]
-        public void Clear_AfterRemovingEntries_CanRefill(int count)
-        {
-            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
-            KeyValuePair<TKey, TValue>[] entries = dictionary.ToArray();
-            int capacity = dictionary.Capacity;
-
-            for (int cycle = 0; cycle < 3; cycle++)
-            {
-                for (int i = 0; i < entries.Length; i += 2)
-                {
-                    Assert.True(dictionary.Remove(entries[i].Key));
-                }
-
-                Dictionary<TKey, TValue>.Enumerator enumerator = dictionary.GetEnumerator();
-                dictionary.Clear();
-                dictionary.Clear();
-
-                Assert.Empty(dictionary);
-                Assert.Empty(dictionary.Keys);
-                Assert.Empty(dictionary.Values);
-                Assert.Equal(capacity, dictionary.Capacity);
-                Assert.False(enumerator.MoveNext());
-
-                foreach (KeyValuePair<TKey, TValue> entry in entries)
-                {
-                    Assert.False(dictionary.ContainsKey(entry.Key));
-                    ref TValue value = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, entry.Key, out bool exists);
-                    Assert.False(exists);
-                    Assert.Equal(default(TValue), value);
-                    value = entry.Value;
-                }
-
-                CollectionAsserts.EqualUnordered<KeyValuePair<TKey, TValue>>(entries, dictionary);
-            }
-        }
-
         #region Constructors
 
         [Theory]
@@ -347,6 +306,50 @@ namespace System.Collections.Tests
                 enumerator.MoveNext();
                 dict.Remove(key);
                 Assert.False(enumerator.MoveNext());
+            }
+        }
+
+        #endregion
+
+        #region Clear
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(17)]
+        [InlineData(100)]
+        public void Clear_AfterRemovingEntries_CanRefill(int count)
+        {
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            KeyValuePair<TKey, TValue>[] entries = dictionary.ToArray();
+            int capacity = dictionary.Capacity;
+
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                for (int i = 0; i < entries.Length; i += 2)
+                {
+                    Assert.True(dictionary.Remove(entries[i].Key));
+                }
+
+                Dictionary<TKey, TValue>.Enumerator enumerator = dictionary.GetEnumerator();
+                dictionary.Clear();
+
+                Assert.Empty(dictionary);
+                Assert.Empty(dictionary.Keys);
+                Assert.Empty(dictionary.Values);
+                Assert.Equal(capacity, dictionary.Capacity);
+                Assert.False(enumerator.MoveNext());
+
+                foreach (KeyValuePair<TKey, TValue> entry in entries)
+                {
+                    Assert.False(dictionary.ContainsKey(entry.Key));
+                    ref TValue value = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, entry.Key, out bool exists);
+                    Assert.False(exists);
+                    Assert.Equal(default(TValue), value);
+                    value = entry.Value;
+                }
+
+                CollectionAsserts.EqualUnordered<KeyValuePair<TKey, TValue>>(entries, dictionary);
             }
         }
 
