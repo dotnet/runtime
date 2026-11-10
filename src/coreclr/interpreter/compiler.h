@@ -1025,8 +1025,7 @@ private:
     int     ApplyAsyncVersionPeepSkipToRet(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
     ContinuationContextHandling m_currentContinuationContextHandling = ContinuationContextHandling::None;
     CORINFO_RESOLVED_TOKEN m_resolvedAsyncCallToken;
-    // Matched non-generic AsyncHelpers.Await, or NULL.
-    CORINFO_METHOD_HANDLE m_awaitHelperHnd = NULL;
+    bool m_isVoidAwait = false;
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);

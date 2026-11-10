@@ -11437,18 +11437,7 @@ bool Compiler::impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET aw
     const BYTE* awaitTokenAddr = info.compCode + awaitOffset + 1;
     // A Task<T>-returning function can be followed by Await(Task), requiring us to discard the result after folding.
     // We can cheaply detect the common case by looking for a MethodSpec token.
-    if (TypeFromToken(getU4LittleEndian(awaitTokenAddr)) == mdtMethodSpec)
-    {
-        return false;
-    }
-
-    CORINFO_RESOLVED_TOKEN awaitToken;
-    impResolveToken(awaitTokenAddr, &awaitToken, CORINFO_TOKENKIND_Method);
-
-    CORINFO_SIG_INFO awaitSig;
-    eeGetMethodSig(awaitToken.hMethod, &awaitSig);
-
-    return awaitSig.retType == CORINFO_TYPE_VOID;
+    return TypeFromToken(getU4LittleEndian(awaitTokenAddr)) != mdtMethodSpec;
 }
 
 //------------------------------------------------------------------------

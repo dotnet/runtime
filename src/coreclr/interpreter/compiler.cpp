@@ -5121,7 +5121,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     ContinuationContextHandling continuationContextHandling = ContinuationContextHandling::None;
     bool isValueTaskAdaptedToTask = false;
-    CORINFO_METHOD_HANDLE awaitHelperHnd = NULL;
+    bool isVoidAwait = false;
     bool discardAwaitResult = false;
 
     if (isCalli)
@@ -5170,8 +5170,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             continuationContextHandling = m_currentContinuationContextHandling;
             isValueTaskAdaptedToTask = m_isValueTaskAdaptedToTask;
             m_isValueTaskAdaptedToTask = false;
-            awaitHelperHnd = m_awaitHelperHnd;
-            m_awaitHelperHnd = NULL;
+            isVoidAwait = m_isVoidAwait;
+            m_isVoidAwait = false;
         }
         else
         {
@@ -5193,13 +5193,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
 
-        if ((awaitHelperHnd != NULL) && (callInfo.sig.retType != CORINFO_TYPE_VOID))
-        {
-            CORINFO_SIG_INFO awaitSig;
-            m_compHnd->getMethodSig(awaitHelperHnd, &awaitSig);
-
-            discardAwaitResult = awaitSig.retType == CORINFO_TYPE_VOID;
-        }
+        discardAwaitResult = isVoidAwait && (callInfo.sig.retType != CORINFO_TYPE_VOID);
 
         if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
         {
@@ -7586,7 +7580,7 @@ bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip, const CORINFO_RESO
 
     // A Task<T>-returning function can be followed by Await(Task), requiring us to discard the result after folding.
     // We can cheaply detect the common case by looking for a MethodSpec token.
-    m_awaitHelperHnd = ((awaitToken != NULL) && (TypeFromToken(awaitToken->token) != mdtMethodSpec)) ? awaitToken->hMethod : NULL;
+    m_isVoidAwait = (awaitToken != NULL) && (TypeFromToken(awaitToken->token) != mdtMethodSpec);
     return true;
 }
 
