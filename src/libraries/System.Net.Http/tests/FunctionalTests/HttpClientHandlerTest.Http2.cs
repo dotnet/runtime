@@ -3218,19 +3218,20 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(ProtocolErrors.STREAM_CLOSED, HttpCompletionOption.ResponseHeadersRead)]
-        [InlineData(ProtocolErrors.STREAM_CLOSED, HttpCompletionOption.ResponseContentRead)]
-        [InlineData(ProtocolErrors.CANCEL, HttpCompletionOption.ResponseHeadersRead)]
-        [InlineData(ProtocolErrors.INTERNAL_ERROR, HttpCompletionOption.ResponseContentRead)]
-        public async Task PostAsyncNonDuplex_ServerCompletesResponseThenResetsWithNoErrorAndAgain_ResponseStillSucceeds(ProtocolErrors secondResetError, HttpCompletionOption completionOption)
+        [InlineData(FrameType.RstStream, ProtocolErrors.STREAM_CLOSED, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(FrameType.RstStream, ProtocolErrors.STREAM_CLOSED, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(FrameType.RstStream, ProtocolErrors.CANCEL, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(FrameType.RstStream, ProtocolErrors.INTERNAL_ERROR, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(FrameType.GoAway, ProtocolErrors.NO_ERROR, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(FrameType.GoAway, ProtocolErrors.NO_ERROR, HttpCompletionOption.ResponseContentRead)]
+        public async Task PostAsyncNonDuplex_ServerCompletesResponseThenResetsWithNoError_LaterResetDoesNotDiscardResponse(FrameType secondFrameType, ProtocolErrors secondResetError, HttpCompletionOption completionOption)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
-                var reachedGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var requestWindowReadTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var pingProcessedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 CancellationToken bodyCancellationToken = default;
-                // Fill the initial flow-control window to flush the request before blocking the next read.
                 int remaining = DefaultInitialWindowSize;
                 using var request = new HttpRequestMessage(HttpMethod.Post, server.Address)
                 {
@@ -3240,6 +3241,7 @@ namespace System.Net.Http.Functional.Tests
                         canReadFunc: () => true,
                         readAsyncFunc: async (buffer, offset, count, token) =>
                         {
+                            // Fill the initial flow-control window to flush the request before blocking the next read.
                             if (remaining > 0)
                             {
                                 int bytesRead = Math.Min(count, remaining);
@@ -3249,9 +3251,9 @@ namespace System.Net.Http.Functional.Tests
                             }
 
                             bodyCancellationToken = token;
-                            reachedGate.SetResult();
+                            requestWindowReadTcs.SetResult();
                             // Delay observing cancellation until both resets have been processed.
-                            await gate.Task;
+                            await pingProcessedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                             token.ThrowIfCancellationRequested();
                             return 0;
                         }))
@@ -3263,12 +3265,20 @@ namespace System.Net.Http.Functional.Tests
                     responseTask = client.SendAsync(request, completionOption);
                     connection = await server.EstablishConnectionAsync();
                     (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
-                    await reachedGate.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await requestWindowReadTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
 
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
                     await connection.SendResponseDataAsync(streamId, "Hello world"u8.ToArray(), endStream: true);
                     await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.NO_ERROR, streamId));
-                    await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)secondResetError, streamId));
+                    if (secondFrameType == FrameType.GoAway)
+                    {
+                        // A lower Last-Stream-ID resets this stream even though its response has already arrived.
+                        await connection.SendGoAway(lastStreamId: 0, errorCode: secondResetError);
+                    }
+                    else
+                    {
+                        await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)secondResetError, streamId));
+                    }
 
                     // A matching PING ACK ensures that both preceding resets have been processed.
                     const long PingPayload = 42;
@@ -3286,14 +3296,14 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(bodyCancellationToken.IsCancellationRequested);
                     Assert.False(responseTask.IsCompleted);
 
-                    gate.SetResult();
+                    pingProcessedTcs.SetResult();
                     HttpResponseMessage response = await responseTask;
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     Assert.Equal("Hello world", await response.Content.ReadAsStringAsync());
                 }
                 finally
                 {
-                    gate.TrySetResult();
+                    pingProcessedTcs.TrySetResult();
                     connection?.Close();
                     client.CancelPendingRequests();
                     if (responseTask is not null)
