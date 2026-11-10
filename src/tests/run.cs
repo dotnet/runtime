@@ -503,8 +503,8 @@ internal static class TestRunner
     {
         if (hostOperatingSystem is "osx" or "freebsd" or "openbsd")
         {
-            ProcessTextOutput result = RunProcessForOutput("sysctl", ["-n", "kern.corefile"]);
-            if (result.ExitStatus.ExitCode != 0)
+            ProcessResult result = RunProcessForOutput("sysctl", ["-n", "kern.corefile"]);
+            if (result.ExitCode != 0)
             {
                 return;
             }
@@ -1061,11 +1061,11 @@ internal static class TestRunner
 
             try
             {
-                ProcessTextOutput result = RunProcessForOutput(
+                ProcessResult result = RunProcessForOutput(
                     "gh",
                     ["issue", "view", number, "--repo", repository, "--json", "title", "--jq", ".title"],
                     timeoutMilliseconds: 10_000);
-                if (result.ExitStatus.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.StandardOutput))
+                if (result.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.StandardOutput))
                 {
                     titles[reference] = result.StandardOutput.Trim();
                 }
@@ -1155,7 +1155,7 @@ internal static class TestRunner
         return Process.Run(startInfo).ExitCode;
     }
 
-    private static ProcessTextOutput RunProcessForOutput(string fileName, IEnumerable<string> arguments, int timeoutMilliseconds = Timeout.Infinite)
+    private static ProcessResult RunProcessForOutput(string fileName, IEnumerable<string> arguments, int timeoutMilliseconds = Timeout.Infinite)
     {
         ProcessStartInfo startInfo = new(fileName)
         {
@@ -1169,14 +1169,37 @@ internal static class TestRunner
             startInfo.ArgumentList.Add(argument);
         }
 
-        ProcessTextOutput output = Process.RunAndCaptureText(startInfo,
-                TimeSpan.FromMilliseconds(timeoutMilliseconds), entireProcessTree: true);
-        if (output.ExitStatus.Canceled)
+        // TODO: Use Process.RunAndCaptureText once it kills the entire process tree on timeout.
+        // https://github.com/dotnet/runtime/issues/136466
+        using Process process = Process.Start(startInfo)!;
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        TimeSpan timeout = TimeSpan.FromMilliseconds(timeoutMilliseconds);
+        (string StandardOutput, string StandardError) output;
+        try
         {
+            output = process.ReadAllText(timeoutMilliseconds == Timeout.Infinite ? null : timeout);
+        }
+        catch (TimeoutException)
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExitStatus();
             throw new TimeoutException($"{fileName} timed out.");
         }
 
-        return output;
+        TimeSpan remaining = timeoutMilliseconds == Timeout.Infinite
+            ? Timeout.InfiniteTimeSpan
+            : TimeSpan.FromMilliseconds(Math.Max(0, (timeout - stopwatch.Elapsed).TotalMilliseconds));
+        if (!process.TryWaitForExitStatus(remaining, out ProcessExitStatus? status))
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExitStatus();
+            throw new TimeoutException($"{fileName} timed out.");
+        }
+
+        return new ProcessResult(
+            status.ExitCode,
+            output.StandardOutput,
+            output.StandardError);
     }
 
     private static string? FindExecutable(string name)
@@ -1760,6 +1783,8 @@ options:
     }
 
     private sealed record CrashedRunner(string Name, string? ExitCode, string? Script);
+
+    private sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);
 
     private sealed class RunnerExitException(string message, int exitCode = 1) : Exception(message)
     {

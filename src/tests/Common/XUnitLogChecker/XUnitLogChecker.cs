@@ -749,14 +749,30 @@ public class XUnitLogChecker
             input.Position = 0;
             symbolizerStartInfo.StandardInputHandle = input.SafeFileHandle;
 
-            ProcessTextOutput result = Process.RunAndCaptureText(symbolizerStartInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS), entireProcessTree: true);
-            if (result.ExitStatus.Canceled)
+            // TODO: Use Process.RunAndCaptureText once it kills the entire process tree on timeout.
+            // https://github.com/dotnet/runtime/issues/136466
+            using Process llvmSymbolizer = Process.Start(symbolizerStartInfo)!;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            TimeSpan timeout = TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS);
+            (string StandardOutput, string StandardError) result;
+            try
             {
-                Console.WriteLine("llvm-symbolizer stdout:");
-                Console.WriteLine(result.StandardOutput);
-                Console.WriteLine("llvm-symbolizer stderr:");
-                Console.WriteLine(result.StandardError);
-                throw new TimeoutException("llvm-symbolizer timed out.");
+                result = llvmSymbolizer.ReadAllText(timeout);
+                TimeSpan remaining = TimeSpan.FromMilliseconds(Math.Max(0, (timeout - stopwatch.Elapsed).TotalMilliseconds));
+                if (!llvmSymbolizer.TryWaitForExitStatus(remaining, out _))
+                {
+                    Console.WriteLine("llvm-symbolizer stdout:");
+                    Console.WriteLine(result.StandardOutput);
+                    Console.WriteLine("llvm-symbolizer stderr:");
+                    Console.WriteLine(result.StandardError);
+                    throw new TimeoutException("llvm-symbolizer timed out.");
+                }
+            }
+            catch (TimeoutException)
+            {
+                llvmSymbolizer.Kill(entireProcessTree: true);
+                llvmSymbolizer.WaitForExitStatus();
+                throw;
             }
 
             symbolizerOutput = result.StandardOutput;
