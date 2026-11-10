@@ -15,6 +15,10 @@ variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
     value: true
+  # GitHub /azp comments can select a pipeline definition but cannot pass YAML parameters.
+  # API-specific container definitions point to this YAML so the API level can be selected by name.
+  - name: isAndroidContainerTestBuild
+    value: ${{ or(parameters.runAndroidContainerTests, eq(variables['Build.DefinitionName'], 'runtime-androidemulator-container-29')) }}
   - name: androidContainerHelixQueue
     value: (Android.29.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-29-amd64@sha256:193e6d0ce33f6d8b9c10170ef8a197683c0fa4fe75fe5f1e3199318e8fb84d03
 
@@ -31,7 +35,7 @@ extends:
             timeoutInMinutes: 540
             allowNoHelixJobs: true
 
-      - ${{ if parameters.runAndroidContainerTests }}:
+      - ${{ if eq(variables.isAndroidContainerTestBuild, true) }}:
         - template: /eng/pipelines/common/xplat-setup.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -80,7 +84,7 @@ extends:
                     testRunNamePrefixSuffix: CoreCLR_Release_API29_Parity_Libraries
                     useHelixMonitor: true
 
-      - ${{ if not(parameters.runAndroidContainerTests) }}:
+      - ${{ if ne(variables.isAndroidContainerTestBuild, true) }}:
         - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
           parameters:
             isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}

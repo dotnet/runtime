@@ -196,6 +196,18 @@ the two queues. A green run alone does not establish parity, and test-result
 comparison is not automated by this pipeline. This lane does not cover
 NativeAOT or other Android API levels.
 
+On a pull request, an authorized collaborator can request the same validation
+with:
+
+```
+/azp run runtime-androidemulator-container-29
+```
+
+Azure Pipelines comment triggers select a pipeline by name but do not accept
+YAML parameters, so the API level is part of the transition pipeline name.
+Each API level must have a published, pinned container image before a
+corresponding pipeline definition is added.
+
 The container image supplies the Android SDK, system image and AVD.
 `eng/testing/Android/start-emulator.sh` and `stop-emulator.sh` own the work-item
 emulator lifecycle. Both libraries and CoreCLR Helix submissions import
