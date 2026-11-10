@@ -13,4 +13,7 @@
     <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJitForLoops" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitGuardedDevirtualizationMaxTypeChecks" Value="3" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
