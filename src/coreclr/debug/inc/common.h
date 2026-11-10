@@ -58,8 +58,14 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 // CORDbgCopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
+// The source and destination are opaque byte buffers with an associated size.
+// Each buffer must satisfy CheckContextSizeForBuffer for its ContextFlags.
+// On x86, the trailing ExtendedRegisters region may be omitted when
+// CONTEXT_EXTENDED_REGISTERS is not set. Only flagged regions within DT_CONTEXT
+// are copied; any trailing XSTATE/SVE state is left untouched.
+//
 
-extern void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc);
+extern void CORDbgCopyThreadContext(BYTE* pDst, ULONG32 cbDst, const BYTE* pSrc, ULONG32 cbSrc);
 
 //---------------------------------------------------------------------------------------
 //

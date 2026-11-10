@@ -75,6 +75,10 @@ enum class AsyncMethodFlags
     Thunk                      = 16,
     // A special thunk to drop return value in covariant return scenario
     ReturnDroppingThunk        = 32,
+    // A special thunk for an override that covariantly returns a type derived from Task/Task<T>.
+    // The thunk gives only such covariant overrides an Async variant; other overrides of the
+    // same slot remain ordinary, non-task-returning methods.
+    CovariantForwardingThunk   = 64,
     // Note: If adding more flags make sure to modify RequiresAsyncContextSaveAndRestore
 
     // The rest of the methods that are not in any of the above groups.
@@ -238,9 +242,6 @@ enum MethodDescFlags
     // Method is static
     mdfStatic                           = 0x0080,
 
-    mdfValueTypeParametersWalked        = 0x0100, // Indicates that all typeref's in the signature of the method have been resolved
-                                                  // to typedefs (or that process failed).
-
     mdfValueTypeParametersLoaded        = 0x0200, // Indicates if the valuetype parameter types have been loaded.
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
@@ -278,6 +279,7 @@ struct MethodDescCodeData final
     NativeCodeVersion::OptimizationTier OptimizationTier;
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
+    PTR_BYTE GCRefMap;
 #ifdef FEATURE_INTERPRETER
     InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
@@ -428,7 +430,8 @@ public:
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         return FALSE;
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        return (m_wFlags3AndTokenRemainder & enum_flag3_HasPrecode) != 0;
+        // Ensure the HasPrecode flag is read before the entry point slot is read
+        return (VolatileLoad(&m_wFlags3AndTokenRemainder) & enum_flag3_HasPrecode) != 0;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
@@ -780,6 +783,7 @@ public:
     inline bool IsLCGMethod();
 
     inline bool IsDiagnosticsHidden();
+    inline bool IsDiagnosticsHiddenLCGMethod();
 
     inline DWORD IsPInvoke()
     {
@@ -1014,6 +1018,9 @@ public:
         WRAPPER_NO_CONTRACT;
         return IsMdInstanceInitializer(GetAttrs(), GetName());
     }
+
+    bool IsStringCtor();
+    bool IsObjectReturningCtor();
 
     inline DWORD IsFinal()
     {
@@ -1883,12 +1890,47 @@ public:
 
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
 
+    PTR_BYTE GetGCRefMap();
+    // Exact entry frames can use their own map, including explicit generic-context arguments.
+    // Dispatch and borrowing use only ABI-compatible maps; slot relationships are immutable
+    // DispatchMap data. Memoize hits only when code data already exists; never allocate here.
+    PTR_BYTE FindGCRefMap(MethodTable* pReceiverMT = nullptr, bool isDispatch = false);
+    void SetGCRefMap(PTR_BYTE pGCRefMap);
+
+    // Publish on the already-resolved call declaration; do not search slots or decode maps.
+    // Every supported R2R image uses contextual THIS, so no format check is necessary.
+    // Without an import map, use only this method's cached map or prepare signature layouts.
+    void PrepareForUseAsAVirtualCallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
+
+    // Load closed value-type signature layouts for signature-scanning frames and ABI lowering.
+    // Required for interpreter ABI lowering, argument-transforming stubs, and map misses.
+    // A GCRefMap hit alone never promises layout readiness.
     void PrepareForUseAsADependencyOfANativeImage()
     {
         WRAPPER_NO_CONTRACT;
-        if (!HaveValueTypeParametersBeenWalked())
+        if (!HaveNativeImageDependenciesBeenPrepared())
             PrepareForUseAsADependencyOfANativeImageWorker();
     }
+
+    // Prepare an exact method entrypoint, not a virtual-dispatch stub or an interpreter ABI.
+    // Non-wrapper targets, including explicit-context generic bodies, can use supplied or
+    // cached exact GCRefMaps instead of loading layouts. nullptr permits reuse, not forced loading.
+    // Callers requiring signature layouts must use PrepareForUseAsADependencyOfANativeImage.
+    void PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
+
+    bool HaveNativeImageDependenciesBeenPrepared()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (VolatileLoad(&m_bFlags4) & enum_flag4_NativeImageDependenciesPrepared) != 0;
+    }
+
+#ifndef DACCESS_COMPILE
+    void SetNativeImageDependenciesPrepared()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedUpdateFlags4(enum_flag4_NativeImageDependenciesPrepared, TRUE);
+    }
+#endif // !DACCESS_COMPILE
 
     void PrepareForUseAsAFunctionPointer();
 
@@ -1904,6 +1946,7 @@ public:
 #endif
 private:
     void PrepareForUseAsADependencyOfANativeImageWorker();
+    PTR_BYTE CacheGCRefMapIfCodeDataExists(PTR_BYTE pGCRefMap);
 
     //================================================================
     // The actual data stored in a MethodDesc follows.
@@ -1937,6 +1980,7 @@ protected:
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         enum_flag4_PendingThunkResolution                   = 0x10,
 #endif
+        enum_flag4_NativeImageDependenciesPrepared          = 0x20,
     };
 
     BYTE        m_bFlags4; // Used to hold more flags
@@ -2100,10 +2144,20 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
     }
 
+    inline bool IsCovariantForwardingThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::CovariantForwardingThunk);
+    }
+
     inline bool SupportsAsyncVersionCodegen() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk();
+        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk() && !IsCovariantForwardingThunk();
     }
 
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
@@ -2270,20 +2324,6 @@ public:
 
     SIZE_T SizeOf();
 
-    inline BOOL HaveValueTypeParametersBeenWalked()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdfValueTypeParametersWalked) != 0;
-    }
-
-#ifndef DACCESS_COMPILE
-    inline void SetValueTypeParametersWalked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags(mdfValueTypeParametersWalked, TRUE);
-    }
-#endif // DACCESS_COMPILE
-
     inline BOOL HaveValueTypeParametersBeenLoaded()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2362,8 +2402,10 @@ private:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
+    void EmitCovariantForwardingThunk(MethodDesc* pOrdinaryVariant, MetaSig& msig, ILStubLinker* pSL);
     int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
+    int GetTokenForGenericMethodCall(ILCodeStream* pCode, MethodDesc* md, SigPointer typeArgSig);
 public:
     SigPointer GetAsyncThunkResultTypeSig();
     static void CreateDerivedTargetSig(MetaSig& msig, SigBuilder* stubSigBuilder);
@@ -2995,7 +3037,8 @@ public:
     {
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
-        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub, and ILStubTypeMask.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub,
+        // FlagIsDiagnosticsHidden, and ILStubTypeMask.
         FlagNone                = 0x00000000,
         FlagPublic              = 0x00000800,
         FlagStatic              = 0x00001000,
@@ -3003,7 +3046,7 @@ public:
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
         // unused               = 0x00010000,
-        // unused               = 0x00020000,
+        FlagIsDiagnosticsHidden = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)

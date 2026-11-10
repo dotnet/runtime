@@ -69,6 +69,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
         return true;
     }
 
+    public override bool TryGetContractVersion<TContract>([NotNullWhen(true)] out string? version)
+        => _tryGetContractVersion(TContract.Name, out version);
+
     public override bool TryValidate<TContract>([NotNullWhen(false)] out System.Exception? failureException)
     {
         failureException = null;

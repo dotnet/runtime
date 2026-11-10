@@ -299,7 +299,7 @@ namespace Internal.IL.Stubs
                 nativeParameterTypes[_marshallers.Length - 1] = _marshallers[0].NativeParameterType;
             }
 
-            if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_targetMethod, out _))
+            if (_pInvokeILEmitterConfiguration.GetLinkageMetadata(_targetMethod) is null)
             {
                 MethodSignature nativeSig = new MethodSignature(
                     MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes,
@@ -468,7 +468,7 @@ namespace Internal.IL.Stubs
             // The configuration can be null if this is delegate or calli marshalling
             if (_pInvokeILEmitterConfiguration != null)
             {
-                if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_targetMethod, out _))
+                if (_pInvokeILEmitterConfiguration.GetLinkageMetadata(_targetMethod) is null)
                 {
                     return true;
                 }

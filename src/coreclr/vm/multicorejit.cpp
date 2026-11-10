@@ -1062,7 +1062,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                     minipal_sleep(g_MulticoreJitDelay);
                 }
 
-                player.SuppressRelease();
+                player.Detach();
             }
 
             MulticoreJitTrace(("ProcessProfile('%s') returns %x", m_fullFileName.GetUTF8(), hr1));

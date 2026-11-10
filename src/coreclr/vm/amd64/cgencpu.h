@@ -51,13 +51,11 @@ class ComCallMethodDesc;
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16   // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16   // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes
-#define CALLDESCR_ARGREGS                       1    // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1    // CallDescrWorker has FloatArgumentRegisters parameter
+#define HAS_FLOAT_ARGUMENT_REGISTERS            1    // Calling convention has separate floating-point argument registers
 #else
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8    // bytes
-#define CALLDESCR_REGTYPEMAP                    1
 #endif
 
 #define INSTRFMT_K64SMALL
@@ -84,39 +82,6 @@ class ComCallMethodDesc;
             ((X86Reg)(((int)extended_reg) & X86_REGISTER_MASK))
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
-
-// Why is the return value ARG_SLOT? On 64-bit systems, that is 64-bits
-// and much bigger than necessary for R4, requiring explicit downcasts.
-inline
-ARG_SLOT FPSpillToR4(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(DWORD*)pSpillSlot;
-}
-
-inline
-ARG_SLOT FPSpillToR8(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(SIZE_T*)pSpillSlot;
-}
-
-inline
-void     R4ToFPSpill(void* pSpillSlot, DWORD  srcFloatAsDWORD)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = (SIZE_T)srcFloatAsDWORD;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
-
-inline
-void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = srcDoubleAsSIZE_T;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
-
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 

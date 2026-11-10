@@ -35,7 +35,7 @@ namespace System
         }
 
         /// <summary>
-        /// Converts the given object to the a Uri.
+        /// Converts the given object to a Uri.
         /// </summary>
         public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
         {

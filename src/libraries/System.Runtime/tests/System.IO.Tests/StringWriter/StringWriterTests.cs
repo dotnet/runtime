@@ -61,6 +61,42 @@ namespace System.IO.Tests
             Assert.Equal("4", sb.ToString());
         }
 
+        [Theory]
+        [MemberData(nameof(TextWriterTests.NumericWriteData), MemberType = typeof(TextWriterTests))]
+        public void WriteNumber_UsesFormatProvider(object value, bool appendNewLine)
+        {
+            foreach (int symbolLength in new[] { 1, 129 })
+            {
+                NumberFormatInfo format = TextWriterTests.CreateNumericFormat(symbolLength);
+                using var writer = new StringWriter(format);
+
+                TextWriterTests.WriteNumber(writer, value, appendNewLine);
+
+                Assert.Equal(((IFormattable)value).ToString(null, format) + (appendNewLine ? writer.NewLine : ""), writer.ToString());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TextWriterTests.NumericWriteData), MemberType = typeof(TextWriterTests))]
+        public void WriteNumber_DerivedWriter_UsesVirtualMembers(object value, bool appendNewLine)
+        {
+            NumberFormatInfo format = TextWriterTests.CreateNumericFormat(1);
+            using var writer = new WriteStringCapturingStringWriter(format);
+
+            TextWriterTests.WriteNumber(writer, value, appendNewLine);
+
+            Assert.Equal(((IFormattable)value).ToString(null, format), writer.Written.ToString());
+        }
+
+        private sealed class WriteStringCapturingStringWriter : StringWriter
+        {
+            public WriteStringCapturingStringWriter(IFormatProvider formatProvider) : base(formatProvider) { }
+
+            public StringBuilder Written { get; } = new StringBuilder();
+
+            public override void Write(string value) => Written.Append(value);
+        }
+
         [Fact]
         public static void WriteArray()
         {

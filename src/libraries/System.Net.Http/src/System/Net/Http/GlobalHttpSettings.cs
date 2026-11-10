@@ -31,7 +31,7 @@ namespace System.Net.Http
 
         internal static class SocketsHttpHandler
         {
-#if !TARGET_BROWSER && !TARGET_WASI
+#if !TARGET_BROWSER
             // Default to allowing HTTP/2, but enable that to be overridden by an
             // AppContext switch, or by an environment variable being set to false/0.
             public static bool AllowHttp2 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(

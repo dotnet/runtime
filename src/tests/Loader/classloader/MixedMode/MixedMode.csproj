@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="MixedMode.cs" />
+    <ProjectReference Include="AutoExportsX64.ilproj" />
+    <ProjectReference Include="AutoExportsX86.ilproj" />
+    <ProjectReference Include="DataPointersArm64.ilproj" />
+    <ProjectReference Include="DataPointersX64.ilproj" />
+    <ProjectReference Include="DataPointersX86.ilproj" />
+    <ProjectReference Include="ExecutableDataArm64.ilproj" />
+    <ProjectReference Include="ExecutableDataX64.ilproj" />
+    <ProjectReference Include="ExecutableDataX86.ilproj" />
+    <ProjectReference Include="VTableFixupsX64.ilproj" />
+    <ProjectReference Include="VTableFixupsX86.ilproj" />
+  </ItemGroup>
+</Project>

@@ -8,7 +8,6 @@ set(UTILCODE_COMMON_SOURCES
   ex.cpp
   sbuffer.cpp
   sstring_com.cpp
-  fstring.cpp
   namespaceutil.cpp
   makepath.cpp
   splitpath.cpp
@@ -70,8 +69,9 @@ endif(CLR_CMAKE_TARGET_WIN32)
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   allocmemtracker.cpp
-  executableallocator.cpp
 )
+
+list(APPEND UTILCODE_SOURCES executableallocator.cpp)
 
 set(UTILCODE_DAC_SOURCES
   ${UTILCODE_COMMON_SOURCES}

@@ -17,31 +17,15 @@ namespace System.Text.Json.SourceGeneration
     internal static class RoslynExtensions
     {
         private static readonly Func<ITypeSymbol, bool>? s_isClosedTypeAccessor = CreateIsClosedTypeAccessor();
-        private static readonly Func<IModuleSymbol, int>? s_memorySafetyRulesVersionAccessor = CreateMemorySafetyRulesVersionAccessor();
 
         public static LanguageVersion? GetLanguageVersion(this Compilation compilation)
             => compilation is CSharpCompilation csc ? csc.LanguageVersion : null;
 
+        // IModuleSymbol.MemorySafetyRulesVersion is experimental
+#pragma warning disable RSEXPERIMENTAL006
         public static bool UsesUpdatedMemorySafetyRules(this SemanticModel semanticModel)
-        {
-            const int UpdatedMemorySafetyRulesVersion = 2;
-
-            // The module API includes both the compilation option and the legacy feature flag.
-            // Older compiler hosts expose only the temporary feature-flag opt-in.
-            return s_memorySafetyRulesVersionAccessor is { } getVersion
-                ? getVersion(semanticModel.Compilation.SourceModule) >= UpdatedMemorySafetyRulesVersion
-                : semanticModel.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules");
-        }
-
-        private static Func<IModuleSymbol, int>? CreateMemorySafetyRulesVersionAccessor()
-        {
-            // The enum-valued API is unavailable in Roslyn 3.11; delegate binding accepts its underlying int type.
-            // https://github.com/dotnet/roslyn/pull/84860
-            MethodInfo? getter = typeof(IModuleSymbol).GetProperty("MemorySafetyRulesVersion")?.GetMethod;
-            return getter is null
-                ? null
-                : (Func<IModuleSymbol, int>)getter.CreateDelegate(typeof(Func<IModuleSymbol, int>));
-        }
+            => (int)semanticModel.Compilation.SourceModule.MemorySafetyRulesVersion >= 2;
+#pragma warning restore RSEXPERIMENTAL006
 
         public static INamedTypeSymbol? GetBestTypeByMetadataName(this Compilation compilation, Type type)
         {

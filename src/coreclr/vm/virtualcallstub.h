@@ -283,6 +283,7 @@ public:
 #endif
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
+          m_initialReservedMemForHeapsSize(0),
           m_FreeIndCellList(NULL),
           m_RecycledIndCellList(NULL),
           indcell_heap(NULL),
@@ -412,7 +413,7 @@ private:
     ResolveHolder *GenerateResolveStub(PCODE addrOfResolver,
                                        PCODE addrOfPatcher,
                                        size_t dispatchToken
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                        , size_t stackArgumentsSize
 #endif
                                        );
@@ -543,6 +544,7 @@ private:
     PTR_LoaderAllocator m_loaderAllocator;
 
     BYTE *          m_initialReservedMemForHeaps;
+    size_t          m_initialReservedMemForHeapsSize;
 
     static const UINT32 INDCELLS_PER_BLOCK = 32;    // 32 indirection cells per block.
 

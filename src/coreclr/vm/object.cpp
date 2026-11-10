@@ -15,7 +15,6 @@
 #include "eeconfig.h"
 #include "gcheaputilities.h"
 #include "field.h"
-#include "argdestination.h"
 
 
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
@@ -386,46 +385,6 @@ void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
     }
 }
 
-// Copy value class into the argument specified by the argDest.
-// The destOffset is nonzero when copying values into Nullable<T>, it is the offset
-// of the T value inside of the Nullable<T>
-void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-#if defined(UNIX_AMD64_ABI)
-
-    if (argDest->IsStructPassedInRegs())
-    {
-        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes(), destOffset);
-        return;
-    }
-
-#elif defined(TARGET_ARM64)
-
-    if (argDest->IsHFA())
-    {
-        argDest->CopyHFAStructToRegister(src, pMT->GetNumInstanceFieldBytes());
-        return;
-    }
-
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-    if (argDest->IsStructPassedInRegs())
-    {
-        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes(), destOffset);
-        return;
-    }
-
-#endif // UNIX_AMD64_ABI
-    // destOffset is only valid for Nullable<T> passed in registers
-    _ASSERTE(destOffset == 0);
-
-    CopyValueClassUnchecked(argDest->GetDestinationAddress(), src, pMT);
-}
-
 #if defined (VERIFY_HEAP)
 
 #include "dbginterface.h"
@@ -717,17 +676,23 @@ STRINGREF StringObject::NewString(LPCUTF8 psz)
         PRECONDITION(CheckPointer(psz));
     } CONTRACTL_END;
 
-    int length = (int)strlen(psz);
+    size_t length = strlen(psz);
     if (length == 0) {
         return GetEmptyString();
     }
     CQuickBytes qb;
-    WCHAR* pwsz = (WCHAR*) qb.AllocThrows((length) * sizeof(WCHAR));
-    length = MultiByteToWideChar(CP_UTF8, 0, psz, length, pwsz, length);
+    S_SIZE_T cWszBytes = S_SIZE_T(length) * S_SIZE_T(sizeof(WCHAR));
+    if (cWszBytes.IsOverflow())
+        COMPlusThrowOM();
+    WCHAR* pwsz = (WCHAR*) qb.AllocThrows(cWszBytes.Value());
+    length = minipal_convert_utf8_to_utf16(psz, length, (CHAR16_T*)pwsz, length, 0);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }
-    return NewString(pwsz, length);
+    if (length > INT_MAX) {
+        COMPlusThrowOM();
+    }
+    return NewString(pwsz, (int)length);
 }
 
 STRINGREF StringObject::NewString(LPCUTF8 psz, int cBytes)
@@ -747,16 +712,19 @@ STRINGREF StringObject::NewString(LPCUTF8 psz, int cBytes)
     if (cBytes == 0) {
         return GetEmptyString();
     }
-    int cWszBytes = 0;
-    if (!ClrSafeInt<int>::multiply(cBytes, sizeof(WCHAR), cWszBytes))
+    S_SIZE_T cWszBytes = S_SIZE_T(cBytes) * S_SIZE_T(sizeof(WCHAR));
+    if (cWszBytes.IsOverflow())
         COMPlusThrowOM();
     CQuickBytes qb;
-    WCHAR* pwsz = (WCHAR*) qb.AllocThrows(cWszBytes);
-    int length = MultiByteToWideChar(CP_UTF8, 0, psz, cBytes, pwsz, cBytes);
+    WCHAR* pwsz = (WCHAR*) qb.AllocThrows(cWszBytes.Value());
+    size_t length = minipal_convert_utf8_to_utf16(psz, cBytes, (CHAR16_T*)pwsz, cBytes, 0);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }
-    return NewString(pwsz, length);
+    if (length > INT_MAX) {
+        COMPlusThrowOM();
+    }
+    return NewString(pwsz, (int)length);
 }
 
 //

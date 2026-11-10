@@ -21,7 +21,8 @@ public static class CoreCLRContracts
         registry.Register<IEcmaMetadata>("c1", static t => new EcmaMetadata_1(t));
         registry.Register<IDacStreams>("c1", static t => new DacStreams_1(t));
         registry.Register<ICodeVersions>("c1", static t => new CodeVersions_1(t));
-        registry.Register<IStackWalk>("c1", static t => new StackWalk_1(t));
+        registry.Register<IStackWalk>("c1", static t => new StackWalk_1(t, 1));
+        registry.Register<IStackWalk>("c2", static t => new StackWalk_1(t));
         registry.Register<IRuntimeInfo>("c1", static t => new RuntimeInfo_1(t));
         registry.Register<IComWrappers>("c1", static t => new ComWrappers_1(t));
         registry.Register<ISHash>("c1", static t => new SHash_1(t));

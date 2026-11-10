@@ -19,7 +19,7 @@ using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
 #pragma warning disable CA1822 // Mark members as static
     internal sealed partial class GrammarActions

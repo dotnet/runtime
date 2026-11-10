@@ -138,6 +138,8 @@ namespace System.Net.Http.Headers
                 return string.Empty;
             }
 
+            string? value = null;
+
             // If it's a known header value, use the known value instead of allocating a new string.
             if (_descriptor is KnownHeader knownHeader)
             {
@@ -164,14 +166,14 @@ namespace System.Net.Http.Headers
                 {
                     // Normally Location should be in ISO-8859-1 but occasionally some servers respond with UTF-8.
                     // If the user set the ResponseHeaderEncodingSelector, we give that priority instead.
-                    if (valueEncoding is null && TryDecodeUtf8(headerValue, out string? decoded))
+                    if (valueEncoding is null)
                     {
-                        return decoded;
+                        TryDecodeUtf8(headerValue, out value);
                     }
                 }
             }
 
-            string value = (valueEncoding ?? HttpRuleParser.DefaultHttpEncoding).GetString(headerValue);
+            value ??= (valueEncoding ?? HttpRuleParser.DefaultHttpEncoding).GetString(headerValue);
             if (headerValue.ContainsAny(s_dangerousCharacterBytes))
             {
                 // Depending on the encoding, 'value' may contain a dangerous character.

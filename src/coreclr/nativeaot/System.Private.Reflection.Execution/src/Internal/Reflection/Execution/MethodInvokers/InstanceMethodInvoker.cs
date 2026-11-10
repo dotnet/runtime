@@ -118,6 +118,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             return thisObject;
         }
 
+        protected sealed override object CreateInstanceDirectByRef(IntPtr* arguments)
+        {
+            Debug.Assert(MethodInvokeInfo.Method.IsConstructor && !MethodInvokeInfo.Method.IsStatic);
+            object thisObject = RawCalliHelper.Call(_allocatorMethod, _declaringTypeHandle.Value);
+            MethodInvokeInfo.InvokeDirectByRef(thisObject, MethodInvokeInfo.LdFtnResult, arguments);
+            return thisObject;
+        }
+
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
         {
             if (isOpen)

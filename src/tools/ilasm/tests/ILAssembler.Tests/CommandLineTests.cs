@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 public class CommandLineTests
 {
@@ -141,7 +141,7 @@ public class CommandLineTests
             Assert.Equal(warning || errorTolerant, File.Exists(output));
             string expected = warning
                 ? $"{input}(5,5) : warning ILA0054 : Local var slot 0 is in use"
-                : $"{input}(3,17) : error ILA0002 : The value type 'Value' is unsealed; implicitly sealed.";
+                : $"{input}(3,17) : error ILA0002 : The value type 'Value' is unsealed.";
             Assert.Equal(errorTolerant ? "" : expected + Environment.NewLine, diagnosticOutput);
             Assert.Equal(warning || errorTolerant ? "" : "***** FAILURE *****" + Environment.NewLine, errorOutput);
             Assert.DoesNotContain(".assembly", diagnosticOutput);
@@ -205,6 +205,7 @@ public class CommandLineTests
         { "KEY", "--key" },
         { "MDV", "--mdv" },
         { "OUT", "--output" },
+        { "RES", "--resource" },
         { "SSV", "--ssver" },
         { "STA", "--stack" },
         { "SUB", "--subsystem" },
@@ -219,6 +220,7 @@ public class CommandLineTests
         "KEY",
         "MDV",
         "OUT",
+        "RES",
         "SSV",
         "STA",
         "SUB",
@@ -447,9 +449,6 @@ public class CommandLineTests
     }
 
     [Theory]
-    [InlineData("-res:file.res", false)]
-    [InlineData("-RESOURCE=file.res", false)]
-    [InlineData("/ReSAnything:file.res", true)]
     [InlineData("-msv=2.0", false)]
     [InlineData("-MSVersion:2.0", false)]
     [InlineData("/MSV=2.0", true)]

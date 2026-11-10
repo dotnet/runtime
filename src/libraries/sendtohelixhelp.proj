@@ -257,7 +257,8 @@
     InitialTargets for this Project. This causes it to be invoked (and the Helix data created,
     such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
   -->
-  <Target Name="BuildHelixWorkItems" DependsOnTargets="$(BuildHelixWorkItemsDependsOn)">
+  <!-- Skipped when sendtohelix.proj invokes this project only to run StageDependenciesForHelix. -->
+  <Target Name="BuildHelixWorkItems" DependsOnTargets="$(BuildHelixWorkItemsDependsOn)" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
     <Message Importance="High" Text="Using TestRunNamePrefix: $(TestRunNamePrefix)" />
@@ -337,13 +338,13 @@
     <Error Text="Stopping the build for dry run" Condition="'$(HelixDryRun)' == 'true'" />
   </Target>
 
-  <Target Name="PrintHelixQueues">
+  <Target Name="PrintHelixQueues" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
              Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets), WasmBundlerFriendlyBootConfig: $(WasmBundlerFriendlyBootConfig)" />
   </Target>
 
-  <Target Name="PrintBuildTargetFramework">
+  <Target Name="PrintBuildTargetFramework" Condition="'$(_StageHelixDependenciesOnly)' != 'true'">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
 

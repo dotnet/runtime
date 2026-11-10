@@ -24,14 +24,22 @@ By default the scripts generate **both** WebAssembly variations; pass `--target-
 
 | Target OS | Output directory                | Default scan path (testhost) |
 |-----------|---------------------------------|------------------------------|
-| `browser` | `src/coreclr/vm/wasm/browser/`  | `artifacts/bin/testhost/net11.0-browser-<config>-wasm/shared/Microsoft.NETCore.App/11.0.0/` |
-| `wasi`    | `src/coreclr/vm/wasm/wasi/`     | `artifacts/bin/testhost/net11.0-wasi-<config>-wasm/shared/Microsoft.NETCore.App/11.0.0/` |
+| `browser` | `src/coreclr/vm/wasm/browser/`  | `artifacts/bin/testhost/net12.0-browser-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
+| `wasi`    | `src/coreclr/vm/wasm/wasi/`     | `artifacts/bin/testhost/net12.0-wasi-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
 
 Each run emits three files into the output directory:
 
 - `callhelpers-pinvoke.cpp`
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
+
+`callhelpers-pinvoke.cpp` also defines a separate QCall table and `QCallResolveDllImport`.
+QCalls are collected only from CoreLib in the managed assembly closure, independently of the P/Invoke module list,
+matching CoreCLR's restriction that only CoreLib can resolve QCalls.
+On WebAssembly, this replaces the full table in `qcallentrypoints.cpp`, so an app's native relink
+can discard QCall implementations that its trimmed managed assemblies no longer reference.
+Browser `memmove` and `memset` QCalls retain the bulk-memory wrappers in `qcallentrypoints.cpp`;
+WASI uses the libc entrypoints directly. Non-WebAssembly builds still use the hand-written table.
 
 ## The P/Invoke module list
 

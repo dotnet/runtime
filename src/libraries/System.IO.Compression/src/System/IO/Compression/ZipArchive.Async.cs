@@ -358,6 +358,8 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
         // if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
         Debug.Assert(_readEntries);
 
+        ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
+
         // Entries starting after this offset have had a dynamically-sized change. Everything on or after this point must be rewritten.
         long completeRewriteStartingOffset = 0;
         List<ZipArchiveEntry> entriesToWrite = _entries;

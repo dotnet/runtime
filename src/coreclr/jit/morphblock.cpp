@@ -1180,9 +1180,20 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         return tree;
     };
 
-    auto getCopyIndirFlags = [](var_types type) {
+    auto getCopyIndirFlags = [](var_types type, GenTreeFlags indirFlags) {
         // These accesses are pieces of a whole struct copy, so non-GC accesses do not need to be atomic.
-        return varTypeIsGC(type) ? GTF_EMPTY : GTF_IND_ALLOW_NON_ATOMIC;
+        return (indirFlags & GTF_IND_COPYABLE_FLAGS) | (varTypeIsGC(type) ? GTF_EMPTY : GTF_IND_ALLOW_NON_ATOMIC);
+    };
+
+    // A nonfaulting indirection may depend on a guarding check (e.g. non-null assertion prop);
+    // keep the ordering constraint so the access isn't speculated or moved above the guard.
+    auto copyOrderingFlag = [](GenTree* indir, GenTreeFlags srcFlags) {
+        if (((srcFlags & GTF_IND_NONFAULTING) != 0) && ((srcFlags & GTF_ORDER_SIDEEFF) != 0))
+        {
+            indir->SetHasOrderingSideEffect();
+        }
+
+        return indir;
     };
 
     auto grabAddr = [=, &result](unsigned offs) {
@@ -1247,7 +1258,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         else
         {
             JITDUMP("  ...but keeping a nullcheck\n");
-            return m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0));
+            GenTree* nullCheck =
+                m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0), getCopyIndirFlags(TYP_BYTE, m_src->gtFlags));
+            return copyOrderingFlag(nullCheck, m_src->gtFlags);
         }
     }
 
@@ -1269,7 +1282,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             noway_assert((m_srcLclNum != BAD_VAR_NUM) && (m_srcLclNode != nullptr));
             unsigned srcFieldLclNum = m_compiler->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
 
-            srcFld = m_compiler->gtNewLclvNode(srcFieldLclNum, m_compiler->lvaGetDesc(srcFieldLclNum)->TypeGet());
+            srcFld = m_compiler->gtNewLclVarNode(srcFieldLclNum, m_compiler->lvaGetDesc(srcFieldLclNum)->TypeGet());
         }
         else
         {
@@ -1283,7 +1296,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 noway_assert(m_srcLclNum != BAD_VAR_NUM);
                 noway_assert(addrSpill == nullptr);
 
-                srcFld = m_compiler->gtNewLclvNode(m_srcLclNum, m_compiler->lvaGetDesc(m_srcLclNum)->TypeGet());
+                srcFld = m_compiler->gtNewLclVarNode(m_srcLclNum, m_compiler->lvaGetDesc(m_srcLclNum)->TypeGet());
             }
             else
             {
@@ -1329,7 +1342,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     else
                     {
                         GenTree* fldAddr = grabAddr(fldOffset);
-                        srcFld           = m_compiler->gtNewIndir(destType, fldAddr, getCopyIndirFlags(destType));
+                        GenTree* fldLoad =
+                            m_compiler->gtNewIndir(destType, fldAddr, getCopyIndirFlags(destType, m_src->gtFlags));
+                        srcFld = copyOrderingFlag(fldLoad, m_src->gtFlags);
                     }
                 }
             }
@@ -1379,7 +1394,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 else
                 {
                     GenTree*     fldAddr    = grabAddr(srcFieldOffset);
-                    GenTreeFlags indirFlags = getCopyIndirFlags(srcType);
+                    GenTreeFlags indirFlags = getCopyIndirFlags(srcType, m_store->gtFlags);
                     if (m_store->OperIs(GT_STORE_BLK, GT_STOREIND))
                     {
                         indirFlags |= m_store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP);
@@ -1388,7 +1403,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             indirFlags |= GTF_IND_TGT_NOT_HEAP;
                         }
                     }
-                    dstFldStore = m_compiler->gtNewStoreIndNode(srcType, fldAddr, srcFld, indirFlags);
+                    dstFldStore = copyOrderingFlag(m_compiler->gtNewStoreIndNode(srcType, fldAddr, srcFld, indirFlags),
+                                                   m_store->gtFlags);
                 }
             }
         }

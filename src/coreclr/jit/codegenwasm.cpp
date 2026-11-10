@@ -187,9 +187,10 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
-        // Helpers may be called without a PEP, so their identity is independent of the caller.
+        // NativeAOT encodes the method start. CoreCLR helpers may be called without a PEP,
+        // so their identity is independent of the caller.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
+        if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
             GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
         }
@@ -755,12 +756,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             if (interval->IsLoop())
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
-            }
-            else if (interval->IsTry() && m_compiler->IsNativeAot())
-            {
-                // TODO-NativeAOT-WASM: Preserve interval nesting without CoreCLR's catch-resumption tag during
-                // NativeAOT bringup.
-                GetEmitter()->emitIns_BlockTy(INS_block);
             }
             else if (interval->IsTry())
             {
@@ -2635,7 +2630,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     }
 
     // Result is the address of the array element.
-    unsigned const scale = node->gtElemSize;
+    unsigned const scale = node->GetElemSize();
 
     if (scale > 1)
     {
@@ -2941,7 +2936,9 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         var_types type         = varDsc->GetRegisterType(tree);
         unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex);
+        bool      isLastUse    = varDsc->lvTracked && ((tree->gtFlags & GTF_VAR_DEATH) != 0) &&
+                         ((tree->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None);
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex, isLastUse);
         // In this case, the resulting tree type may be different from the local var type where the value originates,
         // and so we need an explicit conversion since we can't "load"
         // the value with a different type like we can if the value is on the shadow stack.
@@ -4660,10 +4657,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
+    // NativeAOT uses unscaled virtual IPs.
     // Use 1 as the prolog size.
     //
-    codeSize   = 2 * maxVirtualIP;
+    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).

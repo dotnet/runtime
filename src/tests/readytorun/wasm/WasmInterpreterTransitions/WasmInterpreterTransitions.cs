@@ -33,6 +33,35 @@ namespace System.Runtime
 /// </summary>
 public class WasmInterpreterTransitions
 {
+    public sealed class SignatureOnlyReference
+    {
+    }
+
+    public struct SingleReference
+    {
+        public SignatureOnlyReference Value;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    public struct PaddedReference
+    {
+        [FieldOffset(0)]
+        public SignatureOnlyReference Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static DynamicMethod CreateDefaultReturn(Type returnType)
+    {
+        DynamicMethod method = new(nameof(CreateDefaultReturn), returnType, Type.EmptyTypes);
+        ILGenerator il = method.GetILGenerator();
+        LocalBuilder local = il.DeclareLocal(returnType);
+        il.Emit(OpCodes.Ldloca, local);
+        il.Emit(OpCodes.Initobj, returnType);
+        il.Emit(OpCodes.Ldloc, local);
+        il.Emit(OpCodes.Ret);
+        return method;
+    }
+
     private const int A = 0x11223344;
     private const int B = 0x55667788;
     private const int C = 0x1234567;
@@ -115,6 +144,11 @@ public class WasmInterpreterTransitions
     [Fact]
     public static void TestEntryPoint()
     {
+        Func<SingleReference> singleReference = (Func<SingleReference>)CreateDefaultReturn(typeof(SingleReference)).CreateDelegate(typeof(Func<SingleReference>));
+        Func<PaddedReference> paddedReference = (Func<PaddedReference>)CreateDefaultReturn(typeof(PaddedReference)).CreateDelegate(typeof(Func<PaddedReference>));
+        Assert.Null(singleReference().Value);
+        Assert.Null(paddedReference().Value);
+
         WasmInterpreterTransitions self = new();
 
         // R2R -> native P/Invoke -> generated native-to-managed export -> R2R UCO.
