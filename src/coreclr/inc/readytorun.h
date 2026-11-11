@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 33
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MAJOR_VERSION 34
+#define READYTORUN_MINOR_VERSION 0x0001
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 33
+#define MINIMUM_READYTORUN_MAJOR_VERSION 34
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -86,7 +86,10 @@
 // GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
 // signatures with their GCRefMaps.
 // R2R Version 33.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
-// R2R Version 33.2 adds READYTORUN_FIXUP_PgoInstrumentationData for offline profiling storage.
+// R2R Version 34 changes the ABI for funclets on other architectures to match AMD64: funclets save
+//                only the return address, and the runtime preserves the callee-saved registers around the
+//                funclets that it calls
+// R2R Version 34.1 adds READYTORUN_FIXUP_PgoInstrumentationData for offline profiling storage.
 
 struct READYTORUN_CORE_HEADER
 {

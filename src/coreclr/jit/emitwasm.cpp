@@ -87,14 +87,29 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //   ins      - instruction to emit
 //   attr     - emit attributes
 //   imm      - immediate value
+//   isLastUse - whether this local.get is the last use of the stored value
 //
-void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm, bool isLastUse)
 {
-    // Rewrite `local.set N; local.get N` as `local.tee N`.
+    assert(!isLastUse || (ins == INS_local_get));
+
+    // Keep the local assignment unless this get is known to be its last use.
     //
     if ((ins == INS_local_get) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
         (emitLastIns->idIns() == INS_local_set) && (emitGetInsSC(emitLastIns) == imm))
     {
+        if (isLastUse && (emitLastInsIG == emitCurIG))
+        {
+            JITDUMP("\n -- removing 'local.set %d; local.get %d' for a last use.\n", (int)imm, (int)imm);
+            unsigned size = emitLastIns->idCodeSize();
+            // Preserve instruction positions already captured for debug and GC information.
+            emitLastIns->idIns(INS_nop);
+            emitLastIns->idInsFmt(IF_NONE);
+            emitCurIGsize -= size;
+            emitCurIG->igFlags |= IGF_UPD_ISZ;
+            return;
+        }
+
         JITDUMP("\n -- rewriting 'local.set %d' as 'local.tee %d' since it is followed by a get of the same local.\n",
                 (int)imm, (int)imm);
         emitLastIns->idIns(INS_local_tee);
@@ -122,6 +137,37 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
+    // Double eqz normalizes an i32 to 0/1, which br_if does not need.
+    if ((ins == INS_br_if) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
+        (emitLastIns->idIns() == INS_i32_eqz))
+    {
+        insGroup*  prevIG = emitLastInsIG;
+        instrDesc* prev   = emitLastIns;
+        if (emitPrevID(prevIG, prev) && isInsIGSafeForPeepholeOptimization(prevIG, emitLastInsIG) &&
+            (prev->idIns() == INS_i32_eqz))
+        {
+            // Keep descriptors so captured instruction positions remain valid.
+            auto elide = [this](insGroup* ig, instrDesc* id) {
+                unsigned short size = static_cast<unsigned short>(id->idCodeSize());
+                if (ig == emitCurIG)
+                {
+                    emitCurIGsize -= size;
+                }
+                else
+                {
+                    ig->igSize -= size;
+                }
+                ig->igFlags |= IGF_UPD_ISZ;
+                id->idIns(INS_nop);
+                id->idInsFmt(IF_NONE);
+            };
+
+            JITDUMP("\n -- eliding 'i32.eqz; i32.eqz' before 'br_if'.\n");
+            elide(prevIG, prev);
+            elide(emitLastInsIG, emitLastIns);
+        }
+    }
+
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
@@ -315,6 +361,15 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     switch (params.callType)
     {
         case EC_FUNC_TOKEN:
+            if (m_compiler->eeGetRelocTypeHint(params.addr) == CorInfoReloc::WASM_DEFERRED_CALL)
+            {
+                ins = params.isJump ? INS_deferred_return_call : INS_deferred_call;
+                id  = emitNewInstrCns(EA_HANDLE_CNS_RELOC, reinterpret_cast<cnsval_ssize_t>(params.addr));
+                id->idIns(ins);
+                id->idInsFmt(IF_DEFERRED_CALL);
+                id->idAddr()->iiaWasmSignature = params.wasmSignature;
+                break;
+            }
             ins = params.isJump ? INS_return_call : INS_call;
             id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)params.addr);
             id->idIns(ins);
@@ -727,11 +782,19 @@ static const unsigned PADDED_RELOC_SIZE = 5;
 
 unsigned emitter::instrDesc::idCodeSize() const
 {
+    if (idInsFmt() == IF_NONE)
+    {
+        return 0;
+    }
+
     unsigned int opcode = GetInsOpcode(idIns());
 
     unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
     switch (idInsFmt())
     {
+        case IF_DEFERRED_CALL:
+            size += 1 + 2 * PADDED_RELOC_SIZE;
+            break;
         case IF_OPCODE:
             break;
         case IF_BLOCK:
@@ -989,6 +1052,31 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (insFmt)
     {
+        case IF_NONE:
+            break;
+
+        case IF_DEFERRED_CALL:
+        {
+            // #DeferredWasmCallRelocationProtocol
+            // Lowering omits the final frame-identity/PEP argument from the call IR. Codegen
+            // includes it in the exact Wasm signature, and this fixed-width bundle supplies it.
+            // The managed CorInfoImpl consumes relocation callbacks in emission order: first
+            // the frame identity, then metadata-only WASM_DEFERRED_CALL with the signature,
+            // immediately followed by WASM_FUNCTION_INDEX_LEB for the target at the same offset.
+            // The metadata callback writes no bytes and produces no object relocation. Its
+            // signature occupies one pending slot until the function-index callback consumes it,
+            // so another deferred call must not interleave these callbacks.
+            // See #DeferredWasmCallRewriting for direct-call selection and indirect expansion.
+            dst += emitOutputOpcode(dst, INS_i32_const);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
+                                 CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
+            dst += emitOutputOpcode(dst, ins);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(id->idAddr()->iiaWasmSignature),
+                                 CorInfoReloc::WASM_DEFERRED_CALL);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
+            break;
+        }
         case IF_OPCODE:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1036,9 +1124,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_FRAMEIDENTITY:
         {
+            assert(m_compiler->IsNativeAot() || id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
-            void* target =
-                m_compiler->IsNativeAot() ? static_cast<void*>(emitCodeBlock) : m_compiler->info.compMethodHnd;
+            void* target = m_compiler->IsNativeAot() ? static_cast<void*>(emitCodeBlock)
+                                                     : reinterpret_cast<void*>(emitGetInsSC(id));
             emitRecordRelocation(dst, target, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
             dst += emitOutputPaddedReloc(dst);
             break;
@@ -1342,6 +1431,10 @@ void emitter::emitDispIns(
     //
     switch (fmt)
     {
+        case IF_NONE:
+            printf(" (elided)");
+            break;
+
         case IF_OPCODE:
             break;
 
@@ -1358,6 +1451,7 @@ void emitter::emitDispIns(
         case IF_RAW_ULEB128:
         case IF_ULEB128:
         case IF_FUNCIDX:
+        case IF_DEFERRED_CALL:
         case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);

@@ -466,12 +466,19 @@ namespace Internal.JitInterface
             PublishRWData();
             PublishWasmMethodVirtualIPFixups();
 
+#if READYTORUN
+            if (_compilation.DeferredWasmCalls is null)
+            {
+                _methodCodeNode.FinalizePrecodeFixups(scratch: _precodeFixupScratch);
+            }
+#endif
             return CompilationResult.CompilationComplete;
         }
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
         partial void PublishWasmMethodVirtualIPFixups();
         partial void ClearWasmMethodVirtualIPFixups();
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget);
 
         private static FuncletKind[] GetWasmFuncletKinds(CORINFO_EH_CLAUSE[] clauses)
         {
@@ -561,21 +568,34 @@ namespace Internal.JitInterface
                 _methodCodeNode.InitializeFuncletKinds(GetWasmFuncletKinds(_ehClauses));
             }
 
-            _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
-            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
-            MethodDesc[] inlineeArray;
-            if (_inlinedMethods != null)
+            if (_compilation.DeferredWasmCalls is not null)
             {
-                inlineeArray = new MethodDesc[_inlinedMethods.Count];
-                _inlinedMethods.CopyTo(inlineeArray);
-                Array.Sort(inlineeArray, TypeSystemComparer.Instance.Compare);
+                _compilation.DeferredWasmCalls.InitializeMethodData(
+                    _methodCodeNode, _debugLocInfos, _debugVarInfos, _deferredWasmActivationImports);
             }
             else
+#endif
             {
-                inlineeArray = Array.Empty<MethodDesc>();
+                _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
+                _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
             }
-            _methodCodeNode.InitializeInliningInfo(inlineeArray, _compilation.NodeFactory);
+#if READYTORUN
+            if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+            {
+                MethodDesc[] inlineeArray;
+                if (_inlinedMethods != null)
+                {
+                    inlineeArray = new MethodDesc[_inlinedMethods.Count];
+                    _inlinedMethods.CopyTo(inlineeArray);
+                    Array.Sort(inlineeArray, TypeSystemComparer.Instance.Compare);
+                }
+                else
+                {
+                    inlineeArray = Array.Empty<MethodDesc>();
+                }
+                _methodCodeNode.InitializeInliningInfo(inlineeArray, _compilation.NodeFactory);
+            }
 
             if (RequiresInstructionSetSupportFixup())
             {
@@ -602,7 +622,6 @@ namespace Internal.JitInterface
                     }
                 }
             }
-
             if (_synthesizedPgoDependencies != null)
             {
                 Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
@@ -1775,9 +1794,41 @@ namespace Internal.JitInterface
             return ObjectToHandle(method);
         }
 
+        private bool IsTypeVersionResilientForComparer(TypeDesc type)
+        {
+#if READYTORUN
+            // A type (or one of its base types) can gain IEquatable<T> or IComparable<T> across version bubbles
+            // unless the hierarchy versions with the compilation. Nullable<T> delegates to its underlying value type T,
+            // and primitives, enums, strings, and canonical types have fixed or runtime-determined comparers.
+            if (type.IsNullable)
+            {
+                type = type.Instantiation[0];
+            }
+
+            if (type.IsPrimitive || type.IsEnum || type.IsString || type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                return true;
+            }
+
+            for (TypeDesc t = type; t is not null && !t.IsObject && !t.IsWellKnownType(WellKnownType.ValueType); t = t.BaseType)
+            {
+                if (!_compilation.CompilationModuleGroup.VersionsWithType(t))
+                {
+                    return false;
+                }
+            }
+#endif
+            return true;
+        }
+
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc comparand = HandleToObject(elemType);
+            if (!IsTypeVersionResilientForComparer(comparand))
+            {
+                return null;
+            }
+
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
         }
@@ -1785,6 +1836,11 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc comparand = HandleToObject(elemType);
+            if (!IsTypeVersionResilientForComparer(comparand))
+            {
+                return null;
+            }
+
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetEqualityComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
         }
@@ -4752,6 +4808,17 @@ namespace Internal.JitInterface
             // the relocation with a method-load-time fixup that stores the target's runtime
             // MultiCallableAddrOfCode into the location.
             bool handledByCodeStoreFixup = false;
+#if READYTORUN
+            // Capture metadata for the immediately following function-index relocation.
+            // See #DeferredWasmCallRelocationProtocol for the emitter/consumer ordering contract.
+            if (fRelocType == CorInfoReloc.WASM_DEFERRED_CALL)
+            {
+                Debug.Assert(locationBlock == BlockType.Code && addlDelta == 0);
+                Debug.Assert(_deferredWasmCallSignature is null);
+                _deferredWasmCallSignature = (WasmTypeNode)HandleToObject(target);
+                return;
+            }
+#endif
             TryUseWasmMethodCodeStoreFixup(target, fRelocType, locationBlock, relocOffset, addlDelta, ref handledByCodeStoreFixup);
             if (handledByCodeStoreFixup)
             {
@@ -4827,8 +4894,18 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+#if READYTORUN
+            if (relocTarget is DeferredWasmCallNode call)
+            {
+                Debug.Assert(fRelocType == CorInfoReloc.WASM_FUNCTION_INDEX_LEB && _deferredWasmCallSignature is not null);
+                relocTarget = _compilation.DeferredWasmCalls.GetCall(call.Fallback.MethodWithToken, call.Fallback, _deferredWasmCallSignature);
+                _deferredWasmCallSignature = null;
+            }
+#endif
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
+
+            RecordRelocationDependencies(relocTarget);
 
             if (sourceBlock.Count == 0)
                 sourceBlock.EnsureCapacity(length / 32 + 1);
@@ -4837,6 +4914,12 @@ namespace Internal.JitInterface
 
         private CorInfoReloc getRelocTypeHint(void* target)
         {
+#if READYTORUN
+            if (_compilation.DeferredWasmCalls is not null && target != null && HandleToObject(target) is DeferredWasmCallNode)
+            {
+                return CorInfoReloc.WASM_DEFERRED_CALL;
+            }
+#endif
             switch (_compilation.TypeSystemContext.Target.Architecture)
             {
                 case TargetArchitecture.X64:

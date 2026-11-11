@@ -415,8 +415,13 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        // Use the wasm `memory.fill` instruction.
+        // Use a native Wasm store or memory.fill.
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        if (src->IsIntegralConst(0))
+        {
+            // Codegen picks the constant's type for scalar zero stores.
+            src->SetContained();
+        }
     }
 
     if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) || ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0))

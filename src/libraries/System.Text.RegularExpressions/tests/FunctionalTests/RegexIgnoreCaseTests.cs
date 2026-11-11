@@ -24,6 +24,14 @@ namespace System.Text.RegularExpressions.Tests
                 new("\u2126", "\u03A9"), // Both lowercase to \u03C9
                 new("\u212A", "\u004B"), // Both lowercase to \u006B
                 new("\u212B", "\u00C5"), // Both lowercase to \u00E5
+                // Unicode 18.0 casing pairs
+                new("\uA7CE", "\uA7CF"),
+                new("\uA7D2", "\uA7D3"),
+                new("\uA7D4", "\uA7D5"),
+                new("\uA7DD", "\u0277"),
+                new("\uA7E2", "\u027C"),
+                new("\uAB6C", "\uAB4B"),
+                new("\uAB6D", "\uAB4C"),
             };
         }
 
@@ -42,6 +50,8 @@ namespace System.Text.RegularExpressions.Tests
                     foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                     {
                         yield return new object[] { engine, pattern, input, culture };
+                        // Also exercise lowercase-pattern/uppercase-input (and the reverse of each shared-lowercase pair).
+                        yield return new object[] { engine, input, pattern, culture };
                     }
                 }
             }

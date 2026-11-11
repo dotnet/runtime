@@ -1170,7 +1170,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
             r2rReader.instrumentationData.Append(0);
         }
         size_t schemaDataSize = r2rReader.schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
-        NewArrayHolder<BYTE> allocatedData = new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize];
+        NewArrayHolder<BYTE> allocatedData(new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize]);
 
         *pInstrumentationData = (BYTE*)allocatedData;
         *pCountSchemaItems = r2rReader.schemaArray.GetCount();
@@ -1180,8 +1180,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
         memcpy(*ppSchema, r2rReader.schemaArray.OpenRawBuffer(), schemaDataSize);
         r2rReader.schemaArray.CloseRawBuffer();
 
-        allocatedData.SuppressRelease();
-        *pAllocatedData = allocatedData;
+        *pAllocatedData = allocatedData.Detach();
         return S_OK;
     }
 }

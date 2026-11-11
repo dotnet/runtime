@@ -951,12 +951,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //
     impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, compCurBB);
 
-#ifdef UNIX_X86_ABI
-    // On Unix x86 we use caller-cleaned convention.
-    if ((call->gtFlags & GTF_CALL_UNMANAGED) == 0)
-        call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
-
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         assert(call->IsCall());
@@ -2291,9 +2285,6 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
 
     call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
-#ifdef UNIX_X86_ABI
-    call->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif
 
     return call;
 }

@@ -91,7 +91,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         {
             IStackWalk sw = _target.Contracts.StackWalk;
             IStackDataFrameHandle dataFrame = _dataFrames.Current;
-            byte[] context = sw.GetRawContext(dataFrame);
+            ReadOnlySpan<byte> context = sw.GetRawContext(dataFrame);
             if (context.Length > contextBufSize)
                 hr = HResults.E_INVALIDARG;
 

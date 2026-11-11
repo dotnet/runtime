@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <UnicodeUcdVersion>16.0</UnicodeUcdVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <EnableDefaultItems>true</EnableDefaultItems>

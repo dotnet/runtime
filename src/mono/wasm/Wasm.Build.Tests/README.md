@@ -67,6 +67,54 @@ For this, the builds get cached using `ProjectInfo` as the key.
 - `SHOW_BUILD_OUTPUT` - will show the build output to the console
 - `SKIP_PROJECT_CLEANUP` - won't remove the temporary project directories generated for the tests
 
+## Appsettings coverage
+
+`AppSettingsTests` covers environment selection for build and publish, including
+MSBuild and JavaScript overrides. It also exercises the internal appsettings APIs
+on both CoreCLR and Mono:
+
+- `INTERNAL.getAppSettingsFiles()` returns the manifest-listed VFS filenames for
+  the resolved application environment, with base settings before
+  environment-specific settings and no duplicates.
+- On CoreCLR, `INTERNAL.getAppSettingsBytes(fileName)` returns the downloaded
+  `Uint8Array` retained in JavaScript memory, or `undefined` for an unloaded file.
+  The returned array must be treated as read-only. Managed interop copies it into
+  a managed byte array. Later VFS writes do not change the retained bytes.
+- On Mono, byte access continues to read the current VFS contents.
+
+For CoreCLR applications targeting .NET 12 or later, the manifest contains
+`resources.appsettings` assets with a `loadIntoVfs` flag.
+`_WasmFilesystemUsageDetected` defaults to `true`, preserving existing VFS
+placement, including Blazor versions that read configuration through managed file
+APIs. Explicitly setting it to `false` makes settings available only through the
+internal APIs, unless `WasmFilesToIncludeInFileSystem` items exist: those force the
+flag to `true`. The default can become `false` once IL trimming provides better
+filesystem usage detection. This does not disable filesystem support for other uses.
+
+Older target frameworks and Mono retain the top-level appsettings list.
+CoreCLR also accepts legacy manifests and continues installing those settings
+into VFS while retaining their downloaded bytes.
+
+`AppSettingsWithoutFilesystem` runs in the CoreCLR no-workload lane. Its .NET 12
+browser fixture consumes the generated asset schema and checks the
+filesystem-detection value reported by the real build/publish targets.
+It covers both placement modes, explicit overrides, custom resource loaders, and
+download-before-create. The legacy case converts the generated asset list to
+the old manifest representation before startup.
+
+Manifest-generation theories invoke the task directly to verify .NET 12+ assets,
+the .NET 11 compatibility boundary, and unchanged Mono output. CoreCLR browser
+tests additionally cover .NET 12 project-to-browser manifest generation and
+loading end to end.
+
+The flag-only incremental publish case disables trimming to isolate filesystem
+detection from incremental trimmed assembly staging; fresh-publish cases
+retain trimming. `Blazor.AppsettingsTests` checks that default settings remain
+available through managed VFS access on the template's target framework.
+`Blazor.CurrentRuntimeAppsettingsTests` checks the internal APIs against the
+locally built current runtime, not a released runtime from an older template.
+Managed JSON parsing remains the consumer's responsibility.
+
 ## How to add tests
 
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.

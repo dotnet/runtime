@@ -452,7 +452,7 @@ dotnet publish -c Release
 to `*`. It selects methods, not a profiling granularity. Publishing instruments the application
 and framework ReadyToRun closure, including methods inlined across assembly boundaries. Both a
 packaged wasm-capable crossgen2 and `Crossgen2InBuildDir` are supported. Use matching crossgen2 and
-runtime builds supporting the additive ReadyToRun format version 33.2 and its `PgoInstrumentationData`
+runtime builds supporting the additive ReadyToRun format version 34.1 and its `PgoInstrumentationData`
 fixup (`0x3C`). Development builds, Mono, disabled diagnostics, disabled
 ReadyToRun publishing, and `WasmEnableThreads=true` are rejected rather than silently publishing
 uninstrumented code. Scope the property to the profiling publish if you also use `dotnet build`.

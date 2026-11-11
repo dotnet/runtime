@@ -10,6 +10,21 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        private const long EstimatedMemoryPressure = 20_000;
+
+        [UnmanagedCallersOnly]
+        private static unsafe void RegisterMemoryPressure(Exception* pException)
+        {
+            try
+            {
+                GC.AddMemoryPressure(EstimatedMemoryPressure);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
 #if !TARGET_WINDOWS
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {
@@ -49,7 +64,14 @@ namespace System.Threading
         private static partial void PollGCInternal();
 
         /// <summary>Clean up the thread when it goes away.</summary>
-        ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
+        ~Thread()
+        {
+            if (_DONT_USE_InternalThread != IntPtr.Zero)
+            {
+                InternalFinalize();
+                GC.RemoveMemoryPressure(EstimatedMemoryPressure);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
@@ -58,6 +80,7 @@ namespace System.Threading
         {
             Thread _this = this;
             Initialize(ObjectHandleOnStack.Create(ref _this));
+            GC.AddMemoryPressure(EstimatedMemoryPressure);
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]

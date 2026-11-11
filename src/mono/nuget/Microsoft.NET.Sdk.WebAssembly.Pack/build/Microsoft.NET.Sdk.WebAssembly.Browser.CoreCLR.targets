@@ -30,6 +30,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
          An explicit unsupported value is left as-is and rejected by _WasmCoreClrValidateReadyToRun. -->
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
+    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripInliningInfo>
+    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripDebugInfo>
+    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == '' and '$(DebuggerSupport)' != 'true' and '$(Configuration)' != 'Debug'">true</PublishReadyToRunStripInliningInfo>
+    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == '' and '$(DebuggerSupport)' != 'true' and '$(Configuration)' != 'Debug'">true</PublishReadyToRunStripDebugInfo>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(Configuration)' == 'Debug'">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-debug-info=all</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(Configuration)' != 'Debug'">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-debug-info=none</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- This target is imported after Microsoft.NET.CrossGen.targets, so add strip arguments here when that SDK target
+         has not already added them from the strip properties above. -->
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-inlining-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
@@ -283,6 +293,9 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|PgoInstrumentation=$(WasmPgoInstrumentation)|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <!-- The workload targets record settings for steps that rewrite the images in place after crossgen2
+           (wasm-opt), so changing them recompiles every image. -->
+      <_WasmReadyToRunState Condition="'$(_WasmReadyToRunPostProcessState)' != ''">$(_WasmReadyToRunState)|PostProcess=$(_WasmReadyToRunPostProcessState)</_WasmReadyToRunState>
       <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
       <_WasmReadyToRunStateFile>$(_WasmPublishR2RDir)browser-r2r-state.stamp</_WasmReadyToRunStateFile>
     </PropertyGroup>
@@ -310,6 +323,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <!-- wasm-opt comes from the Emscripten SDK, so the workload's BrowserWasmApp.CoreCLR.targets owns the
+       ReadyToRun wasm-opt pass and sets _WasmCoreClrR2RWasmOptSupported. The workload manifest already requires
+       the workload when WasmRunWasmOpt=true; this covers builds that still lack its targets, for example with
+       UsingBrowserRuntimeWorkload=false. -->
+  <Target Name="_WasmCoreClrWarnR2RWasmOptUnavailable"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmRunWasmOpt)' == 'true' and '$(_WasmCoreClrR2RWasmOptSupported)' != 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <Warning Text="WasmRunWasmOpt=true is ignored for ReadyToRun images because the wasm-tools workload is not in use. Install the wasm-tools workload to optimize ReadyToRun images with wasm-opt." />
+  </Target>
+
   <!-- Delete per-app images and composite component stubs left in obj/R2R by a previous build or
        publish mode. A stale orphan would otherwise be staged and fail-fast at load. -->
   <Target Name="_WasmCoreClrPruneStalePerAppR2R"
@@ -324,8 +347,11 @@ Copyright (c) .NET Foundation. All rights reserved.
                              Condition="'$(PublishReadyToRunComposite)' == 'true'" />
       <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the
            R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. -->
+      <!-- Exclude by full path: OutputR2RImage keeps any '..' segments from IntermediateOutputPath (e.g. an
+           unnormalized ArtifactsPath) while _WasmPublishR2RDir is normalized, and Exclude compares the
+           strings literally, so a raw path would never match and the fresh images would be deleted. -->
       <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm;$(_WasmPublishR2RDir)*.dll"
-                           Exclude="@(_WasmEmittedPerAppR2R)" />
+                           Exclude="@(_WasmEmittedPerAppR2R->'%(FullPath)')" />
     </ItemGroup>
     <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>

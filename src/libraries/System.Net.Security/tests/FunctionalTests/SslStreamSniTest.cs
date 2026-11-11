@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Test.Common;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -215,6 +216,184 @@ namespace System.Net.Security.Tests
 
             Assert.Equal(string.Empty, server.TargetHostName);
             Assert.Equal(target, client.TargetHostName);
+        }
+
+        public static TheoryData<string, string, string?, string?, string, bool> IpLiteralCertificateNameValidationData()
+        {
+            TheoryData<string, string, string?, string?, string, bool> data = new();
+
+            // Without a DNS SAN, a matching CN is accepted even if an IP SAN contains a different address.
+            AddCase("IPv4: CN matches, no SAN",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: true);
+            AddCase("IPv4: CN mismatches, no SAN",
+                commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: false);
+            AddCase("IPv4: CN matches, IP SAN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: true,
+                sanIpAddress: "192.0.2.2");
+            AddCase("IPv4: IP SAN matches, CN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: true,
+                sanIpAddress: "192.0.2.2");
+            AddCase("IPv4: neither CN nor IP SAN matches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.3", expectNameMatch: false,
+                sanIpAddress: "192.0.2.2");
+
+            // A DNS SAN suppresses CN fallback, but does not prevent an IP SAN from matching.
+            AddCase("IPv4: DNS SAN blocks matching CN",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
+                sanDnsName: "example.test");
+            AddCase("IPv4: DNS SAN blocks CN; IP SAN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
+                sanIpAddress: "192.0.2.2", sanDnsName: "example.test");
+            AddCase("IPv4: numeric DNS SAN blocks CN; IP SAN mismatches",
+                commonName: "192.168.2.1", targetHost: "192.168.2.1", expectNameMatch: false,
+                sanIpAddress: "192.168.2.3", sanDnsName: "192.168.2.2");
+            AddCase("IPv4: IP SAN matches, DNS SAN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: true,
+                sanIpAddress: "192.0.2.2", sanDnsName: "example.test");
+            AddCase("IPv4: IP SAN matches, numeric DNS SAN mismatches",
+                commonName: "192.168.2.1", targetHost: "192.168.2.3", expectNameMatch: true,
+                sanIpAddress: "192.168.2.3", sanDnsName: "192.168.2.2");
+
+            // A numeric DNS SAN can match the IP target as text, independently of CN.
+            AddCase("IPv4: numeric DNS SAN and CN match",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: true,
+                sanDnsName: "192.0.2.1");
+            AddCase("IPv4: numeric DNS SAN matches, CN unrelated",
+                commonName: "other.test", targetHost: "192.0.2.1", expectNameMatch: true,
+                sanDnsName: "192.0.2.1");
+            AddCase("IPv4: numeric DNS SAN matches, IP SAN and CN mismatch",
+                commonName: "192.168.2.1", targetHost: "192.168.2.2", expectNameMatch: true,
+                sanIpAddress: "192.168.2.3", sanDnsName: "192.168.2.2");
+            AddCase("IPv4: wildcard DNS SAN does not match",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
+                sanDnsName: "*.0.2.1");
+            AddCase("IPv4: wildcard CN does not match",
+                commonName: "*.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false);
+
+            // IPv6 follows the same CN and SAN precedence rules.
+            AddCase("IPv6: CN matches, no SAN",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true);
+            AddCase("IPv6: CN mismatches, no SAN",
+                commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: false);
+            AddCase("IPv6: CN matches, IP SAN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true,
+                sanIpAddress: "2001:db8::2");
+            AddCase("IPv6: IP SAN matches, CN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: true,
+                sanIpAddress: "2001:db8::2");
+            AddCase("IPv6: neither CN nor IP SAN matches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::3", expectNameMatch: false,
+                sanIpAddress: "2001:db8::2");
+            AddCase("IPv6: DNS SAN blocks matching CN",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: false,
+                sanDnsName: "example.test");
+            AddCase("IPv6: DNS SAN blocks CN; IP SAN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: false,
+                sanIpAddress: "2001:db8::2", sanDnsName: "example.test");
+            AddCase("IPv6: IP SAN matches, DNS SAN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: true,
+                sanIpAddress: "2001:db8::2", sanDnsName: "example.test");
+            AddCase("IPv6: numeric DNS SAN and CN match",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true,
+                sanDnsName: "2001:db8::1");
+            AddCase("IPv6: numeric DNS SAN matches, CN unrelated",
+                commonName: "other.test", targetHost: "2001:db8::1", expectNameMatch: true,
+                sanDnsName: "2001:db8::1");
+
+            // Equivalent IPv6 addresses with different spellings do not match in numeric DNS SANs.
+            AddCase("IPv6: expanded DNS vs compressed target mismatch",
+                commonName: "other.test", targetHost: "2001:db8::1", expectNameMatch: false,
+                sanDnsName: "2001:0db8:0:0:0:0:0:1");
+            AddCase("IPv6: compressed DNS vs expanded target mismatch",
+                commonName: "other.test", targetHost: "2001:0db8:0:0:0:0:0:1", expectNameMatch: false,
+                sanDnsName: "2001:db8::1");
+
+            return data;
+
+            void AddCase(
+                string scenario, string commonName, string targetHost, bool expectNameMatch,
+                string? sanIpAddress = null, string? sanDnsName = null)
+            {
+                data.Add(scenario, commonName, sanIpAddress, sanDnsName, targetHost, expectNameMatch);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(IpLiteralCertificateNameValidationData))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_IpLiteral_CertificateNameValidation(
+            string scenario, string commonName, string? sanIpAddress, string? sanDnsName, string targetHost, bool expectNameMatch)
+        {
+            // The scenario describes the rule being checked and appears in the test case name.
+            _ = scenario;
+
+            using RSA key = RSA.Create(2048);
+            CertificateRequest request = new CertificateRequest(
+                $"CN={commonName}", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+            if (sanIpAddress is not null || sanDnsName is not null)
+            {
+                SubjectAlternativeNameBuilder san = new SubjectAlternativeNameBuilder();
+
+                // Preserve numeric DNS SANs as text; only IP SANs are encoded as address bytes.
+                if (sanDnsName is not null)
+                {
+                    san.AddDnsName(sanDnsName);
+                }
+
+                if (sanIpAddress is not null)
+                {
+                    san.AddIpAddress(IPAddress.Parse(sanIpAddress));
+                }
+
+                request.CertificateExtensions.Add(san.Build());
+            }
+
+            using X509Certificate2 certificate = request.CreateSelfSigned(
+                DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+            using X509Certificate2 serverCertificate = X509CertificateLoader.LoadPkcs12(
+                certificate.Export(X509ContentType.Pkcs12), (string?)null);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                SslPolicyErrors? observedErrors = null;
+                // Disable resumption on both peers so every case validates its own certificate.
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    // Validate this IP literal, independently of the underlying transport.
+                    TargetHost = targetHost,
+                    AllowTlsResume = false,
+                    // Trust the test certificate so chain errors do not obscure name-matching results.
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { certificate },
+                        RevocationMode = X509RevocationMode.NoCheck,
+                    },
+                    RemoteCertificateValidationCallback = (sender, remoteCertificate, chain, errors) =>
+                    {
+                        observedErrors = errors;
+                        // Let mismatch cases complete TLS and payload checks; assert the exact errors below.
+                        return true;
+                    },
+                };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCertificate,
+                    AllowTlsResume = false,
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions));
+
+                Assert.Equal(
+                    expectNameMatch ? SslPolicyErrors.None : SslPolicyErrors.RemoteCertificateNameMismatch,
+                    observedErrors);
+                await TestHelper.PingPong(client, server);
+            }
         }
 
         [Theory]
