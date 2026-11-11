@@ -8,7 +8,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Internal.JitInterface;
 
 namespace SuperPmi.Shim;
 
@@ -25,11 +24,9 @@ internal static unsafe class Counter
 
         ShimEnvironment.SetLogPath();
         s_summarizer = new MethodCallSummarizer(ShimEnvironment.LogPath);
-        ForwardingShim.OnCall = s_summarizer.AddCall;
+        ForwardingShim.OnCall = &AddCall;
         ShimInterop.Shim_SetUnloadCallback(&SaveTextFile);
     };
-
-    public static void AddCall(string name) => s_summarizer.AddCall(name);
 
     [UnmanagedCallersOnly(EntryPoint = "jitStartup")]
     private static void jitStartup(IntPtr host) => ForwardingShim.JitStartup(host);
@@ -38,18 +35,23 @@ internal static unsafe class Counter
     private static IntPtr getJit() => ForwardingShim.GetJit();
 
     [UnmanagedCallersOnly]
+    private static void AddCall(byte* name) => s_summarizer.AddCall(name);
+
+    [UnmanagedCallersOnly]
     private static void SaveTextFile() => s_summarizer.SaveTextFile();
 }
 
-internal sealed class MethodCallSummarizer
+internal sealed unsafe class MethodCallSummarizer
 {
     private readonly string _dataFileName;
-    private readonly ConcurrentDictionary<string, StrongBox<int>> _namesAndCounts = new(StringComparer.Ordinal);
+
+    // By the address of the name, a string literal of the native shim.
+    private readonly ConcurrentDictionary<IntPtr, StrongBox<int>> _namesAndCounts = new();
 
     public MethodCallSummarizer(string logPath)
         => _dataFileName = ShimEnvironment.GetResultFileName(logPath, ShimEnvironment.GetProcessCommandLine(), ".csv");
 
-    public void AddCall(string name) => Interlocked.Increment(ref _namesAndCounts.GetOrAdd(name, static _ => new StrongBox<int>()).Value);
+    public void AddCall(byte* name) => Interlocked.Increment(ref _namesAndCounts.GetOrAdd((IntPtr)name, static _ => new StrongBox<int>()).Value);
 
     public void SaveTextFile()
     {
@@ -57,8 +59,11 @@ internal sealed class MethodCallSummarizer
         {
             using var writer = new StreamWriter(_dataFileName);
             writer.WriteLine("FunctionName,Count");
-            foreach ((string name, StrongBox<int> count) in _namesAndCounts.OrderBy(entry => entry.Key, StringComparer.Ordinal))
-                writer.WriteLine($"{name},{count.Value}");
+            var counts = _namesAndCounts
+                .GroupBy(entry => Marshal.PtrToStringUTF8(entry.Key), entry => entry.Value.Value, StringComparer.Ordinal)
+                .OrderBy(group => group.Key, StringComparer.Ordinal);
+            foreach (IGrouping<string, int> count in counts)
+                writer.WriteLine($"{count.Key},{count.Sum()}");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

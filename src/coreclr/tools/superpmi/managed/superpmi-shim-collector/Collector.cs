@@ -84,25 +84,25 @@ internal static unsafe class Collector
     }
 }
 
-// The ICorJitCompiler that the runtime calls, which records each compilation into a method context.
+// The ICorJitCompiler that the runtime calls, which records each compilation into a method context. The native
+// RecordingJitCompiler compiles with the real JIT, and calls this to set up and to finish the recording.
 internal sealed unsafe class CollectorJitCompiler
 {
-    private static readonly ShimInterop.JitCompilerCallbacks* s_callbacks = ShimInterop.Allocate(new ShimInterop.JitCompilerCallbacks
+    private static readonly ShimInterop.RecordingCompilerCallbacks* s_callbacks = ShimInterop.Allocate(new ShimInterop.RecordingCompilerCallbacks
     {
-        compileMethod = &CompileMethodCallback,
-        ProcessShutdownWork = &ProcessShutdownWorkCallback,
-        getVersionIdentifier = &GetVersionIdentifierCallback,
+        beginCompile = &BeginCompileCallback,
+        endCompile = &EndCompileCallback,
         setTargetOS = &SetTargetOSCallback,
+        pendingCallNotTaken = &PendingCallNotTakenCallback,
+        recordUpdateEntryPointForTailCall = &CorInfoImpl.RecordUpdateEntryPointForTailCallCallback,
     });
 
-    private readonly IntPtr _original;
     private readonly FileStream _file;
     private CORINFO_OS _currentOs = OperatingSystem.IsWindows() ? CORINFO_OS.CORINFO_WINNT :
         OperatingSystem.IsMacOS() ? CORINFO_OS.CORINFO_APPLE : CORINFO_OS.CORINFO_UNIX;
 
     public CollectorJitCompiler(IntPtr original, string dataFileName)
     {
-        _original = original;
         try
         {
             _file = new FileStream(dataFileName, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.SequentialScan);
@@ -113,47 +113,68 @@ internal sealed unsafe class CollectorJitCompiler
         }
 
         // The JIT is used for the lifetime of the process.
-        Native = ShimInterop.Shim_CreateJitCompiler(GCHandle.ToIntPtr(GCHandle.Alloc(this)), s_callbacks);
+        Native = ShimInterop.Shim_CreateRecordingJitCompiler(original, GCHandle.ToIntPtr(GCHandle.Alloc(this)), s_callbacks);
     }
 
     public IntPtr Native { get; }
 
     private static CollectorJitCompiler Get(IntPtr thisHandle) => (CollectorJitCompiler)GCHandle.FromIntPtr(thisHandle).Target;
 
+    // Returns the handle of the JIT-EE interface that records the compilation, or 0 not to record it.
     [UnmanagedCallersOnly]
-    private static CorJitResult CompileMethodCallback(IntPtr thisHandle, IntPtr* ppException, IntPtr comp, CORINFO_METHOD_INFO* info,
-        uint flags, byte** nativeEntry, uint* nativeSizeOfCode)
+    private static IntPtr BeginCompileCallback(IntPtr thisHandle, IntPtr comp, ShimInterop.PendingCall* pending, CORINFO_METHOD_INFO* info,
+        uint flags, IntPtr* pJitInfoCallbacks)
     {
         try
         {
-            return Get(thisHandle).compileMethod(comp, info, flags, nativeEntry, nativeSizeOfCode);
+            CorInfoImpl ourJitInfo = Get(thisHandle).beginCompile(comp, pending, info, flags);
+            if (ourJitInfo == null)
+                return 0;
+
+            *pJitInfoCallbacks = CorInfoImpl.UnmanagedCallbacks;
+            return GCHandle.ToIntPtr(GCHandle.Alloc(ourJitInfo));
+        }
+        catch (EEException)
+        {
+            // The EE threw for a call that the collector made itself: the compilation isn't recorded.
+            return 0;
         }
         catch (Exception ex)
         {
-            *ppException = ShimInterop.ToNativeException(ex);
-            return CorJitResult.CORJIT_INTERNALERROR;
+            return ShimInterop.Fail(ex);
         }
     }
 
     [UnmanagedCallersOnly]
-    private static void ProcessShutdownWorkCallback(IntPtr thisHandle, IntPtr info)
-        => ShimInterop.Shim_ProcessShutdownWork(Get(thisHandle)._original, info);
-
-    [UnmanagedCallersOnly]
-    private static void GetVersionIdentifierCallback(IntPtr thisHandle, Guid* versionIdentifier)
-        => ShimInterop.Shim_GetVersionIdentifier(Get(thisHandle)._original, versionIdentifier);
-
-    [UnmanagedCallersOnly]
-    private static void SetTargetOSCallback(IntPtr thisHandle, CORINFO_OS os)
+    private static void EndCompileCallback(IntPtr thisHandle, IntPtr jitInfoHandle, CorJitResult result, byte* nativeEntry, uint nativeSizeOfCode)
     {
-        CollectorJitCompiler compiler = Get(thisHandle);
-        compiler._currentOs = os;
-        ShimInterop.Shim_SetTargetOS(compiler._original, os);
+        GCHandle handle = GCHandle.FromIntPtr(jitInfoHandle);
+        try
+        {
+            var ourJitInfo = (CorInfoImpl)handle.Target;
+            if (!ourJitInfo.SavedCollectionEarly)
+                Get(thisHandle).finalizeAndCommitCollection(ourJitInfo.MethodContext, result, nativeEntry, nativeSizeOfCode);
+        }
+        catch (Exception ex)
+        {
+            ShimInterop.Fail(ex);
+        }
+        finally
+        {
+            handle.Free();
+        }
     }
 
-    private CorJitResult compileMethod(IntPtr comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode)
+    [UnmanagedCallersOnly]
+    private static void SetTargetOSCallback(IntPtr thisHandle, CORINFO_OS os) => Get(thisHandle)._currentOs = os;
+
+    [UnmanagedCallersOnly]
+    private static void PendingCallNotTakenCallback(int index)
+        => ShimInterop.Fail(new InvalidOperationException($"The collector didn't take the pending call to {OriginalJitInfo.GetMethodName(index)}"));
+
+    private CorInfoImpl beginCompile(IntPtr comp, ShimInterop.PendingCall* pending, CORINFO_METHOD_INFO* info, uint flags)
     {
-        var original = new OriginalJitInfo(comp, ShimInterop.Forwarders);
+        var original = new OriginalJitInfo(comp, ShimInterop.Forwarders, pending);
 
         // See if we are filtering the collection (currently by simple substring match).
         if (Collector.CollectionFilter != null)
@@ -161,7 +182,7 @@ internal sealed unsafe class CollectorJitCompiler
             byte* className = null;
             byte* methodName = original.getMethodNameFromMetadata(info->ftn, &className, null, null, 0);
             if (!Contains(methodName, Collector.CollectionFilter) && !Contains(className, Collector.CollectionFilter))
-                return ShimInterop.CompileMethod(_original, comp, info, flags, nativeEntry, nativeSizeOfCode);
+                return null;
         }
 
         var mc = new MethodContext();
@@ -175,24 +196,7 @@ internal sealed unsafe class CollectorJitCompiler
         if (Collector.GlobalContext != null)
             mc.recGlobalContext(Collector.GlobalContext);
 
-        *nativeEntry = null;
-        *nativeSizeOfCode = 0;
-
-        CorJitResult result = CorJitResult.CORJIT_INTERNALERROR;
-        IntPtr exception = 0;
-        try
-        {
-            result = ourJitInfo.CompileMethod(_original, info, flags, nativeEntry, nativeSizeOfCode, out exception);
-        }
-        finally
-        {
-            if (!ourJitInfo.SavedCollectionEarly)
-                finalizeAndCommitCollection(mc, result, *nativeEntry, *nativeSizeOfCode);
-        }
-
-        if (exception != 0)
-            throw new EEException(exception);
-        return result;
+        return ourJitInfo;
     }
 
     public void finalizeAndCommitCollection(MethodContext mc, CorJitResult result, byte* nativeEntry, uint nativeSizeOfCode)

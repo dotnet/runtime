@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Pgo;
 using SuperPmi;
 using SuperPmi.Shim;
@@ -29,7 +31,12 @@ internal sealed unsafe partial class CorInfoImpl
 
     public bool SavedCollectionEarly => m_savedCollectionEarly;
 
-    private static CorInfoImpl GetThis(IntPtr thisHandle) => Unsafe.Read<CorInfoImpl>((void*)thisHandle);
+    public MethodContext MethodContext => mc;
+
+    // The handle that RecordingJitInfo calls back with, for the duration of the compilation.
+    private static CorInfoImpl GetThis(IntPtr thisHandle) => (CorInfoImpl)GCHandle.FromIntPtr(thisHandle).Target;
+
+    public static IntPtr UnmanagedCallbacks => GetUnmanagedCallbacks();
 
     private IntPtr AllocException(Exception ex) => ShimInterop.ToNativeException(ex);
 
@@ -46,17 +53,6 @@ internal sealed unsafe partial class CorInfoImpl
             _ => 1,
         };
         return false;
-    }
-
-    // Compiles the method with the real JIT through this JIT-EE interface. What escaped the JIT is returned in 'exception'.
-    public CorJitResult CompileMethod(IntPtr jit, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode, out IntPtr exception)
-    {
-        CorInfoImpl _this = this;
-        IntPtr captured = 0;
-        CorJitResult result = ShimInterop.Shim_CompileMethodWithJitInfo(&captured, jit, (IntPtr)Unsafe.AsPointer(ref _this),
-            GetUnmanagedCallbacks(), info, flags, nativeEntry, nativeSizeOfCode);
-        exception = captured;
-        return result;
     }
 
     // Forces some extra data into the method context ("fat" method contexts), which ildump needs.
@@ -177,38 +173,31 @@ internal sealed unsafe partial class CorInfoImpl
         return temp;
     }
 
+    // RecordingJitInfo passes the out parameters of getNewHelper, isEnum and getHelperFtn even where the JIT doesn't.
     private CorInfoHelpFunc getNewHelper(CORINFO_CLASS_STRUCT_* classHandle, ref bool pHasSideEffects)
     {
         CorInfoHelpFunc result = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
-        bool hasSideEffects = false;
         uint exceptionCode = 0;
         try
         {
             AddCall("getNewHelper");
-            result = _original.getNewHelper(classHandle, ref hasSideEffects);
+            result = _original.getNewHelper(classHandle, ref pHasSideEffects);
         }
         catch (Exception e) when (CaptureExceptionCode(e, ref exceptionCode))
         {
         }
         finally
         {
-            mc.recGetNewHelper(classHandle, hasSideEffects, result, exceptionCode);
+            mc.recGetNewHelper(classHandle, pHasSideEffects, result, exceptionCode);
         }
-
-        if (!Unsafe.IsNullRef(ref pHasSideEffects))
-            pHasSideEffects = hasSideEffects;
-
         return result;
     }
 
     private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
     {
         AddCall("isEnum");
-        CORINFO_CLASS_STRUCT_* tempUnderlyingType = null;
-        TypeCompareState temp = _original.isEnum(cls, &tempUnderlyingType);
-        mc.recIsEnum(cls, tempUnderlyingType, temp);
-        if (underlyingType != null)
-            *underlyingType = tempUnderlyingType;
+        TypeCompareState temp = _original.isEnum(cls, underlyingType);
+        mc.recIsEnum(cls, *underlyingType, temp);
         return temp;
     }
 
@@ -264,14 +253,8 @@ internal sealed unsafe partial class CorInfoImpl
     private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
     {
         AddCall("getHelperFtn");
-        CORINFO_CONST_LOOKUP localNativeEntrypoint;
-        CORINFO_METHOD_STRUCT_* localMethodHandle;
-        _original.getHelperFtn(ftnNum, &localNativeEntrypoint, &localMethodHandle);
-        mc.recGetHelperFtn(ftnNum, localNativeEntrypoint, localMethodHandle);
-        if (pNativeEntrypoint != null)
-            *pNativeEntrypoint = localNativeEntrypoint;
-        if (pMethod != null)
-            *pMethod = localMethodHandle;
+        _original.getHelperFtn(ftnNum, pNativeEntrypoint, pMethod);
+        mc.recGetHelperFtn(ftnNum, *pNativeEntrypoint, *pMethod);
     }
 
     private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle,
@@ -300,10 +283,30 @@ internal sealed unsafe partial class CorInfoImpl
         return result;
     }
 
-    private void updateEntryPointForTailCall(ref CORINFO_CONST_LOOKUP entryPoint)
+    // RecordingJitInfo records updateEntryPointForTailCall with RecordUpdateEntryPointForTailCallCallback instead.
+    private void updateEntryPointForTailCall(ref CORINFO_CONST_LOOKUP entryPoint) => throw new UnreachableException();
+
+    // The callback that RecordingJitInfo records updateEntryPointForTailCall with, which also gets the entry point
+    // from before the call.
+    [UnmanagedCallersOnly]
+    public static void RecordUpdateEntryPointForTailCallCallback(IntPtr thisHandle, IntPtr* ppException, CORINFO_CONST_LOOKUP* origEntryPoint,
+        CORINFO_CONST_LOOKUP* entryPoint)
+    {
+        CorInfoImpl _this = GetThis(thisHandle);
+        try
+        {
+            _this.recordUpdateEntryPointForTailCall(*origEntryPoint, ref *entryPoint);
+        }
+        catch (Exception ex)
+        {
+            *ppException = _this.AllocException(ex);
+        }
+    }
+
+    private void recordUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP origEntryPoint, ref CORINFO_CONST_LOOKUP entryPoint)
     {
         AddCall("updateEntryPointForTailCall");
-        CORINFO_CONST_LOOKUP origEntryPoint = entryPoint;
+        // Takes the pending call, without calling the EE.
         _original.updateEntryPointForTailCall(ref entryPoint);
         mc.recUpdateEntryPointForTailCall(origEntryPoint, entryPoint);
     }
@@ -343,7 +346,8 @@ internal sealed unsafe partial class CorInfoImpl
         return _original.runWithErrorTrap(function, parameter);
     }
 
-    // The error trap for the method context errors of the shim itself.
+    // The error trap for the method context errors of the shim itself. The JIT's calls don't get here: RecordingJitInfo
+    // implements it natively.
     private bool runWithSPMIErrorTrap(void* function, void* parameter)
     {
         IntPtr exception = 0;

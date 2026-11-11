@@ -6,8 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\shim\CorInfoImpl_forwarding_generated.cs" Link="Shim\CorInfoImpl_forwarding_generated.cs" />
-    <Compile Include="..\shim\ForwardingCorInfoImpl.cs" Link="Shim\ForwardingCorInfoImpl.cs" />
     <Compile Include="..\shim\ForwardingShim.cs" Link="Shim\ForwardingShim.cs" />
   </ItemGroup>
 </Project>

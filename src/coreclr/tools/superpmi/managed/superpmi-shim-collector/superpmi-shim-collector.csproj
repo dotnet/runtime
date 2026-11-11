@@ -4,4 +4,8 @@
   <PropertyGroup>
     <AssemblyName>superpmi-shim-collector</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\Common\JitInterface\CorInfoImpl_generated.cs" Link="JitInterface\CorInfoImpl_generated.cs" />
+  </ItemGroup>
 </Project>

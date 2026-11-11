@@ -11,15 +11,20 @@ using SuperPmi.Shim;
 namespace Internal.JitInterface;
 
 // The ICorJitInfo of the EE, called through the forwarders of the native shim library.
+//
+// With a pending call, the native side has already made the call that the JIT made (and the managed shim records):
+// the method for it returns the result of that call, or throws if the call threw, instead of calling the EE.
 internal readonly unsafe struct OriginalJitInfo
 {
     private readonly IntPtr _target;
     private readonly Forwarders* _forwarders;
+    private readonly ShimInterop.PendingCall* _pending;
 
-    public OriginalJitInfo(IntPtr target, IntPtr forwarders)
+    public OriginalJitInfo(IntPtr target, IntPtr forwarders, ShimInterop.PendingCall* pending = null)
     {
         _target = target;
         _forwarders = (Forwarders*)forwarders;
+        _pending = pending != null ? pending : ShimInterop.PendingCall.None;
     }
 
     public IntPtr Target => _target;
@@ -216,6 +221,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
     {
+        if (_pending->TryTake(0))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isIntrinsic(_target, &exception, ftn);
@@ -226,6 +234,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool canValueClassInstancePointerEscape(CORINFO_METHOD_STRUCT_* ftn)
     {
+        if (_pending->TryTake(1))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->canValueClassInstancePointerEscape(_target, &exception, ftn);
@@ -236,6 +247,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
     {
+        if (_pending->TryTake(2))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->notifyMethodInfoUsage(_target, &exception, ftn);
@@ -246,6 +260,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
     {
+        if (_pending->TryTake(3))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getMethodAttribs(_target, &exception, ftn);
@@ -256,6 +273,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void setMethodAttribs(CORINFO_METHOD_STRUCT_* ftn, CorInfoMethodRuntimeFlags attribs)
     {
+        if (_pending->TryTake(4))
+            return;
+
         IntPtr exception = 0;
         _forwarders->setMethodAttribs(_target, &exception, ftn, attribs);
         if (exception != 0)
@@ -264,6 +284,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getMethodSig(CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent)
     {
+        if (_pending->TryTake(5))
+            return;
+
         IntPtr exception = 0;
         _forwarders->getMethodSig(_target, &exception, ftn, sig, memberParent);
         if (exception != 0)
@@ -272,6 +295,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_STRUCT* context)
     {
+        if (_pending->TryTake(6))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->getMethodInfo(_target, &exception, ftn, info, context);
@@ -282,6 +308,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool haveSameMethodDefinition(CORINFO_METHOD_STRUCT_* meth1Hnd, CORINFO_METHOD_STRUCT_* meth2Hnd)
     {
+        if (_pending->TryTake(7))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->haveSameMethodDefinition(_target, &exception, meth1Hnd, meth2Hnd);
@@ -292,6 +321,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getTypeDefinition(CORINFO_CLASS_STRUCT_* type)
     {
+        if (_pending->TryTake(8))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getTypeDefinition(_target, &exception, type);
@@ -302,6 +334,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
     {
+        if (_pending->TryTake(9))
+            return *(CorInfoInline*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoInline result;
         result = _forwarders->canInline(_target, &exception, callerHnd, calleeHnd);
@@ -312,6 +347,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void beginInlining(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd)
     {
+        if (_pending->TryTake(10))
+            return;
+
         IntPtr exception = 0;
         _forwarders->beginInlining(_target, &exception, inlinerHnd, inlineeHnd);
         if (exception != 0)
@@ -320,6 +358,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
     {
+        if (_pending->TryTake(11))
+            return;
+
         IntPtr exception = 0;
         _forwarders->reportInliningDecision(_target, &exception, inlinerHnd, inlineeHnd, inlineResult, reason);
         if (exception != 0)
@@ -328,6 +369,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
     {
+        if (_pending->TryTake(12))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->canTailCall(_target, &exception, callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix ? (byte)1 : (byte)0);
@@ -338,6 +382,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
     {
+        if (_pending->TryTake(13))
+            return;
+
         IntPtr exception = 0;
         _forwarders->reportTailCallDecision(_target, &exception, callerHnd, calleeHnd, fIsTailPrefix ? (byte)1 : (byte)0, tailCallResult, reason);
         if (exception != 0)
@@ -346,6 +393,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
     {
+        if (_pending->TryTake(14))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_EH_CLAUSE* p_clause = &clause)
             _forwarders->getEHinfo(_target, &exception, ftn, EHnumber, p_clause);
@@ -355,6 +405,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getMethodClass(CORINFO_METHOD_STRUCT_* method)
     {
+        if (_pending->TryTake(15))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getMethodClass(_target, &exception, method);
@@ -365,6 +418,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
     {
+        if (_pending->TryTake(16))
+            return;
+
         IntPtr exception = 0;
         fixed (uint* p_offsetOfIndirection = &offsetOfIndirection)
         fixed (uint* p_offsetAfterIndirection = &offsetAfterIndirection)
@@ -376,6 +432,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
     {
+        if (_pending->TryTake(17))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->resolveVirtualMethod(_target, &exception, info);
@@ -386,6 +445,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_METHOD_STRUCT_* getAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
     {
+        if (_pending->TryTake(18))
+            return *(CORINFO_METHOD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_METHOD_STRUCT_* result;
         fixed (bool* p_variantIsThunk = &variantIsThunk)
@@ -397,6 +459,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
     {
+        if (_pending->TryTake(19))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getDefaultComparerClass(_target, &exception, elemType);
@@ -407,6 +472,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
     {
+        if (_pending->TryTake(20))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getDefaultEqualityComparerClass(_target, &exception, elemType);
@@ -417,6 +485,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
     {
+        if (_pending->TryTake(21))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getSZArrayHelperEnumeratorClass(_target, &exception, elemType);
@@ -427,6 +498,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
     {
+        if (_pending->TryTake(22))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
         fixed (CORINFO_GENERICHANDLE_RESULT* p_pResult = &pResult)
@@ -437,6 +511,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
     {
+        if (_pending->TryTake(23))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isIntrinsicType(_target, &exception, classHnd);
@@ -447,6 +524,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig, ref bool pSuppressGCTransition)
     {
+        if (_pending->TryTake(24))
+            return *(CorInfoCallConvExtension*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoCallConvExtension result;
         fixed (bool* p_pSuppressGCTransition = &pSuppressGCTransition)
@@ -458,6 +538,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig)
     {
+        if (_pending->TryTake(25))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->pInvokeMarshalingRequired(_target, &exception, method, callSiteSig);
@@ -468,6 +551,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
     {
+        if (_pending->TryTake(26))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->satisfiesMethodConstraints(_target, &exception, parent, method);
@@ -478,6 +564,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
     {
+        if (_pending->TryTake(27))
+            return;
+
         IntPtr exception = 0;
         _forwarders->getGSCookie(_target, &exception, pCookieVal, ppCookieVal);
         if (exception != 0)
@@ -486,6 +575,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void setPatchpointInfo(PatchpointInfo* patchpointInfo)
     {
+        if (_pending->TryTake(28))
+            return;
+
         IntPtr exception = 0;
         _forwarders->setPatchpointInfo(_target, &exception, patchpointInfo);
         if (exception != 0)
@@ -494,6 +586,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public PatchpointInfo* getOSRInfo(ref uint ilOffset)
     {
+        if (_pending->TryTake(29))
+            return *(PatchpointInfo**)_pending->Result;
+
         IntPtr exception = 0;
         PatchpointInfo* result;
         fixed (uint* p_ilOffset = &ilOffset)
@@ -505,6 +600,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void resolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
     {
+        if (_pending->TryTake(30))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
             _forwarders->resolveToken(_target, &exception, p_pResolvedToken);
@@ -514,6 +612,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
     {
+        if (_pending->TryTake(31))
+            return;
+
         IntPtr exception = 0;
         _forwarders->findSig(_target, &exception, module, sigTOK, context, sig);
         if (exception != 0)
@@ -522,6 +623,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
     {
+        if (_pending->TryTake(32))
+            return;
+
         IntPtr exception = 0;
         _forwarders->findCallSiteSig(_target, &exception, module, methTOK, context, sig);
         if (exception != 0)
@@ -530,6 +634,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
     {
+        if (_pending->TryTake(33))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
@@ -541,6 +648,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int bufferSize, int startIndex)
     {
+        if (_pending->TryTake(34))
+            return *(int*)_pending->Result;
+
         IntPtr exception = 0;
         int result;
         result = _forwarders->getStringLiteral(_target, &exception, module, metaTOK, buffer, bufferSize, startIndex);
@@ -551,6 +661,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
     {
+        if (_pending->TryTake(35))
+            return *(nuint*)_pending->Result;
+
         IntPtr exception = 0;
         nuint result;
         result = _forwarders->printObjectDescription(_target, &exception, handle, buffer, bufferSize, pRequiredBufferSize);
@@ -561,6 +674,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(36))
+            return *(CorInfoType*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoType result;
         result = _forwarders->asCorInfoType(_target, &exception, cls);
@@ -571,6 +687,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
     {
+        if (_pending->TryTake(37))
+            return *(byte**)_pending->Result;
+
         IntPtr exception = 0;
         byte* result;
         result = _forwarders->getClassNameFromMetadata(_target, &exception, cls, namespaceName);
@@ -581,6 +700,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getTypeInstantiationArgument(CORINFO_CLASS_STRUCT_* cls, uint index)
     {
+        if (_pending->TryTake(38))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getTypeInstantiationArgument(_target, &exception, cls, index);
@@ -591,6 +713,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getMethodInstantiationArgument(CORINFO_METHOD_STRUCT_* ftn, uint index)
     {
+        if (_pending->TryTake(39))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getMethodInstantiationArgument(_target, &exception, ftn, index);
@@ -601,6 +726,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
     {
+        if (_pending->TryTake(40))
+            return *(nuint*)_pending->Result;
+
         IntPtr exception = 0;
         nuint result;
         result = _forwarders->printClassName(_target, &exception, cls, buffer, bufferSize, pRequiredBufferSize);
@@ -611,6 +739,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(41))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isValueClass(_target, &exception, cls);
@@ -621,6 +752,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isByRefLike(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(42))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isByRefLike(_target, &exception, cls);
@@ -631,6 +765,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isSharedInst(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(43))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isSharedInst(_target, &exception, cls);
@@ -641,6 +778,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(44))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getClassAttribs(_target, &exception, cls);
@@ -651,6 +791,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public byte* getClassAssemblyName(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(45))
+            return *(byte**)_pending->Result;
+
         IntPtr exception = 0;
         byte* result;
         result = _forwarders->getClassAssemblyName(_target, &exception, cls);
@@ -661,6 +804,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void* LongLifetimeMalloc(nuint sz)
     {
+        if (_pending->TryTake(46))
+            return *(void**)_pending->Result;
+
         IntPtr exception = 0;
         void* result;
         result = _forwarders->LongLifetimeMalloc(_target, &exception, sz);
@@ -671,6 +817,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void LongLifetimeFree(void* obj)
     {
+        if (_pending->TryTake(47))
+            return;
+
         IntPtr exception = 0;
         _forwarders->LongLifetimeFree(_target, &exception, obj);
         if (exception != 0)
@@ -679,6 +828,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
     {
+        if (_pending->TryTake(48))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         fixed (CORINFO_CONST_LOOKUP* p_addr = &addr)
@@ -691,6 +843,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* clr)
     {
+        if (_pending->TryTake(49))
+            return *(void**)_pending->Result;
+
         IntPtr exception = 0;
         void* result;
         result = _forwarders->getClassThreadStaticDynamicInfo(_target, &exception, clr);
@@ -701,6 +856,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void* getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* clr)
     {
+        if (_pending->TryTake(50))
+            return *(void**)_pending->Result;
+
         IntPtr exception = 0;
         void* result;
         result = _forwarders->getClassStaticDynamicInfo(_target, &exception, clr);
@@ -711,6 +869,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
     {
+        if (_pending->TryTake(51))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         fixed (CORINFO_CONST_LOOKUP* p_addr = &addr)
@@ -722,6 +883,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(52))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getClassSize(_target, &exception, cls);
@@ -732,6 +896,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(53))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getHeapClassSize(_target, &exception, cls);
@@ -742,6 +909,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool canAllocateOnStack(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(54))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->canAllocateOnStack(_target, &exception, cls);
@@ -752,6 +922,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getClassAlignmentRequirement(CORINFO_CLASS_STRUCT_* cls, bool fDoubleAlignHint)
     {
+        if (_pending->TryTake(55))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getClassAlignmentRequirement(_target, &exception, cls, fDoubleAlignHint ? (byte)1 : (byte)0);
@@ -762,6 +935,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getClassGClayout(CORINFO_CLASS_STRUCT_* cls, byte* gcPtrs)
     {
+        if (_pending->TryTake(56))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getClassGClayout(_target, &exception, cls, gcPtrs);
@@ -772,6 +948,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getClassNumInstanceFields(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(57))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getClassNumInstanceFields(_target, &exception, cls);
@@ -782,6 +961,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_FIELD_STRUCT_* getFieldInClass(CORINFO_CLASS_STRUCT_* clsHnd, int num)
     {
+        if (_pending->TryTake(58))
+            return *(CORINFO_FIELD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_FIELD_STRUCT_* result;
         result = _forwarders->getFieldInClass(_target, &exception, clsHnd, num);
@@ -792,6 +974,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint* numTreeNodes)
     {
+        if (_pending->TryTake(59))
+            return *(GetTypeLayoutResult*)_pending->Result;
+
         IntPtr exception = 0;
         GetTypeLayoutResult result;
         result = _forwarders->getTypeLayout(_target, &exception, typeHnd, treeNodes, numTreeNodes);
@@ -802,6 +987,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool checkMethodModifier(CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, bool fOptional)
     {
+        if (_pending->TryTake(60))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->checkMethodModifier(_target, &exception, hMethod, modifier, fOptional ? (byte)1 : (byte)0);
@@ -812,6 +1000,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoHelpFunc getNewHelper(CORINFO_CLASS_STRUCT_* classHandle, ref bool pHasSideEffects)
     {
+        if (_pending->TryTake(61))
+            return *(CorInfoHelpFunc*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoHelpFunc result;
         fixed (bool* p_pHasSideEffects = &pHasSideEffects)
@@ -823,6 +1014,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
     {
+        if (_pending->TryTake(62))
+            return *(CorInfoHelpFunc*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoHelpFunc result;
         result = _forwarders->getNewArrHelper(_target, &exception, arrayCls);
@@ -833,6 +1027,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
     {
+        if (_pending->TryTake(63))
+            return *(CorInfoHelpFunc*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoHelpFunc result;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
@@ -844,6 +1041,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_STRUCT_* clsHnd)
     {
+        if (_pending->TryTake(64))
+            return *(CorInfoHelpFunc*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoHelpFunc result;
         result = _forwarders->getSharedCCtorHelper(_target, &exception, clsHnd);
@@ -854,6 +1054,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getTypeForBox(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(65))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getTypeForBox(_target, &exception, cls);
@@ -864,6 +1067,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(66))
+            return *(CorInfoHelpFunc*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoHelpFunc result;
         result = _forwarders->getBoxHelper(_target, &exception, cls);
@@ -874,6 +1080,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(67))
+            return *(CorInfoHelpFunc*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoHelpFunc result;
         result = _forwarders->getUnBoxHelper(_target, &exception, cls);
@@ -884,6 +1093,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(68))
+            return *(CORINFO_OBJECT_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_OBJECT_STRUCT_* result;
         result = _forwarders->getRuntimeTypePointer(_target, &exception, cls);
@@ -894,6 +1106,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
     {
+        if (_pending->TryTake(69))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isObjectImmutable(_target, &exception, objPtr);
@@ -904,6 +1119,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
     {
+        if (_pending->TryTake(70))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->getStringChar(_target, &exception, strObj, index, value);
@@ -914,6 +1132,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
     {
+        if (_pending->TryTake(71))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getObjectType(_target, &exception, objPtr);
@@ -924,6 +1145,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
     {
+        if (_pending->TryTake(72))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
@@ -936,6 +1160,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP pLookup)
     {
+        if (_pending->TryTake(73))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_RESOLVED_TOKEN* p_pTargetMethod = &pTargetMethod)
         fixed (CORINFO_LOOKUP* p_pLookup = &pLookup)
@@ -946,6 +1173,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
     {
+        if (_pending->TryTake(74))
+            return *(CorInfoInitClassResult*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoInitClassResult result;
         result = _forwarders->initClass(_target, &exception, field, method, context);
@@ -956,6 +1186,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getBuiltinClass(CorInfoClassId classId)
     {
+        if (_pending->TryTake(75))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getBuiltinClass(_target, &exception, classId);
@@ -966,6 +1199,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(76))
+            return *(CorInfoType*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoType result;
         result = _forwarders->getTypeForPrimitiveValueClass(_target, &exception, cls);
@@ -976,6 +1212,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(77))
+            return *(CorInfoType*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoType result;
         result = _forwarders->getTypeForPrimitiveNumericClass(_target, &exception, cls);
@@ -986,6 +1225,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
     {
+        if (_pending->TryTake(78))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->canCast(_target, &exception, child, parent);
@@ -996,6 +1238,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
     {
+        if (_pending->TryTake(79))
+            return *(TypeCompareState*)_pending->Result;
+
         IntPtr exception = 0;
         TypeCompareState result;
         result = _forwarders->compareTypesForCast(_target, &exception, fromClass, toClass);
@@ -1006,6 +1251,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public TypeCompareState compareTypesForEquality(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
     {
+        if (_pending->TryTake(80))
+            return *(TypeCompareState*)_pending->Result;
+
         IntPtr exception = 0;
         TypeCompareState result;
         result = _forwarders->compareTypesForEquality(_target, &exception, cls1, cls2);
@@ -1016,6 +1264,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isMoreSpecificType(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
     {
+        if (_pending->TryTake(81))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isMoreSpecificType(_target, &exception, cls1, cls2);
@@ -1026,6 +1277,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isExactType(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(82))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isExactType(_target, &exception, cls);
@@ -1036,6 +1290,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public TypeCompareState isGenericType(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(83))
+            return *(TypeCompareState*)_pending->Result;
+
         IntPtr exception = 0;
         TypeCompareState result;
         result = _forwarders->isGenericType(_target, &exception, cls);
@@ -1046,6 +1303,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(84))
+            return *(TypeCompareState*)_pending->Result;
+
         IntPtr exception = 0;
         TypeCompareState result;
         result = _forwarders->isNullableType(_target, &exception, cls);
@@ -1056,6 +1316,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
     {
+        if (_pending->TryTake(85))
+            return *(TypeCompareState*)_pending->Result;
+
         IntPtr exception = 0;
         TypeCompareState result;
         result = _forwarders->isEnum(_target, &exception, cls, underlyingType);
@@ -1066,6 +1329,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(86))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getParentType(_target, &exception, cls);
@@ -1076,6 +1342,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoType getChildType(CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_CLASS_STRUCT_** clsRet)
     {
+        if (_pending->TryTake(87))
+            return *(CorInfoType*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoType result;
         result = _forwarders->getChildType(_target, &exception, clsHnd, clsRet);
@@ -1086,6 +1355,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isSDArray(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(88))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isSDArray(_target, &exception, cls);
@@ -1096,6 +1368,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getArrayRank(CORINFO_CLASS_STRUCT_* cls)
     {
+        if (_pending->TryTake(89))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getArrayRank(_target, &exception, cls);
@@ -1106,6 +1381,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_STRUCT_* ftn)
     {
+        if (_pending->TryTake(90))
+            return *(CorInfoArrayIntrinsic*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoArrayIntrinsic result;
         result = _forwarders->getArrayIntrinsicID(_target, &exception, ftn);
@@ -1116,6 +1394,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)
     {
+        if (_pending->TryTake(91))
+            return *(void**)_pending->Result;
+
         IntPtr exception = 0;
         void* result;
         result = _forwarders->getArrayInitializationData(_target, &exception, field, size);
@@ -1126,6 +1407,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoIsAccessAllowedResult canAccessClass(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_HELPER_DESC pAccessHelper)
     {
+        if (_pending->TryTake(92))
+            return *(CorInfoIsAccessAllowedResult*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoIsAccessAllowedResult result;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
@@ -1138,6 +1422,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public nuint printFieldName(CORINFO_FIELD_STRUCT_* field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
     {
+        if (_pending->TryTake(93))
+            return *(nuint*)_pending->Result;
+
         IntPtr exception = 0;
         nuint result;
         result = _forwarders->printFieldName(_target, &exception, field, buffer, bufferSize, pRequiredBufferSize);
@@ -1148,6 +1435,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)
     {
+        if (_pending->TryTake(94))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getFieldClass(_target, &exception, field);
@@ -1158,6 +1448,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* fieldOwnerHint)
     {
+        if (_pending->TryTake(95))
+            return *(CorInfoType*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoType result;
         result = _forwarders->getFieldType(_target, &exception, field, structType, fieldOwnerHint);
@@ -1168,6 +1461,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getFieldOffset(CORINFO_FIELD_STRUCT_* field)
     {
+        if (_pending->TryTake(96))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getFieldOffset(_target, &exception, field);
@@ -1178,6 +1474,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     {
+        if (_pending->TryTake(97))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
             _forwarders->getFieldInfo(_target, &exception, p_pResolvedToken, callerHandle, flags, pResult);
@@ -1187,6 +1486,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* field, bool isGCtype)
     {
+        if (_pending->TryTake(98))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getThreadLocalFieldInfo(_target, &exception, field, isGCtype ? (byte)1 : (byte)0);
@@ -1197,6 +1499,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     {
+        if (_pending->TryTake(99))
+            return;
+
         IntPtr exception = 0;
         _forwarders->getThreadLocalStaticBlocksInfo(_target, &exception, pInfo);
         if (exception != 0)
@@ -1205,6 +1510,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
     {
+        if (_pending->TryTake(100))
+            return;
+
         IntPtr exception = 0;
         _forwarders->getThreadLocalStaticInfo_NativeAOT(_target, &exception, pInfo);
         if (exception != 0)
@@ -1213,6 +1521,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool isFieldStatic(CORINFO_FIELD_STRUCT_* fldHnd)
     {
+        if (_pending->TryTake(101))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->isFieldStatic(_target, &exception, fldHnd);
@@ -1223,6 +1534,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
     {
+        if (_pending->TryTake(102))
+            return *(int*)_pending->Result;
+
         IntPtr exception = 0;
         int result;
         result = _forwarders->getArrayOrStringLength(_target, &exception, objHnd);
@@ -1233,6 +1547,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
     {
+        if (_pending->TryTake(103))
+            return;
+
         IntPtr exception = 0;
         fixed (uint* p_cILOffsets = &cILOffsets)
         fixed (uint** p_pILOffsets = &pILOffsets)
@@ -1243,6 +1560,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
     {
+        if (_pending->TryTake(104))
+            return;
+
         IntPtr exception = 0;
         _forwarders->setBoundaries(_target, &exception, ftn, cMap, pMap);
         if (exception != 0)
@@ -1251,6 +1571,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getVars(CORINFO_METHOD_STRUCT_* ftn, ref uint cVars, ILVarInfo** vars, ref bool extendOthers)
     {
+        if (_pending->TryTake(105))
+            return;
+
         IntPtr exception = 0;
         fixed (uint* p_cVars = &cVars)
         fixed (bool* p_extendOthers = &extendOthers)
@@ -1261,6 +1584,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
     {
+        if (_pending->TryTake(106))
+            return;
+
         IntPtr exception = 0;
         _forwarders->setVars(_target, &exception, ftn, cVars, vars);
         if (exception != 0)
@@ -1269,6 +1595,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void reportRichMappings(InlineTreeNode* inlineTreeNodes, uint numInlineTreeNodes, RichOffsetMapping* mappings, uint numMappings)
     {
+        if (_pending->TryTake(107))
+            return;
+
         IntPtr exception = 0;
         _forwarders->reportRichMappings(_target, &exception, inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
         if (exception != 0)
@@ -1277,6 +1606,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void reportAsyncDebugInfo(AsyncInfo* asyncInfo, AsyncSuspensionPoint* suspensionPoints, AsyncContinuationVarInfo* vars, uint numVars)
     {
+        if (_pending->TryTake(108))
+            return;
+
         IntPtr exception = 0;
         _forwarders->reportAsyncDebugInfo(_target, &exception, asyncInfo, suspensionPoints, vars, numVars);
         if (exception != 0)
@@ -1285,6 +1617,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void reportMetadata(byte* key, void* value, nuint length)
     {
+        if (_pending->TryTake(109))
+            return;
+
         IntPtr exception = 0;
         _forwarders->reportMetadata(_target, &exception, key, value, length);
         if (exception != 0)
@@ -1293,6 +1628,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void* allocateArray(nuint cBytes)
     {
+        if (_pending->TryTake(110))
+            return *(void**)_pending->Result;
+
         IntPtr exception = 0;
         void* result;
         result = _forwarders->allocateArray(_target, &exception, cBytes);
@@ -1303,6 +1641,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void freeArray(void* array)
     {
+        if (_pending->TryTake(111))
+            return;
+
         IntPtr exception = 0;
         _forwarders->freeArray(_target, &exception, array);
         if (exception != 0)
@@ -1311,6 +1652,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_ARG_LIST_STRUCT_* getArgNext(CORINFO_ARG_LIST_STRUCT_* args)
     {
+        if (_pending->TryTake(112))
+            return *(CORINFO_ARG_LIST_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_ARG_LIST_STRUCT_* result;
         result = _forwarders->getArgNext(_target, &exception, args);
@@ -1321,6 +1665,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet)
     {
+        if (_pending->TryTake(113))
+            return *(CorInfoTypeWithMod*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoTypeWithMod result;
         result = _forwarders->getArgType(_target, &exception, sig, args, vcTypeRet);
@@ -1331,6 +1678,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
     {
+        if (_pending->TryTake(114))
+            return *(int*)_pending->Result;
+
         IntPtr exception = 0;
         int result;
         result = _forwarders->getExactClasses(_target, &exception, baseType, maxExactClasses, exactClsRet);
@@ -1341,6 +1691,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
     {
+        if (_pending->TryTake(115))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getArgClass(_target, &exception, sig, args);
@@ -1351,6 +1704,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoHFAElemType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
     {
+        if (_pending->TryTake(116))
+            return *(CorInfoHFAElemType*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoHFAElemType result;
         result = _forwarders->getHFAType(_target, &exception, hClass);
@@ -1361,6 +1717,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool runWithErrorTrap(void* function, void* parameter)
     {
+        if (_pending->TryTake(117))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->runWithErrorTrap(_target, &exception, function, parameter);
@@ -1371,6 +1730,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool runWithSPMIErrorTrap(void* function, void* parameter)
     {
+        if (_pending->TryTake(118))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->runWithSPMIErrorTrap(_target, &exception, function, parameter);
@@ -1381,6 +1743,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
     {
+        if (_pending->TryTake(119))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_EE_INFO* p_pEEInfoOut = &pEEInfoOut)
             _forwarders->getEEInfo(_target, &exception, p_pEEInfoOut);
@@ -1390,6 +1755,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
     {
+        if (_pending->TryTake(120))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_ASYNC_INFO* p_pAsyncInfoOut = &pAsyncInfoOut)
             _forwarders->getAsyncInfo(_target, &exception, p_pAsyncInfoOut);
@@ -1399,6 +1767,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
     {
+        if (_pending->TryTake(121))
+            return *(CORINFO_METHOD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_METHOD_STRUCT_* result;
         fixed (CORINFO_LOOKUP* p_instArg = &instArg)
@@ -1410,6 +1781,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_METHOD_STRUCT_* getAwaitAwaiterInContinuationCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
     {
+        if (_pending->TryTake(122))
+            return *(CORINFO_METHOD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_METHOD_STRUCT_* result;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
@@ -1422,6 +1796,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
     {
+        if (_pending->TryTake(123))
+            return *(mdToken*)_pending->Result;
+
         IntPtr exception = 0;
         mdToken result;
         result = _forwarders->getMethodDefFromMethod(_target, &exception, hMethod);
@@ -1432,6 +1809,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public nuint printMethodName(CORINFO_METHOD_STRUCT_* ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
     {
+        if (_pending->TryTake(124))
+            return *(nuint*)_pending->Result;
+
         IntPtr exception = 0;
         nuint result;
         result = _forwarders->printMethodName(_target, &exception, ftn, buffer, bufferSize, pRequiredBufferSize);
@@ -1442,6 +1822,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassNames, nuint maxEnclosingClassNames)
     {
+        if (_pending->TryTake(125))
+            return *(byte**)_pending->Result;
+
         IntPtr exception = 0;
         byte* result;
         result = _forwarders->getMethodNameFromMetadata(_target, &exception, ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
@@ -1452,6 +1835,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getMethodHash(CORINFO_METHOD_STRUCT_* ftn)
     {
+        if (_pending->TryTake(126))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getMethodHash(_target, &exception, ftn);
@@ -1462,6 +1848,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
     {
+        if (_pending->TryTake(127))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->getSystemVAmd64PassStructInRegisterDescriptor(_target, &exception, structHnd, structPassInRegDescPtr);
@@ -1472,6 +1861,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getSwiftLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_SWIFT_LOWERING pLowering)
     {
+        if (_pending->TryTake(128))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_SWIFT_LOWERING* p_pLowering = &pLowering)
             _forwarders->getSwiftLowering(_target, &exception, structHnd, p_pLowering);
@@ -1481,6 +1873,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING pLowering)
     {
+        if (_pending->TryTake(129))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_FPSTRUCT_LOWERING* p_pLowering = &pLowering)
             _forwarders->getFpStructLowering(_target, &exception, structHnd, p_pLowering);
@@ -1490,6 +1885,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoWasmType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
     {
+        if (_pending->TryTake(130))
+            return *(CorInfoWasmType*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoWasmType result;
         result = _forwarders->getWasmLowering(_target, &exception, structHnd);
@@ -1500,6 +1898,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getAddressAlignment(void* address)
     {
+        if (_pending->TryTake(131))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getAddressAlignment(_target, &exception, address);
@@ -1510,6 +1911,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getWasmWellKnownGlobals(ref CORINFO_WASM_WELLKNOWN_GLOBALS pWellKnownGlobalsOut)
     {
+        if (_pending->TryTake(132))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_WASM_WELLKNOWN_GLOBALS* p_pWellKnownGlobalsOut = &pWellKnownGlobalsOut)
             _forwarders->getWasmWellKnownGlobals(_target, &exception, p_pWellKnownGlobalsOut);
@@ -1519,6 +1923,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getThreadTLSIndex(ref void* ppIndirection)
     {
+        if (_pending->TryTake(133))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1530,6 +1937,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
     {
+        if (_pending->TryTake(134))
+            return *(int**)_pending->Result;
+
         IntPtr exception = 0;
         int* result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1541,6 +1951,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
     {
+        if (_pending->TryTake(135))
+            return;
+
         IntPtr exception = 0;
         _forwarders->getHelperFtn(_target, &exception, ftnNum, pNativeEntrypoint, pMethod);
         if (exception != 0)
@@ -1549,6 +1962,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
     {
+        if (_pending->TryTake(136))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_CONST_LOOKUP* p_pResult = &pResult)
             _forwarders->getFunctionEntryPoint(_target, &exception, ftn, p_pResult, accessFlags);
@@ -1558,6 +1974,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
     {
+        if (_pending->TryTake(137))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_CONST_LOOKUP* p_pResult = &pResult)
             _forwarders->getFunctionFixedEntryPoint(_target, &exception, ftn, isUnsafeFunctionPointer ? (byte)1 : (byte)0, p_pResult);
@@ -1567,6 +1986,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
     {
+        if (_pending->TryTake(138))
+            return *(CORINFO_MODULE_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_MODULE_STRUCT_* result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1578,6 +2000,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
     {
+        if (_pending->TryTake(139))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1589,6 +2014,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
     {
+        if (_pending->TryTake(140))
+            return *(CORINFO_METHOD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_METHOD_STRUCT_* result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1600,6 +2028,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
     {
+        if (_pending->TryTake(141))
+            return *(CORINFO_FIELD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_FIELD_STRUCT_* result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1611,6 +2042,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
     {
+        if (_pending->TryTake(142))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
         fixed (CORINFO_GENERICHANDLE_RESULT* p_pResult = &pResult)
@@ -1621,6 +2055,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getLocationOfThisType(CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND pLookupKind)
     {
+        if (_pending->TryTake(143))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_LOOKUP_KIND* p_pLookupKind = &pLookupKind)
             _forwarders->getLocationOfThisType(_target, &exception, context, p_pLookupKind);
@@ -1630,6 +2067,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
     {
+        if (_pending->TryTake(144))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_CONST_LOOKUP* p_pLookup = &pLookup)
             _forwarders->getAddressOfPInvokeTarget(_target, &exception, method, p_pLookup);
@@ -1639,6 +2079,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
     {
+        if (_pending->TryTake(145))
+            return *(void**)_pending->Result;
+
         IntPtr exception = 0;
         void* result;
         result = _forwarders->GetCookieForInterpreterCalliSig(_target, &exception, szMetaSig);
@@ -1649,6 +2092,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
     {
+        if (_pending->TryTake(146))
+            return *(CORINFO_JUST_MY_CODE_HANDLE_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_JUST_MY_CODE_HANDLE_* result;
         fixed (CORINFO_JUST_MY_CODE_HANDLE_** p_ppIndirection = &ppIndirection)
@@ -1660,6 +2106,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
     {
+        if (_pending->TryTake(147))
+            return;
+
         IntPtr exception = 0;
         fixed (bool* p_pbHookFunction = &pbHookFunction)
         fixed (void** p_pProfilerHandle = &pProfilerHandle)
@@ -1671,6 +2120,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
     {
+        if (_pending->TryTake(148))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
             _forwarders->getCallInfo(_target, &exception, p_pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
@@ -1680,6 +2132,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* field, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
     {
+        if (_pending->TryTake(149))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->getStaticFieldContent(_target, &exception, field, buffer, bufferSize, valueOffset, ignoreMovableObjects ? (byte)1 : (byte)0);
@@ -1690,6 +2145,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getObjectContent(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
     {
+        if (_pending->TryTake(150))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->getObjectContent(_target, &exception, obj, buffer, bufferSize, valueOffset);
@@ -1700,6 +2158,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
     {
+        if (_pending->TryTake(151))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         result = _forwarders->getStaticFieldCurrentClass(_target, &exception, field, pIsSpeculative);
@@ -1710,6 +2171,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, ref void* ppIndirection)
     {
+        if (_pending->TryTake(152))
+            return *(IntPtr*)_pending->Result;
+
         IntPtr exception = 0;
         IntPtr result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1721,6 +2185,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
     {
+        if (_pending->TryTake(153))
+            return *(InfoAccessType*)_pending->Result;
+
         IntPtr exception = 0;
         InfoAccessType result;
         fixed (void** p_ppValue = &ppValue)
@@ -1732,6 +2199,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public InfoAccessType emptyStringLiteral(ref void* ppValue)
     {
+        if (_pending->TryTake(154))
+            return *(InfoAccessType*)_pending->Result;
+
         IntPtr exception = 0;
         InfoAccessType result;
         fixed (void** p_ppValue = &ppValue)
@@ -1743,6 +2213,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
     {
+        if (_pending->TryTake(155))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         fixed (void** p_ppIndirection = &ppIndirection)
@@ -1754,6 +2227,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
     {
+        if (_pending->TryTake(156))
+            return *(CORINFO_METHOD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_METHOD_STRUCT_* result;
         fixed (DelegateCtorArgs* p_pCtorData = &pCtorData)
@@ -1765,6 +2241,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)
     {
+        if (_pending->TryTake(157))
+            return;
+
         IntPtr exception = 0;
         _forwarders->MethodCompileComplete(_target, &exception, methHnd);
         if (exception != 0)
@@ -1773,6 +2252,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool getTailCallHelpers(ref CORINFO_RESOLVED_TOKEN callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, ref CORINFO_TAILCALL_HELPERS pResult)
     {
+        if (_pending->TryTake(158))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         fixed (CORINFO_RESOLVED_TOKEN* p_callToken = &callToken)
@@ -1785,6 +2267,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
     {
+        if (_pending->TryTake(159))
+            return *(CORINFO_CLASS_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_CLASS_STRUCT_* result;
         fixed (bool* p_objRefs = &objRefs)
@@ -1796,6 +2281,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
     {
+        if (_pending->TryTake(160))
+            return *(CORINFO_METHOD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_METHOD_STRUCT_* result;
         fixed (void** p_entryPoint = &entryPoint)
@@ -1807,6 +2295,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
     {
+        if (_pending->TryTake(161))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         fixed (CORINFO_RESOLVED_TOKEN* p_pResolvedToken = &pResolvedToken)
@@ -1818,6 +2309,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
     {
+        if (_pending->TryTake(162))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->notifyInstructionSetUsage(_target, &exception, instructionSet, supportEnabled ? (byte)1 : (byte)0, preserveNegativeDependency ? (byte)1 : (byte)0);
@@ -1828,6 +2322,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void updateEntryPointForTailCall(ref CORINFO_CONST_LOOKUP entryPoint)
     {
+        if (_pending->TryTake(163))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_CONST_LOOKUP* p_entryPoint = &entryPoint)
             _forwarders->updateEntryPointForTailCall(_target, &exception, p_entryPoint);
@@ -1837,6 +2334,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void allocMem(ref AllocMemArgs pArgs)
     {
+        if (_pending->TryTake(164))
+            return;
+
         IntPtr exception = 0;
         fixed (AllocMemArgs* p_pArgs = &pArgs)
             _forwarders->allocMem(_target, &exception, p_pArgs);
@@ -1846,6 +2346,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint unwindSize)
     {
+        if (_pending->TryTake(165))
+            return;
+
         IntPtr exception = 0;
         _forwarders->reserveUnwindInfo(_target, &exception, isFunclet ? (byte)1 : (byte)0, isColdCode ? (byte)1 : (byte)0, unwindSize);
         if (exception != 0)
@@ -1854,6 +2357,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
     {
+        if (_pending->TryTake(166))
+            return;
+
         IntPtr exception = 0;
         _forwarders->allocUnwindInfo(_target, &exception, pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
         if (exception != 0)
@@ -1862,6 +2368,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void* allocGCInfo(nuint size)
     {
+        if (_pending->TryTake(167))
+            return *(void**)_pending->Result;
+
         IntPtr exception = 0;
         void* result;
         result = _forwarders->allocGCInfo(_target, &exception, size);
@@ -1872,6 +2381,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void setEHcount(uint cEH)
     {
+        if (_pending->TryTake(168))
+            return;
+
         IntPtr exception = 0;
         _forwarders->setEHcount(_target, &exception, cEH);
         if (exception != 0)
@@ -1880,6 +2392,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
     {
+        if (_pending->TryTake(169))
+            return;
+
         IntPtr exception = 0;
         fixed (CORINFO_EH_CLAUSE* p_clause = &clause)
             _forwarders->setEHinfo(_target, &exception, EHnumber, p_clause);
@@ -1889,6 +2404,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public bool logMsg(uint level, byte* fmt, IntPtr args)
     {
+        if (_pending->TryTake(170))
+            return *(byte*)_pending->Result != 0;
+
         IntPtr exception = 0;
         byte result;
         result = _forwarders->logMsg(_target, &exception, level, fmt, args);
@@ -1899,6 +2417,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public int doAssert(byte* szFile, int iLine, byte* szExpr)
     {
+        if (_pending->TryTake(171))
+            return *(int*)_pending->Result;
+
         IntPtr exception = 0;
         int result;
         result = _forwarders->doAssert(_target, &exception, szFile, iLine, szExpr);
@@ -1909,6 +2430,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void reportFatalError(CorJitResult result)
     {
+        if (_pending->TryTake(172))
+            return;
+
         IntPtr exception = 0;
         _forwarders->reportFatalError(_target, &exception, result);
         if (exception != 0)
@@ -1917,6 +2441,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint pCountSchemaItems, byte** pInstrumentationData, ref PgoSource pPgoSource, ref bool pDynamicPgo)
     {
+        if (_pending->TryTake(173))
+            return *(HRESULT*)_pending->Result;
+
         IntPtr exception = 0;
         HRESULT result;
         fixed (PgoInstrumentationSchema** p_pSchema = &pSchema)
@@ -1931,6 +2458,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
     {
+        if (_pending->TryTake(174))
+            return *(HRESULT*)_pending->Result;
+
         IntPtr exception = 0;
         HRESULT result;
         result = _forwarders->allocPgoInstrumentationBySchema(_target, &exception, ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
@@ -1941,6 +2471,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
     {
+        if (_pending->TryTake(175))
+            return;
+
         IntPtr exception = 0;
         _forwarders->recordCallSite(_target, &exception, instrOffset, callSig, methodHandle);
         if (exception != 0)
@@ -1949,6 +2482,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
     {
+        if (_pending->TryTake(176))
+            return;
+
         IntPtr exception = 0;
         _forwarders->recordWasmManagedCallSig(_target, &exception, callSig);
         if (exception != 0)
@@ -1957,6 +2493,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
     {
+        if (_pending->TryTake(177))
+            return;
+
         IntPtr exception = 0;
         _forwarders->recordWasmVirtualFunctionPointerLookup(_target, &exception, method);
         if (exception != 0)
@@ -1965,6 +2504,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta)
     {
+        if (_pending->TryTake(178))
+            return;
+
         IntPtr exception = 0;
         _forwarders->recordRelocation(_target, &exception, location, locationRW, target, fRelocType, addlDelta);
         if (exception != 0)
@@ -1973,6 +2515,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CorInfoReloc getRelocTypeHint(void* target)
     {
+        if (_pending->TryTake(179))
+            return *(CorInfoReloc*)_pending->Result;
+
         IntPtr exception = 0;
         CorInfoReloc result;
         result = _forwarders->getRelocTypeHint(_target, &exception, target);
@@ -1983,6 +2528,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getExpectedTargetArchitecture()
     {
+        if (_pending->TryTake(180))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         result = _forwarders->getExpectedTargetArchitecture(_target, &exception);
@@ -1993,6 +2541,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
     {
+        if (_pending->TryTake(181))
+            return *(uint*)_pending->Result;
+
         IntPtr exception = 0;
         uint result;
         fixed (CORJIT_FLAGS* p_flags = &flags)
@@ -2004,6 +2555,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
     {
+        if (_pending->TryTake(182))
+            return *(CORINFO_WASM_TYPE_SYMBOL_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_WASM_TYPE_SYMBOL_STRUCT_* result;
         result = _forwarders->getWasmTypeSymbol(_target, &exception, types, typesSize);
@@ -2014,6 +2568,9 @@ internal readonly unsafe struct OriginalJitInfo
 
     public CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
     {
+        if (_pending->TryTake(183))
+            return *(CORINFO_METHOD_STRUCT_**)_pending->Result;
+
         IntPtr exception = 0;
         CORINFO_METHOD_STRUCT_* result;
         result = _forwarders->getSpecialCopyHelper(_target, &exception, type);
@@ -2021,4 +2578,195 @@ internal readonly unsafe struct OriginalJitInfo
             throw new EEException(exception);
         return result;
     }
+
+    // The name of the method of a pending call.
+    public static string GetMethodName(int index) => s_methodNames[index];
+
+    private static readonly string[] s_methodNames =
+    [
+        "isIntrinsic",
+        "canValueClassInstancePointerEscape",
+        "notifyMethodInfoUsage",
+        "getMethodAttribs",
+        "setMethodAttribs",
+        "getMethodSig",
+        "getMethodInfo",
+        "haveSameMethodDefinition",
+        "getTypeDefinition",
+        "canInline",
+        "beginInlining",
+        "reportInliningDecision",
+        "canTailCall",
+        "reportTailCallDecision",
+        "getEHinfo",
+        "getMethodClass",
+        "getMethodVTableOffset",
+        "resolveVirtualMethod",
+        "getAsyncOtherVariant",
+        "getDefaultComparerClass",
+        "getDefaultEqualityComparerClass",
+        "getSZArrayHelperEnumeratorClass",
+        "expandRawHandleIntrinsic",
+        "isIntrinsicType",
+        "getUnmanagedCallConv",
+        "pInvokeMarshalingRequired",
+        "satisfiesMethodConstraints",
+        "getGSCookie",
+        "setPatchpointInfo",
+        "getOSRInfo",
+        "resolveToken",
+        "findSig",
+        "findCallSiteSig",
+        "getTokenTypeAsHandle",
+        "getStringLiteral",
+        "printObjectDescription",
+        "asCorInfoType",
+        "getClassNameFromMetadata",
+        "getTypeInstantiationArgument",
+        "getMethodInstantiationArgument",
+        "printClassName",
+        "isValueClass",
+        "isByRefLike",
+        "isSharedInst",
+        "getClassAttribs",
+        "getClassAssemblyName",
+        "LongLifetimeMalloc",
+        "LongLifetimeFree",
+        "getIsClassInitedFlagAddress",
+        "getClassThreadStaticDynamicInfo",
+        "getClassStaticDynamicInfo",
+        "getStaticBaseAddress",
+        "getClassSize",
+        "getHeapClassSize",
+        "canAllocateOnStack",
+        "getClassAlignmentRequirement",
+        "getClassGClayout",
+        "getClassNumInstanceFields",
+        "getFieldInClass",
+        "getTypeLayout",
+        "checkMethodModifier",
+        "getNewHelper",
+        "getNewArrHelper",
+        "getCastingHelper",
+        "getSharedCCtorHelper",
+        "getTypeForBox",
+        "getBoxHelper",
+        "getUnBoxHelper",
+        "getRuntimeTypePointer",
+        "isObjectImmutable",
+        "getStringChar",
+        "getObjectType",
+        "getReadyToRunHelper",
+        "getReadyToRunDelegateCtorHelper",
+        "initClass",
+        "getBuiltinClass",
+        "getTypeForPrimitiveValueClass",
+        "getTypeForPrimitiveNumericClass",
+        "canCast",
+        "compareTypesForCast",
+        "compareTypesForEquality",
+        "isMoreSpecificType",
+        "isExactType",
+        "isGenericType",
+        "isNullableType",
+        "isEnum",
+        "getParentType",
+        "getChildType",
+        "isSDArray",
+        "getArrayRank",
+        "getArrayIntrinsicID",
+        "getArrayInitializationData",
+        "canAccessClass",
+        "printFieldName",
+        "getFieldClass",
+        "getFieldType",
+        "getFieldOffset",
+        "getFieldInfo",
+        "getThreadLocalFieldInfo",
+        "getThreadLocalStaticBlocksInfo",
+        "getThreadLocalStaticInfo_NativeAOT",
+        "isFieldStatic",
+        "getArrayOrStringLength",
+        "getBoundaries",
+        "setBoundaries",
+        "getVars",
+        "setVars",
+        "reportRichMappings",
+        "reportAsyncDebugInfo",
+        "reportMetadata",
+        "allocateArray",
+        "freeArray",
+        "getArgNext",
+        "getArgType",
+        "getExactClasses",
+        "getArgClass",
+        "getHFAType",
+        "runWithErrorTrap",
+        "runWithSPMIErrorTrap",
+        "getEEInfo",
+        "getAsyncInfo",
+        "getAwaitReturnCall",
+        "getAwaitAwaiterInContinuationCall",
+        "getMethodDefFromMethod",
+        "printMethodName",
+        "getMethodNameFromMetadata",
+        "getMethodHash",
+        "getSystemVAmd64PassStructInRegisterDescriptor",
+        "getSwiftLowering",
+        "getFpStructLowering",
+        "getWasmLowering",
+        "getAddressAlignment",
+        "getWasmWellKnownGlobals",
+        "getThreadTLSIndex",
+        "getAddrOfCaptureThreadGlobal",
+        "getHelperFtn",
+        "getFunctionEntryPoint",
+        "getFunctionFixedEntryPoint",
+        "embedModuleHandle",
+        "embedClassHandle",
+        "embedMethodHandle",
+        "embedFieldHandle",
+        "embedGenericHandle",
+        "getLocationOfThisType",
+        "getAddressOfPInvokeTarget",
+        "GetCookieForInterpreterCalliSig",
+        "getJustMyCodeHandle",
+        "GetProfilingHandle",
+        "getCallInfo",
+        "getStaticFieldContent",
+        "getObjectContent",
+        "getStaticFieldCurrentClass",
+        "getVarArgsHandle",
+        "constructStringLiteral",
+        "emptyStringLiteral",
+        "getFieldThreadLocalStoreID",
+        "GetDelegateCtor",
+        "MethodCompileComplete",
+        "getTailCallHelpers",
+        "getContinuationType",
+        "getAsyncResumptionStub",
+        "convertPInvokeCalliToCall",
+        "notifyInstructionSetUsage",
+        "updateEntryPointForTailCall",
+        "allocMem",
+        "reserveUnwindInfo",
+        "allocUnwindInfo",
+        "allocGCInfo",
+        "setEHcount",
+        "setEHinfo",
+        "logMsg",
+        "doAssert",
+        "reportFatalError",
+        "getPgoInstrumentationResults",
+        "allocPgoInstrumentationBySchema",
+        "recordCallSite",
+        "recordWasmManagedCallSig",
+        "recordWasmVirtualFunctionPointerLookup",
+        "recordRelocation",
+        "getRelocTypeHint",
+        "getExpectedTargetArchitecture",
+        "getJitFlags",
+        "getWasmTypeSymbol",
+        "getSpecialCopyHelper",
+    ];
 }
