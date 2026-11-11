@@ -823,10 +823,24 @@ namespace System.Runtime.CompilerServices
             [MethodImpl(MethodImplOptions.NoInlining)]
             private void ExecuteRuntimeAsyncAwaitContinuationWithCurrentTask(Task completedTask, bool canInline, Task currentTask)
             {
-                // Clearing the completing task must not hide a non-default scheduler from the
-                // inlining checks, including those performed later by the dispatcher.
+                object? continuationContext = m_action;
+                if (continuationContext is SuppressThrowingAwaitContext suppressThrowingContext)
+                {
+                    continuationContext = suppressThrowingContext.EncodedContext;
+                }
+
+                // A captured scheduler dispatches through its own Task. Keep the completing
+                // scheduler visible while deciding whether that Task can be inlined.
+                if (continuationContext is TaskScheduler targetScheduler && targetScheduler != TaskScheduler.Default)
+                {
+                    ExecuteRuntimeAsyncAwaitContinuationCore(completedTask, canInline);
+                    return;
+                }
+
+                // Clearing the completing task must not hide a non-default scheduler from
+                // default-context inlining checks, including those performed later by the dispatcher.
                 TaskScheduler? scheduler = TaskScheduler.InternalCurrent;
-                canInline &= scheduler is null || scheduler == TaskScheduler.Default;
+                canInline &= continuationContext is SynchronizationContext || scheduler is null || scheduler == TaskScheduler.Default;
 
                 try
                 {

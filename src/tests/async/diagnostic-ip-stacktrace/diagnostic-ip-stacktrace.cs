@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using TestLibrary;
 using Xunit;
 
 public class RuntimeAsyncDiagnosticIPStackTrace
@@ -24,7 +26,8 @@ public class RuntimeAsyncDiagnosticIPStackTrace
         int firstFrame = stackTrace.IndexOf(callerFrame, StringComparison.Ordinal);
         Assert.True(firstFrame >= 0, stackTrace);
         Assert.Equal(-1, stackTrace.IndexOf(callerFrame, firstFrame + callerFrame.Length, StringComparison.Ordinal));
-        Assert.DoesNotContain("--- End of stack trace from previous location ---", stackTrace);
+        // NativeAOT does not suppress EDI boundaries after async frames.
+        Assert.Equal(Utilities.IsNativeAot, stackTrace.Contains("--- End of stack trace from previous location ---", StringComparison.Ordinal));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -95,15 +98,20 @@ public class RuntimeAsyncDiagnosticIPStackTrace
             Assert.NotNull(stackTrace);
             Console.WriteLine(stackTrace);
 
-            string[] expectedMethods =
+            List<string> expectedMethods =
             [
                 nameof(ThrowAfterResume),
                 nameof(Level4),
                 nameof(Level3),
-                nameof(NoInlineForwarder),
                 nameof(Level2),
                 nameof(Level1),
             ];
+
+            // A non-async forwarder has no suspended frame on NativeAOT.
+            if (!Utilities.IsNativeAot)
+            {
+                expectedMethods.Insert(3, nameof(NoInlineForwarder));
+            }
 
             int previousFrame = -1;
             foreach (string method in expectedMethods)
