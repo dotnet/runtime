@@ -90,7 +90,7 @@ public interface IStackWalk : IContract
     IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
     IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData, byte[] contextBuffer, bool isFirst = true) => throw new NotImplementedException();
     IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers) => throw new NotImplementedException();
-    byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    ReadOnlySpan<byte> GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();

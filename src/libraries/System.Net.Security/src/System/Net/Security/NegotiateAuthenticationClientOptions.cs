@@ -18,7 +18,7 @@ namespace System.Net.Security
     /// name, password and domain combination then set the <see cref="Credential" />
     /// property appropriately.
     ///
-    /// Typical usage of the client-side authentication will also require specifying the
+    /// Typical usage of the client-side authentication will also require specifying
     /// the <see cref="TargetName" /> property. While it may be omitted in some scenarios
     /// it is usually required to be set to a valid value like <c>HOST/contoso.com</c> or
     /// <c>HTTP/www.contoso.com</c>.
@@ -43,6 +43,12 @@ namespace System.Net.Security
         /// Specifies the GSSAPI authentication package used for the authentication.
         /// Common values are Negotiate, NTLM or Kerberos. Default value is Negotiate.
         /// </summary>
+        /// <remarks>
+        /// NTLM is a legacy authentication protocol and should be used only when required for
+        /// compatibility with existing systems. Negotiate prefers Kerberos when available but
+        /// can fall back to NTLM. To prevent NTLM, request Kerberos explicitly when supported
+        /// or use another modern authentication protocol.
+        /// </remarks>
         public string Package { get; set; } = NegotiationInfoClass.Negotiate;
 
         /// <summary>

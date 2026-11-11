@@ -111,7 +111,6 @@ AdjustContextForVirtualStub(
     // put ESP back to what it was before the call.
     TADDR sp = GetSP(pContext) + sizeof(void*);
 
-#ifndef UNIX_X86_ABI
     // set the ESP to what it would be after the call (remove pushed arguments)
 
     size_t stackArgumentsSize;
@@ -133,7 +132,6 @@ AdjustContextForVirtualStub(
     }
 
     sp += stackArgumentsSize;
-#endif // UNIX_X86_ABI
 
     SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(sp)));
 

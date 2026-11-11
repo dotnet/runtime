@@ -613,9 +613,9 @@ void SyncBlockCache::Grow()
 
     STRESS_LOG0(LF_SYNC, LL_INFO10000, "SyncBlockCache::NewSyncBlockSlot growing SyncBlockCache \n");
 
-    NewArrayHolder<SyncTableEntry> newSyncTable (NULL);
-    NewArrayHolder<DWORD>          newBitMap    (NULL);
-    DWORD *                        oldBitMap;
+    NewArrayHolder<SyncTableEntry> newSyncTable;
+    NewArrayHolder<DWORD> newBitMap;
+    DWORD* oldBitMap;
 
     // Compute the size of the new synctable. Normally, we double it - unless
     // doing so would create slots with indices too high to fit within the
@@ -645,10 +645,6 @@ void SyncBlockCache::Grow()
         //! Any operation that could fail must occur before this point.
         CANNOTTHROWCOMPLUSEXCEPTION();
 
-        newSyncTable.SuppressRelease();
-        newBitMap.SuppressRelease();
-
-
         // We chain old table because we can't delete
         // them before all the threads are stopped
         // (next GC)
@@ -664,14 +660,14 @@ void SyncBlockCache::Grow()
                     BitMapSize (m_SyncTableSize)*sizeof (DWORD));
 
         oldBitMap = m_EphemeralBitmap;
-        m_EphemeralBitmap = newBitMap;
+        m_EphemeralBitmap = newBitMap.Detach();
         delete[] oldBitMap;
 
         _ASSERTE((m_SyncTableSize & MASK_SYNCBLOCKINDEX) == m_SyncTableSize);
         // note: we do not care if another thread does not see the new size
         // however we really do not want it to see the new size without seeing the new array
         //@TODO do we still leak here if two threads come here at the same time ?
-        InterlockedExchangeT(&SyncTableEntry::GetSyncTableEntryByRef(), newSyncTable.GetValue());
+        InterlockedExchangeT(&SyncTableEntry::GetSyncTableEntryByRef(), newSyncTable.Detach());
 
         m_FreeSyncTableIndex++;
 

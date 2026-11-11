@@ -770,27 +770,6 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR and run crossgen on S.P.CoreLib
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: checked
-          runtimeFlavor: coreclr
-          platforms:
-          - linux_x86
-          jobParameters:
-            testScope: innerloop
-            nameSuffix: CoreCLR
-            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib+clr.nativecorelib -c $(_BuildConfig)
-            timeoutInMinutes: 120
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
       # Build CoreCLR as a non-portable build
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -970,23 +949,27 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # NativeAOT WASI smoke tests are build-only while execution is being brought up.
+      # NativeAOT WASI checked build and smoke tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Checked
           platforms:
           - wasi_wasm
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 180
-            nameSuffix: NativeAOT_BuildOnly
+            nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs.native+libs.sfx+tools.illink -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false /p:TestAssemblies=false
             postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   testBuildArgs: nativeaot tree nativeaot
+                  liveLibrariesBuildConfig: Release
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:

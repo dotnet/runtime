@@ -10,16 +10,17 @@
 **
 **=========================================================*/
 
-/* Depends on SetEnvironmentVariable(), wcsstr() and wcslen() */
+/* Depends on SetEnvironmentVariable(), u16_strstr() and u16_strlen() */
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstringsw_test1, "miscellaneous/GetEnvironmentStringsW/test1/paltest_getenvironmentstringsw_test1")
 {
 
     LPWSTR CapturedEnvironmentStrings = NULL;
-    LPWSTR EnviroStringReturned = NULL;
+    const WCHAR* EnviroStringReturned = NULL;
     WCHAR EnvironmentVariableBuffer[] =
         {'P','A','L','T','E','S','T','I','N','G','\0'};
     WCHAR EnvironmentValueBuffer[] = {'T','e','s','t','i','n','g','\0'};
@@ -55,9 +56,9 @@ PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstrings
 
     while(*CapturedEnvironmentStrings != 0)
     {
-        EnviroStringReturned = wcsstr(CapturedEnvironmentStrings,
+        EnviroStringReturned = u16_strstr(CapturedEnvironmentStrings,
                                       EnvironmentVariableBuffer);
-        CapturedEnvironmentStrings += wcslen(CapturedEnvironmentStrings)+1;
+        CapturedEnvironmentStrings += u16_strlen(CapturedEnvironmentStrings)+1;
         if(EnviroStringReturned != NULL)
         {
             break;
@@ -68,7 +69,7 @@ PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstrings
     {
         Fail("The memory block returned was searched, but nothing was found to "
              "prove this was really the environment block.  Either this "
-             "function, SetEnvironmentVariable or wcsstr() is broken.\n");
+             "function, SetEnvironmentVariable or u16_strstr() is broken.\n");
     }
 
 

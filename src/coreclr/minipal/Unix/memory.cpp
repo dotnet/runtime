@@ -23,7 +23,7 @@ int32_t VMToOSInterface::GetLastMemoryMappingError()
     return HRESULTFromErr(errno);
 }
 
-VMToOSInterface::MemoryMapHandle VMToOSInterface::OpenFile(const char16_t* path)
+VMToOSInterface::MemoryMapHandle VMToOSInterface::OpenFile(const char16_t* path, bool /* executable */)
 {
     FILE* stream;
     int error = u16_fopen_s(&stream, path, u"rb");

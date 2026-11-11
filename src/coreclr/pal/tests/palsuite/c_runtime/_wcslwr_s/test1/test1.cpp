@@ -13,8 +13,9 @@
 **==========================================================================*/
 
 #include <palsuite.h>
+#include <dn-u16.h>
 
-/* uses memcmp,wcslen */
+/* uses memcmp,u16_strlen */
 
 PALTEST(c_runtime__wcslwr_s_test1_paltest_wcslwr_s_test1, "c_runtime/_wcslwr_s/test1/paltest_wcslwr_s_test1")
 {
@@ -33,7 +34,7 @@ PALTEST(c_runtime__wcslwr_s_test1_paltest_wcslwr_s_test1, "c_runtime/_wcslwr_s/t
     expect_str = convert("asdf 1#");
 
     errno_t ret = _wcslwr_s(test_str, 8);
-    if (ret != 0 || memcmp(test_str, expect_str, wcslen(expect_str)*2 + 2) != 0)
+    if (ret != 0 || memcmp(test_str, expect_str, u16_strlen(expect_str)*2 + 2) != 0)
     {
         Fail ("ERROR: Expected to get \"%s\", got \"%s\".\n",
                 convertC(expect_str), convertC(test_str));

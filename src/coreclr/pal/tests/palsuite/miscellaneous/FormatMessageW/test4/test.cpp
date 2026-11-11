@@ -12,6 +12,7 @@
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 
 PALTEST(miscellaneous_FormatMessageW_test4_paltest_formatmessagew_test4, "miscellaneous/FormatMessageW/test4/paltest_formatmessagew_test4")
@@ -60,7 +61,7 @@ PALTEST(miscellaneous_FormatMessageW_test4_paltest_formatmessagew_test4, "miscel
   
     if(memcmp(OutBuffer,
               convert("Pal Foo Bar FooBar Testing"),
-              wcslen(OutBuffer)*2+2) != 0) 
+              u16_strlen(OutBuffer)*2+2) != 0) 
     {
         Fail("ERROR:  Since the FORMAT_MESSAGE_ARGUMENT_ARRAY flag was set, "
              "the result should have been 'Pal Foo Bar FooBar Testing' but was"
