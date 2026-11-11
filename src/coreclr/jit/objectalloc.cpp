@@ -1640,30 +1640,6 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
         return false;
     }
 
-    // Under R2R, for array allocations that would require handle embedding, check if the embedding will succeed.
-    // We'd rather have an R2R method with a helper call than fail and end up jitting at Tier0 and allocating anyways.
-    //
-    if (m_isR2R && (data->AsCall()->GetHelperNum() == CORINFO_HELP_READYTORUN_NEWARR_1))
-    {
-        struct Param
-        {
-            Compiler*            comp;
-            CORINFO_CLASS_HANDLE clsHnd;
-        };
-
-        Param      param    = {m_compiler, clsHnd};
-        bool const canEmbed = m_compiler->eeRunWithErrorTrap<Param>(
-            [](Param* p) {
-            p->comp->info.compCompHnd->embedClassHandle(p->clsHnd);
-        },
-            &param);
-        if (!canEmbed)
-        {
-            candidate.m_onHeapReason = "[cannot embed class handle]";
-            return false;
-        }
-    }
-
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
     const unsigned int stackLclNum =
         MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,

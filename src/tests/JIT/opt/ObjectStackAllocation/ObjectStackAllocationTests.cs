@@ -397,6 +397,8 @@ namespace ObjectStackAllocation
             return ((SimpleStruct)boxedSimpleStruct).f1 + ((SimpleStruct)boxedSimpleStruct).f2;
         }
 
+        // R2R cannot inline Nullable<T>.Value here, so the object appears to escape and is heap allocated.
+        // AggressiveOptimization keeps this method out of R2R so the runtime JIT can optimize it.
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int StoreStructWithStackObjectInNullable()
         {
@@ -446,11 +448,7 @@ namespace ObjectStackAllocation
             return c.i;
         }
 
-        // Array tests below will fail under R2R as the int[] handles cannot be embedded and
-        // our policy is not to sacrifce an R2R compilation for the sake of stack allocation.
-        // Bypass for now by adding AggressiveOptimization attribute.
-
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateArrayWithNonGCElements()
         {
             int[] array = new int[42];
@@ -459,7 +457,7 @@ namespace ObjectStackAllocation
             return array[24] + array.Length;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateArrayWithGCElements()
         {
             string[] array = new string[42];
@@ -468,7 +466,7 @@ namespace ObjectStackAllocation
             return array[24].Length * 21 + array.Length;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateArrayT<T>()
         {
             T[] array = new T[42];
@@ -652,7 +650,7 @@ namespace ObjectStackAllocation
             return 1;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int StructReferredObjects()
         {
             int[] a1 = new int[10];
