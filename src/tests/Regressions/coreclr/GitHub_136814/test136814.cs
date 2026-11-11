@@ -32,6 +32,12 @@ public class Test136814
         return CreateDelegateInJittedCode(test);
     }
 
+    [Fact]
+    public static int ReferenceContainingStruct()
+    {
+        return DelegateCaller.Invoke(new Test136814().ReferenceTarget);
+    }
+
     // Use a separate signature type so the first case cannot have loaded it already.
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -50,5 +56,11 @@ public class Test136814
     private int JittedConstructionTarget(KindCallbackValue? value)
     {
         return 100;
+    }
+
+    [BypassReadyToRun]
+    private object ReferenceTarget(ReferenceCallbackValue value)
+    {
+        return value.Value;
     }
 }

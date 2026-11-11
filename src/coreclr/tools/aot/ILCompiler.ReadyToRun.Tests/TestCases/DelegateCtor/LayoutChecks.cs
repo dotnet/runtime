@@ -11,10 +11,12 @@ public static class LayoutChecks
     public delegate int ParameterDelegate(WasmDelegateResult value);
     public delegate WasmDelegateResult ReturnDelegate();
     public delegate int ByRefDelegate(ref WasmDelegateResult value);
+    public delegate int IntDelegate(int value);
 
     private static int ParameterTarget(WasmDelegateResult value) => value.Value;
     private static WasmDelegateResult ReturnTarget() => default;
     private static int ByRefTarget(ref WasmDelegateResult value) => value.Value;
+    private static T GenericTarget<T>(T value) => value;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ParameterDelegate CreateParameter() => new(ParameterTarget);
@@ -24,4 +26,7 @@ public static class LayoutChecks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ByRefDelegate CreateByRef() => new(ByRefTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static IntDelegate CreateGeneric() => new(GenericTarget<int>);
 }

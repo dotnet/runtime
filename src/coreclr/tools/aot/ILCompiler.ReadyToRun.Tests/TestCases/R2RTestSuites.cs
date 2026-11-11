@@ -214,6 +214,12 @@ public class R2RTestSuites
                     entry.Signature.ToString(formatting).Contains(target, StringComparison.Ordinal));
                 Assert.True(entry.GCRefMapSize > 0);
             }
+
+            ReadyToRunImportSection.ImportSectionEntry genericTarget = Assert.Single(entries, entry =>
+                entry.Signature.FixupKind == ReadyToRunFixupKind.DelegateCtor &&
+                entry.Signature.ToString(formatting).Contains("GenericTarget", StringComparison.Ordinal));
+            Assert.Equal(0, genericTarget.GCRefMapSize);
+            Assert.Null(genericTarget.GCRefMap);
         }
     }
 
