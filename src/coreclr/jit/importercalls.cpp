@@ -3801,8 +3801,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_String_Contains:
             {
-                // TODO: fold `literal`.Contains(char) into a range check or a
-                // bitmask test against the literal's characters
+                retNode = impStringLiteralContainsChar(sig, methodFlags);
                 break;
             }
 
