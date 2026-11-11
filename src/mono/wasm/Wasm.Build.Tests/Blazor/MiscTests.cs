@@ -115,21 +115,15 @@ public class MiscTests : BlazorWasmTestBase
         // Framework SourceType materialization path that gives each client unique per-project
         // Identity for shared runtime pack files.
         string id = publish ? "multi_pub" : "multi_hosted";
-        CopyTestAsset(config, aot: false, TestAsset.BlazorMultiClientHosted, id);
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorMultiClientHosted, id);
 
         string serverDir = _projectDir;
         string rootDir = Path.GetDirectoryName(serverDir)!;
         string client1Dir = Path.Combine(rootDir, "Client1");
         string client2Dir = Path.Combine(rootDir, "Client2");
 
-        string command = publish ? "publish" : "build";
-        string logPath = Path.Combine(_logPath, $"{id}-{config}-{command}.binlog");
-        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(serverDir);
-        _ = cmd
-            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-            .ExecuteWithCapturedOutput(command, $"-p:Configuration={config}", $"-bl:{logPath}", "-nr:false")
-            .EnsureSuccessful();
+        MSBuildOptions buildOptions = publish ? new PublishOptions() : new BuildOptions();
+        BuildProjectWithoutAssert(config, info.ProjectName, buildOptions);
 
         if (publish)
         {
