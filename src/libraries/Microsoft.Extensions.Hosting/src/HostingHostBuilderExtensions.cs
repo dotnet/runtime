@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -219,12 +218,7 @@ namespace Microsoft.Extensions.Hosting
             // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
             // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
             string cwd = Environment.CurrentDirectory;
-            if (
-#if NETFRAMEWORK
-                Environment.OSVersion.Platform != PlatformID.Win32NT ||
-#else
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-#endif
+            if (!OperatingSystem.IsWindows() ||
                 !string.Equals(cwd, Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 hostConfigBuilder.AddInMemoryCollection(new[]
@@ -283,14 +277,7 @@ namespace Microsoft.Extensions.Hosting
         {
             services.AddLogging(logging =>
             {
-                bool isWindows =
-#if NET
-                    OperatingSystem.IsWindows();
-#elif NETFRAMEWORK
-                    Environment.OSVersion.Platform == PlatformID.Win32NT;
-#else
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#endif
+                bool isWindows = OperatingSystem.IsWindows();
 
                 // IMPORTANT: This needs to be added *before* configuration is loaded, this lets
                 // the defaults be overridden by the configuration.

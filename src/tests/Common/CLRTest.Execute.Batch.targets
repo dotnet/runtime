@@ -129,7 +129,6 @@ IF NOT "%RunningIlasmRoundTrip%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SuperPmiCollectIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%SuperPMIShimPath%"=="" (

@@ -17,7 +17,7 @@
 inline MethodTableBuilder::DeclaredMethodIterator::DeclaredMethodIterator(
             MethodTableBuilder &mtb) :
                 m_numDeclaredMethods((int)mtb.NumDeclaredMethods()),
-                m_declaredMethods(mtb.bmtMethod->m_rgDeclaredMethods),
+                m_declaredMethods(mtb.bmtMethod.m_rgDeclaredMethods),
                 m_idx(-1)
 {
     LIMITED_METHOD_CONTRACT;

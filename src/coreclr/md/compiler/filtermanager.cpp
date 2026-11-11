@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // FilterManager.cpp
 //
-
-//
 // contains utility code to MD directory
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "filtermanager.h"
 
@@ -595,35 +594,6 @@ HRESULT FilterManager::MarkDeclSecuritiesWithParentToken(mdToken tkParent)
 ErrExit:
     return hr;
 } // HRESULT FilterManager::MarkDeclSecuritiesWithParentToken()
-
-
-//*****************************************************************************
-// cascading Mark of all MemberRefs associated with a parent token
-//*****************************************************************************
-HRESULT FilterManager::MarkMemberRefsWithParentToken(mdToken tk)
-{
-    HRESULT     hr = NOERROR;
-    RID         ulEnd;
-    RID         index;
-    mdToken     tkParent;
-    MemberRefRec *pRec;
-
-    ulEnd = m_pMiniMd->getCountMemberRefs();
-
-    for (index = 1; index <= ulEnd; index ++ )
-    {
-        // memberRef table is not sorted. Table scan is needed.
-        IfFailGo(m_pMiniMd->GetMemberRefRecord(index, &pRec));
-        tkParent = m_pMiniMd->getClassOfMemberRef(pRec);
-        if ( tk == tkParent )
-        {
-            IfFailGo( MarkMemberRef( TokenFromRid(index, mdtMemberRef) ) );
-        }
-    }
-ErrExit:
-    return hr;
-} // HRESULT FilterManager::MarkMemberRefsWithParentToken()
-
 
 //*****************************************************************************
 // cascading Mark of a ParamDef token
@@ -1453,5 +1423,3 @@ ErrExit:
     return hr;
 
 } // HRESULT FilterManager::UnmarkTypeDef()
-
-

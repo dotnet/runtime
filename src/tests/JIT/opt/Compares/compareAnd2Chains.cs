@@ -613,6 +613,16 @@ public class ComparisonTestAnd2Chains
             return 101;
         }
 
+        if ((ConsumeInlinedTypeTest(null) != 4) ||
+            (ConsumeInlinedTypeTest(1) != 44) ||
+            (ConsumeInlinedTypeTest(1u) != 44) ||
+            (ConsumeInlinedTypeTest(1L) != 44) ||
+            (ConsumeInlinedTypeTest(1UL) != 4))
+        {
+            Console.WriteLine($"{nameof(ComparisonTestAnd2Chains)}:{nameof(ConsumeInlinedTypeTest)} failed");
+            return 101;
+        }
+
         Console.WriteLine("PASSED");
         return 100;
     }
@@ -629,5 +639,25 @@ public class ComparisonTestAnd2Chains
         //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, {{x[0-9]+}}, 0, eq
         //ARM64-FULL-LINE-NEXT: cset {{x[0-9]+}}, eq
         return ((a == (b >> 63)) & (a == (c >> 63))) ? 1 : 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsIntFamily(object value) => value is int || value is uint || value is long;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ConsumeInlinedTypeTest(object value)
+    {
+        //ARM64: ccmp
+        int acc = 5;
+        if (IsIntFamily(value))
+        {
+            acc += 17;
+        }
+        else
+        {
+            acc -= 3;
+        }
+
+        return acc * 2;
     }
 }

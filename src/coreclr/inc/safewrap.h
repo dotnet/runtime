@@ -80,6 +80,7 @@ DWORD ClrReportEvent(
     PSID        lpUserSid,
     LPCWSTR     pMessage);
 
+#ifdef HOST_WINDOWS
 //*****************************************************************************
 // This provides a wrapper around GetFileSize() that forces it to fail
 // if the file is >4g and pdwHigh is NULL. Other than that, it acts like
@@ -122,5 +123,6 @@ DWORD inline SafeGetFileSize(HANDLE hFile, DWORD *pdwHigh)
     }
 
 }
+#endif // HOST_WINDOWS
 
 #endif // _safewrap_h_

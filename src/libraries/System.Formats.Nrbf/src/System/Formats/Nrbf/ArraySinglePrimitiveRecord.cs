@@ -162,38 +162,17 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             if (typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
                 Span<short> span = MemoryMarshal.Cast<T, short>(result.AsSpan());
-#if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
-#else
-                for (int i = 0; i < span.Length; i++)
-                {
-                    span[i] = BinaryPrimitives.ReverseEndianness(span[i]);
-                }
-#endif
             }
             else if (typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(float))
             {
                 Span<int> span = MemoryMarshal.Cast<T, int>(result.AsSpan());
-#if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
-#else
-                for (int i = 0; i < span.Length; i++)
-                {
-                    span[i] = BinaryPrimitives.ReverseEndianness(span[i]);
-                }
-#endif
             }
             else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double))
             {
                 Span<long> span = MemoryMarshal.Cast<T, long>(result.AsSpan());
-#if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
-#else
-                for (int i = 0; i < span.Length; i++)
-                {
-                    span[i] = BinaryPrimitives.ReverseEndianness(span[i]);
-                }
-#endif
             }
         }
 

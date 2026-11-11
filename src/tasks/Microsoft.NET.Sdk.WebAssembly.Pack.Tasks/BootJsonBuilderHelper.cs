@@ -213,7 +213,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return intValue;
         }
 
-        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? webcilSizes = null)
+        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? webcilSizes = null, HashSet<string>? compositeImages = null, bool useAppSettingsAssets = false, bool filesystemUsageDetected = false)
         {
             List<string> imports = [];
 
@@ -275,6 +275,28 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.coreVfs = MapVfsAssets(resources.coreVfs);
             assets.vfs = MapVfsAssets(resources.vfs);
 
+            if (useAppSettingsAssets && config.appsettings != null)
+            {
+                assets.appsettings = config.appsettings.Select(name =>
+                {
+                    var asset = new AppSettings
+                    {
+                        name = name,
+                        virtualPath = Path.GetFileName(name),
+                        loadIntoVfs = filesystemUsageDetected,
+                        cache = "no-cache"
+                    };
+                    if (bundlerFriendly)
+                    {
+                        string escaped = EscapeName(name);
+                        imports.Add($"import {escaped} from \"./{name}\";");
+                        asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
+                    }
+                    return asset;
+                }).ToList();
+                config.appsettings = null;
+            }
+
             if (bundlerFriendly && config.appsettings != null)
             {
                 config.appsettings = config.appsettings.Select(a =>
@@ -332,6 +354,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
                             asset.tableSize = sizes.tableSize;
                     }
                 }
+
+                if (subFolder is null && compositeImages?.Contains(a.Key) == true)
+                    asset.isCompositeImage = true;
 
                 if (bundlerFriendly)
                 {

@@ -3,11 +3,13 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 using static System.Buffers.Text.Base64Helper;
@@ -209,7 +211,7 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</returns>
         /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the decoded output.</exception>
-        /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
+        /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static int DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination)
         {
@@ -255,7 +257,7 @@ namespace System.Buffers.Text
         /// </summary>
         /// <param name="source">The input span which contains ASCII chars in Base64Url that needs to be decoded.</param>
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
-        /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
+        /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static unsafe byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
@@ -375,6 +377,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,
@@ -476,6 +479,7 @@ namespace System.Buffers.Text
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span) => default(Base64DecoderByte).IndexOfAnyExceptWhiteSpace(span);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> utf8, Span<byte> bytes,
                 ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<byte> =>
                 DecodeWithWhiteSpaceBlockwise(decoder, utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
@@ -519,6 +523,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(Vector128<byte> str, Vector128<byte> hiNibbles, Vector128<byte> maskSlashOrUnderscore, Vector128<byte> mask8F,
                 Vector128<byte> lutLow, Vector128<byte> lutHigh, Vector128<sbyte> lutShift, Vector128<byte> shiftForUnderscore, out Vector128<byte> result) =>
                 default(Base64UrlDecoderByte).TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
@@ -561,6 +566,7 @@ namespace System.Buffers.Text
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<ushort> span) => default(Base64DecoderChar).IndexOfAnyExceptWhiteSpace(span);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes,
                 ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<ushort> =>
                 DecodeWithWhiteSpaceBlockwise(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);

@@ -530,13 +530,8 @@ namespace System.Text.Json.Serialization.Converters
 
         private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy)
         {
-#if NET
             string[] names = Enum.GetNames<T>();
             T[] values = Enum.GetValues<T>();
-#else
-            string[] names = Enum.GetNames(typeof(T));
-            T[] values = (T[])Enum.GetValues(typeof(T));
-#endif
             Debug.Assert(names.Length == values.Length);
 
             Dictionary<string, string>? enumMemberAttributes = null;
@@ -700,7 +695,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // We want values with more bits set to come first so negate the pop count.
                 // Keep the index as a second comparand so that sorting stability is preserved.
-                indices[i] = (-PopCount(enumFields[i].Key), i);
+                indices[i] = (-(int)ulong.PopCount(enumFields[i].Key), i);
             }
 
             Array.Sort(indices);
@@ -714,21 +709,6 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return sortedFields;
-        }
-
-        private static int PopCount(ulong value)
-        {
-#if NET
-            return (int)ulong.PopCount(value);
-#else
-            int count = 0;
-            while (value != 0)
-            {
-                value &= value - 1;
-                count++;
-            }
-            return count;
-#endif
         }
 
         private enum EnumFieldNameKind

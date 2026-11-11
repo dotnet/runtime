@@ -104,6 +104,13 @@ struct EventStaticEntry
     ULONG Flags;
     WCHAR Name[0];
 
+    // The size of an entry with the longest field name we emit (255 characters).  Longer names are emitted as empty strings.
+    static int MaxEntrySize()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int)(sizeof(EventStaticEntry) + 256 * sizeof(WCHAR));
+    }
+
     // Writes one EventStaticEntry to the buffer specified by ptr.  Since we don't actually know how large the event will be,
     // this write may fail if the remaining buffer is not large enough.  This function returns the number of bytes written
     // on success (return is >= 0), and -1 on failure.  If we return -1, the caller is expected to flush the current buffer
@@ -120,21 +127,20 @@ struct EventStaticEntry
 
         // The location in the structure to write to.  We won't actually write here unless we have sufficient buffer.
         WCHAR *name = (WCHAR *)(ptr + offsetof(EventStaticEntry, Name));
-        int len = 0;
+        size_t len = 0;
 
         LPCUTF8 utf8Name = 0;
         if (SUCCEEDED(fieldDesc->GetName_NoThrow(&utf8Name)))
         {
-            len = MultiByteToWideChar(CP_ACP, 0, utf8Name, -1, name, sizeRemaining - sizeof(EventStaticEntry));
-            if (len <= 0)
+            len = minipal_convert_utf8_to_utf16(utf8Name, strlen(utf8Name) + 1, (CHAR16_T*)name,
+                (sizeRemaining - sizeof(EventStaticEntry)) / sizeof(WCHAR), 0);
+            if (len == 0)
             {
-                // We will ignore corrupted/bad metadata here and only emit names for fields which are
-                // up to 255 characters (and also don't fit in the buffer).
-                if (GetLastError() == ERROR_INSUFFICIENT_BUFFER && sizeRemaining < 256)
+                // We will only emit names for fields which are up to 255 characters (and also don't fit in the buffer).
+                if (sizeRemaining < MaxEntrySize())
                     return -1; // nothing written, insufficient buffer.  Flush and try again.
 
-                // If the name is larger than 255 or we have some other error converting the string,
-                // just emit an empty string.
+                // If the name is larger than 255, just emit an empty string.
                 len = 1;
                 name[0] = 0;
             }
@@ -157,7 +163,7 @@ struct EventStaticEntry
         entry->TypeID = typeId;
         entry->Flags = flags;
 
-        return sizeof(EventStaticEntry) + len * sizeof(WCHAR);
+        return (int)(sizeof(EventStaticEntry) + len * sizeof(WCHAR));
     }
 };
 

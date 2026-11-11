@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires TripleDES, which is not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Password-based encryption requires TripleDES, which is not supported on Browser.")]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void ExportEncryptedPkcs8PrivateKey_Pkcs12HashInvalid(CompositeMLKemAlgorithm algorithm)
         {
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires TripleDES, which is not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Password-based encryption requires TripleDES, which is not supported on Browser.")]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void ExportEncryptedPkcs8PrivateKey_BytePasswordRejectsPkcs12Kdf(CompositeMLKemAlgorithm algorithm)
         {
@@ -939,7 +939,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires AES, which is not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Password-based encryption requires AES, which is not supported on Browser.")]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void ExportEncryptedPkcs8PrivateKey_ProducesEncryptedPrivateKeyInfo(CompositeMLKemAlgorithm algorithm)
         {
@@ -965,7 +965,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires AES, which is not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Password-based encryption requires AES, which is not supported on Browser.")]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void ExportEncryptedPkcs8PrivateKey_CoreCryptographicException_Propagates(CompositeMLKemAlgorithm algorithm)
         {
@@ -985,7 +985,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires AES, which is not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Password-based encryption requires AES, which is not supported on Browser.")]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void TryExportEncryptedPkcs8PrivateKey_DestinationTooSmall(CompositeMLKemAlgorithm algorithm)
         {

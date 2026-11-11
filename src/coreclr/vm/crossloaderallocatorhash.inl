@@ -275,10 +275,10 @@ template <class TRAITS>
     }
     CONTRACTL_END;
 
-    NewHolder<LADependentHandleToNativeObject> dependentHandleHolder =
-        new LADependentHandleToNativeObject(dependentKeyValueStoreHash);
+    NewHolder<LADependentHandleToNativeObject> dependentHandleHolder(
+        new LADependentHandleToNativeObject(dependentKeyValueStoreHash));
     loaderAllocator->RegisterDependentHandleToNativeObjectForCleanup(dependentHandleHolder);
-    return dependentHandleHolder.Extract();
+    return dependentHandleHolder.Detach();
 }
 
 template <class TRAITS>
@@ -389,7 +389,7 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
         if (pLoaderAllocatorOfValue != m_pLoaderAllocator)
         {
             hashKeyToTrackersHolder = hashKeyToTrackers = new LAHashKeyToTrackers(keyValueStore);
-            keyValueStoreHolder.SuppressRelease();
+            keyValueStoreHolder.Detach();
             hashKeyEntry = hashKeyToTrackers;
         }
         else
@@ -398,8 +398,8 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
         }
 
         keyToTrackersHash.Add(hashKeyEntry);
-        keyValueStoreHolder.SuppressRelease();
-        hashKeyToTrackersHolder.SuppressRelease();
+        keyValueStoreHolder.Detach();
+        hashKeyToTrackersHolder.Detach();
     }
     else
     {
@@ -428,10 +428,15 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
                 else
                 {
                     hashKeyEntry = keyValueStore;
-                    keyToTrackersHash.ReplacePtr(hashKeyEntryPtr, hashKeyEntry);
+                    bool updated = keyToTrackersHash.Update(key, [&](KeyValueStoreOrLAHashKeyToTrackers *&entry)
+                    {
+                        KeyToValuesHashTraits::OnRemovePerEntryCleanupAction(entry);
+                        entry = hashKeyEntry;
+                    });
+                    _ASSERTE(updated);
                 }
 
-                keyValueStoreHolder.SuppressRelease();
+                keyValueStoreHolder.Detach();
             }
         }
     }
@@ -447,7 +452,11 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
             // LAHashKeyToTrackers, so replace the element without cleanup.
             hashKeyToTrackers = new LAHashKeyToTrackers(keyValueStore);
             hashKeyEntry = hashKeyToTrackers;
-            keyToTrackersHash.ReplacePtr(hashKeyEntryPtr, hashKeyEntry, false /* invokeCleanupAction */);
+            bool updated = keyToTrackersHash.Update(key, [&](KeyValueStoreOrLAHashKeyToTrackers *&entry)
+            {
+                entry = hashKeyEntry;
+            });
+            _ASSERTE(updated);
         }
 
         // Must add it to the cross LA structure
@@ -462,8 +471,13 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
 
             if (KeyToValuesHashTraits::AddToValuesInHeapMemory(&keyValueStore, keyValueStoreHolder, key, value))
             {
-                keyToValuePerLAHash->ReplacePtr(hashKeyEntryInPerLAHashPtr, keyValueStore);
-                keyValueStoreHolder.SuppressRelease();
+                bool updated = keyToValuePerLAHash->Update(key, [&](KeyValueStoreOrLAHashKeyToTrackers *&entry)
+                {
+                    KeyToValuesHashTraits::OnRemovePerEntryCleanupAction(entry);
+                    entry = keyValueStore;
+                });
+                _ASSERTE(updated);
+                keyValueStoreHolder.Detach();
             }
         }
         else
@@ -472,7 +486,7 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
             KeyToValuesHashTraits::AddToValuesInHeapMemory(&keyValueStore, keyValueStoreHolder, key, value);
 
             keyToValuePerLAHash->Add(keyValueStore);
-            keyValueStoreHolder.SuppressRelease();
+            keyValueStoreHolder.Detach();
         }
     }
 }
@@ -656,14 +670,14 @@ void CrossLoaderAllocatorHash<TRAITS>::RemoveAll(TKey key)
     _ASSERTE(TRAITS::GetLoaderAllocator(key) == m_pLoaderAllocator);
 
     KeyToValuesHash &keyToTrackersHash = m_keyToDependentTrackersHash;
-    KeyValueStoreOrLAHashKeyToTrackers *const *hashKeyEntryPtr = keyToTrackersHash.LookupPtr(key);
-    if (hashKeyEntryPtr == NULL)
+    typename KeyToValuesHash::KeyIterator hashKeyEntryIterator = keyToTrackersHash.Begin(key);
+    if (hashKeyEntryIterator == keyToTrackersHash.End(key))
     {
         return;
     }
 
     // We have an entry in the hashtable for the key/dependenthandle.
-    KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry = *hashKeyEntryPtr;
+    KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry = *hashKeyEntryIterator;
     LAHashKeyToTrackers *hashKeyToTrackers = NULL;
     KeyValueStore *keyValueStore;
 
@@ -705,7 +719,7 @@ void CrossLoaderAllocatorHash<TRAITS>::RemoveAll(TKey key)
     }
 
     // Remove entry from key to tracker hash
-    keyToTrackersHash.RemovePtr(const_cast<KeyValueStoreOrLAHashKeyToTrackers **>(hashKeyEntryPtr));
+    keyToTrackersHash.Remove(hashKeyEntryIterator);
 }
 #endif // !DACCESS_COMPILE
 
@@ -830,10 +844,10 @@ CrossLoaderAllocatorHash<TRAITS>::GetDependentTrackerForLoaderAllocator(LoaderAl
         return dependentTracker;
     }
 
-    NewHolder<LADependentKeyToValuesHash> laDependentKeyToValuesHashHolder = new LADependentKeyToValuesHash();
+    NewHolder<LADependentKeyToValuesHash> laDependentKeyToValuesHashHolder(new LADependentKeyToValuesHash());
     LifetimeHolder<typename CrossLoaderAllocatorHash<TRAITS>::LAHashDependentHashTracker::HolderTraits> dependentTrackerHolder{
         new LAHashDependentHashTracker(pLoaderAllocator, laDependentKeyToValuesHashHolder) };
-    laDependentKeyToValuesHashHolder.SuppressRelease();
+    laDependentKeyToValuesHashHolder.Detach();
 
     dependentTrackerHash.Add(dependentTrackerHolder);
     return dependentTrackerHolder.Detach();
@@ -886,13 +900,13 @@ CrossLoaderAllocatorHash<TRAITS>::GetKeyToValueCrossLAHashForHashkeyToTrackers(
             {
                 // Allocate the dependent tracker hash
                 // Fill with the existing dependentTrackerMaybe, and DependentTracker
-                NewHolder<LAHashDependentHashTrackerSetWrapper> dependentTrackerHashWrapperHolder =
-                    new LAHashDependentHashTrackerSetWrapper();
+                NewHolder<LAHashDependentHashTrackerSetWrapper> dependentTrackerHashWrapperHolder(
+                    new LAHashDependentHashTrackerSetWrapper());
                 LAHashDependentHashTrackerHash *dependentTrackerHash = dependentTrackerHashWrapperHolder->GetTrackerSet();
                 dependentTrackerHash->Add(dependentTracker);
                 dependentTracker->AddRef();
                 dependentTrackerHash->Add(dependentTrackerMaybe);
-                hashKeyToTrackers->_trackerOrTrackerSet = dependentTrackerHashWrapperHolder.Extract();
+                hashKeyToTrackers->_trackerOrTrackerSet = dependentTrackerHashWrapperHolder.Detach();
             }
         }
     }

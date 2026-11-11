@@ -396,6 +396,9 @@
   <data name="InvalidAesStrength" xml:space="preserve">
     <value>Invalid AES strength value.</value>
   </data>
+  <data name="InvalidAesExtraField" xml:space="preserve">
+    <value>The required WinZip AES extra data field is missing or invalid.</value>
+  </data>
   <data name="TruncatedZipCryptoHeader" xml:space="preserve">
     <value>The encryption header is truncated.</value>
   </data>
@@ -428,5 +431,8 @@
   </data>
   <data name="UnsupportedEncryptionMethod" xml:space="preserve">
     <value>The entry's encryption method is not supported.</value>
+  </data>
+  <data name="ZipCryptoLastWriteTimeChangeNotSupported" xml:space="preserve">
+    <value>Changing LastWriteTime on a ZipCrypto-encrypted entry that uses a data descriptor requires re-encrypting its contents. Reopen the entry with its password to rewrite the data, or do not change LastWriteTime.</value>
   </data>
 </root>

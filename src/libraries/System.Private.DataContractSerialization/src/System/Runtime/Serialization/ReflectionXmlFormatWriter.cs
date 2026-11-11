@@ -58,7 +58,7 @@ namespace System.Runtime.Serialization
                 IEnumerator enumerator = collectionDataContract.GetEnumeratorForCollection(obj);
                 PrimitiveDataContract? primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(collectionDataContract.UnderlyingType);
 
-                if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != Globals.TypeOfObject)
+                if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != typeof(object))
                 {
                     while (enumerator.MoveNext())
                     {
@@ -224,7 +224,7 @@ namespace System.Runtime.Serialization
 
         private static bool NeedsPrefix(Type type, XmlDictionaryString? ns)
         {
-            return type == Globals.TypeOfXmlQualifiedName && (ns != null && ns.Value != null && ns.Value.Length > 0);
+            return type == typeof(XmlQualifiedName) && (ns != null && ns.Value != null && ns.Value.Length > 0);
         }
 
         private static bool CheckIfMemberHasConflict(DataMember member, ClassDataContract classContract, ClassDataContract derivedMostClassContract)

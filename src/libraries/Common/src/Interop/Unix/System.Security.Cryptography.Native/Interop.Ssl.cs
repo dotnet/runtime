@@ -50,6 +50,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         internal static partial IntPtr SslGetVersion(SafeSslHandle ssl);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
+        internal static unsafe partial byte* SslGetVersion(IntPtr ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetTlsExtHostName", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
@@ -125,7 +128,7 @@ internal static partial class Interop
         internal static partial void SslSetAcceptMovingWriteBuffer(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
-        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
+        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error, [MarshalAs(UnmanagedType.Bool)] bool processPeer);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
         internal static unsafe partial int SslHandshake(
@@ -303,6 +306,9 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionFree")]
         internal static partial void SessionFree(IntPtr session);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionUpRef")]
+        internal static partial int SessionUpRef(IntPtr session);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname")]
         internal static unsafe partial int SessionSetHostname(IntPtr session, byte* name);

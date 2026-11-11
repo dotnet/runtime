@@ -102,6 +102,8 @@
     <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)" Include="$(WasmtimeDirForHelixPayload)" />
   </ItemGroup>
 
+  <Import Project="$(TestArchiveRoot)**\*.helix.targets" />
+
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
 

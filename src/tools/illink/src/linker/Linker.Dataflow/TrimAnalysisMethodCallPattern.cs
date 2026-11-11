@@ -37,10 +37,10 @@ namespace Mono.Linker.Dataflow
             }
             else
             {
-                var builder = ImmutableArray.CreateBuilder<MultiValue>();
+                var builder = ImmutableArray.CreateBuilder<MultiValue>(arguments.Length);
                 foreach (var argument in arguments)
                     builder.Add(argument.DeepCopy());
-                Arguments = builder.ToImmutableArray();
+                Arguments = builder.MoveToImmutable();
             }
             Origin = origin;
         }
@@ -52,7 +52,7 @@ namespace Mono.Linker.Dataflow
             Debug.Assert(CalledMethod == other.CalledMethod);
             Debug.Assert(Arguments.Length == other.Arguments.Length);
 
-            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>();
+            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>(Arguments.Length);
             for (int i = 0; i < Arguments.Length; i++)
                 argumentsBuilder.Add(lattice.Meet(Arguments[i], other.Arguments[i]));
 
@@ -60,7 +60,7 @@ namespace Mono.Linker.Dataflow
                 Operation,
                 CalledMethod,
                 lattice.Meet(Instance, other.Instance),
-                argumentsBuilder.ToImmutable(),
+                argumentsBuilder.MoveToImmutable(),
                 Origin);
         }
 

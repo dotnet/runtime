@@ -18,7 +18,6 @@ enum class known_options
     fx_version,
     roll_forward,
     additional_deps,
-    roll_forward_on_no_candidate_fx,
 
     __last // Sentinel value
 };

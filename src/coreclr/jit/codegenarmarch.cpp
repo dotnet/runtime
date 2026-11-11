@@ -1079,7 +1079,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                     // Load from our address expression source
                     emit->emitIns_R_R_R_I(INS_ldp, emitTypeSize(type0), loReg, hiReg, addrReg, structOffset,
-                                          INS_OPTS_NONE, emitTypeSize(type0));
+                                          INS_OPTS_NONE, emitTypeSize(type1));
                 }
 
                 // Emit stp instruction to store the two registers into the outgoing argument area
@@ -1551,55 +1551,84 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
     }
 
-    // Can we use a ScaledAdd instruction?
-    //
-    if (isPow2(node->gtElemSize) && (node->gtElemSize <= 32768))
-    {
-        DWORD scale;
-        BitScanForward(&scale, node->gtElemSize);
-
 #ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(node->gtElemType))
+    {
         if (!index->TypeIs(TYP_I_IMPL))
         {
-            if (scale <= 4)
-            {
-                // target = base + index<<scale
-                GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(),
-                                              indexReg, scale, INS_OPTS_UXTW);
-            }
-            else
-            {
-                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
-                indexReg      = tmpReg;
-                emitter* emit = GetEmitter();
-                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
-            }
-        }
-        else
-#endif // TARGET_ARM64
-        {
-            // dest = base + index * scale
-            genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
-        }
-    }
-    else // we have to load the element size and use a MADD (multiply-add) instruction
-    {
-#ifdef TARGET_ARM64
-        if (!index->TypeIs(TYP_I_IMPL))
-        {
+            // We require zero extension for madd here.
             const regNumber tmpReg2 = internalRegisters.Extract(node);
             GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
             indexReg = tmpReg2;
         }
+
+        if (node->gtElemType == TYP_SIMD)
+        {
+            // tmpReg = VL
+            GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, tmpReg, 1);
+        }
+        else
+        {
+            // tmpReg = PL
+            assert(node->gtElemType == TYP_MASK);
+            instGen_Set_Reg_To_Zero(EA_8BYTE, tmpReg);
+            GetEmitter()->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, tmpReg, tmpReg, 1);
+        }
+
+        // Generate addr = base + {VL|PL} * index;
+        GetEmitter()->emitIns_R_R_R_R(INS_madd, EA_8BYTE, node->GetRegNum(), indexReg, tmpReg, base->GetRegNum());
+    }
+    else
+#endif
+        // Can we use a ScaledAdd instruction?
+        //
+        if (isPow2(node->GetElemSize()) && (node->GetElemSize() <= 32768))
+        {
+            DWORD scale;
+            BitScanForward(&scale, node->GetElemSize());
+
+#ifdef TARGET_ARM64
+            if (!index->TypeIs(TYP_I_IMPL))
+            {
+                if (scale <= 4)
+                {
+                    // target = base + index<<scale
+                    GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(),
+                                                  base->GetRegNum(), indexReg, scale, INS_OPTS_UXTW);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
+                    indexReg      = tmpReg;
+                    emitter* emit = GetEmitter();
+                    genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+                }
+            }
+            else
+#endif // TARGET_ARM64
+            {
+                // dest = base + index * scale
+                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+            }
+        }
+        else // we have to load the element size and use a MADD (multiply-add) instruction
+        {
+#ifdef TARGET_ARM64
+            if (!index->TypeIs(TYP_I_IMPL))
+            {
+                const regNumber tmpReg2 = internalRegisters.Extract(node);
+                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
+                indexReg = tmpReg2;
+            }
 #endif // TARGET_ARM64
 
-        // tmpReg = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
+            // tmpReg = element size
+            instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->GetElemSize());
 
-        // dest = index * tmpReg + base
-        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
-                                      base->GetRegNum());
-    }
+            // dest = index * tmpReg + base
+            GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
+                                          base->GetRegNum());
+        }
 
     // dest = dest + elemOffs
     GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),
@@ -3191,6 +3220,10 @@ void CodeGen::genCall(GenTreeCall* call)
     if (m_compiler->killGCRefs(call))
     {
         genDefineTempLabel(genCreateTempLabel());
+
+        // The runtime can't find callee-saved registers through an InlinedCallFrame,
+        // so LSRA must have spilled any GC values held in them.
+        assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & RBM_INT_CALLEE_SAVED) == RBM_NONE);
     }
 
     genCallInstruction(call);
@@ -4278,31 +4311,33 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
 #ifdef TARGET_ARM64
-
             if (index->isContained())
             {
+                // Only BFIZ/CAST nodes should be present for contained index on ARM64.
+                GenTreeCast* cast;
                 if (index->OperIs(GT_BFIZ))
                 {
-                    // Handle LEA with "contained" BFIZ
                     assert(scale == 0);
                     scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
-                    index = index->gtGetOp1()->gtGetOp1();
-                }
-                else if (index->OperIs(GT_CAST))
-                {
-                    index = index->AsCast()->gtGetOp1();
+                    cast  = index->gtGetOp1()->AsCast();
                 }
                 else
                 {
-                    // Only BFIZ/CAST nodes should be present for for contained index on ARM64.
-                    // If there are more, we need to handle them here.
-                    unreached();
+                    cast = index->AsCast();
                 }
-            }
-#endif
 
-            // Then compute target reg from [base + index*scale]
-            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+                // The 32-bit index has to be sign/zero-extended as part of the add.
+                assert(genActualTypeIsInt(cast->CastOp()) && (scale <= 4));
+                emit->emitIns_R_R_R_I(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(),
+                                      cast->CastOp()->GetRegNum(), scale,
+                                      cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW);
+            }
+            else
+#endif
+            {
+                // Then compute target reg from [base + index*scale]
+                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+            }
         }
     }
     else if (lea->HasBase())

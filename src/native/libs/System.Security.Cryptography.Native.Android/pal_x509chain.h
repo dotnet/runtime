@@ -8,12 +8,15 @@
 typedef struct X509ChainContext_t X509ChainContext;
 typedef struct ValidationError_t ValidationError;
 
+int32_t X509ChainIsSystemTrusted(JNIEnv* env, jobject /*X509Certificate*/ cert);
+
 /*
 Create a context for building a certificate chain
 */
 PALEXPORT X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certificate*/ cert,
                                                                        jobject* /*X509Certificate*/ extraStore,
-                                                                       int32_t extraStoreLen);
+                                                                       int32_t extraStoreLen,
+                                                                       bool useCustomRootTrust);
 
 /*
 Destroy the context
@@ -24,8 +27,13 @@ PALEXPORT void AndroidCryptoNative_X509ChainDestroyContext(X509ChainContext* ctx
 Build a certificate path
 
 Always validates time and trust root.
+
+Returns 1 on success, 0 for a path building failure, and -1 for an interop error.
 */
-PALEXPORT int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeInMsFromUnixEpoch);
+PALEXPORT int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx,
+                                                    int64_t timeInMsFromUnixEpoch,
+                                                    bool useFullTrustStore,
+                                                    bool* usedTargetedTrust);
 
 /*
 Return the number of certificates in the path

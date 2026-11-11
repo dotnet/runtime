@@ -111,7 +111,10 @@ $cdacDll = if ($isWin) { "mscordaccore_universal.dll" } elseif ($IsMacOS) { "lib
 $debuggeesDir = Join-Path $scriptDir "Debuggees"
 
 # Discover available debuggees
-$allDebuggees = Get-ChildItem $debuggeesDir -Directory | Where-Object { Test-Path (Join-Path $_.FullName "*.csproj") } | ForEach-Object { $_.Name }
+$allDebuggees = Get-ChildItem $debuggeesDir -Directory | Where-Object {
+    (Test-Path (Join-Path $_.FullName "*.csproj")) -or
+    (Test-Path (Join-Path $_.FullName "*.ilproj"))
+} | ForEach-Object { $_.Name }
 
 # Resolve which debuggees to run
 if ($Debuggee.Count -eq 0) {
@@ -195,8 +198,10 @@ if (!(Test-Path (Join-Path $coreRoot $cdacDll))) {
 # ---------------------------------------------------------------------------
 Write-Host ">>> Step 2: Building debuggees..." -ForegroundColor Yellow
 foreach ($d in $selectedDebuggees) {
-    $csproj = Get-ChildItem (Join-Path $debuggeesDir $d) -Filter "*.csproj" | Select-Object -First 1
-    & $dotnetExe build $csproj.FullName -c Release --nologo -v q
+    $project = Get-ChildItem (Join-Path $debuggeesDir $d) |
+        Where-Object { $_.Extension -in ".csproj", ".ilproj" } |
+        Select-Object -First 1
+    & $dotnetExe build $project.FullName -c Release --nologo -v q
     if ($LASTEXITCODE -ne 0) { Write-Error "Failed to build debuggee '$d'"; exit 1 }
     Write-Host "  Built $d" -ForegroundColor DarkGray
 }

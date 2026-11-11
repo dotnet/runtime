@@ -56,7 +56,7 @@ internal readonly struct ReJIT_1 : IReJIT
         {
             RejitFlags.kStateRequested => RejitState.Requested,
             RejitFlags.kStateActive => RejitState.Active,
-            _ => throw new InvalidOperationException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
+            _ => RejitState.Unknown,
         };
     }
 

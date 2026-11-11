@@ -59,31 +59,7 @@ namespace Internal.IL.Stubs
             {
                 if (_signature == null)
                 {
-                    // Append the unmanaged target to the signature.
-                    TypeDesc[] parameterTypes = new TypeDesc[_targetSignature.Length + 1];
-
-                    for (int i = 0; i < _targetSignature.Length; i++)
-                        parameterTypes[i] = _targetSignature[i];
-                    parameterTypes[parameterTypes.Length - 1] = Context.GetWellKnownType(WellKnownType.IntPtr);
-
-                    EmbeddedSignatureData[] embeddedSignatureData =
-                    [
-                        new()
-                        {
-                            index = MethodSignature.GetIndexOfCustomModifierOnTypeByParameterIndex(parameterTypes.Length),
-                            kind = EmbeddedSignatureDataKind.RequiredCustomModifier,
-                            type = Context.SystemModule.GetKnownType(
-                                "System.Runtime.CompilerServices"u8,
-                                "SecretStubArgument"u8)
-                        }
-                    ];
-
-                    _signature = new MethodSignature(
-                        MethodSignatureFlags.Static,
-                        0,
-                        _targetSignature.ReturnType,
-                        parameterTypes,
-                        embeddedSignatureData);
+                    _signature = CreateSignatureWithSecretStubArgument(_targetSignature, MethodSignatureFlags.Static);
                 }
                 return _signature;
             }

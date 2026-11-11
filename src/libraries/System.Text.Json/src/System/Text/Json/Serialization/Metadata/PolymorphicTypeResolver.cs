@@ -210,7 +210,7 @@ namespace System.Text.Json.Serialization.Metadata
             !type.IsSealed &&
             !type.IsGenericTypeDefinition &&
             !type.IsPointer &&
-            type != JsonTypeInfo.ObjectType;
+            type != typeof(object);
 
         public static bool IsSupportedDerivedType(Type baseType, Type? derivedType) =>
             baseType.IsAssignableFrom(derivedType) && !derivedType.IsGenericTypeDefinition;

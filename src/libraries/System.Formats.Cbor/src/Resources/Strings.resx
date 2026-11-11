@@ -183,6 +183,9 @@
   <data name="Cbor_Reader_InvalidCbor_InvalidIntegerEncoding" xml:space="preserve">
     <value>CBOR initial byte contains invalid integer encoding</value>
   </data>
+  <data name="Cbor_Reader_InvalidCbor_InvalidSimpleValueEncoding" xml:space="preserve">
+    <value>CBOR initial byte contains reserved additional information.</value>
+  </data>
   <data name="Cbor_Reader_InvalidCbor_KeyMissingValue" xml:space="preserve">
     <value>The current CBOR map contains an incomplete key/value pair.</value>
   </data>
@@ -224,6 +227,9 @@
   </data>
   <data name="Cbor_Reader_InvalidUnixTimeEncoding" xml:space="preserve">
     <value>Not a valid tagged unix time encoding.</value>
+  </data>
+  <data name="Cbor_Reader_UnixTimeOutOfRange" xml:space="preserve">
+    <value>The decoded Unix time is outside the range of DateTimeOffset.</value>
   </data>
   <data name="Cbor_Reader_InvalidBigNumEncoding" xml:space="preserve">
     <value>Not a valid tagged bignum encoding.</value>

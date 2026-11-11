@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-
 #ifndef _SSTRING_INL_
 #define _SSTRING_INL_
 
@@ -743,7 +741,7 @@ inline int SString::_wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelper(buffer1, buffer2, 0, TRUE, FALSE);
 #ifdef VERIFY_CRT_EQUIVALNCE
-    _ASSERTE((returnValue == 0) == (::_wcsicmp(buffer1, buffer2) == 0));
+    _ASSERTE((returnValue == 0) == (u16_stricmp(buffer1, buffer2) == 0));
 #endif
     return returnValue;
 
@@ -754,7 +752,7 @@ inline int SString::_wcsnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelper(buffer1, buffer2, count, TRUE, TRUE);
 #ifdef VERIFY_CRT_EQUIVALNCE
-    _ASSERTE((returnValue == 0) == (::_wcsnicmp(buffer1, buffer2, count) == 0));
+    _ASSERTE((returnValue == 0) == (u16_strnicmp(buffer1, buffer2, count) == 0));
 #endif
     return returnValue;
 }
@@ -1544,12 +1542,12 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
         THROWS;
     }
     SS_CONTRACT_END;
-    NewArrayHolder<WCHAR> buffer = NULL;
+    WStringHolder buffer;
 
     buffer = new WCHAR[GetCount() +1];
     wcscpy_s(buffer, GetCount() + 1, GetUnicode());
 
-    return buffer.Extract();
+    return buffer.Detach();
 }
 
 //----------------------------------------------------------------------------
@@ -1565,12 +1563,12 @@ inline UTF8 *SString::GetCopyOfUTF8String()
         THROWS;
     }
     SS_CONTRACT_END;
-    NewArrayHolder<UTF8> buffer = NULL;
+    NewArrayHolder<UTF8> buffer;
 
     buffer = new UTF8[GetSize()];
     strncpy(buffer, GetUTF8(), GetSize());
 
-    return buffer.Extract();
+    return buffer.Detach();
 }
 
 //----------------------------------------------------------------------------
@@ -1686,29 +1684,6 @@ inline void SString::CloseBuffer(COUNT_T finalCount)
 
     SBuffer::CloseRawBuffer(CountToSize(finalCount));
     NullTerminate();
-}
-
-//----------------------------------------------------------------------------
-// EnsureWritable
-// Ensures that the buffer is writable
-//----------------------------------------------------------------------------
-inline void SString::EnsureWritable() const
-{
-#ifdef SSTRING_EXTRA_CHECKS
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        THROWS;
-    }
-    CONTRACTL_END;
-#else //SSTRING_EXTRA_CHECKS
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_THROWS;
-#endif //SSTRING_EXTRA_CHECKS
-
-    if (IsLiteral())
-        const_cast<SString *>(this)->Resize(GetRawCount(), GetRepresentation(), PRESERVE);
 }
 
 //-----------------------------------------------------------------------------

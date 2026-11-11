@@ -6,10 +6,14 @@
   of once per shell language. See generate-coreclr-helpers.md.
 
   Properties:
-    Configuration     Debug (default), Release or Checked. Has to match the configuration the
+    Configuration     Release (the scripts' default), Debug or Checked. Has to match the configuration the
                       scanned assemblies were built in.
     BrowserScanPath   Overrides the browser scan path.
     WasiScanPath      Overrides the wasi scan path.
+    CallHelperTargetOS
+                      browser or wasi to regenerate only that flavor's tables (default: both).
+                      Lets a build that produced only one flavor, such as a CI leg, regenerate
+                      its own tables.
 -->
 <Project Sdk="Microsoft.Build.NoTargets">
 
@@ -31,11 +35,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_WasmCallHelperTarget Include="browser">
+    <_WasmCallHelperTarget Include="browser" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'browser'">
       <ScanPath Condition="'$(BrowserScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(BrowserScanPath)'))</ScanPath>
       <ScanPath Condition="'$(BrowserScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-browser-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
     </_WasmCallHelperTarget>
-    <_WasmCallHelperTarget Include="wasi">
+    <_WasmCallHelperTarget Include="wasi" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'wasi'">
       <ScanPath Condition="'$(WasiScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(WasiScanPath)'))</ScanPath>
       <ScanPath Condition="'$(WasiScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-wasi-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
     </_WasmCallHelperTarget>
@@ -81,8 +85,13 @@
     </Task>
   </UsingTask>
 
+  <Target Name="_ValidateCallHelperTargetOS">
+    <Error Condition="'@(_WasmCallHelperTarget)' == ''"
+           Text="Unknown CallHelperTargetOS '$(CallHelperTargetOS)'. Expected browser or wasi." />
+  </Target>
+
   <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
-  <Target Name="GenerateCallHelpers" Outputs="%(_WasmCallHelperTarget.Identity)">
+  <Target Name="GenerateCallHelpers" DependsOnTargets="_ValidateCallHelperTargetOS" Outputs="%(_WasmCallHelperTarget.Identity)">
     <PropertyGroup>
       <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
       <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>

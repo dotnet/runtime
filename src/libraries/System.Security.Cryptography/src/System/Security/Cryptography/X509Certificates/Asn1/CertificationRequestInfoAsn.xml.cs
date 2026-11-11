@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct CertificationRequestInfoAsn
     {
-        internal System.Numerics.BigInteger Version;
+        internal int Version;
         internal ReadOnlyMemory<byte> Subject;
         internal System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
         internal System.Security.Cryptography.Asn1.AttributeAsn[] Attributes;
@@ -103,7 +103,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             int offset;
             ReadOnlySpan<byte> tmpSpan;
 
-            decoded.Version = sequenceReader.ReadInteger();
+
+            if (!sequenceReader.TryReadInt32(out decoded.Version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 throw new CryptographicException();
@@ -136,7 +141,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct ValueCertificationRequestInfoAsn
     {
-        internal System.Numerics.BigInteger Version;
+        internal int Version;
         internal ReadOnlySpan<byte> Subject;
         internal System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
         internal ReadOnlySpan<byte> Attributes;
@@ -225,7 +230,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             decoded = default;
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
-            decoded.Version = sequenceReader.ReadInteger();
+
+            if (!sequenceReader.TryReadInt32(out decoded.Version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 throw new CryptographicException();

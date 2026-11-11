@@ -41,17 +41,28 @@ namespace System.Net.Security.Tests
                     throw new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.Message}");
                 }
 
-                using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
+                bool callbackCalled = false;
+                using (SslStream sslStream = new SslStream(client.GetStream()))
                 {
+                    var options = new SslClientAuthenticationOptions
+                    {
+                        TargetHost = Configuration.Security.TlsServer.IdnHost,
+                        AllowTlsResume = false,
+                        RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                        {
+                            callbackCalled = true;
+                            return RemoteHttpsCertValidation(sender, certificate, chain, errors);
+                        }
+                    };
                     try
                     {
                         if (useAsync)
                         {
-                            await sslStream.AuthenticateAsClientAsync(Configuration.Security.TlsServer.IdnHost);
+                            await sslStream.AuthenticateAsClientAsync(options);
                         }
                         else
                         {
-                            sslStream.AuthenticateAsClient(Configuration.Security.TlsServer.IdnHost);
+                            sslStream.AuthenticateAsClient(options);
                         }
                     }
                     catch (IOException ex) when (ex.InnerException is SocketException &&
@@ -61,6 +72,8 @@ namespace System.Net.Security.Tests
                         // caused most likely by environmental failures.
                         throw new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.InnerException.Message}");
                     }
+
+                    Assert.True(callbackCalled);
                 }
             }
         }
@@ -135,7 +148,7 @@ namespace System.Net.Security.Tests
         [InlineData(X509RevocationMode.Offline)]
         [InlineData(X509RevocationMode.Online)]
         [InlineData(X509RevocationMode.NoCheck)]
-        public Task ConnectWithRevocation_RemoteServer_StapledOcsp_FromWindows(X509RevocationMode revocationMode)
+        public async Task ConnectWithRevocation_RemoteServer_StapledOcsp_FromWindows(X509RevocationMode revocationMode)
         {
             // This test could ideally end at the Client Hello, because it really only wants to
             // ensure that the status_request extension was asserted.  Since the SslStream tests
@@ -146,22 +159,26 @@ namespace System.Net.Security.Tests
             // but it's the best we can do right now.
 
             string serverName = Configuration.Http.Http2Host;
+            bool callbackCalled = false;
 
             SslClientAuthenticationOptions clientOpts = new SslClientAuthenticationOptions
             {
                 TargetHost = serverName,
+                AllowTlsResume = false,
                 RemoteCertificateValidationCallback = CertificateValidationCallback,
                 CertificateRevocationCheckMode = revocationMode,
             };
 
-            return EndToEndHelper(clientOpts);
+            await EndToEndHelper(clientOpts);
+            Assert.True(callbackCalled);
 
-            static bool CertificateValidationCallback(
+            bool CertificateValidationCallback(
                 object sender,
                 X509Certificate? certificate,
                 X509Chain? chain,
                 SslPolicyErrors sslPolicyErrors)
             {
+                callbackCalled = true;
                 Assert.NotNull(certificate);
 
                 using (SafeCertContextHandle ctx = new SafeCertContextHandle(certificate.Handle, ownsHandle: false))

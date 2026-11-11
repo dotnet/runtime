@@ -2,21 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/init.h
 
 Abstract:
     Header file for PAL init utility functions. Those functions
     are only use by the PAL itself.
-
-Revision History:
-
-
-
 --*/
 
 #ifndef _PAL_INIT_H_
@@ -26,15 +17,6 @@ Revision History:
 extern "C"
 {
 #endif // __cplusplus
-
-/*++
-Function:
-  PALCommonCleanup
-
-Utility function to prepare for shutdown.
-
---*/
-void PALCommonCleanup();
 
 extern Volatile<INT> init_count;
 
@@ -69,24 +51,6 @@ PALIsThreadDataInitialized();
 
 /*++
 Function:
-  PALIsShuttingDown
-
-Returns TRUE if the some thread has declared intent to shutdown
---*/
-BOOL
-PALIsShuttingDown();
-
-/*++
-Function:
-  PALSetShutdownIntent
-
-Delcares intent to shutdown
---*/
-void
-PALSetShutdownIntent();
-
-/*++
-Function:
   PALInitLock
 
 Take the initialization critical section (init_critsec). necessary to serialize
@@ -99,16 +63,6 @@ Return value :
     FALSE if critical section doesn't exist yet
 --*/
 BOOL PALInitLock(void);
-
-/*++
-Function:
-  PALInitUnlock
-
-Release the initialization critical section (init_critsec).
-
-(no parameters, no return value)
---*/
-void PALInitUnlock(void);
 
 #ifdef __cplusplus
 }

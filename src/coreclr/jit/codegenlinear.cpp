@@ -893,12 +893,20 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                 }
 #endif // TARGET_AMD64
 
+                // A block a catch returns to must emit at least one instruction.
+                if (genIsCatchRetTargetWithoutCode(block))
+                {
+                    instGen(INS_nop);
+                }
+
                 removedJmp = true;
                 break;
             }
 #ifdef TARGET_XARCH
-            // Do not remove a jump between hot and cold regions.
-            bool isRemovableJmpCandidate = !m_compiler->fgInDifferentRegions(block, block->GetTarget());
+            // Do not remove a jump between hot and cold regions, or a jump that is the only
+            // instruction of a block a catch returns to.
+            bool isRemovableJmpCandidate =
+                !m_compiler->fgInDifferentRegions(block, block->GetTarget()) && !genIsCatchRetTargetWithoutCode(block);
 
             inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
 #else  // !TARGET_XARCH
@@ -967,6 +975,49 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
         }
     }
 #endif // FEATURE_LOOP_ALIGN
+}
+
+//------------------------------------------------------------------------
+// genIsCatchRetTargetWithoutCode: check whether a catch returns to a block
+//   that has not emitted any code so far
+//
+// Arguments:
+//   block - the block whose code is being generated
+//
+// Return Value:
+//   true if 'block' is the target of a catch return and nothing has been
+//   emitted since its label
+//
+// Notes:
+//   When a catch returns with a thread abort pending, the runtime raises the
+//   abort again at the address the catch returns to and finds the handlers
+//   for it by that address. That address must be inside the EH regions of
+//   the block the catch returns to (see impImportLeave), so the block must
+//   emit at least one instruction of its own: if it emits none, the address
+//   belongs to the code that follows it. Whether the block emits anything is
+//   only known here: it can be empty in the IR, or have nodes that generate
+//   no code.
+//
+bool CodeGen::genIsCatchRetTargetWithoutCode(BasicBlock* block)
+{
+    // The target of a catch return always has a label, so nothing has been
+    // emitted for the block if the emitter is still at the start of the
+    // label's instruction group.
+    if ((block->bbEmitCookie != GetEmitter()->emitCurIG) || GetEmitter()->emitCurIGnonEmpty())
+    {
+        return false;
+    }
+
+    for (BasicBlock* const predBlock : block->PredBlocks())
+    {
+        if (predBlock->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->HasFlag(BBF_HAS_LABEL));
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
@@ -1331,6 +1382,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // for 64-bit local, or 8-bit cmp for 16-bit local).
             //
             // * For byrefs it can differ in GC-ness (TYP_I_IMPL vs TYP_BYREF).
+            // We use the local's GC-ness since the register keeps holding the
+            // local after this use and later uses won't update its GC state.
             //
             // In the NOL case the potential use of subrange assertions means
             // we always have to normalize, even if 'lcl' is wide; we could
@@ -1340,11 +1393,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // unspilling.
             //
             var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
-
-            if (varTypeIsGC(lcl))
-            {
-                unspillType = lcl->TypeGet();
-            }
 
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
@@ -1985,133 +2033,6 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 }
 #endif // !TARGET_X86
 
-//------------------------------------------------------------------------
-// genSetBlockSize: Ensure that the block size is in the given register
-//
-// Arguments:
-//    blkNode - The block node
-//    sizeReg - The register into which the block's size should go
-//
-
-void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
-{
-    if (sizeReg != REG_NA)
-    {
-        assert((internalRegisters.GetAll(blkNode) & genRegMask(sizeReg)) != 0);
-        // This can go via helper which takes the size as a native uint.
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
-    }
-}
-
-//------------------------------------------------------------------------
-// genConsumeBlockSrc: Consume the source address register of a block node, if any.
-//
-// Arguments:
-//    blkNode - The block node
-
-void CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
-{
-    GenTree* src = blkNode->Data();
-    if (blkNode->OperIsCopyBlkOp())
-    {
-        // For a CopyBlk we need the address of the source.
-        assert(src->isContained());
-        if (src->OperIs(GT_IND))
-        {
-            src = src->AsOp()->gtOp1;
-        }
-        else
-        {
-            // This must be a local.
-            // For this case, there is no source address register, as it is a
-            // stack-based address.
-            assert(src->OperIsLocal());
-            return;
-        }
-    }
-    else
-    {
-        if (src->OperIsInitVal())
-        {
-            src = src->gtGetOp1();
-        }
-    }
-    genConsumeReg(src);
-}
-
-//------------------------------------------------------------------------
-// genSetBlockSrc: Ensure that the block source is in its allocated register.
-//
-// Arguments:
-//    blkNode - The block node
-//    srcReg  - The register in which to set the source (address or init val).
-//
-void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
-{
-    GenTree* src = blkNode->Data();
-    if (blkNode->OperIsCopyBlkOp())
-    {
-        // For a CopyBlk we need the address of the source.
-        if (src->OperIs(GT_IND))
-        {
-            src = src->AsOp()->gtOp1;
-        }
-        else
-        {
-            // This must be a local struct.
-            // Load its address into srcReg.
-            unsigned varNum = src->AsLclVarCommon()->GetLclNum();
-            unsigned offset = src->AsLclVarCommon()->GetLclOffs();
-            GetEmitter()->emitIns_R_S(INS_lea, EA_BYREF, srcReg, varNum, offset);
-            return;
-        }
-    }
-    else
-    {
-        if (src->OperIsInitVal())
-        {
-            src = src->gtGetOp1();
-        }
-    }
-    genCopyRegIfNeeded(src, srcReg);
-}
-
-//------------------------------------------------------------------------
-// genConsumeBlockOp: Ensure that the block's operands are enregistered
-//                    as needed.
-// Arguments:
-//    blkNode - The block node
-//
-// Notes:
-//    This ensures that the operands are consumed in the proper order to
-//    obey liveness modeling.
-
-void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg)
-{
-    // We have to consume the registers, and perform any copies, in the actual execution order: dst, src, size.
-    //
-    // Note that the register allocator ensures that the registers ON THE NODES will not interfere
-    // with one another if consumed (i.e. reloaded or moved to their ASSIGNED reg) in execution order.
-    // Further, it ensures that they will not interfere with one another if they are then copied
-    // to the REQUIRED register (if a fixed register requirement) in execution order.  This requires,
-    // then, that we first consume all the operands, then do any necessary moves.
-
-    GenTree* const dstAddr = blkNode->Addr();
-
-    // First, consume all the sources in order, and verify that registers have been allocated appropriately,
-    // based on the 'gtBlkOpKind'.
-
-    // The destination is always in a register; 'genConsumeReg' asserts that.
-    genConsumeReg(dstAddr);
-    // The source may be a local or in a register; 'genConsumeBlockSrc' will check that.
-    genConsumeBlockSrc(blkNode);
-
-    // Next, perform any necessary moves.
-    genCopyRegIfNeeded(dstAddr, dstReg);
-    genSetBlockSrc(blkNode, srcReg);
-    genSetBlockSize(blkNode, sizeReg);
-}
-
 //-------------------------------------------------------------------------
 // genSpillLocal: Generate the actual spill of a local var.
 //
@@ -2709,7 +2630,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * disassembler.
  *
  * Possible values for JitEmitUnitTestsSections:
- * Amd64: all, sse2
+ * Amd64: all, lea, sse2
  * Arm64: all, general, advsimd, sve
  * Wasm:  all, simd
  */
@@ -2751,6 +2672,10 @@ void CodeGen::genEmitterUnitTests()
     bool unitTestSectionAll = (strstr(unitTestSection, "all") != nullptr);
 
 #if defined(TARGET_AMD64)
+    if (unitTestSectionAll || (strstr(unitTestSection, "lea") != nullptr))
+    {
+        genAmd64EmitterUnitTestsLea();
+    }
     if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();

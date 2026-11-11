@@ -20,14 +20,38 @@ namespace System.Net
             if (remoteCertificate == null)
                 return SslPolicyErrors.RemoteCertificateNotAvailable;
 
-            SslPolicyErrors errors = chain.Build(remoteCertificate)
+            SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+            IntPtr platformTrustAnchor = sslContext.SslStreamProxy.PlatformTrustAnchor;
+            bool valid;
+            if (platformTrustAnchor != IntPtr.Zero && chain.ChainPolicy.TrustMode == X509ChainTrustMode.System)
+            {
+                using (X509Certificate2 hint = new X509Certificate2(platformTrustAnchor))
+                {
+                    int hintIndex = chain.ChainPolicy.ExtraStore.Count;
+                    chain.ChainPolicy.ExtraStore.Add(hint);
+                    try
+                    {
+                        valid = chain.Build(remoteCertificate);
+                    }
+                    finally
+                    {
+                        // Do not expose the temporary platform hint through the user's TLS callback.
+                        chain.ChainPolicy.ExtraStore.RemoveAt(hintIndex);
+                    }
+                }
+            }
+            else
+            {
+                valid = chain.Build(remoteCertificate);
+            }
+
+            SslPolicyErrors errors = valid
                 ? SslPolicyErrors.None
                 : SslPolicyErrors.RemoteCertificateChainErrors;
 
             if (checkCertName)
             {
                 System.Diagnostics.Debug.Assert(hostName != null);
-                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
                 if (!Interop.AndroidCrypto.SSLStreamVerifyHostname(sslContext.SslContext, hostName!))
                 {
                     errors |= SslPolicyErrors.RemoteCertificateNameMismatch;

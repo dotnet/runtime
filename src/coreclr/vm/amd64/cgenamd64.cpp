@@ -349,11 +349,23 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
+// Selects the APX jmpabs stub encoding; set by EEJitManager::SetCpuInfo() when APX is available.
+GVAL_IMPL_INIT(bool, g_isJmpAbsAvailable, false);
+
 bool isBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
     PTR_BYTE pbCode = PTR_BYTE(pCode);
 
+    // Check for jmpabs encoding (APX)
+    if (0xD5 == pbCode[0] &&
+        0x00 == pbCode[1] &&
+        0xA1 == pbCode[2])
+    {
+        return true;
+    }
+
+    // Check for legacy encoding: mov rax, imm64; jmp rax
     return 0x48 == pbCode[0]  &&
            0xB8 == pbCode[1]  &&
            0xFF == pbCode[10] &&
@@ -364,11 +376,18 @@ PCODE decodeBackToBackJump(PCODE pBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // mov rax, xxx
-    // jmp rax
     _ASSERTE(isBackToBackJump(pBuffer));
 
-    return *PTR_UINT64(pBuffer+2);
+    PTR_BYTE pbCode = PTR_BYTE(pBuffer);
+
+    // jmpabs encoding (APX): D5 00 A1 [8 bytes at offset 3-10]
+    if (0x00 == pbCode[1])
+    {
+        return *PTR_UINT64(pBuffer + 3);
+    }
+
+    // Legacy encoding: 48 B8 [8 bytes at offset 2-9] FF E0
+    return *PTR_UINT64(pBuffer + 2);
 }
 
 #ifdef DACCESS_COMPILE
@@ -394,40 +413,6 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 
 #ifndef DACCESS_COMPILE
 
-void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-
-        PRECONDITION(CheckPointer(pBuffer));
-    }
-    CONTRACTL_END;
-
-    // mov r10, pv                      49 ba xx xx xx xx xx xx xx xx
-
-    pBuffer[0]  = 0x49;
-    pBuffer[1]  = 0xBA;
-
-    SET_UNALIGNED_64(&pBuffer[2], pv);
-
-    // mov rax, pTarget                 48 b8 xx xx xx xx xx xx xx xx
-
-    pBuffer[10] = 0x48;
-    pBuffer[11] = 0xB8;
-
-    SET_UNALIGNED_64(&pBuffer[12], pTarget);
-
-    // jmp rax                          ff e0
-
-    pBuffer[20] = 0xFF;
-    pBuffer[21] = 0xE0;
-
-    _ASSERTE(DbgIsExecutable(pBuffer, 22));
-}
-
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL
@@ -437,25 +422,57 @@ void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pBufferRX));
+        PRECONDITION(CheckPointer(pBufferRW));
     }
     CONTRACTL_END;
 
-    // mov rax, 123456789abcdef0h       48 b8 xx xx xx xx xx xx xx xx
-    // jmp rax                          ff e0
+    if (IsJmpAbsAvailable())
+    {
+        // jmpabs (11 bytes) + nop padding = 12 bytes
+        emitJmpAbsJump(pBufferRX, pBufferRW, target);
+        pBufferRW[11] = 0x90;  // nop padding
+    }
+    else
+    {
+        // Fallback: mov rax, imm64; jmp rax (12 bytes)
+        pBufferRW[0]  = 0x48;
+        pBufferRW[1]  = 0xB8;
 
-    pBufferRW[0]  = 0x48;
-    pBufferRW[1]  = 0xB8;
+        SET_UNALIGNED_64(&pBufferRW[2], target);
 
-    SET_UNALIGNED_64(&pBufferRW[2], target);
-
-    pBufferRW[10] = 0xFF;
-    pBufferRW[11] = 0xE0;
+        pBufferRW[10] = 0xFF;
+        pBufferRW[11] = 0xE0;
+    }
 
     _ASSERTE(DbgIsExecutable(pBufferRX, 12));
 }
 
+void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+
+        PRECONDITION(CheckPointer(pBufferRX));
+        PRECONDITION(CheckPointer(pBufferRW));
+        PRECONDITION(IsJmpAbsAvailable());  // Caller must check APX availability
+    }
+    CONTRACTL_END;
+
+    // jmpabs instruction (APX)
+    pBufferRW[0]  = 0xD5;
+    pBufferRW[1]  = 0x00;
+    pBufferRW[2]  = 0xA1;
+
+    SET_UNALIGNED_64(&pBufferRW[3], target);
+
+    _ASSERTE(DbgIsExecutable(pBufferRX, 11));
+}
+
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
-    LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)
+    LoaderAllocator *pLoaderAllocator /* = NULL */)
 {
     CONTRACTL
     {
@@ -485,31 +502,13 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
         TADDR hiAddr = baseAddr + INT32_MAX;
         if (hiAddr < baseAddr) hiAddr = UINT64_MAX; // overflow
 
-        // Always try to allocate with throwOnOutOfMemoryWithinRange:false first to conserve reserveForJumpStubs until when
-        // it is really needed. LoaderCodeHeap::CreateCodeHeap and EEJitManager::CanUseCodeHeap won't use the reserved
-        // space when throwOnOutOfMemoryWithinRange is false.
-        //
-        // The reserved space should be only used by jump stubs for precodes and other similar code fragments. It should
-        // not be used by JITed code. And since the accounting of the reserved space is not precise, we are conservative
-        // and try to save the reserved space until it is really needed to avoid throwing out of memory within range exception.
         PCODE jumpStubAddr = ExecutionManager::jumpStub(pMethod,
                                                         target,
                                                         (BYTE *)loAddr,
                                                         (BYTE *)hiAddr,
-                                                        pLoaderAllocator,
-                                                        /* throwOnOutOfMemoryWithinRange */ false);
+                                                        pLoaderAllocator);
         if (jumpStubAddr == (PCODE)NULL)
-        {
-            if (!throwOnOutOfMemoryWithinRange)
-                return 0;
-
-            jumpStubAddr = ExecutionManager::jumpStub(pMethod,
-                target,
-                (BYTE *)loAddr,
-                (BYTE *)hiAddr,
-                pLoaderAllocator,
-                /* throwOnOutOfMemoryWithinRange */ true);
-        }
+            return 0;
 
         offset = jumpStubAddr - baseAddr;
 
@@ -524,69 +523,6 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
     return static_cast<INT32>(offset);
 }
 
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddrRX, PCODE jumpStubAddrRW, bool emitJump)
-{
-    CONTRACTL
-    {
-        THROWS; // emitBackToBackJump may throw (see emitJump)
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    TADDR baseAddr = (TADDR)pRel32 + 4;
-    _ASSERTE(FitsInI4(jumpStubAddrRX - baseAddr));
-
-    INT_PTR offset = target - baseAddr;
-    if (!FitsInI4(offset) INDEBUG(|| PEDecoder::GetForceRelocs()))
-    {
-        offset = jumpStubAddrRX - baseAddr;
-        if (!FitsInI4(offset))
-        {
-            _ASSERTE(!"jump stub was not in expected range");
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-
-        if (emitJump)
-        {
-            emitBackToBackJump((LPBYTE)jumpStubAddrRX, (LPBYTE)jumpStubAddrRW, (LPVOID)target);
-        }
-        else
-        {
-            _ASSERTE(decodeBackToBackJump(jumpStubAddrRX) == target);
-        }
-    }
-
-    _ASSERTE(FitsInI4(offset));
-    return static_cast<INT32>(offset);
-}
-//
-// Some AMD64 assembly functions have one or more DWORDS at the end of the function
-//  that specify the offsets where significant instructions are
-//  we use this function to get at these offsets
-//
-DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
-                               PT_RUNTIME_FUNCTION pFunctionEntry,
-                               int                 offsetNum /* = 1*/)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION((offsetNum > 0) && (offsetNum < 20));  /* we only allow reasonable offsetNums 1..19 */
-    }
-    CONTRACTL_END;
-
-    DWORD  functionSize     = pFunctionEntry->EndAddress - pFunctionEntry->BeginAddress;
-    BYTE*  pEndOfFunction   = (BYTE*)  (uImageBase + pFunctionEntry->EndAddress);
-    DWORD* pOffset          = (DWORD*) (pEndOfFunction)  - offsetNum;
-    DWORD  offsetInFunc     = *pOffset;
-
-    _ASSERTE_ALL_BUILDS((offsetInFunc >= 0) && (offsetInFunc < functionSize));
-
-    return offsetInFunc;
-}
-
 #ifdef FEATURE_READYTORUN
 
 //
@@ -596,7 +532,10 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+// Keep failed allocations so that retries emit the helper at a different address.
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    for (;;) \
+    { \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -605,15 +544,23 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
-    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
-    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-
 #define END_DYNAMIC_HELPER_EMIT() \
+    if (p == nullptr) \
+        continue; \
     _ASSERTE(pStart + cb == p); \
     while (p < pStart + cbAligned) *p++ = X86_INSTR_INT3; \
     ClrFlushInstructionCache(pStartRX, cbAligned); \
-    return (PCODE)pStartRX
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pStartRX, cb, PerfMapStubType::Individual); \
+    return (PCODE)pStartRX; \
+    } /* for (;;) */
+
+#define EMIT_DYNAMIC_HELPER_JUMP(target) \
+    *p++ = X86_INSTR_JMP_REL32; \
+    INT32 rel32 = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, nullptr, pAllocator); \
+    if (rel32 == 0) \
+        continue; \
+    SET_UNALIGNED_32(p, rel32); \
+    p += 4;
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
@@ -630,9 +577,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     SET_UNALIGNED_64(p, arg);
     p += 8;
 
-    *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
-    p += 4;
+    EMIT_DYNAMIC_HELPER_JUMP(target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -658,7 +603,14 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
+    INT32 rel32 = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, nullptr, pAllocator);
+    if (rel32 == 0)
+    {
+        // Signal the enclosing emission loop to allocate and emit a new helper.
+        p = nullptr;
+        return;
+    }
+    SET_UNALIGNED_32(p, rel32);
     p += 4;
 }
 
@@ -697,9 +649,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     SET_UNALIGNED_64(p, arg2);
     p += 8;
 
-    *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
-    p += 4;
+    EMIT_DYNAMIC_HELPER_JUMP(target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -728,9 +678,7 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
     SET_UNALIGNED_64(p, arg);
     p += 8;
 
-    *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
-    p += 4;
+    EMIT_DYNAMIC_HELPER_JUMP(target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -802,9 +750,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     SET_UNALIGNED_64(p, arg);
     p += 8;
 
-    *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
-    p += 4;
+    EMIT_DYNAMIC_HELPER_JUMP(target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -833,9 +779,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     SET_UNALIGNED_64(p, arg2);
     p += 8;
 
-    *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
-    p += 4;
+    EMIT_DYNAMIC_HELPER_JUMP(target);
 
     END_DYNAMIC_HELPER_EMIT();
 }

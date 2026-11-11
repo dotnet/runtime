@@ -71,15 +71,25 @@ namespace System.Net.Http.Tests
             byte[] encoded = (encoding ?? Encoding.Latin1).GetBytes(input);
             string expectedValue = input.Replace('\0', ' ').Replace('\r', ' ').Replace('\n', ' ');
 
-            Assert.True(HeaderDescriptor.TryGet("custom-header", out HeaderDescriptor descriptor));
-            Assert.Null(descriptor.KnownHeader);
-            string roundtrip = descriptor.GetHeaderValue(encoded, encoding);
-            Assert.Equal(expectedValue, roundtrip);
+            foreach (string headerName in new[] { "custom-header", "Cache-Control", "Content-Type", "Location" })
+            {
+                Assert.True(HeaderDescriptor.TryGet(headerName, out HeaderDescriptor descriptor));
+                Assert.Equal(expectedValue, descriptor.GetHeaderValue(encoded, encoding));
+            }
+        }
 
-            Assert.True(HeaderDescriptor.TryGet("Cache-Control", out descriptor));
-            Assert.NotNull(descriptor.KnownHeader);
-            roundtrip = descriptor.GetHeaderValue(encoded, encoding);
-            Assert.Equal(expectedValue, roundtrip);
+        [Theory]
+        [InlineData("")]
+        [InlineData("/path")]
+        [InlineData("/\u00E9/\uD83D\uDE03")]
+        [InlineData("\0/\u00E9\r/\uD83D\uDE03\n")]
+        [InlineData("/\u00E9\r\n\0/\uD83D\uDE03")]
+        public void GetHeaderValue_Location_DecodesUtf8_ReplacesDangerousCharacters(string input)
+        {
+            byte[] encoded = Encoding.UTF8.GetBytes(input);
+            string expectedValue = input.Replace('\0', ' ').Replace('\r', ' ').Replace('\n', ' ');
+
+            Assert.Equal(expectedValue, KnownHeaders.Location.Descriptor.GetHeaderValue(encoded, valueEncoding: null));
         }
     }
 }

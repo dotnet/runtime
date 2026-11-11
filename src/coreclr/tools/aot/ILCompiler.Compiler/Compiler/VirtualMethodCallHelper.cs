@@ -123,8 +123,6 @@ namespace ILCompiler
             int baseSlots = 0;
 
             TypeDesc baseType = owningType.BaseType;
-            TypeDesc templateBaseType = owningType.ConvertToCanonForm(CanonicalFormKind.Specific).BaseType;
-
             while (baseType != null)
             {
                 // Normalize the base type. Necessary to make this work with the lazy vtable slot
@@ -132,31 +130,9 @@ namespace ILCompiler
                 // something like Base<__Canon, string>. We would get "0 slots used" for weird
                 // base types like this.
                 baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                templateBaseType = templateBaseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-                //
-                // In the universal canonical types case, we could have base types in the hierarchy that are partial universal canonical types.
-                // The presence of these types could cause incorrect vtable layouts, so we need to fully canonicalize them and walk the
-                // hierarchy of the template type of the original input type to detect these cases.
-                //
-                // Exmaple: we begin with Derived<__UniversalCanon> and walk the template hierarchy:
-                //
-                //    class Derived<T> : Middle<T, MyStruct> { }    // -> Template is Derived<__UniversalCanon> and needs a dictionary slot
-                //                                                  // -> Basetype tempalte is Middle<__UniversalCanon, MyStruct>. It's a partial
-                //                                                        Universal canonical type, so we need to fully canonicalize it.
-                //
-                //    class Middle<T, U> : Base<U> { }              // -> Template is Middle<__UniversalCanon, __UniversalCanon> and needs a dictionary slot
-                //                                                  // -> Basetype template is Base<__UniversalCanon>
-                //
-                //    class Base<T> { }                             // -> Template is Base<__UniversalCanon> and needs a dictionary slot.
-                //
-                // If we had not fully canonicalized the Middle class template, we would have ended up with Base<MyStruct>, which does not need
-                // a dictionary slot, meaning we would have created a vtable layout that the runtime does not expect.
-                //
-
                 // For types that have a generic dictionary, the introduced virtual method slots are
                 // prefixed with a pointer to the generic dictionary.
-                if ((baseType.HasGenericDictionarySlot() || templateBaseType.HasGenericDictionarySlot()) && countDictionarySlots)
+                if (baseType.HasGenericDictionarySlot() && countDictionarySlots)
                     baseSlots++;
 
                 IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
@@ -169,7 +145,6 @@ namespace ILCompiler
                 }
 
                 baseType = baseType.BaseType;
-                templateBaseType = templateBaseType.BaseType;
             }
 
             return baseSlots;

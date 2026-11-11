@@ -13,8 +13,7 @@ void HostInformation::SetContract(_In_ host_runtime_contract* hostContract)
 {
     _ASSERTE(s_hostContract.size == 0 && hostContract != nullptr);
 
-    // Copy the contract values
-    s_hostContract = *hostContract;
+    memcpy(&s_hostContract, hostContract, min(hostContract->size, sizeof(s_hostContract)));
 }
 
 bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
@@ -55,6 +54,51 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
 
     value.CloseBuffer(static_cast<COUNT_T>(lenActual) - 1);
     return true;
+}
+
+bool HostInformation::GetAssemblyNames(const char* const** names, size_t* count)
+{
+    _ASSERTE(names != nullptr && count != nullptr);
+
+    size_t requiredSize = offsetof(host_runtime_contract, resolve_assembly_to_path) + sizeof(s_hostContract.resolve_assembly_to_path);
+    if (s_hostContract.size < requiredSize
+        || s_hostContract.get_assembly_names == nullptr
+        || s_hostContract.resolve_assembly_to_path == nullptr)
+    {
+        return false;
+    }
+
+    if (!s_hostContract.get_assembly_names(names, count, s_hostContract.context))
+        return false;
+
+    if (*count != 0 && *names == nullptr)
+        return false;
+
+    return true;
+}
+
+void HostInformation::ResolveAssemblyToPath(_In_z_ LPCWSTR simpleName, SString& path)
+{
+    size_t requiredSize = offsetof(host_runtime_contract, resolve_assembly_to_path) + sizeof(s_hostContract.resolve_assembly_to_path);
+    if (s_hostContract.size < requiredSize || s_hostContract.resolve_assembly_to_path == nullptr)
+        return;
+
+    StackSString utf8Name;
+    utf8Name.SetAndConvertToUTF8(simpleName);
+    const char* directory;
+    const char* fileName;
+    if (!s_hostContract.resolve_assembly_to_path(utf8Name.GetUTF8(), &directory, &fileName, s_hostContract.context))
+        return;
+
+    if (directory == nullptr || directory[0] == '\0' || fileName == nullptr || fileName[0] == '\0')
+        return;
+
+    path.SetUTF8(directory);
+    size_t directoryLength = strlen(directory);
+    if (directory[directoryLength - 1] != DIRECTORY_SEPARATOR_CHAR_A)
+        path.Append(DIRECTORY_SEPARATOR_CHAR_A);
+
+    path.AppendUTF8(fileName);
 }
 
 bool HostInformation::HasExternalProbe()

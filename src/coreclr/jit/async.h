@@ -532,9 +532,9 @@ class AsyncTransformation
     BasicBlock* RethrowExceptionOnResumption(BasicBlock* block, const ContinuationLayout& layout, BasicBlock* resumeBB);
     void        CopyReturnValueOnResumption(GenTreeCall*              call,
                                             const CallDefinitionInfo& callDefInfo,
-                                            const ContinuationLayout& layout,
+                                            const ReturnInfo*         retInfo,
                                             BasicBlock*               storeResultBB);
-    void ClearReturnValueOnResumption(const ReturnInfo* retInfo, unsigned resultOffset, BasicBlock* storeResultBB);
+    void        ClearReturnValueOnResumption(const ReturnInfo* retInfo, BasicBlock* storeResultBB);
 
     GenTreeIndir*    LoadFromOffset(GenTree*     base,
                                     unsigned     offset,

@@ -102,8 +102,7 @@ namespace System.Threading.Tasks.Tests
     {
         // The test scenarios drive async work via Task.Run(...).GetAwaiter().GetResult() (see
         // RunScenarioAndFlush / RunScenario), which requires synchronous blocking waits. On
-        // single-threaded WASM this throws PlatformNotSupportedException from
-        // RuntimeFeature.ThrowIfMultithreadingIsNotSupported(), so gate the tests on both
+        // single-threaded WASM this throws PlatformNotSupportedException, so gate the tests on both
         // runtime async support and threading support.
         public static bool IsRuntimeAsyncAndThreadingSupported =>
             PlatformDetection.IsRuntimeAsyncSupported && PlatformDetection.IsMultithreadingSupported;
@@ -462,12 +461,12 @@ namespace System.Threading.Tasks.Tests
         // StateMachine frame, i.e. the native code of MoveNext (see AsyncStateMachineDiagnostics<T>.
         // ResolveMethodId). This covers frame name resolution and the console dump uniformly on Mono.
         //
-        // The IntPtr overload of GetNativeCodeInternal only exists on Mono (CoreCLR's takes an
+        // The IntPtr overload of GetDiagnosticCodeStart only exists on Mono (CoreCLR's takes an
         // IRuntimeMethodInfo), so this reflection yields null on CoreCLR/NativeAOT and the fallback is a
         // no-op there, leaving the robust IP->name resolution untouched.
-        private static readonly MethodInfo? s_getNativeCodeInternalMethod =
+        private static readonly MethodInfo? s_getDiagnosticCodeStartMethod =
             typeof(RuntimeMethodHandle).GetMethod(
-                "GetNativeCodeInternal",
+                "GetDiagnosticCodeStart",
                 BindingFlags.Static | BindingFlags.NonPublic,
                 null,
                 new[] { typeof(IntPtr) },
@@ -524,14 +523,14 @@ namespace System.Threading.Tasks.Tests
         // and keyed by address. No-op except on Mono.
         private static void SnapshotStateMachineMethodIds()
         {
-            if (s_getNativeCodeInternalMethod is null)
+            if (s_getDiagnosticCodeStartMethod is null)
             {
                 return;
             }
 
             foreach ((string methodName, IntPtr moveNextHandle) in s_stateMachineMoveNextMethods.Value)
             {
-                object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNextHandle });
+                object? nativeCode = s_getDiagnosticCodeStartMethod.Invoke(null, new object[] { moveNextHandle });
                 if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
                 {
                     s_methodIdToName.TryAdd((ulong)(nuint)ip, methodName);
@@ -548,7 +547,7 @@ namespace System.Threading.Tasks.Tests
         // No-op except on Mono.
         private static void SnapshotStateMachineMethodIdFor(MethodInfo asyncMethod)
         {
-            if (s_getNativeCodeInternalMethod is null)
+            if (s_getDiagnosticCodeStartMethod is null)
             {
                 return;
             }
@@ -563,7 +562,7 @@ namespace System.Threading.Tasks.Tests
                 return;
             }
 
-            object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNext.MethodHandle.Value });
+            object? nativeCode = s_getDiagnosticCodeStartMethod.Invoke(null, new object[] { moveNext.MethodHandle.Value });
             if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
             {
                 s_methodIdToName.TryAdd((ulong)(nuint)ip, asyncMethod.Name);
@@ -575,7 +574,7 @@ namespace System.Threading.Tasks.Tests
         // methods run (a MoveNext has no code start until it has first run). No-op except on Mono.
         private static string? ResolveStateMachineMethodNameFromId(ulong methodId)
         {
-            if (s_getNativeCodeInternalMethod is null || methodId == 0)
+            if (s_getDiagnosticCodeStartMethod is null || methodId == 0)
             {
                 return null;
             }

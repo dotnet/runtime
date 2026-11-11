@@ -33,6 +33,7 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 #endif
 
 IGCHandleManager* g_pGCHandleManager = nullptr;
+IGCHandleStore* g_pGlobalHandleStore = nullptr;
 
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);

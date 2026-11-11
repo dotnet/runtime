@@ -55,7 +55,8 @@ namespace System.Net.Test.Common
                         }
                         finally { mutex?.ReleaseMutex(); }
                     }
-                    catch (Exception ex)
+                    // Without TLS the test certificates aren't needed, and their PFX encryption may be unsupported too.
+                    catch (Exception ex) when (PlatformDetection.IsTlsSupported)
                     {
                         Trace.Fail(nameof(Certificates) + " cctor threw " + ex.ToString());
                         throw;

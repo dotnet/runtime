@@ -223,6 +223,27 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArray(SAFEARRAY* 
     return S_OK;
 }
 
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArrayElements(SAFEARRAY* d, VARTYPE expectedType, IUnknown* first, IUnknown* second)
+{
+    HRESULT hr;
+    VARTYPE elementType;
+    RETURN_IF_FAILED(::SafeArrayGetVartype(d, &elementType));
+    if (elementType != expectedType || ::SafeArrayGetDim(d) != 1)
+        return E_INVALIDARG;
+
+    LONG lowerBound, upperBound;
+    RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBound));
+    RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBound));
+    if (upperBound - lowerBound != 1)
+        return E_INVALIDARG;
+
+    IUnknown** values;
+    RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
+    bool match = values[0] == first && values[1] == second;
+    RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
+    return match ? S_OK : E_FAIL;
+}
+
 extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanVariantIntArray(SAFEARRAY* d, int* result)
 {
     HRESULT hr;
@@ -514,4 +535,30 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Verify2DStringSafeArray(SAFEARRA
     }
 
     return S_OK;
+}
+
+using VariantArrayCallback = void(__cdecl*)(SAFEARRAY*);
+
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE ReplaceVariantArrayElement(
+    VariantArrayCallback callback,
+    LONG* nativeValue,
+    VARTYPE* elementType)
+{
+    if (callback == nullptr || nativeValue == nullptr || elementType == nullptr)
+        return E_POINTER;
+
+    SAFEARRAY* array = ::SafeArrayCreateVector(VT_VARIANT, 0, 1);
+    if (array == nullptr)
+        return E_OUTOFMEMORY;
+
+    LONG native = 4;
+    VARIANT* elements = static_cast<VARIANT*>(array->pvData);
+    V_VT(&elements[0]) = VT_BYREF | VT_I4;
+    V_I4REF(&elements[0]) = &native;
+
+    callback(array);
+
+    *nativeValue = native;
+    *elementType = V_VT(&elements[0]);
+    return ::SafeArrayDestroy(array);
 }
