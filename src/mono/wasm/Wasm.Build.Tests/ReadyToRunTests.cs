@@ -496,7 +496,18 @@ namespace Wasm.Build.Tests
 
         private string EvaluatePublishReadyToRunCrossgen2ExtraArgs(Configuration config, string projectName, string extraMSBuildArgs)
         {
-            string binlogPath = Path.Combine(_logPath, $"{projectName}-evaluate.binlog");
+            string[] commonArgs = [$"-p:Configuration={config}", "-p:_IsPublishing=true", "-nr:false", extraMSBuildArgs];
+
+            // MSBuild skips -restore when -getProperty is used without a target, so restore separately. The WebAssembly
+            // SDK pack, which sets these arguments, is imported from the restored packages.
+            using (ToolCommand restore = new DotNetCommand(s_buildEnv, _testOutput)
+                .WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir))
+            {
+                restore.ExecuteWithCapturedOutput(["msbuild", "-t:Restore", $"-bl:{Path.Combine(_logPath, $"{projectName}-restore.binlog")}", .. commonArgs])
+                    .EnsureSuccessful();
+            }
+
             List<string> stdout = [];
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir)
@@ -506,8 +517,8 @@ namespace Wasm.Build.Tests
                     if (!string.IsNullOrWhiteSpace(line))
                         stdout.Add(line);
                 });
-            cmd.ExecuteWithCapturedOutput("msbuild", "-restore", "-getProperty:PublishReadyToRunCrossgen2ExtraArgs",
-                    $"-p:Configuration={config}", "-p:_IsPublishing=true", "-nr:false", $"-bl:{binlogPath}", extraMSBuildArgs)
+            cmd.ExecuteWithCapturedOutput(["msbuild", "-getProperty:PublishReadyToRunCrossgen2ExtraArgs",
+                    $"-bl:{Path.Combine(_logPath, $"{projectName}-evaluate.binlog")}", .. commonArgs])
                 .EnsureSuccessful();
             return Assert.Single(stdout);
         }
