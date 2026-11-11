@@ -19,11 +19,15 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
-Consumers with task-specific identity can instead use the `ExecuteCached` overload whose preparation
-callback returns an `InvocationCacheRequest` containing a prepared key and output declaration. Such
-consumers own input discovery, full-content hashing, and execution-context identity; the shared layer still owns
-validation, restoration, publication, and concurrency. ILLink uses this entry point for its
-conservative root-aware identity and execution model.
+An `InvocationDescription` can specify an effective working directory and a path mapping that
+assigns logical identities to input files, output locations, and that working directory. File
+access, output validation, and restoration still use the physical absolute paths; only key
+serialization uses the mapped identities. Without a mapping, identities remain absolute.
+Consumers must preserve complete relative layouts and distinguish external paths rather than
+mapping unrelated files to the same identity. ILLink supplies its root-aware mapping this way.
+
+Prepare any execution-path normalization independently of the cache callbacks so disabling or
+bypassing caching does not change the invocation.
 
 ## Behavior and limitations
 
@@ -37,8 +41,8 @@ The cache owns reconciliation only on hits, including deleting declared files re
 Restoration is not transactional. Empty directories are not preserved, and symbolic links are not
 checked.
 
-Standard invocation descriptions retain absolute input/output paths and execution context;
-cross-worktree reuse requires a consumer-specific prepared key and execution contract.
+Cross-worktree reuse requires stable logical path identities and a matching execution contract;
+mapping identities does not rewrite tool arguments or normalize embedded paths in file contents.
 Hits do not replay diagnostics or non-file task outputs. Cache operations do not observe cancellation.
 Consumers must bypass invocations whose dependencies or required side effects cannot be modeled.
 

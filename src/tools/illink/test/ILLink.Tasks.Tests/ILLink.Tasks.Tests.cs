@@ -1132,7 +1132,7 @@ namespace ILLink.Tasks.Tests
                 Assert.Contains(task.Messages, message =>
                     message.Line.Contains(succeeds ? "illink [options]" : "No input files were specified"));
                 Assert.Equal(bool.Parse(enabled) && succeeds, test.BuildEngine.Messages.Any(message =>
-                    message.Message.StartsWith("ILLink cache bypassed: extra arguments")));
+                    message.Message.StartsWith("ILLink cache bypassed:")));
                 Assert.False(Directory.Exists(cacheDirectory));
             }, enableCache.ToString(), succeeds.ToString()).Dispose();
         }
@@ -1311,8 +1311,8 @@ namespace ILLink.Tasks.Tests
             Directory.CreateDirectory(directory);
             test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
             string originalResponse = test.Task.GetResponseFileCommands();
-            MethodInfo parse = typeof(ILLink).GetMethod("TryAddCacheableExtraArgsInputs", BindingFlags.Instance | BindingFlags.NonPublic);
-            object[] arguments = { new SortedSet<string>(StringComparer.Ordinal), new SortedSet<string>(StringComparer.Ordinal), null };
+            MethodInfo parse = typeof(ILLink).GetMethod("TryGetExtraArgsPaths", BindingFlags.Instance | BindingFlags.NonPublic);
+            object[] arguments = { null };
 
             Assert.False((bool)parse.Invoke(test.Task, arguments));
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
@@ -1320,7 +1320,7 @@ namespace ILLink.Tasks.Tests
             Assert.Null(test.Task.CacheInvocation);
             Assert.Equal(originalResponse, test.Task.GetResponseFileCommands());
             Assert.Contains(test.BuildEngine.Messages, message =>
-                message.Message.StartsWith("ILLink cache bypassed: extra arguments are not supported."));
+                message.Message.StartsWith("ILLink invocation unchanged: extra arguments are not supported."));
         }
 
         [Theory]
@@ -1388,7 +1388,7 @@ namespace ILLink.Tasks.Tests
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
             Assert.Empty(key);
             Assert.Contains(test.BuildEngine.Messages, message =>
-                message.Message.StartsWith("ILLink cache bypassed: extra arguments are not supported."));
+                message.Message.StartsWith("ILLink invocation unchanged: extra arguments are not supported."));
         }
 
         [Theory]
@@ -2079,10 +2079,12 @@ namespace ILLink.Tasks.Tests
             Assert.Empty(key);
         }
 
-        [Fact]
-        public void TaskRunsUncachedForPhysicalSymbolPaths()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TaskRunsUncachedForPhysicalSymbolPaths(bool cacheEnabled)
         {
-            RemoteExecutor.Invoke(static () =>
+            RemoteExecutor.Invoke(static value =>
             {
                 using var test = new OutputDirectoryTest();
                 string input = Path.Combine(test.Root, "Input.dll");
@@ -2091,16 +2093,92 @@ namespace ILLink.Tasks.Tests
                 test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
                 test.Task.ExtraArgs = null;
                 string cacheDirectory = Path.Combine(test.Root, "cache");
-                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                bool cacheEnabled = bool.Parse(value);
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", cacheEnabled.ToString());
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
 
                 Assert.True(test.Task.Execute());
                 Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
                 Assert.False(Directory.Exists(cacheDirectory));
-                Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
-                Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
-                Assert.Contains(input, Assert.Single(test.Task.ResponseFiles));
-            }).Dispose();
+                if (cacheEnabled)
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
+                Assert.Equal(test.Root, test.Task.WorkingDirectories.Last());
+                Assert.Contains("\"Input.dll\"", Assert.Single(test.Task.ResponseFiles));
+                Assert.DoesNotContain(test.Root, test.Task.ResponseFiles[0]);
+            }, cacheEnabled.ToString()).Dispose();
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void TaskUsesRelativePathsWithoutDeterministicSourceMappings(bool cacheEnabled, bool missingMapping)
+        {
+            RemoteExecutor.Invoke(static (enabled, missing) =>
+            {
+                using var test = new OutputDirectoryTest();
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
+                test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
+                test.Task.ExtraArgs = null;
+                if (bool.Parse(missing))
+                    test.Task.SourceRoots[0].RemoveMetadata("MappedPath");
+                else
+                    test.Task.SourceRoots[0].SetMetadata("MappedPath", test.Root + Path.DirectorySeparatorChar);
+                string cacheDirectory = Path.Combine(test.Root, "cache");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", enabled);
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+
+                Assert.True(test.Task.Execute());
+                Assert.Equal(test.Root, test.Task.WorkingDirectories.Last());
+                Assert.DoesNotContain(test.Root, Assert.Single(test.Task.ResponseFiles));
+                Assert.Contains("\"Input.dll\"", test.Task.ResponseFiles[0]);
+                Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
+                Assert.False(Directory.Exists(cacheDirectory));
+            }, cacheEnabled.ToString(), missingMapping.ToString()).Dispose();
+        }
+
+        [Theory]
+        [InlineData("missing")]
+        [InlineData("missing-directory")]
+        [InlineData("disjoint")]
+        public void TaskKeepsOriginalInvocationWithoutUsableExecutionRoot(string reason)
+        {
+            RemoteExecutor.Invoke(static reason =>
+            {
+                using var test = new OutputDirectoryTest();
+                using var other = new OutputDirectoryTest();
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
+                test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
+                test.Task.ExtraArgs = null;
+                switch (reason)
+                {
+                    case "missing":
+                        test.Task.SourceRoots = null;
+                        break;
+                    case "missing-directory":
+                        test.Task.SourceRoots[0].ItemSpec = Path.Combine(test.Root, "missing");
+                        break;
+                    case "disjoint":
+                        test.Task.SourceRoots = test.Task.SourceRoots.Append(
+                            new TaskItem(other.Root, new Dictionary<string, string> { { "MappedPath", "/_1/" } })).ToArray();
+                        break;
+                }
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", Path.Combine(test.Root, "cache"));
+                foreach (bool enabled in new[] { false, true })
+                {
+                    Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", enabled.ToString());
+                    Assert.True(test.Task.Execute());
+                    Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
+                    Assert.Contains(input, test.Task.ResponseFiles.Last());
+                    Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
+                }
+                Assert.Equal(test.Task.ResponseFiles[0], test.Task.ResponseFiles[1]);
+            }, reason).Dispose();
         }
 
         [Theory]
@@ -2158,8 +2236,8 @@ namespace ILLink.Tasks.Tests
                     var restored = outputs.ToDictionary(name => name, name => File.ReadAllBytes(Path.Combine(second.Output, name)));
                     Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "false");
                     Assert.True(second.Task.Execute());
-                    Assert.Equal(Path.Combine(second.Root, "caller"), second.Task.WorkingDirectories.Last());
-                    Assert.Contains(Path.Combine(second.Root, "Fixture.dll"), Assert.Single(second.Task.ResponseFiles));
+                    Assert.Equal(second.Root, second.Task.WorkingDirectories.Last());
+                    Assert.Equal(executedResponse, Assert.Single(second.Task.ResponseFiles));
                     foreach (string name in outputs)
                     {
                         Assert.Equal(File.ReadAllBytes(Path.Combine(first.Output, name)), restored[name]);

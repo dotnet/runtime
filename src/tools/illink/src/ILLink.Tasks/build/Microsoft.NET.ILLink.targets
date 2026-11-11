@@ -147,6 +147,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
+  <Target Name="_InitializeILLinkSourceRoots"
+          BeforeTargets="_RunILLink"
+          DependsOnTargets="InitializeSourceRootMappedPaths"
+          Condition="'$(SourceRootMappedPathsFeatureSupported)' == 'true'" />
+
   <Target Name="_RunILLink"
           DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
           Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"

@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Framework;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Mono.Linker.Steps;
 
@@ -29,17 +30,18 @@ namespace ILLink.Tasks.Tests
             // Match the normalization ToolTask.Execute applies before calling ExecuteTool.
             string commandLine = GenerateCommandLineCommands();
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
-            object[] arguments = {
-                pathToTool,
+            object[] preparationArguments = {
                 AdjustCommandsForOperatingSystem(commandLine),
-                AdjustCommandsForOperatingSystem(GenerateResponseFileCommands()),
-                null,
-                null
+                AdjustCommandsForOperatingSystem(GenerateResponseFileCommands())
             };
-            MethodInfo method = typeof(ILLink).GetMethod("TryComputeCacheKey", BindingFlags.Instance | BindingFlags.NonPublic);
-            bool result = (bool)method.Invoke(this, arguments);
-            key = (string)arguments[3];
-            CacheInvocation = ((string, string, string)?)arguments[4];
+            MethodInfo prepare = typeof(ILLink).GetMethod("PrepareInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
+            object invocation = prepare.Invoke(this, preparationArguments);
+            MethodInfo method = typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
+            var description = (InvocationDescription)method.Invoke(this, new object[] { pathToTool, invocation });
+            key = string.Empty;
+            bool result = description is not null && InvocationCache.TryComputeKey(Log, "ILLink", description, out key);
+            CacheInvocation = result ? ((string, string, string)?)invocation.GetType()
+                .GetProperty("RelativeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(invocation) : null;
             return result;
         }
 

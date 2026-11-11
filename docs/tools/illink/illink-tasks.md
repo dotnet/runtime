@@ -64,12 +64,14 @@ the module version ID (MVID), file length, and timestamp are unchanged.
 `SourceRoots` with stable `MappedPath` metadata allow equivalent relative layouts in different
 clones/worktrees to share a key. Only known path arguments and input identities are mapped;
 external paths remain absolute and argument/search-directory order is preserved.
-For eligible invocations with one physical root (including consistent nested mappings),
-the task runs ILLink from that root with known in-root paths rendered relative to it.
+For supported invocations with one enclosing physical root, the task runs ILLink from that root
+with known in-root paths rendered relative to it, independently of whether caching is enabled.
 Original relative inputs are resolved against the caller's working directory first.
 External paths remain absolute. This does not change process-wide cwd, mutate task inputs,
-or normalize bytes embedded in inputs or outputs. Disjoint-root invocations retain their
-original execution; disabled or bypassed caching leaves execution unchanged.
+or normalize bytes embedded in inputs or outputs. Cache eligibility failures, including missing
+logical mappings or unsuitable symbols, do not change this prepared invocation. Disjoint or missing
+execution roots and unsupported argument or working-directory overrides retain the original
+invocation in both cache modes.
 Bundled dependencies and configuration are not fingerprinted. Changes to those files require
 a cleared/isolated cache or disabled caching unless the linker binary also changes.
 
@@ -101,11 +103,11 @@ ILLink's existing unresolved-name handling.
 Portable PDB emission requires already-normalized input paths and
 explicit `PreserveSymbolPaths=true`. Neither symbol preservation nor deterministic compiler
 paths are enabled automatically. Copy actions also require shareable input paths.
-The SDK forwards existing `@(SourceRoot)` items and requires their `MappedPath` metadata to
-already use stable logical prefixes. The SDK normally supplies these mappings when
+SDK and runtime library targets initialize and forward the compiler's existing `@(SourceRoot)`
+items. Caching additionally requires stable logical `MappedPath` prefixes, normally supplied when
 `DeterministicSourcePaths=true`, such as deterministic CI builds; ordinary local SDK builds
-without usable mappings run uncached. Runtime library targets supply the repository root
-without changing how inputs are compiled. Normal runtime trimming uses structured task parameters
+without usable mappings run uncached. These targets do not change how inputs are compiled.
+Normal runtime trimming uses structured task parameters
 and supported extra arguments; custom arguments and input/symbol eligibility checks can
 still cause a cache bypass. See the
 [cache design](../../design/tools/illink/task-cache.md) for identity and eligibility details.
@@ -215,21 +217,16 @@ A list of XML [descriptors](data-formats.md#descriptor-format) files specifying 
 
 ### SourceRoots
 
-Physical absolute roots with stable `MappedPath` metadata for experimental cache identity.
-For example:
+Physical absolute roots for relative execution and experimental cache identity. Pass
+`SourceRoots="@(SourceRoot)"` after running `InitializeSourceRootMappedPaths` to reuse the
+compiler's initialized source roots.
 
-```xml
-<ItemGroup>
-  <LinkerSourceRoot Include="$(RepositoryRoot)" MappedPath="/_/" />
-</ItemGroup>
-```
-
-Pass `SourceRoots="@(LinkerSourceRoot)"` to the task. The current shared-cache scope accepts
-the conventional `/_/`, `/_1/`, etc. logical prefixes; nested mappings must preserve relative
-layout. Eligible invocations with one physical root execute from it using relative in-root
-paths. This parameter does not enable caching, change compiler settings, or remap embedded
-paths in linker outputs. Without usable mappings a cache-enabled invocation runs normally,
-uncached.
+Supported invocations with one enclosing physical root execute from it using relative in-root
+paths, even when caching is disabled or `MappedPath` metadata contains physical paths.
+Caching additionally requires conventional `/_/`, `/_1/`, etc. logical prefixes and
+consistent nested mappings. Without those mappings the same prepared invocation runs uncached.
+This parameter does not enable caching, change compiler settings, or remap embedded paths
+in linker outputs.
 
 ## ILLink Task Customization
 

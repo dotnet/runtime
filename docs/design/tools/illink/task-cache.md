@@ -19,10 +19,13 @@ platform cache location; a path alone never enables caching. See
 [task usage](../../../tools/illink/illink-tasks.md#experimental-task-cache) for configuration and
 maintenance commands.
 
-`ExecuteTool` calls `InvocationCache.ExecuteCached` with a preparation callback that computes a
-root-aware key through `TryComputeCacheKey`, one `InvocationOutputs.FromDirectory` declaration, and a
-normal-execution callback. Eligibility, metadata inspection, and full input-content hashing stay in
-ILLink; publication, restoration, and writer coordination use the shared layer.
+`ExecuteTool` prepares the effective invocation before calling `InvocationCache.ExecuteCached`.
+The description callback inventories and validates inputs through `DescribeInvocation`, supplies
+the effective working directory and logical path mapping, and declares one
+`InvocationOutputs.FromDirectory`; it runs only when caching is enabled. Normal execution uses
+the already-prepared invocation regardless of cache eligibility. ILLink owns metadata inspection
+and path-independence checks; the shared layer owns key serialization, full-content hashing,
+publication, restoration, and writer coordination.
 
 ## Root identity and execution
 
@@ -32,23 +35,27 @@ tagged logical-root/relative-path identities; retain absolute external paths. Re
 and consistent nested mappings. Missing or invalid mappings run uncached.
 
 For one enclosing physical root, run ILLink from that root with known in-root paths rendered
-relative to it. Resolve original relative inputs against the caller's cwd first. Do not change
-process-wide cwd or task inputs. Disjoint-root invocations retain their original execution with
-logical key mapping only. Disabled or bypassed caching leaves execution unchanged.
+relative to it, whether caching is enabled, disabled, or bypassed by input eligibility checks.
+Relative execution does not require stable logical `MappedPath` metadata. Resolve original
+relative inputs against the caller's cwd first. Do not change process-wide cwd or task inputs.
+Disjoint-root invocations retain their original execution with logical key mapping only.
+Missing execution roots, unsupported argument shapes, and incompatible command or working-directory
+overrides retain the original invocation in both cache modes.
 
-Use SHA-256 over a length-delimited description in the ILLink key domain. Include
+Use the shared SHA-256 key builder over a length-delimited description with ILLink-specific context. Include
 execution mode, effective working directory, exact generated arguments, logical output identity,
 platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
 replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
 sidecar associations, and ordered search directories. Overridden command generation or working
 directories that do not match the model bypass caching.
 
-Runtime per-library, shared-framework, and out-of-band targets supply their repository root with
-logical identity `/_/`. SDK publish targets forward existing `@(SourceRoot)` items without
-initializing or changing their mappings. They must already carry stable logical `MappedPath`
-metadata; the SDK normally produces it when `DeterministicSourcePaths=true`, such as deterministic
-CI builds. Ordinary local SDK builds without usable mappings run uncached. Root forwarding does not
-normalize upstream assemblies or enable symbol preservation or compiler path mapping.
+Runtime per-library, shared-framework, out-of-band, and SDK publish targets forward the compiler's
+existing `@(SourceRoot)` items after `InitializeSourceRootMappedPaths`. Aggregate runtime projects
+import the managed compiler's mapping target explicitly because their SDK does not compile sources.
+Initialization uses the existing `DeterministicSourcePaths` setting: deterministic builds normally
+receive stable logical prefixes; other builds receive physical mappings and run uncached, still
+using relative execution when supported. Root forwarding does not normalize upstream assemblies or
+enable symbol preservation or compiler path mapping.
 
 ## Input discovery and eligibility
 

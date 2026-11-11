@@ -4,14 +4,11 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -70,8 +67,8 @@ namespace ILLink.Tasks
         public ITaskItem OutputDirectory { get; set; }
 
         /// <summary>
-        /// Gets or sets physical source roots with stable MappedPath metadata for cache identity.
-        /// Eligible single-root invocations use root-relative execution paths.
+        /// Gets or sets physical source roots for root-relative execution paths.
+        /// Stable MappedPath metadata is additionally required for cache identity.
         /// These mappings do not normalize paths embedded in inputs or outputs.
         /// </summary>
         public ITaskItem[] SourceRoots { get; set; }
@@ -286,11 +283,10 @@ namespace ILLink.Tasks
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            (string WorkingDirectory, string CommandLine, string ResponseFile)? invocation = null;
+            PreparedInvocation invocation = PrepareInvocation(commandLineCommands, responseFileCommands);
             return InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
-                prepareInvocation: () => TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out string key, out invocation)
-                    ? new InvocationCacheRequest(key, InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec)) : null,
-                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands, invocation));
+                describeInvocation: () => DescribeInvocation(pathToTool, invocation),
+                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands, invocation?.RelativeInvocation));
         }
 
         private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands,
@@ -330,39 +326,39 @@ namespace ILLink.Tasks
             return exitCode;
         }
 
-        private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands,
-            out string inputHash, out (string WorkingDirectory, string CommandLine, string ResponseFile)? invocation)
+        private sealed class PreparedInvocation
         {
-            inputHash = string.Empty;
-            invocation = null;
+            internal CachePathMap Paths { get; }
+            internal List<(string Option, string Path)> ExtraPaths { get; }
+            internal (string WorkingDirectory, string CommandLine, string ResponseFile)? RelativeInvocation { get; }
+
+            internal PreparedInvocation(CachePathMap paths, List<(string Option, string Path)> extraPaths,
+                (string WorkingDirectory, string CommandLine, string ResponseFile)? relativeInvocation)
+            {
+                Paths = paths;
+                ExtraPaths = extraPaths;
+                RelativeInvocation = relativeInvocation;
+            }
+        }
+
+        private PreparedInvocation PrepareInvocation(string commandLineCommands, string responseFileCommands)
+        {
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
             {
-                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: custom steps/data, dependency dumps, and task environment overrides are not supported.");
-                return false;
+                return Unchanged("custom steps/data, dependency dumps, and task environment overrides are not supported.");
             }
             try
             {
-                var files = new SortedSet<string>(StringComparer.Ordinal);
-                var directories = new SortedSet<string>(StringComparer.Ordinal);
-                if (!TryAddCacheableExtraArgsInputs(files, directories, out List<(string Option, string Path)> extraPaths))
-                {
-                    Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
-                    return false;
-                }
+                if (!TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths))
+                    return Unchanged("extra arguments are not supported.");
 
                 var paths = new CachePathMap(SourceRoots);
                 if (paths.ExecutionRoot is not null && !Directory.Exists(paths.ExecutionRoot))
-                {
-                    Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: the execution SourceRoot directory does not exist.");
-                    return false;
-                }
+                    return Unchanged("the execution SourceRoot directory does not exist.");
                 string workingDirectory = GetWorkingDirectory();
                 if (!string.IsNullOrEmpty(workingDirectory) && Path.GetFullPath(workingDirectory) != Environment.CurrentDirectory)
-                {
-                    Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: an overridden working directory is not supported.");
-                    return false;
-                }
+                    return Unchanged("an overridden working directory is not supported.");
                 if (paths.ExecutionRoot is not null)
                 {
                     string previousWorkingDirectory = _executionWorkingDirectory;
@@ -371,10 +367,7 @@ namespace ILLink.Tasks
                         _executionWorkingDirectory = paths.ExecutionRoot;
                         if (Path.GetFullPath(GetWorkingDirectory() ?? Environment.CurrentDirectory)
                             .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) != paths.ExecutionRoot)
-                        {
-                            Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: an overridden working directory ignores the execution SourceRoot.");
-                            return false;
-                        }
+                            return Unchanged("an overridden working directory ignores the execution SourceRoot.");
                     }
                     finally
                     {
@@ -385,27 +378,73 @@ namespace ILLink.Tasks
                 // Do not ignore arguments supplied by an overridden command generator.
                 if (commandLineCommands != AdjustCommandsForOperatingSystem(" " + Quote(ILLinkPath)) ||
                     responseFileCommands != AdjustCommandsForOperatingSystem(GenerateResponseFileCommandsCore(null, ExtraArgs)))
-                {
-                    Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: overridden command generation is not supported.");
-                    return false;
-                }
+                    return Unchanged("overridden command generation is not supported.");
 
+                (string WorkingDirectory, string CommandLine, string ResponseFile)? relativeInvocation = null;
+                if (paths.ExecutionRoot is not null)
+                {
+                    var commands = GenerateMappedCommands(paths.MapForExecution, extraPaths);
+                    relativeInvocation = (paths.ExecutionRoot, commands.CommandLine, commands.ResponseFile);
+                }
+                return new PreparedInvocation(paths, extraPaths, relativeInvocation);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                return Unchanged(ex.Message);
+            }
+
+            PreparedInvocation Unchanged(string reason)
+            {
+                Log.LogMessage(MessageImportance.Low, $"ILLink invocation unchanged: {reason}");
+                return null;
+            }
+        }
+
+        private (string CommandLine, string ResponseFile) GenerateMappedCommands(
+            Func<string, string> renderPath, List<(string Option, string Path)> extraPaths)
+        {
+            var extraArgs = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(ExtraArgs))
+            {
+                extraArgs.AppendLine("--ignore-link-attributes true");
+                foreach (var argument in extraPaths)
+                    extraArgs.Append(argument.Option).Append(' ').AppendLine(Quote(renderPath(argument.Path)));
+            }
+            return (AdjustCommandsForOperatingSystem(" " + Quote(renderPath(ILLinkPath))),
+                AdjustCommandsForOperatingSystem(GenerateResponseFileCommandsCore(renderPath, extraArgs.ToString())));
+        }
+
+        private InvocationDescription DescribeInvocation(string pathToTool, PreparedInvocation invocation)
+        {
+            if (invocation is null)
+            {
+                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: the invocation could not be normalized.");
+                return null;
+            }
+            try
+            {
+                CachePathMap paths = invocation.Paths;
+                paths.ValidateMappings();
+                var files = new SortedSet<string>(StringComparer.Ordinal);
+                var directories = new SortedSet<string>(StringComparer.Ordinal);
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
                 foreach (ITaskItem assembly in AssemblyPaths)
                 {
                     if (!AddAssembly(assembly.ItemSpec))
-                        return false;
+                        return null;
                 }
                 foreach (ITaskItem assembly in ReferenceAssemblyPaths ?? Array.Empty<ITaskItem>())
                 {
                     if (!AddAssembly(assembly.ItemSpec, checkOutputPaths: false))
-                        return false;
+                        return null;
                 }
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
                     AddFile(descriptor.ItemSpec);
-                foreach (var argument in extraPaths)
+                foreach (var argument in invocation.ExtraPaths)
                 {
-                    if (argument.Option != "-d")
+                    if (argument.Option == "-d")
+                        directories.Add(Path.GetFullPath(argument.Path));
+                    else
                         AddFile(argument.Path);
                 }
 
@@ -420,7 +459,7 @@ namespace ILLink.Tasks
                             extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
                         {
                             if (!AddAssembly(file))
-                                return false;
+                                return null;
                         }
                     }
                 }
@@ -438,55 +477,25 @@ namespace ILLink.Tasks
                     Path.GetFullPath(taskAssemblyPath)
                 };
 
-                Func<string, string> renderPath = paths.ExecutionRoot is not null ? paths.MapForExecution : paths.Map;
-                var cacheableExtraArgs = new StringBuilder();
-                if (!string.IsNullOrWhiteSpace(ExtraArgs))
-                {
-                    cacheableExtraArgs.AppendLine("--ignore-link-attributes true");
-                    foreach (var argument in extraPaths)
-                        cacheableExtraArgs.Append(argument.Option).Append(' ').AppendLine(Quote(renderPath(argument.Path)));
-                }
-                string modeledCommandLine = AdjustCommandsForOperatingSystem(" " + Quote(renderPath(ILLinkPath)));
-                string modeledResponseFile = AdjustCommandsForOperatingSystem(GenerateResponseFileCommandsCore(renderPath, cacheableExtraArgs.ToString()));
-                using var sha256 = SHA256.Create();
-                using var description = new MemoryStream();
-                using var writer = new BinaryWriter(description, Encoding.UTF8, leaveOpen: true);
-                writer.Write("ILLink task cache key");
-                writer.Write(paths.ExecutionRoot is not null);
-                writer.Write(paths.Map(ILLinkPath));
-                writer.Write(modeledCommandLine);
-                writer.Write(modeledResponseFile);
-                writer.Write(paths.Map(paths.ExecutionRoot ?? Environment.CurrentDirectory));
-                writer.Write(paths.Map(OutputDirectory.ItemSpec));
-                writer.Write(RuntimeInformation.OSDescription);
-                writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
-                writer.Write(CultureInfo.CurrentCulture.Name);
-                writer.Write(CultureInfo.CurrentUICulture.Name);
-                writer.Write(files.Count);
+                var commands = invocation.RelativeInvocation is { } relative
+                    ? (relative.CommandLine, relative.ResponseFile)
+                    : GenerateMappedCommands(paths.Map, invocation.ExtraPaths);
                 var logicalFiles = new SortedDictionary<string, string>(StringComparer.Ordinal);
                 foreach (string file in files)
                     logicalFiles.Add(paths.Map(file), file);
                 foreach (var file in logicalFiles)
                 {
-                    writer.Write(file.Key);
                     using var input = File.OpenRead(file.Value);
                     if (!assemblies.Contains(file.Value) && !toolFiles.Contains(file.Value))
                     {
                         paths.CheckForPhysicalRoots(input, 0, input.Length);
                     }
-                    writer.Write(sha256.ComputeHash(input));
                 }
 
-                writer.Flush();
-                description.Position = 0;
-#if NET
-                inputHash = Convert.ToHexStringLower(sha256.ComputeHash(description));
-#else
-                inputHash = BitConverter.ToString(sha256.ComputeHash(description)).Replace("-", "").ToLowerInvariant();
-#endif
-                if (paths.ExecutionRoot is not null)
-                    invocation = (paths.ExecutionRoot, modeledCommandLine, modeledResponseFile);
-                return true;
+                return new InvocationDescription(InvocationInputs.FromFiles(logicalFiles.Values.ToArray()),
+                    new[] { "ILLink", paths.ExecutionRoot is not null ? "relative" : "original", commands.CommandLine, commands.ResponseFile },
+                    InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec),
+                    workingDirectory: paths.ExecutionRoot ?? Environment.CurrentDirectory, pathMap: paths.Map);
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(path));
 
@@ -547,13 +556,13 @@ namespace ILLink.Tasks
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException)
             {
                 Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: input identity could not be computed: {ex.Message}");
-                return false;
+                return null;
             }
         }
 
         private static bool HasPathSyntax(string name) => name.AsSpan().IndexOfAny('/', '\\', ':') >= 0;
 
-        private bool TryAddCacheableExtraArgsInputs(SortedSet<string> files, SortedSet<string> directories, out List<(string Option, string Path)> extraPaths)
+        private bool TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths)
         {
             extraPaths = new();
             ReadOnlySpan<char> arguments = ExtraArgs.AsSpan().Trim();
@@ -565,7 +574,7 @@ namespace ILLink.Tasks
                 return false;
 
             // The runtime library builds pass this policy through ExtraArgs. Keep the
-            // supported shape narrow so arbitrary linker arguments continue to bypass caching.
+            // supported shape narrow so arbitrary linker arguments retain their original invocation.
             if (!TryReadArgument(ref arguments, out string option) ||
                 option != "--ignore-link-attributes" ||
                 !TryReadArgument(ref arguments, out string value) ||
@@ -584,10 +593,6 @@ namespace ILLink.Tasks
                     return false;
                 }
 
-                if (option == "-d")
-                    directories.Add(Path.GetFullPath(path));
-                else
-                    files.Add(Path.GetFullPath(path));
                 extraPaths.Add((option, path));
             }
 
@@ -689,36 +694,47 @@ namespace ILLink.Tasks
             internal CachePathMap(ITaskItem[] sourceRoots)
             {
                 if (sourceRoots is null || sourceRoots.Length == 0)
-                    throw new NotSupportedException("SourceRoots with stable MappedPath metadata are required for the shared cache.");
+                    throw new NotSupportedException("SourceRoots are required for relative execution.");
                 foreach (ITaskItem root in sourceRoots)
                 {
                     if (!Path.IsPathRooted(root.ItemSpec))
                         throw new NotSupportedException("SourceRoots must be absolute.");
                     string physical = Path.GetFullPath(root.ItemSpec).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                     string logical = root.GetMetadata("MappedPath");
-                    if (physical.Length == 0 || physical.Equals(Path.GetPathRoot(physical), PathComparison) ||
-                        !IsLogicalPath(logical) || logical[logical.Length - 1] != '/')
-                        throw new NotSupportedException("SourceRoots require stable /_/ or /_N/ MappedPath prefixes.");
-                    foreach (var previous in _roots)
-                    {
-                        if (physical.Equals(previous.Physical, PathComparison) ||
-                            logical.Equals(previous.Logical, StringComparison.Ordinal))
-                            throw new NotSupportedException("Duplicate physical or logical SourceRoots are not supported.");
-                        CheckNested(physical, logical, previous.Physical, previous.Logical);
-                        CheckNested(previous.Physical, previous.Logical, physical, logical);
-                    }
+                    if (physical.Length == 0 || physical.Equals(Path.GetPathRoot(physical), PathComparison))
+                        throw new NotSupportedException("SourceRoots must not be filesystem roots.");
+                    if (_roots.Any(previous => physical.Equals(previous.Physical, PathComparison)))
+                        throw new NotSupportedException("Duplicate physical SourceRoots are not supported.");
                     _roots.Add((physical, logical));
-                    foreach (string prefix in new[] { physical, physical.Replace('\\', '/') }.Distinct(StringComparer.Ordinal))
-                    {
-                        _physicalPrefixes.Add(Encoding.UTF8.GetBytes(prefix));
-                        _physicalPrefixes.Add(Encoding.Unicode.GetBytes(prefix));
-                    }
                 }
                 _roots.Sort((left, right) => right.Physical.Length.CompareTo(left.Physical.Length));
                 string outerRoot = _roots[_roots.Count - 1].Physical;
                 if (_roots.All(root => root.Physical.Equals(outerRoot, PathComparison) ||
                     root.Physical.StartsWith(outerRoot + Path.DirectorySeparatorChar, PathComparison)))
                     ExecutionRoot = outerRoot;
+            }
+
+            internal void ValidateMappings()
+            {
+                for (int i = 0; i < _roots.Count; i++)
+                {
+                    var (physical, logical) = _roots[i];
+                    if (!IsLogicalPath(logical) || logical[logical.Length - 1] != '/')
+                        throw new NotSupportedException("SourceRoots require stable /_/ or /_N/ MappedPath prefixes.");
+                    for (int j = 0; j < i; j++)
+                    {
+                        var previous = _roots[j];
+                        if (logical.Equals(previous.Logical, StringComparison.Ordinal))
+                            throw new NotSupportedException("Duplicate logical SourceRoots are not supported.");
+                        CheckNested(physical, logical, previous.Physical, previous.Logical);
+                        CheckNested(previous.Physical, previous.Logical, physical, logical);
+                    }
+                    foreach (string prefix in new[] { physical, physical.Replace('\\', '/') }.Distinct(StringComparer.Ordinal))
+                    {
+                        _physicalPrefixes.Add(Encoding.UTF8.GetBytes(prefix));
+                        _physicalPrefixes.Add(Encoding.Unicode.GetBytes(prefix));
+                    }
+                }
 
                 static void CheckNested(string child, string childLogical, string parent, string parentLogical)
                 {

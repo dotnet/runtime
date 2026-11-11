@@ -599,16 +599,12 @@ public class InvocationCacheTests
     }
 
     [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(true, false, false)]
-    [InlineData(true, true, false)]
-    [InlineData(false, false, true)]
-    [InlineData(false, true, true)]
-    [InlineData(true, false, true)]
-    [InlineData(true, true, true)]
-    public void SharedTaskAdapterGatesDescriptionAndUsesCapturedArguments(bool configured, bool eligible, bool preparedKey)
-        => RemoteExecutor.Invoke(static (enabled, supported, prepared) =>
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void SharedTaskAdapterGatesDescriptionAndUsesCapturedArguments(bool configured, bool eligible)
+        => RemoteExecutor.Invoke(static (enabled, supported) =>
     {
         bool isConfigured = bool.Parse(enabled);
         bool isEligible = bool.Parse(supported);
@@ -622,17 +618,9 @@ public class InvocationCacheTests
         var events = new List<string>();
         DateTime preparedAt = default;
 
-        int result = bool.Parse(prepared)
-            ? InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
-                prepareInvocation: () =>
-                {
-                    InvocationDescription? description = DescribeInvocation("compiler path", "response contents", "command contents");
-                    return description is null ? null : new InvocationCacheRequest(InvocationCache.ComputeKey(description), description.Outputs);
-                },
-                executeNormally: () => ExecuteNormally("compiler path", "response contents", "command contents"))
-            : InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
-                describeInvocation: () => DescribeInvocation("compiler path", "response contents", "command contents"),
-                executeNormally: () => ExecuteNormally("compiler path", "response contents", "command contents"));
+        int result = InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+            describeInvocation: () => DescribeInvocation("compiler path", "response contents", "command contents"),
+            executeNormally: () => ExecuteNormally("compiler path", "response contents", "command contents"));
         DateTime completedAt = DateTime.UtcNow;
 
         Assert.Equal(isConfigured && isEligible ? 0 : 42, result);
@@ -666,7 +654,7 @@ public class InvocationCacheTests
             Assert.Equal("response contents", response);
             Assert.Equal("command contents", command);
         }
-    }, configured.ToString(), eligible.ToString(), preparedKey.ToString()).Dispose();
+    }, configured.ToString(), eligible.ToString()).Dispose();
 
     [Fact]
     public void SharedTaskAdapterPropagatesPreparationExceptions() => RemoteExecutor.Invoke(static () =>
@@ -847,6 +835,52 @@ public class InvocationCacheTests
         Assert.False(InvocationCache.TryComputeKey(test.Log, "Test", invocation, out string key));
         Assert.Equal(string.Empty, key);
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("input identity could not be computed") is true);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedFingerprintUsesLogicalPathsAndPhysicalFiles(bool ownedDirectory)
+    {
+        using var first = new CacheTestDirectory();
+        using var second = new CacheTestDirectory();
+        first.WriteSource("image.dll", "image");
+        second.WriteSource("image.dll", "image");
+        InvocationDescription firstInvocation = Describe(first);
+        InvocationDescription secondInvocation = Describe(second);
+        string key = InvocationCache.ComputeKey(firstInvocation);
+        Assert.Equal(key, InvocationCache.ComputeKey(secondInvocation));
+
+        first.Cache.Store(key, Outputs(first.Source));
+        Assert.True(first.Cache.TryRestore(key, secondInvocation.Outputs, CacheTestDirectory.Timestamp));
+        Assert.Equal("image", File.ReadAllText(Path.Combine(second.Output, "image.dll")));
+        Assert.False(File.Exists(Path.Combine(first.Output, "image.dll")));
+
+        second.WriteSource("image.dll", "changed");
+        Assert.NotEqual(key, InvocationCache.ComputeKey(secondInvocation));
+        second.WriteSource("image.dll", "image");
+        Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(second, workingDirectory: second.Source)));
+        Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(second, outputDirectory: Path.Combine(second.Root, "other"))));
+        Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(second,
+            pathMap: path => path == Path.Combine(second.Source, "image.dll") ? "renamed.dll" : Map(second.Root, path))));
+
+        InvocationDescription Describe(CacheTestDirectory test, string? workingDirectory = null,
+            string? outputDirectory = null, Func<string, string>? pathMap = null) =>
+            new(InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
+                new[] { "arguments" }, Outputs(outputDirectory ?? test.Output),
+                workingDirectory ?? test.Root, pathMap ?? (path => Map(test.Root, path)));
+
+        InvocationOutputs Outputs(string directory) => ownedDirectory
+            ? InvocationOutputs.FromDirectory(directory)
+            : InvocationOutputs.FromFiles(Path.Combine(directory, "image.dll"), Path.Combine(directory, "image.pdb"));
+
+        static string Map(string root, string path)
+        {
+            string relative = Path.GetRelativePath(root, path);
+            return Path.IsPathRooted(relative) || relative == ".." ||
+                relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                ? path : relative.Replace('\\', '/');
+        }
     }
 
     [Fact]

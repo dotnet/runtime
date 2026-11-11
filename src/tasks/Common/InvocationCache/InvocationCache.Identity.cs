@@ -37,7 +37,7 @@ internal sealed partial class InvocationCache
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
         writer.Write("invocation-cache-key-v1");
-        writer.Write(Environment.CurrentDirectory);
+        writer.Write(invocation.GetPathIdentity(invocation.WorkingDirectory));
         writer.Write(RuntimeInformation.OSDescription);
         writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
         writer.Write(CultureInfo.CurrentCulture.Name);
@@ -47,14 +47,14 @@ internal sealed partial class InvocationCache
             writer.Write(value);
         writer.Write(invocation.Outputs.DirectoryPath is not null);
         if (invocation.Outputs.DirectoryPath is not null)
-            writer.Write(invocation.Outputs.DirectoryPath);
+            writer.Write(invocation.GetPathIdentity(invocation.Outputs.DirectoryPath));
         writer.Write(invocation.Outputs.Files.Length);
         foreach (string file in invocation.Outputs.Files)
-            writer.Write(file);
+            writer.Write(invocation.GetPathIdentity(file));
         writer.Write(invocation.Inputs.Files.Length);
         foreach (string input in invocation.Inputs.Files)
         {
-            writer.Write(input);
+            writer.Write(invocation.GetPathIdentity(input));
             try
             {
                 using FileStream file = File.OpenRead(input);
