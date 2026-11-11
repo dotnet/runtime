@@ -121,16 +121,10 @@ namespace Wasm.Build.Tests
             if (stripDebugInfo is not null)
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
 
-            (_, string binlogPath) = BuildProjectWithoutAssert(config, info.ProjectName,
-                new PublishOptions(ExtraMSBuildArgs: string.Join(" ", extraBuildArgs)));
-            AssertPerAppCrossgenRan(config, expected: true);
-
-            string crossgen2Args = GetCrossgen2ExtraCommandLineArgs(binlogPath);
-            string expectedWasmDebugInfo = config == Configuration.Debug ? "--wasm-debug-info=all" : "--wasm-debug-info=none";
-            Assert.Contains(expectedWasmDebugInfo, crossgen2Args);
-            Assert.Equal(expectStripInliningInfo, crossgen2Args.Contains("--strip-inlining-info", System.StringComparison.Ordinal));
-            Assert.Equal(expectStripDebugInfo, crossgen2Args.Contains("--strip-debug-info", System.StringComparison.Ordinal));
-            Assert.Contains("--opt-cross-module:*", crossgen2Args);
+            // These arguments are computed at evaluation time, so evaluating the publish checks them without running
+            // crossgen2. PublishRunAllPagesCore checks that a real publish passes them to crossgen2.
+            string crossgen2Args = EvaluatePublishReadyToRunCrossgen2ExtraArgs(config, info.ProjectName, string.Join(" ", extraBuildArgs));
+            AssertCrossgen2DebugInfoArgs(config, crossgen2Args, expectStripInliningInfo, expectStripDebugInfo);
             if (extraCrossgen2Args.Length > 0)
                 Assert.Contains(extraCrossgen2Args, crossgen2Args);
         }
@@ -197,6 +191,10 @@ namespace Wasm.Build.Tests
             AssertNoManagedAssembliesOutsideFramework(frameworkDir);
             AssertTrimmedClosureIsFullyStaged(config, frameworkDir);
             AssertPerAppCrossgenRan(config, expected: true);
+            bool expectStrip = config != Configuration.Debug;
+            AssertCrossgen2DebugInfoArgs(config,
+                GetCrossgen2ExtraCommandLineArgs(Path.Combine(_logPath, $"{info.ProjectName}-publish.binlog")),
+                expectStripInliningInfo: expectStrip, expectStripDebugInfo: expectStrip);
 
             if (trimmed && !nativeRelink)
             {
@@ -494,6 +492,33 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount > 0, $"Expected per-app ReadyToRun images under '{r2rDir}'.");
             else
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
+        }
+
+        private string EvaluatePublishReadyToRunCrossgen2ExtraArgs(Configuration config, string projectName, string extraMSBuildArgs)
+        {
+            string binlogPath = Path.Combine(_logPath, $"{projectName}-evaluate.binlog");
+            List<string> stdout = [];
+            using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                .WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .WithOutputDataReceived(line =>
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                        stdout.Add(line);
+                });
+            cmd.ExecuteWithCapturedOutput("msbuild", "-restore", "-getProperty:PublishReadyToRunCrossgen2ExtraArgs",
+                    $"-p:Configuration={config}", "-p:_IsPublishing=true", "-nr:false", $"-bl:{binlogPath}", extraMSBuildArgs)
+                .EnsureSuccessful();
+            return Assert.Single(stdout);
+        }
+
+        private static void AssertCrossgen2DebugInfoArgs(Configuration config, string crossgen2Args, bool expectStripInliningInfo, bool expectStripDebugInfo)
+        {
+            string expectedWasmDebugInfo = config == Configuration.Debug ? "--wasm-debug-info=all" : "--wasm-debug-info=none";
+            Assert.Contains(expectedWasmDebugInfo, crossgen2Args);
+            Assert.Equal(expectStripInliningInfo, crossgen2Args.Contains("--strip-inlining-info", System.StringComparison.Ordinal));
+            Assert.Equal(expectStripDebugInfo, crossgen2Args.Contains("--strip-debug-info", System.StringComparison.Ordinal));
+            Assert.Contains("--opt-cross-module:*", crossgen2Args);
         }
 
         private static string GetCrossgen2ExtraCommandLineArgs(string binlogPath)
