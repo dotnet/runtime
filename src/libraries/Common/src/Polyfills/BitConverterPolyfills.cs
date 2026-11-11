@@ -34,6 +34,7 @@ internal static class BitConverterPolyfills
 
         // ---- ReadOnlySpan<byte> read overloads (host-endian, semantics match BCL net5+) ----
 
+        public static char ToChar(ReadOnlySpan<byte> value) => MemoryMarshal.Read<char>(value);
         public static short ToInt16(ReadOnlySpan<byte> value) => MemoryMarshal.Read<short>(value);
         public static ushort ToUInt16(ReadOnlySpan<byte> value) => MemoryMarshal.Read<ushort>(value);
         public static int ToInt32(ReadOnlySpan<byte> value) => MemoryMarshal.Read<int>(value);
