@@ -191,9 +191,9 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `InterpMethodContextFrame` | `NextPtr` | `pointer` | Pointer to the next InterpMethodContextFrame toward the top of the stack |
 | `InterpMethodContextFrame` | `ParentPtr` | `pointer` | Pointer to the parent InterpMethodContextFrame in the call chain (null for outermost frame) |
 | `InterpMethodContextFrame` | `Stack` | `pointer` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
+| `InterpreterFrame` | `Continuation` | `pointer` | Runtime-async continuation object held by the frame; its address is reported as a GC root |
 | `InterpreterFrame` | `IsFaulting` | `uint8` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include CONTEXT_EXCEPTION_ACTIVE so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
 | `InterpreterFrame` | `TopInterpMethodContextFrame` | `pointer` | Pointer to the InterpreterFrame's top InterpMethodContextFrame |
-| `InterpreterFrame` | `Continuation` | `pointer` | Runtime-async continuation object held by the frame; its address is reported as a GC root |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
 | `MethodDesc` | `Flags` | `uint16` | The method's flags |
 | `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
