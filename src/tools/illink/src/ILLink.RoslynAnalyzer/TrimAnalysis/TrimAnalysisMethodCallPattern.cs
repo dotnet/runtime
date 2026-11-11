@@ -62,9 +62,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             ImmutableArray<MultiValue> mergedArguments = ImmutableArray<MultiValue>.Empty;
             if (!Arguments.IsEmpty)
             {
-                var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>(Arguments.Length);
+                ImmutableArray<MultiValue>.Builder argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>(Arguments.Length);
+
                 for (int i = 0; i < Arguments.Length; i++)
+                {
                     argumentsBuilder.Add(lattice.Meet(arguments[i], Arguments[i]));
+                }
+
                 mergedArguments = argumentsBuilder.MoveToImmutable();
             }
 
@@ -87,7 +91,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
             {
                 var typeNameResolver = new TypeNameResolver(context.Compilation);
-                TrimAnalysisVisitor.HandleCall(context.TrimAnalyzer, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, context.CompilationState.FlowAnnotations, out var _);
+                TrimAnalysisVisitor.HandleCall(context.TrimAnalyzer, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, context.CompilationState.FlowAnnotations, out MultiValue _);
             }
             // For Requires, make the location the reference to the method, not the entire invocation.
             // The parameters are not part of the issue, and including them in the location can be misleading.

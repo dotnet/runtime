@@ -72,7 +72,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             Assert.Equal(equal, left.Equals((object)right));
             Assert.Equal(equal, EqualityComparer<T>.Default.Equals(left, right));
             if (equal)
+            {
                 Assert.Equal(left.GetHashCode(), right.GetHashCode());
+            }
         }
     }
 }

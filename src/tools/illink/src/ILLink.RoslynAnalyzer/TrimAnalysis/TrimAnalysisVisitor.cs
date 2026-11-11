@@ -155,7 +155,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             // It can also happen that we see this for a static method - for example a delegate creation
             // over a local function does this, even thought the "this" makes no sense inside a static scope.
             if (OwningSymbol is IMethodSymbol method && !method.IsStatic)
+            {
                 return _compilationState.FlowAnnotations.GetMethodThisParameterValue(new(method));
+            }
 
             return TopValue;
         }
@@ -292,7 +294,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
         {
             if (_trimAnalyzer is null || target.Equals(TopValue))
+            {
                 return;
+            }
 
             TrimAnalysisPatterns.AddAssignment(source, target, operation, OwningSymbol, featureContext);
         }
@@ -418,7 +422,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public override void HandleReturnValue(MultiValue returnValue, IOperation operation, in FeatureContext featureContext)
         {
             if (_trimAnalyzer is null)
+            {
                 return;
+            }
 
             // Return statements should only happen inside of method bodies.
             Debug.Assert(OwningSymbol is IMethodSymbol);
@@ -427,7 +433,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
             if (method.ReturnType.IsTypeInterestingForDataflow(isByRef: method.ReturnsByRef, _compilationState))
             {
-                var returnParameter = _compilationState.FlowAnnotations.GetMethodReturnValue(new(method), isNewObj: false);
+                MethodReturnValue returnParameter = _compilationState.FlowAnnotations.GetMethodReturnValue(new(method), isNewObj: false);
 
                 TrimAnalysisPatterns.AddAssignment(returnValue, returnParameter, operation, OwningSymbol, featureContext);
             }

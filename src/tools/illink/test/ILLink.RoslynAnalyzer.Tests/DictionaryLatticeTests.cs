@@ -19,17 +19,25 @@ namespace ILLink.RoslynAnalyzer.Tests
         public void EnumerationPreservesResetAndInterfaceBehavior(int count)
         {
             DefaultValueDictionary<int, int> values = new(0);
+
             for (int i = 1; i <= count; i++)
+            {
                 values.Set(i, i);
-            var enumerator = values.GetEnumerator();
+            }
+
+            DefaultValueDictionary<int, int>.Enumerator enumerator = values.GetEnumerator();
+
             for (int pass = 0; pass < 2; pass++)
             {
                 List<int> actual = new();
                 while (enumerator.MoveNext())
+                {
                     actual.Add(enumerator.Current.Value);
+                }
                 Assert.Equal(Enumerable.Range(1, count), actual);
                 enumerator.Reset();
             }
+
             Assert.Equal(Enumerable.Range(1, count), ((IEnumerable<KeyValuePair<int, int>>)values).Select(pair => pair.Value));
             Assert.Equal(Enumerable.Range(1, count), ((IEnumerable)values).Cast<KeyValuePair<int, int>>().Select(pair => pair.Value));
         }
@@ -40,12 +48,19 @@ namespace ILLink.RoslynAnalyzer.Tests
             DefaultValueDictionary<int, int> values = new(0);
             values.Set(1, 1);
             int sum = 0;
-            foreach (var value in values)
+
+            foreach (KeyValuePair<int, int> value in values)
+            {
                 sum += value.Value;
+            }
 
             long before = GC.GetAllocatedBytesForCurrentThread();
-            foreach (var value in values)
+
+            foreach (KeyValuePair<int, int> value in values)
+            {
                 sum += value.Value;
+            }
+
             long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
             Assert.Equal(2, sum);
@@ -57,7 +72,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             DefaultValueDictionary<int, int> values = new(0);
             values.Set(1, 1);
-            var enumerator = values.GetEnumerator();
+            DefaultValueDictionary<int, int>.Enumerator enumerator = values.GetEnumerator();
             Assert.True(enumerator.MoveNext());
             values.Set(2, 2);
 
@@ -79,16 +94,23 @@ namespace ILLink.RoslynAnalyzer.Tests
                 left.Set(-1, 1);
                 left.Set(-1, 0);
             }
+
             for (int i = 1; i <= count; i++)
+            {
                 right.Set(i, i);
+            }
 
             DictionaryLattice<int, int, MaxLattice> lattice = new(default);
             DefaultValueDictionary<int, int> merged = lattice.Meet(left, right);
 
             Assert.Equal(count, merged.Count);
             Assert.Equal(0, merged.Get(count + 1));
+
             for (int i = 1; i <= count; i++)
+            {
                 Assert.Equal(i, merged.Get(i));
+            }
+
             merged.Set(count + 1, 10);
             Assert.Equal(0, left.Count);
             Assert.Equal(-1, right.Get(count + 1));

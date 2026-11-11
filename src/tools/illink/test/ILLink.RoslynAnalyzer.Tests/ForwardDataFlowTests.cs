@@ -41,7 +41,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             MethodDeclarationSyntax method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
                 .Single(node => node.Identifier.ValueText == "M");
             var operation = (IMethodBodyOperation)model.GetOperation(method)!;
-            var graph = ControlFlowGraph.Create(operation);
+            ControlFlowGraph graph = ControlFlowGraph.Create(operation);
             Assert.InRange(graph.Blocks.Length, 1, 64);
             return new ControlFlowGraphProxy(graph);
         }
@@ -84,7 +84,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             Type contextType = typeof(ControlFlowGraphProxy).Assembly.GetType("ILLink.RoslynAnalyzer.DataFlowAnalyzerContext", throwOnError: true)!;
             MethodInfo create = contextType.GetMethod("Create")!;
             object analyzers = create.GetParameters()[2].ParameterType.GetField("Empty")!.GetValue(null)!;
-            var compilation = CSharpCompilation.Create("DisabledCacheTests", references: LiveReferencePack.GetMetadataReferences());
+            CSharpCompilation compilation = CSharpCompilation.Create("DisabledCacheTests", references: LiveReferencePack.GetMetadataReferences());
             object context = create.Invoke(null, new object[] { new AnalyzerOptions(ImmutableArray<AdditionalText>.Empty), compilation, analyzers })!;
 
             Assert.False((bool)contextType.GetProperty("AnyAnalyzersEnabled")!.GetValue(context)!);
@@ -95,12 +95,16 @@ namespace ILLink.RoslynAnalyzer.Tests
         public void CompilationCachesPublishIndependentGraphsUnderConcurrency()
         {
             ControlFlowGraph cfg = CreateGraph("Marker(condition ? \"left\" : \"right\");").ControlFlowGraph;
-            var getGraph = CreateGraphCache();
+            Func<ControlFlowGraph, ControlFlowGraphProxy> getGraph = CreateGraphCache();
             var graphs = new ControlFlowGraphProxy[64];
             Parallel.For(0, graphs.Length, i => graphs[i] = getGraph(cfg));
-            var expected = graphs[0].GetSuccessors(graphs[0].Entry);
-            foreach (var graph in graphs)
+            IEnumerable<IControlFlowGraph<BlockProxy, RegionProxy>.ControlFlowBranch> expected = graphs[0].GetSuccessors(graphs[0].Entry);
+
+            foreach (ControlFlowGraphProxy graph in graphs)
+            {
                 Assert.Same(expected, graph.GetSuccessors(graph.Entry));
+            }
+
             GC.Collect();
             Assert.Same(expected, getGraph(cfg).GetSuccessors(graphs[0].Entry));
 
@@ -158,8 +162,8 @@ namespace ILLink.RoslynAnalyzer.Tests
         public void CaptureClassificationReusesImmutablePerGraphResults(string body, FlowCaptureKind kind)
         {
             ControlFlowGraph cfg = CreateGraph(body).ControlFlowGraph;
-            var getGraph = CreateGraphCache();
-            var property = typeof(ControlFlowGraphProxy).GetProperty("LValueFlowCaptures", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            Func<ControlFlowGraph, ControlFlowGraphProxy> getGraph = CreateGraphCache();
+            PropertyInfo property = typeof(ControlFlowGraphProxy).GetProperty("LValueFlowCaptures", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var first = (ImmutableDictionary<CaptureId, FlowCaptureKind>)property.GetValue(getGraph(cfg))!;
             var second = (ImmutableDictionary<CaptureId, FlowCaptureKind>)property.GetValue(getGraph(cfg))!;
             Assert.Contains(kind, first.Values);
@@ -180,7 +184,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         [InlineData("string[] values = new string[1]; values[0] = condition ? \"a\" : \"b\"; Marker(values[0]);", false)]
         public void CachedDeconstructionClassificationMatchesReferenceWalk(string body, bool hasDeconstruction)
         {
-            var getGraph = CreateGraphCache();
+            Func<ControlFlowGraph, ControlFlowGraphProxy> getGraph = CreateGraphCache();
             ControlFlowGraphProxy graph = getGraph(CreateGraph(body).ControlFlowGraph);
             Type graphExtensions = typeof(ControlFlowGraphProxy).Assembly.GetType("ILLink.RoslynAnalyzer.DataFlow.ControlFlowGraphExtensions", throwOnError: true)!;
             MethodInfo descendantsMethod = graphExtensions.GetMethods().Single(method => method.Name == "DescendantOperations" && method.IsGenericMethod)
@@ -192,7 +196,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 .CreateDelegate(typeof(IsInDeconstruction));
             ImmutableHashSet<CaptureId> expected = descendants(graph.ControlFlowGraph, OperationKind.FlowCaptureReference)
                 .Where(reference => isInDeconstruction(reference, out _)).Select(reference => reference.Id).ToImmutableHashSet();
-            var property = typeof(ControlFlowGraphProxy).GetProperty("DeconstructionLValueFlowCaptures", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            PropertyInfo property = typeof(ControlFlowGraphProxy).GetProperty("DeconstructionLValueFlowCaptures", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var actual = (ImmutableHashSet<CaptureId>)property.GetValue(graph)!;
 
             Assert.Equal(hasDeconstruction, !expected.IsEmpty);
@@ -206,18 +210,22 @@ namespace ILLink.RoslynAnalyzer.Tests
         [InlineData("for (int scoped = 0; scoped < 2; scoped++) { Marker(\"loop\"); } Marker(\"end\");")]
         public void ScopeExitIndexIncludesOnlyRegionsOutsideTheDestination(string body)
         {
-            var getGraph = CreateGraphCache();
+            Func<ControlFlowGraph, ControlFlowGraphProxy> getGraph = CreateGraphCache();
             ControlFlowGraphProxy graph = getGraph(CreateGraph(body).ControlFlowGraph);
             var exits = (IReadOnlyDictionary<int, ImmutableArray<ControlFlowRegion>>?)typeof(ControlFlowGraphProxy)
                 .GetProperty("ScopeExits", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(graph);
             Assert.NotNull(exits);
             ImmutableArray<ControlFlowRegion> regions = exits[FindMarker(graph, "end").Block.Ordinal];
             Assert.Contains(regions.SelectMany(region => region.Locals), local => local.Name == "scoped");
-            foreach (var (ordinal, leavingRegions) in exits)
+
+            foreach ((int ordinal, ImmutableArray<ControlFlowRegion> leavingRegions) in exits)
             {
                 foreach (ControlFlowRegion region in leavingRegions)
+                {
                     Assert.False(ordinal >= region.FirstBlockOrdinal && ordinal <= region.LastBlockOrdinal);
+                }
             }
+
             Assert.Same(exits, typeof(ControlFlowGraphProxy).GetProperty("ScopeExits", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .GetValue(getGraph(graph.ControlFlowGraph)));
         }
@@ -229,7 +237,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch branch = graph.Entry.Block.FallThroughSuccessor!;
             ControlFlowGraphProxy.CreateProxyBranch(branch);
             long before = GC.GetAllocatedBytesForCurrentThread();
-            var proxy = ControlFlowGraphProxy.CreateProxyBranch(branch);
+            IControlFlowGraph<BlockProxy, RegionProxy>.ControlFlowBranch proxy = ControlFlowGraphProxy.CreateProxyBranch(branch);
             long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
             Assert.Empty(proxy.FinallyRegions);
@@ -241,24 +249,27 @@ namespace ILLink.RoslynAnalyzer.Tests
         [InlineData("try { try { Marker(\"try\"); } finally { Marker(\"inner\"); } } finally { Marker(\"outer\"); }")]
         public void CachedEdgesPreserveNativeOrderAndFinallyMetadata(string body)
         {
-            var getGraph = CreateGraphCache();
+            Func<ControlFlowGraph, ControlFlowGraphProxy> getGraph = CreateGraphCache();
             ControlFlowGraphProxy graph = getGraph(CreateGraph(body).ControlFlowGraph);
+
             foreach (BlockProxy block in graph.Blocks)
             {
-                var successors = graph.GetSuccessors(block);
-                var predecessors = graph.GetPredecessors(block);
+                IEnumerable<IControlFlowGraph<BlockProxy, RegionProxy>.ControlFlowBranch> successors = graph.GetSuccessors(block);
+                IEnumerable<IControlFlowGraph<BlockProxy, RegionProxy>.ControlFlowBranch> predecessors = graph.GetPredecessors(block);
                 Assert.Same(successors, getGraph(graph.ControlFlowGraph).GetSuccessors(block));
                 Assert.Same(predecessors, graph.GetPredecessors(block));
-                var nativeSuccessors = new[] { block.Block.ConditionalSuccessor, block.Block.FallThroughSuccessor }
+                ControlFlowBranch?[] nativeSuccessors = new[] { block.Block.ConditionalSuccessor, block.Block.FallThroughSuccessor }
                     .Where(branch => branch is not null).ToArray();
                 Assert.Equal(nativeSuccessors.Length, successors.Count());
-                foreach (var (native, proxy) in nativeSuccessors.Zip(successors))
+
+                foreach ((ControlFlowBranch? native, IControlFlowGraph<BlockProxy, RegionProxy>.ControlFlowBranch proxy) in nativeSuccessors.Zip(successors))
                 {
                     Assert.Same(native!.Source, proxy.Source.Block);
                     Assert.Same(native.Destination, proxy.Destination?.Block);
                     Assert.Equal(native.FinallyRegions, proxy.FinallyRegions.Select(region => region.Region));
                     Assert.Equal(ControlFlowGraphProxy.CreateProxyBranch(native).ConditionKind, proxy.ConditionKind);
                 }
+
                 Assert.Equal(block.Block.Predecessors.Select(branch => branch.Source.Ordinal), predecessors.Select(branch => branch.Source.Block.Ordinal));
             }
         }
@@ -293,7 +304,10 @@ namespace ILLink.RoslynAnalyzer.Tests
             Assert.True(new Analysis().Fixpoint(graph, transfer));
 
             foreach (BlockProxy block in graph.Blocks.Where(block => !block.Equals(graph.Entry)))
+            {
                 Assert.Equal(1, transfer.Visits[block.Block.Ordinal]);
+            }
+
             BlockProxy end = FindMarker(graph, "end");
             ulong expected = Bit(FindMarker(graph, "left")) | Bit(FindMarker(graph, "right"));
             Assert.Equal(expected, transfer.Inputs[end.Block.Ordinal].Bits & expected);
@@ -312,7 +326,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             BlockProxy end = FindMarker(graph, "end");
             ulong expected = Bit(FindMarker(graph, "try")) | Bit(FindMarker(graph, "finally"));
             if (body.Contains("\"nested\""))
+            {
                 expected |= Bit(FindMarker(graph, "nested"));
+            }
             Assert.Equal(expected, transfer.Inputs[end.Block.Ordinal].Bits & expected);
         }
 
@@ -391,7 +407,9 @@ namespace ILLink.RoslynAnalyzer.Tests
                 Inputs[ordinal] = state.Lattice.Meet(input, state.Current);
                 state.Current = new Facts(state.Current.Bits | Bit(block), state.Current.Generation + (KeepChanging ? 1 : 0));
                 if (state.Exception is not null)
+                {
                     state.Exception.Value = state.Lattice.Meet(state.Exception.Value, state.Current);
+                }
                 return null;
             }
 

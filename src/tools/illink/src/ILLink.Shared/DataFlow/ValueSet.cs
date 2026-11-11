@@ -38,7 +38,9 @@ namespace ILLink.Shared.DataFlow
             public EnumerableValues(Enumerable values)
             {
                 foreach (TValue value in values)
+                {
                     Add(value);
+                }
             }
 
             public override int GetHashCode()
@@ -119,7 +121,7 @@ namespace ILLink.Shared.DataFlow
                 if (_state < 0)
                 {
                     // Keep the address-exposed collection enumerator separate from the singleton fields.
-                    var enumerator = _enumerator;
+                    HashSet<TValue>.Enumerator enumerator = _enumerator;
                     bool hasNext = enumerator.MoveNext();
                     _enumerator = enumerator;
                     return hasNext;
@@ -138,7 +140,9 @@ namespace ILLink.Shared.DataFlow
             public void Reset()
             {
                 if (_state < 0)
+                {
                     ResetEnumerator(ref _enumerator);
+                }
                 else
                     _state = 0;
             }
@@ -188,7 +192,9 @@ namespace ILLink.Shared.DataFlow
         public bool Equals(ValueSet<TValue> other)
         {
             if (ReferenceEquals(_values, other._values))
+            {
                 return true;
+            }
 
             if (_values == null)
                 return other._values == null;
@@ -256,7 +262,7 @@ namespace ILLink.Shared.DataFlow
             {
                 if (values.Count == 1)
                 {
-                    using var enumerator = values.GetEnumerator();
+                    using HashSet<TValue>.Enumerator enumerator = values.GetEnumerator();
                     enumerator.MoveNext();
                     value = enumerator.Current;
                     return true;
@@ -296,7 +302,9 @@ namespace ILLink.Shared.DataFlow
 
             if (ReferenceEquals(left._values, right._values) &&
                 (left._values is not EnumerableValues sameValues || sameValues.Count <= MaxValuesInSet))
+            {
                 return left.DeepCopy();
+            }
 
             if (left._values is not EnumerableValues && right.Contains((TValue)left._values))
                 return right.DeepCopy();
@@ -309,15 +317,20 @@ namespace ILLink.Shared.DataFlow
             var leftValues = leftCopy._values as EnumerableValues;
             int leftCount = leftValues?.Count ?? 1;
             if (leftCount > MaxValuesInSet)
+            {
                 return Unknown;
+            }
 
             EnumerableValues? values = null;
+
             foreach (TValue value in rightCopy.GetKnownValues())
             {
                 if (values is null)
                 {
                     if (leftCopy.Contains(value))
+                    {
                         continue;
+                    }
                     values = leftValues is not null && !ReferenceEquals(leftCopy._values, left._values)
                         ? leftValues
                         : new EnumerableValues(leftCopy.GetKnownValues());
@@ -325,8 +338,11 @@ namespace ILLink.Shared.DataFlow
                 values.Add(value);
                 // Widen only after mutable values have been copied and their hashes normalized.
                 if (values.Count > MaxValuesInSet)
+                {
                     return Unknown;
+                }
             }
+
             return values is null ? leftCopy : new ValueSet<TValue>(values);
         }
 
@@ -342,7 +358,9 @@ namespace ILLink.Shared.DataFlow
                 return left.DeepCopy();
 
             if (ReferenceEquals(left._values, right._values))
+            {
                 return left.DeepCopy();
+            }
 
             if (left._values is not EnumerableValues)
                 return right.Contains((TValue)left._values) ? left.DeepCopy() : Empty;
@@ -358,7 +376,7 @@ namespace ILLink.Shared.DataFlow
                 return leftCopy;
             }
 
-            var values = ReferenceEquals(leftCopy._values, left._values)
+            EnumerableValues values = ReferenceEquals(leftCopy._values, left._values)
                 ? new EnumerableValues(leftCopy.GetKnownValues())
                 : leftValues;
             values.IntersectWith(right.GetKnownValues());
@@ -374,13 +392,18 @@ namespace ILLink.Shared.DataFlow
             get
             {
                 if (_values is not EnumerableValues values)
+                {
                     return _values is TValue value && IsMutable(value);
+                }
 
                 foreach (TValue value in values)
                 {
                     if (IsMutable(value))
+                    {
                         return true;
+                    }
                 }
+
                 return false;
             }
         }
@@ -427,7 +450,7 @@ namespace ILLink.Shared.DataFlow
         private static ValueSet<TValue> DeepCopyMultipleValues(EnumerableValues sourceValues)
         {
             int unchangedValues = 0;
-            using var enumerator = sourceValues.GetEnumerator();
+            using HashSet<TValue>.Enumerator enumerator = sourceValues.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 TValue value = enumerator.Current;
@@ -438,7 +461,7 @@ namespace ILLink.Shared.DataFlow
                     {
                         // Preserve immutable sets, but rebuild mutable values and their hashes.
                         var values = new EnumerableValues(Array.Empty<TValue>());
-                        using (var prefix = sourceValues.GetEnumerator())
+                        using (HashSet<TValue>.Enumerator prefix = sourceValues.GetEnumerator())
                         {
                             for (int i = 0; i < unchangedValues; i++)
                             {

@@ -62,41 +62,54 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             {
                 Predecessors = new ReadOnlyCollection<ControlFlowBranch>[graph.Blocks.Length];
                 Successors = new ReadOnlyCollection<ControlFlowBranch>[graph.Blocks.Length];
+
                 foreach (BasicBlock block in graph.Blocks)
                 {
-                    var conditional = block.ConditionalSuccessor;
-                    var fallThrough = block.FallThroughSuccessor;
+                    Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch? conditional = block.ConditionalSuccessor;
+                    Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch? fallThrough = block.FallThroughSuccessor;
                     ControlFlowBranch[] successors = conditional is null
                         ? fallThrough is null ? Array.Empty<ControlFlowBranch>() : [CreateProxyBranch(fallThrough)]
                         : fallThrough is null ? [CreateProxyBranch(conditional)] : [CreateProxyBranch(conditional), CreateProxyBranch(fallThrough)];
                     Successors[block.Ordinal] = Array.AsReadOnly(successors);
                 }
+
                 Dictionary<int, ImmutableArray<ControlFlowRegion>>? scopeExits = null;
+
                 foreach (BasicBlock block in graph.Blocks)
                 {
                     var predecessors = new ControlFlowBranch[block.Predecessors.Length];
                     HashSet<ControlFlowRegion>? leavingRegions = null;
+
                     for (int i = 0; i < predecessors.Length; i++)
                     {
-                        var predecessor = block.Predecessors[i];
+                        Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch predecessor = block.Predecessors[i];
                         int index = predecessor.IsConditionalSuccessor || predecessor.Source.ConditionalSuccessor is null ? 0 : 1;
                         predecessors[i] = Successors[predecessor.Source.Ordinal][index];
+
                         foreach (ControlFlowRegion region in predecessor.LeavingRegions)
                         {
                             if (region.Locals.IsEmpty && region.CaptureIds.IsEmpty)
+                            {
                                 continue;
+                            }
                             if (block.Ordinal >= region.FirstBlockOrdinal && block.Ordinal <= region.LastBlockOrdinal)
+                            {
                                 continue;
+                            }
 
                             (leavingRegions ??= new()).Add(region);
                         }
                     }
+
                     Predecessors[block.Ordinal] = Array.AsReadOnly(predecessors);
                     if (leavingRegions is not null)
+                    {
                         (scopeExits ??= new()).Add(block.Ordinal, leavingRegions.ToImmutableArray());
+                    }
                 }
+
                 ScopeExits = scopeExits;
-                LValueFlowCaptures = LValueFlowCapturesProvider.ComputeCaptureInfo(graph, out var deconstructionCaptures);
+                LValueFlowCaptures = LValueFlowCapturesProvider.ComputeCaptureInfo(graph, out ImmutableHashSet<CaptureId> deconstructionCaptures);
                 DeconstructionLValueFlowCaptures = deconstructionCaptures;
             }
         }
@@ -123,14 +136,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             ImmutableArray<RegionProxy> finallyRegions = ImmutableArray<RegionProxy>.Empty;
             if (!branch.FinallyRegions.IsEmpty)
             {
-                var builder = ImmutableArray.CreateBuilder<RegionProxy>(branch.FinallyRegions.Length);
-                foreach (var region in branch.FinallyRegions)
+                ImmutableArray<RegionProxy>.Builder builder = ImmutableArray.CreateBuilder<RegionProxy>(branch.FinallyRegions.Length);
+
+                foreach (ControlFlowRegion region in branch.FinallyRegions)
                 {
                     Debug.Assert(region != null);
                     if (region == null)
+                    {
                         continue;
+                    }
                     builder.Add(new RegionProxy(region));
                 }
+
                 finallyRegions = builder.Count == builder.Capacity ? builder.MoveToImmutable() : builder.ToImmutable();
             }
 

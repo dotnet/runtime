@@ -184,23 +184,34 @@ namespace ILLink.RoslynAnalyzer
         {
             var location = GetPrimaryLocation(member.Locations);
             if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow(isByRef: field.RefKind is not RefKind.None, compilationState))
+            {
                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName()));
+            }
             else if (member is IMethodSymbol method)
             {
                 if (method.GetDynamicallyAccessedMemberTypesOnReturnType() != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow(isByRef: method.ReturnsByRef, compilationState))
+                {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName()));
+                }
                 if (method.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !method.ContainingType.IsTypeInterestingForDataflow(isByRef: false, compilationState))
+                {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods), location));
-                foreach (var parameter in method.Parameters)
+                }
+
+                foreach (IParameterSymbol parameter in method.Parameters)
                 {
                     if (parameter.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow(isByRef: parameter.RefKind is not RefKind.None, compilationState))
+                    {
                         context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), location, parameter.GetDisplayName(), member.GetDisplayName()));
+                    }
                 }
             }
             else if (member is IPropertySymbol property)
             {
                 if (property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow(isByRef: property.ReturnsByRef, compilationState))
+                {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName()));
+                }
                 if (property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && property.ContainingType.ExtensionParameter != null)
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties), location, member.GetDisplayName()));
             }
@@ -326,7 +337,9 @@ namespace ILLink.RoslynAnalyzer
                 || methodSymbol.AssociatedSymbol is not IPropertySymbol propertySymbol
                 || !propertySymbol.Type.IsTypeInterestingForDataflow(isByRef: propertySymbol.RefKind is not RefKind.None, compilationState)
                 || propertySymbol.GetDynamicallyAccessedMemberTypes() == DynamicallyAccessedMemberTypes.None)
+            {
                 return;
+            }
 
             // For C# 14 extension properties, property-level DAM does not propagate to accessors
             // and we do not consider property vs accessor conflicts meaningful. Skip conflict checks.

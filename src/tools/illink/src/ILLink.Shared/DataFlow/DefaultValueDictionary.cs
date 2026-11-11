@@ -39,8 +39,10 @@ namespace ILLink.Shared.DataFlow
             Dictionary = new Dictionary<TKey, TValue>(capacity);
             if (other.Dictionary is not null)
             {
-                foreach (var item in other.Dictionary)
+                foreach (KeyValuePair<TKey, TValue> item in other.Dictionary)
+                {
                     Dictionary.Add(item.Key, item.Value);
+                }
             }
             DefaultValue = other.DefaultValue;
         }
@@ -110,10 +112,12 @@ namespace ILLink.Shared.DataFlow
             public bool MoveNext()
             {
                 if (!_hasDictionary)
+                {
                     return false;
+                }
 
                 // Avoid exposing the containing struct's address on the empty path.
-                var enumerator = _enumerator;
+                Dictionary<TKey, TValue>.Enumerator enumerator = _enumerator;
                 bool hasNext = enumerator.MoveNext();
                 _enumerator = enumerator;
                 return hasNext;
@@ -124,7 +128,9 @@ namespace ILLink.Shared.DataFlow
             public void Reset()
             {
                 if (_hasDictionary)
+                {
                     ResetEnumerator(ref _enumerator);
+                }
             }
 
             private static object GetCurrent<TEnumerator>(ref TEnumerator enumerator)

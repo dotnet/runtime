@@ -55,7 +55,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             IOperation operation, ISymbol owningSymbol, FeatureContext featureContext)
         {
             if (!HasAssignmentRequirements(target))
+            {
                 return;
+            }
 
             // Finally blocks will be analyzed multiple times, once for normal control flow and once
             // for exceptional control flow, and these separate analyses could produce different
@@ -65,7 +67,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             // of the normal control-flow state.
             // We still add patterns to the operation, rather than replacing, to make this resilient to
             // changes in the analysis algorithm.
-            if (!AssignmentPatterns.TryGetValue(operation, out var existingPattern))
+            if (!AssignmentPatterns.TryGetValue(operation, out TrimAnalysisAssignmentPattern existingPattern))
             {
                 AssignmentPatterns.Add(operation, new TrimAnalysisAssignmentPattern(source, target, operation, owningSymbol, featureContext));
                 return;
@@ -77,13 +79,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         private static bool HasAssignmentRequirements(ValueSet<SingleValue> target)
         {
-            if (target.TryGetSingleValue(out var single))
+            if (target.TryGetSingleValue(out SingleValue? single))
+            {
                 return single is not ValueWithDynamicallyAccessedMembers annotated || annotated.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None;
+            }
 
-            foreach (var value in target.AsEnumerable())
+            foreach (SingleValue value in target.AsEnumerable())
             {
                 if (value is not ValueWithDynamicallyAccessedMembers annotated || annotated.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+                {
                     return true;
+                }
             }
 
             return false;
@@ -114,7 +120,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public void AddMethodCall(IMethodSymbol calledMethod, ValueSet<SingleValue> instance, ImmutableArray<ValueSet<SingleValue>> arguments,
             IOperation operation, ISymbol owningSymbol, FeatureContext featureContext)
         {
-            if (!MethodCallPatterns.TryGetValue(operation, out var existingPattern))
+            if (!MethodCallPatterns.TryGetValue(operation, out TrimAnalysisMethodCallPattern existingPattern))
             {
                 MethodCallPatterns.Add(operation, new TrimAnalysisMethodCallPattern(calledMethod, instance, arguments, operation, owningSymbol, featureContext));
                 return;

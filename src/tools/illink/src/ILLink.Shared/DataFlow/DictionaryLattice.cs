@@ -27,9 +27,11 @@ namespace ILLink.Shared.DataFlow
         public DefaultValueDictionary<TKey, TValue> Meet(DefaultValueDictionary<TKey, TValue> left, DefaultValueDictionary<TKey, TValue> right)
         {
             if (right.Count == 0)
+            {
                 return new DefaultValueDictionary<TKey, TValue>(left);
+            }
 
-            var met = left.Count == 0
+            DefaultValueDictionary<TKey, TValue> met = left.Count == 0
                 ? new DefaultValueDictionary<TKey, TValue>(left, right.Count)
                 : new DefaultValueDictionary<TKey, TValue>(left);
             foreach (var kvp in right)

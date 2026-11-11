@@ -64,17 +64,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             ImmutableHashSet<CaptureId>.Builder? deconstructionCaptureIdBuilder = null;
             HashSet<CaptureId>? rvalueFlowCaptureIds = null;
 
-            foreach (var flowCaptureReference in cfg.DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference))
+            foreach (IFlowCaptureReferenceOperation flowCaptureReference in cfg.DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference))
             {
                 if (IsLValueFlowCapture(flowCaptureReference, out IAssignmentOperation? assignment, out bool isDeconstruction))
                 {
                     lvalueFlowCaptureIdBuilder ??= ImmutableDictionary.CreateBuilder<CaptureId, FlowCaptureKind>();
-                    var captureKind = assignment?.IsAnyCompoundAssignment() == true || rvalueFlowCaptureIds?.Contains(flowCaptureReference.Id) == true
+                    FlowCaptureKind captureKind = assignment?.IsAnyCompoundAssignment() == true || rvalueFlowCaptureIds?.Contains(flowCaptureReference.Id) == true
                         ? FlowCaptureKind.LValueAndRValueCapture
                         : FlowCaptureKind.LValueCapture;
                     lvalueFlowCaptureIdBuilder.Add(flowCaptureReference.Id, captureKind);
                     if (isDeconstruction)
+                    {
                         (deconstructionCaptureIdBuilder ??= ImmutableHashSet.CreateBuilder<CaptureId>()).Add(flowCaptureReference.Id);
+                    }
                 }
                 else
                 {
@@ -85,7 +87,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 #if DEBUG
             if (lvalueFlowCaptureIdBuilder != null)
             {
-                foreach (var kvp in lvalueFlowCaptureIdBuilder)
+                foreach (KeyValuePair<CaptureId, FlowCaptureKind> kvp in lvalueFlowCaptureIdBuilder)
                 {
                     var captureId = kvp.Key;
                     var kind = kvp.Value;

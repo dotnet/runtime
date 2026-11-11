@@ -97,10 +97,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 oldInterproceduralState = interproceduralState.Clone();
 
                 Debug.Assert(!oldInterproceduralState.Methods.IsUnknown());
-                foreach (var method in oldInterproceduralState.Methods.GetKnownValues())
+
+                foreach (MethodBodyValue method in oldInterproceduralState.Methods.GetKnownValues())
                 {
                     if (!hoistedLocalsChanged && analyzedMethods.Contains(method))
+                    {
                         continue;
+                    }
 
                     succeeded &= AnalyzeMethod(method, ref interproceduralState);
                 }
@@ -110,15 +113,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private bool AnalyzeAttribute(ISymbol owningSymbol, IAttributeOperation attribute)
         {
-            var cfg = GetControlFlowGraph(Context.GetControlFlowGraph(attribute));
-            var visitor = GetVisitor(owningSymbol, cfg, default);
+            ControlFlowGraphProxy cfg = GetControlFlowGraph(Context.GetControlFlowGraph(attribute));
+            TTransfer visitor = GetVisitor(owningSymbol, cfg, default);
             return Fixpoint(cfg, visitor);
         }
 
         private bool AnalyzeMethod(MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
         {
-            var cfg = GetControlFlowGraph(method.ControlFlowGraph);
-            var visitor = GetVisitor(method.OwningSymbol, cfg, interproceduralState);
+            ControlFlowGraphProxy cfg = GetControlFlowGraph(method.ControlFlowGraph);
+            TTransfer visitor = GetVisitor(method.OwningSymbol, cfg, interproceduralState);
             bool succeeded = Fixpoint(cfg, visitor);
 
             // The interprocedural state struct is stored as a field of the visitor and modified

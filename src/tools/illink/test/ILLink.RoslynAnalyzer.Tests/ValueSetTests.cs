@@ -52,8 +52,12 @@ namespace ILLink.RoslynAnalyzer.Tests
             HashSet<TestValue> CreateStorage()
             {
                 var storage = new HashSet<TestValue>();
+
                 foreach (TestValue value in values)
+                {
                     storage.Add(value);
+                }
+
                 return storage;
             }
         }
@@ -68,8 +72,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             SingleValue source = CreateArray(count);
             Dictionary<int, ValueSet<SingleValue>> indices = GetArrayIndices(source);
+
             for (int i = 0; i < count; i++)
+            {
                 indices.Add(i, new TestSingleValue(i));
+            }
+
             SingleValue empty = CreateArray(0);
             source.DeepCopy();
             empty.DeepCopy();
@@ -94,8 +102,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             Dictionary<int, ValueSet<SingleValue>> copiedIndices = GetArrayIndices(copy);
             Assert.Equal(count, copiedIndices.Count);
+
             for (int i = 0; i < count; i++)
+            {
                 Assert.Equal(new TestSingleValue(i), Assert.Single(copiedIndices[i].GetKnownValues()));
+            }
+
             copiedIndices[count] = new TestSingleValue(-1);
             Assert.Equal(count, indices.Count);
             Assert.Equal(emptyCopyBytes - emptyDictionaryBytes + finalDictionaryBytes, allocated);
@@ -111,7 +123,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             SingleValue copy = source.DeepCopy();
             element.Id = 2;
 
-            var copiedElement = Assert.IsType<MutableTestSingleValue>(Assert.Single(GetArrayIndices(copy)[0].GetKnownValues()));
+            MutableTestSingleValue copiedElement = Assert.IsType<MutableTestSingleValue>(Assert.Single(GetArrayIndices(copy)[0].GetKnownValues()));
             Assert.Equal(1, copiedElement.Id);
             Assert.NotSame(element, copiedElement);
         }
@@ -193,7 +205,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             Assert.Equal(unknown, result.IsUnknown());
             if (!unknown)
+            {
                 Assert.Equal(count, result.GetKnownValues().Count());
+            }
         }
 
         private delegate SingleValue? ReadSingleValue(in ValueSet<SingleValue> value);
@@ -216,11 +230,17 @@ namespace ILLink.RoslynAnalyzer.Tests
                     : new ValueSet<SingleValue>(Enumerable.Range(0, count).Select(i => (SingleValue)new TestSingleValue(i)));
             SingleValue? result = read(in values);
             if (count < 0)
+            {
                 Assert.Equal("UnknownValue", result!.GetType().Name);
+            }
             else if (count == 1)
+            {
                 Assert.Equal(new TestSingleValue(0), result);
+            }
             else
+            {
                 Assert.Null(result);
+            }
 
             long before = GC.GetAllocatedBytesForCurrentThread();
             read(in values);
@@ -257,15 +277,19 @@ namespace ILLink.RoslynAnalyzer.Tests
         public void EnumerationPreservesResetAndInterfaceBehavior(int count)
         {
             ValueSet<int> values = count == 1 ? new ValueSet<int>(0) : new ValueSet<int>(Enumerable.Range(0, count));
-            var enumerator = values.GetKnownValues().GetEnumerator();
+            ValueSet<int>.Enumerator enumerator = values.GetKnownValues().GetEnumerator();
+
             for (int pass = 0; pass < 2; pass++)
             {
                 List<int> actual = new();
                 while (enumerator.MoveNext())
+                {
                     actual.Add(enumerator.Current);
+                }
                 Assert.Equal(Enumerable.Range(0, count), actual);
                 enumerator.Reset();
             }
+
             Assert.Equal(Enumerable.Range(0, count), (IEnumerable<int>)values.GetKnownValues());
             Assert.Equal(Enumerable.Range(0, count), ((IEnumerable)values.GetKnownValues()).Cast<int>());
         }
@@ -275,12 +299,19 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             ValueSet<int> values = new(Enumerable.Range(0, 16));
             int sum = 0;
+
             foreach (int value in values.GetKnownValues())
+            {
                 sum += value;
+            }
 
             long before = GC.GetAllocatedBytesForCurrentThread();
+
             foreach (int value in values.GetKnownValues())
+            {
                 sum += value;
+            }
+
             long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
             Assert.Equal(240, sum);
@@ -295,8 +326,11 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             TestValue[] values = Enumerable.Range(0, count).Select(i => new TestValue(i, mutable: false)).ToArray();
             ValueSet<TestValue> source = new(values);
+
             foreach (TestValue value in values)
+            {
                 value.HashCodeCalls = 0;
+            }
 
             ValueSet<TestValue> copy = source.DeepCopy();
 
@@ -357,7 +391,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             Assert.Equal(unknown, merged.IsUnknown());
             if (!unknown)
+            {
                 Assert.Equal(count, merged.GetKnownValues().Count());
+            }
         }
 
         [Fact]
@@ -365,8 +401,11 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             TestValue[] values = Enumerable.Range(0, 257).Select(i => new TestValue(i, mutable: true)).ToArray();
             ValueSet<TestValue> source = new(values);
+
             foreach (TestValue value in values)
+            {
                 value.Id = 0;
+            }
 
             ValueSet<TestValue> merged = default(ValueSetLattice<TestValue>).Meet(source, source);
 

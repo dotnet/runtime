@@ -193,11 +193,13 @@ namespace ILLink.Shared.DataFlow
         )
         {
             TConditionValue? conditionValue = transfer.Transfer(block, state);
-            using var successors = cfg.GetSuccessors(block).GetEnumerator();
+            using IEnumerator<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch> successors = cfg.GetSuccessors(block).GetEnumerator();
             if (!successors.MoveNext())
+            {
                 return;
+            }
 
-            var successor = successors.Current;
+            IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch successor = successors.Current;
             while (true)
             {
                 bool hasNext = successors.MoveNext();
@@ -215,7 +217,9 @@ namespace ILLink.Shared.DataFlow
 
                 updateState(successor, branchState);
                 if (!hasNext)
+                {
                     break;
+                }
                 successor = successors.Current;
             }
         }
@@ -231,20 +235,28 @@ namespace ILLink.Shared.DataFlow
 
             TBlock[] blocks = cfg.Blocks.ToArray();
             var blockOrdinals = new Dictionary<TBlock, int>(blocks.Length);
+
             for (int i = 0; i < blocks.Length; i++)
+            {
                 blockOrdinals.Add(blocks[i], i);
+            }
+
             // Propagate loop and finally updates in graph order before revisiting their continuations.
             var pending = new SortedSet<int>();
             var finallyDependents = new Dictionary<TBlock, HashSet<TBlock>>();
             var exceptionDependents = new Dictionary<TRegion, HashSet<TBlock>>();
+
             foreach (TBlock block in blocks)
             {
                 Enqueue(block);
-                foreach (var predecessor in cfg.GetPredecessors(block))
+
+                foreach (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor in cfg.GetPredecessors(block))
                 {
                     // A branch leaving a protected region reads the normal exit of each intervening finally.
                     foreach (TRegion finallyRegion in predecessor.FinallyRegions)
+                    {
                         AddDependency(finallyDependents, cfg.LastBlock(finallyRegion), block);
+                    }
                 }
 
                 if (cfg.TryGetEnclosingTryOrCatchOrFilter(block, out TRegion? region) &&
@@ -252,11 +264,16 @@ namespace ILLink.Shared.DataFlow
                     (region.Kind == RegionKind.Filter || (region.Kind == RegionKind.Catch && !cfg.HasFilter(region))))
                 {
                     AddDependency(exceptionDependents, cfg.GetCorrespondingTry(region), block);
+
                     foreach (TRegion previousFilter in cfg.GetPreviousFilters(region))
+                    {
                         AddDependency(exceptionDependents, previousFilter, block);
+                    }
                 }
                 if (cfg.TryGetEnclosingFinally(block, out TRegion? enclosingFinally) && block.Equals(cfg.FirstBlock(enclosingFinally)))
+                {
                     AddDependency(exceptionDependents, cfg.GetCorrespondingTry(enclosingFinally), block);
+                }
             }
 
             // Allocate some objects which will be reused to hold the current dataflow state,
@@ -280,7 +297,9 @@ namespace ILLink.Shared.DataFlow
                 bool changed = !newValue.Equals(branchState.Current);
                 branchState.Current = newValue;
                 if (changed)
+                {
                     EnqueueBranchDependents(branch);
+                }
             };
             Action<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TValue> updateExceptionFinallyState = (branch, newValue) =>
             {
@@ -288,7 +307,9 @@ namespace ILLink.Shared.DataFlow
                 Debug.Assert(result);
                 cfgState.SetExceptionFinallyState(branch, newValue);
                 if (!newValue.Equals(oldValue))
+                {
                     EnqueueBranchDependents(branch);
+                }
             };
 
             const int MaxBlockVisits = 10_000;
@@ -304,7 +325,9 @@ namespace ILLink.Shared.DataFlow
                 TraceVisitBlock(block);
 
                 if (block.Equals(cfg.Entry))
+                {
                     continue;
+                }
 
                 bool isTryOrCatchOrFilterBlock = cfg.TryGetEnclosingTryOrCatchOrFilter(block, out TRegion? tryOrCatchOrFilterRegion);
 
@@ -327,7 +350,8 @@ namespace ILLink.Shared.DataFlow
 
                 // Compute the dataflow state at the beginning of this block.
                 TValue currentState = lattice.Top;
-                foreach (var predecessor in cfg.GetPredecessors(block))
+
+                foreach (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor in cfg.GetPredecessors(block))
                 {
                     TValue predecessorState = cfgState.Get(predecessor).Current;
 
@@ -335,6 +359,7 @@ namespace ILLink.Shared.DataFlow
                     TraceEdgeInput(predecessor, predecessorState);
                     currentState = lattice.Meet(currentState, predecessorState);
                 }
+
                 // State at start of a catch also includes the exceptional state from
                 // try -> catch exceptional control flow.
                 if (isCatchOrFilterStart)
@@ -366,9 +391,10 @@ namespace ILLink.Shared.DataFlow
                     // Inside finally regions, must compute the parallel meet state for unhandled exceptions.
                     // Using predecessors in the finally. But not from outside the finally.
                     exceptionFinallyState = lattice.Top;
-                    foreach (var predecessor in cfg.GetPredecessors(block))
+
+                    foreach (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor in cfg.GetPredecessors(block))
                     {
-                        var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState(predecessor, out TValue predecessorState);
+                        bool isPredecessorInFinally = cfgState.TryGetExceptionFinallyState(predecessor, out TValue predecessorState);
                         Debug.Assert(isPredecessorInFinally);
 
                         FlowStateThroughExitedFinallys(predecessor, ref predecessorState);
@@ -445,7 +471,9 @@ namespace ILLink.Shared.DataFlow
                         TValue oldEnclosingState = tryOrCatchExceptionState.Value;
                         tryOrCatchExceptionState.Value = lattice.Meet(oldEnclosingState, exceptionState!.Value);
                         if (!tryOrCatchExceptionState.Value.Equals(oldEnclosingState))
+                        {
                             EnqueueExceptionDependents(enclosingTryOrCatch);
+                        }
                         tryOrCatchOrFilterRegion = enclosingTryOrCatch;
                     }
                 }
@@ -474,11 +502,15 @@ namespace ILLink.Shared.DataFlow
             void EnqueueBranchDependents(IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch branch)
             {
                 if (branch.Destination is TBlock destination)
+                {
                     Enqueue(destination);
+                }
                 if (finallyDependents.TryGetValue(branch.Source, out HashSet<TBlock>? dependents))
                 {
                     foreach (TBlock dependent in dependents)
+                    {
                         Enqueue(dependent);
+                    }
                 }
             }
 
@@ -487,7 +519,9 @@ namespace ILLink.Shared.DataFlow
                 if (exceptionDependents.TryGetValue(region, out HashSet<TBlock>? dependents))
                 {
                     foreach (TBlock dependent in dependents)
+                    {
                         Enqueue(dependent);
+                    }
                 }
             }
 
@@ -495,7 +529,7 @@ namespace ILLink.Shared.DataFlow
                 IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor,
                 ref TValue predecessorState)
             {
-                foreach (var exitedFinally in predecessor.FinallyRegions)
+                foreach (TRegion exitedFinally in predecessor.FinallyRegions)
                 {
                     TValue oldFinallyInputState = cfgState.GetFinallyInputState(exitedFinally);
                     TValue finallyInputState = lattice.Meet(oldFinallyInputState, predecessorState);
@@ -503,7 +537,9 @@ namespace ILLink.Shared.DataFlow
                     cfgState.SetFinallyInputState(exitedFinally, finallyInputState);
 
                     if (!finallyInputState.Equals(oldFinallyInputState))
+                    {
                         Enqueue(cfg.FirstBlock(exitedFinally));
+                    }
 
                     TBlock lastFinallyBlock = cfg.LastBlock(exitedFinally);
                     IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetSuccessors(lastFinallyBlock).SingleOrDefault();

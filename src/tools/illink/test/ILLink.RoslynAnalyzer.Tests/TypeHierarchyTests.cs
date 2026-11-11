@@ -61,7 +61,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             Assert.Equal(interesting, classify(symbol, false));
             Assert.Equal(interesting, classify(symbol, true));
 
-            var field = first.GetType().GetField("_interestingTypes", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            FieldInfo field = first.GetType().GetField("_interestingTypes", BindingFlags.Instance | BindingFlags.NonPublic)!;
             Assert.Single(((IEnumerable)field.GetValue(first)!).Cast<object>());
             Assert.Empty((IEnumerable)field.GetValue(second)!);
             GC.KeepAlive(symbol);

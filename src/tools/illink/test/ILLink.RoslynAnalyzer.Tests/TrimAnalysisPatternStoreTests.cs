@@ -90,7 +90,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             Assert.Equal(stored ? 1 : 0, GetPatterns(store, methodCall: false).Count);
             int expectedCopies = stored ? 1 : 0;
             if (targetKind == AssignmentTarget.Unexpected)
+            {
                 expectedCopies++;
+            }
             Assert.Equal(expectedCopies, counter.Copies);
         }
 

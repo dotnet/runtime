@@ -23,12 +23,16 @@ namespace ILLink.Shared.TrimAnalysis
         private static bool RequiresDataFlowAnalysis(IMethodSymbol method, AnalyzerCompilationState? compilationState)
         {
             if (GetMethodReturnValueAnnotation(method, compilationState) != DynamicallyAccessedMemberTypes.None)
+            {
                 return true;
+            }
 
-            foreach (var param in method.GetParameters())
+            foreach (ParameterProxy param in method.GetParameters())
             {
                 if (GetMethodParameterAnnotation(param, compilationState) != DynamicallyAccessedMemberTypes.None)
+                {
                     return true;
+                }
             }
 
             return false;
@@ -113,7 +117,9 @@ namespace ILLink.Shared.TrimAnalysis
         internal static DynamicallyAccessedMemberTypes GetFieldAnnotation(IFieldSymbol field, AnalyzerCompilationState? compilationState = null)
         {
             if (!field.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef: field.RefKind is not RefKind.None, compilationState))
+            {
                 return DynamicallyAccessedMemberTypes.None;
+            }
 
             if (field.AssociatedSymbol is IPropertySymbol property
                 && property.IsAutoProperty())
@@ -128,7 +134,9 @@ namespace ILLink.Shared.TrimAnalysis
         internal static DynamicallyAccessedMemberTypes GetBackingFieldAnnotation(IPropertySymbol property, AnalyzerCompilationState? compilationState = null)
         {
             if (!property.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef: false, compilationState))
+            {
                 return DynamicallyAccessedMemberTypes.None;
+            }
 
             return property.GetDynamicallyAccessedMemberTypes();
         }
@@ -159,14 +167,18 @@ namespace ILLink.Shared.TrimAnalysis
             if (param.IsImplicitThis)
             {
                 if (!param.Method.Method.ContainingType.IsTypeInterestingForDataflow(isByRef: false, compilationState))
+                {
                     return DynamicallyAccessedMemberTypes.None;
+                }
                 return param.Method.Method.GetDynamicallyAccessedMemberTypes();
             }
 
             IParameterSymbol parameter = param.ParameterSymbol!;
             bool isByRef = parameter.RefKind is not RefKind.None;
             if (!parameter.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef, compilationState))
+            {
                 return DynamicallyAccessedMemberTypes.None;
+            }
 
             var damt = parameter.GetDynamicallyAccessedMemberTypes();
 
@@ -196,7 +208,9 @@ namespace ILLink.Shared.TrimAnalysis
         internal static DynamicallyAccessedMemberTypes GetMethodReturnValueAnnotation(IMethodSymbol method, AnalyzerCompilationState? compilationState)
         {
             if (!method.OriginalDefinition.ReturnType.IsTypeInterestingForDataflow(isByRef: method.ReturnsByRef, compilationState))
+            {
                 return DynamicallyAccessedMemberTypes.None;
+            }
 
             var returnDamt = method.GetDynamicallyAccessedMemberTypesOnReturnType();
 
@@ -267,7 +281,7 @@ namespace ILLink.Shared.TrimAnalysis
             if (!method.HasImplicitThis())
                 throw new InvalidOperationException($"Cannot get 'this' parameter of method {method.GetDisplayName()} with no 'this' parameter.");
             ParameterProxy param = new(method, (ParameterIndex)0);
-            var damt = GetMethodParameterAnnotation(param, _compilationState);
+            DynamicallyAccessedMemberTypes damt = GetMethodParameterAnnotation(param, _compilationState);
             return GetMethodParameterValue(new ParameterProxy(method, (ParameterIndex)0), damt);
         }
 

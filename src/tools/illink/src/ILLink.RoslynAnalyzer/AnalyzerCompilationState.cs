@@ -21,7 +21,9 @@ namespace ILLink.RoslynAnalyzer
         public bool IsTypeInterestingForDataflow(ITypeSymbol type, bool isByRef)
         {
             if (type.SpecialType != SpecialType.None)
+            {
                 return type.SpecialType == SpecialType.System_String && !isByRef;
+            }
 
             return type is INamedTypeSymbol namedType &&
                 _interestingTypes.GetValue(namedType.OriginalDefinition,

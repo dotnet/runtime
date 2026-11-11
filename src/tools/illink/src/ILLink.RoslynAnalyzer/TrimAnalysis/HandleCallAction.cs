@@ -124,7 +124,7 @@ namespace ILLink.Shared.TrimAnalysis
                         break;
                     }
 
-                    foreach (var valueNode in instanceValue.AsEnumerable())
+                    foreach (SingleValue valueNode in instanceValue.AsEnumerable())
                     {
                         // Note that valueNode can be statically typed as some generic argument type.
                         // For example:
@@ -193,6 +193,7 @@ namespace ILLink.Shared.TrimAnalysis
                             AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
                         }
                     }
+
                     break;
                 }
 

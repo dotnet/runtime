@@ -70,7 +70,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 ? !candidate.CaptureIds.IsEmpty
                 : candidate.Locals.Any(local => local.Name == "scoped"));
             LocalKey dead = captured ? new(region.CaptureIds[0]) : new(region.Locals.Single(local => local.Name == "scoped"));
-            var (liveKeys, _) = GetKeys();
+            (LocalKey[] liveKeys, CapturedTargetKey _) = GetKeys();
             LocalKey live = liveKeys[0];
             IOperation reference = model.GetOperation(tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>().First())!;
             var targetKey = new CapturedTargetKey(reference);
@@ -79,7 +79,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             current.Context = new ValueSet<string>("feature");
             current.LocalState.CapturedTargetValues.Set(targetKey, new CapturedTargetValue<ValueSet<TestValue>>(new TestValue(3)));
             if (captured)
+            {
                 current.LocalState.CapturedReferences.Set(region.CaptureIds[0], new ValueSet<CapturedReferenceValue>(new CapturedReferenceValue(reference)));
+            }
             state.Current = current;
             state.Set(dead, new TestValue(1));
             state.Set(live, new TestValue(2));
@@ -106,10 +108,13 @@ namespace ILLink.RoslynAnalyzer.Tests
         private static IEnumerable<ControlFlowRegion> GetRegions(ControlFlowRegion region)
         {
             yield return region;
+
             foreach (ControlFlowRegion nested in region.NestedRegions)
             {
                 foreach (ControlFlowRegion descendant in GetRegions(nested))
+                {
                     yield return descendant;
+                }
             }
         }
 
@@ -122,7 +127,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             State state = CreateState();
             state.Set(keys[0], new TestValue(1));
             state.Set(keys[1], new TestValue(2));
-            var output = GetOutputFactory(state, canTransferOwnership);
+            Func<StateValue> output = GetOutputFactory(state, canTransferOwnership);
             output();
 
             long before = GC.GetAllocatedBytesForCurrentThread();
@@ -131,9 +136,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             Assert.Equal(2, result.LocalState.Dictionary.Count);
             if (canTransferOwnership)
+            {
                 Assert.Equal(0, allocated);
+            }
             else
+            {
                 Assert.True(allocated > 0);
+            }
         }
 
         [Theory]
@@ -141,7 +150,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         [InlineData(true)]
         public void CompletedOutputStillSnapshotsMutableAliases(bool capturedTarget)
         {
-            var (keys, captureKey) = GetKeys();
+            (LocalKey[] keys, CapturedTargetKey captureKey) = GetKeys();
             State state = CreateState();
             TestValue mutable = new(1, mutable: true);
             if (capturedTarget)
@@ -170,7 +179,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             State state = CreateState();
             TestValue mutable = new(1, mutable: true);
             state.Set(key, mutable);
-            var output = GetOutputFactory(state, canTransferOwnership: true);
+            Func<StateValue> output = GetOutputFactory(state, canTransferOwnership: true);
             output();
             mutable.DeepCopy();
 
@@ -194,10 +203,14 @@ namespace ILLink.RoslynAnalyzer.Tests
             LocalKey[] keys = GetKeys(count).Keys;
             TestValue[] mutable = Enumerable.Range(0, count).Select(i => new TestValue(i, mutable: true)).ToArray();
             State state = CreateState();
+
             for (int i = 0; i < count; i++)
+            {
                 state.Set(keys[i], mutable[i]);
+            }
 
             StateValue result = GetOutputFactory(state, canTransferOwnership: true)();
+
             for (int i = 0; i < count; i++)
             {
                 mutable[i].Id = -1;
@@ -225,7 +238,9 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             MethodInfo? method = typeof(State).GetMethod(nameof(State.CreateBranchOutput));
             if (method is null)
+            {
                 return () => state.Lattice.Meet(state.Lattice.Top, state.Current);
+            }
             var create = (Func<bool, StateValue>)method.CreateDelegate(typeof(Func<bool, StateValue>), state);
             return () => create(canTransferOwnership);
         }
@@ -237,6 +252,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             CaptureId otherCapture = (CaptureId)Activator.CreateInstance(typeof(CaptureId),
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: new object[] { 1 }, culture: null)!;
             LocalKey[] keys = [default, new(default(CaptureId)), new(otherCapture), locals[0], locals[1]];
+
             for (int i = 0; i < keys.Length; i++)
             {
                 for (int j = 0; j < keys.Length; j++)
@@ -244,7 +260,9 @@ namespace ILLink.RoslynAnalyzer.Tests
                     Assert.Equal(i == j, keys[i].Equals(keys[j]));
                     Assert.Equal(i == j, keys[i].Equals((object)keys[j]));
                     if (i == j)
+                    {
                         Assert.Equal(keys[i].GetHashCode(), keys[j].GetHashCode());
+                    }
                 }
             }
         }
@@ -254,13 +272,20 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             LocalKey key = new(default(CaptureId));
             Dictionary<LocalKey, ValueSet<TestValue>> dictionary = new() { [key] = new TestValue(1) };
+
             for (int i = 0; i < 10_000; i++)
+            {
                 Lookup(dictionary, key);
+            }
 
             long before = GC.GetAllocatedBytesForCurrentThread();
             int count = 0;
+
             for (int i = 0; i < 1_000; i++)
+            {
                 count += Lookup(dictionary, key);
+            }
+
             long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
             Assert.Equal(1_000, count);
@@ -332,7 +357,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         [Fact]
         public void UpdatingAnotherLocalSnapshotsMutableCapturedTargets()
         {
-            var (keys, captureKey) = GetKeys();
+            (LocalKey[] keys, CapturedTargetKey captureKey) = GetKeys();
             State state = CreateState();
             TestValue mutable = new(1, mutable: true);
             StateValue current = state.Current;
@@ -374,7 +399,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             State state = CreateState();
 
             for (int i = 0; i < Count; i++)
+            {
                 state.Set(keys[i], values[i]);
+            }
 
             Assert.Equal(Count, state.Exception!.Value.LocalState.Dictionary.Count);
             Assert.InRange(values.Sum(value => value.CopyCount), Count, 4 * Count);

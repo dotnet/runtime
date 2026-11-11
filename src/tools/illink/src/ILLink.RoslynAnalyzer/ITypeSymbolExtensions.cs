@@ -19,10 +19,14 @@ namespace ILLink.RoslynAnalyzer
         public static bool IsTypeInterestingForDataflow(this ITypeSymbol type, bool isByRef, AnalyzerCompilationState? compilationState = null)
         {
             if (compilationState is not null)
+            {
                 return compilationState.IsTypeInterestingForDataflow(type, isByRef);
+            }
 
             if (type.SpecialType != SpecialType.None)
+            {
                 return type.SpecialType == SpecialType.System_String && !isByRef;
+            }
 
             if (type is not INamedTypeSymbol namedType)
                 return false;
@@ -32,7 +36,7 @@ namespace ILLink.RoslynAnalyzer
 
         internal static bool IsNamedTypeInterestingForDataflow(INamedTypeSymbol type)
         {
-            var flags = GetFlags(type);
+            HierarchyFlags flags = GetFlags(type);
             return IsSystemType(flags) || IsSystemReflectionIReflect(flags);
         }
 

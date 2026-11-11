@@ -52,7 +52,9 @@ namespace ILLink.Shared.TrimAnalysis
         internal static SingleValue? AsSingleValue(this in MultiValue node)
         {
             if (node.IsUnknown())
+            {
                 return UnknownValue.Instance;
+            }
             return node.TryGetSingleValue(out SingleValue? value) ? value : null;
         }
 

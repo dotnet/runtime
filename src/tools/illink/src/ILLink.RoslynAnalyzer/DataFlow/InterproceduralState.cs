@@ -53,7 +53,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             Debug.Assert(!Methods.IsUnknown());
             if (Methods.Contains(method))
+            {
                 return;
+            }
 
             var methodsList = new List<MethodBodyValue>(Methods.GetKnownValues());
             methodsList.Add(method);

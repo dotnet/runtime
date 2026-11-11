@@ -94,10 +94,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
             // Predecessor states have already flowed through exited finally regions and been copied.
-            if (_scopeExits is not null && _scopeExits.TryGetValue(block.Block.Ordinal, out var regions))
+            if (_scopeExits is not null && _scopeExits.TryGetValue(block.Block.Ordinal, out ImmutableArray<ControlFlowRegion> regions))
             {
                 foreach (ControlFlowRegion region in regions)
+                {
                     state.RemoveLocals(region);
+                }
             }
 
             foreach (IOperation operation in block.Block.Operations)
@@ -408,7 +410,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
                     var property = (IPropertySymbol)indexerRef.IndexerSymbol;
 
-                    var argumentsBuilder = ImmutableArray.CreateBuilder<TValue>(2);
+                    ImmutableArray<TValue>.Builder argumentsBuilder = ImmutableArray.CreateBuilder<TValue>(2);
                     argumentsBuilder.Add(indexArgumentValue);
                     argumentsBuilder.Add(value);
 
@@ -1488,12 +1490,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             TValue instanceValue = Visit(instance, state);
 
-            var parameters = method.Parameters;
+            ImmutableArray<IParameterSymbol> parameters = method.Parameters;
             bool hasExtensionParameter = method.HasExtensionParameterOnType();
             int argumentOffset = hasExtensionParameter ? 1 : 0;
-            var argumentsBuilder = ImmutableArray.CreateBuilder<TValue>(parameters.Length + argumentOffset);
+            ImmutableArray<TValue>.Builder argumentsBuilder = ImmutableArray.CreateBuilder<TValue>(parameters.Length + argumentOffset);
+
             for (int i = 0; i < parameters.Length + argumentOffset; i++)
+            {
                 argumentsBuilder.Add(TopValue);
+            }
 
             // For calls to C# 14 extensions, treat the instance argument as a regular argument.
             // The extension method doesn't have an implicit this, yet (unlike for existing extension methods)
@@ -1505,7 +1510,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             }
 
             // Build a map from parameter to argument so we can handle named/out-of-order arguments correctly
-            foreach (var argument in arguments)
+            foreach (IArgumentOperation argument in arguments)
             {
                 // For __arglist argument there might not be any parameter
                 // __arglist is only legal as the last argument to a method and there's also no supported

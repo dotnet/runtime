@@ -52,8 +52,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             Debug.Assert(!_ownsExceptionState && !_mutableLocalsInitialized);
             TValue top = Lattice.LocalStateLattice.Lattice.ValueLattice.Top;
+
             foreach (ILocalSymbol local in region.Locals)
+            {
                 current.LocalState.Set(new LocalKey(local), top);
+            }
+
             foreach (CaptureId capture in region.CaptureIds)
             {
                 current.LocalState.Set(new LocalKey(capture), top);
@@ -65,7 +69,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             current.LocalState.Set(key, value);
             if (_exception is null)
+            {
                 return;
+            }
 
             if (!_ownsExceptionState)
             {
@@ -77,11 +83,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
             if (!_mutableLocalsInitialized)
             {
-                foreach (var local in current.LocalState.Dictionary)
+                foreach (KeyValuePair<LocalKey, TValue> local in current.LocalState.Dictionary)
                 {
                     if (local.Value.HasMutableState)
+                    {
                         (_mutableLocals ??= new HashSet<LocalKey>()).Add(local.Key);
+                    }
                 }
+
                 _mutableLocalsInitialized = true;
             }
             else if (value.HasMutableState)
@@ -93,8 +102,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 _mutableLocals?.Remove(key);
             }
 
-            var exceptionValue = _exception.Value;
-            var valueLattice = Lattice.LocalStateLattice.Lattice.ValueLattice;
+            LocalStateAndContext<TValue, TContext> exceptionValue = _exception.Value;
+            TValueLattice valueLattice = Lattice.LocalStateLattice.Lattice.ValueLattice;
             exceptionValue.LocalState.Set(key, valueLattice.Meet(exceptionValue.LocalState.Get(key), value));
             // Array values can change through aliases without another assignment to their local.
             if (_mutableLocals is not null)
@@ -102,7 +111,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 foreach (LocalKey mutableLocal in _mutableLocals)
                 {
                     if (!mutableLocal.Equals(key))
+                    {
                         exceptionValue.LocalState.Set(mutableLocal, valueLattice.Meet(exceptionValue.LocalState.Get(mutableLocal), current.LocalState.Get(mutableLocal)));
+                    }
                 }
             }
             // Captured deconstruction receivers can contain the same mutable array values.
@@ -116,51 +127,73 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public LocalStateAndContext<TValue, TContext> CreateBranchOutput(bool canTransferOwnership)
         {
             if (!canTransferOwnership)
+            {
                 return Lattice.Meet(Lattice.Top, current);
+            }
 
             // Maps are owned, but their values can still alias hoisted arrays. Detach those
             // payloads before transferring the maps, without rebuilding all immutable entries.
             KeyValuePair<LocalKey, TValue>? firstLocal = null;
             List<KeyValuePair<LocalKey, TValue>>? otherLocals = null;
-            foreach (var local in current.LocalState.Dictionary)
+
+            foreach (KeyValuePair<LocalKey, TValue> local in current.LocalState.Dictionary)
             {
                 if (local.Value.HasMutableState)
                 {
                     var copy = new KeyValuePair<LocalKey, TValue>(local.Key, local.Value.DeepCopy());
                     if (firstLocal is null)
+                    {
                         firstLocal = copy;
+                    }
                     else
+                    {
                         (otherLocals ??= new()).Add(copy);
+                    }
                 }
             }
+
             if (firstLocal is { } firstLocalCopy)
+            {
                 current.LocalState.Set(firstLocalCopy.Key, firstLocalCopy.Value);
+            }
             if (otherLocals is not null)
             {
-                foreach (var copy in otherLocals)
+                foreach (KeyValuePair<LocalKey, TValue> copy in otherLocals)
+                {
                     current.LocalState.Set(copy.Key, copy.Value);
+                }
             }
 
             KeyValuePair<CapturedTargetKey, CapturedTargetValue<TValue>>? firstTarget = null;
             List<KeyValuePair<CapturedTargetKey, CapturedTargetValue<TValue>>>? otherTargets = null;
-            foreach (var captured in current.LocalState.CapturedTargetValues)
+
+            foreach (KeyValuePair<CapturedTargetKey, CapturedTargetValue<TValue>> captured in current.LocalState.CapturedTargetValues)
             {
                 if (captured.Value.HasValue && captured.Value.Value.HasMutableState)
                 {
                     var copy = new KeyValuePair<CapturedTargetKey, CapturedTargetValue<TValue>>(
                         captured.Key, new CapturedTargetValue<TValue>(captured.Value.Value.DeepCopy()));
                     if (firstTarget is null)
+                    {
                         firstTarget = copy;
+                    }
                     else
+                    {
                         (otherTargets ??= new()).Add(copy);
+                    }
                 }
             }
+
             if (firstTarget is { } firstTargetCopy)
+            {
                 current.LocalState.CapturedTargetValues.Set(firstTargetCopy.Key, firstTargetCopy.Value);
+            }
             if (otherTargets is not null)
             {
-                foreach (var copy in otherTargets)
+                foreach (KeyValuePair<CapturedTargetKey, CapturedTargetValue<TValue>> copy in otherTargets)
+                {
                     current.LocalState.CapturedTargetValues.Set(copy.Key, copy.Value);
+                }
             }
 
             return new LocalStateAndContext<TValue, TContext>(
