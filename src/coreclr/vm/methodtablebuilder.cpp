@@ -3768,7 +3768,11 @@ MethodTableBuilder::EnumerateClassMethods()
                     asyncFlags |= AsyncMethodFlags::Thunk;
 
                 if (insertCount == 2)
+                {
                     asyncFlags |= (AsyncMethodFlags::Thunk | AsyncMethodFlags::ReturnDroppingThunk);
+                    // Only the target implementation should acquire the receiver's monitor.
+                    asyncImplFlags &= ~miSynchronized;
+                }
 
                 if (isCovariantTaskOverride)
                 {
