@@ -1,13 +1,14 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-    internal partial struct ParameterProxy
+    internal partial struct ParameterProxy : IEquatable<ParameterProxy>
     {
         public ParameterProxy(IParameterSymbol parameter, IMethodSymbol method)
         {
@@ -80,5 +81,11 @@ namespace ILLink.Shared.TypeSystemProxy
         public partial bool IsTypeOf(string typeName) => ParameterType.IsTypeOf(typeName.Substring(0, typeName.LastIndexOf('.')), typeName.Substring(1 + typeName.LastIndexOf('.')));
 
         public bool IsTypeOf(WellKnownType type) => ParameterType.IsTypeOf(type);
+
+        public bool Equals(ParameterProxy other) => Method.Equals(other.Method) && Index == other.Index;
+
+        public override bool Equals(object? obj) => obj is ParameterProxy other && Equals(other);
+
+        public override int GetHashCode() => HashUtils.Combine(Method.GetHashCode(), (int)Index);
     }
 }

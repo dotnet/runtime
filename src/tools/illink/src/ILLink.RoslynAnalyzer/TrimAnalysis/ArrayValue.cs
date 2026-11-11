@@ -24,10 +24,10 @@ namespace ILLink.Shared.TrimAnalysis
 
         public static MultiValue Create(int size) => Create(new ConstIntValue(size));
 
-        private ArrayValue(SingleValue size)
+        private ArrayValue(SingleValue size, int capacity = 0)
         {
             Size = size;
-            IndexValues = new Dictionary<int, MultiValue>();
+            IndexValues = new Dictionary<int, MultiValue>(capacity);
         }
 
         public partial bool TryGetValueByIndex(int index, out MultiValue value)
@@ -68,7 +68,7 @@ namespace ILLink.Shared.TrimAnalysis
         // Lattice Meet() is supposed to copy values, so we need to make a deep copy since ArrayValue is mutable through IndexValues
         public override SingleValue DeepCopy()
         {
-            var newArray = new ArrayValue(Size);
+            var newArray = new ArrayValue(Size, IndexValues.Count);
             foreach (var kvp in IndexValues)
             {
 #if DEBUG

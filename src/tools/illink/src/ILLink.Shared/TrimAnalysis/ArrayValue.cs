@@ -10,11 +10,13 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    internal sealed partial record ArrayValue : SingleValue
+    internal sealed partial record ArrayValue : SingleValue, IValueWithMutableState
     {
         private static ValueSetLattice<SingleValue> MultiValueLattice => default;
 
         public readonly SingleValue Size;
+
+        bool IValueWithMutableState.HasMutableState => true;
 
         public partial bool TryGetValueByIndex(int index, out MultiValue value);
 
