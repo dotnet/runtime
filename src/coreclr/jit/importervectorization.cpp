@@ -539,10 +539,14 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
 //------------------------------------------------------------------------
 // impStringLiteralContainsChar: Folds a `str.Contains(char value)` call when
-//    `str` is a constant string whose chars form a continuous range, e.g.
-//    "cdef", into `value >= 'c' && value <= 'f'` (represented as nested
-//    QMARKs), which optOptimizeRangeTests later folds into a single unsigned
-//    range check. In all other cases the call is left as-is.
+//    `str` is a constant string, into a range or set membership check:
+//    - a continuous range, e.g. "cdef", becomes `value >= 'c' && value <= 'f'`
+//      (represented as nested QMARKs), which optOptimizeRangeTests later folds
+//      into a single unsigned range check;
+//    - any other set of chars, e.g. "0123456789ABCDEF", becomes a chain of
+//      `value == cns` tests that optRecognizeAndOptimizeSwitchJumps later folds
+//      into a bitmask test (`bt`).
+//    In all other cases the call is left as-is.
 //
 // Arguments:
 //    sig         - signature of the Contains method
@@ -626,9 +630,12 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
         mask[bit / 64] |= 1ULL << (bit % 64);
     }
 
-    if (distinct != span + 1)
+    const bool isContinuous = (distinct == span + 1);
+
+    if (!isContinuous && (span > (TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1))
     {
-        // Not a continuous range, e.g. "aZ"
+        // Not a continuous range and the range is wider than the pointer-sized
+        // bitmask the switch recognition is able to build.
         return nullptr;
     }
 
@@ -639,24 +646,53 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
         return nullptr;
     }
 
-    // "cdef".Contains(value) -> value >= 'c' && value <= 'f'
-    JITDUMP("Folding literal.Contains(char) into a range check\n")
-
-    // Spill the searched value into a temp as it's used twice. The cast to
-    // TYP_USHORT (the JIT's type for char) mimics how the callee normalizes
+    // Spill the searched value into a temp as it's used multiple times. The cast
+    // to TYP_USHORT (the JIT's type for char) mimics how the callee normalizes
     // its char argument on load (the managed ABI doesn't guarantee the upper
     // bits of small-typed args); it folds away for values known to be in range.
     unsigned valueTmp         = lvaGrabTemp(true DEBUGARG("spilling Contains value"));
     lvaTable[valueTmp].lvType = TYP_INT;
     GenTreeLclVar* valueLcl   = gtNewLclvNode(valueTmp, TYP_INT);
 
-    GenTree* folded = gtNewQmarkNode(
-        TYP_INT, gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn, TYP_INT)),
-        gtNewColonNode(
-            TYP_INT,
-            gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_LE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mx, TYP_INT)),
-                           gtNewColonNode(TYP_INT, gtNewTrue(), gtNewFalse())),
-            gtNewFalse()));
+    GenTree* folded;
+
+    if (isContinuous)
+    {
+        // "cdef".Contains(value) -> value >= 'c' && value <= 'f'
+        JITDUMP("Folding literal.Contains(char) into a range check\n")
+
+        folded = gtNewQmarkNode(
+            TYP_INT, gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn, TYP_INT)),
+            gtNewColonNode(
+                TYP_INT,
+                gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_LE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mx, TYP_INT)),
+                               gtNewColonNode(TYP_INT, gtNewTrue(), gtNewFalse())),
+                gtNewFalse()));
+    }
+    else
+    {
+        // "0123456789ABCDEF".Contains(value) ->
+        //   value == '0' || value == '1' || ... || value == 'F'
+        //
+        // Emit it as a chain of QMARKs with empty "true" arms. Expanding it
+        // produces a chain of conditional blocks that all branch to the same
+        // block, the shape optRecognizeAndOptimizeSwitchJumps folds into a
+        // bitmask test (`bt`). The chain only writes the result when no char
+        // matched, so the result temp is seeded with `true` below.
+        JITDUMP("Folding literal.Contains(char) into a bitmask test\n")
+
+        folded = gtNewFalse();
+        for (unsigned bit = span + 1; bit-- > 0;)
+        {
+            if ((mask[bit / 64] & (1ULL << (bit % 64))) == 0)
+            {
+                continue;
+            }
+
+            GenTree* cond = gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn + bit, TYP_INT));
+            folded        = gtNewQmarkNode(TYP_INT, cond, gtNewColonNode(TYP_INT, gtNewNothingNode(), folded));
+        }
+    }
 
     impPopStack(argsCount);
     impStoreToTemp(valueTmp, gtNewCastNode(TYP_INT, value, false, TYP_USHORT), CHECK_SPILL_ALL);
@@ -664,6 +700,13 @@ GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned 
     // QMARK nodes cannot reside on the evaluation stack
     unsigned resultTmp         = lvaGrabTemp(true DEBUGARG("spilling Contains qmark"));
     lvaTable[resultTmp].lvType = TYP_INT;
+
+    if (!isContinuous)
+    {
+        // The bitmask chain leaves the result untouched when a char matched.
+        impStoreToTemp(resultTmp, gtNewTrue(), CHECK_SPILL_ALL);
+    }
+
     impStoreToTemp(resultTmp, folded, CHECK_SPILL_ALL);
 
     JITDUMP("\n... Successfully folded to:\n")
