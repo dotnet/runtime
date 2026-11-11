@@ -144,6 +144,21 @@ public readonly record struct SystemVAmd64EightByteClassification(
     SystemVAmd64EightByte First,
     SystemVAmd64EightByte? Second);
 
+// A single flattened field of a value type passed by the RISC-V / LoongArch64 hardware floating-point
+// calling convention: whether it is floating-point, its size in bytes (1, 2, 4 or 8) and its offset
+// from the start of the value.
+public readonly record struct FpStructField(
+    bool IsFloatingPoint,
+    byte Size,
+    uint Offset);
+
+// RISC-V / LoongArch64 floating-point calling convention classification for a value type that flattens
+// to one or two fields, at least one of them floating-point. First is the field at the lower offset;
+// Second is present only when the value flattens to two fields.
+public readonly record struct FpStructInRegistersClassification(
+    FpStructField First,
+    FpStructField? Second);
+
 
 public interface IRuntimeTypeSystem : IContract
 {
@@ -203,6 +218,10 @@ public interface IRuntimeTypeSystem : IContract
     // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI). Mirrors
     // the EEClass::GetSystemVAmd64EightByteInfo runtime data used by the JIT.
     bool TryGetSystemVAmd64EightByteClassification(ITypeHandle typeHandle, out SystemVAmd64EightByteClassification classification) => throw new NotImplementedException();
+    // Returns how a value type is passed by the RISC-V / LoongArch64 hardware floating-point calling
+    // convention, or false if it is passed by the integer calling convention (including on other
+    // targets). Mirrors MethodTable::GetFpStructInRegistersInfo in src/coreclr/vm/methodtable.cpp.
+    bool TryGetFpStructInRegistersClassification(ITypeHandle typeHandle, out FpStructInRegistersClassification classification) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
     bool IsContinuationWithoutMetadata(ITypeHandle typeHandle) => throw new NotImplementedException();
     /// <summary>

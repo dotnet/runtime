@@ -193,6 +193,7 @@ On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` u
 | `InterpMethodContextFrame` | `Stack` | `pointer` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
 | `InterpreterFrame` | `IsFaulting` | `uint8` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include CONTEXT_EXCEPTION_ACTIVE so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
 | `InterpreterFrame` | `TopInterpMethodContextFrame` | `pointer` | Pointer to the InterpreterFrame's top InterpMethodContextFrame |
+| `InterpreterFrame` | `Continuation` | `pointer` | Runtime-async continuation object held by the frame; its address is reported as a GC root |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
 | `MethodDesc` | `Flags` | `uint16` | The method's flags |
 | `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
@@ -317,6 +318,8 @@ This produces three frames in order: C, B, A (innermost to outermost).
 When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and sets the Frame iterator to that Frame's `Next`, so the same frames are not walked twice. If the first-argument register is null or does not name an `InterpreterFrame`, the walk fails (native asserts both).
 
 An interpreted P/Invoke pushes an active `InlinedCallFrame` whose `CallSiteSP` is the top `InterpMethodContextFrame` of the `InterpreterFrame` that immediately follows it (native `InlinedCallFrame::IsInInterpreter`). When the walker reaches such a Frame, it moves to that `InterpreterFrame` without updating the context; the `InterpreterFrame` then switches into the interpreted chain.
+
+The caller context of an interpreted frame (used for caller SPs, funclet parent lookup and the unwound-by-exception checks) mirrors native `VirtualUnwindInterpreterCallFrame`: it is the parent `InterpMethodContextFrame` when there is one, otherwise a non-managed IP with the owning `InterpreterFrame` as SP. Interpreted EH funclets run in their own `InterpreterFrame`, whose address the runtime records as the `ExInfo`'s `CSFEHClause`, so a funclet's caller SP identifies its clause the same way as for compiled code. An interpreted IP is a funclet when it falls in an EH clause's handler or filter range (native `InterpreterJitManager::GetFuncletStartAddress`).
 
 
 #### Simple Example
@@ -832,7 +835,7 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 **Managed (frameless) frames** use `EnumGcRefsForManagedFrame`:
 
 1. Get the code block handle and relative offset from the `ExecutionManager` contract.
-2. Decode the GCInfo for the code block via the `GCInfo` contract.
+2. Decode the GCInfo for the code block via the `GCInfo` contract, with the interpreter encoding for interpreted code and the platform encoding otherwise. Interpreted stack slots are always frame-register relative, where the frame pointer is the `InterpMethodContextFrame`'s `Stack`. A slot at or above the `Stack` of an active callee (`NextPtr` with a non-null `Ip`) belongs to the callee and is not reported.
 3. Determine `GcSlotEnumerationOptions`: set `IsActiveFrame` if this is the leaf frame (`IsFirst`), `IsExecutionAborted` if the frame was interrupted, `IsParentOfFuncletStackFrame` if funclet GC reporting was delegated to the parent, `SuppressUntrackedSlots` if the code block is a filter funclet.
 4. **Catch handler offset override**: When `ShouldParentFrameUseUnwindTargetPCforGCReporting` is set (parent frame resuming from a catch handler), the GC liveness offset is overridden to the first interruptible point within the catch handler clause range. This uses `GetInterruptibleRanges` from the `GCInfo` contract. See [How EH affects GC info/reporting](../coreclr/botr/clr-abi.md#how-eh-affects-gc-inforeporting) for background on why this override is needed.
 5. Call `GcInfoDecoder.EnumerateLiveSlots` with the computed offset and flags to report all live register and stack slots. See the [GCInfo contract — EnumerateLiveSlots](./GCInfo.md#enumerateliveslots) for details on the algorithm.
@@ -842,6 +845,7 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 - **StubDispatchFrame / ExternalMethodFrame**: Resolve GCRefMap via `FindGCRefMap` using the frame's `Indirection` pointer, otherwise fall back to signature-based scanning.
 - **DynamicHelperFrame**: Use flag-based scanning (`DynamicHelperFrameFlags`).
 - **PrestubMethodFrame / CallCountingHelperFrame**: Read `MethodDesc.CodeData` from the frame's `MethodDescPtr`, then use `MethodDescCodeData.GCRefMap` if both pointers are non-null. If no map is available, use signature-based scanning.
+- **InterpreterFrame**: Report the address of the frame's `Continuation` field.
 - Other frame types: No GC roots to report.
 
 See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) uses `CallingConvention.TryComputeArgGCRefMapBlob`. If the target data does not provide enough signature layout information, the frame is marked as deferred.

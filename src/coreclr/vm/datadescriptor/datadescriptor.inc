@@ -1312,6 +1312,7 @@ CDAC_TYPE_BEGIN(InterpreterFrame)
 CDAC_TYPE_INDETERMINATE(InterpreterFrame)
 CDAC_TYPE_FIELD(InterpreterFrame, T_POINTER, TopInterpMethodContextFrame, cdac_data<InterpreterFrame>::TopInterpMethodContextFrame)
 CDAC_TYPE_FIELD(InterpreterFrame, T_BOOL, IsFaulting, cdac_data<InterpreterFrame>::IsFaulting)
+CDAC_TYPE_FIELD(InterpreterFrame, T_POINTER, Continuation, cdac_data<InterpreterFrame>::Continuation)
 CDAC_TYPE_END(InterpreterFrame)
 #endif // FEATURE_INTERPRETER
 

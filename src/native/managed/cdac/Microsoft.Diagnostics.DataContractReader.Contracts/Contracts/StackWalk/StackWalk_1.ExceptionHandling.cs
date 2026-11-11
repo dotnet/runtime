@@ -46,8 +46,7 @@ internal partial class StackWalk_1 : IStackWalk
         StackDataFrameHandle handle,
         bool forGCReporting = false)
     {
-        IPlatformAgnosticContext callerContext = handle.Context.Clone();
-        callerContext.Unwind(_target);
+        IPlatformAgnosticContext callerContext = GetCallerContext(handle.Context);
         TargetPointer callerStackFrame = callerContext.StackPointer;
 
         bool isFilterFunclet = IsFilterFunclet(handle);
@@ -70,9 +69,7 @@ internal partial class StackWalk_1 : IStackWalk
                 else
                 {
                     // ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet
-                    IPlatformAgnosticContext callerCallerContext = callerContext.Clone();
-                    callerCallerContext.Unwind(_target);
-                    return callerCallerContext.StackPointer;
+                    return CallerStackPointer(callerContext);
                 }
             }
         }
@@ -199,9 +196,7 @@ internal partial class StackWalk_1 : IStackWalk
         TargetPointer callerStackPointer;
         if (handle.State is StackWalkState.Frameless)
         {
-            IPlatformAgnosticContext callerContext = handle.Context.Clone();
-            callerContext.Unwind(_target);
-            callerStackPointer = callerContext.StackPointer;
+            callerStackPointer = CallerStackPointer(handle);
         }
         else
         {
