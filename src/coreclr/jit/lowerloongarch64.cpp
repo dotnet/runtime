@@ -294,7 +294,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size)))
     {
         addr->SetContained();
         return;
@@ -373,7 +373,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 
         // Codegen supports containment of local addresses under BLKs.
         if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr() &&
-            IsContainableLclAddr(src->AsBlk()->Addr()->AsLclFld(), src->AsBlk()->Size()))
+            IsContainableLclAddr(src->AsBlk()->Addr()->AsLclFld(), src->AsBlk()->ValueSize()))
         {
             // TODO-LOONGARCH64-CQ: support containment of LCL_ADDR with non-zero offset too.
             MakeSrcContained(src, src->AsBlk()->Addr());
@@ -582,7 +582,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->ValueSize()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
