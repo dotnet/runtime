@@ -68,7 +68,7 @@ AdjustContextForVirtualStub(
     PCODE f_IP = GetIP(pContext);
 
     StubCodeBlockKind sk;
-    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    VirtualCallStubManager::FindStubManager(f_IP, &sk);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
@@ -119,10 +119,8 @@ AdjustContextForVirtualStub(
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
         DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
-        MethodTable *pMT = (MethodTable*)holder->stub()->expectedMT();
-        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, f_IP, sk));
-        MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
-        stackArgumentsSize = pMD->SizeOfArgStack();
+        ResolveHolder *resolveHolder = ResolveHolder::FromFailEntry(holder->stub()->failTarget());
+        stackArgumentsSize = resolveHolder->stub()->stackArgumentsSize();
     }
     else
     {

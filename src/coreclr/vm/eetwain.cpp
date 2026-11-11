@@ -1823,7 +1823,7 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
 EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
-#ifdef TARGET_AMD64
+#ifdef TARGET_64BIT
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 #else
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
@@ -1881,7 +1881,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
         // it will retrieve the framepointer for accessing the locals in the parent
         // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
-#ifdef TARGET_AMD64
+#ifdef TARGET_64BIT
                                        pRD->pCurrentContext,
 #else
                                        GetFP(pRD->pCurrentContext),
