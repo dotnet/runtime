@@ -810,6 +810,7 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
@@ -820,6 +821,7 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )

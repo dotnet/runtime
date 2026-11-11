@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RollForward>Major</RollForward>
+    <IsPackable>false</IsPackable>
+    <!-- The linked Program.cs has the CLI's Main, so the test SDK must not generate a second entry point. -->
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" />
+  </ItemGroup>
+
+  <!-- Link the CLI so it can be tested without referencing the self-contained executable project. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\ilasm\IlasmRootCommand.cs" Link="IlasmRootCommand.cs" />
+    <Compile Include="..\..\src\ilasm\NativeCommandLine.cs" Link="NativeCommandLine.cs" />
+    <Compile Include="..\..\src\ilasm\OutputFileWriter.cs" Link="OutputFileWriter.cs" />
+    <Compile Include="..\..\src\ilasm\Program.cs" Link="Program.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\ILAssembler.Tests\DocumentCompilerTestHelpers.cs" Link="DocumentCompilerTestHelpers.cs" />
+    <Compile Include="..\ILAssembler.Tests\GeneratedCases\PdbCaseGenerator.cs" Link="GeneratedCases\PdbCaseGenerator.cs" />
+    <Compile Include="..\ILAssembler.Tests\PortablePdbTestReader.cs" Link="PortablePdbTestReader.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\TypeSystem\IL\ILOpcode.cs" Link="IL\ILOpcode.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\TypeSystem\IL\ILOpcodeHelper.cs" Link="IL\ILOpcodeHelper.cs" />
+  </ItemGroup>
+
+</Project>
