@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-openbsd;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-openbsd;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
@@ -20,7 +20,10 @@
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseAppleCrypto>
     <UseManagedNtlm Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseManagedNtlm>
-    <DefineConstants Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
+    <!-- Platforms with no TLS or GSSAPI provider. The public surface is built normally, but SslStream, NegotiateStream
+         and NegotiateAuthentication are backed by unsupported PALs. -->
+    <UseUnsupportedTls Condition="'$(TargetPlatformIdentifier)' == 'wasi'">true</UseUnsupportedTls>
+    <DefineConstants Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true' or '$(UseUnsupportedTls)' == 'true'">$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
 
@@ -68,25 +71,25 @@
     <Compile Include="System\Net\Security\SslStream.IO.cs" />
     <Compile Include="System\Net\Security\SslStream.Protocol.cs" />
     <Compile Include="System\Net\Security\SslStream.TlsSessionWedge.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'" />
     <Compile Include="System\Net\Security\SslStream.NoTlsSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' == '' or '$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' == '' or '$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true' or '$(UseUnsupportedTls)' == 'true'" />
     <Compile Include="System\Net\Security\TlsContext.cs" />
     <Compile Include="System\Net\Security\TlsContext.OpenSsl.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.OpenSsl.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'" />
     <Compile Include="System\Net\Security\TlsOperationStatus.cs" />
     <Compile Include="System\Net\Security\TlsSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'" />
     <Compile Include="System\Net\Security\TlsBufferSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'" />
     <Compile Include="System\Net\Security\TlsSocketSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'" />
     <Compile Include="System\Net\Security\TlsSession.OpenSsl.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'" />
     <Compile Include="System\Net\Security\TlsSession.Stub.cs"
-             Condition="'$(TargetPlatformIdentifier)' == '' or '$(UseAndroidCrypto)' == 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' == '' or '$(UseAndroidCrypto)' == 'true' or '$(UseUnsupportedTls)' == 'true'" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />
@@ -158,7 +161,7 @@
     </Compile>
     <None Include="System\Net\Security\TlsCipherSuiteNameParser.ttinclude" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseUnsupportedTls)' != 'true'">
     <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -303,7 +306,7 @@
              Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseUnsupportedTls)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -324,7 +327,7 @@
     <Compile Include="System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseManagedNtlm)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseManagedNtlm)' != 'true' and '$(UseUnsupportedTls)' != 'true'">
     <Compile Include="System\Net\NegotiateAuthenticationPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\KerberosPacLogonInfo.cs"
              Link="Common\System\Net\Security\KerberosPacLogonInfo.cs" />
@@ -346,7 +349,7 @@
     <Compile Include="System\Net\NegotiateAuthenticationPal.Managed.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseUnsupportedTls)' != 'true'">
     <Compile Include="System\Net\NegotiateAuthenticationPal.ManagedNtlm.cs" />
     <Compile Include="System\Net\NegotiateAuthenticationPal.ManagedSpnego.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
@@ -357,7 +360,7 @@
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true' and '$(UseUnsupportedTls)' != 'true'">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Unix.cs" />
@@ -446,6 +449,20 @@
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Android.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(UseUnsupportedTls)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
+    <Compile Include="System\Net\CertificateValidationPal.Unsupported.cs" />
+    <Compile Include="System\Net\NegotiateAuthenticationPal.UnsupportedPlatform.cs" />
+    <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Unsupported.cs" />
+    <Compile Include="System\Net\Security\Pal.Unsupported\SafeDeleteSslContext.cs" />
+    <Compile Include="System\Net\Security\SslStreamCertificateContext.Unsupported.cs" />
+    <Compile Include="System\Net\Security\SslStreamPal.Unsupported.cs" />
+    <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
@@ -513,7 +530,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseUnsupportedTls)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.StackTrace\src\System.Diagnostics.StackTrace.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Numerics\src\System.Runtime.Numerics.csproj" />

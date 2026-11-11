@@ -57,6 +57,12 @@ namespace System.Net.Http
 
         public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
         {
+            if (OperatingSystem.IsWasi())
+            {
+                // There is no TLS provider on WASI; this also lets the trimmer drop the handshake code.
+                throw new PlatformNotSupportedException();
+            }
+
             sslOptions = SetUpRemoteCertificateValidationCallback(sslOptions, request);
 
             SslStream sslStream = new SslStream(stream);

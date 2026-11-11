@@ -837,6 +837,12 @@ namespace System
         private static bool GetIsTlsSupported()
         {
 #if NET
+            // WASI builds System.Net.Security so the options types work, but has no TLS provider.
+            if (IsWasi)
+            {
+                return false;
+            }
+
             // Probe rather than check the platform, so that platforms which only support TLS
             // through an optional runtime feature report the capability correctly.
             try
