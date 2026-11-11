@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Translation of hardware exception signals to Win32 exception codes, shared by the CoreCLR PAL and NativeAOT.
-// The including file must provide the EXCEPTION_* codes.
 
 #ifndef _EXCEPTION_CODE_FOR_SIGNAL_H_
 #define _EXCEPTION_CODE_FOR_SIGNAL_H_
 
 #include <signal.h>
 #include <stdint.h>
+
+#include "ExceptionCodes.h"
 
 // Returns the exception code for a SIGSEGV with SI_KERNEL code, or 0 to report an access violation.
 typedef uint32_t (*SiKernelSegvExceptionCodeCallback)(const void* context);

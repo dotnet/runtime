@@ -390,66 +390,9 @@ bool Xstate_IsAvx512Supported()
     return Xstate_Avx512Supported == 1;
 #endif
 }
-
-bool Xstate_IsApxSupported()
-{
-#if !defined(HOST_AMD64) || defined(TARGET_OSX)
-    // APX is AMD64 only and not supported on macOS.
-    return false;
-#else
-    static int Xstate_ApxSupported = -1;
-
-    if (Xstate_ApxSupported == -1)
-    {
-        int cpuidInfo[4];
-
-        const int CPUID_EAX = 0;
-        const int CPUID_EBX = 1;
-        const int CPUID_ECX = 2;
-        const int CPUID_EDX = 3;
-
-#ifdef _DEBUG
-        // We should only be calling this function if we know the extended feature exists
-        __cpuid(cpuidInfo, 0x00000000);
-        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) >= 0x0D);
-#endif // _DEBUG
-
-        __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
-
-        if ((cpuidInfo[CPUID_EAX] & XSTATE_MASK_APX) == XSTATE_MASK_APX)
-        {
-            // Knight's Landing and Knight's Mill shipped without all 5 of the "baseline"
-            // AVX-512 ISAs that are required by x86-64-v4. Specifically they do not include
-            // BW, DQ, or VL. RyuJIT currently requires all 5 ISAs to be present so we will
-            // only enable Avx512 context save/restore when all exist. This requires us to
-            // query which ISAs are actually supported to ensure they're all present.
-
-            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-
-            const int requiredApxFlags = (1 << 21);
-
-            if ((cpuidInfo[CPUID_EDX] & requiredApxFlags) == requiredApxFlags)
-            {
-                Xstate_ApxSupported = 1;
-            }
-        }
-
-        if (Xstate_ApxSupported == -1)
-        {
-            Xstate_ApxSupported = 0;
-        }
-    }
-
-    return Xstate_ApxSupported == 1;
-#endif
-}
 #endif // XSTATE_SUPPORTED || defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS)
 
 #if !HAVE_MACH_EXCEPTIONS
-
-#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64)
-Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
-#endif // XSTATE_SUPPORTED && HOST_AMD64
 
 /*++
 Function:

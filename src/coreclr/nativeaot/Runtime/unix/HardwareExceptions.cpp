@@ -25,33 +25,6 @@
 #error Cannot handle hardware exceptions on this platform
 #endif
 
-#define EXCEPTION_ACCESS_VIOLATION          0xC0000005u
-#define EXCEPTION_DATATYPE_MISALIGNMENT     0x80000002u
-#define EXCEPTION_BREAKPOINT                0x80000003u
-#define EXCEPTION_SINGLE_STEP               0x80000004u
-#define EXCEPTION_ARRAY_BOUNDS_EXCEEDED     0xC000008Cu
-#define EXCEPTION_FLT_DENORMAL_OPERAND      0xC000008Du
-#define EXCEPTION_FLT_DIVIDE_BY_ZERO        0xC000008Eu
-#define EXCEPTION_FLT_INEXACT_RESULT        0xC000008Fu
-#define EXCEPTION_FLT_INVALID_OPERATION     0xC0000090u
-#define EXCEPTION_FLT_OVERFLOW              0xC0000091u
-#define EXCEPTION_FLT_STACK_CHECK           0xC0000092u
-#define EXCEPTION_FLT_UNDERFLOW             0xC0000093u
-#define EXCEPTION_INT_DIVIDE_BY_ZERO        0xC0000094u
-#define EXCEPTION_INT_OVERFLOW              0xC0000095u
-#define EXCEPTION_PRIV_INSTRUCTION          0xC0000096u
-#define EXCEPTION_IN_PAGE_ERROR             0xC0000006u
-#define EXCEPTION_ILLEGAL_INSTRUCTION       0xC000001Du
-#define EXCEPTION_NONCONTINUABLE_EXCEPTION  0xC0000025u
-#define EXCEPTION_STACK_OVERFLOW            0xC00000FDu
-#define EXCEPTION_INVALID_DISPOSITION       0xC0000026u
-#define EXCEPTION_GUARD_PAGE                0x80000001u
-#define EXCEPTION_INVALID_HANDLE            0xC0000008u
-
-#define EXCEPTION_CONTINUE_EXECUTION (-1)
-#define EXCEPTION_CONTINUE_SEARCH (0)
-#define EXCEPTION_EXECUTE_HANDLER (1)
-
 #include <unix/ExceptionCodeForSignal.h>
 #ifdef HOST_AMD64
 #include <amd64/DivInstructionDecoder.h>
@@ -67,8 +40,7 @@ static PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
 // Check if a division by zero exception is in fact a division overflow.
 bool IsDivByZeroAnIntegerOverflow(void* context)
 {
-    // The APX extended registers R16..R31 are not read from the signal context.
-    return DivInstructionHasNonZeroDivisor</* DecodeApx */ false>(
+    return DivInstructionHasNonZeroDivisor(
         (uint8_t*)GetPC(context),
         [context](uint32_t index) { return GetRegisterValueByIndex(context, index); });
 }

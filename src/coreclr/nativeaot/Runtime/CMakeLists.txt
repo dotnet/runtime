@@ -393,6 +393,10 @@ if (CLR_CMAKE_TARGET_UNIX)
 
   if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DUNIX_AMD64_ABI)
+    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
+      # Currently the _xstate is not available on Alpine Linux
+      add_definitions(-DXSTATE_SUPPORTED)
+    endif()
   elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     add_definitions(-DUNIX_ARM_ABI)
   endif()

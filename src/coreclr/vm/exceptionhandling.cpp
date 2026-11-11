@@ -901,7 +901,7 @@ Return value :
 --*/
 bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 {
-    return DivInstructionHasNonZeroDivisor</* DecodeApx */ true>(
+    return DivInstructionHasNonZeroDivisor(
         (uint8_t*)GetIP(pContext),
         [pContext](uint32_t index) { return (uint64_t)GetRegisterValueByIndex(pContext, index); });
 }

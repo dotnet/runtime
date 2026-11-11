@@ -244,13 +244,12 @@ inline uint8_t SkipPrefixes(uint8_t **ip, bool* hasOpSizePrefix)
 // processor generates the same exception for division by zero and division
 // overflow, so a division by zero exception with a non-zero divisor is an overflow.
 // Parameters:
-//  DecodeApx :             true to decode the APX REX2 and EVEX prefixes; getRegister must then
-//                          accept indices 16..31 for R16..R31
 //  uint8_t* ip :           address of the faulting instruction
-//  getRegister :           callable returning the value of the register with the given index
+//  getRegister :           callable returning the value of the register with the given index;
+//                          indices 16..31 (R16..R31) are only used by APX encoded instructions
 // Return value :
 //  true if the divisor is non-zero, i.e. the division error was an overflow
-template <bool DecodeApx, typename TGetRegister>
+template <typename TGetRegister>
 bool DivInstructionHasNonZeroDivisor(uint8_t* ip, TGetRegister getRegister)
 {
     uint8_t rex = 0;
@@ -267,7 +266,7 @@ bool DivInstructionHasNonZeroDivisor(uint8_t* ip, TGetRegister getRegister)
     //   P0[2:0] = mmm (map: 100 = map 4 for legacy promoted)
     //   P1[7]   = W (operand size, not inverted)
     //   P1[1:0] = pp (00=none, 01=66, 10=F3, 11=F2)
-    if (DecodeApx && (code == 0x62))
+    if (code == 0x62)
     {
         uint8_t p0 = *ip++;
         uint8_t p1 = *ip++;
@@ -307,7 +306,7 @@ bool DivInstructionHasNonZeroDivisor(uint8_t* ip, TGetRegister getRegister)
     //   M    = map select (0 = map 0, 1 = map 1)
     //   Bits [3:0] = W:R3:X3:B3 (same layout as REX lower 4 bits)
     //   Bits [6:4] = R4:X4:B4 (extend register indices to 5 bits)
-    else if (DecodeApx && (code == 0xD5))
+    else if (code == 0xD5)
     {
         uint8_t payload = *ip++;
 

@@ -13,6 +13,7 @@
 #include "NativeContext.h"
 
 #include <unix/NativeContextRegs.h>
+#include <unix/NativeContextXstate.h>
 
 #if defined(HOST_AMD64)
 #define ASSIGN_CONTROL_REGS \
@@ -163,6 +164,7 @@ void RedirectNativeContext(void* context, const PAL_LIMITED_CONTEXT* palContext,
 //                   Rsp = 4, Rbp = 5, Rsi = 6, Rdi = 7
 //                   R8  = 8, R9  = 9, R10 = 10, R11 = 11
 //                   R12 = 12, R13 = 13, R14 = 14, R15 = 15
+//                   R16..R31 = 16..31 when the context contains APX state
 uint64_t GetRegisterValueByIndex(void* context, uint32_t index)
 {
     ucontext_t *nativeContext = (ucontext_t*)context;
@@ -201,6 +203,16 @@ uint64_t GetRegisterValueByIndex(void* context, uint32_t index)
         case 15:
             return MCREG_R15(MCONTEXT_FROM_NATIVE(nativeContext));
     }
+
+#ifdef XSTATE_SUPPORTED
+    if ((index < 32) && FPREG_HasApxRegisters(nativeContext))
+    {
+        uint32_t size;
+        uint64_t* egpr = (uint64_t*)FPREG_Xstate_Egpr(nativeContext, &size);
+        ASSERT(size >= 16 * sizeof(uint64_t));
+        return egpr[index - 16];
+    }
+#endif // XSTATE_SUPPORTED
 
     ASSERT(false);
     return 0;
