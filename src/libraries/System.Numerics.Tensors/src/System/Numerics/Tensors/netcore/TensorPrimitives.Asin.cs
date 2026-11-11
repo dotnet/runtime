@@ -8,7 +8,7 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise angle in radians whose sine is the specifed number.</summary>
+        /// <summary>Computes the element-wise angle in radians whose sine is the specified number.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>

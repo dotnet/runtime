@@ -259,7 +259,7 @@ char* RstrA(unsigned n, unsigned codepage)
     WCHAR* wz = RstrW(n);
     // Unicode -> UTF-8
     memset(buff,0,sizeof(buff));
-    if(!WideCharToMultiByte(codepage,0,(LPCWSTR)wz,-1,buff,sizeof(buff),NULL,NULL))
+    if(!minipal_convert_utf16_to_utf8((const CHAR16_T*)wz,u16_strlen(wz)+1,buff,sizeof(buff),0))
         buff[0] = 0;
     return buff;
 }
@@ -3088,7 +3088,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if (chName)
         {
             char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-            WideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
+            minipal_convert_utf16_to_utf8((const CHAR16_T*)wzArgName,u16_strlen(wzArgName)+1,sz,UNIBUF_SIZE,0);
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s",ProperName(sz));
         }
         CHECK_REMAINING_SIZE;
@@ -3156,7 +3156,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                     //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
                     //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
                     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-                    WideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
+                    minipal_convert_utf16_to_utf8((const CHAR16_T*)wzArgName,u16_strlen(wzArgName)+1,sz,UNIBUF_SIZE,0);
                     szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s ",ProperName(sz));
                 }
                 else
@@ -3224,7 +3224,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                         if (chName > 0)
                         {
                             char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE / 2]);
-                            WideCharToMultiByte(CP_UTF8, 0, wzArgName, -1, sz, UNIBUF_SIZE, NULL, NULL);
+                            minipal_convert_utf16_to_utf8((const CHAR16_T*)wzArgName, u16_strlen(wzArgName) + 1, sz, UNIBUF_SIZE, 0);
                             szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), "  %s", ProperName(sz));
                         }
                         else
@@ -5820,7 +5820,7 @@ void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
     TableSeenReset();
     metaSize = 0;
 
-    sprintf_s(szString,SZSTRING_SIZE,"// File size            : %d", fileSize = SafeGetFileSize(g_pPELoader->getHFile(), NULL));
+    sprintf_s(szString,SZSTRING_SIZE,"// File size            : %d", fileSize = (int)g_pPELoader->getFileSize());
     printLine(GUICookie,szStr);
 
     if (g_pPELoader->IsPE32())
@@ -6764,7 +6764,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
 
     DumpMI((char*)GUICookie); // initialize the print function for DumpMetaInfo
 
-    if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
+    if(pch && (!u16_stricmp(pch+1,W("lib")) || !u16_stricmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
         if (SUCCEEDED(CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
@@ -6775,7 +6775,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
                 int nLength = (int) strlen(pszObjFileName)+1;
                 pwzObjFileName = new WCHAR[nLength];
                 memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
-                MultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
+                minipal_convert_utf8_to_utf16(pszObjFileName,strlen(pszObjFileName)+1,(CHAR16_T*)pwzObjFileName,nLength,0);
             }
             DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
             g_pDisp->Release();
@@ -7214,9 +7214,9 @@ BOOL DumpFile()
     }
 
     memset(wzInputFileName,0,sizeof(WCHAR)*MAX_FILENAME_LENGTH);
-    MultiByteToWideChar(CP_UTF8,0,pszFilename,-1,wzInputFileName,MAX_FILENAME_LENGTH);
+    minipal_convert_utf8_to_utf16(pszFilename,strlen(pszFilename)+1,(CHAR16_T*)wzInputFileName,MAX_FILENAME_LENGTH,0);
     memset(szFilenameANSI,0,MAX_FILENAME_LENGTH*3);
-    WideCharToMultiByte(g_uConsoleCP,0,wzInputFileName,-1,szFilenameANSI,MAX_FILENAME_LENGTH*3,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wzInputFileName,u16_strlen(wzInputFileName)+1,szFilenameANSI,MAX_FILENAME_LENGTH*3,0);
         fSuccess = g_pPELoader->open(wzInputFileName);
 
     if (fSuccess == FALSE)
@@ -7566,7 +7566,7 @@ ReportAndExit:
         {
             WCHAR wzResFileName[2048], *pwc;
             memset(wzResFileName,0,sizeof(wzResFileName));
-            MultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
+            minipal_convert_utf8_to_utf16(g_szOutputFile,strlen(g_szOutputFile)+1,(CHAR16_T*)wzResFileName,2048,0);
             pwc = (WCHAR*)u16_strrchr(wzResFileName,L'.');
             if(pwc == NULL) pwc = &wzResFileName[u16_strlen(wzResFileName)];
             wcscpy_s(pwc, 2048 - (pwc - wzResFileName), L".res");

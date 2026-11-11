@@ -241,7 +241,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Trim support for line number in stack traces by default -->
     <PropertyGroup>
-      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == '' and ('$(StackTraceSupport)' == 'false' or '$(DebugSymbols)' != 'true')">false</StackTraceLineNumberSupport>
+      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == '' and ('$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(StackTraceSupport)' == 'false' or '$(DebugSymbols)' != 'true')">false</StackTraceLineNumberSupport>
     </PropertyGroup>
     <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
       <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
@@ -1023,10 +1023,24 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Publish targets and output directory messages start here -->
 
-  <!-- Make sure that ResolveAssemblyReferences runs early enough to ensure satellite assemblies are populated in the ResolvedFilesToPublish -->
+  <!-- Resolve satellite assemblies and runtime feature switches before trimming, including publishing without a build. -->
   <Target Name="_WasmPrepareForPublish"
-    DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences"
+    DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences;_ResolveWasmPublishConfiguration"
     BeforeTargets="PrepareForPublish" />
+
+  <!-- Native-only nested publishes must not initialize boot configuration or its shared incremental outputs. -->
+  <Target Name="_ResolveWasmPublishConfiguration"
+    DependsOnTargets="_ResolveWasmConfiguration"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <!-- Direct MSBuild publish does not set _IsPublishing, and build may have already resolved configuration. -->
+    <PropertyGroup>
+      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == ''">false</StackTraceLineNumberSupport>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
+      <RuntimeHostConfigurationOption Remove="System.Diagnostics.StackTrace.IsLineNumberSupported" />
+      <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="_PrintWasmBrowserPublishOutputDirectory" AfterTargets="Publish" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <Message Importance="High" Text="$(MSBuildProjectName) (wwwroot) -&gt; $([MSBuild]::NormalizeDirectory('$(PublishDir)', 'wwwroot'))" />

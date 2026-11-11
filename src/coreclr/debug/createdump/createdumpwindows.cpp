@@ -27,7 +27,7 @@ CreateDump(const CreateDumpOptions& options)
     _ASSERTE(options.CreateDump);
     _ASSERTE(!options.CrashReport);
 
-    AStringHolder pszName = new char[MAX_LONGPATH + 1];
+    AStringHolder pszName(new char[MAX_LONGPATH + 1]);
     char pathName[MAX_DUMP_PATH];
     std::string dumpPath;
 

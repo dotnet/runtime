@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     ///         <item>
     ///             <term>relative paths</term>
     ///             <description>
-    ///             '../shared/*' - all files in a diretory named 'shared' at the sibling level to the base directory given
+    ///             '../shared/*' - all files in a directory named 'shared' at the sibling level to the base directory given
     ///             to <see cref="Execute(DirectoryInfoBase)" />
     ///             </description>
     ///         </item>

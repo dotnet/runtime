@@ -201,6 +201,29 @@ enum ICodeManagerFlags
 
 #include "gcinfotypes.h"
 
+namespace BitOperations
+{
+    FORCEINLINE UINT32 TrailingZeroCount(size_t value)
+    {
+        _ASSERTE(value != 0);
+#if defined(_MSC_VER)
+        unsigned long result;
+#if defined(HOST_64BIT)
+        ::_BitScanForward64(&result, value);
+#else
+        ::_BitScanForward(&result, value);
+#endif
+        return static_cast<UINT32>(result);
+#else
+#if defined(HOST_64BIT)
+        return static_cast<UINT32>(__builtin_ctzll(value));
+#else
+        return static_cast<UINT32>(__builtin_ctz(value));
+#endif
+#endif
+    }
+}
+
 #ifdef _DEBUG
     #define MAX_PREDECODED_SLOTS  4
 #else
@@ -345,6 +368,55 @@ public:
         m_current >>= 1;
 
         return result;
+    }
+
+    // Reads up to the remaining bits in the current word (at most maxBits and at most BITS_PER_SIZE_T).
+    // Returns the read bits in the low bits of the result and sets bitsRead to the number of bits consumed.
+    FORCEINLINE size_t ReadWord(UINT32 maxBits, UINT32& bitsRead)
+    {
+        SUPPORTS_DAC;
+        _ASSERTE(maxBits > 0);
+
+        if (m_RelPos == BITS_PER_SIZE_T)
+        {
+            m_pCurrent++;
+            m_current = *m_pCurrent;
+            m_RelPos = 0;
+        }
+
+        UINT32 availBits = (UINT32)(BITS_PER_SIZE_T - m_RelPos);
+        UINT32 chunkBits = _min(maxBits, availBits);
+        bitsRead = chunkBits;
+
+        size_t mask = (chunkBits == BITS_PER_SIZE_T) ? ~(size_t)0 : ((size_t{ 1 } << chunkBits) - 1);
+        size_t result = m_current & mask;
+        m_current = (chunkBits == BITS_PER_SIZE_T) ? 0 : (m_current >> chunkBits);
+        m_RelPos += chunkBits;
+
+        return result;
+    }
+
+    // Counts consecutive zero bits up to the next set bit, consumes the zero bits and that set bit,
+    // and returns the number of zero bits skipped.
+    FORCEINLINE UINT32 SkipZerosAndReadOne()
+    {
+        SUPPORTS_DAC;
+
+        UINT32 skipped = 0;
+        while (m_current == 0)
+        {
+            skipped += (UINT32)(BITS_PER_SIZE_T - m_RelPos);
+            m_pCurrent++;
+            m_current = *m_pCurrent;
+            m_RelPos = 0;
+        }
+
+        UINT32 tz = BitOperations::TrailingZeroCount(m_current);
+        skipped += tz;
+        UINT32 consume = tz + 1;
+        m_RelPos += consume;
+        m_current = (consume == BITS_PER_SIZE_T) ? 0 : (m_current >> consume);
+        return skipped;
     }
 
 

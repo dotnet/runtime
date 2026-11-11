@@ -6879,6 +6879,13 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                            unsigned   simdSize,
                                            bool       reverseCond = false);
 
+#ifdef TARGET_ARM64
+    static NamedIntrinsic GetSveIntrinsicIdForBinOp(genTreeOps oper,
+                                                    GenTree*   op1,
+                                                    GenTree*   op2,
+                                                    var_types  simdBaseType);
+#endif
+
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
     genTreeOps GetOperForHWIntrinsicId(bool* isScalar, bool getEffectiveOp = false) const;
@@ -7703,7 +7710,7 @@ struct GenTreeIndexAddr : public GenTreeOp
     CORINFO_CLASS_HANDLE gtStructElemClass; // If the element type is a struct, this is the struct type.
 
     var_types gtElemType;   // The element type of the array.
-    unsigned  gtElemSize;   // size of elements in the array
+    ValueSize gtElemSize;   // size of elements in the array
     unsigned  gtLenOffset;  // The offset from the array's base address to its length.
     unsigned  gtElemOffset; // The offset from the array's base address to its first element.
 
@@ -7711,7 +7718,7 @@ struct GenTreeIndexAddr : public GenTreeOp
                      GenTree*             ind,
                      var_types            elemType,
                      CORINFO_CLASS_HANDLE structElemClass,
-                     unsigned             elemSize,
+                     ValueSize            elemSize,
                      unsigned             lenOffset,
                      unsigned             elemOffset,
                      bool                 boundsCheck)
@@ -7748,6 +7755,11 @@ struct GenTreeIndexAddr : public GenTreeOp
     bool IsNotNull() const
     {
         return IsBoundsChecked() || ((gtFlags & GTF_INX_ADDR_NONNULL) != 0);
+    }
+
+    unsigned GetElemSize()
+    {
+        return gtElemSize.GetExact();
     }
 };
 

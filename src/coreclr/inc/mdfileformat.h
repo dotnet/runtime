@@ -198,13 +198,13 @@ public:
     }
     inline LPCWSTR GetName(__inout_ecount (iMaxSize) LPWSTR szName, int iMaxSize)
     {
-        VERIFY(::MultiByteToWideChar(CP_ACP, 0, rcName, -1, szName, iMaxSize));
+        VERIFY(minipal_convert_utf8_to_utf16(rcName, strlen(rcName) + 1, (CHAR16_T*)szName, iMaxSize, 0));
         return (szName);
     }
     inline void SetName(LPCWSTR szName)
     {
-        int size;
-        size = WideCharToMultiByte(CP_ACP, 0, szName, -1, rcName, MAXSTREAMNAME, 0, 0);
+        size_t size;
+        size = minipal_convert_utf16_to_utf8((const CHAR16_T*)szName, u16_strlen(szName) + 1, rcName, MAXSTREAMNAME, 0);
         _ASSERTE(size > 0);
     }
 

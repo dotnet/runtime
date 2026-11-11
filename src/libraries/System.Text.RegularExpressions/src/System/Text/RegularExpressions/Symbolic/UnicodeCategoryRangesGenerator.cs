@@ -30,7 +30,7 @@ $@"// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This is a programmatically generated file from Regex.GenerateUnicodeTables.
-// It provides serialized BDD Unicode category definitions for System.Environment.Version = {Environment.Version}
+// It provides serialized BDD Unicode category definitions.
 
 using System.Globalization;
 

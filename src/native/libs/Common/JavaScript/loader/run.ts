@@ -28,7 +28,9 @@ let modulesAfterConfigLoadedCache: [JsAsset, Promise<any>][] = [];
 export function initializeLoaderConfig(): Promise<[JsAsset, Promise<any>][]> {
     return configInitialization ??= (async () => {
         await validateEngineFeatures();
-        await loaderCallbacks.configLoaded?.(loaderConfig);
+        for (const callback of [...loaderCallbacks.configLoaded]) {
+            await callback(loaderConfig);
+        }
         validateLoaderConfig();
         const modules: [JsAsset, Promise<any>][] = normalizeCollection(loaderConfig.resources!.modulesAfterConfigLoaded)
             .map(asset => [asset, callLibraryInitializerOnRuntimeConfigLoaded(asset)]);

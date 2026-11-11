@@ -46,6 +46,48 @@ test("worker boot metadata is cloneable while providers and module namespaces re
     assert.equal(source.resources.jsModuleRuntime[0].moduleExports, uiModule);
 });
 
+test("shared loader initialization snapshots ordered config callbacks and runs once across preload and create", async () => {
+    const source = await readFile(new URL("../libs/Common/JavaScript/loader/run.ts", import.meta.url), "utf8");
+    const declaration = source.match(/export function initializeLoaderConfig[\s\S]*?\n\}/)?.[0];
+    assert.ok(declaration);
+    const events = [];
+    const config = { resources: { modulesAfterConfigLoaded: [] } };
+    const late = () => events.push("late");
+    const callbacks = { configLoaded: [
+        async received => {
+            assert.equal(received, config);
+            events.push("first");
+            callbacks.configLoaded.push(late);
+            await Promise.resolve();
+            events.push("first-done");
+        },
+        () => events.push("second"),
+    ] };
+    const context = createContext({
+        console, loaderConfig: config, loaderCallbacks: callbacks, Module: {},
+        validateEngineFeatures: async () => events.push("validate-engine"),
+        validateLoaderConfig: () => events.push("validate-config"),
+        normalizeCollection: value => value ?? [],
+        callLibraryInitializerOnRuntimeConfigLoaded: () => {
+            throw new Error("Unexpected initializer");
+        },
+        initPolyfillsLoader: async () => events.push("polyfills"),
+    });
+    const output = ts.transpileModule("let configInitialization; let modulesAfterConfigLoadedCache;\n" + declaration,
+        { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
+    const module = new SourceTextModule(output, { context });
+    await module.link(() => {
+        throw new Error("Unexpected import");
+    });
+    await module.evaluate();
+    const first = module.namespace.initializeLoaderConfig();
+    const second = module.namespace.initializeLoaderConfig();
+    assert.equal(first, second);
+    await first;
+    await module.namespace.initializeLoaderConfig();
+    assert.deepEqual(events, ["validate-engine", "first", "first-done", "second", "validate-config", "polyfills"]);
+});
+
 test("worker errors preserve built-in type, stack, cause, status and aggregate members", async () => {
     const load = createWorkerModuleLoader(createContext({ structuredClone }), {});
     const module = await load("./worker-errors");
