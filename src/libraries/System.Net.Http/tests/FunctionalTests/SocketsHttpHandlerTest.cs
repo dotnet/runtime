@@ -497,8 +497,7 @@ namespace System.Net.Http.Functional.Tests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task NoCallback_RevokedCertificate_RevocationChecking_MatchesExpected(bool checkRevocation)
         {
-            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(
-                "localhost", forceRsaCertificate: true);
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates("localhost");
             pkiHolder.Intermediates[^1].Revoke(pkiHolder.EndEntity, pkiHolder.EndEntity.NotBefore);
 
             using HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
