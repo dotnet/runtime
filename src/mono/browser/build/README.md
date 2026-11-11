@@ -30,6 +30,9 @@ build rather than stable names or signature hashes. A generated string switch bi
 only the selected method. No managed preflight call or binder delegate is required.
 Async exports use their normal thread dispatch, including on the Mono UI thread.
 Legacy assemblies retain their existing registration path.
+Assemblies without a provider or legacy initializer return empty exports on both
+runtimes. Failed or reentrant binding releases unconsumed argument payloads without
+calling the generated wrapper; subsequent invocations can retry binding.
 Private and protected nested exports use managed unsafe accessors to their generated
 wrappers. Generic and file-local containing types retain the diagnostic and reflection fallback.
 Mono's implementation is limited to an internal unconditional, assembly-local

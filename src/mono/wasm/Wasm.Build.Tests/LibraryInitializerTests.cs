@@ -143,6 +143,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         string appGeneratedFile = Directory.GetFiles(Path.Combine(_projectDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
         Assert.Contains("JSExportProvider>(\"Library\")", File.ReadAllText(appGeneratedFile));
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports"));
+        Assert.Contains("Empty BCL exports passed", result.TestOutput);
         Assert.Contains("Mapped JSExports passed", result.TestOutput);
         Assert.Equal(
             new[] { "lazy:constructor", "lazy:discovered", "lazy:read", "lazy:bind", "lazy:first", "lazy:repeated" },

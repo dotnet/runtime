@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
@@ -59,6 +60,133 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public unsafe void FailedBindingReleasesUnconsumedPayloads(bool reentrant)
+        {
+            Type hostType = typeof(JSExportProvider).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSHostImplementation", throwOnError: true)!;
+            Type contextType = typeof(JSExportProvider).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext", throwOnError: true)!;
+            Type pendingType = contextType.GetNestedType("PendingJSExport", BindingFlags.NonPublic)!;
+            object context = contextType.GetMethod("AssertIsInteropThread", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
+            var provider = new PayloadFailureProvider("PayloadFailure", isAsync: false);
+            JSFunctionBinding signature = PayloadFailureProvider.CreateSignature(
+                [JSMarshalerType.Int32, JSMarshalerType.Object, JSMarshalerType.Span(JSMarshalerType.Byte)]);
+            object pending = Activator.CreateInstance(pendingType, BindingFlags.Instance | BindingFlags.NonPublic, null,
+                [provider, "0", provider.Name, 1, signature], null)!;
+            int handle = (int)contextType.GetMethod("AllocJSExportHandle", BindingFlags.Instance | BindingFlags.NonPublic, null, [pendingType], null)!.Invoke(context, [pending])!;
+            FieldInfo isBinding = pendingType.GetField("IsBinding", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            isBinding.SetValue(pending, reentrant);
+            PayloadFailureProvider.FreeSignature(signature);
+            MethodInfo bind = hostType.GetMethod("TryBindJSExport", BindingFlags.Static | BindingFlags.NonPublic)!;
+            JSMarshalerArgument* arguments = stackalloc JSMarshalerArgument[4];
+            Span<byte> borrowed = stackalloc byte[] { 17, 25 };
+            try
+            {
+                for (int attempt = 0; attempt < 2; attempt++)
+                {
+                    arguments[0].Initialize();
+                    arguments[1].Initialize();
+                    arguments[2].Initialize();
+                    arguments[3].Initialize();
+                    arguments[2].ToJS(new object[] { new byte[] { 1, 2, 3 }, "payload", new object[] { new int[] { 4, 5 } } });
+                    arguments[3].ToJS(borrowed);
+                    Assert.False((bool)bind.Invoke(null, [context, handle, Pointer.Box(arguments, typeof(JSMarshalerArgument*)), null])!);
+                    arguments[0].ToManaged(out Exception? error);
+                    Assert.Contains(reentrant ? "cannot be bound recursively" : "Payload binding failure", error!.Message);
+                    arguments[2].ToManaged(out object? payload);
+                    Assert.Null(payload);
+                    Assert.Equal(17, borrowed[0]);
+                    Assert.Equal(25, borrowed[1]);
+                }
+                Assert.Equal(reentrant ? 0 : 2, provider.BindAttempts);
+            }
+            finally
+            {
+                contextType.GetMethod("FreeJSExportHandle", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(context, [handle]);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task AllocatedArrayBindingFailureCanRetry(bool isAsync)
+        {
+            string assemblyName = "PayloadFailure" + Guid.NewGuid().ToString("N");
+            PayloadFailureProvider.Register(assemblyName, isAsync);
+            Assert.Equal(42, await JavaScriptTestHelper.InvokePayloadFailure(assemblyName, isAsync));
+        }
+
+        private sealed unsafe class PayloadFailureProvider(string assemblyName, bool isAsync, bool probeReentry = false) : JSExportProvider
+        {
+            internal string Name => $"[{assemblyName}]Payload:Invoke";
+            internal int BindAttempts;
+            public override ReadOnlySpan<string> GetExportNames() => new string[] { Name + "#1" };
+
+            public override void Bind(string methodId)
+            {
+                if (++BindAttempts <= 2)
+                    throw new InvalidOperationException("Payload binding failure");
+
+                if (probeReentry)
+                    JavaScriptTestHelper.ProbePayloadReentry(assemblyName);
+                JSFunctionBinding.BindManagedFunction(Name, 1,
+                    [isAsync ? JSMarshalerType.Task(JSMarshalerType.Int32) : JSMarshalerType.Int32, JSMarshalerType.Array(JSMarshalerType.Byte)],
+                    isAsync ? &InvokeAsync : &Invoke);
+                if (probeReentry)
+                    JavaScriptTestHelper.ProbePayloadReentry(assemblyName);
+            }
+
+            private static void Invoke(JSMarshalerArgument* arguments)
+            {
+                arguments[2].ToManaged(out byte[]? bytes);
+                arguments[1].ToJS(bytes![0] + bytes[1]);
+            }
+
+            private static void InvokeAsync(JSMarshalerArgument* arguments)
+            {
+                arguments[2].ToManaged(out byte[]? bytes);
+                arguments[1].ToJS(Task.FromResult(bytes![0] + bytes[1]),
+                    static (ref JSMarshalerArgument argument, int value) => argument.ToJS(value));
+            }
+
+            internal static JSFunctionBinding CreateSignature(ReadOnlySpan<JSMarshalerType> types) => GetMethodSignature(null, types, null, null);
+            internal static void FreeSignature(JSFunctionBinding signature) => FreeMethodSignatureBuffer(null, signature);
+
+            internal static void Register(string assemblyName, bool isAsync)
+            {
+                Type contextType = typeof(JSExportProvider).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext", throwOnError: true)!;
+                Type pendingType = contextType.GetNestedType("PendingJSExport", BindingFlags.NonPublic)!;
+                object context = contextType.GetMethod("AssertIsInteropThread", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
+                var provider = new PayloadFailureProvider(assemblyName, isAsync, probeReentry: true);
+                JSFunctionBinding signature = CreateSignature(
+                    [isAsync ? JSMarshalerType.Task(JSMarshalerType.Int32) : JSMarshalerType.Int32, JSMarshalerType.Array(JSMarshalerType.Byte)]);
+                try
+                {
+                    object pending = Activator.CreateInstance(pendingType, BindingFlags.Instance | BindingFlags.NonPublic, null,
+                        [provider, "0", provider.Name, 1, signature], null)!;
+                    int handle = (int)contextType.GetMethod("AllocJSExportHandle", BindingFlags.Instance | BindingFlags.NonPublic, null, [pendingType], null)!.Invoke(context, [pending])!;
+                    void* header = Pointer.Unbox(typeof(JSFunctionBinding).GetField("Header", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(signature)!);
+                    JavaScriptTestHelper.RegisterPayloadFailure(assemblyName, handle, header);
+                }
+                finally
+                {
+                    FreeSignature(signature);
+                }
+            }
+
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetMethodSignature")]
+            private static extern JSFunctionBinding GetMethodSignature(
+                [UnsafeAccessorType("System.Runtime.InteropServices.JavaScript.JSHostImplementation, System.Runtime.InteropServices.JavaScript")] object? target,
+                ReadOnlySpan<JSMarshalerType> types, string? functionName, string? moduleName);
+
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "FreeMethodSignatureBuffer")]
+            private static extern void FreeMethodSignatureBuffer(
+                [UnsafeAccessorType("System.Runtime.InteropServices.JavaScript.JSHostImplementation, System.Runtime.InteropServices.JavaScript")] object? target,
+                JSFunctionBinding signature);
+
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         public void PublicTypeMapStillFollowsAssemblyTargets()
         {

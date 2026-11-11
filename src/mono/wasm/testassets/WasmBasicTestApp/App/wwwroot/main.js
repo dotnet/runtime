@@ -352,6 +352,13 @@ try {
     switch (testCase) {
         case "MappedJSExports":
         case "DeferredJSExports": {
+            for (const assemblyName of ["System.Private.CoreLib", "System.Private.CoreLib.dll"]) {
+                const emptyExports = await getAssemblyExports(assemblyName);
+                if (Object.keys(emptyExports).length !== 0) {
+                    throw new Error(`Unexpected exports from ${assemblyName}`);
+                }
+            }
+            testOutput("Empty BCL exports passed");
             if (testCase === "DeferredJSExports") {
                 if (!await INTERNAL.loadLazyAssembly("Library.dll")) {
                     throw new Error("The exported library was not downloaded lazily");

@@ -595,6 +595,58 @@ export function registerRawExportCatalog(assemblyName, exportNames) {
     }
 }
 
+export function registerPayloadFailure(assemblyName, handle, signature) {
+    App.runtime.INTERNAL.registerLazyCsFunctions(assemblyName,
+        [`[${assemblyName}]Payload:Invoke#1`], [handle], [signature]);
+}
+
+const payloadReentryProbes = new Map();
+
+export function probePayloadReentry(assemblyName) {
+    payloadReentryProbes.get(assemblyName)();
+}
+
+export async function invokePayloadFailure(assemblyName, isAsync) {
+    const fn = (await App.runtime.getAssemblyExports(assemblyName)).Payload.Invoke;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        let failed = false;
+        try {
+            const result = fn(new Uint8Array([19, 23]));
+            if (isAsync) await result;
+        } catch (error) {
+            if (!error.message.includes("Payload binding failure")) throw error;
+            failed = true;
+        }
+        if (!failed) throw new Error("Binding failure did not propagate");
+    }
+    const pending = [];
+    let rejected = 0;
+    const checkReentryError = error => {
+        if (!error.message.includes("cannot be bound recursively")) throw error;
+        rejected++;
+    };
+    payloadReentryProbes.set(assemblyName, () => {
+        try {
+            const result = fn(new Uint8Array([1, 2]));
+            if (!isAsync) throw new Error("Reentrant call was not rejected");
+            pending.push(result.then(
+                () => { throw new Error("Async reentrant call was not rejected"); },
+                checkReentryError));
+        } catch (error) {
+            checkReentryError(error);
+        }
+    });
+    try {
+        const result = fn(new Uint8Array([19, 23]));
+        const value = isAsync ? await result : result;
+        await Promise.all(pending);
+        if (rejected !== 2) throw new Error(`Expected two reentry failures, got ${rejected}`);
+        return value;
+    } finally {
+        payloadReentryProbes.delete(assemblyName);
+    }
+}
+
 export async function inspectRawExportCatalog(assemblyName, typeName) {
     let scope = await App.runtime.getAssemblyExports(assemblyName);
     for (const part of typeName.replace(/\//g, ".").split(".")) {

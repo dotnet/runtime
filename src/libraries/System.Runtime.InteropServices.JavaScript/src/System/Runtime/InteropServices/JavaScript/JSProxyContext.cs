@@ -46,6 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
             internal readonly string FullyQualifiedName;
             internal readonly int SignatureHash;
             internal readonly JSFunctionBinding Signature;
+            internal readonly int ArgumentCount;
             internal bool IsBinding;
 
             internal PendingJSExport(JSExportProvider provider, string methodId, string fullyQualifiedName, int signatureHash, JSFunctionBinding signature)
@@ -55,6 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 FullyQualifiedName = fullyQualifiedName;
                 SignatureHash = signatureHash;
                 Signature = signature;
+                ArgumentCount = signature.ArgumentCount;
             }
         }
 

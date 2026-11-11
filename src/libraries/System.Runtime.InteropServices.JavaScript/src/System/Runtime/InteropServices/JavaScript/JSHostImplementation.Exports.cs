@@ -125,6 +125,11 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
+                if (entry is not null)
+                {
+                    for (int index = 0; index < entry.ArgumentCount; index++)
+                        arguments[index + 2].ReleaseJSExportArgument();
+                }
                 if (entry is not null && !wasBinding)
                     entry.Callback = null;
                 if (arguments[1].slot.Type == MarshalerType.TaskPreCreated)
