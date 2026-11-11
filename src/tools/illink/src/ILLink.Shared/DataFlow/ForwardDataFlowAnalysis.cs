@@ -188,7 +188,7 @@ namespace ILLink.Shared.DataFlow
             this.entryValue = entryValue;
         }
 
-        private void TransferOut(TTransfer transfer, TControlFlowGraph cfg, TBlock block, TState state,
+        private static void TransferOut(TTransfer transfer, TControlFlowGraph cfg, TBlock block, TState state,
             Action<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TValue> updateState
         )
         {
