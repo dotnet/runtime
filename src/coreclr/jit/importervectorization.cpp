@@ -29,6 +29,9 @@
 //   11) MemoryExtensions.EndsWith<char>(ROS<char>, ROS<char>)
 //   12) MemoryExtensions.EndsWith(ROS<char>, ROS<char>, Ordinal or OrdinalIgnoreCase)
 //
+//   13) str.Contains(char) when str is a constant string whose chars form
+//       a continuous range - folded into a range check
+//
 // When one of the arguments is a constant string of a [0..32] size so we can inline
 // a vectorized comparison against it using SWAR or SIMD techniques (e.g. via two V256 vectors)
 //
@@ -532,6 +535,141 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
         DISPTREE(unrolled)
     }
     return unrolled;
+}
+
+//------------------------------------------------------------------------
+// impStringLiteralContainsChar: Folds a `str.Contains(char value)` call when
+//    `str` is a constant string whose chars form a continuous range, e.g.
+//    "cdef", into `value >= 'c' && value <= 'f'` (represented as nested
+//    QMARKs), which optOptimizeRangeTests later folds into a single unsigned
+//    range check. In all other cases the call is left as-is.
+//
+// Arguments:
+//    sig         - signature of the Contains method
+//    methodFlags - its flags
+//
+// Returns:
+//    GenTree representing the folded check or nullptr
+//
+GenTree* Compiler::impStringLiteralContainsChar(CORINFO_SIG_INFO* sig, unsigned methodFlags)
+{
+    const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
+    const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
+
+    // We only fold the `str.Contains(char value)` overload and not, e.g.,
+    // `Contains(string value)`
+    CORINFO_CLASS_HANDLE argClass;
+    if ((argsCount != 2) || (strip(info.compCompHnd->getArgType(sig, sig->args, &argClass)) != CORINFO_TYPE_CHAR))
+    {
+        return nullptr;
+    }
+
+    // impStackTop(0) is the searched value, impStackTop(1) is the receiver
+    GenTree* value = impStackTop(0).val;
+    if (!impStackTop(1).val->OperIs(GT_CNS_STR))
+    {
+        return nullptr;
+    }
+    GenTreeStrCon* cnsStr = impStackTop(1).val->AsStrCon();
+
+    if (cnsStr->IsStringEmptyField())
+    {
+        // check for fake ""
+        return nullptr;
+    }
+
+    char16_t str[MaxPossibleUnrollSize];
+    int      cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
+    if ((cnsLength <= 0) || (cnsLength > MaxPossibleUnrollSize))
+    {
+        // We were unable to get the literal (e.g. dynamic context), or it's
+        // empty or too long
+        return nullptr;
+    }
+
+    // Find the smallest and the largest chars
+    unsigned mn = 0xFFFF;
+    unsigned mx = 0;
+    for (int i = 0; i < cnsLength; i++)
+    {
+        unsigned ch = str[i];
+        if (ch < mn)
+        {
+            mn = ch;
+        }
+        if (ch > mx)
+        {
+            mx = ch;
+        }
+    }
+
+    const unsigned span = mx - mn;
+
+    // The chars form a continuous range iff all span + 1 values in [mn..mx]
+    // are present; this can only be the case when the literal is short enough
+    // (at most MaxPossibleUnrollSize distinct chars)
+    if (span > MaxPossibleUnrollSize - 1)
+    {
+        return nullptr;
+    }
+
+    // Count the distinct chars in the [mn..mx] window with a presence bitmask
+    uint64_t mask[2] = {};
+    unsigned distinct = 0;
+    for (int i = 0; i < cnsLength; i++)
+    {
+        unsigned bit = str[i] - mn;
+        if ((mask[bit / 64] & (1ULL << (bit % 64))) == 0)
+        {
+            distinct++;
+        }
+        mask[bit / 64] |= 1ULL << (bit % 64);
+    }
+
+    if (distinct != span + 1)
+    {
+        // Not a continuous range, e.g. "aZ"
+        return nullptr;
+    }
+
+    // This optimization spawns a couple of temps so make sure we have room
+    if (lvaHaveManyLocals(0.75))
+    {
+        JITDUMP("impStringLiteralContainsChar: Method has too many locals - bail out.\n")
+        return nullptr;
+    }
+
+    // "cdef".Contains(value) -> value >= 'c' && value <= 'f'
+    JITDUMP("Folding literal.Contains(char) into a range check\n")
+
+    // Spill the searched value into a temp as it's used twice. The cast to
+    // TYP_USHORT (the JIT's type for char) mimics how the callee normalizes
+    // its char argument on load (the managed ABI doesn't guarantee the upper
+    // bits of small-typed args); it folds away for values known to be in range.
+    unsigned valueTmp         = lvaGrabTemp(true DEBUGARG("spilling Contains value"));
+    lvaTable[valueTmp].lvType = TYP_INT;
+    GenTreeLclVar* valueLcl   = gtNewLclvNode(valueTmp, TYP_INT);
+
+    GenTree* folded = gtNewQmarkNode(
+        TYP_INT, gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn, TYP_INT)),
+        gtNewColonNode(
+            TYP_INT,
+            gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_LE, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mx, TYP_INT)),
+                           gtNewColonNode(TYP_INT, gtNewTrue(), gtNewFalse())),
+            gtNewFalse()));
+
+    impPopStack(argsCount);
+    impStoreToTemp(valueTmp, gtNewCastNode(TYP_INT, value, false, TYP_USHORT), CHECK_SPILL_ALL);
+
+    // QMARK nodes cannot reside on the evaluation stack
+    unsigned resultTmp         = lvaGrabTemp(true DEBUGARG("spilling Contains qmark"));
+    lvaTable[resultTmp].lvType = TYP_INT;
+    impStoreToTemp(resultTmp, folded, CHECK_SPILL_ALL);
+
+    JITDUMP("\n... Successfully folded to:\n")
+    DISPTREE(folded)
+
+    return gtNewLclvNode(resultTmp, TYP_INT);
 }
 
 //------------------------------------------------------------------------
