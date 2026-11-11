@@ -607,6 +607,7 @@
   <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ILAssembler\ILAssembler.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" Test="true" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ilasm.Tests\ilasm.Tests.csproj" Category="tools" Test="true" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj"
                     Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"

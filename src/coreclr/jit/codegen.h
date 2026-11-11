@@ -514,45 +514,19 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_64BIT)
 
     // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
     // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
     // same.
     struct FuncletFrameInfoDsc
     {
-        unsigned fiOutgoingArgSpace; // Outgoing argument space allocated below the saved LR, aligned to 16
+        unsigned fiSpDelta; // Stack allocated for the outgoing argument space below the saved return address
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#elif defined(TARGET_AMD64)
-
-    // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
-    // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
-    // same.
-    struct FuncletFrameInfoDsc
-    {
-        unsigned fiSpDelta; // Stack pointer delta
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-    // A set of information that is used by funclet prolog and epilog generation.
-    // It is collected once, before funclet prologs and epilogs are generated,
-    // and used by all funclet prologs and epilogs, which must all be the same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
-        int       fiSP_to_CalleeSaved_delta; // CalleeSaved register save offset from SP (positive)
-        int       fiSpDelta;                 // Stack pointer delta (negative)
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#endif // TARGET_ARM, TARGET_ARM64, TARGET_AMD64, TARGET_LOONGARCH64, TARGET_RISCV64
+#endif // TARGET_ARM, TARGET_64BIT
 
 #if defined(TARGET_XARCH)
 
@@ -1206,6 +1180,7 @@ protected:
 #ifdef TARGET_WASM
     void           genCodeForFrameSize(GenTree* tree);
     cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
+    void           genWasmZeroInit(size_t size);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
