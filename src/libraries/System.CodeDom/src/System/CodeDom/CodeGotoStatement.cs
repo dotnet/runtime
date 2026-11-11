@@ -16,7 +16,7 @@ namespace System.CodeDom
 
         public string Label
         {
-            get => _label ?? string.Empty;
+            get => _label!;
             set
             {
                 if (string.IsNullOrEmpty(value))
