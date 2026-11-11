@@ -47,3 +47,20 @@ jobs:
       #     parameters:
       #       creator: dotnet-bot
       #       testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
+
+#
+# Build the whole product using CoreCLR for Android Linux with Bionic libc
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isLinuxBionicOnlyBuild: ${{ parameters.isLinuxBionicOnlyBuild }}
+    platforms:
+      - linux_bionic_arm64
+      - linux_bionic_x64
+    jobParameters:
+      nameSuffix: AllSubsets_CoreCLR
+      buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+      timeoutInMinutes: 480
