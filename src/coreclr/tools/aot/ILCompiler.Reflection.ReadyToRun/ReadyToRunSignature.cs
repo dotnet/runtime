@@ -1211,7 +1211,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_HANDLE)");
                     break;
 
-                case ReadyToRunFixupKind.MethodEntryCounter:
+                case ReadyToRunFixupKind.PgoInstrumentationData:
                     ParseMethod(builder);
                     builder.Append(" (METHOD_ENTRY_COUNTER)");
                     break;

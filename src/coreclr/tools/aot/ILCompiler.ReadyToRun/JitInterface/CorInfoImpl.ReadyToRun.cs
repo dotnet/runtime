@@ -3410,11 +3410,11 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
         private byte[] _bbCounts;
-        private readonly Dictionary<MethodDesc, (byte[] Cell, ISymbolNode Import)> _wasmMethodEntryCounters = new();
+        private readonly Dictionary<MethodDesc, (byte[] Cell, ISymbolNode Import)> _wasmPgoInstrumentationData = new();
 
-        private ISymbolNode FindWasmMethodEntryCounter(void* address)
+        private ISymbolNode FindWasmPgoInstrumentationData(void* address)
         {
-            foreach (var counter in _wasmMethodEntryCounters.Values)
+            foreach (var counter in _wasmPgoInstrumentationData.Values)
             {
                 if (address == (void*)GetPin(counter.Cell))
                     return counter.Import;
@@ -3425,7 +3425,7 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
         {
-            if (FindWasmMethodEntryCounter(location) is not null)
+            if (FindWasmPgoInstrumentationData(location) is not null)
             {
                 offset = 0;
                 blockType = BlockType.BBCounts;
@@ -3556,7 +3556,8 @@ namespace Internal.JitInterface
 
             MethodDesc entryMethod = HandleToObject(ftnHnd);
             if (_compilation.NodeFactory.Target.IsWasm && countSchemaItems == 1 &&
-                pSchema[0].InstrumentationKind == PgoInstrumentationKind.MethodEntryLongCount)
+                pSchema[0].InstrumentationKind == PgoInstrumentationKind.MethodEntryLongCount &&
+                pSchema[0].ILOffset == 0 && pSchema[0].Count == 1 && pSchema[0].Other == 0)
             {
                 entryMethod = entryMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (entryMethod.GetTypicalMethodDefinition() is not EcmaMethod ecmaEntry ||
@@ -3564,7 +3565,7 @@ namespace Internal.JitInterface
                     ecmaEntry.Module.MetadataReader.GetMethodDefinition(ecmaEntry.Handle).RelativeVirtualAddress == 0)
                     return HRESULT.E_NOTIMPL;
 
-                if (!_wasmMethodEntryCounters.TryGetValue(entryMethod, out var counter))
+                if (!_wasmPgoInstrumentationData.TryGetValue(entryMethod, out var counter))
                 {
                     ModuleToken token = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(
                         entryMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: false);
@@ -3576,12 +3577,14 @@ namespace Internal.JitInterface
                     }
                     MethodWithToken method = new MethodWithToken(entryMethod, token, null, false, null);
                     ISymbolNode import = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                        ReadyToRunHelperId.MethodEntryCounter, method);
+                        ReadyToRunHelperId.PgoInstrumentationData, method);
                     counter = (new byte[4], import);
-                    _wasmMethodEntryCounters.Add(entryMethod, counter);
+                    _wasmPgoInstrumentationData.Add(entryMethod, counter);
                 }
 
                 AddPrecodeFixup(counter.Import);
+                // The fixed 33.2 schema starts at offset zero in the counter allocation.
+                // The symbolic cell represents that allocation's base, not an individual field.
                 pSchema[0].Offset = IntPtr.Zero;
                 *pInstrumentationData = (byte*)GetPin(counter.Cell);
                 return HRESULT.S_OK;

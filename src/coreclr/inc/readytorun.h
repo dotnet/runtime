@@ -86,7 +86,7 @@
 // GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
 // signatures with their GCRefMaps.
 // R2R Version 33.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
-// R2R Version 33.2 adds READYTORUN_FIXUP_MethodEntryCounter for logical invocation profiling.
+// R2R Version 33.2 adds READYTORUN_FIXUP_PgoInstrumentationData for offline profiling storage.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -350,7 +350,7 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
     READYTORUN_FIXUP_MethodEntry_ReadyToRun       = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
-    READYTORUN_FIXUP_MethodEntryCounter          = 0x3C, /* Resolve a logical method invocation counter */
+    READYTORUN_FIXUP_PgoInstrumentationData      = 0x3C, /* Resolve the schema-based PGO counter allocation */
 
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */

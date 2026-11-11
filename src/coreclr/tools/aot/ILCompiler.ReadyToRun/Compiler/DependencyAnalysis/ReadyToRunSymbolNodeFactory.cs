@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         DeclaringTypeHandle,
         MethodHandle,
         FieldHandle,
-        MethodEntryCounter,
+        PgoInstrumentationData,
         MethodDictionary,
         TypeDictionary,
         MethodEntry,
@@ -307,9 +307,9 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodHandle:
                     return CreateMethodHandleHelper((MethodWithToken)key.Target);
 
-                case ReadyToRunHelperId.MethodEntryCounter:
+                case ReadyToRunHelperId.PgoInstrumentationData:
                     return new PrecodeHelperImport(_codegenNodeFactory,
-                        _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.MethodEntryCounter,
+                        _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.PgoInstrumentationData,
                             (MethodWithToken)key.Target, isInstantiatingStub: false));
 
                 case ReadyToRunHelperId.FieldHandle:

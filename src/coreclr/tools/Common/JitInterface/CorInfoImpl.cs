@@ -744,7 +744,7 @@ namespace Internal.JitInterface
             _rwDataRelocs = default(ArrayBuilder<Relocation>);
             ClearWasmMethodVirtualIPFixups();
 #if READYTORUN
-            _wasmMethodEntryCounters.Clear();
+            _wasmPgoInstrumentationData.Clear();
             _coldCodeRelocs = default(ArrayBuilder<Relocation>);
 #endif
             _numFrameInfos = 0;
@@ -4803,7 +4803,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                     case BlockType.BBCounts:
-                        relocTarget = FindWasmMethodEntryCounter(target);
+                        relocTarget = FindWasmPgoInstrumentationData(target);
                         break;
 #endif
 

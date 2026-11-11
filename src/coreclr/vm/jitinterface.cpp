@@ -12612,33 +12612,23 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
 
 #ifdef FEATURE_PGO
 
-    if (countSchemaItems == 1 && pSchema[0].InstrumentationKind == PgoInstrumentationKind::MethodEntryLongCount)
-    {
-        MethodDesc* method = reinterpret_cast<MethodDesc*>(ftnHnd);
-        if (method->IsDynamicMethod() || method->IsILStub() || !method->IsIL() || method->GetILHeader() == nullptr)
-        {
-            hr = E_NOTIMPL;
-        }
-        else
-        {
-            *pInstrumentationData = reinterpret_cast<BYTE*>(PgoManager::GetMethodEntryCounter(method));
-            pSchema[0].Offset = 0;
-            hr = S_OK;
-        }
-    }
+    MethodDesc* method = reinterpret_cast<MethodDesc*>(ftnHnd);
+#ifdef TARGET_WASM
+    // Offline WASM collection does not require tiered compilation. Use the requested
+    // method's IL, including when a compiler requests storage for an inlinee.
+    if (method->IsDynamicMethod() || method->IsILStub() || !method->IsIL() || method->GetILHeader() == nullptr)
+        hr = E_NOTIMPL;
     else
     {
-        // Other instrumentation schemas are limited to tiering-eligible methods.
-        MethodDesc* pMD = (MethodDesc*)ftnHnd;
-        if (pMD->IsEligibleForTieredCompilation())
-        {
-            hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
-        }
-        else
-        {
-            hr = E_NOTIMPL;
-        }
+        method = method->GetOrdinaryVariant();
+        COR_ILMETHOD_DECODER header(method->GetILHeader());
+        hr = PgoManager::allocPgoInstrumentationBySchema(method, &header, pSchema, countSchemaItems, pInstrumentationData);
     }
+#else
+    hr = method->IsEligibleForTieredCompilation()
+        ? PgoManager::allocPgoInstrumentationBySchema(method, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData)
+        : E_NOTIMPL;
+#endif // TARGET_WASM
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
@@ -13997,13 +13987,24 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case READYTORUN_FIXUP_MethodEntryCounter:
+    case READYTORUN_FIXUP_PgoInstrumentationData:
         {
 #if defined(FEATURE_PGO) && defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
             MethodDesc* method = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
             if (g_fEEStarted)
                 method->EnsureActive();
-            result = reinterpret_cast<size_t>(PgoManager::GetMethodEntryCounter(method));
+            method = method->GetOrdinaryVariant();
+            if (!method->IsIL() || method->GetILHeader() == nullptr)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            COR_ILMETHOD_DECODER header(method->GetILHeader());
+            // Version 33.2 has a fixed one-entry schema. Future schemas must be carried
+            // by the image and agree with the offsets encoded in the generated code.
+            ICorJitInfo::PgoInstrumentationSchema schema = {};
+            schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
+            schema.Count = 1;
+            BYTE* data;
+            IfFailThrow(PgoManager::allocPgoInstrumentationBySchema(method, &header, &schema, 1, &data));
+            result = reinterpret_cast<size_t>(data);
 #else
             COMPlusThrowHR(COR_E_PLATFORMNOTSUPPORTED);
 #endif

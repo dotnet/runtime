@@ -776,10 +776,12 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
 
 //------------------------------------------------------------------------
 #ifdef TARGET_WASM
-static GenTree* MethodEntryCounterIncrement(Compiler* comp, uint8_t* cell)
+static GenTree* MethodEntryCounterIncrement(Compiler* comp, uint8_t* cell, size_t offset)
 {
-    auto address = [comp, cell]() {
-        return comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(cell), GTF_ICON_BBC_PTR);
+    auto address = [comp, cell, offset]() {
+        GenTree* base = comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(cell), GTF_ICON_BBC_PTR);
+        return offset == 0 ? base
+                           : comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, base, comp->gtNewIconNode(offset, TYP_I_IMPL));
     };
     GenTree* value = comp->gtNewIndir(TYP_LONG, address(), GTF_IND_NONFAULTING);
     GenTree* sum   = comp->gtNewOperNode(GT_ADD, TYP_LONG, value, comp->gtNewLconNode(1));
@@ -796,7 +798,7 @@ GenTree* Compiler::fgMethodEntryCount(CORINFO_METHOD_HANDLE method)
     if (result == E_NOTIMPL)
         return nullptr;
     noway_assert(SUCCEEDED(result));
-    return MethodEntryCounterIncrement(this, cell);
+    return MethodEntryCounterIncrement(this, cell, schema.Offset);
 }
 
 class WasmEntryCountInstrumentor final : public Instrumentor
@@ -825,7 +827,7 @@ public:
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override
     {
         // The method's fixups resolve this image cell before execution reaches the probe.
-        GenTree* store = MethodEntryCounterIncrement(m_compiler, profileMemory);
+        GenTree* store = MethodEntryCounterIncrement(m_compiler, profileMemory, schema[0].Offset);
         m_compiler->fgNewStmtAtBeg(block, store);
         m_instrCount++;
     }

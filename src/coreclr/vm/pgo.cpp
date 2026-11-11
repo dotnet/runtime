@@ -673,24 +673,6 @@ void PgoManager::Header::Init(MethodDesc *pMD, unsigned methodhash, unsigned cod
     this->countsOffset = countsOffset;
 }
 
-uint64_t* PgoManager::GetMethodEntryCounter(MethodDesc* method)
-{
-    STANDARD_VM_CONTRACT;
-
-    method = method->GetOrdinaryVariant();
-    COR_ILMETHOD* il = method->GetILHeader();
-    if (il == nullptr)
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-
-    COR_ILMETHOD_DECODER header(il);
-    ICorJitInfo::PgoInstrumentationSchema schema = {};
-    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
-    schema.Count = 1;
-    BYTE* data;
-    IfFailThrow(allocPgoInstrumentationBySchema(method, &header, &schema, 1, &data));
-    return reinterpret_cast<uint64_t*>(data + schema.Offset);
-}
-
 HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
 {
     STANDARD_VM_CONTRACT;
@@ -717,7 +699,18 @@ HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_I
         return E_NOTIMPL;
     }
 
-    return mgr->allocPgoInstrumentationBySchemaInstance(pMD, ilHeader, pSchema, countSchemaItems, pInstrumentationData);
+    HRESULT hr = mgr->allocPgoInstrumentationBySchemaInstance(pMD, ilHeader, pSchema, countSchemaItems, pInstrumentationData);
+#ifdef TARGET_WASM
+    if (SUCCEEDED(hr))
+    {
+        // R2R and interpreter code address the counter allocation, not its private schema prefix.
+        size_t offset = pSchema[0].Offset;
+        *pInstrumentationData += offset;
+        for (UINT32 i = 0; i < countSchemaItems; i++)
+            pSchema[i].Offset -= offset;
+    }
+#endif // TARGET_WASM
+    return hr;
 }
 
 HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData)
@@ -729,8 +722,10 @@ HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::
         return E_NOTIMPL;
     }
 
-    // Align all instrumentation at size_t alignment, as the copy routine will copy in size_t units
-    *offsetOfActualInstrumentationData = (UINT)AlignUp(headerSize, sizeof(size_t));
+    size_t alignment = sizeof(size_t);
+    for (UINT32 i = 0; i < countSchemaItems; i++)
+        alignment = max(alignment, static_cast<size_t>(InstrumentationKindToAlignment(pSchema[i].InstrumentationKind)));
+    *offsetOfActualInstrumentationData = (UINT)AlignUp(headerSize, alignment);
     return S_OK;
 }
 
@@ -764,8 +759,6 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     prevSchema.Offset = offsetOfInstrumentationDataFromStartOfDataRegion;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
     {
-        // The data region is only size_t aligned, and readers re-derive this layout from offset 0.
-        _ASSERTE(InstrumentationKindToAlignment(pSchema[iSchema].InstrumentationKind) <= sizeof(size_t));
         LayoutPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
         prevSchema = pSchema[iSchema];
     }
