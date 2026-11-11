@@ -9,7 +9,7 @@ stages:
       DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
     pool:
       name: $(DncEngPublicBuildPool)
-      demands: ImageOverride -equals build.azurelinux.4.amd64.open
+      demands: ImageOverride -equals build.azurelinux.3.amd64.open
 
     steps:
     - checkout: self

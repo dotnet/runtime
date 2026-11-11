@@ -37,7 +37,3 @@ extends:
     forceRecreatePR: ${{ parameters.forceRecreatePR }}
     gitHubRepo: ${{ variables.gitHubRepo }}
     renovateConfigPath: eng/renovate.json
-    pool:
-      name: NetCore1ESPool-Internal
-      image: build.azurelinux.4.amd64
-      os: linux

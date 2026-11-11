@@ -178,13 +178,5 @@ extends:
           - name: Linux_x64
             targetRID: linux-x64
             container: SourceBuild_linux_x64
-            pool:
-              ${{ if eq(variables['System.TeamProject'], 'public') }}:
-                name: $(DncEngPublicBuildPool)
-                demands: ImageOverride -equals build.azurelinux.4.amd64.open
-              ${{ else }}:
-                name: $(DncEngInternalBuildPool)
-                demands: ImageOverride -equals build.azurelinux.4.amd64
-                os: linux
             jobProperties:
               condition: and(succeeded(), notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))

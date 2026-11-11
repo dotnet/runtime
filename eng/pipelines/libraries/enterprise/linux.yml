@@ -39,7 +39,7 @@ extends:
         timeoutInMinutes: 120
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals build.azurelinux.4.amd64.open
+          demands: ImageOverride -equals build.azurelinux.3.amd64.open
         steps:
         - bash: |
             cd $(enterpriseTestsSetup)
