@@ -1053,6 +1053,9 @@ protected:
             BasicBlock* iiaBBlabel;
             insGroup*   iiaIGlabel;
             BYTE*       iiaAddr;
+#ifdef TARGET_WASM
+            CORINFO_WASM_TYPE_SYMBOL_HANDLE iiaWasmSignature;
+#endif // TARGET_WASM
 #ifdef TARGET_XARCH
             emitAddrMode iiaAddrMode;
 #endif // TARGET_XARCH

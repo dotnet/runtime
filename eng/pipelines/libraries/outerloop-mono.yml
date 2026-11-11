@@ -38,7 +38,6 @@ extends:
               - linux_x64
               - osx_x64
               - ${{ if eq(variables['isRollingBuild'], true) }}:
-                - android_x64
                 - linux_arm
                 - linux_musl_x64
                 - windows_x86
