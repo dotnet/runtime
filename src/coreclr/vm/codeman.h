@@ -3232,7 +3232,13 @@ public:
     GCInfoToken  GetGCInfoToken()
     {
         WRAPPER_NO_CONTRACT;
-        return GetJitManager()->GetGCInfoToken(GetMethodToken());
+        if (m_gcInfoToken.Info == NULL)
+        {
+            m_gcInfoToken = GetJitManager()->GetGCInfoToken(GetMethodToken());
+        }
+        _ASSERTE(m_gcInfoToken.Info == GetJitManager()->GetGCInfoToken(GetMethodToken()).Info &&
+                 m_gcInfoToken.Version == GetJitManager()->GetGCInfoToken(GetMethodToken()).Version);
+        return m_gcInfoToken;
     }
 
     PTR_VOID GetGCInfo()
@@ -3306,6 +3312,7 @@ private:
     DWORD               m_relOffset;
     IsFuncletCache      m_isFuncletCache;
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
+    GCInfoToken         m_gcInfoToken;
 
 #ifdef TARGET_X86
     PTR_CBYTE           m_hdrInfoTable;
@@ -3350,7 +3357,5 @@ inline TADDR InterpreterJitManager::JitTokenToStartAddress(const METHODTOKEN& Me
 #endif // FEATURE_INTERPRETER
 
 #include "codeman.inl"
-
-bool SafeToReportGenericParamContext(CrawlFrame* pCF);
 
 #endif // !__CODEMAN_HPP__

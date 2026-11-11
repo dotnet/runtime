@@ -815,8 +815,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             }
 
 #if !defined(TARGET_ARM)
-            // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
-            if ((TargetOS::IsWindows || compUnixX86Abi()) && srcCall->IsUnmanaged())
+            // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
+            if (TargetOS::IsWindows && srcCall->IsUnmanaged())
             {
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
@@ -4033,6 +4033,17 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 if (simdWidth > 0)
                 {
                     assert((totalSize <= 64) && (totalSize <= MaxStructSize));
+
+#if defined(TARGET_ARM64)
+                    // The VM returns the concrete runtime contents of the field, but a scalable GT_CNS_VEC
+                    // represents a pattern rather than an arbitrary byte sequence. Leave the field as a load
+                    // since the runtime contents cannot, in general, be represented as a scalable constant.
+                    if (simdWidth == SIZE_UNKNOWN)
+                    {
+                        return nullptr;
+                    }
+#endif // TARGET_ARM64
+
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
                     bool hwAccelerated = true;
@@ -4467,7 +4478,7 @@ void Compiler::impAnnotateFieldIndir(GenTreeIndir* indir)
     {
         GenTreeFieldAddr* addr = indir->Addr()->AsFieldAddr();
 
-        if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
+        if (!indir->IsVolatile() && addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
         {
             indir->gtFlags &= ~GTF_GLOB_REF;
             if (indir->OperIsStore())

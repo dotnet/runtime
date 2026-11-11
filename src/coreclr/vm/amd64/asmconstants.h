@@ -469,33 +469,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pThread
                     == offsetof(InlinedCallFrame, m_pThread));
 
-#define CallDescrData__pSrc                0x00
-#define CallDescrData__numStackSlots       0x08
-#ifdef UNIX_AMD64_ABI
-#define CallDescrData__pArgumentRegisters  0x10
-#define CallDescrData__pFloatArgumentRegisters 0x18
-#define CallDescrData__fpReturnSize        0x20
-#define CallDescrData__pTarget             0x28
-#define CallDescrData__returnValue         0x30
-#else
-#define CallDescrData__dwRegTypeMap        0x10
-#define CallDescrData__fpReturnSize        0x18
-#define CallDescrData__pTarget             0x20
-#define CallDescrData__returnValue         0x28
-#endif
-
-ASMCONSTANTS_C_ASSERT(CallDescrData__pSrc                 == offsetof(CallDescrData, pSrc))
-ASMCONSTANTS_C_ASSERT(CallDescrData__numStackSlots        == offsetof(CallDescrData, numStackSlots))
-#ifdef UNIX_AMD64_ABI
-ASMCONSTANTS_C_ASSERT(CallDescrData__pArgumentRegisters   == offsetof(CallDescrData, pArgumentRegisters))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pFloatArgumentRegisters == offsetof(CallDescrData, pFloatArgumentRegisters))
-#else
-ASMCONSTANTS_C_ASSERT(CallDescrData__dwRegTypeMap         == offsetof(CallDescrData, dwRegTypeMap))
-#endif
-ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrData, fpReturnSize))
-ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
-ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
-
 #ifdef UNIX_AMD64_ABI
 #define OFFSETOF__TransitionBlock__m_argumentRegisters    0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__TransitionBlock__m_argumentRegisters == offsetof(TransitionBlock, m_argumentRegisters))

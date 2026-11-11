@@ -974,6 +974,38 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void FastPathWithShadowedProperties_CompilesSuccessfully()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98634
+
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                public class Base
+                {
+                    [JsonPropertyName("baseMoreData")]
+                    public string? MoreData { get; set; }
+                }
+
+                public class Derived : Base
+                {
+                    [JsonPropertyName("derivedMoreData")]
+                    public new string? MoreData { get; set; }
+                }
+
+                [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+                [JsonSerializable(typeof(Derived))]
+                internal partial class ModelContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
         public void InitOnlyPropertyWithReservedKeywordName_CompilesSuccessfully()
         {
             // Verbatim identifiers like @else should be correctly handled in property initializers.

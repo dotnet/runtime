@@ -84,9 +84,7 @@ private:
 #else // __APPLE__
     struct user_regs_struct m_gpRegisters;      // general purpose registers
     struct user_fpregs_struct m_fpRegisters;    // floating point registers
-#if defined(__i386__)
-    struct user_fpxregs_struct m_fpxRegisters;  // x86 floating point registers
-#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     struct user_vfpregs_struct m_vfpRegisters;  // ARM VFP/NEON registers
 #endif
 #endif // __APPLE__
@@ -135,9 +133,7 @@ public:
 #else // __APPLE__
     inline const user_regs_struct* GPRegisters() const { return &m_gpRegisters; }
     inline const user_fpregs_struct* FPRegisters() const { return &m_fpRegisters; }
-#if defined(__i386__)
-    inline const user_fpxregs_struct* FPXRegisters() const { return &m_fpxRegisters; }
-#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     inline const user_vfpregs_struct* VFPRegisters() const { return &m_vfpRegisters; }
 #endif
 #if defined(__x86_64__)

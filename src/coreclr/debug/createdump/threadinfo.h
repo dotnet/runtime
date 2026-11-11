@@ -55,9 +55,7 @@ public:
 #else
     inline const user_regs_struct* GPRegisters() const { return m_snapshot.GPRegisters(); }
     inline const user_fpregs_struct* FPRegisters() const { return m_snapshot.FPRegisters(); }
-#if defined(__i386__)
-    inline const user_fpxregs_struct* FPXRegisters() const { return m_snapshot.FPXRegisters(); }
-#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     inline const user_vfpregs_struct* VFPRegisters() const { return m_snapshot.VFPRegisters(); }
 #endif
 #endif // __APPLE__

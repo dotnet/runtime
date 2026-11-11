@@ -11225,6 +11225,13 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             // SIB byte
             noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
             sz++;
+
+            if (ins == INS_tail_i_jmp)
+            {
+                // The unwinder only recognizes this "jmp [abs32]" form as part of the epilog if it is
+                // rex.w prefixed. The rip-relative form is recognized without it.
+                sz++;
+            }
         }
 #endif // TARGET_AMD64
     }
@@ -18500,6 +18507,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     noway_assert(!m_compiler->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != CorInfoReloc::RELATIVE32);
                     noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (ssize_t)addr);
+
+                    if (ins == INS_tail_i_jmp)
+                    {
+                        // Needs rex.w prefix to be recognized as part of epilog by unwinder.
+                        code = AddRexWPrefix(id, code);
+                        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+                    }
 
                     // This requires, specifying a SIB byte after ModRM byte.
                     dst += emitOutputWord(dst, code | 0x0400);

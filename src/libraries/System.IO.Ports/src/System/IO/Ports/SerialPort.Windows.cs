@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -19,17 +20,20 @@ namespace System.IO.Ports
             //
             // QueryDosDevice involves finding any ports that map to \Device\Serialx (call with null to get all, then iterate to get the actual device name)
 
-            using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
+            using (RegistryKey? serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
             {
                 if (serialKey != null)
                 {
-                    string[] result = serialKey.GetValueNames();
-                    for (int i = 0; i < result.Length; i++)
+                    string[] valueNames = serialKey.GetValueNames();
+                    List<string> result = new List<string>(valueNames.Length);
+                    for (int i = 0; i < valueNames.Length; i++)
                     {
-                        // Replace the name in the array with its value.
-                        result[i] = (string)serialKey.GetValue(result[i]);
+                        if (serialKey.GetValue(valueNames[i]) is string portName)
+                        {
+                            result.Add(portName);
+                        }
                     }
-                    return result;
+                    return result.ToArray();
                 }
             }
 

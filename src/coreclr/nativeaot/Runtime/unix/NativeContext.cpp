@@ -527,18 +527,6 @@
 #define MCREG_R11(mc)       ((mc).arm_fp)
 #define MCREG_R12(mc)       ((mc).arm_ip)
 
-#elif defined(HOST_X86)
-
-#define MCREG_Eip(mc)       ((mc).mc_eip)
-#define MCREG_Esp(mc)       ((mc).mc_esp)
-#define MCREG_Eax(mc)       ((mc).mc_eax)
-#define MCREG_Ebx(mc)       ((mc).mc_ebx)
-#define MCREG_Ecx(mc)       ((mc).mc_ecx)
-#define MCREG_Edx(mc)       ((mc).mc_edx)
-#define MCREG_Esi(mc)       ((mc).mc_esi)
-#define MCREG_Edi(mc)       ((mc).mc_edi)
-#define MCREG_Ebp(mc)       ((mc).mc_ebp)
-
 #else
 #error "Unsupported arch"
 #endif
@@ -575,19 +563,6 @@
 #define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg)    \
     MCREG_Rdi(MCONTEXT_FROM_NATIVE(nativeContext)) = arg0Reg;  \
     MCREG_Rsi(MCONTEXT_FROM_NATIVE(nativeContext)) = arg1Reg;
-
-#elif defined(HOST_X86)
-#define ASSIGN_CONTROL_REGS \
-    ASSIGN_REG(Eip, IP)     \
-    ASSIGN_REG(Esp, Rsp)
-
-#define ASSIGN_INTEGER_REGS  \
-    ASSIGN_REG(Ebx, Rbx)     \
-    ASSIGN_REG(Ebp, Rbp)
-
-#define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg)    \
-    MCREG_Ecx(nativeContext->uc_mcontext) = arg0Reg;  \
-    MCREG_Edx(nativeContext->uc_mcontext) = arg1Reg;
 
 #elif defined(HOST_ARM)
 
