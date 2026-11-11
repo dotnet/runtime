@@ -5253,51 +5253,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
-                uint8_t* entryCounter = nullptr;
-                bool canExpand = true;
-                if (callInfo.hMethod != m_methodHnd &&
-                    !InterpConfig.WasmPgoInstrumentation().isEmpty() &&
-                    InterpConfig.WasmPgoInstrumentation().contains(m_compHnd, callInfo.hMethod,
-                        m_compHnd->getMethodClass(callInfo.hMethod), &callInfo.sig))
-                {
-                    // Allocation checks IL eligibility and canonicalizes shared generic callees.
-                    // Ineligible intrinsics must still expand, but have no logical IL entry to count.
-                    entryCounter = AllocMethodEntryCounter(m_compHnd, callInfo.hMethod);
-                    canExpand = entryCounter == nullptr ||
-                        callInfo.thisTransform == CORINFO_NO_THIS_TRANSFORM;
-                }
-
-                InterpBasicBlock* intrinsicBB = m_pCBB;
-                InterpInst* beforeIntrinsic = intrinsicBB->pLastIns;
-                int32_t receiverVar = -1;
-                if (entryCounter != nullptr && isVirtual && callInfo.sig.hasThis())
-                {
-                    CHECK_STACK(callInfo.sig.numArgs + 1);
-                    StackInfo* receiver = m_pStackPointer - callInfo.sig.numArgs - 1;
-                    if (receiver->GetStackType() == StackTypeO)
-                        receiverVar = receiver->var;
-                }
-
-                if (canExpand &&
-                    EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
-                {
-                    if (entryCounter != nullptr)
-                    {
-                        // Arguments are already evaluated. Validate callvirt before counting, but count
-                        // before any instructions emitted by the intrinsic body, including its throws.
-                        if (receiverVar != -1)
-                        {
-                            InterpInst* nullCheck = InsertInsBB(intrinsicBB, beforeIntrinsic, INTOP_NULLCHECK);
-                            nullCheck->SetSVar(receiverVar);
-                            beforeIntrinsic = nullCheck;
-                        }
-                        InterpInst* probe = InsertInsBB(intrinsicBB, beforeIntrinsic, INTOP_PGO_COUNT);
-                        probe->ilOffset = -1;
-                        probe->data[0] = GetDataItemIndex(entryCounter);
-                        m_pLastNewIns = m_pCBB->pLastIns;
-                    }
+                if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
                     return;
-                }
             }
         }
 

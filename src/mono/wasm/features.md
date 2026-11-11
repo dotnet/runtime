@@ -499,8 +499,13 @@ For automatic startup collection instead, configure:
 This starts tracing before managed startup, then stops and downloads after ten seconds. It consumes
 the one-shot collection, so do not also call `collectPgoTrace()` manually in that runtime instance.
 
-Interpreter and R2R execution use the same entry-only schema, method filter, and PgoManager
-counter storage. For an interpreter-only development build, configure the runtime filter directly:
+Full R2R execution is the training workflow for a subsequent partial R2R publish.
+Ordinary interpreter fallback method entries use the same schema, filter, and PgoManager
+storage. Intrinsics expanded only by the interpreter's forced interpretation modes do not get
+additional call-site counters; self-recursive intrinsic implementations are counted at their
+method entry. Such modes are not a substitute for R2R training.
+
+For interpreter-only development collection of method entries, configure the runtime filter directly:
 
 ```xml
 <ItemGroup>

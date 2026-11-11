@@ -250,25 +250,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         string mibcPath = CreateMethodEntryPgoProfile(info, config, buildOutput, tracePath, producerMvids,
             assertIntrinsics: pgoFilter == "all");
-        if (config == Configuration.Debug && pgoFilter == "all")
-        {
-            // A fresh runtime against the same bundle exercises interpreter intrinsic expansion,
-            // not R2R execution. Counters are startup-cumulative, so keep its profile separate.
-            string interpTrace = Path.Combine(info.LogPath, "method-entry-interp.nettrace");
-            await RunForPublishWithWebServer(new BlazorRunOptions(config, CheckCounter: false, TimeoutSeconds: 60,
-                BrowserQueryString: new NameValueCollection { ["interp-pgo"] = "1" },
-                Test: async page =>
-                {
-                    Assert.Equal("3", await page.EvaluateAsync<string>(
-                        "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_InterpMode"));
-                    await SetupCounterPage(page, "method-entry-interp.nettrace",
-                        "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0 })", uploadTrace: false);
-                    await ClickAndCollect(page, interpTrace);
-                    Assert.Equal("Current count: 159", await page.Locator("p[role='status']").InnerHTMLAsync());
-                }));
-            CreateMethodEntryPgoProfile(info, config, buildOutput, interpTrace, producerMvids,
-                assertIntrinsics: true, label: "method-entry-interp");
-        }
         if (cpuSampling)
         {
             string cpuTrace = Path.Combine(info.LogPath, "method-entry-cpu.nettrace");
@@ -510,21 +491,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             ["currentCount++;"] = """
                 currentCount = BlazorBasicTestApp.WasmPgoScenarios.RunOnce();
                 BlazorBasicTestApp.WasmPgoScenarios.CpuSamplingTarget(currentCount);
-                """
-        });
-        UpdateFile(Path.Combine("wwwroot", "index.html"), new Dictionary<string, string>
-        {
-            ["""<script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>"""] = """
-                <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
-                <script>
-                    Blazor.start({
-                        configureRuntime: builder => {
-                            if (new URLSearchParams(location.search).has("interp-pgo")) {
-                                builder.withEnvironmentVariables({ DOTNET_ReadyToRun: "0", DOTNET_InterpMode: "3" });
-                            }
-                        }
-                    });
-                </script>
                 """
         });
         File.WriteAllText(Path.Combine(_projectDir, "WasmPgoScenarios.cs"), """
