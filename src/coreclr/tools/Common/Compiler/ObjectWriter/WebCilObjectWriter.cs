@@ -32,6 +32,7 @@ namespace ILCompiler.ObjectWriter
 
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
         private protected override bool ShouldDeduplicateFunctionBodies => true;
+        private protected override string WasmProducerName => "WebCIL";
 
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
@@ -258,6 +259,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
+            base.EmitSectionsAndLayout();
+
 #if READYTORUN
             int expectedTableSlot = -1;
             foreach (ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
@@ -450,19 +453,6 @@ namespace ILCompiler.ObjectWriter
                 return value;
             }
 
-            static void WriteULEB128(Stream stream, uint value)
-            {
-                do
-                {
-                    byte current = (byte)(value & 0x7F);
-                    value >>= 7;
-                    if (value != 0)
-                    {
-                        current |= 0x80;
-                    }
-                    stream.WriteByte(current);
-                } while (value != 0);
-            }
         }
 
         private protected override void EmitObjectFile(Stream outputFileStream)
@@ -567,13 +557,8 @@ namespace ILCompiler.ObjectWriter
 
 #if READYTORUN
             byte[] webcilBuildId = ComputeModuleHash(outputFileStream);
-            WasmCustomSectionWriter.ProducerValue[] producers =
-            [
-                new(WasmCustomSectionWriter.ProducersFieldProcessedBy, "WebCIL", string.Empty),
-                new(WasmCustomSectionWriter.ProducersFieldSdk, ".NET", string.Empty),
-            ];
-            WasmCustomSectionWriter.WriteProducersSection(outputFileStream, producers);
-            WasmCustomSectionWriter.WriteBuildIdSection(outputFileStream, webcilBuildId);
+            EmitProducersSection(outputFileStream);
+            EmitBuildIdSection(outputFileStream, webcilBuildId);
 #endif
 
             if (_outputInfoBuilder is not null)
@@ -606,7 +591,31 @@ namespace ILCompiler.ObjectWriter
             outputFileStream.Position = end;
             return hash;
         }
+
+        private static void EmitBuildIdSection(Stream outputFileStream, byte[] buildId)
+        {
+            using var payload = new MemoryStream();
+            WriteULEB128(payload, checked((uint)buildId.Length));
+            payload.Write(buildId);
+
+            var section = new WasmCustomSection(payload, new Utf8String("build_id"), sectionIndex: -1);
+            section.EmitToStream(outputFileStream);
+        }
 #endif
+
+        private static void WriteULEB128(Stream stream, uint value)
+        {
+            do
+            {
+                byte current = (byte)(value & 0x7F);
+                value >>= 7;
+                if (value != 0)
+                {
+                    current |= 0x80;
+                }
+                stream.WriteByte(current);
+            } while (value != 0);
+        }
 
         public void EmitSymbolMap(string path)
         {

@@ -17,7 +17,7 @@ Specs:
 
 | Section     | Purpose                                                                 | How it is produced |
 |-------------|-------------------------------------------------------------------------|--------------------|
-| `producers` | Static telemetry about the toolchain that produced the module.          | Assembly source is passed to Emscripten and merged by `wasm-ld` into the module's `producers` section. |
+| `producers` | Static telemetry about the toolchain that produced the module.          | Native links merge assembly-source input; managed Wasm writers emit the section directly. |
 | `build_id`  | A per-file value used to correlate a module with its symbols/sources.   | Native linking or the Webcil writer computes it when producing the file. |
 
 `producers` is linker-driven so `wasm-ld` can merge entries from every tool. Each producer also owns
@@ -34,8 +34,9 @@ Behavior:
 - Native linking asks wasm-ld to generate a deterministic build ID for each `dotnet.native.wasm`.
   Runtime-pack modules therefore arrive in applications with their original ID intact, while an
   application native relink creates a new ID for the new binary.
-- When `wasm-opt` rewrites a relinked native module, the build recomputes its ID from the final
-  module with the previous `build_id` section removed.
+- Emscripten and Binaryen preserve the linker ID through post-link transformations. When Binaryen
+  generates a source map, it also records that ID as the map's `debugId`, keeping the transformed
+  module and its debug information associated.
 - Regular and R2R Webcil modules use their own SHA-256 content hashes.
 - Application builds preserve IDs already present in runtime-pack Wasm files.
 
@@ -59,8 +60,13 @@ single section merged by `wasm-ld` through Emscripten's post-link processing.
 
 ## Implementation
 
-- `src/coreclr/tools/Common/Wasm/WasmCustomSectionWriter.cs` – a reusable managed writer for Webcil,
-  R2R Webcil, and build-ID stamping.
+- `src/coreclr/tools/Common/Compiler/ObjectWriter/WasmObjectWriter.cs` emits producer metadata for
+  R2R Webcil and NativeAOT Wasm objects through the existing custom-section model.
+- `src/coreclr/tools/Common/Compiler/ObjectWriter/WebCilObjectWriter.cs` adds the content-hash build
+  ID to final R2R Webcil modules. NativeAOT object files do not receive a build ID; the final linker
+  owns it.
+- `src/tasks/Microsoft.NET.WebAssembly.Webcil/WebcilWasmWrapper.cs` emits regular Webcil producer
+  metadata and payload-hash build IDs directly while writing the wrapper module.
 - `src/tasks/WasmAppBuilder/WasmEmitProducersSource.cs` – emits the flavor- and version-specific
   `dotnet-producers.s` assembly source. Labels let the assembler encode string lengths without
   duplicating WebAssembly object-file logic in managed code.

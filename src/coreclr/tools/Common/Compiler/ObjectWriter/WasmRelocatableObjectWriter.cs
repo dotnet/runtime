@@ -17,6 +17,8 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed partial class WasmRelocatableObjectWriter : WasmObjectWriter
     {
+        private protected override string WasmProducerName => "ILCompiler";
+
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
         private SectionWriter _pdataSectionWriter;
@@ -92,6 +94,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
+            base.EmitSectionsAndLayout();
+
             if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
             {
                 _pdataSectionWriter.WriteLittleEndian<uint>(_nextVirtualIP);

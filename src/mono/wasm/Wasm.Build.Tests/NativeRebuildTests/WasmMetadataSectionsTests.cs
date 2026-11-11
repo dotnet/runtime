@@ -16,7 +16,7 @@ namespace Wasm.Build.NativeRebuild.Tests
     //   - emitted into dotnet.native.wasm when the native runtime is re-linked, and
     //   - emitted into every webcil module (independent of native re-link).
     //
-    // Workload-free cases validate managed stamping of the runtime-pack binary. Native re-link cases
+    // Workload-free cases validate metadata already present in runtime-pack files. Native re-link cases
     // run in workload lanes and also validate that Emscripten assembles the producers source and preserves it.
     [TestCategory("native")]
     public class WasmMetadataSectionsTests : NativeRebuildTestsBase

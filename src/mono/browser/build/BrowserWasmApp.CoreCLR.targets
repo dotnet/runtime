@@ -111,10 +111,6 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmRegenerateBuildId"
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
-             TaskFactory="TaskHostFactory"
-             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
   <!-- Import shared native.wasm.targets, which defines GenerateEmccExports (exported functions/methods
        and the INCOMING_MODULE_JS_API allowlist) plus the Emscripten SDK, ICU, and the relink registry.
@@ -1029,9 +1025,6 @@
     </Exec>
     <!-- Do not leave an unoptimized link output that looks up to date to the next incremental build. -->
     <Delete Files="$(_WasmRelinkedWasmPath)" Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' != '0'" />
-    <WasmRegenerateBuildId WasmPath="$(_WasmRelinkedWasmPath)"
-                           Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' == '0'" />
-
     <ItemGroup>
       <FileWrites Include="$(_WasmRelinkedWasmPath)" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />

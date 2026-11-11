@@ -22,6 +22,8 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
+        private static readonly ObjectNodeSection ProducersSection = new("producers", SectionType.Debug);
+
         private readonly Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
@@ -79,6 +81,7 @@ namespace ILCompiler.ObjectWriter
         private int ActualFunctionCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
 
         private protected virtual bool ShouldDeduplicateFunctionBodies => false;
+        private protected abstract string WasmProducerName { get; }
 
         private readonly struct FoldedFunctionAlias
         {
@@ -119,6 +122,30 @@ namespace ILCompiler.ObjectWriter
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
+        }
+
+        private protected override void EmitSectionsAndLayout()
+        {
+            base.EmitSectionsAndLayout();
+
+            SectionWriter writer = GetOrCreateSection(ProducersSection);
+            writer.WriteULEB128(2);
+            WriteProducerField(writer, "processed-by", WasmProducerName);
+            WriteProducerField(writer, "sdk", ".NET");
+        }
+
+        private protected void EmitProducersSection(Stream outputFileStream)
+        {
+            int sectionIndex = _sections.GetSectionIndex(ProducersSection.Name);
+            _sections[sectionIndex].EmitToStream(outputFileStream);
+        }
+
+        private static void WriteProducerField(SectionWriter writer, string field, string name)
+        {
+            writer.WriteUtf8WithLength(field);
+            writer.WriteULEB128(1);
+            writer.WriteUtf8WithLength(name);
+            writer.WriteULEB128(0);
         }
 
         public override void EmitObject(

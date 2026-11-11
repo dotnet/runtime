@@ -21,19 +21,6 @@ namespace Wasm.Build.Tests;
 public class WebcilInWasmSizesTests
 {
     [Fact]
-    public void RegenerateBuildId_IsIdempotentAndTracksContent()
-    {
-        byte[] first = WasmCustomSectionWriter.RegenerateBuildId(BuildWebcilInWasm(payloadSize: 4, tableSize: 1));
-        byte[] second = WasmCustomSectionWriter.RegenerateBuildId(first);
-        byte[] different = WasmCustomSectionWriter.RegenerateBuildId(BuildWebcilInWasm(payloadSize: 5, tableSize: 1));
-
-        Assert.Equal(first, second);
-        Assert.NotEqual(
-            Convert.ToHexString(first.AsSpan(first.Length - 32)),
-            Convert.ToHexString(different.AsSpan(different.Length - 32)));
-    }
-
-    [Fact]
     public void NonR2R_ReadsPayloadSize_WithZeroTableSize()
     {
         byte[] wasm = BuildWebcilInWasm(payloadSize: 0x1234, tableSize: null);
