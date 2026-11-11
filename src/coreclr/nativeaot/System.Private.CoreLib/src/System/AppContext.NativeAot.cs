@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime;
-using System.Text;
+using System.Text.Unicode;
 
 namespace System
 {
@@ -16,12 +16,21 @@ namespace System
             var dataStore = new Dictionary<string, object?>((int)count);
             for (int i = 0; i < count; i++)
             {
-                dataStore.Add(
-                    Encoding.UTF8.GetString(keys[i], string.strlen(keys[i])),
-                    Encoding.UTF8.GetString(values[i], string.strlen(values[i])));
+                dataStore.Add(Utf8ToString(keys[i]), Utf8ToString(values[i]));
             }
 
             return dataStore;
+        }
+
+        // This must not use Encoding.UTF8: AppContext can be initialized from Lock while a class constructor
+        // (including the one for UTF8Encoding) is running on the current thread, in which case the encoding
+        // static would be observed as null. Utf8.ToUtf16 has no static dependencies.
+        private static unsafe string Utf8ToString(byte* utf8)
+        {
+            ReadOnlySpan<byte> bytes = new ReadOnlySpan<byte>(utf8, string.strlen(utf8));
+            char[] chars = new char[bytes.Length];
+            Utf8.ToUtf16(bytes, chars, out _, out int charsWritten);
+            return new string(chars, 0, charsWritten);
         }
 
         [RuntimeExport("OnFirstChanceException")]
