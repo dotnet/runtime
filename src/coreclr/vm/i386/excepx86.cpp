@@ -32,7 +32,6 @@
 
 #include "asmconstants.h"
 #include "virtualcallstub.h"
-#include "gcrefmap.h"
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 {
@@ -122,27 +121,7 @@ AdjustContextForVirtualStub(
 
         DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
         ResolveHolder *resolveHolder = ResolveHolder::FromFailEntry(holder->stub()->failTarget());
-        DispatchToken token(resolveHolder->stub()->token());
-        if (token.IsTypedToken())
-        {
-            stackArgumentsSize = resolveHolder->stub()->stackArgumentsSize();
-        }
-        else
-        {
-            // Class tokens encode only the slot, so the shared resolver's stack size may belong to another class.
-            MethodTable *pMT = (MethodTable*)holder->stub()->expectedMT();
-            MethodDesc *pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
-            PTR_BYTE pGCRefMap = pMD->FindGCRefMap(pMT, true /* isDispatch */);
-            if (pGCRefMap != nullptr)
-            {
-                GCRefMapDecoder decoder(pGCRefMap);
-                stackArgumentsSize = decoder.ReadStackPop() * sizeof(TADDR);
-            }
-            else
-            {
-                stackArgumentsSize = pMD->SizeOfArgStack();
-            }
-        }
+        stackArgumentsSize = resolveHolder->stub()->stackArgumentsSize();
     }
     else
     {

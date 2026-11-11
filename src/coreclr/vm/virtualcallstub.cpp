@@ -1851,6 +1851,29 @@ ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem)
 #endif
 #endif
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+static size_t GetDispatchStackArgumentsSize(DispatchToken token, MethodTable* objectType)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
+    MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
+    PTR_BYTE pGCRefMap = pMD->FindGCRefMap(objectType, true /* isDispatch */);
+    if (pGCRefMap != nullptr)
+    {
+        GCRefMapDecoder decoder(pGCRefMap);
+        return decoder.ReadStackPop() * sizeof(TADDR);
+    }
+
+    return pMD->SizeOfArgStack();
+}
+#endif // TARGET_X86 && !UNIX_X86_ABI
+
 PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                             OBJECTREF *protectedObj,
                                             DispatchToken token,
@@ -2062,29 +2085,27 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                     pResolverFcn = (PCODE) GetEEFuncEntryPoint(ResolveWorkerAsmStub);
 #endif
 
-                    // First see if we've already created a resolve stub for this token
-                    if (resolvers->SetUpProber(token.To_SIZE_T(), 0, &probeR))
+                    size_t resolverKey = 0;
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                    size_t stackArgumentsSize = 0;
+                    if (!token.IsTypedToken())
+                    {
+                        // Unrelated class methods can share a slot but require different null-fault stack adjustments.
+                        stackArgumentsSize = GetDispatchStackArgumentsSize(token, objectType);
+                        resolverKey = stackArgumentsSize;
+                    }
+#endif // TARGET_X86 && !UNIX_X86_ABI
+
+                    // First see if we've already created a resolve stub for this token and stack size.
+                    if (resolvers->SetUpProber(token.To_SIZE_T(), resolverKey, &probeR))
                     {
                         // Find the right resolver, make it if necessary
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-                            MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
-                            size_t stackArgumentsSize;
-                            // Prefer the stack pop size recorded in the GCRefMap: computing it from the
-                            // signature may need to load value type layouts, which is not allowed here.
-                            PTR_BYTE pGCRefMap = pMD->FindGCRefMap(objectType, true /* isDispatch */);
-                            if (pGCRefMap != NULL)
-                            {
-                                GCRefMapDecoder decoder(pGCRefMap);
-                                stackArgumentsSize = decoder.ReadStackPop() * sizeof(TADDR);
-                            }
-                            else
-                            {
-                                ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                                stackArgumentsSize = pMD->SizeOfArgStack();
-                            }
+                            if (token.IsTypedToken())
+                                stackArgumentsSize = GetDispatchStackArgumentsSize(token, objectType);
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
                             bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
@@ -2102,7 +2123,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             if (reenteredCooperativeGCMode)
                             {
                                 // The prober may have been invalidated by reentering cooperative GC mode, reset it
-                                BOOL success = resolvers->SetUpProber(token.To_SIZE_T(), 0, &probeR);
+                                BOOL success = resolvers->SetUpProber(token.To_SIZE_T(), resolverKey, &probeR);
                                 _ASSERTE(success);
                             }
                             // Add the resolve entrypoint into the cache.

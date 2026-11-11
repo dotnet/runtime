@@ -13,9 +13,19 @@ public class OpenDelegate
         public virtual int PublicInstanceMethod() { return 17; }
     }
 
+    public class DerivedClassA : ClassA
+    {
+        public override int PublicInstanceMethod() { return 18; }
+    }
+
     public class ClassB
     {
         public virtual int PublicInstanceMethod(int a, int b, int c, int d) { return a + b + c + d; }
+    }
+
+    public class DerivedClassB : ClassB
+    {
+        public override int PublicInstanceMethod(int a, int b, int c, int d) { return a + b + c + d + 1; }
     }
 
     public delegate int Delegate_TC_Int(ClassA tc);
@@ -36,9 +46,13 @@ public class OpenDelegate
         return result;
     }
 
-    [Fact]
+    // This test is only expected to reproduce the original stack-recovery failure with tiered compilation
+    // disabled, because Tier-0 frame pointers can conceal the incorrect stack adjustment.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/137225")]
-    public static void NullReceiverAfterWarmingUnrelatedVirtualDelegates()
+    public static void NullReceiverAfterWarmingUnrelatedVirtualDelegates(bool polymorphic)
     {
         Func<ClassA, int> first = typeof(ClassA).GetMethod(nameof(ClassA.PublicInstanceMethod))
             .CreateDelegate<Func<ClassA, int>>();
@@ -49,8 +63,22 @@ public class OpenDelegate
         ClassB secondReceiver = new ClassB();
         for (int i = 0; i < 2; i++)
         {
-            Assert.Equal(17, first(firstReceiver));
             Assert.Equal(10, second(secondReceiver, 1, 2, 3, 4));
+            Assert.Equal(17, first(firstReceiver));
+        }
+
+        if (polymorphic)
+        {
+            // Repeated dispatch misses switch the delegate from its dispatch stub to the shared resolver.
+            ClassA firstDerivedReceiver = new DerivedClassA();
+            ClassB derivedReceiver = new DerivedClassB();
+            for (int i = 0; i < 1024; i++)
+            {
+                Assert.Equal(18, first(firstDerivedReceiver));
+                Assert.Equal(17, first(firstReceiver));
+                Assert.Equal(11, second(derivedReceiver, 1, 2, 3, 4));
+                Assert.Equal(10, second(secondReceiver, 1, 2, 3, 4));
+            }
         }
 
         Assert.Throws<NullReferenceException>(() => second(null, 1, 2, 3, 4));

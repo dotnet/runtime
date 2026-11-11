@@ -1148,8 +1148,8 @@ private:
 /**********************************************************************************************
 ResolveEntry wraps ResolveStubs and provide the concrete implementation of the abstract class Entry.
 Polymorphic call sites and monomorphic calls that fail end up in a ResolveStub.  Resolve stubs
-are stored in hash tables keyed by token, hence the Equals function uses the embedded token in
-the stub for comparison purposes.  Since we are willing to allow duplicates in the hash table (as
+are stored in hash tables keyed by token and, for class tokens on Windows x86, stack argument size.
+Since we are willing to allow duplicates in the hash table (as
 long as they are relatively rare) we do use direct comparison of the tokens rather than extracting
 the fields from within the tokens, for perf reasons. */
 class ResolveEntry : public Entry
@@ -1169,7 +1169,15 @@ public:
     inline BOOL Equals(size_t keyA, size_t keyB)
          { WRAPPER_NO_CONTRACT; return stub && (keyA == KeyA()) && (keyB == KeyB()); }
     inline size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
-    inline size_t KeyB() { WRAPPER_NO_CONTRACT; return (size_t)0; }
+    inline size_t KeyB()
+    {
+        WRAPPER_NO_CONTRACT;
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+        if (stub && !DispatchToken(stub->token()).IsTypedToken())
+            return stub->stackArgumentsSize();
+#endif // TARGET_X86 && !UNIX_X86_ABI
+        return 0;
+    }
 
     void SetContents(size_t contents)
     {
