@@ -57,10 +57,15 @@ The build emits `runInWorker: true` into the boot configuration. Start it with
 
 Shared native and ReadyToRun images are staged into the application's intermediate
 directory before asset fingerprinting and integrity computation. The runtime pack
-is not modified. Ordinary builds without this property retain non-shared memory
+is not modified. Ordinary builds with this property set to false retain non-shared memory
 and do not require these isolation headers. Changing the property restages the
 application assets; do not patch files in the NuGet cache or published output.
-`WasmRunInWorker` defaults to false. It controls both worker startup and shared
+For this temporary coverage experiment, `WasmRunInWorker` defaults to true for
+Browser/CoreCLR. Set it to false to opt out. Revert the temporary default commit
+before shipping; Mono and other targets are unchanged. V8/Node test harnesses
+explicitly select ordinary execution, including when a shared-asset archive is
+reused by browser and shell CI lanes.
+The property controls both worker startup and shared
 asset staging for build and publish. `withConfig({ runInWorker: true })` can
 select worker startup only when the application already carries shared assets.
 `workerOptions.timeoutMs` optionally adjusts startup timeout but does not enable

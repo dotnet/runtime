@@ -489,6 +489,12 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     private async Task<RunResult> BrowserRun(RunOptions runOptions)
     {
+        if (IsCoreClrRuntime && runOptions.Host == RunHost.WebServer)
+        {
+            string bootPath = Path.Combine(GetObjDir(runOptions.Configuration), "dotnet.js");
+            if (_provider.GetBootJson(bootPath).runInWorker == true && !runOptions.ExtraArgs.Contains("--web-server-use-cop", StringComparison.Ordinal))
+                runOptions = runOptions with { ExtraArgs = runOptions.ExtraArgs + " --web-server-use-cop" };
+        }
         if (EnvironmentVariables.UseJavascriptBundler)
         {
             runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };

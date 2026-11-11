@@ -12,6 +12,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0" TreatAsLocalProperty="_WasmFilesystemUsageDetected">
 
   <PropertyGroup>
+    <!-- Temporary coverage experiment; revert this default before shipping worker hosting. -->
+    <WasmRunInWorker Condition="'$(WasmRunInWorker)' == '' and '$(UseMonoRuntime)' == 'false'">true</WasmRunInWorker>
     <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
 
     <_TargetingNET80OrLater>false</_TargetingNET80OrLater>

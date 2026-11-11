@@ -315,6 +315,9 @@ async function run() {
         }
 
         configureRuntime(dotnet, runArgs);
+        if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
+            dotnet.withConfig({ runInWorker: false });
+        }
         if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && !ENVIRONMENT_IS_NODE) {
             dotnet.withConfigLoaded(config => {
                 runArgs.runInWorker = config.runInWorker === true;

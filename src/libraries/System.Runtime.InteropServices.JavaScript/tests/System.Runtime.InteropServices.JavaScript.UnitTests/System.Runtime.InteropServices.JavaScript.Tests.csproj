@@ -31,8 +31,8 @@
     <PublishReadyToRunPgoFiles Include="$(BrowserWasmMibcProfile)" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(WasmTestWithWorker)' == 'true'">
-    <WasmRunInWorker>true</WasmRunInWorker>
+  <PropertyGroup Condition="'$(WasmTestWithWorker)' != ''">
+    <WasmRunInWorker>$(WasmTestWithWorker)</WasmRunInWorker>
   </PropertyGroup>
   <Target Name="ValidateWorkerInteropTests" BeforeTargets="PrepareForBuild"
           Condition="'$(WasmTestWithWorker)' == 'true'">
