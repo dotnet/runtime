@@ -200,13 +200,13 @@ FCIMPL1(int32_t, RhGetGeneration, OBJECTREF obj)
 }
 FCIMPLEND
 
-FCIMPL1(int64_t, RhGetGenerationSize, int32_t gen)
+FCIMPL1(uint64_t, RhGetGenerationSize, int32_t gen)
 {
-    return (int64_t)(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
+    return static_cast<uint64_t>(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
 }
 FCIMPLEND
 
-FCIMPL0(int64_t, RhGetLastGCPercentTimeInGC)
+FCIMPL0(int32_t, RhGetLastGCPercentTimeInGC)
 {
     return GCHeapUtilities::GetGCHeap()->GetLastGCPercentTimeInGC();
 }
@@ -655,6 +655,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numEle
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // The allocation fast path is an asm helper that runs in coop mode and handles most allocation cases.
     // The helper can also be tail-called. That is desirable for the fast path.
     //
@@ -680,6 +681,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numEle
     ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
 
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     pThread->SetDeferredTransitionFrame(pTransitionFrame);
 

@@ -2038,6 +2038,12 @@ namespace Internal.JitInterface
         {
             get
             {
+                if (_compilation.TypeSystemContext.Target.IsWasm)
+                {
+                    // m_pThread, m_ShadowSP.
+                    return 2 * PointerSize;
+                }
+
                 // struct PInvokeTransitionFrame:
                 //  m_RIP (1)
                 //  m_FramePointer (1)
@@ -2517,6 +2523,12 @@ namespace Internal.JitInterface
 
 #pragma warning disable CA1822 // Mark members as static
         private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
 #pragma warning restore CA1822 // Mark members as static
         {
         }

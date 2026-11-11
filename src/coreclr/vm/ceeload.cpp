@@ -467,6 +467,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_pNativeImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
+#ifdef TARGET_WASM
+        // Direct R2R calls can execute before assembly activation. Register virtual IPs as soon as
+        // the R2R info is installed so stack walks can resolve those frames.
+        m_pReadyToRunInfo->RegisterVirtualIPRange(this);
+#endif
         if (m_pReadyToRunInfo->SkipTypeValidation())
             m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
@@ -1009,11 +1014,13 @@ void Module::SetInstrumentedILOffsetMapping(mdMethodDef token, InstrumentedILOff
         m_debuggerSpecificData.m_pILOffsetMappingTable = PTR_ILOffsetMappingTable(new ILOffsetMappingTable);
     }
 
+    // Replace the entry before freeing the old array, so that a throw from AddOrReplace
+    // (it can grow the table) leaves the table holding a live array.
     ILOffsetMappingEntry currentEntry = m_debuggerSpecificData.m_pILOffsetMappingTable->Lookup(ILOffsetMappingTraits::GetKey(entry));
+    m_debuggerSpecificData.m_pILOffsetMappingTable->AddOrReplace(entry);
+
     if (!ILOffsetMappingTraits::IsNull(currentEntry))
         currentEntry.m_mapping.Clear();
-
-    m_debuggerSpecificData.m_pILOffsetMappingTable->AddOrReplace(entry);
 }
 #endif // DACCESS_COMPILE
 
@@ -1029,7 +1036,7 @@ void Module::SetInstrumentedILOffsetMapping(mdMethodDef token, InstrumentedILOff
 //    Check InstrumentedILOffsetMapping::IsNull() to see if any mapping is available.
 //
 // Notes:
-//    * Once added, the mapping stays valid until the Module containing the method is destructed.
+//    * Outside the DAC the result is a copy the caller owns.
 //    * The profiler may potentially update the mapping more than once.
 //
 
@@ -1063,7 +1070,31 @@ InstrumentedILOffsetMapping Module::GetInstrumentedILOffsetMapping(mdMethodDef t
     }
 
     ILOffsetMappingEntry entry = m_debuggerSpecificData.m_pILOffsetMappingTable->Lookup(token);
+
+#if !defined(DACCESS_COMPILE)
+    // Return a copy the caller owns: replacing a map frees the table's array, so a shallow
+    // copy used after the Crst is released could point at freed memory.
+    const InstrumentedILOffsetMapping & tableMapping = entry.m_mapping;
+    if (tableMapping.IsNull())
+        return InstrumentedILOffsetMapping();
+
+    UINT cMap = tableMapping.GetCount();
+    COR_IL_MAP * rgNewMap = new (nothrow) COR_IL_MAP[cMap];
+    if (rgNewMap == NULL)
+    {
+        // Leave offsets untranslated if allocation fails.
+        return InstrumentedILOffsetMapping();
+    }
+
+    memcpy(rgNewMap, tableMapping.GetOffsets(), cMap * sizeof(COR_IL_MAP));
+
+    InstrumentedILOffsetMapping ownedMapping;
+    ownedMapping.SetMappingInfo(cMap, rgNewMap);
+    return ownedMapping;
+#else
+    // The DAC reads a stopped target, so the shallow view is safe.
     return entry.m_mapping;
+#endif // !DACCESS_COMPILE
 }
 
 #undef DECODE_TYPEID
@@ -1504,7 +1535,7 @@ void Module::FreeClassTables()
             {
                 TypeHandle th = pEntry->GetTypeHandle();
 
-                // Array EEClass doesn't need notification and there is no work for Destruct()
+                // TypeDescs don't need notification and there is no work for Destruct()
                 if (th.IsTypeDesc())
                     continue;
 
@@ -3038,12 +3069,13 @@ mdToken GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
 }
 
 //=================================================================================
+#ifdef FEATURE_IJW
 void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
 {
     STANDARD_VM_CONTRACT;
 
     DWORD oldProtect;
-    if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))
+    if (!VirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))
     {
         // This is very bad.  We are not going to be able to update header.
         _ASSERTE(!"SetTargetForVTableEntry(): VirtualProtect() changing IJW thunk vtable to R/W failed.\n");
@@ -3053,12 +3085,13 @@ void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
     *ppVTEntry = pTarget;
 
     DWORD ignore;
-    if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), oldProtect, &ignore))
+    if (!VirtualProtect(ppVTEntry, sizeof(BYTE*), oldProtect, &ignore))
     {
         // This is not so bad, we're already done the update, we just didn't return the thunk table to read only
         _ASSERTE(!"SetTargetForVTableEntry(): VirtualProtect() changing IJW thunk vtable back to RO failed.\n");
     }
 }
+#endif // FEATURE_IJW
 
 //=================================================================================
 BYTE * GetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
@@ -3940,7 +3973,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     IfFailThrow(hr);
 
     // Operate on local data, and then persist it into the module once we know it's valid.
-    NewArrayHolder<uint8_t> pBuffer(new uint8_t[numBytes + sizeof(DynamicMetadata)]);
+    NewArrayHolder<uint8_t> pBuffer{ new uint8_t[numBytes + sizeof(DynamicMetadata)] };
     _ASSERTE(pBuffer != NULL); // allocation would throw first
 
     DynamicMetadata *pDynamicMetadata = (DynamicMetadata*)(uint8_t*)pBuffer;
@@ -3962,7 +3995,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
 
         delete[] (uint8_t*)m_pDynamicMetadata;
 
-        m_pDynamicMetadata = (TADDR)pBuffer.Extract();
+        m_pDynamicMetadata = (TADDR)pBuffer.Detach();
         m_dwMetadataGeneration++;
     }
 

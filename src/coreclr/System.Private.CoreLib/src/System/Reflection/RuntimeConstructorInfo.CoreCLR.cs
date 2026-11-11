@@ -69,6 +69,10 @@ namespace System.Reflection
         internal unsafe object InvokeDirectByRef(IntPtr* arguments) =>
             Invoker.InvokeDirectByRef(obj: null, arguments)!;
 
+        [StackTraceHidden]
+        [DebuggerHidden]
+        internal InvokerEmitUtil.InvokeFunc_Debugger GetDebuggerInvokeDelegate() => Invoker.GetDebuggerInvokeDelegate();
+
         internal override bool CacheEquals(object? o) =>
             o is RuntimeConstructorInfo m && m.m_handle == m_handle &&
             ReferenceEquals(m_declaringType, m.m_declaringType);

@@ -467,7 +467,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         // All common ABIs have outgoing arguments under caller SP (minus slot reserved for return address).
         // There are ABI-specific optimizations that could applied here, but they are not worth the complexity
         // given that this path is used rarely.
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
         upperBound = dac_cast<TADDR>(localRegisterSet.GetSP() - sizeof(TADDR));
 #else
         upperBound = dac_cast<TADDR>(localRegisterSet.GetSP());

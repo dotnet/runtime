@@ -192,7 +192,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
-            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                                    reinterpret_cast<cnsval_ssize_t>(m_compiler->info.compMethodHnd));
         }
         else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
         {
@@ -230,8 +231,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 }
 
 //------------------------------------------------------------------------
-// genZeroInitFrame: zero the lvMustInit untracked range of the frame using
-// a single memory.fill.
+// genZeroInitFrame: zero the lvMustInit untracked range of the frame.
 //
 // Arguments:
 //    untrLclHi      - High offset (exclusive) of the untracked range relative to FP.
@@ -260,12 +260,52 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclLo);
         emit->emitIns(INS_I_add);
     }
-    // Push fill value (zero, always i32 per memory.fill spec).
-    emit->emitIns_I(INS_i32_const, EA_4BYTE, 0);
-    // Push length (pointer-sized: i32 on wasm32, i64 on wasm64).
-    emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
-    // memory.fill 0
-    emit->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+    genWasmZeroInit(untrLclHi - untrLclLo);
+}
+
+//------------------------------------------------------------------------
+// genWasmZeroInit: zero memory using a scalar store or memory.fill.
+//
+// Arguments:
+//    size - Number of bytes to zero.
+//
+// Notes:
+//    The destination address must already be on the operand stack.
+//
+void CodeGen::genWasmZeroInit(size_t size)
+{
+    instruction store = INS_invalid;
+    switch (size)
+    {
+        case 1:
+            store = INS_i32_store8;
+            break;
+        case 2:
+            store = INS_i32_store16;
+            break;
+        case 4:
+            store = INS_i32_store;
+            break;
+        case 8:
+            store = INS_i64_store;
+            break;
+        default:
+            break;
+    }
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = (size == 8) ? EA_8BYTE : EA_4BYTE;
+    emit->emitIns_I((size == 8) ? INS_i64_const : INS_i32_const, attr, 0);
+
+    if (store != INS_invalid)
+    {
+        emit->emitIns_I(store, attr, 0);
+    }
+    else
+    {
+        emit->emitIns_I(INS_I_const, EA_PTRSIZE, size);
+        emit->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -756,12 +796,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             if (interval->IsLoop())
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
-            }
-            else if (interval->IsTry() && m_compiler->IsNativeAot())
-            {
-                // TODO-NativeAOT-WASM: Preserve interval nesting without CoreCLR's catch-resumption tag during
-                // NativeAOT bringup.
-                GetEmitter()->emitIns_BlockTy(INS_block);
             }
             else if (interval->IsTry())
             {
@@ -2177,6 +2211,13 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
+            if (icon->IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
+            {
+                GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
+                WasmProduceReg(treeNode);
+                return;
+            }
+
             // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
             // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
@@ -2636,7 +2677,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     }
 
     // Result is the address of the array element.
-    unsigned const scale = node->gtElemSize;
+    unsigned const scale = node->GetElemSize();
 
     if (scale > 1)
     {
@@ -2942,7 +2983,9 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         var_types type         = varDsc->GetRegisterType(tree);
         unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex);
+        bool      isLastUse    = varDsc->lvTracked && ((tree->gtFlags & GTF_VAR_DEATH) != 0) &&
+                         ((tree->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None);
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex, isLastUse);
         // In this case, the resulting tree type may be different from the local var type where the value originates,
         // and so we need an explicit conversion since we can't "load"
         // the value with a different type like we can if the value is on the shadow stack.
@@ -3334,6 +3377,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(wvt < WasmValueType::Count);
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
+    }
+
+    if ((call->gtDirectCallAddress != nullptr) &&
+        (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) == CorInfoReloc::WASM_DEFERRED_CALL))
+    {
+        // The emitter supplies this operand outside the argument IR; its exact call signature
+        // must still include it. See #DeferredWasmCallRelocationProtocol.
+        assert(!call->IsHelperCall() && !call->IsUnmanaged());
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) == nullptr);
+        typeStack.Push(CORINFO_WASM_TYPE_I32);
     }
 
     // Report managed call signatures to the R2R compiler for thunk generation.
@@ -3842,12 +3895,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             if (needsZeroing)
             {
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
-                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
-
-                // TODO-WASM-CQ: possibly do small fills directly
-                //
-                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+                genWasmZeroInit(amount);
             }
 
             // SP now points at the reserved space just below the allocation.
@@ -3999,7 +4047,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     unsigned  destOffset    = 0;
     unsigned  srcOffset     = 0;
 
-    // Unwrap a contained GT_INIT_VAL so the wrapped fill value (not the wrapper) is pushed onto the WASM value stack.
+    // Unwrap a contained GT_INIT_VAL to consume its fill value.
     GenTree* srcForConsume = src->OperIs(GT_INIT_VAL) ? src->gtGetOp1() : src;
     assert(!src->OperIs(GT_INIT_VAL) || src->isContained());
 
@@ -4026,7 +4074,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         {
             src = src->gtGetOp1();
         }
-        assert(!src->isContained());
+        assert(src->isContained() == src->IsIntegralConst(0));
         assert(!isCopyBlk);
         assert(isNativeOp);
     }
@@ -4084,10 +4132,9 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     if (isNativeOp)
     {
         // The destination should already be on the stack.
-        // The src may not be on the evaluation stack if it was contained, in which case we need to manufacture it
-        if (src->isContained())
+        // A contained copy source still needs its address on the operand stack.
+        if (isCopyBlk && src->isContained())
         {
-            assert(isCopyBlk);
             assert(srcReg != REG_NA);
             genEmitLocalGet(srcReg, WasmValueType::I);
             if (srcOffset != 0)
@@ -4096,8 +4143,15 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
                 emit->emitIns(INS_I_add);
             }
         }
-        GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-        GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        if (!isCopyBlk && src->isContained())
+        {
+            genWasmZeroInit(blkOp->Size());
+        }
+        else
+        {
+            emit->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+            emit->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        }
         genUpdateLife(blkOp);
         return;
     }
@@ -4172,17 +4226,13 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
 {
     // TODO-WASM: In multi-threaded wasm we will need to generate a for loop that atomically zeroes one GC ref
-    //  at a time. Right now we're single-threaded, so we can just use memory.fill.
+    //  at a time. Right now we're single-threaded, so regular stores and memory.fill suffice.
     assert(!WASM_THREAD_SUPPORT);
 
     // FIXME-WASM: We're missing a null check here.
 
     genConsumeOperands(blkOp);
-    // Emit the value constant expected by the memory.fill opcode (zero)
-    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
-    // Emit the size constant expected by the memory.copy and memory.fill opcodes
-    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-    GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
+    genWasmZeroInit(blkOp->Size());
 }
 
 //------------------------------------------------------------------------
@@ -4661,10 +4711,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
+    // NativeAOT uses unscaled virtual IPs.
     // Use 1 as the prolog size.
     //
-    codeSize   = 2 * maxVirtualIP;
+    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).

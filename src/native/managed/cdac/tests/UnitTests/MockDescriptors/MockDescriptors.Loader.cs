@@ -172,6 +172,12 @@ internal sealed class MockLoaderModule : TypedView
         set => WritePointerField(DynamicILBlobTableFieldName, value);
     }
 
+    public ulong AvailableTypeParams
+    {
+        get => ReadPointerField(AvailableTypeParamsFieldName);
+        set => WritePointerField(AvailableTypeParamsFieldName, value);
+    }
+
     public int MemberRefToDescMapOffset => Layout.GetField(MemberRefToDescMapFieldName).Offset;
 }
 
@@ -307,6 +313,7 @@ internal sealed class MockLoaderBuilder
     internal Layout<MockCGrowableSymbolStream> CGrowableSymbolStreamLayout { get; }
     internal Layout<MockModuleLookupMap> ModuleLookupMapLayout { get; }
     internal Layout DynamicILBlobTableLayout { get; }
+    internal Layout EETypeHashTableLayout { get; }
     internal Layout AppDomainLayout { get; }
     internal Layout ArrayListBaseLayout { get; }
     internal Layout ArrayListBlockLayout { get; }
@@ -349,6 +356,12 @@ internal sealed class MockLoaderBuilder
             builder.TargetTestHelpers.Arch,
             entryLayout.Size,
             [.. _dynamicILBlobTableHeaderLayout.Fields, .. entryLayout.Fields]);
+
+        Layout typeHashHeader = new SequentialLayoutBuilder("EETypeHashTable header", builder.TargetTestHelpers.Arch)
+            .AddPointerField("Buckets").AddUInt32Field("Count").Build();
+        int pointerSize = builder.TargetTestHelpers.PointerSize;
+        EETypeHashTableLayout = new Layout("EETypeHashTable", builder.TargetTestHelpers.Arch, typeHashHeader.Size,
+            [.. typeHashHeader.Fields, new("VolatileEntryValue", 0, pointerSize), new("VolatileEntryNextEntry", pointerSize, pointerSize)]);
 
         // An ArrayListBase embeds its first block, and a block's elements start at ArrayStart.
         // AssemblyList is last so that the first block's elements can follow the AppDomain.
@@ -494,6 +507,32 @@ internal sealed class MockLoaderBuilder
         }
 
         module.DynamicILBlobTable = header.Address;
+    }
+
+    internal ulong SetAvailableTypeParams(MockLoaderModule module, int bucketCount, params (uint Hash, ulong TypeHandle)[] entries)
+    {
+        const int SpecialSlots = 3;
+        TargetTestHelpers helpers = Builder.TargetTestHelpers;
+        int pointerSize = helpers.PointerSize;
+        MockMemorySpace.HeapFragment header = _allocator.Allocate((ulong)EETypeHashTableLayout.Size, "EETypeHashTable");
+        MockMemorySpace.HeapFragment buckets = _allocator.Allocate(checked((ulong)(bucketCount + SpecialSlots) * (ulong)pointerSize), "EETypeHashTable buckets");
+        helpers.WritePointer(header.Data.AsSpan(EETypeHashTableLayout.GetField("Buckets").Offset), buckets.Address);
+        helpers.Write(header.Data.AsSpan(EETypeHashTableLayout.GetField("Count").Offset), (uint)entries.Length);
+        helpers.WritePointer(buckets.Data, (ulong)bucketCount);
+        helpers.WritePointer(buckets.Data.AsSpan(2 * pointerSize), 1);
+        for (int i = 0; i < bucketCount; i++)
+            helpers.WritePointer(buckets.Data.AsSpan((i + SpecialSlots) * pointerSize), ((ulong)(i + SpecialSlots) << 6) | 1);
+        foreach ((uint hash, ulong typeHandle) in entries)
+        {
+            int bucketOffset = ((int)(hash % (uint)bucketCount) + SpecialSlots) * pointerSize;
+            MockMemorySpace.HeapFragment entry = _allocator.Allocate((ulong)(3 * pointerSize), "EETypeHashTable entry");
+            helpers.WritePointer(entry.Data, typeHandle);
+            helpers.WritePointer(entry.Data.AsSpan(pointerSize), helpers.ReadPointer(buckets.Data.AsSpan(bucketOffset)));
+            helpers.Write(entry.Data.AsSpan(2 * pointerSize), hash);
+            helpers.WritePointer(buckets.Data.AsSpan(bucketOffset), entry.Address);
+        }
+        module.AvailableTypeParams = header.Address;
+        return buckets.Address;
     }
 
     /// <summary>

@@ -32,6 +32,22 @@ public class ColdSignatureDispatch
         }
     }
 
+    public abstract class GenericVirtualTransform
+    {
+        public abstract GenericVirtualSignatureValue Transform<T>(GenericVirtualSignatureValue value);
+    }
+
+    public sealed class GenericVirtualTransformImpl : GenericVirtualTransform
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override GenericVirtualSignatureValue Transform<T>(GenericVirtualSignatureValue value)
+        {
+            Assert.Equal(typeof(string), typeof(T));
+
+            return value;
+        }
+    }
+
     public sealed class Caller<T>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -43,6 +59,26 @@ public class ColdSignatureDispatch
 
             return result;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public GenericVirtualSignatureValue InvokeGenericVirtual(GenericVirtualTransform target, GenericVirtualSignatureValue value)
+        {
+            return target.Transform<T>(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static T InvokeGenericContext(T value) => GenericContextCallee.Wrap(value).Value;
+    }
+
+    public struct GenericContextValue<T>
+    {
+        public T Value;
+    }
+
+    public static class GenericContextCallee
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static GenericContextValue<T> Wrap<T>(T value) => new GenericContextValue<T> { Value = value };
     }
 
     // A cold shared-generic interface call must prepare signature types before GC scans its
@@ -53,8 +89,33 @@ public class ColdSignatureDispatch
     {
         s_isGCStress = TestLibrary.Utilities.IsGCStress;
         object reference = new object();
-        SignatureValue result = new Caller<string>().Invoke(
-            new GenericTransform<string>(), new SignatureValue { Reference = reference });
+        Caller<string> caller = new Caller<string>();
+        GenericTransform<string> target = new GenericTransform<string>();
+        SignatureValue argument = new SignatureValue { Reference = reference };
+        SignatureValue result = caller.Invoke(target, argument);
         Assert.Same(reference, result.Reference);
+
+        // The cold call prepares the target. Further calls install and exercise the dispatch stub.
+        s_isGCStress = false;
+        for (int i = 0; i < 2; i++)
+        {
+            result = caller.Invoke(target, argument);
+            Assert.Same(reference, result.Reference);
+        }
+
+        Assert.Throws<NullReferenceException>(() =>
+        {
+            caller.Invoke(null, default);
+        });
+
+        // Shared code resolves a generic virtual target at run time. The resolved instantiation
+        // must load its signature types before GC can scan its prestub frame.
+        GenericVirtualSignatureValue genericVirtualResult = new Caller<string>().InvokeGenericVirtual(
+            new GenericVirtualTransformImpl(), new GenericVirtualSignatureValue { Reference = reference });
+        Assert.Same(reference, genericVirtualResult.Reference);
+
+        // GC in the callee's fixup reports the generic-context argument of its call frame. The
+        // callee's return type is not loaded, so its offset must come from the GCRefMap.
+        Assert.Same(reference, Caller<object>.InvokeGenericContext(reference));
     }
 }

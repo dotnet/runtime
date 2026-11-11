@@ -2740,7 +2740,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_LDC_I4_0;
 		} else if (!strcmp ("BitOperations", klass_name)) {
 			int arg_type = (csignature->param_count > 0) ? csignature->params [0]->type : MONO_TYPE_VOID;
-			if ((!strcmp (tm, "RotateLeft") || !strcmp (tm, "RotateRight")) && MINT_IS_LDC_I4 (td->last_ins->opcode)) {
+			if ((!strcmp (tm, "RotateLeft") || !strcmp (tm, "RotateRight")) && td->last_ins == td->cbb->last_ins && MINT_IS_LDC_I4 (td->last_ins->opcode)) {
 				gboolean left = !strcmp (tm, "RotateLeft");
 				int ct = interp_get_const_from_ldc_i4 (td->last_ins);
 				int opcode = -1;

@@ -382,62 +382,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
 //-----------------------------------------------------------------------
 
 
-// TODO [DAVBR]: For the full fix for VsWhidbey 450273, all the below
-// may be uncommented once isLegalManagedCodeCaller works properly
-// with non-return address inputs, and with non-DEBUG builds
-#if 0
-//-----------------------------------------------------------------------
-// returns TRUE if retAddr, is a return address that can call managed code
-
-bool isLegalManagedCodeCaller(PCODE retAddr) {
-    WRAPPER_NO_CONTRACT;
-#ifdef TARGET_X86
-
-        // we expect to be called from JITTED code or from special code sites inside
-        // mscorwks like callDescr which we have put a NOP (0x90) so we know that they
-        // are specially blessed.
-    if (!ExecutionManager::IsManagedCode(retAddr) &&
-        (
-#ifdef DACCESS_COMPILE
-         !(PTR_BYTE(retAddr).IsValid()) ||
-#endif
-         ((*PTR_BYTE(retAddr) != 0x90) &&
-          (*PTR_BYTE(retAddr) != 0xcc))))
-    {
-        LOG((LF_GC, LL_INFO10, "Bad caller to managed code: retAddr=0x%08x, *retAddr=0x%x\n",
-             retAddr, *(BYTE*)PTR_BYTE(retAddr)));
-
-        return false;
-    }
-
-        // it better be a return address of some kind
-    TADDR dummy;
-    if (isRetAddr(retAddr, &dummy))
-        return true;
-
-#ifndef DACCESS_COMPILE
-#ifdef DEBUGGING_SUPPORTED
-    // The debugger could have dropped an INT3 on the instruction that made the call
-    // Calls can be 2 to 7 bytes long
-    if (CORDebuggerAttached()) {
-        PTR_BYTE ptr = PTR_BYTE(retAddr);
-        for (int i = -2; i >= -7; --i)
-            if (ptr[i] == 0xCC)
-                return true;
-        return false;
-    }
-#endif // DEBUGGING_SUPPORTED
-#endif // #ifndef DACCESS_COMPILE
-
-    _ASSERTE(!"Bad return address on stack");
-    return false;
-#else  // TARGET_X86
-    return true;
-#endif // TARGET_X86
-}
-#endif //0
-
-
 //-----------------------------------------------------------------------
 // Implementation of the global table of names
 #define FRAME_TYPE_NAME(x) #x,
@@ -664,6 +608,9 @@ void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targe
 
 void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
 {
+#ifdef CONTEXT_FLOATING_POINT
+    _ASSERTE((pRD->pCurrentContext->ContextFlags & (CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)) != 0);
+#endif
     switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateFloatingPointRegisters_Impl(pRD, targetSP); }
@@ -720,6 +667,8 @@ BOOL InlinedCallFrame::IsInInterpreter()
 //---------------------------------------------------------------
 // Get the extra param for shared generic code.
 //---------------------------------------------------------------
+static UINT OffsetFromGCRefMapPos(int pos);
+
 PTR_VOID TransitionFrame::GetParamTypeArg()
 {
     CONTRACTL
@@ -742,6 +691,30 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
 
     MethodDesc *pFunction = GetFunction();
     _ASSERTE (pFunction->RequiresInstArg());
+
+    // A target prepared with a GCRefMap need not have loaded the signature types
+    // that ArgIterator requires, so locate the argument through the map instead.
+    FrameIdentifier frame = GetFrameIdentifier();
+    PTR_BYTE pGCRefMap = nullptr;
+    if (frame == FrameIdentifier::ExternalMethodFrame)
+        pGCRefMap = dac_cast<PTR_ExternalMethodFrame>(this)->GetGCRefMap();
+    else if (frame == FrameIdentifier::PrestubMethodFrame || frame == FrameIdentifier::CallCountingHelperFrame)
+        pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
+
+    if (pGCRefMap != nullptr)
+    {
+        GCRefMapDecoder decoder(pGCRefMap);
+#ifdef TARGET_X86
+        decoder.ReadStackPop();
+#endif
+        while (!decoder.AtEnd())
+        {
+            int pos = decoder.CurrentPos();
+            int token = decoder.ReadToken();
+            if (token == GCREFMAP_METHOD_PARAM || token == GCREFMAP_TYPE_PARAM)
+                return PTR_VOID(*PTR_TADDR(GetTransitionBlock() + OffsetFromGCRefMapPos(pos)));
+        }
+    }
 
     MetaSig msig(pFunction);
     ArgIterator argit (&msig);
@@ -1453,24 +1426,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 }
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
-
-void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ValueClassInfo *pVCInfo = m_pVCInfo;
-    while (pVCInfo != NULL)
-    {
-        _ASSERTE(pVCInfo->pMT->IsValueType());
-        ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
-        pVCInfo = pVCInfo->pNext;
-    }
-}
 
 //
 // Promote Caller Stack

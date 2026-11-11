@@ -441,8 +441,10 @@ public class ExecutionManagerTests
         }
     }
 
-    [Fact]
-    public void GetMethodDesc_R2R_WasmVirtualIPRangeList_ResolvesCapturedShape()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetMethodDesc_R2R_WasmVirtualIPRangeList_ResolvesCapturedShape(bool compositeComponent)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
@@ -466,7 +468,16 @@ public class ExecutionManagerTests
                     emBuilder.AllocateJittedCodeRange(VirtualIPRangeStart, VirtualIPRangeSize);
                 MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x200], []);
                 r2rInfo.MinVirtualIP = VirtualIPRangeStart;
-                r2rInfo.LoadedImageBase = LoadedImageBase;
+
+                // A component assembly of a composite image leaves LoadedImageBase unset; the image base
+                // and entry point map belong to the composite image's ReadyToRunInfo.
+                MockReadyToRunInfo compositeInfo = r2rInfo;
+                if (compositeComponent)
+                {
+                    compositeInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x200], []);
+                    r2rInfo.CompositeInfo = compositeInfo.Address;
+                }
+                compositeInfo.LoadedImageBase = LoadedImageBase;
                 runtimeFunctionsAddress = r2rInfo.RuntimeFunctions;
                 runtimeFunctionSize = emBuilder.RuntimeFunctionLayout.Size;
                 Assert.Equal(8, runtimeFunctionSize);
@@ -476,7 +487,7 @@ public class ExecutionManagerTests
 
                 MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
                 hashMapBuilder.PopulatePtrMap(
-                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    compositeInfo.EntryPointToMethodDescMapAddress,
                     [(CapturedVirtualIP, ExpectedMethodDescAddress)]);
 
                 MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);

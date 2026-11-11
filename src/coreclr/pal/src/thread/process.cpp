@@ -14,7 +14,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #include "pal/procobj.hpp"
 #include "pal/thread.hpp"
-#include "pal/file.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/module.h"
 #include "procprivate.hpp"
@@ -24,7 +23,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/debug.h"
 #include "pal/utils.h"
 #include "pal/environ.h"
-#include "pal/virtual.h"
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
 
@@ -571,7 +569,14 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 #endif
 
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
-static const char* IpcNameFormat = "%s-%d-%llu-%s";
+
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/tmp/"
+#else
+// On Android, "/tmp/" doesn't exist; temporary files should go to
+// /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp/"
+#endif
 
 #ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
 static const char* RuntimeStartupPipeName = "st";
@@ -1153,12 +1158,11 @@ PAL_GetTransportName(
     IN const char *suffix)
 {
     *name = '\0';
-    DWORD dwRetVal = 0;
     UINT64 disambiguationKey = 0;
-    PathCharString formatBufferString;
+    PathCharString directoryString;
     BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
-    char *formatBuffer = formatBufferString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
-    if (formatBuffer == nullptr)
+    char *directoryBuffer = directoryString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
+    if (directoryBuffer == nullptr)
     {
         ERROR("Out Of Memory");
         return;
@@ -1180,16 +1184,16 @@ PAL_GetTransportName(
         }
 
         // In sandbox, all IPC files (locks, pipes) should be written to the application group
-        // container. The path returned by GetTempPathA will be unique for each process and cannot
+        // container. $TMPDIR will be unique for each process and cannot
         // be used for IPC between two different processes
-        if (!GetApplicationContainerFolder(formatBufferString, applicationGroupId, applicationGroupIdLength))
+        if (!GetApplicationContainerFolder(directoryString, applicationGroupId, applicationGroupIdLength))
         {
             ERROR("Out Of Memory");
             return;
         }
 
         // Verify the size of the path won't exceed maximum allowed size
-        if (formatBufferString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
+        if (directoryString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
         {
             ERROR("GetApplicationContainerFolder returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
             return;
@@ -1198,28 +1202,31 @@ PAL_GetTransportName(
     else
 #endif // __APPLE__
     {
-        // Get a temp file location
-        dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, formatBuffer);
-        if (dwRetVal == 0)
+        // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
+        const char* tmpDir = getenv("TMPDIR");
+        if (tmpDir == nullptr || tmpDir[0] == '\0')
         {
-            ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
+            tmpDir = TEMP_DIRECTORY_PATH;
+        }
+
+        const char* slash = (tmpDir[strlen(tmpDir) - 1] == '/') ? "" : "/";
+        int len = snprintf(directoryBuffer, MAX_TRANSPORT_NAME_LENGTH, "%s%s", tmpDir, slash);
+        if (len < 0 || (unsigned int)len >= MAX_TRANSPORT_NAME_LENGTH)
+        {
+            ERROR("TMPDIR is longer than MAX_TRANSPORT_NAME_LENGTH");
             return;
         }
-        if (dwRetVal > MAX_TRANSPORT_NAME_LENGTH)
-        {
-            ERROR("GetTempPath returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
-            return;
-        }
+        directoryString.CloseBuffer(len);
     }
 
-    if (strncat_s(formatBuffer, MAX_TRANSPORT_NAME_LENGTH, IpcNameFormat, strlen(IpcNameFormat)) == STRUNCATE)
+    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, "%s%s-%d-%llu-%s",
+                         directoryString.GetString(), prefix, (int)id, (unsigned long long)disambiguationKey, suffix);
+    if (chars < 0 || (unsigned int)chars >= MAX_TRANSPORT_NAME_LENGTH)
     {
         ERROR("TransportPipeName was larger than MAX_TRANSPORT_NAME_LENGTH");
+        *name = '\0';
         return;
     }
-
-    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, formatBuffer, prefix, id, disambiguationKey, suffix);
-    _ASSERTE(chars > 0 && (unsigned int)chars < MAX_TRANSPORT_NAME_LENGTH);
 }
 
 /*++

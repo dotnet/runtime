@@ -14,6 +14,8 @@
 
 
 #include <palsuite.h>
+#include <sys/mman.h>
+
 
 char* p;   /* pointer to be abused */
 
@@ -55,14 +57,11 @@ LONG ExitFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
             ep->ExceptionRecord->ExceptionCode);
     }
 
-    /* attempt to correct the problem by commiting the page at address 'p'  */
-    Temp= VirtualAlloc(p, 1, MEM_COMMIT, PAGE_READWRITE);	
-    if (!Temp) 
-    { 
-        Fail("EXCEPTION_CONTINUE_EXECUTION: last error = %u - probably "
-             "out of memory. Unable to continue, not proof of exception "
-             "failure\n",
-             GetLastError());
+    /* attempt to correct the problem by making the page at address 'p' writable */
+    Temp = mmap(p, 1, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0);
+    if (Temp == MAP_FAILED)
+    {
+        Fail("EXCEPTION_CONTINUE_EXECUTION: unable to make reserved memory writable.\n");
     }
     /*  The memory that 'p' points to is now valid */
 
@@ -94,11 +93,10 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_test2_paltest_pal_except_filter_tes
         bTry = TRUE;    /* indicate we hit the PAL_TRY block */
 
         /* reserve an address chunk for p to point to */
-        p = (char*) VirtualAlloc(0, 1, MEM_RESERVE, PAGE_READONLY);
-        if (!p) 
+        p = (char*)mmap(NULL, 1, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        if (p == MAP_FAILED)
         {
-            Fail("EXCEPTION_CONTINUE_EXECUTION: test setup via "
-                 "VirtualAlloc failed.\n");
+            Fail("EXCEPTION_CONTINUE_EXECUTION: test setup via mmap failed.\n");
         }
 
         *p = 13;        /* causes an access violation exception */

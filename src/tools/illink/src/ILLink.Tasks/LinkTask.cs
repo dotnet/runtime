@@ -9,12 +9,11 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks
 {
-    public class ILLink : ToolTask
+    public class ILLink : CachedToolTask
     {
         private static readonly InvocationCacheConfiguration s_cacheConfiguration =
             new("ILLink", "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH");
@@ -281,14 +280,9 @@ namespace ILLink.Tasks
 
         protected override string GetWorkingDirectory() => _executionWorkingDirectory ?? base.GetWorkingDirectory();
 
-        protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-        {
-            return InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
-                describeInvocation: () => DescribeInvocation(pathToTool),
-                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands));
-        }
+        private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
 
-        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
+        protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
@@ -313,7 +307,7 @@ namespace ILLink.Tasks
                     _executionWorkingDirectory = executionRoot;
                     pathToTool = Path.GetFullPath(pathToTool);
                 }
-                exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+                exitCode = base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
             }
             finally
             {
@@ -346,7 +340,8 @@ namespace ILLink.Tasks
             }
         }
 
-        private InvocationDescription DescribeInvocation(string pathToTool)
+        private protected override InvocationDescription DescribeInvocation(
+            string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             InvocationBuilder invocation = _invocation;
             if (invocation?.Paths is null)

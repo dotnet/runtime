@@ -65,6 +65,7 @@
 //
 // The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
 // For example: DllImportEntry(FooNative_Bar)
+// WebAssembly instead generates the QCall table in callhelpers-pinvoke.cpp from the managed assembly closure.
 //
 // extern "C" BOOL QCALLTYPE FooNative_Bar(
 //     int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)

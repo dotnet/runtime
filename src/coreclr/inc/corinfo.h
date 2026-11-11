@@ -595,6 +595,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+    CORINFO_HELP_WASM_PROF_SAMPLEPOINT,     // WASM only: cooperative EventPipe CPU-sampling samplepoint
+
     CORINFO_HELP_COUNT,
 };
 
@@ -695,11 +697,7 @@ enum class CorInfoCallConvExtension
 #ifdef TARGET_X86
 inline bool IsCallerPop(CorInfoCallConvExtension callConv)
 {
-#ifdef UNIX_X86_ABI
-    return callConv == CorInfoCallConvExtension::Managed || callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
-#else
     return callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
-#endif // UNIX_X86_ABI
 }
 #endif
 
@@ -926,6 +924,7 @@ enum class CorInfoReloc
     WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
     WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
     WASM_METHOD_FRAME_IDENTITY_SLEB, // Wasm: the current method's runtime-specific shadow-frame identity, encoded as a 5-byte varint32.
+    WASM_DEFERRED_CALL, // Wasm: metadata for a deferred direct call; the target is its exact signature handle and the location is its first immediate byte. Does not write bytes.
 };
 
 enum CorInfoGCType
