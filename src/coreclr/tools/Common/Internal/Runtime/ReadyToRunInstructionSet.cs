@@ -108,5 +108,7 @@ namespace Internal.ReadyToRunConstants
         Fp16 = 95,
         SvePmull128 = 96,
         RelaxedSimd = 97,
+        LAM_BH = 98,
+        LAM_CAS = 99,
     }
 }
