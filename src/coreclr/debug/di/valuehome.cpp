@@ -19,6 +19,13 @@ EnregisteredValueHome::EnregisteredValueHome(const CordbNativeFrame * pFrame):
     _ASSERTE(pFrame != NULL);
 }
 
+ULONG32 EnregisteredValueHome::GetRegisterSize() const
+{
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+    return targetInfo.pointerSize;
+}
+
 // ----------------------------------------------------------------------------
 // RegValueHome member function implementations
 // ----------------------------------------------------------------------------
@@ -35,30 +42,23 @@ void RegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 } // RegValueHome::CopyToIPCEType
 
 // RegValueHome::SetContextRegister
-// This will update a register in a given context, and in the regdisplay of a given frame.
-// Arguments:
-// updates a register in a given context buffer using the DAC.
+// Updates a register in a given context buffer using the DAC.
 // Arguments:
 //     input:  contextBuffer - context buffer in which the register is to be updated
-//             regnum   - enumeration constant indicating which register is to be updated
-//             newVal   - the new value for the register contents
+//             regNum        - enumeration constant indicating which register is to be updated
+//             newVal        - the new register value in fixed-width transport
 //     output: no out parameters, but the new value will be written to the context buffer
 void RegValueHome::SetContextRegister(ContextBuffer    contextBuffer,
                                       CorDebugRegister regNum,
-                                      SIZE_T           newVal)
+                                      CORDB_REGISTER   newVal)
 {
     IDacDbiInterface * pDAC = m_pFrame->GetProcess()->GetDAC();
-    TADDR value = (TADDR)newVal;
     HRESULT hr = pDAC->WriteRegistersToContext(
         contextBuffer,
         &regNum,
         1,
-        &value);
-    if (FAILED(hr))
-    {
-        _ASSERTE(!"Invalid register number!");
-        ThrowHR(E_FAIL);
-    }
+        &newVal);
+    IfFailThrow(hr);
 } // RegValueHome::SetContextRegister
 
 // RegValueHome::SetEnregisteredValue
@@ -66,30 +66,28 @@ void RegValueHome::SetContextRegister(ContextBuffer    contextBuffer,
 // for full header comment)
 void RegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
-    SIZE_T extendedVal = 0;
+    CORDB_REGISTER extendedVal = 0;
 
     // If the value is in a reg, then it's going to be a register's width (regardless of
     // the actual width of the data).
     // For signed types, like i2, i1, make sure we sign extend.
-    IDacDbiInterface::TargetInfo targetInfo;
+    if (newValue.Size() > GetRegisterSize())
+        ThrowHR(E_INVALIDARG);
 
     if (fIsSigned)
     {
-        // Sign extend. SSIZE_T is a register size signed value.
-        // Casting
+        // Extend in the fixed-width transport, not the debugger host's native integer.
         switch(newValue.Size())
         {
             case 1:  _ASSERTE(sizeof( BYTE) == 1);
-                     extendedVal = (SSIZE_T) *(char*)newValue.StartAddress();           break;
+                     extendedVal = static_cast<INT64>(*(char*)newValue.StartAddress());  break;
             case 2:  _ASSERTE(sizeof( WORD) == 2);
-                     extendedVal = (SSIZE_T) *(short*)newValue.StartAddress();          break;
+                     extendedVal = static_cast<INT64>(*(short*)newValue.StartAddress()); break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
-                     extendedVal = (SSIZE_T) *(int*)newValue.StartAddress();            break;
+                     extendedVal = static_cast<INT64>(*(int*)newValue.StartAddress());   break;
             case 8:
             {
-                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
-                _ASSERTE(targetInfo.pointerSize == 8);
-                extendedVal = (SSIZE_T) *(INT64*)newValue.StartAddress();
+                extendedVal = *(INT64*)newValue.StartAddress();
                 break;
             }
             default:
@@ -110,9 +108,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer cont
                      extendedVal = *(DWORD*)newValue.StartAddress();     break;
             case 8:
             {
-                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
-                _ASSERTE(targetInfo.pointerSize == 8);
-                extendedVal = (SIZE_T) *(UINT64*)newValue.StartAddress();
+                extendedVal = *(UINT64*)newValue.StartAddress();
                 break;
             }
             default:
@@ -129,8 +125,9 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer cont
 // for full header comment)
 void RegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
-    TADDR value = 0;
-    _ASSERTE(valueOutBuffer.Size() <= sizeof(value));
+    CORDB_REGISTER value = 0;
+    if (valueOutBuffer.Size() > GetRegisterSize())
+        ThrowHR(E_INVALIDARG);
     HRESULT hr = m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &value);
     IfFailThrow(hr);
 
@@ -166,22 +163,18 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer c
     // x64 this is up to 16 bytes (2*8). Guard at runtime (not just via assert)
     // so that an unexpected buffer size cannot cause the memcpy below to read
     // past the end of newValue in retail builds.
-    _ASSERTE(REG_SIZE == sizeof(void*));
-    if ((newValue.Size() <= sizeof(void*)) || (newValue.Size() > 2 * sizeof(void*)))
+    const ULONG32 registerSize = GetRegisterSize();
+    if ((newValue.Size() <= registerSize) || (newValue.Size() > 2 * registerSize))
     {
         ThrowHR(E_INVALIDARG);
     }
 
     // Split the new value into high and low parts.
-    SIZE_T highPart = 0;
-    SIZE_T lowPart = 0;
+    CORDB_REGISTER highPart = 0;
+    CORDB_REGISTER lowPart = 0;
 
-    memcpy(&lowPart, newValue.StartAddress(), REG_SIZE);
-    // Only read the high part if the value is large enough to span two registers.
-    if (newValue.Size() > REG_SIZE)
-    {
-        memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, newValue.Size() - REG_SIZE);
-    }
+    memcpy(&lowPart, newValue.StartAddress(), registerSize);
+    memcpy(&highPart, (BYTE *)newValue.StartAddress() + registerSize, newValue.Size() - registerSize);
 
     // Update the proper registers. SetContextRegister writes through to the
     // active CONTEXT - which is the only source of truth now that REGDISPLAY is gone.
@@ -194,17 +187,16 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer c
 // for full header comment)
 void RegRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
-    TADDR highWord = 0;
-    TADDR lowWord = 0;
+    CORDB_REGISTER highWord = 0;
+    CORDB_REGISTER lowWord = 0;
     IfFailThrow(m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &highWord));
     IfFailThrow(m_pFrame->ReadContextRegister(m_reg2Info.m_kRegNumber, &lowWord));
 
     // The low half occupies the first register-sized chunk; the high half the second.
     // The out buffer may be smaller than two registers (e.g. a 12-byte struct returned
     // in two 8-byte registers), so clamp each copy to the bytes that actually remain.
-    const SIZE_T cbReg = sizeof(lowWord);
+    const SIZE_T cbReg = GetRegisterSize();
     const SIZE_T cbTotal = valueOutBuffer.Size();
-    _ASSERTE(cbTotal <= 2 * cbReg);
     if (cbTotal > 2 * cbReg)
     {
         ThrowHR(E_INVALIDARG);
@@ -260,22 +252,22 @@ void RegMemValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // for full header comment)
 void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
-    _ASSERTE(newValue.Size() == REG_SIZE >> 1); // make sure we have bytes for two registers
-    _ASSERTE(REG_SIZE == sizeof(void*));
+    const ULONG32 registerSize = GetRegisterSize();
+    if (newValue.Size() != 2 * registerSize)
+        ThrowHR(E_INVALIDARG);
 
     // Split the new value into high and low parts.
-    SIZE_T highPart;
-    SIZE_T lowPart;
+    CORDB_REGISTER highPart = 0;
+    CORDB_REGISTER lowPart = 0;
 
-    memcpy(&lowPart, newValue.StartAddress(), REG_SIZE);
-    memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, REG_SIZE);
+    memcpy(&lowPart, newValue.StartAddress(), registerSize);
+    memcpy(&highPart, (BYTE *)newValue.StartAddress() + registerSize, registerSize);
 
     // Update the proper registers.
     SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, highPart); // throws
 
-    _ASSERTE(REG_SIZE == sizeof(lowPart));
-    HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowPart);
-    IfFailThrow(hr);
+    m_pFrame->GetProcess()->SafeWriteBuffer(
+        TargetBuffer(m_memAddr, registerSize), reinterpret_cast<BYTE *>(&lowPart));
 
 } // RegMemValueHome::SetEnregisteredValue
 
@@ -284,19 +276,21 @@ void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer c
 // for full header comment)
 void RegMemValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
+    const ULONG32 registerSize = GetRegisterSize();
+    if (valueOutBuffer.Size() != 2 * registerSize)
+        ThrowHR(E_INVALIDARG);
+
     // Read the high bits from the register...
-    TADDR highBits = 0;
+    CORDB_REGISTER highBits = 0;
     IfFailThrow(m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &highBits));
 
     // ... and the low bits from the remote process
-    DWORD lowBits;
-    HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowBits);
-    IfFailThrow(hr);
+    CORDB_REGISTER lowBits = 0;
+    m_pFrame->GetProcess()->SafeReadBuffer(
+        TargetBuffer(m_memAddr, registerSize), reinterpret_cast<BYTE *>(&lowBits));
 
-    _ASSERTE(sizeof(lowBits) + sizeof(highBits) == valueOutBuffer.Size());
-
-    memcpy(valueOutBuffer.StartAddress(), &lowBits, sizeof(lowBits));
-    memcpy((BYTE *)valueOutBuffer.StartAddress() + sizeof(lowBits), &highBits, sizeof(highBits));
+    memcpy(valueOutBuffer.StartAddress(), &lowBits, registerSize);
+    memcpy((BYTE *)valueOutBuffer.StartAddress() + registerSize, &highBits, registerSize);
 
 } // RegMemValueHome::GetEnregisteredValue
 
@@ -322,22 +316,22 @@ void MemRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // for full header comment)
 void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
-    _ASSERTE(newValue.Size() == REG_SIZE << 1); // make sure we have bytes for two registers
-    _ASSERTE(REG_SIZE == sizeof(void *));
+    const ULONG32 registerSize = GetRegisterSize();
+    if (newValue.Size() != 2 * registerSize)
+        ThrowHR(E_INVALIDARG);
 
     // Split the new value into high and low parts.
-    SIZE_T highPart;
-    SIZE_T lowPart;
+    CORDB_REGISTER highPart = 0;
+    CORDB_REGISTER lowPart = 0;
 
-    memcpy(&lowPart, newValue.StartAddress(), REG_SIZE);
-    memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, REG_SIZE);
+    memcpy(&lowPart, newValue.StartAddress(), registerSize);
+    memcpy(&highPart, (BYTE *)newValue.StartAddress() + registerSize, registerSize);
 
     // Update the proper registers.
     SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, lowPart); // throws
 
-    _ASSERTE(REG_SIZE == sizeof(highPart));
-    HRESULT hr = m_pFrame->GetProcess()->SafeWriteStruct(m_memAddr, &highPart);
-    IfFailThrow(hr);
+    m_pFrame->GetProcess()->SafeWriteBuffer(
+        TargetBuffer(m_memAddr, registerSize), reinterpret_cast<BYTE *>(&highPart));
 } // MemRegValueHome::SetEnregisteredValue
 
 // MemRegValueHome::GetEnregisteredValue
@@ -345,19 +339,21 @@ void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer c
 // for full header comment)
 void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
+    const ULONG32 registerSize = GetRegisterSize();
+    if (valueOutBuffer.Size() != 2 * registerSize)
+        ThrowHR(E_INVALIDARG);
+
     // Read the high bits from the remote process' memory
-    DWORD highBits;
-    HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &highBits);
-    IfFailThrow(hr);
+    CORDB_REGISTER highBits = 0;
+    m_pFrame->GetProcess()->SafeReadBuffer(
+        TargetBuffer(m_memAddr, registerSize), reinterpret_cast<BYTE *>(&highBits));
 
     // and the low bits from a register
-    TADDR lowBits = 0;
+    CORDB_REGISTER lowBits = 0;
     IfFailThrow(m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &lowBits));
 
-    _ASSERTE(sizeof(lowBits) + sizeof(highBits) == valueOutBuffer.Size());
-
-    memcpy(valueOutBuffer.StartAddress(), &lowBits, sizeof(lowBits));
-    memcpy((BYTE *)valueOutBuffer.StartAddress() + sizeof(lowBits), &highBits, sizeof(highBits));
+    memcpy(valueOutBuffer.StartAddress(), &lowBits, registerSize);
+    memcpy((BYTE *)valueOutBuffer.StartAddress() + registerSize, &highBits, registerSize);
 
 } // MemRegValueHome::GetEnregisteredValue
 

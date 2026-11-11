@@ -4210,7 +4210,7 @@ bool CordbFrame::IsContainedInFrame(FramePointer fp)
 }
 
 // Reads an integer register from this frame's CONTEXT buffer via the DAC.
-HRESULT CordbFrame::ReadContextRegister(CorDebugRegister reg, TADDR * pValue) const
+HRESULT CordbFrame::ReadContextRegister(CorDebugRegister reg, CORDB_REGISTER * pValue) const
 {
     if (pValue == NULL)
         return E_POINTER;
@@ -4223,7 +4223,7 @@ HRESULT CordbFrame::ReadContextRegister(CorDebugRegister reg, TADDR * pValue) co
         1,
         &value);
     if (SUCCEEDED(hr))
-        *pValue = (TADDR)value;
+        *pValue = value;
     return hr;
 }
 
@@ -4795,9 +4795,9 @@ BOOL CordbInternalFrame::IsCloserToLeafWorker(ICorDebugFrame * pFrameToCompare)
         CordbRuntimeUnwindableFrame * pCRUFrame =
             static_cast<CordbRuntimeUnwindableFrame *>(pRUFrame.GetValue());
 
-        TADDR sp = 0;
+        CORDB_REGISTER sp = 0;
         IfFailThrow(pCRUFrame->ReadContextRegister(REGISTER_STACK_POINTER, &sp));
-        CORDB_ADDRESS stackFrameSP = PTR_TO_CORDB_ADDRESS(sp);
+        CORDB_ADDRESS stackFrameSP = sp;
         return (thisFrameAddr < stackFrameSP);
     }
 
@@ -4937,7 +4937,7 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
                                    FramePointer         fp,
                                    CordbNativeCode *    pNativeCode,
                                    SIZE_T               ip,
-                                   TADDR                taAmbientESP,
+                                   CORDB_ADDRESS        taAmbientESP,
                                    CordbAppDomain *     pCurrentAppDomain,
                                    CordbMiscFrame *     pMisc /*= NULL*/,
                                    ContextBuffer        contextBuffer /*= {}*/)
@@ -5128,7 +5128,7 @@ ULONG32 CordbNativeFrame::GetIPOffset()
 // Reads an integer register from this frame's CONTEXT buffer via the DAC, using
 // the JIT register number. Composes the JIT-RegNum -> CorDebugRegister
 // translation with the generic register read.
-HRESULT CordbNativeFrame::ReadJitRegFromContext(ULONG32 jitRegNum, TADDR * pValue) const
+HRESULT CordbNativeFrame::ReadJitRegFromContext(ULONG32 jitRegNum, CORDB_REGISTER * pValue) const
 {
     if (pValue == NULL)
         return E_POINTER;
@@ -5154,14 +5154,14 @@ CorDebugRegister CordbNativeFrame::ConvertJitRegToCorDebugRegister(ULONG32 jitRe
 // Convenience wrapper around ReadContextRegister for the stack pointer.
 CORDB_ADDRESS CordbNativeFrame::GetStackPointer() const
 {
-    TADDR sp = 0;
+    CORDB_REGISTER sp = 0;
     HRESULT hr = ReadContextRegister(REGISTER_STACK_POINTER, &sp);
     if (FAILED(hr))
     {
         _ASSERTE(!"ReadContextRegister(REGISTER_STACK_POINTER) failed");
         return (CORDB_ADDRESS)0;
     }
-    return PTR_TO_CORDB_ADDRESS(sp);
+    return sp;
 }
 
 // Determine if we can set IP at this point.  The specified offset is the native offset.
@@ -5239,22 +5239,22 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
         // funclet prolog using the PSP. Thus, we just look up the frame pointer in the
         // current native frame.
 
-        TADDR regVal = 0;
+        CORDB_REGISTER regVal = 0;
         hr = ReadContextRegister(reg, &regVal);
         _ASSERTE(SUCCEEDED(hr));
         IfFailThrow(hr);
 
-        pRemoteValue = PTR_TO_CORDB_ADDRESS(regVal + offset);
+        pRemoteValue = regVal + offset;
     }
     else
     {
         // Use the ambient ESP. At this point we're decoding an ambient-sp var, so
         // we should definitely have an ambient-sp. If this is null, then the jit
         // likely gave us an inconsistent data.
-        TADDR taAmbient = this->GetAmbientESP();
-        _ASSERTE(taAmbient != (TADDR)NULL);
+        CORDB_ADDRESS taAmbient = this->GetAmbientESP();
+        _ASSERTE(taAmbient != 0);
 
-        pRemoteValue = PTR_TO_CORDB_ADDRESS(taAmbient + offset);
+        pRemoteValue = taAmbient + offset;
     }
 
     return pRemoteValue;
@@ -5462,9 +5462,9 @@ HRESULT CordbNativeFrame::GetStackParameterSize(ULONG32 * pSize)
         IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
         if (targetInfo.arch == IDacDbiInterface::kArchX86)
         {
-            TADDR ip = 0;
+            CORDB_REGISTER ip = 0;
             IfFailThrow(ReadContextRegister(REGISTER_INSTRUCTION_POINTER, &ip));
-            IfFailThrow(pDAC->GetStackParameterSize(PTR_TO_CORDB_ADDRESS(ip), pSize));
+            IfFailThrow(pDAC->GetStackParameterSize(ip, pSize));
         }
         else
         {
@@ -5515,23 +5515,24 @@ CORDB_ADDRESS CordbNativeFrame::GetLeftSideAddressOfRegister(CorDebugRegister re
 //    Eventually we should make this more general-purpose.
 //
 
-SIZE_T CordbNativeFrame::GetRegisterOrStackValue(const ICorDebugInfo::NativeVarInfo * pNativeVarInfo)
+CORDB_REGISTER CordbNativeFrame::GetRegisterOrStackValue(const ICorDebugInfo::NativeVarInfo * pNativeVarInfo)
 {
-    SIZE_T uResult;
+    CORDB_REGISTER uResult = 0;
 
     if (pNativeVarInfo->loc.vlType == ICorDebugInfo::VLT_REG)
     {
-        TADDR regVal = 0;
+        CORDB_REGISTER regVal = 0;
         IfFailThrow(ReadJitRegFromContext(pNativeVarInfo->loc.vlReg.vlrReg, &regVal));
-        uResult = (SIZE_T)regVal;
+        uResult = regVal;
     }
     else if (pNativeVarInfo->loc.vlType == ICorDebugInfo::VLT_STK)
     {
         CORDB_ADDRESS remoteAddr = GetLSStackAddress(pNativeVarInfo->loc.vlStk.vlsBaseReg,
                                                      pNativeVarInfo->loc.vlStk.vlsOffset);
 
-        HRESULT hr = GetProcess()->SafeReadStruct(remoteAddr, &uResult);
-        IfFailThrow(hr);
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        GetProcess()->SafeReadBuffer(TargetBuffer(remoteAddr, targetInfo.pointerSize), reinterpret_cast<BYTE *>(&uResult));
     }
     else
     {
@@ -5814,7 +5815,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
     if (isFloatingPoint)
         return GetLocalFloatingPointValue(reg, pType, ppValue);
 
-    TADDR regVal = 0;
+    CORDB_REGISTER regVal = 0;
     hr = ReadContextRegister(reg, &regVal);
     if (FAILED(hr))
         return hr;
@@ -5827,7 +5828,10 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
         EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
         ULONG32 valueSize = CordbValue::GetSizeForType(pType, kUnboxed);
-        _ASSERTE(valueSize <= REG_SIZE);
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        if (valueSize > targetInfo.pointerSize)
+            ThrowHR(E_INVALIDARG);
 
         ICorDebugValue *pValue;
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
@@ -5891,7 +5895,9 @@ HRESULT CordbNativeFrame::GetLocalDoubleRegisterValue(
             // object occupies more than one register (otherwise it would be a
             // single-register home) and at most two registers' worth of space.
             //
-            _ASSERTE((objectSize > sizeof(void*)) && (objectSize <= 2 * sizeof(void*)));
+            IDacDbiInterface::TargetInfo targetInfo;
+            IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
+            _ASSERTE((objectSize > targetInfo.pointerSize) && (objectSize <= 2 * targetInfo.pointerSize));
         }
     }
 #endif
@@ -5939,14 +5945,21 @@ CordbNativeFrame::GetLocalByRefMemoryValue(CORDB_ADDRESS address,
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
-    LPVOID actualAddress = NULL;
-    HRESULT hr = GetProcess()->SafeReadStruct(address, &actualAddress);
+    CORDB_ADDRESS actualAddress = 0;
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        GetProcess()->SafeReadBuffer(TargetBuffer(address, targetInfo.pointerSize), reinterpret_cast<BYTE *>(&actualAddress));
+    }
+    EX_CATCH_HRESULT(hr);
     if (FAILED(hr))
     {
         return hr;
     }
 
-    return GetLocalMemoryValue(PTR_TO_CORDB_ADDRESS(actualAddress), pType, ppValue);
+    return GetLocalMemoryValue(actualAddress, pType, ppValue);
 }
 
 HRESULT
@@ -5990,7 +6003,9 @@ CordbNativeFrame::GetLocalRegisterMemoryValue(CorDebugRegister highWordReg,
             _ASSERTE(SUCCEEDED(hr));
             // See the comment in CordbNativeFrame::GetLocalDoubleRegisterValue
             // for more information on this assertion
-            _ASSERTE(objectSize == 2 * sizeof(void*));
+            IDacDbiInterface::TargetInfo targetInfo;
+            IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
+            _ASSERTE(objectSize == 2 * targetInfo.pointerSize);
         }
     }
 #endif
@@ -6038,7 +6053,9 @@ CordbNativeFrame::GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
             _ASSERTE(SUCCEEDED(hr));
             // See the comment in CordbNativeFrame::GetLocalDoubleRegisterValue
             // for more information on this assertion
-            _ASSERTE(objectSize == 2 * sizeof(void*));
+            IDacDbiInterface::TargetInfo targetInfo;
+            IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
+            _ASSERTE(objectSize == 2 * targetInfo.pointerSize);
         }
     }
 #endif
@@ -6174,7 +6191,7 @@ HRESULT CordbNativeFrame::GetLocalTwoRegisterValue(DWORD            lowReg,
         }
         else
         {
-            TADDR regValue = 0;
+            CORDB_REGISTER regValue = 0;
             IfFailThrow(ReadContextRegister((CorDebugRegister)lowReg, &regValue));
             memcpy(valueBuffer, &regValue, sizeof(regValue));
         }
@@ -6188,7 +6205,7 @@ HRESULT CordbNativeFrame::GetLocalTwoRegisterValue(DWORD            lowReg,
         }
         else
         {
-            TADDR regValue = 0;
+            CORDB_REGISTER regValue = 0;
             IfFailThrow(ReadContextRegister((CorDebugRegister)highReg, &regValue));
             memcpy(valueBuffer + sizeof(double), &regValue, sizeof(regValue));
         }
@@ -6590,7 +6607,7 @@ HRESULT CordbJITILFrame::Init()
                     _ASSERTE(pNativeVarInfo != NULL);
 
                     // The generics type token should be stored either in a register or on the stack.
-                    SIZE_T uRawToken = pNativeFrame->GetRegisterOrStackValue(pNativeVarInfo);
+                    CORDB_REGISTER uRawToken = pNativeFrame->GetRegisterOrStackValue(pNativeVarInfo);
 
                     // Ask DAC to resolve the token for us.  We really don't want to deal with all the logic here.
                     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
@@ -7418,11 +7435,11 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 
     case ICorDebugInfo::VLT_REG_BYREF:
         {
-            TADDR regVal = 0;
+            CORDB_REGISTER regVal = 0;
             IfFailThrow(m_nativeFrame->ReadJitRegFromContext(
                 pNativeVarInfo->loc.vlReg.vlrReg,
                 &regVal));
-            CORDB_ADDRESS pRemoteByRefAddr = PTR_TO_CORDB_ADDRESS(regVal);
+            CORDB_ADDRESS pRemoteByRefAddr = regVal;
 
             hr = m_nativeFrame->GetLocalMemoryValue(pRemoteByRefAddr,
                                                     type,
@@ -9557,7 +9574,10 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
             if (m_pHandleValue == NULL)
             {
                 // Create CordbHandleValue for result
-                RSInitHolder<CordbHandleValue> pHandleValue(new CordbHandleValue(pAppDomain, pType, HANDLE_STRONG));
+                IDacDbiInterface::TargetInfo targetInfo;
+                IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+                RSInitHolder<CordbHandleValue> pHandleValue(
+                    new CordbHandleValue(pAppDomain, pType, HANDLE_STRONG, targetInfo.pointerSize));
 
                 // Initialize the handle value object. The HandleValue will now
                 // own the m_objectHandle.
@@ -9654,15 +9674,14 @@ HRESULT CordbEval::CreatePrimitiveLiteral(CordbType *   pType,
     HRESULT hr = S_OK;
     EX_TRY
     {
-        // Create a generic value.
-        gv = new CordbGenericValue(pType);
-
-        // initialize the local value
-        int size = CordbValue::GetSizeForType(pType, kBoxed);
+        ULONG32 size = CordbValue::GetSizeForType(pType, kBoxed);
         if (size > 8)
         {
             ThrowHR(HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER));
         }
+        gv = new CordbGenericValue(pType, size);
+
+        // initialize the local value
         TargetBuffer remoteValue(m_resultAddr, size);
         BYTE localBuffer[8] = {0};
 
@@ -9745,7 +9764,9 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
         EX_TRY
         {
             // create a reference value
-            CordbReferenceValue *rv = new CordbReferenceValue(pType);
+            IDacDbiInterface::TargetInfo targetInfo;
+            IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+            CordbReferenceValue *rv = new CordbReferenceValue(pType, targetInfo.pointerSize);
 
             if (SUCCEEDED(rv->InitRef(MemoryRange(NULL,0))))
             {
@@ -9763,7 +9784,8 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
         EX_TRY
         {
             // Create a generic value.
-            gv = new CordbGenericValue(pType);
+            ULONG32 size = CordbValue::GetSizeForType(pType, kUnboxed);
+            gv = new CordbGenericValue(pType, size);
 
             gv->Init(MemoryRange(NULL,0));
             // Do not delete gv here even if the initialization fails.
@@ -10634,15 +10656,13 @@ void CordbAsyncFrame::LoadGenericArgs()
         {
             if (m_asyncVars[i].ilVarNum == genericArgIndex)
             {
-                // Read a target-pointer-sized value. CORDB_ADDRESS is always 8 bytes (ULONG64),
-                // but on x86 targets the generic arg field is only a 4-byte pointer. Using
-                // SIZE_T (which is pointer-sized for the DBI build, matching the target here)
-                // avoids reading adjacent memory. This mirrors how CordbJITILFrame::Init()
-                // reads the raw token via GetRegisterOrStackValue (which returns SIZE_T).
-                SIZE_T rawToken = 0;
-                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &rawToken);
-                genericTypeParam = (CORDB_ADDRESS)rawToken;
-                IfFailThrow(hr);
+                // Read a target-pointer-sized value. CORDB_ADDRESS is always 8 bytes (ULONG64).
+                // Read only the target pointer's bytes, without consuming adjacent fields.
+                IDacDbiInterface::TargetInfo targetInfo;
+                IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+                GetProcess()->SafeReadBuffer(
+                    TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, targetInfo.pointerSize),
+                    reinterpret_cast<BYTE *>(&genericTypeParam));
                 break;
             }
         }

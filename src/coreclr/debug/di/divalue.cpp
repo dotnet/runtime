@@ -112,6 +112,8 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
                                     CordbValue*                    pExternalMemoryParent)
 {
     LOG((LF_CORDB,LL_INFO100000,"CV::CreateValueByType CreateGenericValue\n"));
+    ULONG32 size = 0;
+    IfFailThrow(pType->GetUnboxedObjectSize(&size));
     RSSmartPtr<CordbGenericValue> pGenValue;
     // A generic value
     // By using a RSSmartPtr we ensure that in both success and failure cases,
@@ -120,6 +122,7 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
     // can't delete it (but this is a detail we shouldn't rely on)
     pGenValue.Assign(new CordbGenericValue(pAppdomain,
                                            pType,
+                                           size,
                                            remoteValue,
                                            ppRemoteRegAddr));
 
@@ -351,7 +354,7 @@ ULONG32 CordbValue::GetSizeForType(CordbType * pType, BoxedValue boxing)
         case ELEMENT_TYPE_U8:
         case ELEMENT_TYPE_R8:
         case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:        pType->GetUnboxedObjectSize(&size);                     break;
+        case ELEMENT_TYPE_U:        IfFailThrow(pType->GetUnboxedObjectSize(&size));        break;
 
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_OBJECT:
@@ -379,7 +382,7 @@ ULONG32 CordbValue::GetSizeForType(CordbType * pType, BoxedValue boxing)
                                     }
                                     else
                                     {
-                                        pType->GetUnboxedObjectSize(&size);
+                                        IfFailThrow(pType->GetUnboxedObjectSize(&size));
                                     }
                                  }                                                          break;
 
@@ -457,7 +460,10 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     RSInitHolder<CordbHandleValue> pHandle;
     EX_TRY
     {
-        pHandle.Assign(new (nothrow) CordbHandleValue(m_appdomain, m_type, handleType));
+        // Construction registers the value for neutering, so target lookup must precede it.
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        pHandle.Assign(new (nothrow) CordbHandleValue(m_appdomain, m_type, handleType, targetInfo.pointerSize));
     }
     EX_CATCH_HRESULT(hr);
     IfFailRet(hr);
@@ -517,6 +523,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 // Arguments:
 //     input: pAppdomain      - the app domain to which the value belongs
 //            pType           - the type of the value
+//            size            - unboxed size resolved before construction
 //            remoteValue     - buffer (and size) of the remote location where
 //                              the value resides. This may be NULL if the value
 //                              is enregistered.
@@ -527,6 +534,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 //                              memory.
 CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
                                      CordbType *                   pType,
+                                     ULONG32                       size,
                                      TargetBuffer                  remoteValue,
                                      EnregisteredValueHomeHolder * ppRemoteRegAddr)
     : CordbValue(pAppdomain, pType, remoteValue.pAddress, false),
@@ -536,11 +544,6 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
     _ASSERTE(pType->m_elementType != ELEMENT_TYPE_VOID);
     _ASSERTE(pType->m_elementType < ELEMENT_TYPE_MAX);
 
-    // We can fill in the size now for generic values.
-    ULONG32 size = 0;
-    HRESULT hr;
-    hr = pType->GetUnboxedObjectSize(&size);
-    _ASSERTE (!FAILED(hr));
     m_size = size;
 
     // now instantiate the value home
@@ -558,19 +561,16 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
 
 //
 // CordbGenericValue constructor that builds an empty generic value
-// from just an element type. Used for literal values for func evals
+// from a type and precomputed size. Used for literal values for func evals
 // only.
 // Arguments:
 //     input: pType - the type of the value
-CordbGenericValue::CordbGenericValue(CordbType * pType)
+//            size - unboxed size resolved before construction
+CordbGenericValue::CordbGenericValue(CordbType * pType, ULONG32 size)
     : CordbValue(NULL, pType, (CORDB_ADDRESS)NULL, true),
       m_pValueHome(NULL)
 {
     // The only purpose of a literal value is to hold a RS literal value.
-    ULONG32 size = 0;
-    HRESULT hr;
-    hr = pType->GetUnboxedObjectSize(&size);
-    _ASSERTE (!FAILED(hr));
     m_size = size;
 
     memset(m_pCopyOfData, 0, m_size);
@@ -745,13 +745,15 @@ bool CordbGenericValue::CopyLiteralData(BYTE *pBuffer)
 //                              remoteValue, or vmObjectHandle is non-NULL.
 //            vmObjectHandle  - a LS object handle holding the reference. This will be NULL if either
 //                              localValue, remoteValue, or ppRemoteRegAddr is non-NULL.
+//            pointerSize     - target pointer size in bytes, resolved before construction
 // Note: this may throw OOM
 CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomain,
                                          CordbType *                   pType,
                                          MemoryRange                   localValue,
                                          TargetBuffer                  remoteValue,
                                          EnregisteredValueHomeHolder * ppRemoteRegAddr,
-                                         VMPTR_OBJECTHANDLE            vmObjectHandle)
+                                         VMPTR_OBJECTHANDLE            vmObjectHandle,
+                                         ULONG32                       pointerSize)
     : CordbValue(pAppdomain, pType, remoteValue.pAddress, false,
             // We'd like to change this to be a ContinueList so it gets neutered earlier,
             // but it may be a breaking change
@@ -762,9 +764,7 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
     memset(&m_info, 0, sizeof(m_info));
 
     LOG((LF_CORDB,LL_EVERYTHING,"CRV::CRV: this:0x%p\n",this));
-    IDacDbiInterface::TargetInfo targetInfo;
-    IfFailThrow(pAppdomain->GetProcess()->GetTargetInfo(&targetInfo));
-    m_size = targetInfo.pointerSize;
+    m_size = pointerSize;
 
     // now instantiate the value home
     NewHolder<ValueHome> pHome;
@@ -789,19 +789,17 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
 } // CordbReferenceValue::CordbReferenceValue
 
 // CordbReferenceValue constructor that builds an empty reference value
-// from just an element type. Used for literal values for func evals
-// only.
+// from a type and the target pointer size. Used only for literal values for func evals.
 // Arguments:
 //     input: pType - the type of the value
-CordbReferenceValue::CordbReferenceValue(CordbType * pType)
+//            pointerSize - target pointer size in bytes, resolved before construction
+CordbReferenceValue::CordbReferenceValue(CordbType * pType, ULONG32 pointerSize)
     : CordbValue(NULL, pType, (CORDB_ADDRESS)NULL, true, pType->GetAppDomain()->GetSweepableExitNeuterList())
 {
     memset(&m_info, 0, sizeof(m_info));
 
     // The only purpose of a literal value is to hold a RS literal value.
-    IDacDbiInterface::TargetInfo targetInfo;
-    IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
-    m_size = targetInfo.pointerSize;
+    m_size = pointerSize;
 
     // there is no value home for a literal
     m_valueHome.m_pHome = NULL;
@@ -1287,12 +1285,15 @@ HRESULT CordbReferenceValue::Build(CordbAppDomain *          appdomain,
     // Weak by default
     EX_TRY
     {
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(appdomain->GetProcess()->GetTargetInfo(&targetInfo));
         RSSmartPtr<CordbReferenceValue> pRefValue(new CordbReferenceValue(appdomain,
                                                                           type,
                                                                           localValue,
                                                                           remoteValue,
                                                                           ppRemoteRegAddr,
-                                                                          vmObjectHandle));
+                                                                          vmObjectHandle,
+                                                                          targetInfo.pointerSize));
         IfFailThrow(pRefValue->InitRef(localValue));
 
         pRefValue->InternalAddRef();
@@ -1541,11 +1542,10 @@ void PreInitObjectData(DacDbiObjectData * pObjectData, CORDB_ADDRESS objAddress,
 // array or string
 // Arguments:
 //     input:  pProcess      - process to which the object belongs
-//             objectAddress - pointer to the TypedByRef object (this is the value of the object reference
-//                             or handle.
+//             objectAddress - target address of the object (the value of the object reference or handle)
 //             type          - the type of the object referenced
-//             vmAppDomain   - appdomain to which the object belongs
-//     output: pInfo         - filled with information about the object to which the TypedByRef refers.
+//             vmAppdomain   - appdomain to which the object belongs
+//     output: pInfo         - filled with information about the referenced object
 // Note: Throws
 /* static */
 void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
@@ -1609,7 +1609,8 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
 } // CordbReferenceValue::GetTypedByRefData
 
 //  get the address of the object referenced
-//  Arguments: none
+//  Arguments:
+//      input: localValue - target-pointer-sized cached reference, or an empty range to read from the value home
 //  Return Value: the address of the object referenced (i.e., the value of the object ref)
 //  Note: Throws
 CORDB_ADDRESS CordbReferenceValue::GetObjectAddress(MemoryRange localValue)
@@ -3610,10 +3611,10 @@ HRESULT CordbBoxValue::GetObject(ICorDebugObjectValue **ppObject)
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    ULONG32 size = 0;
-    m_type->GetUnboxedObjectSize(&size);
-
     HRESULT hr = S_OK;
+    ULONG32 size = 0;
+    IfFailRet(m_type->GetUnboxedObjectSize(&size));
+
     EX_TRY
     {
         m_valueHome.CreateInternalValue(m_type,
@@ -4254,13 +4255,15 @@ HRESULT CordbArrayValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadE
 // constructor
 // Arguments:
 //     input:
-//         pAppDomain  - app domain to which the value belongs
+//         pAppdomain  - app domain to which the value belongs
 //         pType       - type information for the value
 //         handleType  - indicates whether we are constructing a strong or weak handle
+//         pointerSize - target pointer size in bytes, resolved before construction
 CordbHandleValue::CordbHandleValue(
     CordbAppDomain *   pAppdomain,
     CordbType *        pType,             // The type of object that we create handle on
-    CorDebugHandleType handleType)         // strong or weak handle
+    CorDebugHandleType handleType,         // strong or weak handle
+    ULONG32           pointerSize)
     : CordbValue(pAppdomain, pType, (CORDB_ADDRESS)NULL, false,
                     pAppdomain->GetSweepableExitNeuterList()
                 )
@@ -4269,9 +4272,7 @@ CordbHandleValue::CordbHandleValue(
     m_fCanBeValid = TRUE;
 
     m_handleType = handleType;
-    IDacDbiInterface::TargetInfo targetInfo;
-    IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
-    m_size = targetInfo.pointerSize;
+    m_size = pointerSize;
 } // CordbHandleValue::CordbHandleValue
 
 //-----------------------------------------------------------------------------

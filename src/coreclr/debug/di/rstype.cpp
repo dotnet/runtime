@@ -1737,16 +1737,20 @@ HRESULT CordbType::ReturnedByValue()
     ULONG32 unboxedSize = 0;
     IfFailRet(GetUnboxedObjectSize(&unboxedSize));
 
-#ifdef TARGET_64BIT
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
+    const ULONG32 registerSize = targetInfo.pointerSize;
     // A value type is returned in registers (and is therefore representable by
-    // the managed-return-value debug info) only if it fits in at most two
-    // pointer-sized registers. Larger value types use the return buffer (stack)
-    // path, which the JIT does not currently emit MRV info for.
+    // the managed-return-value debug info) only if it fits in the registers the
+    // MRV read path supports: up to two pointer-sized registers on 64-bit
+    // targets, but only one on 32-bit targets. Larger value types use the
+    // return buffer (stack) path, which the JIT does not currently emit MRV
+    // info for.
     //
     // On AMD64, the RegNum enum includes FP registers (XMM0-XMM15), so
     // VLT_REG_REG can encode any combination of int and FP registers for
     // two-register returns. Single-register returns use VLT_REG / VLT_REG_FP.
-    if (unboxedSize > 2 * sizeof(SIZE_T))
+    if (unboxedSize > (registerSize == 8 ? 2 * registerSize : registerSize))
         return S_FALSE;
 
     // Whether the value occupies two registers (size in (8, 16] bytes on a
@@ -1757,25 +1761,12 @@ HRESULT CordbType::ReturnedByValue()
     // RegNum handles all int/FP combinations). Enabling them for single-register
     // value classes would reach unimplemented paths in the value-home code, so
     // they remain unsupported there.
-    const bool twoRegister = (unboxedSize > sizeof(SIZE_T));
+    const bool twoRegister = (unboxedSize > registerSize);
 
     // 64-bit targets support multi-field value classes (e.g. ValueTuple<T1, T2>)
     // returned across two registers.
-    const bool allowMultiField = true;
-#else
-    // 32-bit targets (x86 / arm32): the multi-register FP/mixed managed-return-
-    // value feature (dotnet/runtime#129344) is 64-bit only. Preserve the original
-    // behavior exactly: a value type is representable only if it fits in a single
-    // (pointer-sized) register and has a single non-floating-point field. The
-    // expanded two-register encodings above are inactive here, so broadening the
-    // size/field/FP rules would surface return values that the 32-bit read path
-    // does not support.
-    if (unboxedSize > sizeof(SIZE_T))
-        return S_FALSE;
-
-    const bool twoRegister = false;
-    const bool allowMultiField = false;
-#endif
+    // The 32-bit read path only supports single-field, single-register returns.
+    const bool allowMultiField = (registerSize == 8);
 
     mdToken mdClass = m_pClass->GetToken();
 
@@ -1930,6 +1921,29 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
     }
     else
     {
+        switch (m_elementType)
+        {
+            case ELEMENT_TYPE_I:
+            case ELEMENT_TYPE_U:
+            case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_BYREF:
+            case ELEMENT_TYPE_CLASS:
+            case ELEMENT_TYPE_OBJECT:
+            case ELEMENT_TYPE_FNPTR:
+            case ELEMENT_TYPE_TYPEDBYREF:
+            case ELEMENT_TYPE_ARRAY:
+            case ELEMENT_TYPE_SZARRAY:
+            {
+                IDacDbiInterface::TargetInfo targetInfo;
+                IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
+                *pObjectSize = targetInfo.pointerSize;
+                return S_OK;
+            }
+            default:
+                break;
+        }
+
         // Caller guarantees that we're not a class. And the check above guarantees we're not a value-type.
         // So we're some sort of primitive, and thus we can determine size from the signature.
         //
@@ -2739,7 +2753,7 @@ HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
         *isRequired = FALSE;
 
         ULONG32 size = 0;
-        GetUnboxedObjectSize(&size);
+        IfFailThrow(GetUnboxedObjectSize(&size));
 
         if (size >= 8)
         {
@@ -3008,4 +3022,3 @@ HRESULT CordbTypeEnum::Next(ULONG celt, ICorDebugType *values[], ULONG *pceltFet
 
     return hr;
 }
-

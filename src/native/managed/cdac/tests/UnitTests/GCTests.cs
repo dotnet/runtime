@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -281,6 +283,108 @@ public class GCTests
         Assert.Equal(new CapturedSegment(0x4000_0000, 0x4000_FFFF, GCSegmentClassification.Gen0), captured[2]);
         Assert.Equal(new CapturedSegment(0x5000_0000, 0x5000_1000, GCSegmentClassification.LOH), captured[3]);
         Assert.Equal(new CapturedSegment(0x5100_0000, 0x5100_1000, GCSegmentClassification.POH), captured[4]);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public unsafe void SOSGCStatistics_ConvertsAllArraysBeforePublishing(int array)
+    {
+        TargetNUInt[] values = [new(1), new(1), new(1), new(1)];
+        values[array] = new(ulong.MaxValue);
+        GCHeapData heap = new()
+        {
+            InterestingData = [values[0]],
+            CompactReasons = [values[1]],
+            ExpandMechanisms = [values[2]],
+            InterestingMechanismBits = [values[3]],
+        };
+        var gc = new Mock<IGC>();
+        gc.Setup(g => g.GetGCIdentifiers()).Returns([GCIdentifiers.Workstation]);
+        gc.Setup(g => g.GetHeapData()).Returns(heap);
+        Target target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract(gc).Build();
+        ISOSDacInterface3 sos = new SOSDacImpl(target, legacyObj: null, new());
+        DacpGCInterestingInfoData result = default;
+        bool fits = ulong.MaxValue == nuint.MaxValue;
+
+        Assert.Equal(fits ? System.HResults.S_OK : new OverflowException().HResult,
+            sos.GetGCInterestingInfoStaticData(&result));
+        Assert.Equal(fits ? values[0].Value : 0, (ulong)result.interestingDataPoints[0]);
+        Assert.Equal(fits ? values[1].Value : 0, (ulong)result.compactReasons[0]);
+        Assert.Equal(fits ? values[2].Value : 0, (ulong)result.expandMechanisms[0]);
+        Assert.Equal(fits ? values[3].Value : 0, (ulong)result.bitMechanisms[0]);
+    }
+
+    [Theory]
+    [InlineData(0ul)]
+    [InlineData((ulong)uint.MaxValue)]
+    [InlineData((ulong)uint.MaxValue + 1)]
+    public unsafe void SOSHeapSegmentFlags_DoNotTruncate(ulong value)
+    {
+        var gc = new Mock<IGC>();
+        gc.Setup(g => g.GetGCIdentifiers()).Returns([GCIdentifiers.Workstation]);
+        gc.Setup(g => g.GetHeapSegmentData(It.IsAny<TargetPointer>())).Returns(new GCHeapSegmentData { Flags = new(value) });
+        gc.Setup(g => g.GetHeapData()).Returns(new GCHeapData());
+        Target target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract(gc).Build();
+        ISOSDacInterface sos = new SOSDacImpl(target, legacyObj: null, new());
+        DacpHeapSegmentData result = default;
+        bool fits = value <= nuint.MaxValue;
+
+        Assert.Equal(fits ? System.HResults.S_OK : new OverflowException().HResult,
+            sos.GetHeapSegmentData(new ClrDataAddress(0x1000), &result));
+        Assert.Equal(fits ? value : 0, (ulong)result.flags);
+    }
+
+    [Theory]
+    [InlineData(false, 0ul)]
+    [InlineData(false, (ulong)uint.MaxValue)]
+    [InlineData(false, (ulong)uint.MaxValue + 1)]
+    [InlineData(true, 0ul)]
+    [InlineData(true, (ulong)uint.MaxValue)]
+    [InlineData(true, (ulong)uint.MaxValue + 1)]
+    public unsafe void SOSGCStatistics_DoNotTruncate(bool server, ulong value)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        var gc = new Mock<IGC>();
+        gc.Setup(g => g.GetGCIdentifiers()).Returns([server ? GCIdentifiers.Server : GCIdentifiers.Workstation]);
+        GCHeapData heap = new()
+        {
+            InterestingData = [new(1), new(value)],
+            CompactReasons = [new(value)],
+            ExpandMechanisms = [new(value)],
+            InterestingMechanismBits = [new(value)],
+        };
+        gc.Setup(g => g.GetHeapData()).Returns(heap);
+        gc.Setup(g => g.GetHeapData(It.IsAny<TargetPointer>())).Returns(heap);
+        gc.Setup(g => g.GetGlobalMechanisms()).Returns([new(1), new(value)]);
+        Target target = new TestPlaceholderTarget.Builder(arch).AddMockContract(gc).Build();
+        ISOSDacInterface3 sos = new SOSDacImpl(target, legacyObj: null, new());
+        DacpGCInterestingInfoData result = default;
+        bool fits = value <= nuint.MaxValue;
+        int expected = fits ? System.HResults.S_OK : new OverflowException().HResult;
+
+        int hr = server
+            ? sos.GetGCInterestingInfoData(new ClrDataAddress(0x1000), &result)
+            : sos.GetGCInterestingInfoStaticData(&result);
+
+        Assert.Equal(expected, hr);
+        Assert.Equal(fits ? 1u : 0u, (ulong)result.interestingDataPoints[0]);
+        Assert.Equal(fits ? value : 0, (ulong)result.interestingDataPoints[1]);
+        Assert.Equal(fits ? value : 0, (ulong)result.compactReasons[0]);
+        Assert.Equal(fits ? value : 0, (ulong)result.expandMechanisms[0]);
+        Assert.Equal(fits ? value : 0, (ulong)result.bitMechanisms[0]);
+
+        nuint[] global = new nuint[GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT + 1];
+        Array.Fill(global, nuint.MaxValue);
+        fixed (nuint* buffer = global)
+            Assert.Equal(expected, sos.GetGCGlobalMechanisms(buffer));
+        Assert.Equal(fits ? 1u : 0u, (ulong)global[0]);
+        Assert.Equal(fits ? value : 0, (ulong)global[1]);
+        Assert.Equal(nuint.MaxValue, global[GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT]);
     }
 }
 
