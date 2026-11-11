@@ -884,6 +884,29 @@ public class InvocationCacheTests
     }
 
     [Fact]
+    public void SharedDescriptionCapturesLogicalPathsBeforeHashing()
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("image.dll", "image");
+        string prefix = "first/";
+        var invocation = new InvocationDescription(
+            InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
+            Array.Empty<string>(), test.OutputOutputs, workingDirectory: test.Root,
+            pathMap: path => prefix + Path.GetRelativePath(test.Root, path));
+        string original = InvocationCache.ComputeKey(invocation);
+
+        prefix = "second/";
+        Assert.Equal(original, InvocationCache.ComputeKey(invocation));
+        var changed = new InvocationDescription(invocation.Inputs, invocation.Context,
+            invocation.Outputs, workingDirectory: test.Root,
+            pathMap: path => prefix + Path.GetRelativePath(test.Root, path));
+        Assert.NotEqual(original, InvocationCache.ComputeKey(changed));
+
+        test.WriteSource("image.dll", "changed");
+        Assert.NotEqual(original, InvocationCache.ComputeKey(invocation));
+    }
+
+    [Fact]
     public void SharedExecutionRecordsAbsentOutputsAfterSuccess()
     {
         using var test = new CacheTestDirectory();

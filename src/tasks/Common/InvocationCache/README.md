@@ -22,7 +22,8 @@ environment settings and installed runtime trees are not automatically fingerpri
 An `InvocationDescription` can specify an effective working directory and a path mapping that
 assigns logical identities to input files, output locations, and that working directory. File
 access, output validation, and restoration still use the physical absolute paths; only key
-serialization uses the mapped identities. Without a mapping, identities remain absolute.
+serialization uses the mapped identities, captured when the description is constructed rather than
+recomputed while hashing. Without a mapping, identities remain absolute.
 Consumers must preserve complete relative layouts and distinguish external paths rather than
 mapping unrelated files to the same identity. ILLink supplies its root-aware mapping this way.
 

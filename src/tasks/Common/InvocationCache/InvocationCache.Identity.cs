@@ -37,7 +37,7 @@ internal sealed partial class InvocationCache
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
         writer.Write("invocation-cache-key-v1");
-        writer.Write(invocation.GetPathIdentity(invocation.WorkingDirectory));
+        writer.Write(invocation.WorkingDirectoryIdentity);
         writer.Write(RuntimeInformation.OSDescription);
         writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
         writer.Write(CultureInfo.CurrentCulture.Name);
@@ -45,19 +45,19 @@ internal sealed partial class InvocationCache
         writer.Write(invocation.Context.Length);
         foreach (string value in invocation.Context)
             writer.Write(value);
-        writer.Write(invocation.Outputs.DirectoryPath is not null);
-        if (invocation.Outputs.DirectoryPath is not null)
-            writer.Write(invocation.GetPathIdentity(invocation.Outputs.DirectoryPath));
+        writer.Write(invocation.OutputDirectoryIdentity is not null);
+        if (invocation.OutputDirectoryIdentity is { } outputDirectoryIdentity)
+            writer.Write(outputDirectoryIdentity);
         writer.Write(invocation.Outputs.Files.Length);
-        foreach (string file in invocation.Outputs.Files)
-            writer.Write(invocation.GetPathIdentity(file));
+        foreach (string identity in invocation.OutputFileIdentities)
+            writer.Write(identity);
         writer.Write(invocation.Inputs.Files.Length);
-        foreach (string input in invocation.Inputs.Files)
+        for (int i = 0; i < invocation.Inputs.Files.Length; i++)
         {
-            writer.Write(invocation.GetPathIdentity(input));
+            writer.Write(invocation.InputIdentities[i]);
             try
             {
-                using FileStream file = File.OpenRead(input);
+                using FileStream file = File.OpenRead(invocation.Inputs.Files[i]);
                 writer.Write(true);
                 writer.Write(sha256.ComputeHash(file));
             }

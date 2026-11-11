@@ -30,18 +30,14 @@ namespace ILLink.Tasks.Tests
             // Match the normalization ToolTask.Execute applies before calling ExecuteTool.
             string commandLine = GenerateCommandLineCommands();
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
-            object[] preparationArguments = {
-                AdjustCommandsForOperatingSystem(commandLine),
-                AdjustCommandsForOperatingSystem(GenerateResponseFileCommands())
-            };
-            MethodInfo prepare = typeof(ILLink).GetMethod("PrepareInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
-            object invocation = prepare.Invoke(this, preparationArguments);
+            string responseFile = AdjustCommandsForOperatingSystem(GenerateResponseFileCommands());
+            var invocation = (InvocationBuilder)typeof(ILLink).GetField("_invocation", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(this);
             MethodInfo method = typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
-            var description = (InvocationDescription)method.Invoke(this, new object[] { pathToTool, invocation });
+            var description = (InvocationDescription)method.Invoke(this, new object[] { pathToTool });
             key = string.Empty;
             bool result = description is not null && InvocationCache.TryComputeKey(Log, "ILLink", description, out key);
-            CacheInvocation = result ? ((string, string, string)?)invocation.GetType()
-                .GetProperty("RelativeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(invocation) : null;
+            CacheInvocation = result && invocation.Paths.ExecutionRoot is { } root
+                ? (root, AdjustCommandsForOperatingSystem(commandLine), responseFile) : null;
             return result;
         }
 

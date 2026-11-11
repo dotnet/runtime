@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.NET.Build.Tasks;
@@ -277,19 +276,19 @@ namespace ILLink.Tasks
         protected override string GenerateFullPathToTool() => DotNetPath;
 
         private string _executionWorkingDirectory;
+        private InvocationBuilder _invocation;
+        private string _pendingResponseFile;
 
         protected override string GetWorkingDirectory() => _executionWorkingDirectory ?? base.GetWorkingDirectory();
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            PreparedInvocation invocation = PrepareInvocation(commandLineCommands, responseFileCommands);
             return InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
-                describeInvocation: () => DescribeInvocation(pathToTool, invocation),
-                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands, invocation?.RelativeInvocation));
+                describeInvocation: () => DescribeInvocation(pathToTool),
+                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands));
         }
 
-        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands,
-            (string WorkingDirectory, string CommandLine, string ResponseFile)? invocation)
+        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
@@ -309,12 +308,10 @@ namespace ILLink.Tasks
             string previousWorkingDirectory = _executionWorkingDirectory;
             try
             {
-                if (invocation is { } relative)
+                if (_invocation?.Paths?.ExecutionRoot is { } executionRoot)
                 {
-                    _executionWorkingDirectory = relative.WorkingDirectory;
+                    _executionWorkingDirectory = executionRoot;
                     pathToTool = Path.GetFullPath(pathToTool);
-                    commandLineCommands = relative.CommandLine;
-                    responseFileCommands = relative.ResponseFile;
                 }
                 exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
             }
@@ -325,120 +322,52 @@ namespace ILLink.Tasks
             return exitCode;
         }
 
-        private sealed class PreparedInvocation
-        {
-            internal CachePathMap Paths { get; }
-            internal List<(string Option, string Path)> ExtraPaths { get; }
-            internal (string WorkingDirectory, string CommandLine, string ResponseFile)? RelativeInvocation { get; }
-
-            internal PreparedInvocation(CachePathMap paths, List<(string Option, string Path)> extraPaths,
-                (string WorkingDirectory, string CommandLine, string ResponseFile)? relativeInvocation)
-            {
-                Paths = paths;
-                ExtraPaths = extraPaths;
-                RelativeInvocation = relativeInvocation;
-            }
-        }
-
-        private PreparedInvocation PrepareInvocation(string commandLineCommands, string responseFileCommands)
+        private InvocationBuilder CreateInvocationBuilder()
         {
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
             {
-                return Unchanged("custom steps/data, dependency dumps, and task environment overrides are not supported.");
+                return new InvocationBuilder(ILLinkPath, null, null,
+                    "custom steps/data, dependency dumps, and task environment overrides are not supported.");
             }
             try
             {
                 if (!TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths))
-                    return Unchanged("extra arguments are not supported.");
+                    return new InvocationBuilder(ILLinkPath, null, null, "extra arguments are not supported.");
 
-                var paths = new CachePathMap(SourceRoots);
+                var paths = new SourceRootPathMap(SourceRoots);
                 if (paths.ExecutionRoot is not null && !Directory.Exists(paths.ExecutionRoot))
-                    return Unchanged("the execution SourceRoot directory does not exist.");
-                string workingDirectory = GetWorkingDirectory();
-                if (!string.IsNullOrEmpty(workingDirectory) && Path.GetFullPath(workingDirectory) != Environment.CurrentDirectory)
-                    return Unchanged("an overridden working directory is not supported.");
-                if (paths.ExecutionRoot is not null)
-                {
-                    string previousWorkingDirectory = _executionWorkingDirectory;
-                    try
-                    {
-                        _executionWorkingDirectory = paths.ExecutionRoot;
-                        if (Path.GetFullPath(GetWorkingDirectory() ?? Environment.CurrentDirectory)
-                            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) != paths.ExecutionRoot)
-                            return Unchanged("an overridden working directory ignores the execution SourceRoot.");
-                    }
-                    finally
-                    {
-                        _executionWorkingDirectory = previousWorkingDirectory;
-                    }
-                }
-                // ToolTask adds a leading space and adjusts slashes before ExecuteTool.
-                // Do not ignore arguments supplied by an overridden command generator.
-                if (commandLineCommands != AdjustCommandsForOperatingSystem(" " + Quote(ILLinkPath)) ||
-                    responseFileCommands != AdjustCommandsForOperatingSystem(GenerateResponseFileCommandsCore(null, ExtraArgs)))
-                    return Unchanged("overridden command generation is not supported.");
-
-                (string WorkingDirectory, string CommandLine, string ResponseFile)? relativeInvocation = null;
-                if (paths.ExecutionRoot is not null)
-                {
-                    var commands = GenerateMappedCommands(paths.MapForExecution, extraPaths);
-                    relativeInvocation = (paths.ExecutionRoot, commands.CommandLine, commands.ResponseFile);
-                }
-                return new PreparedInvocation(paths, extraPaths, relativeInvocation);
+                    return new InvocationBuilder(ILLinkPath, null, null, "the execution SourceRoot directory does not exist.");
+                return new InvocationBuilder(ILLinkPath, paths, extraPaths);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
-                return Unchanged(ex.Message);
-            }
-
-            PreparedInvocation Unchanged(string reason)
-            {
-                Log.LogMessage(MessageImportance.Low, $"ILLink invocation unchanged: {reason}");
-                return null;
+                return new InvocationBuilder(ILLinkPath, null, null, ex.Message);
             }
         }
 
-        private (string CommandLine, string ResponseFile) GenerateMappedCommands(
-            Func<string, string> renderPath, List<(string Option, string Path)> extraPaths)
+        private InvocationDescription DescribeInvocation(string pathToTool)
         {
-            var extraArgs = new StringBuilder();
-            if (!string.IsNullOrWhiteSpace(ExtraArgs))
-            {
-                extraArgs.AppendLine("--ignore-link-attributes true");
-                foreach (var argument in extraPaths)
-                    extraArgs.Append(argument.Option).Append(' ').AppendLine(Quote(renderPath(argument.Path)));
-            }
-            return (AdjustCommandsForOperatingSystem(" " + Quote(renderPath(ILLinkPath))),
-                AdjustCommandsForOperatingSystem(GenerateResponseFileCommandsCore(renderPath, extraArgs.ToString())));
-        }
-
-        private InvocationDescription DescribeInvocation(string pathToTool, PreparedInvocation invocation)
-        {
-            if (invocation is null)
+            InvocationBuilder invocation = _invocation;
+            if (invocation?.Paths is null)
             {
                 Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: the invocation could not be normalized.");
                 return null;
             }
             try
             {
-                CachePathMap paths = invocation.Paths;
+                SourceRootPathMap paths = invocation.Paths;
                 paths.ValidateMappings();
                 var files = new SortedSet<string>(StringComparer.Ordinal);
                 var directories = new SortedSet<string>(StringComparer.Ordinal);
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
-                foreach (ITaskItem assembly in AssemblyPaths)
+                foreach (var assembly in invocation.Assemblies)
                 {
-                    if (!AddAssembly(assembly.ItemSpec))
+                    if (!AddAssembly(assembly.Path, assembly.CheckOutputSymbols))
                         return null;
                 }
-                foreach (ITaskItem assembly in ReferenceAssemblyPaths ?? Array.Empty<ITaskItem>())
-                {
-                    if (!AddAssembly(assembly.ItemSpec, checkOutputSymbols: false))
-                        return null;
-                }
-                foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
-                    AddFile(descriptor.ItemSpec);
+                foreach (string file in invocation.Files)
+                    AddFile(file);
                 foreach (var argument in invocation.ExtraPaths)
                 {
                     if (argument.Option == "-d")
@@ -468,10 +397,7 @@ namespace ILLink.Tasks
 #pragma warning restore IL3000
                 AddFile(taskAssemblyPath);
                 AddFile(pathToTool);
-                AddFile(ILLinkPath);
-                var commands = invocation.RelativeInvocation is { } relative
-                    ? (relative.CommandLine, relative.ResponseFile)
-                    : GenerateMappedCommands(paths.Map, invocation.ExtraPaths);
+                AddFile(invocation.ToolPath);
                 var logicalFiles = new SortedDictionary<string, string>(StringComparer.Ordinal);
                 foreach (string file in files)
                 {
@@ -481,8 +407,10 @@ namespace ILLink.Tasks
                 }
 
                 return new InvocationDescription(InvocationInputs.FromFiles(logicalFiles.Values.ToArray()),
-                    new[] { "ILLink", paths.ExecutionRoot is not null ? "relative" : "original", commands.CommandLine, commands.ResponseFile },
-                    InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec),
+                    new[] { "ILLink", paths.ExecutionRoot is not null ? "relative" : "original",
+                        AdjustCommandsForOperatingSystem(" " + invocation.CommandIdentity),
+                        AdjustCommandsForOperatingSystem(invocation.ResponseIdentity) },
+                    InvocationOutputs.FromDirectory(invocation.OutputDirectory),
                     workingDirectory: paths.ExecutionRoot ?? Environment.CurrentDirectory, pathMap: paths.Map);
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(path));
@@ -517,11 +445,6 @@ namespace ILLink.Tasks
                     if (!pe.HasMetadata)
                         throw new BadImageFormatException("Input PE image has no managed metadata.", path);
                     MetadataReader metadata = pe.GetMetadataReader();
-                    if (!metadata.IsAssembly ||
-                        metadata.GetString(metadata.GetAssemblyDefinition().Name) != Path.GetFileNameWithoutExtension(path))
-                        throw new NotSupportedException("Assembly names must match their filenames for shared-cache action identity.");
-                    if (metadata.AssemblyFiles.Count != 0)
-                        throw new NotSupportedException("Additional modules and linked resources are not supported by the shared cache.");
                     foreach (AssemblyReferenceHandle reference in metadata.AssemblyReferences)
                     {
                         if (HasPathSyntax(metadata.GetString(metadata.GetAssemblyReference(reference).Name)))
@@ -632,7 +555,7 @@ namespace ILLink.Tasks
                     case DebugDirectoryEntryType.CodeView:
                         if (!entry.IsPortableCodeView)
                             throw new NotSupportedException("Native PDB symbols are not supported by the shared cache.");
-                        CachePathMap.CheckSymbolPath(pe.ReadCodeViewDebugDirectoryData(entry).Path);
+                        SourceRootPathMap.CheckSymbolPath(pe.ReadCodeViewDebugDirectoryData(entry).Path);
                         break;
                     case DebugDirectoryEntryType.EmbeddedPortablePdb:
                         using (MetadataReaderProvider provider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(entry))
@@ -659,118 +582,7 @@ namespace ILLink.Tasks
             static void CheckDocuments(MetadataReader metadata)
             {
                 foreach (DocumentHandle handle in metadata.Documents)
-                    CachePathMap.CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
-            }
-        }
-
-        private sealed class CachePathMap
-        {
-            private readonly List<(string Physical, string Logical)> _roots = new();
-            internal string ExecutionRoot { get; }
-            private static StringComparison PathComparison => Path.DirectorySeparatorChar == '\\'
-                ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-
-            internal CachePathMap(ITaskItem[] sourceRoots)
-            {
-                if (sourceRoots is null || sourceRoots.Length == 0)
-                    throw new NotSupportedException("SourceRoots are required for relative execution.");
-                foreach (ITaskItem root in sourceRoots)
-                {
-                    if (!Path.IsPathRooted(root.ItemSpec))
-                        throw new NotSupportedException("SourceRoots must be absolute.");
-                    string physical = Path.GetFullPath(root.ItemSpec).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                    string logical = root.GetMetadata("MappedPath");
-                    if (physical.Length == 0 || physical.Equals(Path.GetPathRoot(physical), PathComparison))
-                        throw new NotSupportedException("SourceRoots must not be filesystem roots.");
-                    if (_roots.Any(previous => physical.Equals(previous.Physical, PathComparison)))
-                        throw new NotSupportedException("Duplicate physical SourceRoots are not supported.");
-                    _roots.Add((physical, logical));
-                }
-                _roots.Sort((left, right) => right.Physical.Length.CompareTo(left.Physical.Length));
-                string outerRoot = _roots[_roots.Count - 1].Physical;
-                if (_roots.All(root => root.Physical.Equals(outerRoot, PathComparison) ||
-                    root.Physical.StartsWith(outerRoot + Path.DirectorySeparatorChar, PathComparison)))
-                    ExecutionRoot = outerRoot;
-            }
-
-            internal void ValidateMappings()
-            {
-                for (int i = 0; i < _roots.Count; i++)
-                {
-                    var (physical, logical) = _roots[i];
-                    if (!IsLogicalPath(logical) || logical[logical.Length - 1] != '/')
-                        throw new NotSupportedException("SourceRoots require stable /_/ or /_N/ MappedPath prefixes.");
-                    for (int j = 0; j < i; j++)
-                    {
-                        var previous = _roots[j];
-                        if (logical.Equals(previous.Logical, StringComparison.Ordinal))
-                            throw new NotSupportedException("Duplicate logical SourceRoots are not supported.");
-                        CheckNested(physical, logical, previous.Physical, previous.Logical);
-                        CheckNested(previous.Physical, previous.Logical, physical, logical);
-                    }
-                }
-
-                static void CheckNested(string child, string childLogical, string parent, string parentLogical)
-                {
-                    if (child.StartsWith(parent + Path.DirectorySeparatorChar, PathComparison) &&
-                        childLogical != parentLogical + child.Substring(parent.Length + 1).Replace('\\', '/') + "/")
-                        throw new NotSupportedException("Nested SourceRoots must preserve their relative layout.");
-                }
-            }
-
-            internal string Map(string path)
-            {
-                path = GetValidatedFullPath(path);
-                foreach (var root in _roots)
-                {
-                    if (path.TrimEnd(Path.DirectorySeparatorChar).Equals(root.Physical, PathComparison))
-                        return "mapped:" + root.Logical;
-                    if (path.StartsWith(root.Physical + Path.DirectorySeparatorChar, PathComparison))
-                        return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
-                }
-                return "absolute:" + path;
-            }
-
-            internal string MapForExecution(string path)
-            {
-                // Resolve against the caller's cwd before changing the child process's cwd.
-                path = GetValidatedFullPath(path);
-                if (path.TrimEnd(Path.DirectorySeparatorChar).Equals(ExecutionRoot, PathComparison))
-                    return ".";
-                if (path.StartsWith(ExecutionRoot + Path.DirectorySeparatorChar, PathComparison))
-                    return path.Substring(ExecutionRoot.Length + 1);
-                return path;
-            }
-
-            private static string GetValidatedFullPath(string path)
-            {
-                path = Path.GetFullPath(path);
-                if (path.Length > Path.GetPathRoot(path).Length)
-                    path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
-                    (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
-                    throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
-                return path;
-            }
-
-            internal static void CheckSymbolPath(string path)
-            {
-                if (IsLogicalPath(path))
-                    return;
-                if ((path.Length > 0 && path[0] is '/' or '\\') ||
-                    (path.Length > 1 && path[1] == ':') || path.Split('/', '\\').Any(part => part == ".."))
-                    throw new NotSupportedException($"Physical or escaping symbol path '{path}' is not supported by the shared cache.");
-            }
-
-            private static bool IsLogicalPath(string path)
-            {
-                if (!path.StartsWith("/_", StringComparison.Ordinal))
-                    return false;
-                int index = 2;
-                while (index < path.Length && path[index] is >= '0' and <= '9')
-                    index++;
-                return index < path.Length && path[index] == '/' &&
-                    path.IndexOf('\\') < 0 && !path.Split('/').Any(part => part is "." or "..");
+                    SourceRootPathMap.CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
             }
         }
 
@@ -795,47 +607,45 @@ namespace ILLink.Tasks
             set => _illinkPath = value;
         }
 
-        private static string Quote(string path)
-        {
-            int trailingBackslashes = path.Length - path.TrimEnd('\\').Length;
-            // ToolTask's Unix normalization preserves the last backslash before a quote as an escape.
-            if (Path.DirectorySeparatorChar == '/')
-                return $"\"{path.TrimEnd('\\')}{new string('/', trailingBackslashes)}\"";
-
-            // Double trailing backslashes so they do not escape the closing quote on Windows.
-            return $"\"{path}{new string('\\', trailingBackslashes)}\"";
-        }
+        private static string Quote(string path) => InvocationBuilder.Quote(path);
 
         protected override string GenerateCommandLineCommands()
         {
-            var args = new StringBuilder();
-            var path = ILLinkPath;
-            args.Append(Quote(path));
-            Log.LogMessage(MessageImportance.Normal, $"ILLink.Tasks path: {path}");
-
-            return args.ToString();
+            _invocation = BuildInvocation();
+            _pendingResponseFile = _invocation.ToString();
+            Log.LogMessage(MessageImportance.Normal, $"ILLink.Tasks path: {ILLinkPath}");
+            return _invocation.CommandLine;
         }
 
-        private static void SetOpt(StringBuilder args, string opt, bool enabled)
+        private static void SetOpt(InvocationBuilder args, string opt, bool enabled)
         {
             args.Append(enabled ? "--enable-opt " : "--disable-opt ").AppendLine(opt);
         }
 
-        private static void SetOpt(StringBuilder args, string opt, string assembly, bool enabled)
+        private static void SetOpt(InvocationBuilder args, string opt, string assembly, bool enabled)
         {
             args.Append(enabled ? "--enable-opt " : "--disable-opt ").Append(opt).Append(' ').AppendLine(assembly);
         }
 
-        protected override string GenerateResponseFileCommands() => GenerateResponseFileCommandsCore(null, ExtraArgs);
-
-        private string GenerateResponseFileCommandsCore(Func<string, string> mapPath, string extraArgs)
+        protected override string GenerateResponseFileCommands()
         {
-            var args = new StringBuilder();
+            if (_pendingResponseFile is { } responseFile)
+            {
+                _pendingResponseFile = null;
+                return responseFile;
+            }
+            _invocation = BuildInvocation();
+            return _invocation.ToString();
+        }
+
+        private InvocationBuilder BuildInvocation()
+        {
+            InvocationBuilder args = CreateInvocationBuilder();
 
             if (RootDescriptorFiles != null)
             {
                 foreach (var rootFile in RootDescriptorFiles)
-                    args.Append("-x ").AppendLine(Quote(mapPath?.Invoke(rootFile.ItemSpec) ?? rootFile.ItemSpec));
+                    args.Append("-x ").AppendFile(rootFile.ItemSpec).AppendLine();
             }
 
             foreach (var assemblyItem in RootAssemblyNames)
@@ -889,7 +699,7 @@ namespace ILLink.Tasks
                 if (!assemblyNames.Add(assemblyName))
                     continue;
 
-                args.Append("-reference ").AppendLine(Quote(mapPath?.Invoke(assemblyPath) ?? assemblyPath));
+                args.Append("-reference ").AppendAssembly(assemblyPath).AppendLine();
 
                 string assemblyTrimMode = assembly.GetMetadata("TrimMode");
                 string isTrimmable = assembly.GetMetadata("IsTrimmable");
@@ -952,7 +762,7 @@ namespace ILLink.Tasks
                     if (assemblyNames.Contains(assemblyName))
                         continue;
 
-                    args.Append("-reference ").AppendLine(Quote(mapPath?.Invoke(assemblyPath) ?? assemblyPath));
+                    args.Append("-reference ").AppendAssembly(assemblyPath, checkOutputSymbols: false).AppendLine();
 
                     // Treat reference assemblies as "skip". Ideally we
                     // would not even look at the IL, but only use them to
@@ -1058,8 +868,7 @@ namespace ILLink.Tasks
                 }
             }
 
-            if (extraArgs != null)
-                args.AppendLine(extraArgs);
+            args.AppendExtraArgs(ExtraArgs);
 
             if (DumpDependencies)
                 args.AppendLine("--dump-dependencies");
@@ -1071,9 +880,11 @@ namespace ILLink.Tasks
 
             // Keep the tool's output directory consistent with the directory owned by the task.
             if (OutputDirectory is not null)
-                args.Append("-out ").AppendLine(Quote(mapPath?.Invoke(OutputDirectory.ItemSpec) ?? OutputDirectory.ItemSpec));
+                args.Append("-out ").AppendOutputDirectory(OutputDirectory.ItemSpec).AppendLine();
 
-            return args.ToString();
+            if (args.BypassReason is not null && BuildEngine is not null)
+                Log.LogMessage(MessageImportance.Low, $"ILLink invocation unchanged: {args.BypassReason}");
+            return args;
         }
     }
 }

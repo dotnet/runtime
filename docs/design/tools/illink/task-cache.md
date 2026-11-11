@@ -19,11 +19,14 @@ platform cache location; a path alone never enables caching. See
 [task usage](../../../tools/illink/illink-tasks.md#experimental-task-cache) for configuration and
 maintenance commands.
 
-`ExecuteTool` prepares the effective invocation before calling `InvocationCache.ExecuteCached`.
-The description callback inventories and validates inputs through `DescribeInvocation`, supplies
-the effective working directory and logical path mapping, and declares one
-`InvocationOutputs.FromDirectory`; it runs only when caching is enabled. Normal execution uses
-the already-prepared invocation regardless of cache eligibility. ILLink owns metadata inspection
+Argument construction records input roles and renders execution paths and logical identities in
+one walk over the task inputs. The command-line and response-file hooks reuse that construction;
+`ExecuteTool` does not reconstruct or compare arguments.
+The description callback expands the recorded inputs through `DescribeInvocation`, supplies
+the effective working directory, and declares one `InvocationOutputs.FromDirectory`; it runs only
+when caching is enabled. The description captures logical file identities during construction;
+hashing reads physical files without performing path mapping. Normal execution uses
+the already-generated arguments regardless of cache eligibility. ILLink owns metadata inspection
 and path-independence checks; the shared layer owns key serialization, full-content hashing,
 publication, restoration, and writer coordination.
 
@@ -39,15 +42,15 @@ relative to it, whether caching is enabled, disabled, or bypassed by input eligi
 Relative execution does not require stable logical `MappedPath` metadata. Resolve original
 relative inputs against the caller's cwd first. Do not change process-wide cwd or task inputs.
 Disjoint-root invocations retain their original execution with logical key mapping only.
-Missing execution roots, unsupported argument shapes, and incompatible command or working-directory
-overrides retain the original invocation in both cache modes.
+Missing execution roots and unsupported argument shapes retain the original invocation in both
+cache modes.
 
 Use the shared SHA-256 key builder over a length-delimited description with ILLink-specific context. Include
 execution mode, effective working directory, exact generated arguments, logical output identity,
 platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
 replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
-sidecar associations, and ordered search directories. Overridden command generation or working
-directories that do not match the model bypass caching.
+sidecar associations, and ordered search directories. The model describes the task's built-in
+argument generation and working directory; it does not detect or protect against subclass overrides.
 
 Runtime per-library, shared-framework, out-of-band, and SDK publish targets forward the compiler's
 existing `@(SourceRoot)` items after `InitializeSourceRootMappedPaths`. Aggregate runtime projects
@@ -59,12 +62,17 @@ enable symbol preservation or compiler path mapping.
 
 ## Input discovery and eligibility
 
-Hash all supplied assemblies, reference assemblies, and root descriptors. Include adjacent PDBs,
+Hash effective assemblies, reference assemblies, and root descriptors recorded during argument
+construction. Include adjacent PDBs,
 configuration files, and satellite assemblies even when symbols are disabled. Adding or removing a
-sidecar changes identity. Bypass additional modules and linked resources rather than approximate
-their resolution. Reject mismatched assembly filenames and path-shaped metadata assembly references.
+sidecar changes identity. Leave assembly filename/name mismatches and unsupported additional modules
+to ILLink rather than preflight-rejecting them. Reject path-shaped metadata assembly references.
 Leave root and XML assembly-name validation to ILLink, which treats path-shaped names as unresolved
 rather than probing outside the inventory.
+
+Linked resources with stored hashes do not introduce an external file read during rewriting.
+Dependency tracking for the unusual missing-hash case, where Cecil can read the resource file to
+compute an output hash, is deferred; such inputs are outside the cache's supported dependency model.
 
 Inspect CodeView paths, portable-PDB document paths, and embedded portable PDBs.
 Accept relative non-escaping paths and conventional synthetic `/_N/` paths; reject physical symbol

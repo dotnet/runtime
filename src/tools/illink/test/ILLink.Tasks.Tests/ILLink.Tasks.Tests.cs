@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -1550,7 +1551,7 @@ namespace ILLink.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void CacheKeyBypassesAssemblyFiles(bool containsMetadata)
+        public void CacheKeyDoesNotPreflightAssemblyFiles(bool containsMetadata)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -1582,10 +1583,29 @@ namespace ILLink.Tasks.Tests
             }
 
             Assert.True(File.Exists(externalFile));
-            Assert.False(test.Task.TryGetCacheKey(host, out string key));
-            Assert.Empty(key);
-            Assert.Contains(test.BuildEngine.Messages, message =>
+            Assert.True(test.Task.TryGetCacheKey(host, out _));
+            Assert.DoesNotContain(test.BuildEngine.Messages, message =>
                 message.Message.Contains("Additional modules and linked resources"));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CacheKeyTracksRenamedAssemblies(bool reference)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            Assert.True(test.Task.TryGetCacheKey(host, out string original));
+            ITaskItem item = reference ? test.Task.ReferenceAssemblyPaths[0] : test.Task.AssemblyPaths[0];
+            string renamed = Path.Combine(test.Root, "Renamed.dll");
+            File.Copy(item.ItemSpec, renamed);
+            item.ItemSpec = renamed;
+            Assert.True(test.Task.TryGetCacheKey(host, out string changedPath));
+            Assert.NotEqual(original, changedPath);
+
+            WriteTestAssembly(renamed);
+            Assert.True(test.Task.TryGetCacheKey(host, out string changedContents));
+            Assert.NotEqual(changedPath, changedContents);
         }
 
         [Theory]
@@ -1626,8 +1646,6 @@ namespace ILLink.Tasks.Tests
         [InlineData("metadata-less-assembly")]
         [InlineData("metadata-less-reference")]
         [InlineData("missing-linker")]
-        [InlineData("renamed-input")]
-        [InlineData("renamed-reference")]
         public void CacheKeyBypassesUnsupportedInputs(string reason)
         {
             using var test = new OutputDirectoryTest();
@@ -1669,13 +1687,6 @@ namespace ILLink.Tasks.Tests
                     break;
                 case "missing-linker":
                     File.Delete(test.Task.ILLinkPath);
-                    break;
-                case "renamed-input":
-                case "renamed-reference":
-                    ITaskItem item = reason == "renamed-input" ? test.Task.AssemblyPaths[0] : test.Task.ReferenceAssemblyPaths[0];
-                    string renamed = Path.Combine(test.Root, "Renamed.dll");
-                    File.Copy(item.ItemSpec, renamed);
-                    item.ItemSpec = renamed;
                     break;
             }
 
@@ -1836,7 +1847,7 @@ namespace ILLink.Tasks.Tests
                 Directory.CreateDirectory(Path.Combine(searchRoot, "second search"));
                 test.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{test.Root}/roots.xml\" -d \"{searchRoot}/first search\" -d \"{searchRoot}/second search\"";
             }
-            Assert.NotEqual(first.Task.GetResponseFileCommands(), second.Task.GetResponseFileCommands());
+            Assert.Equal(!disjointRoots, first.Task.GetResponseFileCommands() == second.Task.GetResponseFileCommands());
             Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstKey));
             Assert.True(second.Task.TryGetCacheKey(secondHost, out string secondKey));
             Assert.Equal(firstKey, secondKey);
@@ -2322,38 +2333,35 @@ namespace ILLink.Tasks.Tests
             Assert.Equal(firstKey, restored);
         }
 
-        [Theory]
-        [InlineData(false, false, false)]
-        [InlineData(true, false, false)]
-        [InlineData(false, true, false)]
-        [InlineData(false, true, true)]
-        public void CacheKeyRejectsOverriddenCommandGeneration(bool response, bool workingDirectory, bool ignoreExecutionRoot)
+        [Fact]
+        public void CacheDescriptionReusesArgumentConstruction()
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
-            var task = new OverriddenCommandTask(response, workingDirectory, ignoreExecutionRoot)
-            {
-                BuildEngine = test.BuildEngine,
-                SourceRoots = test.Task.SourceRoots,
-                AssemblyPaths = test.Task.AssemblyPaths,
-                RootAssemblyNames = test.Task.RootAssemblyNames,
-                ReferenceAssemblyPaths = test.Task.ReferenceAssemblyPaths,
-                RootDescriptorFiles = test.Task.RootDescriptorFiles,
-                ILLinkPath = test.Task.ILLinkPath,
-                OutputDirectory = test.Task.OutputDirectory
-            };
-            Assert.False(task.TryGetCacheKey(host, out string key));
-            Assert.Empty(key);
-            Assert.Contains(test.BuildEngine.Messages, message =>
-                message.Message.Contains(workingDirectory ? "overridden working directory" : "overridden command generation"));
+            var input = new CountingTaskItem(test.Task.AssemblyPaths[0]);
+            test.Task.AssemblyPaths[0] = input;
+
+            Assert.True(test.Task.TryGetCacheKey(host, out _));
+            Assert.Equal(1, input.TrimModeReads);
         }
 
-        private sealed class OverriddenCommandTask(bool response, bool workingDirectory, bool ignoreExecutionRoot) : MockTask
+        private sealed class CountingTaskItem(ITaskItem item) : ITaskItem
         {
-            protected override string GetWorkingDirectory() => ignoreExecutionRoot ? Environment.CurrentDirectory :
-                workingDirectory ? Path.GetTempPath() : base.GetWorkingDirectory();
-            protected override string GenerateCommandLineCommands() => base.GenerateCommandLineCommands() + (response || workingDirectory ? "" : " --help");
-            protected override string GenerateResponseFileCommands() => base.GenerateResponseFileCommands() + (response ? "--help" : "");
+            public int TrimModeReads { get; private set; }
+            public string ItemSpec { get => item.ItemSpec; set => item.ItemSpec = value; }
+            public int MetadataCount => item.MetadataCount;
+            public ICollection MetadataNames => item.MetadataNames;
+            public IDictionary CloneCustomMetadata() => item.CloneCustomMetadata();
+            public void CopyMetadataTo(ITaskItem destinationItem) => item.CopyMetadataTo(destinationItem);
+            public void RemoveMetadata(string metadataName) => item.RemoveMetadata(metadataName);
+            public void SetMetadata(string metadataName, string metadataValue) => item.SetMetadata(metadataName, metadataValue);
+
+            public string GetMetadata(string metadataName)
+            {
+                if (metadataName == nameof(ILLink.TrimMode))
+                    TrimModeReads++;
+                return item.GetMetadata(metadataName);
+            }
         }
 
         private static void WriteSymbolAssembly(string path, string document, bool physicalCodeView = false)
