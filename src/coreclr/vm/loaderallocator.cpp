@@ -387,7 +387,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
 #ifdef ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP
         // Debug logic for debugging the loader allocator gc.
@@ -395,7 +395,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -418,7 +418,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
@@ -441,7 +441,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pAssembly.This()))
+        while (i.Next_Unlocked(&pAssembly))
         {
             if (pAssembly != NULL)
             {
