@@ -13,6 +13,7 @@ namespace Wasm.Build.Tests
 {
     public class ToolCommand : IDisposable
     {
+        private static readonly TimeSpan s_killWaitTimeout = TimeSpan.FromSeconds(30);
         private string _label;
         protected ITestOutputHelper _testOutput;
 
@@ -96,6 +97,10 @@ namespace Wasm.Build.Tests
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
                 CurrentProcess.KillTree();
+                // Kill is asynchronous; wait so the process releases its handles (including
+                // its working directory on Windows) before callers try to delete them.
+                if (!CurrentProcess.WaitForExit(s_killWaitTimeout))
+                    _testOutput.WriteLine($"[{_label}] Process {CurrentProcess.Id} did not exit within {s_killWaitTimeout} after being killed.");
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
