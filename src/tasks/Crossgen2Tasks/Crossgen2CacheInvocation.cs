@@ -25,6 +25,29 @@ internal sealed class Crossgen2CacheInvocation
             ((OperatingSystem.IsLinux() && tool.GetMetadata(MetadataKeys.TargetOS) == "linux") ||
              (OperatingSystem.IsWindows() && tool.GetMetadata(MetadataKeys.TargetOS) == "windows"));
 
+    internal static IEnumerable<string> GetNativeLibraryCandidates(string directory, bool includeJit = true)
+    {
+        bool windows = OperatingSystem.IsWindows();
+        string[] names = includeJit
+            ? new[] { windows ? "clrjit_win_x64_x64" : "clrjit_unix_x64_x64", "jitinterface_x64" }
+            : new[] { "jitinterface_x64" };
+        foreach (string name in names)
+        {
+            if (windows)
+            {
+                yield return Path.Combine(directory, name + ".dll");
+            }
+            else
+            {
+                // NativeLibrary.Load probes both prefixes and suffixes; absence affects resolution too.
+                yield return Path.Combine(directory, name + ".so");
+                yield return Path.Combine(directory, "lib" + name + ".so");
+                yield return Path.Combine(directory, name);
+                yield return Path.Combine(directory, "lib" + name);
+            }
+        }
+    }
+
     internal static void ValidateInputSymbols(Stream stream, BlobContentId expected)
     {
         if (!OperatingSystem.IsWindows())
@@ -95,12 +118,12 @@ internal sealed class Crossgen2CacheInvocation
         }
 
         string directory = Path.GetDirectoryName(tool)!;
-        var dependencies = new List<string>
+        var dependencies = new List<string> { tool };
+        if (!string.IsNullOrEmpty(jit))
         {
-            tool,
-            string.IsNullOrEmpty(jit) ? Path.Combine(directory, windows ? "clrjit_win_x64_x64.dll" : "libclrjit_unix_x64_x64.so") : jit,
-            Path.Combine(directory, windows ? "jitinterface_x64.dll" : "libjitinterface_x64.so")
-        };
+            dependencies.Add(jit);
+        }
+        dependencies.AddRange(GetNativeLibraryCandidates(directory, includeJit: string.IsNullOrEmpty(jit)));
         if (windows && emitSymbols)
         {
             dependencies.Add(Path.Combine(directory, "Microsoft.DiaSymReader.Native.dll"));

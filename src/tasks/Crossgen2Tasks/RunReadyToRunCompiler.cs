@@ -6,7 +6,6 @@
 
 #nullable disable
 
-using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -220,136 +219,6 @@ namespace Microsoft.NET.Build.Tasks
                 {
                     Log.LogError(Strings.MissingOutputPDBImagePath);
                 }
-            }
-
-            return ValidateOutputPaths();
-        }
-
-        private bool ValidateOutputPaths()
-        {
-            try
-            {
-                var outputs = new HashSet<string>(Crossgen2Cache.PathComparer);
-                if (!IsPdbCompilation)
-                {
-                    outputs.Add(Path.GetFullPath(_outputR2RImage));
-                }
-                string symbols = GetOwnedSymbolOutputPath();
-                if (!string.IsNullOrEmpty(symbols))
-                {
-                    outputs.Add(Path.GetFullPath(symbols));
-                }
-
-                ITaskItem tool = ActuallyUseCrossgen2 ? Crossgen2Tool : CrossgenTool;
-                IEnumerable<string> assemblies = new[]
-                {
-                    _createCompositeImage ? null : CompilationEntry.ItemSpec,
-                    ActuallyUseCrossgen2 && !_createCompositeImage ? CompilationEntry.ItemSpec.Trim() : null
-                };
-                IEnumerable<string> inputs = new[]
-                {
-                    tool.ItemSpec,
-                    tool.GetMetadata(MetadataKeys.JitPath),
-                    ActuallyUseCrossgen2 ? DotNetHostPath : DiaSymReader
-                };
-                IEnumerable<ITaskItem> references = _createCompositeImage
-                    ? ReadyToRunCompositeBuildReferences : ImplementationAssemblyReferences;
-                if (IsPdbCompilation && references is not null)
-                {
-                    references = references.Where(reference => !string.Equals(Path.GetFileName(reference.ItemSpec),
-                        Path.GetFileName(_outputR2RImage), StringComparison.OrdinalIgnoreCase));
-                }
-                assemblies = assemblies.Concat((references ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
-                if (ActuallyUseCrossgen2)
-                {
-                    inputs = inputs.Concat((Crossgen2PgoFiles ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
-                    if (_createCompositeImage)
-                    {
-                        assemblies = assemblies.Concat((ReadyToRunCompositeBuildInput ?? Array.Empty<ITaskItem>()).SelectMany(item => new[] { item.ItemSpec, item.ItemSpec.Trim() }))
-                            .Concat((ReadyToRunCompositeUnrootedBuildInput ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
-                    }
-                    string directory = Path.GetDirectoryName(Path.GetFullPath(tool.ItemSpec));
-                    inputs = inputs.Concat(new[]
-                    {
-                        Path.Combine(directory, OperatingSystem.IsWindows() ? "clrjit_win_x64_x64.dll" : "libclrjit_unix_x64_x64.so"),
-                        Path.Combine(directory, OperatingSystem.IsWindows() ? "jitinterface_x64.dll" : "libjitinterface_x64.so")
-                    });
-                    if (_emitSymbols && Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows")
-                    {
-                        inputs = inputs.Append(Path.Combine(directory, "Microsoft.DiaSymReader.Native.dll"));
-                    }
-                }
-                var assemblyPaths = new HashSet<string>(Crossgen2Cache.PathComparer);
-                foreach (string assembly in assemblies)
-                {
-                    if (string.IsNullOrEmpty(assembly))
-                    {
-                        continue;
-                    }
-                    if (ActuallyUseCrossgen2 && assembly.AsSpan().IndexOfAny('*', '?') >= 0)
-                    {
-                        // Match crossgen2's non-recursive command-line wildcard expansion.
-                        string directory = Path.GetDirectoryName(assembly);
-                        if (string.IsNullOrEmpty(directory))
-                        {
-                            directory = ".";
-                        }
-                        if (Directory.Exists(directory))
-                        {
-                            foreach (string match in Directory.EnumerateFiles(directory, Path.GetFileName(assembly)))
-                            {
-                                assemblyPaths.Add(Path.GetFullPath(match));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        assemblyPaths.Add(Path.GetFullPath(assembly));
-                    }
-                }
-                foreach (string input in inputs.Concat(assemblyPaths))
-                {
-                    if (!ValidateInput(input))
-                    {
-                        return false;
-                    }
-                }
-                foreach (string assembly in assemblyPaths)
-                {
-                    try
-                    {
-                        using FileStream stream = File.OpenRead(assembly);
-                        using var pe = new PEReader(stream);
-                        foreach (var candidate in Crossgen2Cache.GetSymbolCandidates(pe, assembly, Environment.CurrentDirectory,
-                            skipNativePdbOutput: IsPdbCompilation && Crossgen2Cache.PathComparer.Equals(assembly, Path.GetFullPath(_outputR2RImage))))
-                        {
-                            if (!ValidateInput(candidate.Path))
-                            {
-                                return false;
-                            }
-                        }
-                    }
-                    catch (Exception ex) when (ex is BadImageFormatException or FileNotFoundException or DirectoryNotFoundException)
-                    {
-                        // Invalid or missing assemblies cannot supply symbols; let the compiler diagnose them.
-                    }
-                }
-
-                bool ValidateInput(string input)
-                {
-                    if (!string.IsNullOrEmpty(input) && outputs.Contains(Path.GetFullPath(input)))
-                    {
-                        Log.LogError(Strings.CrossgenOutputOverlapsInput, input);
-                        return false;
-                    }
-
-                    return true;
-                }
-            }
-            catch (Exception ex) when (ex is ArgumentException or IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException)
-            {
-                Log.LogErrorFromException(ex);
-                return false;
             }
 
             return true;
@@ -623,7 +492,12 @@ namespace Microsoft.NET.Build.Tasks
                 if (!string.IsNullOrEmpty(symbols))
                 {
                     // The unquoted --pdb-path/--perfmap-path response line loses trailing whitespace.
-                    symbols = Path.Combine(Path.GetDirectoryName(symbols).TrimEnd(), Path.GetFileName(symbols));
+                    string directory = Path.GetDirectoryName(symbols).TrimEnd();
+                    if (string.IsNullOrEmpty(directory))
+                    {
+                        directory = Path.GetDirectoryName(_outputR2RImage);
+                    }
+                    symbols = Path.Combine(directory, Path.GetFileName(symbols));
                 }
                 if (!_emitSymbols || Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows" ||
                     Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) == "1")
@@ -646,8 +520,9 @@ namespace Microsoft.NET.Build.Tasks
                 extension = nativeImageName ? ".pdb" : ".ni.pdb";
             }
             string output = Path.ChangeExtension(image, extension);
-            return string.IsNullOrEmpty(symbols)
-                ? output : Path.Combine(Path.GetDirectoryName(symbols), Path.GetFileName(output));
+            string directory = string.IsNullOrEmpty(symbols) ? null : Path.GetDirectoryName(symbols);
+            return string.IsNullOrEmpty(directory)
+                ? output : Path.Combine(directory, Path.GetFileName(output));
         }
 
         private static void DeleteOutputFile(string path)

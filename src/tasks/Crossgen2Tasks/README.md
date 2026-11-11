@@ -40,8 +40,11 @@ PDBs are supported. It requires fully qualified, non-wildcard input/output paths
 represented safely in the task's response file.
 Paths ending in whitespace, including normalized symbol-output directories, bypass
 caching because the response-file reader trims unquoted arguments.
-Cleanup and overlap checks use the effective trimmed symbol directory without
+Cleanup uses the effective trimmed symbol directory without
 changing the compiler arguments or touching the distinct untrimmed directory.
+An empty symbol directory, including a bare symbol filename, resolves to the image
+directory for cleanup, matching the compiler's symbol writer. A compiler that rejects
+the explicit empty path still reports that error.
 It does not parse extra command
 strings in general: an unrecognized argument (including anything with a path-like
 shape, response files, or an unexpected value) bypasses caching. A small allowlist
@@ -66,15 +69,9 @@ Before tool execution, the task deletes these two files, including
 symbols left by a previous symbol-enabled compilation. Preparation belongs to
 normal tool execution, not the cache, so it also runs when caching is disabled
 or bypassed. This intentionally changes those paths to remove stale outputs.
-Task parameter validation rejects owned output paths that overlap declared compiler
-inputs, including rooted and adjacent CodeView PDB candidates, before cleanup or
-cache restoration, regardless of cache eligibility or whether symbols are enabled.
-Crossgen2 reference and composite-input wildcards are expanded for these checks;
-wildcard invocations still bypass caching.
 A hit restores their recorded presence/absence. Unrelated outputs are untouched.
 PDB-only compilation preserves the native image it reads
-and cleans only its symbol output. Its leading native CodeView output record is not an
-IL-PDB dependency; subsequent IL-PDB records and reference symbols remain protected.
+and cleans only its symbol output.
 When legacy symbols are requested, preparation
 uses the declared symbol path rather than the modern crossgen2 naming convention.
 
@@ -95,7 +92,9 @@ full SHA-256 content hashes. It includes:
   `clrjit_win_x64_x64.dll` on Windows. The adjacent support library is
   `libjitinterface_x64.so` on Linux / `jitinterface_x64.dll` on Windows. Windows
   symbol-enabled invocations also hash adjacent `Microsoft.DiaSymReader.Native.dll`.
-  Only the selected JIT is hashed, not all cross-target JITs or the runtime hosting MSBuild.
+  Linux's adjacent prefixed/unprefixed and extensionless library candidates are
+  included, including absence. An explicit `JitPath` replaces the default JIT
+  candidates. Other cross-target JITs and the runtime hosting MSBuild are not hashed.
 * Input and ordered implementation references, MIBC files, and rooted and adjacent
   CodeView PDB candidates (including absence). Multi-file assemblies bypass.
   On Windows, every present input-PDB candidate must be a portable PDB whose
@@ -120,8 +119,7 @@ and managed single-file deployments; they do not distinguish the two.
 A symbolic-link executable or adjacent managed DLL/deps/runtimeconfig bypasses.
 Unreadable dependencies never become empty hashes. File timestamps, lengths,
 MVIDs, and version strings are not input identities.
-Windows path containment and input/output alias checks compare case-insensitively;
-drive-relative, root-relative, device, alternate-stream, and trailing-dot/space
+Windows drive-relative, root-relative, device, alternate-stream, and trailing-dot/space
 invocation paths bypass caching. Embedded root-relative CodeView paths are resolved
 against the compiler's working-directory drive and hashed, including absence;
 drive-relative CodeView paths bypass. Filesystem aliases remain unsupported.
@@ -136,8 +134,10 @@ temporary native-image copies are not replayed.
 **Inputs, tool deployment, and environment must remain stable from invocation
 description through hashing and execution/restoration.** There is no input snapshot
 or persistent digest cache.
-Cache/output paths must not alias inputs or each other through symbolic links,
-hard links, or filesystem aliases; use ordinary, trusted local directories.
+Inputs, owned outputs, and cache storage must be disjoint, including through symbolic
+links, hard links, or other filesystem aliases. Crossgen does not validate this contract.
+The existing shared cache checks still reject cache/output overlap and invalid output
+declarations. Use ordinary, trusted local directories.
 The cache is trusted build storage, not an authenticated artifact source.
 
 The cache deliberately does not identify OS native libraries, kernel/CPU state,

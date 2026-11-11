@@ -49,7 +49,6 @@ internal static class Crossgen2Cache
     internal static InvocationDescription DescribeInvocation(string[] compilerDependencies, string input, ITaskItem[] references,
         ITaskItem[]? profiles, string[] outputs, string response, string command, string workingDirectory)
     {
-        var inputs = new HashSet<string>(PathComparer);
         var files = new List<string>();
 #pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
         string taskAssemblyPath = typeof(RunReadyToRunCompiler).Assembly.Location;
@@ -75,10 +74,6 @@ internal static class Crossgen2Cache
                 AddFile(profile.ItemSpec);
             }
         }
-        if (outputs.Any(inputs.Contains))
-        {
-            throw new InvalidDataException("An output aliases a compiler input.");
-        }
         return new InvocationDescription(InvocationInputs.FromFiles(files.ToArray()), new[]
         {
             Path.GetFullPath(workingDirectory),
@@ -90,7 +85,6 @@ internal static class Crossgen2Cache
         void AddFile(string path)
         {
             path = InputPath(path);
-            inputs.Add(path);
             files.Add(path);
         }
 
@@ -134,8 +128,7 @@ internal static class Crossgen2Cache
         }
     }
 
-    internal static IEnumerable<(string Path, BlobContentId Identity)> GetSymbolCandidates(PEReader pe, string assembly, string workingDirectory,
-        bool skipNativePdbOutput = false)
+    private static IEnumerable<(string Path, BlobContentId Identity)> GetSymbolCandidates(PEReader pe, string assembly, string workingDirectory)
     {
         // The compiler tries rooted CodeView paths before candidates beside the PE.
         // Include absence too, so creating a previously missing PDB invalidates the key.
@@ -144,12 +137,6 @@ internal static class Crossgen2Cache
         {
             DebugDirectoryEntry entry = entries[i];
             if (entry.Type != DebugDirectoryEntryType.CodeView)
-            {
-                continue;
-            }
-            // ReadyToRun prepends its native PDB output record before copying the IL debug records.
-            if (skipNativePdbOutput && i == 0 && !entry.IsPortableCodeView &&
-                pe.PEHeaders.CorHeader?.ManagedNativeHeaderDirectory.Size > 0)
             {
                 continue;
             }

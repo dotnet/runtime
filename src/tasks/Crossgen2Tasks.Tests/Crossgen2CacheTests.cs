@@ -8,10 +8,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -145,76 +143,23 @@ public class Crossgen2CacheTests
         Assert.False(Directory.Exists(fixture.Cache));
     }).Dispose();
 
-    public static IEnumerable<object[]> PdbOnlyCodeViewCases =>
-        from configuration in new[] { "enabled", "disabled", "bypassed" }
-        from stale in new[] { false, true }
-        from portable in new[] { false, true }
-        from collision in new[] { "none", "image", "reference", "il-only" }
-        select new object[] { configuration, stale, portable, collision };
-
     [CachePlatformTheory]
-    [MemberData(nameof(PdbOnlyCodeViewCases))]
-    public void PdbOnlyCompilationDistinguishesNativeOutputFromIlSymbols(string configuration, bool stale, bool portable, string collision) =>
-        RemoteExecutor.Invoke((mode, existing, format, source) =>
+    [InlineData("enabled")]
+    [InlineData("disabled")]
+    [InlineData("bypassed")]
+    public void InputInspectionDoesNotPreventNormalExecution(string configuration) => RemoteExecutor.Invoke(mode =>
     {
         using var fixture = new Fixture();
-        string output = Path.Combine(fixture.Root, "input.ni.pdb");
-        var debug = new DebugDirectoryBuilder();
-        var identity = new BlobContentId(Guid.Parse("034b11c0-23c6-4376-93c0-07fb07aa0fdc"), 1);
-        debug.AddCodeViewEntry(Path.GetFileName(output), identity, portablePdbVersion: 0);
-        debug.AddCodeViewEntry(source == "image" ? Path.GetFileName(output) : "input.pdb",
-            identity, portablePdbVersion: bool.Parse(format) ? (ushort)0x0100 : (ushort)0);
-        WriteImageWithDebugDirectory(fixture.Input, debug, readyToRun: source != "il-only");
-        if (source == "reference")
-        {
-            var referenceDebug = new DebugDirectoryBuilder();
-            referenceDebug.AddCodeViewEntry(Path.GetFileName(output), identity,
-                portablePdbVersion: bool.Parse(format) ? (ushort)0x0100 : (ushort)0);
-            WriteImageWithDebugDirectory(fixture.Reference, referenceDebug, readyToRun: true);
-        }
-        if (bool.Parse(existing))
-        {
-            File.WriteAllText(output, "stale native symbols");
-        }
-        byte[] image = File.ReadAllBytes(fixture.Input);
-        byte[] symbols = File.ReadAllBytes(Path.ChangeExtension(fixture.Input, ".pdb"));
-        byte[]? previousOutput = File.Exists(output) ? File.ReadAllBytes(output) : null;
-        Directory.CreateDirectory(Path.GetDirectoryName(fixture.Output)!);
-        MockCompiler task = fixture.Create();
-        task.CrossgenTool = new TaskItem(fixture.Tool);
-        task.CrossgenTool.SetMetadata("JitPath", fixture.Jit);
-        task.Crossgen2Tool.SetMetadata("IsVersion5", "true");
-        task.CompilationEntry.SetMetadata("CreatePDBCommand", $"/CreatePDB \"{fixture.Root}\"");
-        task.CompilationEntry.SetMetadata("OutputPDBImage", output);
-        task.BeforeExecute = () =>
-        {
-            Assert.Equal(image, File.ReadAllBytes(fixture.Input));
-            Assert.Equal(symbols, File.ReadAllBytes(Path.ChangeExtension(fixture.Input, ".pdb")));
-            Assert.False(File.Exists(output));
-        };
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+        MockCompiler task = fixture.Create();
         task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
+        using FileStream reference = File.Open(fixture.Reference, FileMode.Open, FileAccess.Read, FileShare.None);
 
-        Assert.Equal(source == "none", task.Execute());
-        Assert.Equal(source == "none" ? 1 : 0, task.Executions);
-        Assert.Equal(image, File.ReadAllBytes(fixture.Input));
-        Assert.Equal(symbols, File.ReadAllBytes(Path.ChangeExtension(fixture.Input, ".pdb")));
-        if (source == "none")
-        {
-            Assert.Empty(task.Engine.Errors);
-            Assert.Equal("map", File.ReadAllText(output));
-        }
-        else
-        {
-            Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
-            Assert.Equal(previousOutput is not null, File.Exists(output));
-            if (previousOutput is not null)
-            {
-                Assert.Equal(previousOutput, File.ReadAllBytes(output));
-            }
-        }
+        Assert.True(task.Execute());
+        Assert.Equal(1, task.Executions);
+        Assert.Empty(task.Engine.Errors);
         Assert.False(Directory.Exists(fixture.Cache));
-    }, configuration, stale.ToString(), portable.ToString(), collision).Dispose();
+    }, configuration).Dispose();
 
     [CachePlatformTheory]
     [InlineData("")]
@@ -504,6 +449,50 @@ public class Crossgen2CacheTests
         Assert.Equal(value == "timestamp" ? 0 : 1, changed.Executions);
     }, change).Dispose();
 
+    public static IEnumerable<object[]> LinuxNativeLibraryCases =>
+        from library in new[] { "clrjit_unix_x64_x64", "jitinterface_x64" }
+        from shape in new[] { "unprefixed", "extensionless", "prefixed-extensionless" }
+        from change in new[] { "add", "modify", "remove" }
+        select new object[] { library, shape, change };
+
+    [LinuxCacheTheory]
+    [MemberData(nameof(LinuxNativeLibraryCases))]
+    public void LinuxNativeLibraryCandidatesParticipateInIdentity(string library, string shape, string change) =>
+        RemoteExecutor.Invoke((name, variant, operation) =>
+    {
+        using var fixture = new Fixture();
+        string candidate = Path.Combine(fixture.Root, variant switch
+        {
+            "unprefixed" => name + ".so",
+            "extensionless" => name,
+            _ => "lib" + name
+        });
+        if (operation != "add")
+        {
+            File.WriteAllText(candidate, "one");
+        }
+        Assert.True(fixture.Create().Execute());
+        DateTime timestamp = File.GetLastWriteTimeUtc(candidate);
+        if (operation == "remove")
+        {
+            File.Delete(candidate);
+        }
+        else
+        {
+            File.WriteAllText(candidate, "two");
+            if (operation == "modify")
+            {
+                File.SetLastWriteTimeUtc(candidate, timestamp);
+            }
+        }
+        MockCompiler changed = fixture.Create();
+        Assert.True(changed.Execute());
+        Assert.Equal(1, changed.Executions);
+        MockCompiler warm = fixture.Create();
+        Assert.True(warm.Execute());
+        Assert.Equal(0, warm.Executions);
+    }, library, shape, change).Dispose();
+
     [CachePlatformTheory]
     [InlineData("extra-output")]
     [InlineData("response-file")]
@@ -648,256 +637,57 @@ public class Crossgen2CacheTests
         Assert.False(Directory.Exists(fixture.Cache));
     }, configuration, shape, whitespace).Dispose();
 
-    public static IEnumerable<object[]> WhitespaceSymbolOverlapCases =>
+    public static IEnumerable<object[]> BareSymbolPathCases =>
         from configuration in new[] { "enabled", "disabled", "bypassed" }
         from shape in new[] { "symbols", "no-symbols", "legacy-symbols" }
+        where shape != "legacy-symbols" || OperatingSystem.IsLinux()
         select new object[] { configuration, shape };
 
-    [LinuxCacheTheory]
-    [MemberData(nameof(WhitespaceSymbolOverlapCases))]
-    public void TrimmedSymbolDirectoryOverlapsFailBeforeCleanup(string configuration, string shape) => RemoteExecutor.Invoke((mode, value) =>
-    {
-        using var fixture = new Fixture();
-        MockCompiler task = fixture.Create();
-        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
-        string directory = Path.Combine(fixture.Root, "symbols");
-        Directory.CreateDirectory(directory);
-        Directory.CreateDirectory(directory + " ");
-        string name = value == "legacy-symbols"
-            ? Path.GetFileName(Path.ChangeExtension(fixture.Output, $".ni.{{{ReadMvid(fixture.Input)}}}.map"))
-            : Path.GetFileName(fixture.Map);
-        string reference = Path.Combine(directory, name);
-        File.Copy(fixture.Reference, reference);
-        byte[] original = File.ReadAllBytes(reference);
-        string unrelated = Path.Combine(directory + " ", name);
-        File.WriteAllText(unrelated, "unrelated symbols");
-        task.ImplementationAssemblyReferences = new[] { new TaskItem(reference) };
-        task.Crossgen2Tool.SetMetadata("PerfmapFormatVersion", value == "legacy-symbols" ? "0" : "1");
-        task.CompilationEntry.SetMetadata("EmitSymbols", (value != "no-symbols").ToString().ToLowerInvariant());
-        task.CompilationEntry.SetMetadata("OutputPDBImage", unrelated);
-
-        Assert.False(task.Execute());
-        Assert.Equal(0, task.Executions);
-        Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
-        Assert.Equal(original, File.ReadAllBytes(reference));
-        Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
-        Assert.False(Directory.Exists(fixture.Cache));
-    }, configuration, shape).Dispose();
-
-    public static IEnumerable<object[]> InputOutputOverlapCases =>
-        from configuration in new[] { "enabled", "disabled", "bypassed" }
-        from input in new[] { "assembly", "trimmed-assembly", "reference", "profile", "tool", "jit", "support", "symbols", "stale-symbols", "composite", "unrooted", "legacy", "pdb-only" }
-        where input != "trimmed-assembly" || OperatingSystem.IsLinux()
-        select new object[] { configuration, input };
-
     [CachePlatformTheory]
-    [MemberData(nameof(InputOutputOverlapCases))]
-    public void InputOutputOverlapsFailBeforeCleanup(string configuration, string input) => RemoteExecutor.Invoke((mode, source) =>
+    [MemberData(nameof(BareSymbolPathCases))]
+    public void BareSymbolFilenameUsesImageDirectory(string configuration, string shape) => RemoteExecutor.Invoke((mode, value) =>
     {
         using var fixture = new Fixture();
-        MockCompiler task = fixture.Create();
-        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
-        string protectedPath = source switch
-        {
-            "reference" => fixture.Reference,
-            "profile" => fixture.Profile,
-            "tool" => fixture.Tool,
-            "jit" => fixture.Jit,
-            "support" => fixture.Support,
-            _ => fixture.Input
-        };
-        if (source is "symbols" or "stale-symbols")
-        {
-            protectedPath = Path.ChangeExtension(fixture.Input, Fixture.SymbolExtension);
-            File.Copy(fixture.Reference, protectedPath);
-            task.ImplementationAssemblyReferences = new[] { new TaskItem(protectedPath) };
-            task.CompilationEntry.SetMetadata("OutputR2RImage", fixture.Input);
-            task.CompilationEntry.ItemSpec = fixture.Reference;
-            task.CompilationEntry.SetMetadata("OutputPDBImage", protectedPath);
-            task.CompilationEntry.SetMetadata("EmitSymbols", (source == "symbols").ToString().ToLowerInvariant());
-        }
-        else if (source == "pdb-only")
-        {
-            task.UseCrossgen2 = false;
-            task.CrossgenTool = new TaskItem(fixture.Tool);
-            task.CrossgenTool.SetMetadata("JitPath", fixture.Jit);
-            task.CompilationEntry.SetMetadata("CreatePDBCommand", "/CreatePDB");
-            task.CompilationEntry.SetMetadata("OutputPDBImage", fixture.Input);
-        }
-        else
-        {
-            task.CompilationEntry.SetMetadata("OutputR2RImage",
-                Path.Combine(Path.GetDirectoryName(protectedPath)!, ".", Path.GetFileName(protectedPath)));
-            if (source == "trimmed-assembly")
-            {
-                string paddedInput = fixture.Input + " ";
-                File.Copy(fixture.Input, paddedInput);
-                task.CompilationEntry.ItemSpec = paddedInput;
-                task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
-            }
-            else if (source is "composite" or "unrooted")
-            {
-                task.CompilationEntry.SetMetadata("CreateCompositeImage", "true");
-                task.ReadyToRunCompositeBuildInput = new[] { new TaskItem(fixture.Reference) };
-                task.ReadyToRunCompositeBuildReferences = Array.Empty<ITaskItem>();
-                if (source == "composite")
-                {
-                    task.ReadyToRunCompositeBuildInput = new[] { new TaskItem(fixture.Input) };
-                }
-                else
-                {
-                    task.ReadyToRunCompositeUnrootedBuildInput = new[] { new TaskItem(fixture.Input) };
-                }
-            }
-            else if (source == "legacy")
-            {
-                task.UseCrossgen2 = false;
-                task.CrossgenTool = new TaskItem(fixture.Tool);
-                task.CrossgenTool.SetMetadata("JitPath", fixture.Jit);
-            }
-        }
-        byte[] before = File.ReadAllBytes(protectedPath);
-        Assert.False(task.Execute());
-        Assert.Equal(0, task.Executions);
-        Assert.Equal(before, File.ReadAllBytes(protectedPath));
-        Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
-        Assert.False(Directory.Exists(fixture.Cache));
-    }, configuration, input).Dispose();
-
-    public static IEnumerable<object[]> TrimmedInputOverlapCases =>
-        from configuration in new[] { "enabled", "disabled", "bypassed" }
-        from source in new[] { "assembly", "composite" }
-        from whitespace in new[] { " ", "\t\u00a0" }
-        from symbols in new[] { false, true }
-        select new object[] { configuration, source, whitespace, symbols };
-
-    [LinuxCacheTheory]
-    [MemberData(nameof(TrimmedInputOverlapCases))]
-    public void LeadingWhitespaceInputOverlapsFailBeforeCleanup(string configuration, string source, string whitespace, bool symbols) =>
-        RemoteExecutor.Invoke((mode, input, padding, pdb) =>
-    {
-        using var fixture = new Fixture();
-        MockCompiler task = fixture.Create();
-        string protectedPath = fixture.Input;
-        if (bool.Parse(pdb))
-        {
-            protectedPath = Path.Combine(fixture.Root, Path.GetFileName(fixture.Map));
-            File.Copy(Path.ChangeExtension(fixture.Input, ".pdb"), protectedPath);
-            task.CompilationEntry.SetMetadata("OutputPDBImage", protectedPath);
-            using FileStream stream = File.Open(fixture.Input, FileMode.Open, FileAccess.ReadWrite);
-            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
-            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
-            stream.Position = entry.DataPointer + 24;
-            stream.Write(System.Text.Encoding.UTF8.GetBytes(Path.GetFileName(protectedPath) + "\0"));
-        }
-        else
-        {
-            task.CompilationEntry.SetMetadata("OutputR2RImage", protectedPath);
-        }
-        string paddedInput = padding + Path.GetFileName(fixture.Input) + padding;
-        string declaredPath = Path.Combine(fixture.Root, paddedInput);
-        File.Copy(fixture.Reference, declaredPath);
-        task.CompilationEntry.SetMetadata("EmitSymbols", "false");
-        task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
-        if (input == "assembly")
-        {
-            task.CompilationEntry.ItemSpec = paddedInput;
-        }
-        else
-        {
-            task.CompilationEntry.SetMetadata("CreateCompositeImage", "true");
-            task.ReadyToRunCompositeBuildInput = new[] { new TaskItem(paddedInput) };
-            task.ReadyToRunCompositeBuildReferences = Array.Empty<ITaskItem>();
-        }
-        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
-        byte[] before = File.ReadAllBytes(protectedPath);
-        byte[] declaredBefore = File.ReadAllBytes(declaredPath);
-        string directory = Environment.CurrentDirectory;
+        string previousDirectory = Directory.GetCurrentDirectory();
         try
         {
-            Environment.CurrentDirectory = fixture.Root;
-            Assert.False(task.Execute());
-            Assert.Equal(0, task.Executions);
-            Assert.Equal(before, File.ReadAllBytes(protectedPath));
-            Assert.Equal(declaredBefore, File.ReadAllBytes(declaredPath));
-            Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
+            Directory.SetCurrentDirectory(fixture.Root);
+            MockCompiler task = fixture.Create();
+            Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+            task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
+            string symbols = value == "legacy-symbols"
+                ? Path.ChangeExtension(fixture.Output, $".ni.{{{ReadMvid(fixture.Input)}}}.map")
+                : fixture.Map;
+            string unrelated = Path.Combine(fixture.Root, Path.GetFileName(symbols));
+            Directory.CreateDirectory(Path.GetDirectoryName(symbols)!);
+            File.WriteAllText(symbols, "stale symbols");
+            File.WriteAllText(unrelated, "unrelated symbols");
+            task.CompilationEntry.SetMetadata("OutputPDBImage", Path.GetFileName(symbols));
+            task.CompilationEntry.SetMetadata("EmitSymbols", (value != "no-symbols").ToString().ToLowerInvariant());
+            task.Crossgen2Tool.SetMetadata("PerfmapFormatVersion", value == "legacy-symbols" ? "0" : "1");
+            task.ProduceMap = false;
+            task.BeforeExecute = () =>
+            {
+                Assert.False(File.Exists(symbols));
+                Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
+            };
+
+            Assert.True(task.Execute());
+            Assert.Equal(1, task.Executions);
+            Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
             Assert.False(Directory.Exists(fixture.Cache));
         }
         finally
         {
-            Environment.CurrentDirectory = directory;
+            Directory.SetCurrentDirectory(previousDirectory);
         }
-    }, configuration, source, whitespace, symbols.ToString()).Dispose();
-
-    public static IEnumerable<object[]> WildcardInputOverlapCases =>
-        from configuration in new[] { "enabled", "disabled", "bypassed" }
-        from source in new[] { "reference", "composite-reference", "composite", "unrooted" }
-        from pattern in new[] { "Dep*.dll", "Dependen?y.dll" }
-        from symbols in new[] { false, true }
-        select new object[] { configuration, source, pattern, symbols };
-
-    [CachePlatformTheory]
-    [MemberData(nameof(WildcardInputOverlapCases))]
-    public void WildcardInputOverlapsFailBeforeCleanup(string configuration, string source, string pattern, bool symbols) =>
-        RemoteExecutor.Invoke((mode, input, search, pdb) =>
-    {
-        using var fixture = new Fixture();
-        string directory = Path.Combine(fixture.Root, "reference directory");
-        Directory.CreateDirectory(directory);
-        string assembly = Path.Combine(directory, "Dependency.dll");
-        File.Copy(fixture.Input, assembly);
-        string protectedPath = assembly;
-        MockCompiler task = fixture.Create();
-        task.CompilationEntry.SetMetadata("EmitSymbols", "false");
-        if (bool.Parse(pdb))
-        {
-            protectedPath = Path.Combine(directory, Path.GetFileName(fixture.Map));
-            File.Copy(Path.ChangeExtension(fixture.Input, ".pdb"), protectedPath);
-            task.CompilationEntry.SetMetadata("OutputPDBImage", protectedPath);
-            using FileStream stream = File.Open(assembly, FileMode.Open, FileAccess.ReadWrite);
-            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
-            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
-            stream.Position = entry.DataPointer + 24;
-            stream.Write(System.Text.Encoding.UTF8.GetBytes(Path.GetFileName(protectedPath) + "\0"));
-        }
-        else
-        {
-            task.CompilationEntry.SetMetadata("OutputR2RImage", protectedPath);
-        }
-        var wildcard = new TaskItem(Path.Combine(directory, search));
-        task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
-        if (input == "reference")
-        {
-            task.ImplementationAssemblyReferences = new[] { wildcard };
-        }
-        else
-        {
-            task.CompilationEntry.SetMetadata("CreateCompositeImage", "true");
-            task.ReadyToRunCompositeBuildReferences = input == "composite-reference" ? new[] { wildcard } : Array.Empty<ITaskItem>();
-            task.ReadyToRunCompositeBuildInput = new[] { input == "composite" ? wildcard : new TaskItem(fixture.Input) };
-            task.ReadyToRunCompositeUnrootedBuildInput = input == "unrooted" ? new[] { wildcard } : Array.Empty<ITaskItem>();
-        }
-        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
-        byte[] before = File.ReadAllBytes(protectedPath);
-        byte[] assemblyBefore = File.ReadAllBytes(assembly);
-
-        Assert.False(task.Execute());
-        Assert.Equal(0, task.Executions);
-        Assert.Equal(before, File.ReadAllBytes(protectedPath));
-        Assert.Equal(assemblyBefore, File.ReadAllBytes(assembly));
-        Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
-        Assert.False(Directory.Exists(fixture.Cache));
-    }, configuration, source, pattern, symbols.ToString()).Dispose();
+    }, configuration, shape).Dispose();
 
     [CachePlatformTheory]
     [InlineData("*.dll")]
     [InlineData("missing*.dll")]
     [InlineData("missing-directory/*.dll")]
-    public void NonOverlappingWildcardReferencesStillExecuteWithoutCaching(string pattern) => RemoteExecutor.Invoke(search =>
+    public void WildcardReferencesExecuteWithoutCaching(string pattern) => RemoteExecutor.Invoke(search =>
     {
         using var fixture = new Fixture();
         string directory = Path.Combine(fixture.Root, "references");
@@ -911,73 +701,6 @@ public class Crossgen2CacheTests
         Assert.Contains(task.Engine.Messages, message => message.Contains("cache bypass:", StringComparison.Ordinal));
         Assert.False(Directory.Exists(fixture.Cache));
     }, pattern).Dispose();
-
-    public static IEnumerable<object[]> InputPdbOverlapCases =>
-        from configuration in new[] { "enabled", "disabled", "bypassed" }
-        from source in new[] { "assembly", "reference", "composite", "unrooted", "legacy", "pdb-only" }
-        from rooted in new[] { false, true }
-        from emitSymbols in new[] { false, true }
-        select new object[] { configuration, source, rooted, emitSymbols };
-
-    [CachePlatformTheory]
-    [MemberData(nameof(InputPdbOverlapCases))]
-    public void InputPdbOverlapsFailBeforeCleanup(string configuration, string source, bool rooted, bool emitSymbols) =>
-        RemoteExecutor.Invoke((mode, input, absolute, symbols) =>
-    {
-        using var fixture = new Fixture();
-        Directory.CreateDirectory(Path.GetDirectoryName(fixture.Output)!);
-        string assembly = Path.Combine(absolute == "True" ? fixture.Root : Path.GetDirectoryName(fixture.Output)!, "reference.ni.dll");
-        File.Copy(fixture.Input, assembly);
-        using (FileStream stream = File.Open(assembly, FileMode.Open, FileAccess.ReadWrite))
-        {
-            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
-            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
-            byte[] path = System.Text.Encoding.UTF8.GetBytes((absolute == "True" ? fixture.Map : Path.GetFileName(fixture.Map)) + "\0");
-            Assert.True(path.Length <= entry.DataSize - 24);
-            stream.Position = entry.DataPointer + 24;
-            stream.Write(path);
-        }
-        File.Copy(Path.ChangeExtension(fixture.Input, ".pdb"), fixture.Map);
-        byte[] before = File.ReadAllBytes(fixture.Map);
-        byte[] assemblyBefore = File.ReadAllBytes(assembly);
-        MockCompiler task = fixture.Create();
-        task.CompilationEntry.SetMetadata("EmitSymbols", symbols.ToLowerInvariant());
-        task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
-        if (input is "assembly" or "legacy" or "pdb-only")
-        {
-            task.CompilationEntry.ItemSpec = assembly;
-            if (input is "legacy" or "pdb-only")
-            {
-                task.UseCrossgen2 = false;
-                task.CrossgenTool = new TaskItem(fixture.Tool);
-                task.CrossgenTool.SetMetadata("JitPath", fixture.Jit);
-                if (input == "pdb-only")
-                {
-                    task.CompilationEntry.SetMetadata("CreatePDBCommand", "/CreatePDB");
-                }
-            }
-        }
-        else if (input == "reference")
-        {
-            task.ImplementationAssemblyReferences = new[] { new TaskItem(assembly) };
-        }
-        else
-        {
-            task.CompilationEntry.SetMetadata("CreateCompositeImage", "true");
-            task.ReadyToRunCompositeBuildReferences = Array.Empty<ITaskItem>();
-            task.ReadyToRunCompositeBuildInput = new[] { new TaskItem(input == "composite" ? assembly : fixture.Input) };
-            task.ReadyToRunCompositeUnrootedBuildInput = input == "unrooted" ? new[] { new TaskItem(assembly) } : Array.Empty<ITaskItem>();
-        }
-        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
-
-        Assert.False(task.Execute());
-        Assert.Equal(0, task.Executions);
-        Assert.Equal(before, File.ReadAllBytes(fixture.Map));
-        Assert.Equal(assemblyBefore, File.ReadAllBytes(assembly));
-        Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
-        Assert.False(Directory.Exists(fixture.Cache));
-    }, configuration, source, rooted.ToString(), emitSymbols.ToString()).Dispose();
 
     [CachePlatformTheory]
     [InlineData("outputs-in-cache")]
@@ -1345,26 +1068,16 @@ public class Crossgen2CacheTests
     }
 
     [WindowsCacheTheory]
-    [InlineData("cache")]
-    [InlineData("input")]
-    public void WindowsCaseAliasesAreRejected(string location) => RemoteExecutor.Invoke(value =>
+    [InlineData("output.dll")]
+    public void WindowsCacheOutputOverlapIsCaseInsensitive(string name) => RemoteExecutor.Invoke(file =>
     {
         using var fixture = new Fixture();
         MockCompiler task = fixture.Create();
         InvocationCache cache = fixture.CreateCache(task.Log);
-        string image = value == "cache" ? Path.Combine(fixture.Cache.ToUpperInvariant(), "output.dll") : fixture.Input.ToUpperInvariant();
+        string image = Path.Combine(fixture.Cache.ToUpperInvariant(), file);
         string[] paths = new[] { Crossgen2Cache.InputPath(image), fixture.Map };
-        if (value == "cache")
-        {
-            Assert.Throws<ArgumentException>(() => cache.ValidateOutputs(InvocationOutputs.FromFiles(paths)));
-        }
-        else
-        {
-            Assert.Throws<InvalidDataException>(() => Crossgen2Cache.DescribeInvocation(new[] { fixture.Tool, fixture.Jit, fixture.Support },
-                fixture.Input, task.ImplementationAssemblyReferences, task.Crossgen2PgoFiles,
-                paths, "", "", fixture.Root));
-        }
-    }, location).Dispose();
+        Assert.Throws<ArgumentException>(() => cache.ValidateOutputs(InvocationOutputs.FromFiles(paths)));
+    }, name).Dispose();
 
     [WindowsCacheTheory]
     [InlineData("non-portable", true)]
@@ -1427,53 +1140,6 @@ public class Crossgen2CacheTests
             Assert.False(Directory.Exists(fixture.Cache));
         }
     }, shape, caching.ToString()).Dispose();
-
-    [WindowsCacheTheory]
-    [InlineData("enabled", false)]
-    [InlineData("disabled", false)]
-    [InlineData("bypassed", false)]
-    [InlineData("enabled", true)]
-    [InlineData("disabled", true)]
-    [InlineData("bypassed", true)]
-    public void DriveRelativeInputPdbOverlapsFailBeforeCleanup(string configuration, bool adjacent) =>
-        RemoteExecutor.Invoke((mode, besideAssembly) =>
-    {
-        using var fixture = new Fixture();
-        Directory.CreateDirectory(Path.GetDirectoryName(fixture.Output)!);
-        string assembly = Path.Combine(Path.GetDirectoryName(fixture.Output)!, "assembly.dll");
-        File.Copy(fixture.Input, assembly);
-        string pdb = Path.GetPathRoot(fixture.Root)!.TrimEnd('\\') +
-            (bool.Parse(besideAssembly) ? @"missing\" : "") + Path.GetFileName(fixture.Map);
-        using (FileStream stream = File.Open(assembly, FileMode.Open, FileAccess.ReadWrite))
-        {
-            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
-            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
-            stream.Position = entry.DataPointer + 24;
-            stream.Write(System.Text.Encoding.UTF8.GetBytes(pdb + "\0"));
-        }
-        File.Copy(Path.ChangeExtension(fixture.Input, ".pdb"), fixture.Map);
-        byte[] before = File.ReadAllBytes(fixture.Map);
-        MockCompiler task = fixture.Create();
-        task.CompilationEntry.ItemSpec = assembly;
-        task.CompilationEntry.SetMetadata("EmitSymbols", "false");
-        task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
-        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
-        task.EnvironmentVariables = mode == "bypassed" ? new[] { "CROSSGEN2_CACHE_TEST_BYPASS=1" } : null;
-        string directory = Environment.CurrentDirectory;
-        try
-        {
-            Environment.CurrentDirectory = bool.Parse(besideAssembly) ? fixture.Root : Path.GetDirectoryName(fixture.Output)!;
-            Assert.False(task.Execute());
-            Assert.Equal(0, task.Executions);
-            Assert.Equal(before, File.ReadAllBytes(fixture.Map));
-            Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
-            Assert.False(Directory.Exists(fixture.Cache));
-        }
-        finally
-        {
-            Environment.CurrentDirectory = directory;
-        }
-    }, configuration, adjacent.ToString()).Dispose();
 
     [RealCrossgen2Theory]
     [InlineData(false, false)]
@@ -1542,14 +1208,14 @@ public class Crossgen2CacheTests
         }
     }, symbols.ToString(), separateDirectory.ToString()).Dispose();
 
-    public static IEnumerable<object[]> RealWhitespacePathCases =>
+    public static IEnumerable<object[]> RealUnsupportedPathCases =>
         from configuration in new[] { "enabled", "disabled", "bypassed" }
-        from shape in new[] { "input", "symbols", "normalized-symbols" }
+        from shape in new[] { "input", "symbols", "normalized-symbols", "bare-symbols" }
         select new object[] { configuration, shape };
 
     [LinuxCacheTheory(realCompiler: true)]
-    [MemberData(nameof(RealWhitespacePathCases))]
-    public void RealCompilerWhitespacePathsBypass(string configuration, string shape) => RemoteExecutor.Invoke((mode, value) =>
+    [MemberData(nameof(RealUnsupportedPathCases))]
+    public void RealCompilerUnsupportedPathsBypass(string configuration, string shape) => RemoteExecutor.Invoke((mode, value) =>
     {
         using var fixture = new Fixture();
         string runtime = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
@@ -1563,6 +1229,11 @@ public class Crossgen2CacheTests
             declaredInput += " ";
             File.Copy(fixture.Input, declaredInput);
         }
+        else if (value == "bare-symbols")
+        {
+            symbolDirectory = "";
+            effectiveSymbolDirectory = Path.Combine(fixture.Root, "out");
+        }
         else
         {
             symbolDirectory += " ";
@@ -1572,11 +1243,15 @@ public class Crossgen2CacheTests
                 symbolDirectory = Path.Combine(symbolDirectory, ".");
             }
         }
-        Directory.CreateDirectory(symbolDirectory);
+        if (!string.IsNullOrEmpty(symbolDirectory))
+        {
+            Directory.CreateDirectory(symbolDirectory);
+        }
         Directory.CreateDirectory(effectiveSymbolDirectory);
         string output = Path.Combine(fixture.Root, "out", "System.Linq.dll");
         string symbolName = Path.ChangeExtension(Path.GetFileName(output), Fixture.SymbolExtension);
-        string unrelated = Path.Combine(fixture.Root, value == "normalized-symbols" ? "symbols" : "symbols ", symbolName);
+        string unrelated = value == "bare-symbols" ? Path.Combine(fixture.Root, symbolName) :
+            Path.Combine(fixture.Root, value == "normalized-symbols" ? "symbols" : "symbols ", symbolName);
         Directory.CreateDirectory(Path.GetDirectoryName(unrelated)!);
         File.WriteAllText(unrelated, "unrelated symbols");
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
@@ -1603,14 +1278,22 @@ public class Crossgen2CacheTests
                 Assert.False(File.Exists(effectiveSymbols));
                 Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
             };
-            Assert.True(task.Execute(), string.Join(Environment.NewLine, task.Engine.Messages));
+            bool succeeds = value != "bare-symbols";
+            Assert.Equal(succeeds, task.Execute());
             Assert.Equal(1, task.Executions);
             if (mode == "enabled")
             {
                 Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass: Unsupported response-file path:", StringComparison.Ordinal));
             }
-            Assert.Equal("System.Linq", System.Reflection.AssemblyName.GetAssemblyName(output).Name);
-            Assert.Equal(value != "input", File.Exists(effectiveSymbols));
+            if (succeeds)
+            {
+                Assert.Equal("System.Linq", System.Reflection.AssemblyName.GetAssemblyName(output).Name);
+            }
+            else
+            {
+                Assert.Contains(task.Engine.Messages, message => message.Contains("Required argument missing for option: '--perfmap-path'.", StringComparison.Ordinal));
+            }
+            Assert.Equal(succeeds && value != "input", File.Exists(effectiveSymbols));
             Assert.Equal("unrelated symbols", File.ReadAllText(unrelated));
             Assert.False(Directory.Exists(fixture.Cache));
         }
@@ -1646,37 +1329,6 @@ public class Crossgen2CacheTests
         using FileStream stream = File.OpenRead(path);
         using var pe = new PEReader(stream);
         return pe.HasMetadata;
-    }
-
-    private static void WriteImageWithDebugDirectory(string path, DebugDirectoryBuilder debug, bool readyToRun)
-    {
-        var nativeHeader = new BlobBuilder();
-        nativeHeader.WriteUInt32(0x00525452); // ReadyToRun signature, "RTR\0".
-        nativeHeader.WriteUInt16(2);
-        nativeHeader.WriteUInt16(0);
-        nativeHeader.WriteUInt32(0);
-        nativeHeader.WriteUInt16(0);
-        nativeHeader.WriteByte(0);
-        nativeHeader.WriteByte(0);
-        byte[] headerBytes = nativeHeader.ToArray();
-        var builder = new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(),
-            new MetadataRootBuilder(new MetadataBuilder()), nativeHeader, debugDirectoryBuilder: debug);
-        var image = new BlobBuilder();
-        builder.Serialize(image);
-        byte[] bytes = image.ToArray();
-        if (readyToRun)
-        {
-            using var pe = new PEReader(new MemoryStream(bytes));
-            int offset = bytes.AsSpan().IndexOf(headerBytes);
-            SectionHeader section = pe.PEHeaders.SectionHeaders.Single(s =>
-                offset >= s.PointerToRawData && offset < s.PointerToRawData + s.SizeOfRawData);
-            using var writer = new BinaryWriter(new MemoryStream(bytes));
-            // IMAGE_COR20_HEADER.ManagedNativeHeader follows its first 64 bytes.
-            writer.BaseStream.Position = pe.PEHeaders.CorHeaderStartOffset + 64;
-            writer.Write(section.VirtualAddress + offset - section.PointerToRawData);
-            writer.Write(headerBytes.Length);
-        }
-        File.WriteAllBytes(path, bytes);
     }
 
     private sealed class Fixture : IDisposable
