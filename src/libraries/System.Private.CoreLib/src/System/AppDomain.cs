@@ -52,7 +52,13 @@ namespace System
 
         public event UnhandledExceptionEventHandler? UnhandledException
         {
-            add { AppContext.UnhandledException += value; }
+            add
+            {
+                AppContext.UnhandledException += value;
+#if NATIVEAOT
+                AppContext.SetUnhandledExceptionHandler();
+#endif
+            }
             remove { AppContext.UnhandledException -= value; }
         }
 
@@ -83,7 +89,7 @@ namespace System
             add
             {
                 AppContext.FirstChanceException += value;
-#if CORECLR
+#if CORECLR || NATIVEAOT
                 // Once a handler is added, the runtime will attempt
                 // to deliver first chance notifications for all exceptions.
                 // We don't care if handlers are removed.
