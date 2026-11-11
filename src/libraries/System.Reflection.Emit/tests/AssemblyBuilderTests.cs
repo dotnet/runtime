@@ -572,18 +572,6 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<MethodAccessException>(() => d());
         }
 
-        [Fact]
-        public void DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty()
-        {
-            AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty));
-            Assembly internalAssemblyBuilder = AppDomain.CurrentDomain.GetAssemblies()
-                    .FirstOrDefault(a => a.FullName == assembly.FullName);
-
-            Assert.Empty(assembly.Location);
-            Assert.NotNull(internalAssemblyBuilder);
-            Assert.Empty(internalAssemblyBuilder.Location);
-        }
-
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ThrowsWhenDynamicCodeNotSupported()
         {
@@ -598,6 +586,24 @@ namespace System.Reflection.Emit.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => AssemblyBuilder.DefineDynamicAssembly(assemblyName, access));
                 Assert.Throws<PlatformNotSupportedException>(() => AssemblyBuilder.DefineDynamicAssembly(assemblyName, access, assemblyAttributes: null));
             }, options);
+        }
+    }
+
+    // AppDomain.GetAssemblies() holds strong references to every loaded assembly, which can keep
+    // collectible assemblies created by tests running in parallel alive.
+    [Collection(nameof(DisableParallelization))]
+    public class AssemblyTestsDisableParallelization
+    {
+        [Fact]
+        public void DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty));
+            Assembly internalAssemblyBuilder = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.FullName == assembly.FullName);
+
+            Assert.Empty(assembly.Location);
+            Assert.NotNull(internalAssemblyBuilder);
+            Assert.Empty(internalAssemblyBuilder.Location);
         }
     }
 }

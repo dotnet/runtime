@@ -818,7 +818,7 @@ public class DebuggerTests
         uint contextSize = seed.Size;
         seed.StackPointer = new TargetPointer(originalSp);
         seed.InstructionPointer = new TargetCodePointer(OriginalIp);
-        byte[] contextBuffer = seed.GetBytes();
+        byte[] contextBuffer = seed.GetBytes().ToArray();
 
         int recordSize = ExceptionRecordSize(ptrSize);
         byte[] recordBytes = new byte[recordSize];

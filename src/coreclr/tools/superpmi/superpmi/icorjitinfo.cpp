@@ -1861,6 +1861,12 @@ void MyICJI::recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig /* IN */)
     // No-op for SuperPMI replay. Only meaningful for ReadyToRun Wasm compilation.
 }
 
+void MyICJI::recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_HANDLE method /* IN */)
+{
+    jitInstance->mc->cr->AddCall("recordWasmVirtualFunctionPointerLookup");
+    // No-op for SuperPMI replay. Only meaningful for ReadyToRun Wasm compilation.
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void MyICJI::recordRelocation(void*        location,   /* IN  */

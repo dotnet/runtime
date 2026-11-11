@@ -105,7 +105,7 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <ApiCompatNetCoreAppBaselineVersion>11.0.0-rc.1.26425.128</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineVersion>11.0.0-rc.3.26522.148</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net11.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 

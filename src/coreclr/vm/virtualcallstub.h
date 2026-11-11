@@ -413,7 +413,7 @@ private:
     ResolveHolder *GenerateResolveStub(PCODE addrOfResolver,
                                        PCODE addrOfPatcher,
                                        size_t dispatchToken
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                        , size_t stackArgumentsSize
 #endif
                                        );
@@ -1172,10 +1172,10 @@ public:
     inline size_t KeyB()
     {
         WRAPPER_NO_CONTRACT;
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
         if (stub && !DispatchToken(stub->token()).IsTypedToken())
             return stub->stackArgumentsSize();
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
         return 0;
     }
 

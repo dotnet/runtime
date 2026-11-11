@@ -481,12 +481,12 @@ namespace Internal.Reflection.Execution
             if (FunctionPointerOps.IsGenericMethodPointer(originalLdFtnResult))
             {
                 GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(originalLdFtnResult);
-                canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(realTargetData->MethodFunctionPointer);
+                canonOriginalLdFtnResult = RuntimeAugments.GetTargetOfWrapperStub(realTargetData->MethodFunctionPointer, includeInstantiatingStubs: false);
                 instantiationArgument = realTargetData->InstantiationArgument;
             }
             else
             {
-                canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
+                canonOriginalLdFtnResult = RuntimeAugments.GetTargetOfWrapperStub(originalLdFtnResult, includeInstantiatingStubs: false);
                 instantiationArgument = IntPtr.Zero;
             }
         }
@@ -605,18 +605,10 @@ namespace Internal.Reflection.Execution
                 // within the actual method, not the stub.
                 if (RuntimeAugments.IsValueType(declaringTypeHandle))
                 {
-                    IntPtr targetAddress = RuntimeAugments.GetCodeTarget(entryMethodEntrypoint);
+                    IntPtr targetAddress = RuntimeAugments.GetTargetOfWrapperStub(entryMethodEntrypoint, includeInstantiatingStubs: true);
                     if (targetAddress != IntPtr.Zero && targetAddress != entryMethodEntrypoint)
                     {
                         functionPointers.Add(new FunctionPointerOffsetPair(targetAddress, parserOffset));
-                    }
-
-                    IntPtr targetAddress2;
-                    if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress2) &&
-                        targetAddress2 != entryMethodEntrypoint &&
-                        targetAddress2 != targetAddress)
-                    {
-                        functionPointers.Add(new FunctionPointerOffsetPair(targetAddress2, parserOffset));
                     }
                 }
             }
@@ -672,11 +664,8 @@ namespace Internal.Reflection.Execution
             else
             {
 #if DEBUG
-                IntPtr targetAddress;
                 Debug.Assert(entryMethodEntrypoint == canonOriginalLdFtnResult ||
-                    RuntimeAugments.GetCodeTarget(entryMethodEntrypoint) == canonOriginalLdFtnResult ||
-                    TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress) &&
-                        targetAddress == canonOriginalLdFtnResult);
+                    RuntimeAugments.GetTargetOfWrapperStub(entryMethodEntrypoint, includeInstantiatingStubs: true) == canonOriginalLdFtnResult);
 #endif
 
                 if ((entryFlags & InvokeTableFlags.RequiresInstArg) == 0 && declaringTypeHandle.IsNull())

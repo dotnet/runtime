@@ -33,11 +33,13 @@
 
 import argparse
 import os
+import re
 import shutil
 import stat
 
 from coreclr_arguments import *
-from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir, determine_jit_name
+from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir, determine_jit_name, \
+    get_assembly_simple_name, is_managed_assembly
 
 # Start of parser object creation.
 
@@ -57,6 +59,7 @@ parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi
 parser.add_argument("-public_queues", action="store_true", help="Whether to set up for public queues (or internal ones, if not specified)")
 parser.add_argument("-target_os", help="Target OS for cross-targeting crossgen2 collections (e.g., 'browser' for wasm). Defaults to the host platform.")
 parser.add_argument("-target_arch", help="Target architecture for cross-targeting crossgen2 collections (e.g., 'wasm'). Defaults to the host architecture.")
+parser.add_argument("-target_runtime_pack_directory", help="Path to the target's CoreCLR runtime pack `runtimes/<rid>` directory. Required for cross-targeting crossgen2 collections: its managed assemblies are the crossgen2 reference set and, for the 'libraries' collection, part of the assemblies to collect over.")
 
 is_windows = platform.system() == "Windows"
 
@@ -191,6 +194,42 @@ native_binaries_to_ignore = [
     "xunit.console.exe",
 ]
 
+# Managed Core_Root assemblies that are not staged for cross-target crossgen2 collections:
+# COM interop wrappers and out-of-band libraries that only support Windows (or other
+# non-browser platforms), whose code isn't representative of what runs on the target.
+core_root_assemblies_to_ignore_for_cross_target = [
+    "Dia2Lib.dll",
+    "Microsoft.DiaSymReader.dll",
+    "Microsoft.Extensions.Hosting.WindowsServices.dll",
+    "Microsoft.Extensions.Logging.EventLog.dll",
+    "Microsoft.Win32.Registry.AccessControl.dll",
+    "Microsoft.Win32.SystemEvents.dll",
+    "System.Data.Odbc.dll",
+    "System.Data.OleDb.dll",
+    "System.Diagnostics.EventLog.dll",
+    "System.Diagnostics.EventLog.Messages.dll",
+    "System.Diagnostics.PerformanceCounter.dll",
+    "System.DirectoryServices.dll",
+    "System.DirectoryServices.AccountManagement.dll",
+    "System.DirectoryServices.Protocols.dll",
+    "System.IO.Ports.dll",
+    "System.Management.dll",
+    "System.Net.Http.WinHttpHandler.dll",
+    "System.Security.Cryptography.ProtectedData.dll",
+    "System.ServiceProcess.ServiceController.dll",
+    "System.Speech.dll",
+    "System.Windows.Extensions.dll",
+    "TraceReloggerLib.dll",
+]
+
+# Test infrastructure assemblies that are copied next to every test in the coreclr test
+# build. Cross-target coreclr_tests collections stage one copy as a crossgen2 reference
+# rather than compiling each copy.
+coreclr_test_infrastructure_assemblies = [
+    "TestLibrary.dll",
+    "XUnitWrapperLibrary.dll",
+]
+
 MAX_FILES_COUNT = 1500
 
 
@@ -292,6 +331,15 @@ def setup_args(args):
                         lambda unused: True,
                         "Unable to set target_arch",
                         modify_arg=lambda target_arch: target_arch if target_arch else coreclr_args.arch)
+
+    is_cross_target_crossgen2 = coreclr_args.collection_type == "crossgen2" and \
+        ((coreclr_args.target_os != coreclr_args.platform) or (coreclr_args.target_arch != coreclr_args.arch))
+    coreclr_args.verify(args,
+                        "target_runtime_pack_directory",
+                        lambda target_runtime_pack_directory: not is_cross_target_crossgen2 or
+                            (target_runtime_pack_directory is not None and os.path.isdir(target_runtime_pack_directory)),
+                        "target_runtime_pack_directory is required for cross-target crossgen2 collections and must exist",
+                        modify_arg=lambda target_runtime_pack_directory: None if target_runtime_pack_directory is None else os.path.abspath(target_runtime_pack_directory))
     return coreclr_args
 
 
@@ -300,9 +348,16 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
     Args:
         src_directory (string): Path of directory to enumerate.
-        exclude_directories ([string]): Directory names to exclude.
+        exclude_directories ([string]): Directory names to exclude. Names containing '/' are
+            paths relative to src_directory, and exclude only that directory.
         exclude_files ([string]): File names to exclude.
     """
+
+    def is_excluded_directory(parent, name):
+        if name in exclude_directories:
+            return True
+        relative_path = os.path.relpath(os.path.join(parent, name), src_directory)
+        return relative_path.replace(os.sep, "/") in exclude_directories
 
     def sorter_by_size(pair):
         """ Sorts the pair (file_name, file_size) tuple in descending order of file_size
@@ -318,7 +373,7 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
     for file_path, dirs, files in os.walk(src_directory, topdown=True):
         # Credit: https://stackoverflow.com/a/19859907
-        dirs[:] = [d for d in dirs if d not in exclude_directories]
+        dirs[:] = [d for d in dirs if not is_excluded_directory(file_path, d)]
         for name in files:
             # Make the exclude check case-insensitive
             if name.lower() in exclude_files_lower:
@@ -343,12 +398,16 @@ def first_fit(sorted_by_size, max_size):
     approach, it doesn't guarantee to find the bucket with tighest spot available.
 
     Args:
-        sorted_by_size ((string, int)): (file_name, file_size) tuple
+        sorted_by_size ((string, int)): (file_name, file_size) tuple. file_name can also be a tuple
+            of file names that must stay in the same bucket, with file_size their total size.
         max_size (int): Maximum size (in bytes) of each bucket.
 
     Returns:
         [{int, [string]}]: Returns a dictionary of partition-index to list of file names following in that bucket.
     """
+    def file_count(bucket):
+        return sum(len(names) if isinstance(names, tuple) else 1 for names, _ in bucket)
+
     partitions = {}
     for curr_file in sorted_by_size:
         _, file_size = curr_file
@@ -359,7 +418,7 @@ def first_fit(sorted_by_size, max_size):
         if file_size < max_size:
             for p_index in partitions:
                 total_in_curr_par = sum(n for _, n in partitions[p_index])
-                if ((total_in_curr_par + file_size) < max_size) and (len(partitions[p_index]) < MAX_FILES_COUNT):
+                if ((total_in_curr_par + file_size) < max_size) and (file_count(partitions[p_index]) < MAX_FILES_COUNT):
                     partitions[p_index].append(curr_file)
                     found_bucket = True
                     break
@@ -370,7 +429,7 @@ def first_fit(sorted_by_size, max_size):
     total_size = 0
     for p_index in partitions:
         partition_size = sum(n for _, n in partitions[p_index])
-        print("Partition {0}: {1} files with {2} bytes.".format(p_index, len(partitions[p_index]), partition_size))
+        print("Partition {0}: {1} files with {2} bytes.".format(p_index, file_count(partitions[p_index]), partition_size))
         total_size += partition_size
     print("Total {0} partitions with {1} bytes.".format(str(len(partitions)), total_size))
 
@@ -378,7 +437,7 @@ def first_fit(sorted_by_size, max_size):
 
 
 def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
-                    exclude_files=native_binaries_to_ignore):
+                    exclude_files=native_binaries_to_ignore, keep_directories_together=False):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
@@ -387,15 +446,25 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
         max_size (int): Maximum partition size in bytes
         exclude_directories ([string]): List of folder names to be excluded.
         exclude_files ([string]): List of files names to be excluded.
+        keep_directories_together (bool): Put all the files of a directory in the same partition,
+            e.g. so a test ships with the dependencies copied next to it.
     """
 
     print('Partitioning files from {0} to {1}'.format(src_directory, dst_directory))
     sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories, exclude_files)
+    if keep_directories_together:
+        files_by_directory = {}
+        for file_name, file_size in sorted_by_size:
+            files_by_directory.setdefault(os.path.dirname(file_name), []).append((file_name, file_size))
+        sorted_by_size = sorted(((tuple(name for name, _ in files), sum(size for _, size in files))
+                                 for files in files_by_directory.values()), key=lambda x: x[1], reverse=True)
     partitions = first_fit(sorted_by_size, max_size)
 
     index = 0
     for p_index in partitions:
-        file_names = [curr_file[0] for curr_file in partitions[p_index]]
+        file_names = []
+        for names, _ in partitions[p_index]:
+            file_names += list(names) if isinstance(names, tuple) else [names]
         curr_dst_path = os.path.join(dst_directory, str(index), "binaries")
         copy_files(src_directory, curr_dst_path, file_names)
         index += 1
@@ -443,6 +512,76 @@ def stage_runtime_pack_assemblies(runtime_pack_rid_directory, dst_directory):
     copy_files(os.path.dirname(corelib_path), dst_directory, [corelib_path])
 
     return dst_directory
+
+
+def stage_core_root_extra_assemblies(core_root_directory, dst_directory, exclude_simple_names):
+    """ Stage the managed assemblies at the top level of Core_Root that aren't part of the target's
+    shared framework into a flat directory.
+
+    For host collections the `libraries` crossgen2 collection compiles all of Core_Root, which
+    besides the shared framework holds a lot of portable IL: Roslyn, TraceEvent, FSharp.Core,
+    Newtonsoft.Json, xunit, and the out-of-band libraries. Cross-target collections compile the
+    target's runtime pack instead, so stage these extra assemblies to collect over (and to
+    resolve references against) as well. Only the top level is considered so assembly simple
+    names stay unique; subdirectories hold copies of tools and their dependencies.
+
+    Args:
+        core_root_directory (string): Path to the host Core_Root directory.
+        dst_directory (string): Directory to stage the assemblies into.
+        exclude_simple_names (set): Lowercased simple names to skip, e.g. those already
+            provided by the target's runtime pack.
+
+    Returns:
+        [string]: The file names that were staged.
+    """
+
+    ignored = set(get_assembly_simple_name(name) for name in core_root_assemblies_to_ignore_for_cross_target)
+    ignored |= set(get_assembly_simple_name(name) for name in native_binaries_to_ignore)
+
+    assemblies = []
+    for name in sorted(os.listdir(core_root_directory)):
+        path = os.path.join(core_root_directory, name)
+        if not name.endswith(".dll") or name.endswith(".resources.dll") or not os.path.isfile(path):
+            continue
+        simple_name = get_assembly_simple_name(name)
+        if simple_name in exclude_simple_names or simple_name in ignored:
+            continue
+        if not is_managed_assembly(path):
+            continue
+        assemblies.append(path)
+
+    os.makedirs(dst_directory, exist_ok=True)
+    copy_files(core_root_directory, dst_directory, assemblies)
+
+    return [os.path.basename(path) for path in assemblies]
+
+
+def stage_coreclr_test_infrastructure_assemblies(tests_directory, dst_directory):
+    """ Stage one copy of each coreclr test infrastructure assembly found in the test tree.
+
+    Args:
+        tests_directory (string): Root of the coreclr test tree being collected over.
+        dst_directory (string): Directory to stage the assemblies into.
+
+    Returns:
+        [string]: The file names that were staged.
+    """
+
+    remaining = set(name.lower() for name in coreclr_test_infrastructure_assemblies)
+    found = []
+    for file_path, _, files in os.walk(tests_directory):
+        for name in files:
+            if name.lower() in remaining:
+                remaining.discard(name.lower())
+                found.append(os.path.join(file_path, name))
+        if len(remaining) == 0:
+            break
+
+    os.makedirs(dst_directory, exist_ok=True)
+    for path in found:
+        copy_files(os.path.dirname(path), dst_directory, [path])
+
+    return [os.path.basename(path) for path in found]
 
 
 def setup_benchmark(workitem_directory, arch):
@@ -691,6 +830,7 @@ def main(main_args):
             exclude_directories += ['Core_Root']
 
         exclude_files = list(native_binaries_to_ignore)
+        keep_directories_together = False
         if coreclr_args.collection_type == "crossgen2":
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
@@ -708,27 +848,53 @@ def main(main_args):
 
         if coreclr_args.collection_type == "crossgen2" and is_cross_target_collection:
             # A cross-target crossgen2 collection compiles assemblies built for the target,
-            # not the host Core_Root. The YAML routes InputDirectory to the target's CoreCLR
-            # runtime pack `runtimes/<rid>` directory; flatten its managed assemblies
-            # (lib/<tfm>/*.dll plus native/System.Private.CoreLib.dll) into a single
-            # directory to partition over.
-            staged_assemblies_directory = os.path.join(workitem_payload_directory, "target_assemblies")
-            print('Staging target assemblies from {} -> {}'.format(coreclr_args.input_directory, staged_assemblies_directory))
-            stage_runtime_pack_assemblies(coreclr_args.input_directory, staged_assemblies_directory)
-            coreclr_args.input_directory = staged_assemblies_directory
+            # not the host Core_Root, and resolves references against them. Stage the target's
+            # assembly set into a single flat directory: the managed assemblies of its CoreCLR
+            # runtime pack (lib/<tfm>/*.dll plus native/System.Private.CoreLib.dll), plus the
+            # portable non-framework IL that Core_Root carries (Roslyn, TraceEvent, xunit, the
+            # out-of-band libraries, ...), which host `libraries` collections compile as well.
+            target_assemblies_directory = os.path.join(workitem_payload_directory, "target_assemblies")
+            print('Staging target assemblies from {} -> {}'.format(coreclr_args.target_runtime_pack_directory, target_assemblies_directory))
+            stage_runtime_pack_assemblies(coreclr_args.target_runtime_pack_directory, target_assemblies_directory)
+            framework_simple_names = set(get_assembly_simple_name(name) for name in os.listdir(target_assemblies_directory))
+            print('Staging non-framework Core_Root assemblies from {} -> {}'.format(coreclr_args.release_core_root_directory, target_assemblies_directory))
+            stage_core_root_extra_assemblies(coreclr_args.release_core_root_directory, target_assemblies_directory, framework_simple_names)
 
-            # crossgen2 also has to resolve references against the target's assemblies
-            # rather than the host Core_Root, so stage a full copy into the correlation
-            # payload, which every Helix work item sees. superpmi-collect.proj turns
-            # `Crossgen2ReferenceDirName` into superpmi.py's -crossgen2_reference_directory.
+            # crossgen2 has to resolve references against the target's assemblies rather than
+            # the host Core_Root, so stage a full copy into the correlation payload, which every
+            # Helix work item sees. superpmi-collect.proj turns `Crossgen2ReferenceDirName`
+            # into superpmi.py's -crossgen2_reference_directory.
             crossgen2_reference_dir_name = "crossgen2References"
             crossgen2_reference_directory = os.path.join(core_root_dst_directory, crossgen2_reference_dir_name)
-            print('Copying {} -> {}'.format(staged_assemblies_directory, crossgen2_reference_directory))
-            copy_directory(staged_assemblies_directory, crossgen2_reference_directory, verbose_output=False,
+            print('Copying {} -> {}'.format(target_assemblies_directory, crossgen2_reference_directory))
+            copy_directory(target_assemblies_directory, crossgen2_reference_directory, verbose_output=False,
                            match_func=lambda path: path.endswith(".dll"))
 
+            if coreclr_args.collection_name == "libraries":
+                # Collect over the whole staged target assembly set.
+                coreclr_args.input_directory = target_assemblies_directory
+            elif coreclr_args.collection_name == "coreclr_tests":
+                # Collect over the test assemblies under input_directory. Every test directory
+                # carries its own copy of the test infrastructure; stage one copy of it as a
+                # reference, and don't compile copies of anything that is already a reference
+                # (the `libraries` collection covers those).
+                print('Staging coreclr test infrastructure assemblies from {} -> {}'.format(coreclr_args.input_directory, crossgen2_reference_directory))
+                stage_coreclr_test_infrastructure_assemblies(coreclr_args.input_directory, crossgen2_reference_directory)
+                exclude_files += [name for name in os.listdir(crossgen2_reference_directory) if name.endswith(".dll")]
+                # The Arm and x86 hardware intrinsics tests are large and on wasm mostly compile
+                # their software fallbacks; keep the General and Wasm ones.
+                hardware_intrinsics_directory = os.path.join(coreclr_args.input_directory, "HardwareIntrinsics")
+                if os.path.isdir(hardware_intrinsics_directory):
+                    exclude_directories += ["HardwareIntrinsics/" + name for name in os.listdir(hardware_intrinsics_directory)
+                                            if re.match(r"(HardwareIntrinsics_)?(Arm|X86)", name)]
+                # crossgen2 resolves a test's other dependencies from its own directory, so don't
+                # split directories across work items.
+                keep_directories_together = True
+            else:
+                raise RuntimeError("Cross-target crossgen2 collections support only the 'libraries' and 'coreclr_tests' collections, not '{}'".format(coreclr_args.collection_name))
+
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
-                        exclude_files)
+                        exclude_files, keep_directories_together=keep_directories_together)
 
     # Set variables
     print('Setting pipeline variables:')

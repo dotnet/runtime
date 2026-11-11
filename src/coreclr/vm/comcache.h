@@ -35,31 +35,25 @@ STDAPI_(LPSTREAM)   CreateMemStm(DWORD cb, BYTE** ppBuf);
 typedef DPTR(CtxEntry) PTR_CtxEntry;
 
 //==============================================================
-// An entry representing a CLR 1.0 context or an appartment.
+// An entry representing a CLR context or an apartment.
 class CtxEntry
 {
     // The CtxEntryCache needs to be able to see the internals
     // of the CtxEntry.
     friend CtxEntryCache;
 
-    // NewHolder<CtxEntry> needs to be able to call the destructor of CtxEntry.
-    // DISABLE Warning C4396, the inline specifier cannot be used when a friend declaration refers to a specialization of a function template
-#pragma warning(push)		// store original warning levels
-#pragma warning(disable: 4396)
-    friend void Delete<CtxEntry>(CtxEntry *);
-#pragma warning(pop)		// restore original warning levels
-
     friend struct ::cdac_data<CtxEntry>;
 
 private:
-    // Disallow creation and deletion of the CtxEntries.
+    // Disallow creation of the CtxEntries.
     CtxEntry(LPVOID pCtxCookie, Thread* pSTAThread);
-    ~CtxEntry();
 
     // Initialization method called from the CtxEntryCache.
     VOID Init();
 
 public:
+    ~CtxEntry();
+
     // Add a reference to the CtxEntry.
     DWORD AddRef();
 

@@ -42,15 +42,9 @@ namespace System
 
         private static SafeFileHandle OpenStandardHandle(IntPtr fd) => new SafeFileHandle(fd, ownsHandle: false);
 
-        public static Encoding InputEncoding
-        {
-            get { return GetConsoleEncoding(); }
-        }
+        public static Encoding InputEncoding => Encoding.Default;
 
-        public static Encoding OutputEncoding
-        {
-            get { return GetConsoleEncoding(); }
-        }
+        public static Encoding OutputEncoding => Encoding.Default;
 
         internal static TextReader GetOrCreateReader()
         {
@@ -188,16 +182,6 @@ namespace System
         public static (int Left, int Top) GetCursorPosition()
         {
             throw new PlatformNotSupportedException();
-        }
-
-        /// <summary>Creates an encoding from the current environment.</summary>
-        /// <returns>The encoding.</returns>
-        private static Encoding GetConsoleEncoding()
-        {
-            Encoding? enc = EncodingHelper.GetEncodingFromCharset();
-            return enc != null ?
-                enc.RemovePreamble() :
-                Encoding.Default;
         }
 
 #pragma warning disable IDE0060

@@ -22,6 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("wasm-opt")]
         public async Task SimpleNativeBuild(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -38,6 +39,8 @@ namespace Wasm.Build.Tests
             ReplaceMainJsWithMinimalRunMain();
 
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
+            if (EnvironmentVariables.UseWasmOpt)
+                Assert.Contains("Running wasm-opt with", buildOutput);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
         }
 
