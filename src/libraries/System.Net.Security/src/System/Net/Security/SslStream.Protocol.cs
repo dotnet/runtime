@@ -590,6 +590,7 @@ namespace System.Net.Security
                 }
             }
 
+            SslStreamCertificateContext? certificateContextToRestore = null;
             try
             {
                 // Try to locate cached creds first.
@@ -631,6 +632,8 @@ namespace System.Net.Security
                     guessedThumbPrint = null;
                     selectedCert = null;
                     _selectedClientCertificate = null;
+                    certificateContextToRestore = _sslAuthenticationOptions.CertificateContext;
+                    _sslAuthenticationOptions.CertificateContext = null;
                 }
 
                 if (cachedCredentialHandle != null)
@@ -652,6 +655,11 @@ namespace System.Net.Security
             finally
             {
                 UpdateCertificateContext(selectedCert);
+                if (certificateContextToRestore is not null)
+                {
+                    Debug.Assert(_sslAuthenticationOptions.CertificateContext is null);
+                    _sslAuthenticationOptions.CertificateContext = certificateContextToRestore;
+                }
             }
 
             return cachedCred;

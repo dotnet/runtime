@@ -203,7 +203,7 @@ namespace System.Net.Security
         internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
         internal bool IsServer { get; set; }
         internal bool IsClient => !IsServer;
-        internal SslStreamCertificateContext? CertificateContext { get; private set; }
+        internal SslStreamCertificateContext? CertificateContext { get; set; }
         // If true, the certificate context was created by the SslStream and
         // certificates inside should be disposed when no longer needed.
         internal bool OwnsCertificateContext { get; private set; }
