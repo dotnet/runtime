@@ -1,7 +1,7 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-include asmmacros.inc
+include AsmMacros_Shared.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -371,33 +371,25 @@ NESTED_ENTRY RhpResumeAfterCatch, _TEXT
         mov     rdx, rbx                                            ;; rdx <- REGDISPLAY*
         mov     r11, [rdx + OFFSETOF__REGDISPLAY__SSP]              ;; r11 <- resume SSP value
 
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     rbx, [rcx]
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     rbp, [rcx]
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRsi]
-        mov     rsi, [rcx]
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRdi]
-        mov     rdi, [rcx]
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     r12, [rcx]
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     r13, [rcx]
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     r14, [rcx]
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     r15, [rcx]
+        LOAD_FUNCLET_REGISTER rdx, Rbx, rcx
+        LOAD_FUNCLET_REGISTER rdx, Rbp, rcx
+        LOAD_FUNCLET_REGISTER rdx, Rsi, rcx
+        LOAD_FUNCLET_REGISTER rdx, Rdi, rcx
+        LOAD_FUNCLET_REGISTER rdx, R12, rcx
+        LOAD_FUNCLET_REGISTER rdx, R13, rcx
+        LOAD_FUNCLET_REGISTER rdx, R14, rcx
+        LOAD_FUNCLET_REGISTER rdx, R15, rcx
 
-        movdqa  xmm6, [rdx + OFFSETOF__REGDISPLAY__Xmm + 0*10h]
-        movdqa  xmm7, [rdx + OFFSETOF__REGDISPLAY__Xmm + 1*10h]
-        movdqa  xmm8, [rdx + OFFSETOF__REGDISPLAY__Xmm + 2*10h]
-        movdqa  xmm9, [rdx + OFFSETOF__REGDISPLAY__Xmm + 3*10h]
-        movdqa  xmm10,[rdx + OFFSETOF__REGDISPLAY__Xmm + 4*10h]
-        movdqa  xmm11,[rdx + OFFSETOF__REGDISPLAY__Xmm + 5*10h]
-        movdqa  xmm12,[rdx + OFFSETOF__REGDISPLAY__Xmm + 6*10h]
-        movdqa  xmm13,[rdx + OFFSETOF__REGDISPLAY__Xmm + 7*10h]
-        movdqa  xmm14,[rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
-        movdqa  xmm15,[rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
+        LOAD_FUNCLET_XMM_REGISTER rdx, 6
+        LOAD_FUNCLET_XMM_REGISTER rdx, 7
+        LOAD_FUNCLET_XMM_REGISTER rdx, 8
+        LOAD_FUNCLET_XMM_REGISTER rdx, 9
+        LOAD_FUNCLET_XMM_REGISTER rdx, 10
+        LOAD_FUNCLET_XMM_REGISTER rdx, 11
+        LOAD_FUNCLET_XMM_REGISTER rdx, 12
+        LOAD_FUNCLET_XMM_REGISTER rdx, 13
+        LOAD_FUNCLET_XMM_REGISTER rdx, 14
+        LOAD_FUNCLET_XMM_REGISTER rdx, 15
 
         ;; reset RSP and jump to RAX
         mov     rsp, r8                                             ;; reset the SP to resume SP value

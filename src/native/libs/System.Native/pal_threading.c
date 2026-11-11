@@ -283,6 +283,14 @@ int32_t SystemNative_SchedGetCpu(void)
 {
 #if HAVE_SCHED_GETCPU
     return sched_getcpu();
+#elif HAVE_PTHREAD_CPU_NUMBER_NP
+    size_t cpu;
+    if (pthread_cpu_number_np(&cpu) != 0)
+    {
+        return -1;
+    }
+
+    return (int32_t)cpu;
 #else
     return -1;
 #endif

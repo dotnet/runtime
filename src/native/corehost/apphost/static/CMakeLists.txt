@@ -171,7 +171,6 @@ else()
     endif()
 
     list(APPEND NATIVE_LIBS
-        coreclrpal_dac
         corguids
         dbgutil
     )

@@ -6,7 +6,7 @@
 typedef BOOL (PALAPI_NOEXPORT *PFN_DLLMAIN)(HINSTANCE, DWORD, LPVOID);      /* entry point of module */
 typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
 
-// This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
+// This is for the VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
