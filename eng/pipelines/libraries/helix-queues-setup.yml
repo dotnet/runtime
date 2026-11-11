@@ -35,9 +35,6 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - (Alpine.324.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:2b0735aa217ba6ee9429e1cdbe6c1a0ae791bd7b82c27b14476d95900ecd480d
-      - ${{ if and(eq(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'coreclr')) }}:
-        # extra-platforms CoreCLR (inner loop only)
-        - (Alpine.edge.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64@sha256:ab32a8e5e7805fba2107273d7978e2c017e6a8ff089c99df6564504362383cdc
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
