@@ -591,7 +591,9 @@ public record X86GCInfo : IGCInfoDecoder
         return position * (uint)_target.PointerSize;
     }
 
-    uint IGCInfoDecoder.GetCalleePoppedArgumentsSize()
+    uint IGCInfoDecoder.GetCalleePoppedArgumentsSize() => GetCalleePoppedArgumentsSize();
+
+    private uint GetCalleePoppedArgumentsSize()
     {
         // Mirrors native ::GetStackParameterSize(hdrInfo) in gc_unwind_x86.inl: varargs are
         // caller-popped (return 0); other methods report the argument size from the GC info
@@ -886,7 +888,7 @@ public record X86GCInfo : IGCInfoDecoder
 
         foreach (KeyValuePair<int, uint> pushed in pushedPtrs)
         {
-            result.Add(GetPushedPointerSlot(depthSlots, pushed.Key, pushed.Value));
+            result.Add(GetPushedPointerSlot(depthSlots, pushed.Key, pushed.Value, options.IsFunclet));
         }
 
         // Partially-interruptible call site: emit its register set and pointer args directly.
@@ -1006,10 +1008,10 @@ public record X86GCInfo : IGCInfoDecoder
         }
     }
 
-    private LiveSlot GetPushedPointerSlot(int depthSlots, int pushIndex, uint flags)
+    private LiveSlot GetPushedPointerSlot(int depthSlots, int pushIndex, uint flags, bool isFunclet)
     {
-        // An ordinary EBP frame has a stable argument base below its saved registers.
-        if (Header.EbpFrame && !Header.LocalAlloc)
+        // Funclet EBP points to the parent's locals, not the funclet's pushed arguments.
+        if (Header.EbpFrame && !Header.LocalAlloc && !isFunclet)
             return new LiveSlot(false, 0, checked(-(int)_stackSize - pushIndex * sizeof(int)), 2, flags);
         return new LiveSlot(false, 0, checked((depthSlots - 1 - pushIndex) * sizeof(int)), 1, flags);
     }
@@ -1034,9 +1036,22 @@ public record X86GCInfo : IGCInfoDecoder
             ? (Header.GenericsContextIsMethodDesc ? GenericsContextKind.MethodDesc : GenericsContextKind.MethodHandle)
             : GenericsContextKind.None;
 
-        SpecialSlot? gsCookie = Header.GsCookieOffset != 0
-            ? new SpecialSlot((int)Header.GsCookieOffset)
-            : null;
+        SpecialSlot? gsCookie = null;
+        if (Header.GsCookieOffset != 0)
+        {
+            int offset = checked((int)Header.GsCookieOffset);
+            if (Header.DoubleAlign)
+            {
+                gsCookie = new SpecialSlot(offset, SpecialSlotBase.InitialStackPointer);
+            }
+            else
+            {
+                int callerSpOffset = Header.EbpFrame
+                    ? checked(-offset - 2 * sizeof(int))
+                    : checked(offset - (int)_stackSize - sizeof(int));
+                gsCookie = new SpecialSlot(checked(callerSpOffset - (int)GetCalleePoppedArgumentsSize()));
+            }
+        }
 
         return new GCInfoHeader(
             Version: _gcInfoVersion,
@@ -1161,7 +1176,7 @@ public record X86GCInfo : IGCInfoDecoder
                                 (interiorRegs & reg) != 0 ? 1u : 0u));
                     }
                     foreach ((int index, uint flags) in pushedPtrs)
-                        state.Add(GetPushedPointerSlot(depthSlots, index, flags));
+                        state.Add(GetPushedPointerSlot(depthSlots, index, flags, isFunclet: false));
                 }
                 else if (callSite is not null && offset >= Header.PrologSize)
                 {

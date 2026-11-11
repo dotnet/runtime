@@ -153,8 +153,8 @@ public class GCArgTable
                     // non-ptr arg push
 
                     curOffs += (val & 0x07);
-                    argCnt++;
-                    AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt, Action.PUSH, _header.EbpFrame, false, false, false));
+                    argCnt = checked(argCnt + 1);
+                    AddNewTransition(new GcTransitionPointer((int)curOffs, argCnt - 1, argCnt, Action.PUSH, _header.EbpFrame, false, false, false));
                 }
 
                 continue;

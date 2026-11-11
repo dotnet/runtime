@@ -681,6 +681,9 @@ typedef struct _SOSGCInfoHeader
     BOOL   WantsReportOnlyLeaf;
     BOOL   HasTailCalls;
 
+    // GSCookieStackSlot, PSPSymStackSlot, and GenericsInstContextStackSlot are offsets
+    // from the caller's SP. A GS cookie that cannot be located relative to the caller's SP
+    // (an X86 double-aligned frame) is reported as absent; see SOSGCInfoX86Header.
     BOOL   GSCookieIsPresent;
     int    GSCookieStackSlot;
     unsigned int GSCookieValidRangeStart;
@@ -701,7 +704,8 @@ typedef struct _SOSGCSlotLifetime
     int          IsRegister;
     unsigned int RegisterNumber;
     int          SpOffset;
-    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister. Ignored for register slots.
+    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister; 2 = caller-SP-relative.
+    // Ignored for register slots. Consumers should treat other values as unknown.
     unsigned int BaseRegister;
     unsigned int GcFlags;
 } SOSGCSlotLifetime;
@@ -758,6 +762,10 @@ typedef struct _SOSGCInfoX86Header
     unsigned int ArgumentTableOffset;
     unsigned int ReturnKind;
     unsigned int ReversePInvokeOffset;
+    unsigned int GSCookieBase; // 0=absent, 1=caller SP, 2=initial SP after double alignment.
+    int GSCookieOffset; // Bytes relative to GSCookieBase.
+    unsigned int GSCookieValidRangeStart;
+    unsigned int GSCookieValidRangeEnd;
 } SOSGCInfoX86Header;
 
 typedef struct _SOSGCInfoX86Transition
@@ -769,7 +777,8 @@ typedef struct _SOSGCInfoX86Transition
                           // EBP push/pop records report zero; bulk stack deltas are in bytes.
     unsigned int RegisterNumber; // ICorDebugInfo register number, or UINT_MAX if absent.
     unsigned int ArgumentOffset; // Push index, pop/kill count, or Call/InteriorMask bitmap.
-    unsigned int Count; // Argument count, or Call interior-argument mask.
+                                 // Unused for register-based ESP push/pop records.
+    unsigned int Count; // Argument count, ESP push/pop slot count, or Call interior-argument mask.
     unsigned int Flags; // 1=interior, 2=pointer argument, 4=this.
 } SOSGCInfoX86Transition;
 

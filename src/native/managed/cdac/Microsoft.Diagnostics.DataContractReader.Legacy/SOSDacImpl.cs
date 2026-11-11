@@ -7621,6 +7621,12 @@ public sealed unsafe partial class SOSDacImpl
             *header = new SOSGCInfoHeader { SizeOf = (uint)sizeof(SOSGCInfoHeader) };
             (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
             GCInfoHeader info = gcInfo.GetHeader(handle);
+            if (info.PSPSym is { Base: not SpecialSlotBase.CallerStackPointer }
+                || info.GenericsInstContext is { Base: not SpecialSlotBase.CallerStackPointer })
+                return HResults.E_NOTIMPL;
+
+            // Interface18 special slots are caller-SP-relative; other GS cookie bases are reported through Interface19.
+            SpecialSlot? gsCookie = info.GSCookie is { Base: SpecialSlotBase.CallerStackPointer } ? info.GSCookie : null;
             *header = new SOSGCInfoHeader
             {
                 SizeOf = (uint)sizeof(SOSGCInfoHeader),
@@ -7632,10 +7638,10 @@ public sealed unsafe partial class SOSDacImpl
                 IsVarArg = info.IsVarArg ? 1 : 0,
                 WantsReportOnlyLeaf = info.WantsReportOnlyLeaf ? 1 : 0,
                 HasTailCalls = info.HasTailCalls ? 1 : 0,
-                GSCookieIsPresent = info.GSCookie.HasValue ? 1 : 0,
-                GSCookieStackSlot = info.GSCookie?.SpOffset ?? 0,
-                GSCookieValidRangeStart = info.GSCookieValidRangeStart,
-                GSCookieValidRangeEnd = info.GSCookieValidRangeEnd,
+                GSCookieIsPresent = gsCookie.HasValue ? 1 : 0,
+                GSCookieStackSlot = gsCookie?.SpOffset ?? 0,
+                GSCookieValidRangeStart = gsCookie.HasValue ? info.GSCookieValidRangeStart : 0,
+                GSCookieValidRangeEnd = gsCookie.HasValue ? info.GSCookieValidRangeEnd : 0,
                 PSPSymIsPresent = info.PSPSym.HasValue ? 1 : 0,
                 PSPSymStackSlot = info.PSPSym?.SpOffset ?? 0,
                 GenericsInstContextIsPresent = info.GenericsInstContext.HasValue ? 1 : 0,
@@ -7761,9 +7767,10 @@ public sealed unsafe partial class SOSDacImpl
                     IsRegister = slot.IsRegister ? 1 : 0,
                     RegisterNumber = slot.RegisterNumber,
                     SpOffset = slot.SpOffset,
-                    // Contract SP/frame bases (1/2) map to Interface18's 0/1; caller-SP has no representation.
+                    // Contract caller-SP/SP/frame bases (0/1/2) map to Interface18's 2/0/1.
                     BaseRegister = slot.IsRegister ? 0u : slot.BaseRegister switch
                     {
+                        0 => 2u,
                         1 => 0u,
                         2 => 1u,
                         _ => throw new InvalidOperationException($"Unexpected GC stack slot base {slot.BaseRegister}."),
@@ -7792,6 +7799,8 @@ public sealed unsafe partial class SOSDacImpl
             *header = new() { SizeOf = (uint)sizeof(SOSGCInfoX86Header) };
             (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
             X86GCInfoHeader info = gcInfo.GetX86Header(handle);
+            GCInfoHeader commonInfo = gcInfo.GetHeader(handle);
+            SpecialSlot? gsCookie = commonInfo.GSCookie;
             *header = new()
             {
                 SizeOf = (uint)sizeof(SOSGCInfoX86Header),
@@ -7809,6 +7818,16 @@ public sealed unsafe partial class SOSDacImpl
                 ArgumentTableOffset = info.ArgumentTableOffset,
                 ReturnKind = info.ReturnKind,
                 ReversePInvokeOffset = info.ReversePInvokeOffset,
+                GSCookieBase = gsCookie?.Base switch
+                {
+                    null => 0u,
+                    SpecialSlotBase.CallerStackPointer => 1u,
+                    SpecialSlotBase.InitialStackPointer => 2u,
+                    SpecialSlotBase slotBase => throw new InvalidOperationException($"Unexpected GS cookie base {slotBase}."),
+                },
+                GSCookieOffset = gsCookie?.SpOffset ?? 0,
+                GSCookieValidRangeStart = gsCookie.HasValue ? commonInfo.GSCookieValidRangeStart : 0,
+                GSCookieValidRangeEnd = gsCookie.HasValue ? commonInfo.GSCookieValidRangeEnd : 0,
             };
             return HResults.S_OK;
         }

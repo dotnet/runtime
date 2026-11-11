@@ -1312,7 +1312,8 @@ public struct SOSGCSlotLifetime
     public int IsRegister;
     public uint RegisterNumber;
     public int SpOffset;
-    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister. Ignored for register slots.
+    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister; 2 = caller-SP-relative.
+    // Ignored for register slots.
     public uint BaseRegister;
     public uint GcFlags;
 }
@@ -1364,6 +1365,11 @@ public struct SOSGCInfoX86Header
     public uint ArgumentTableOffset;
     public uint ReturnKind;
     public uint ReversePInvokeOffset;
+    // 0 = absent; 1 = caller SP; 2 = initial SP after double alignment.
+    public uint GSCookieBase;
+    public int GSCookieOffset;
+    public uint GSCookieValidRangeStart;
+    public uint GSCookieValidRangeEnd;
 }
 
 [StructLayout(LayoutKind.Sequential)]

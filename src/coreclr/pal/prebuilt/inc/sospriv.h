@@ -4327,6 +4327,10 @@ typedef struct _SOSGCInfoX86Header
     unsigned int ArgumentTableOffset;
     unsigned int ReturnKind;
     unsigned int ReversePInvokeOffset;
+    unsigned int GSCookieBase;
+    int GSCookieOffset;
+    unsigned int GSCookieValidRangeStart;
+    unsigned int GSCookieValidRangeEnd;
     } 	SOSGCInfoX86Header;
 
 typedef struct _SOSGCInfoX86Transition

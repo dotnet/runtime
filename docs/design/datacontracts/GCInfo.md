@@ -78,8 +78,16 @@ TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer 
 ```
 
 ```csharp
-// Stack offset of a special GC info slot (GS cookie, PSP sym, or generics inst context).
-public readonly record struct SpecialSlot(int SpOffset);
+// CallerStackPointer is the caller's SP after unwinding the current frame.
+// InitialStackPointer is the SP after the prolog, before outgoing arguments are pushed.
+public enum SpecialSlotBase { CallerStackPointer, InitialStackPointer }
+
+// Stack offset and base of a special GC info slot (GS cookie, PSP sym, or generics context).
+public readonly record struct SpecialSlot(int SpOffset)
+{
+    public SpecialSlot(int spOffset, SpecialSlotBase slotBase) : this(spOffset) { Base = slotBase; }
+    public SpecialSlotBase Base { get; init; } // CallerStackPointer by default
+}
 
 // Kind of the generics instantiation context reported in the GC info header.
 public enum GenericsContextKind
@@ -177,6 +185,7 @@ public record struct GcSlotEnumerationOptions
     bool IsActiveFrame;                  // True if this is the active (leaf) stack frame
     bool IsExecutionAborted;             // True if execution was interrupted by an exception
     bool IsParentOfFuncletStackFrame;    // True if a funclet already reported GC references
+    bool IsFunclet;                     // True if the current frame is a funclet
     bool SuppressUntrackedSlots;         // True to suppress untracked slots (e.g., filter funclets)
     bool ReportFPBasedSlotsOnly;         // True to report only frame-register-relative stack slots
 }
@@ -194,7 +203,8 @@ their current ESP-relative displacement. Pushes and pops split locations of
 existing pushed roots and ESP-relative locals. KILL removes the indicated number
 of highest pointer arguments without changing stack depth.
 For ordinary EBP frames, pushed roots instead use the encoded argument index
-relative to the stable frame base. Fully interruptible pops count all stack
+relative to the stable frame base. Funclets use their current ESP instead,
+because their EBP addresses the parent frame. Fully interruptible pops count all stack
 entries, including non-pointer arguments, and remove roots only from the slots
 actually popped. `GetX86Transitions` currently reports zero stack delta for EBP
 push/pop records; their argument information and pointer flag identify the
@@ -220,10 +230,21 @@ epilog-at-end `1`, EBP-frame `2`, interruptible `4`, double-aligned `8`, securit
 `1`, pointer argument `2`, and receiver `4`. `ArgumentOffset` and `Count` retain
 decoded argument indices/counts; for a call they contain its pointer and interior
 argument masks. For an `InteriorMask` record, `ArgumentOffset` contains the mask.
+For register-based ESP push/pop records, `ArgumentOffset` is unused and `Count`
+is the number of stack slots pushed or popped.
 Explicit huge-call roots are included in `GetSlotLifetimes`.
 Raw encoding bytes are not exposed.
 Dynamic localloc and funclet argument bases still require per-frame execution
 state and remain a limitation of the static lifetime projection.
+
+Special slots normally use caller-SP-relative offsets. On X86 the caller SP
+includes any callee-popped arguments. For a double-aligned frame, the GS cookie
+instead uses `InitialStackPointer` because alignment makes its caller-SP
+displacement dependent on the frame. The SOS common header cannot represent this
+base and reports the cookie as absent; `ISOSDacInterface19` reports every X86
+GS cookie with its base (`1` = caller SP, `2` = initial SP), offset, and valid range.
+Interface18 lifetime bases are `0` = SP, `1` = `StackBaseRegister`, and `2` =
+caller SP.
 
 <!-- BEGIN GENERATED: usage contract=GCInfo version=c1 -->
 ### Data descriptors used
