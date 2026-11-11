@@ -22,6 +22,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override bool CanFold(MethodDesc method)
             => _methodBodyDeduplicator?.CanFold(method) ?? false;
 
+        // WASM stack-trace metadata distinguishes address-taken methods from direct-call targets.
+        protected override bool RequiresAddressTakenTracking => Target.IsWasm;
+
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
             if (method.IsInternalCall)
@@ -54,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.Signature.IsStatic);
 
-            if (method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
+            if (!Target.IsWasm && method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
             {
                 // Unboxing stubs to canonical instance methods need a special unboxing stub that unboxes
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
@@ -64,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                // Otherwise we just unbox 'this' and don't touch anything else.
+                // WASM stubs can also supply the instantiation argument directly.
                 return new UnboxingStubNode(method);
             }
         }

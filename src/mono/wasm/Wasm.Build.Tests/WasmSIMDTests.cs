@@ -69,7 +69,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [TestCategory("coreclr")]
+        [TestCategory("coreclr"), TestCategory("wasm-opt")]
         public async Task PublishRelaxedSimdCoreClr(bool relaxedSimd)
         {
             Configuration config = Configuration.Debug;

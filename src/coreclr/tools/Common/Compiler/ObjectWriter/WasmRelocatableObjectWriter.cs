@@ -24,6 +24,7 @@ namespace ILCompiler.ObjectWriter
         private uint _nextVirtualIP = 1; // Zero marks an invalid stack frame.
         private readonly Dictionary<Utf8String, uint> _methodStartVirtualIPs = new();
         private static readonly Utf8String RestoreContextTagName = new("__nativeaot_wasm_restore_context_tag");
+        private static readonly ObjectNodeSection HydrationTargetSection = new(".bss.hydrated", SectionType.Uninitialized);
 
         // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md
         private enum SymbolKind : byte
@@ -73,6 +74,12 @@ namespace ILCompiler.ObjectWriter
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
+            if (section == ObjectNodeSection.HydrationTargetSection)
+            {
+                // wasm-ld omits zero-initialized segments whose names start with ".bss".
+                return HydrationTargetSection;
+            }
+
             if (section == ObjectNodeSection.TextSection ||
                 section == ObjectNodeSection.ManagedCodeUnixContentSection ||
                 section == ObjectNodeSection.ManagedCodeWindowsContentSection)
@@ -386,6 +393,13 @@ namespace ILCompiler.ObjectWriter
                 fixed (byte* pData = relocScratchBuffer)
                 {
                     long addend = reloc.Addend + Relocation.ReadValue(reloc.Type, pData);
+                    if (reloc.Type is RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
+                    {
+                        Relocation.WriteValue(reloc.Type, pData, checked(_methodStartVirtualIPs[reloc.SymbolName] + addend));
+                        sectionStream.Position = reloc.Offset;
+                        sectionStream.Write(relocScratchBuffer.AsSpan(0, size));
+                        continue;
+                    }
                     if (reloc.Type is RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB)
                     {
                         Debug.Assert(addend == 0);
@@ -608,13 +622,18 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitDebugSections(IDictionary<Utf8String, SymbolDefinition> definedSymbols)
         {
+            bool useDwarf5 = _dwarfBuilder.UseDwarf5;
             SectionWriter info = GetOrCreateSection(new ObjectNodeSection(".debug_info", SectionType.Debug));
             SectionWriter strings = GetOrCreateSection(new ObjectNodeSection(".debug_str", SectionType.Debug));
             SectionWriter abbrev = GetOrCreateSection(new ObjectNodeSection(".debug_abbrev", SectionType.Debug));
-            SectionWriter loc = GetOrCreateSection(new ObjectNodeSection(".debug_loc", SectionType.Debug));
-            SectionWriter ranges = GetOrCreateSection(new ObjectNodeSection(".debug_ranges", SectionType.Debug));
+            SectionWriter loc = GetOrCreateSection(new ObjectNodeSection(useDwarf5 ? ".debug_loclists" : ".debug_loc", SectionType.Debug));
+            SectionWriter ranges = GetOrCreateSection(new ObjectNodeSection(useDwarf5 ? ".debug_rnglists" : ".debug_ranges", SectionType.Debug));
             SectionWriter lines = GetOrCreateSection(new ObjectNodeSection(".debug_line", SectionType.Debug));
             SectionWriter aranges = GetOrCreateSection(new ObjectNodeSection(".debug_aranges", SectionType.Debug));
+            if (useDwarf5)
+            {
+                _dwarfBuilder.WriteAddressTable(GetOrCreateSection(new ObjectNodeSection(".debug_addr", SectionType.Debug)));
+            }
             _dwarfBuilder.Write(info, strings, abbrev, loc, ranges, lines, aranges, _ => (default, 0));
         }
 
@@ -628,7 +647,8 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            _methodStartVirtualIPs.Add(currentSymbolName, _nextVirtualIP);
+            // Bit 31 is reserved by the managed stack-trace resolver for StackTraceHidden.
+            _methodStartVirtualIPs.Add(currentSymbolName, checked((uint)(int)_nextVirtualIP));
             Span<byte> indexBuffer = stackalloc byte[16];
             for (int i = 0; i < frames.Length; i++)
             {

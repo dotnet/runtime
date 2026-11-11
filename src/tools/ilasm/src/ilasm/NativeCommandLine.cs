@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static class NativeCommandLine
 {

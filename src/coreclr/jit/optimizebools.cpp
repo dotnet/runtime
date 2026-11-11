@@ -1080,14 +1080,10 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     const weight_t    fallthroughLikelihood = retainedEdge->getLikelihood();
     BasicBlock* const b1RemovedTarget       = removedEdge->getDestinationBlock();
 
-    // Need to repair b2's profile as b1->b2 flow will be unconditional.
-    // "fgCompactBlock" will end up using b2's new profile weight
-    // Don't decrement the removed-edge-target's weight because the same control flow still
-    // reaches that block.
-    if (m_b2->hasProfileWeight())
-    {
-        m_b2->increaseBBProfileWeight(removedEdge->getLikelyWeight());
-    }
+    // b1 is b2's only predecessor and b1->b2 becomes unconditional, so the combined block, which
+    // "fgCompactBlock" gives b2's weight, runs as often as b1. Don't decrement the removed-edge-target's
+    // weight because the same control flow still reaches that block.
+    m_b2->inheritWeight(m_b1);
 
     m_compiler->fgRemoveRefPred(removedEdge);
     m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);

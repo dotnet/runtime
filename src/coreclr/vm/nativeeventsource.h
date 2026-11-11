@@ -37,6 +37,8 @@ extern "C" void QCALLTYPE NativeRuntimeEventSource_LogContentionStart(uint8_t Co
 extern "C" void QCALLTYPE NativeRuntimeEventSource_LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogIncreaseMemoryPressure(uint64_t BytesAllocated, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogDecreaseMemoryPressure(uint64_t BytesFreed, QCallExceptionStatus* qcallError);
 
 #endif // defined(FEATURE_PERFTRACING)
 

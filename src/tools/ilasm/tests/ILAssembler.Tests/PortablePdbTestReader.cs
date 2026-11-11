@@ -11,7 +11,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     /// <summary>
     /// Reads an image and its Portable PDB together, from a compilation or from the files the command line writes,

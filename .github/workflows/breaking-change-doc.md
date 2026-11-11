@@ -6,6 +6,7 @@ description: >
 
 concurrency:
   group: "breaking-change-doc-${{ github.event.pull_request.number || inputs.pr_number || github.run_id }}"
+  job-discriminator: "${{ github.event.pull_request.number || inputs.pr_number || github.run_id }}"
   cancel-in-progress: true
 
 permissions:
@@ -21,6 +22,24 @@ checkout:
 tools:
   bash: ["pwsh", "gh", "jq", "mkdir"]
 
+if: |
+  github.event_name == 'workflow_dispatch' ||
+  (
+    !github.event.repository.fork &&
+    github.event.pull_request.merged &&
+    contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')
+  )
+
+post-steps:
+  - name: Upload breaking change drafts
+    if: always()
+    uses: actions/upload-artifact@v7.0.2
+    with:
+      name: breaking-change-docs
+      path: artifacts/docs/breakingChanges/
+      retention-days: 30
+      if-no-files-found: ignore
+
 safe-outputs:
   report-failure-as-issue: false
   report-failed-jobs: false
@@ -35,98 +54,86 @@ safe-outputs:
         AGENT_RESULT: ${{ needs.agent.result }}
       run: |
         if [ "$AGENT_RESULT" != "success" ]; then
-          echo "::error::Documentation generation or outcome validation failed; refusing to publish."
+          echo "::error::Documentation generation failed; refusing to publish."
           exit 1
         fi
-
-if: |
-  github.event_name == 'workflow_dispatch' ||
-  (
-    !github.event.repository.fork &&
-    github.event.pull_request.merged &&
-    contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')
-  )
-
-post-steps:
-  - name: Upload breaking change drafts
-    if: always()
-    uses: actions/upload-artifact@v4
-    with:
-      name: breaking-change-docs
-      path: artifacts/docs/breakingChanges/
-      retention-days: 30
-      if-no-files-found: ignore
-  - name: Validate documentation outcome
-    uses: actions/github-script@v9
-    env:
-      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
-      SUPPRESS_OUTPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.suppress_output }}
-      SAFE_OUTPUTS_PATH: ${{ steps.set-runtime-paths.outputs.GH_AW_SAFE_OUTPUTS }}
-    with:
-      script: |
-        const fs = require('node:fs');
-        function parsePrNumber(value) {
-          const text = String(value);
-          const number = Number(text);
-          if ((typeof value !== 'number' && typeof value !== 'string') ||
-              !/^\d+$/.test(text) || !Number.isSafeInteger(number) || number <= 0) {
-            throw new Error('Invalid PR number: ' + text);
+    - name: Download breaking change drafts for validation
+      uses: actions/download-artifact@v8.0.2
+      with:
+        pattern: breaking-change-docs
+        merge-multiple: true
+        path: artifacts/docs/breakingChanges/
+    - name: Validate documentation outcome
+      uses: actions/github-script@v9
+      env:
+        PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        SUPPRESS_OUTPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.suppress_output }}
+      with:
+        script: |
+          const fs = require('node:fs');
+          function parsePrNumber(value) {
+            const text = String(value);
+            const number = Number(text);
+            if ((typeof value !== 'number' && typeof value !== 'string') ||
+                !/^\d+$/.test(text) || !Number.isSafeInteger(number) || number <= 0) {
+              throw new Error('Invalid PR number: ' + text);
+            }
+            return number;
           }
-          return number;
-        }
-        const output = JSON.parse(fs.readFileSync('/tmp/gh-aw/agent_output.json', 'utf8'));
-        if (!Array.isArray(output.items) || output.errors?.length) {
-          throw new Error('Documentation output is invalid: ' + JSON.stringify(output.errors));
-        }
-        const failures = output.items.filter(item =>
-          ['missing_tool', 'missing_data', 'report_incomplete'].includes(item.type));
-        if (failures.length) {
-          throw new Error('Documentation could not be completed: ' + JSON.stringify(failures));
-        }
-        const comments = output.items.filter(item => item.type === 'add_comment');
-        const noops = output.items.filter(item => item.type === 'noop');
-        const dryRun = process.env.SUPPRESS_OUTPUT === 'true';
-        if (dryRun && comments.length) {
-          throw new Error('Dry-run documentation must not request publication.');
-        }
-        if (comments.length === 1 && noops.length === 0) {
-          const comment = comments[0];
-          const prNumber = parsePrNumber(process.env.PR_NUMBER);
-          if (parsePrNumber(comment.item_number) !== prNumber) {
-            throw new Error('Documentation comment targets the wrong PR.');
+          const output = JSON.parse(fs.readFileSync('/tmp/gh-aw/agent_output.json', 'utf8'));
+          if (!Array.isArray(output.items) || output.errors?.length) {
+            throw new Error('Documentation output is invalid: ' + JSON.stringify(output.errors));
           }
-          if (!comment.body?.trim()) {
-            throw new Error('Documentation comment is empty.');
+          const failures = output.items.filter(item =>
+            ['report_missing_tool', 'report_missing_data', 'report_incomplete'].includes(item.type));
+          if (failures.length) {
+            throw new Error('Documentation could not be completed: ' + JSON.stringify(failures));
           }
-          const rawComments = fs.readFileSync(process.env.SAFE_OUTPUTS_PATH, 'utf8')
-            .split('\n')
-            .filter(line => line.trim())
-            .map(line => JSON.parse(line))
-            .filter(item => item.type === 'add_comment');
-          if (rawComments.length !== 1 || parsePrNumber(rawComments[0].item_number) !== prNumber) {
-            throw new Error('Documentation requires exactly one raw comment intent for the source PR.');
+          const comments = output.items.filter(item => item.type === 'add_comment');
+          const noops = output.items.filter(item => item.type === 'noop');
+          const dryRun = process.env.SUPPRESS_OUTPUT === 'true';
+          if (dryRun && comments.length) {
+            throw new Error('Dry-run documentation must not request publication.');
           }
-          const expectedBody = fs.readFileSync('artifacts/docs/breakingChanges/pr-comment.md', 'utf8');
-          if (rawComments[0].body !== expectedBody) {
-            throw new Error('Documentation comment does not match pr-comment.md before sanitization.');
+          if (comments.length === 1 && noops.length === 0) {
+            const comment = comments[0];
+            const prNumber = parsePrNumber(process.env.PR_NUMBER);
+            if (parsePrNumber(comment.item_number) !== prNumber) {
+              throw new Error('Documentation comment targets the wrong PR.');
+            }
+            if (!comment.body?.trim()) {
+              throw new Error('Documentation comment is empty.');
+            }
+            const rawComments = fs.readFileSync('/tmp/gh-aw/safeoutputs.jsonl', 'utf8')
+              .split('\n')
+              .filter(line => line.trim())
+              .map(line => JSON.parse(line))
+              .filter(item => item.type === 'add_comment');
+            if (rawComments.length !== 1 || parsePrNumber(rawComments[0].item_number) !== prNumber) {
+              throw new Error('Documentation requires exactly one raw comment intent for the source PR.');
+            }
+            const expectedBody = fs.readFileSync('artifacts/docs/breakingChanges/pr-comment.md', 'utf8');
+            if (rawComments[0].body !== expectedBody) {
+              throw new Error('Documentation comment does not match pr-comment.md before sanitization.');
+            }
+          } else if (comments.length !== 0 || noops.length !== 1 || !noops[0].message?.trim()) {
+            throw new Error('Documentation must emit a comment or an explicit noop; drafts alone are not completion.');
+          } else if (!dryRun && fs.existsSync('artifacts/docs/breakingChanges/pr-comment.md')) {
+            throw new Error('Generated documentation drafts require publication or report_incomplete, not a noop.');
           }
-        } else if (comments.length !== 0 || noops.length !== 1 || !noops[0].message?.trim()) {
-          throw new Error('Documentation must emit a comment or an explicit noop; drafts alone are not completion.');
-        } else if (!dryRun && fs.existsSync('artifacts/docs/breakingChanges/pr-comment.md')) {
-          throw new Error('Generated documentation drafts require publication or report_incomplete, not a noop.');
-        }
-        if (comments.length ||
-            fs.existsSync('artifacts/docs/breakingChanges/issue-draft.md') ||
-            fs.existsSync('artifacts/docs/breakingChanges/pr-comment.md')) {
-          for (const name of ['issue-draft.md', 'pr-comment.md']) {
-            if (!fs.readFileSync('artifacts/docs/breakingChanges/' + name, 'utf8').trim()) {
-              throw new Error('Documentation draft is empty: ' + name);
+          if (comments.length ||
+              fs.existsSync('artifacts/docs/breakingChanges/issue-draft.md') ||
+              fs.existsSync('artifacts/docs/breakingChanges/pr-comment.md')) {
+            for (const name of ['issue-draft.md', 'pr-comment.md']) {
+              if (!fs.readFileSync('artifacts/docs/breakingChanges/' + name, 'utf8').trim()) {
+                throw new Error('Documentation draft is empty: ' + name);
+              }
             }
           }
-        }
 
 on:
   pull_request_target:
+    acknowledge-risk: true
     types: [closed, labeled]
   workflow_dispatch:
     inputs:
@@ -186,7 +193,7 @@ Using the breaking-change-doc skill from
 `.github/skills/breaking-change-doc/SKILL.md`, execute **all steps (0 through
 6)** for the PR above.
 
-Run `Get-VersionInfo.ps1` and `Build-IssueComment.ps1` as required by the
+Use `pwsh` to run `Get-VersionInfo.ps1` and `Build-IssueComment.ps1` as required by the
 skill; do not infer the release version or recreate the comment by hand
 instead of running the helpers. Use `pwsh --version` to check PowerShell,
 not a compound shell command beginning with `command -v`.
@@ -217,7 +224,7 @@ valid JSON string, preserving its contents exactly. Do not chain commands
 or pipe JSON from another command into `safeoutputs`. If the invocation
 fails, correct it and retry this single-command form once. If publication
 still fails, emit `report_incomplete` with the actual error; do not report
-only `missing_tool`, silently finish with drafts, or substitute a `noop`
+only `report_missing_tool`, silently finish with drafts, or substitute a `noop`
 for a failed publication.
 
 If the skill's uncertainty gate prevents publication, retain the drafts

@@ -1729,6 +1729,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+        helperCall->gtFlags |= GTF_GLOB_REF;
     }
 
 #ifdef FEATURE_READYTORUN

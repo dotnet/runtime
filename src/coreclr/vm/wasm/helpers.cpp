@@ -193,7 +193,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
-size_t CallDescrWorkerInternalReturnAddressOffset = 0;
 
 // File-local WebAssembly exception tag used only by RtlRestoreContext. Carries
 // no payload; the resume IP is communicated via the JIT-managed resumeIP local.
@@ -501,7 +500,7 @@ EXTERN_C bool SamplingProfiler_ShouldSample();
 EXTERN_C void SamplingProfiler_CollectSample();
 #endif
 
-HCIMPL0(void, JIT_WasmProfSamplepoint)
+FCIMPL0(void, JIT_WasmProfSamplepoint)
 {
     FCALL_CONTRACT;
 
@@ -528,7 +527,7 @@ HCIMPL0(void, JIT_WasmProfSamplepoint)
     UNREFERENCED_PARAMETER(callersStackPointer);
 #endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
 }
-HCIMPLEND
+FCIMPLEND
 
 void InitJITHelpers1()
 {

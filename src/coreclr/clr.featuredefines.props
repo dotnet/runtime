@@ -34,7 +34,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux' AND !$(TargetRid.StartsWith('linux-bionic'))">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 

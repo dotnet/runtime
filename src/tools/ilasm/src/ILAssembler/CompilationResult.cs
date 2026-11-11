@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>Represents a compiled portable executable image.</summary>
 public sealed class CompilationResult

@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 public sealed class SourceText(string text, string path)
 {

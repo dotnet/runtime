@@ -227,7 +227,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     public override async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions) =>
         await base.RunForBuildWithDotnetRun(runOptions with {
             ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded,
-            ServerEnvironment = GetServerEnvironmentForBuild(runOptions.ServerEnvironment)
+            ServerEnvironment = GetServerEnvironment(runOptions.ServerEnvironment)
         });
 
     public override async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
@@ -235,10 +235,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
         });
 
-    private Dictionary<string, string>? GetServerEnvironmentForBuild(Dictionary<string, string>? originalServerEnv)
+    protected static Dictionary<string, string> GetServerEnvironment(Dictionary<string, string>? originalServerEnv)
     {
         var serverEnvironment = new Dictionary<string, string>();
-        if (originalServerEnv != null)
+        if (originalServerEnv is not null)
         {
             foreach (var kvp in originalServerEnv)
             {
@@ -246,7 +246,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             }
         }
         // avoid "System.IO.IOException: address already in use"
-        serverEnvironment.Add("ASPNETCORE_URLS", "http://127.0.0.1:0");
+        serverEnvironment.TryAdd("ASPNETCORE_URLS", "http://127.0.0.1:0");
         return serverEnvironment;
     }
 
