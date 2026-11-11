@@ -1822,6 +1822,11 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Set(InstructionSet_Zicond);
     }
+
+    if (((cpuFeatures & RiscV64IntrinsicConstants_Zacas) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zacas))
+    {
+        CPUCompileFlags.Set(InstructionSet_Zacas);
+    }
 #endif
 
     // These calls are very important as it ensures the flags are consistent with any

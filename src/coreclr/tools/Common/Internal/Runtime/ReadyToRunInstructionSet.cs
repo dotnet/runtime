@@ -108,5 +108,6 @@ namespace Internal.ReadyToRunConstants
         Fp16 = 95,
         SvePmull128 = 96,
         RelaxedSimd = 97,
+        Zacas = 98,
     }
 }

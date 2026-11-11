@@ -810,6 +810,16 @@ int minipal_getcpufeatures(void)
         {
             result |= RiscV64IntrinsicConstants_Zicond;
         }
+
+#ifndef RISCV_HWPROBE_EXT_ZACAS
+// Older linux-headers packages do not define this extension.
+#define RISCV_HWPROBE_EXT_ZACAS (1ULL << 34)
+#endif
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZACAS)
+        {
+            result |= RiscV64IntrinsicConstants_Zacas;
+        }
     }
 
 #endif // HAVE_HWPROBE_H

@@ -262,6 +262,10 @@ INST(amominu_d,     "amominu.d",      0,   0xc000302f) // funct5:11000
 INST(amomaxu_w,     "amomaxu.w",      0,   0xe000202f) // funct5:11100
 INST(amomaxu_d,     "amomaxu.d",      0,   0xe000302f) // funct5:11100
 
+// Zacas (R-type, R_R_R)
+INST(amocas_w,      "amocas.w",       0,   0x2800202f) // funct5:00101
+INST(amocas_d,      "amocas.d",       0,   0x2800302f) // funct5:00101
+
 // Zbb (RV32 + RV64)
 //// R_R
 INST(clz,           "clz",            0,   0x60001013)

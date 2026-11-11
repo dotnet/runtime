@@ -501,11 +501,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CMPXCHG:
         {
-            GenTreeCmpXchg* cas = tree->AsCmpXchg();
+            GenTreeCmpXchg* cas      = tree->AsCmpXchg();
+            bool           useZacas = m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zacas);
             assert(dstCount == 1);
 
             srcCount = 1;
             // Extend lifetimes of argument regs because they may be reused during retries
+            // or must survive the comparand move for AMOCAS.
             assert(!cas->Addr()->isContained());
             setDelayFree(BuildUse(cas->Addr()));
 
@@ -525,13 +527,16 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 srcCount++;
                 RefPosition* use = BuildUse(comparand);
-                if (comparand->TypeIs(TYP_INT, TYP_UINT))
+                if (!useZacas)
                 {
-                    buildInternalIntRegisterDefForNode(tree); // temp reg for sign-extended comparand
-                }
-                else
-                {
-                    setDelayFree(use);
+                    if (comparand->TypeIs(TYP_INT, TYP_UINT))
+                    {
+                        buildInternalIntRegisterDefForNode(tree); // temp reg for sign-extended comparand
+                    }
+                    else
+                    {
+                        setDelayFree(use);
+                    }
                 }
             }
             else
@@ -539,7 +544,10 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(comparand->IsIntegralConst(0));
             }
 
-            buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
+            if (!useZacas)
+            {
+                buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
+            }
             // Internals may not collide with target
             setInternalRegsDelayFree = true;
             buildInternalRegisterUses();
