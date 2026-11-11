@@ -144,7 +144,7 @@ namespace System.Runtime
         // Miscellaneous helpers.
         //
 
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_64BIT
         [RuntimeImport(RuntimeLibrary, "CallEHFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe byte* CallEHFunclet(
