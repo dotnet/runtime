@@ -1096,7 +1096,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 0, // EntryPointsFilenameRVA
                 0, // InstanceMethodEntryPointsRVA
                 0, // MethodDefEntryPointsInfoRVA
-                0, // EntryPointsModuleActivationStatus
+                1, // EntryPointsModuleActivationStatus
                 0, // PrimaryModuleMethodCount
                 1  // AuxiliaryModuleCount
             };
@@ -1106,7 +1106,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 0,                   // FileNameRVA
                 0,                   // RelativeTableBase
                 m_nRuntimeFunctions, // MethodCount
-                0                    // ActivationStatus
+                1                    // ActivationStatus
             };
     }
     else if (m_pAuxiliaryModuleMetadata == nullptr)
