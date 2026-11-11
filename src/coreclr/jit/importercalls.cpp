@@ -3799,6 +3799,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 retNode = impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, ni);
                 break;
 
+            case NI_System_String_Contains:
+            {
+                // TODO: fold `literal`.Contains(char) into a range check or a
+                // bitmask test against the literal's characters
+                break;
+            }
+
             case NI_System_String_Equals:
             {
                 retNode = impUtf16StringComparison(StringComparisonKind::Equals, sig, methodFlags);
@@ -11992,7 +11999,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     }
                     else if (strcmp(className, "String") == 0)
                     {
-                        if (strcmp(methodName, "Equals") == 0)
+                        if (strcmp(methodName, "Contains") == 0)
+                        {
+                            result = NI_System_String_Contains;
+                        }
+                        else if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_String_Equals;
                         }
