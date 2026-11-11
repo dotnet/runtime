@@ -126,7 +126,7 @@
     <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
-    <MicrosoftDiaSymReaderNativeVersion>18.9.0-beta1.26405.2</MicrosoftDiaSymReaderNativeVersion>
+    <MicrosoftDiaSymReaderNativeVersion>18.9.1-beta1.26515.1</MicrosoftDiaSymReaderNativeVersion>
     <TraceEventVersion>3.1.28</TraceEventVersion>
     <MicrosoftDiagnosticsNetCoreClientVersion>0.2.746701</MicrosoftDiagnosticsNetCoreClientVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
