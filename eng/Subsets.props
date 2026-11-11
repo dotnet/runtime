@@ -56,7 +56,7 @@
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
     <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true</_UseNativeAotForComponentsCrossOS>
-    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and ('$(TargetOS)' == '$(HostOS)' or '$(_UseNativeAotForComponentsCrossOS)' == 'true') and '$(TargetsLinuxBionic)' != 'true' and '$(TargetsOpenHarmony)' != 'true'">true</UseNativeAotForComponents>
+    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and ('$(TargetOS)' == '$(HostOS)' or '$(_UseNativeAotForComponentsCrossOS)' == 'true') and '$(TargetsOpenHarmony)' != 'true'">true</UseNativeAotForComponents>
   </PropertyGroup>
 
   <PropertyGroup>
