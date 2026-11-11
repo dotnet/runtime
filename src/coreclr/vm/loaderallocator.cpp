@@ -2076,7 +2076,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     {
         FailedTypeInitCleanupListItem * pItem = m_failedTypeInitCleanupList.RemoveHead();
 
-        ListLockHolder pInitLock(pLock);
+        ListLockHolder pInitLock = pLock->TakeLock();
         pLock->Unlink(pItem->m_pListLockEntry);
     }
 }
