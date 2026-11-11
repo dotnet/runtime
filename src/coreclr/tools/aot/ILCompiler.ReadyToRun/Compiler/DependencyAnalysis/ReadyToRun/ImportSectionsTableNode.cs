@@ -36,6 +36,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int index = 0;
             foreach (ImportSectionNode node in NodesList)
             {
+                if (node.IsEager && node.IsEmpty)
+                {
+                    continue;
+                }
+
                 if (!relocsOnly)
                 {
                     node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);

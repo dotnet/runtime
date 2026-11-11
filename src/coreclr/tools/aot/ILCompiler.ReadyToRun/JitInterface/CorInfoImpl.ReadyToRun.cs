@@ -496,10 +496,13 @@ namespace Internal.JitInterface
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
+        private readonly HashSet<Import> _precodeFixupScratch = new();
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
+        private WasmTypeNode _deferredWasmCallSignature;
+        private Dictionary<MethodWithGCInfo, DelayLoadMethodImport> _deferredWasmActivationImports;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -514,10 +517,16 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
-        private void AddAdditionalDependency(ISymbolNode node, string reason)
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget)
         {
-            _additionalDependencies.Add(node, reason);
+            if (relocTarget is Import { Table.IsEager: false, EmitPrecode: true } import)
+            {
+                AddPrecodeFixup(import);
+            }
         }
+
+        private void AddAdditionalDependency(ISymbolNode node, string reason) =>
+            _additionalDependencies.Add(node, reason);
 
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
@@ -2747,6 +2756,7 @@ namespace Internal.JitInterface
                         {
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
+                        bool isRawPInvoke = nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod;
                         if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         {
                             nonUnboxingMethod = rawPinvoke.Target;
@@ -2771,6 +2781,33 @@ namespace Internal.JitInterface
                             MethodDesc compilableTarget = nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
+                        }
+                        else if (_compilation.DeferredWasmCalls is not null &&
+                            !_isCompilationProbe &&
+                            !isUnboxingStub &&
+                            !isRawPInvoke &&
+                            !useInstantiatingStub &&
+                            (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+                        {
+                            // Represent eligible calls with a compiled target and the ordinary import
+                            // as a fallback. The JIT emits a rewritable call bundle; finalization
+                            // chooses direct calls once the call graph and callee activation guarantees
+                            // are known, expanding rejected calls into indirect calls.
+                            // Preserve each target's first import-time activation token separately:
+                            // surviving call sites may carry different tokens after JIT transformations.
+                            // See #DeferredWasmCallFinalization and #DeferredWasmCallRewriting.
+                            MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
+                                nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: false);
+                            ISymbolNode fallback = _compilation.NodeFactory.MethodEntrypoint(
+                                targetMethodWithToken, isInstantiatingStub: false,
+                                isPrecodeImportRequired: false, isJumpableImportRequired: false);
+                            ISymbolNode deferredTarget = _compilation.DeferredWasmCalls.GetCall(targetMethodWithToken, fallback);
+                            if (deferredTarget is DeferredWasmCallNode deferredCall)
+                            {
+                                _deferredWasmActivationImports ??= new Dictionary<MethodWithGCInfo, DelayLoadMethodImport>();
+                                _deferredWasmActivationImports.TryAdd(deferredCall.Target, deferredCall.Fallback);
+                            }
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(deferredTarget);
                         }
                         else
                         {
@@ -3149,6 +3186,10 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            if (!CanEncodeTypeInSignature(type))
+            {
+                throw new RequiresRuntimeJitException(type.ToString());
+            }
             // Continuations require special handling to encode the layout of the type.
             // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
             // PrecodeHelper(
@@ -3160,8 +3201,6 @@ namespace Internal.JitInterface
                 ppIndirection = (void*)ObjectToHandle(import);
                 return null;
             }
-            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
-                throw new RequiresRuntimeJitException(type.ToString());
 
             Import typeHandleImport = GetTypeHandleImport(type);
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
@@ -3488,8 +3527,10 @@ namespace Internal.JitInterface
             if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
             {
                 Debug.Assert(locationBlock == BlockType.Code);
-                MethodDesc targetMethod = HandleToObject((CORINFO_METHOD_STRUCT_*)target);
-                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(targetMethod);
+                object targetObject = HandleToObject(target);
+                MethodWithGCInfo method = targetObject is DeferredWasmCallNode call
+                    ? call.Target
+                    : _compilation.NodeFactory.CompiledMethodNode((MethodDesc)targetObject);
                 relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
                 relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
                 handled = true;
@@ -3528,6 +3569,8 @@ namespace Internal.JitInterface
         partial void ClearWasmMethodVirtualIPFixups()
         {
             _wasmMethodVirtualIPFixups = null;
+            _deferredWasmCallSignature = null;
+            _deferredWasmActivationImports = null;
         }
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)

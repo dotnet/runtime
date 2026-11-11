@@ -2116,11 +2116,18 @@ Resolving the loaded async variant of an async thunk method:
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
         ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+        TargetPointer module = GetModule(methodTable);
+        AsyncMethodFlags methodFlags = GetAsyncMethodFlags(methodDescHandle);
+        bool matchSlot = methodDesc.Slot != ushort.MaxValue &&
+            methodFlags.HasFlag(AsyncMethodFlags.IsAsyncVariant) &&
+            !methodFlags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk);
 
         foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
         {
             MethodDesc candidate = _methodDescs[candidateHandle.Address];
-            if (candidate.Slot != methodDesc.Slot)
+            if (matchSlot ? candidate.Slot != methodDesc.Slot :
+                candidate.Token != methodDesc.Token ||
+                GetModule(GetTypeHandle(candidate.MethodTable)) != module)
                 continue;
 
             AsyncMethodFlags flags = GetAsyncMethodFlags(candidateHandle);

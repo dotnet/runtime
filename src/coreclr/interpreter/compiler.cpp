@@ -3015,8 +3015,8 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (target < 0 || target >= m_ILCodeSize)
         BADCODE("code jumps to outer space");
 
-    // Backwards branch, emit safepoint
-    if (ilOffset < 0)
+    // Back edge, including a branch to itself, emit safepoint
+    if (ilOffset <= 0)
     {
         AddIns(INTOP_SAFEPOINT);
 #ifdef PERFTRACING_DISABLE_THREADS
@@ -3029,7 +3029,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (pTargetBB == NULL)
         BADCODE("code jumps to invalid offset");
 
-    if (ilOffset < 0)
+    if (ilOffset <= 0)
         pTargetBB->isBackwardBranchTarget = true;
 
     EmitBranchToBB(opcode, pTargetBB);

@@ -3007,14 +3007,25 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // the call according to the portable entrypoint abi
     if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        if (call->gtDirectCallAddress != nullptr)
+        // Deferred instructions supply the final PEP argument after all other operands.
+        // See #DeferredWasmCallRelocationProtocol.
+        if ((call->gtDirectCallAddress != nullptr) &&
+            (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) != CorInfoReloc::WASM_DEFERRED_CALL))
         {
-            // A direct call target has no portable entrypoint to dispatch through, so there is
-            // nothing meaningful to pass here. The argument still needs to be present to satisfy
-            // the calling convention shared with indirect PEP calls, so pass a constant zero.
-            AddWasmPortableEntryPointArg(call, m_compiler->gtNewIconNode(0, TYP_I_IMPL));
+            GenTree* portableEntryPoint;
+            if ((call->gtCallMethHnd != nullptr) && !call->IsHelperCall())
+            {
+                portableEntryPoint = m_compiler->gtNewIconHandleNode(reinterpret_cast<size_t>(call->gtCallMethHnd),
+                                                                     GTF_ICON_WASM_FRAME_IDENTITY);
+            }
+            else
+            {
+                // Direct same-image managed helpers establish their own frame identity.
+                portableEntryPoint = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+            }
+            AddWasmPortableEntryPointArg(call, portableEntryPoint);
         }
-        else
+        else if (call->gtDirectCallAddress == nullptr)
         {
             LowerPEPCall(call);
         }
@@ -12126,7 +12137,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     // to use as the target. That is non-optimal because it will be modeled as conflicting
     // with the source register(s).
     // So, to summarize:
-    // - On ARM64, always use GT_NULLCHECK for a dead indirection.
+    // - Volatile loads always use GT_IND to preserve acquire semantics.
+    // - On ARM64, use GT_NULLCHECK for a dead non-volatile indirection.
     // - On ARM, always use GT_IND.
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
     // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
@@ -12134,6 +12146,21 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     // on XARCH as an optimization.
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK));
+
+    // Null checks do not provide the acquire semantics of volatile loads.
+    if (ind->IsVolatile())
+    {
+        if (ind->TypeIs(TYP_STRUCT))
+        {
+            ind->ChangeType(TYP_UBYTE);
+        }
+        if (!ind->OperIs(GT_IND))
+        {
+            ind->SetOper(GT_IND);
+            ind->SetUnusedValue();
+        }
+        return;
+    }
 
     ind->ChangeType(m_compiler->gtTypeForNullCheck(ind));
 
