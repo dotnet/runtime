@@ -743,7 +743,6 @@ extern "C" {
     void RuntimeHelper_GCHandle_InternalSet (uintptr_t, void *, void *, uintptr_t) __asm__("GCHandle_InternalSet");
     void * RuntimeHelper_GCHandle__InternalAlloc (uintptr_t, void *, int32_t, uintptr_t) __asm__("GCHandle__InternalAlloc");
     int32_t RuntimeHelper_GCHandle__InternalFree (uintptr_t, void *, uintptr_t) __asm__("GCHandle__InternalFree");
-    void RuntimeHelper_GCInterface_AddMemoryPressure (uint64_t, void *) __asm__("GCInterface_AddMemoryPressure");
     void RuntimeHelper_GCInterface_AllocateNewArray (void *, int32_t, int32_t, void *, void *) __asm__("GCInterface_AllocateNewArray");
     void RuntimeHelper_GCInterface_Collect (int32_t, int32_t, uint32_t, void *) __asm__("GCInterface_Collect");
     int32_t RuntimeHelper_GCInterface_EnableNoGCRegionCallback (void *, int64_t, void *) __asm__("GCInterface_EnableNoGCRegionCallback");
@@ -756,7 +755,6 @@ extern "C" {
     void RuntimeHelper_GCInterface_ReRegisterForFinalize (void *, void *) __asm__("GCInterface_ReRegisterForFinalize");
     int32_t RuntimeHelper_GCInterface_RefreshMemoryLimit (void *, void *) __asm__("GCInterface_RefreshMemoryLimit");
     void * RuntimeHelper_GCInterface_RegisterFrozenSegment (void *, void *, void *) __asm__("GCInterface_RegisterFrozenSegment");
-    void RuntimeHelper_GCInterface_RemoveMemoryPressure (uint64_t, void *) __asm__("GCInterface_RemoveMemoryPressure");
     int32_t RuntimeHelper_GCInterface_StartNoGCRegion (int64_t, int32_t, int64_t, int32_t, void *) __asm__("GCInterface_StartNoGCRegion");
     void RuntimeHelper_GCInterface_UnregisterFrozenSegment (void *, void *) __asm__("GCInterface_UnregisterFrozenSegment");
     int32_t RuntimeHelper_GCInterface_WaitForFullGCApproach (int32_t, void *) __asm__("GCInterface_WaitForFullGCApproach");
@@ -768,9 +766,13 @@ extern "C" {
     void RuntimeHelper_GCSettings_SetLOHCompactionMode (uintptr_t, int32_t, uintptr_t) __asm__("GCSettings_SetLOHCompactionMode");
     int32_t RuntimeHelper_GCSettings_get_IsServerGC (uintptr_t, uintptr_t) __asm__("GCSettings_get_IsServerGC");
     int64_t RuntimeHelper_GC_GetAllocatedBytesForCurrentThread (uintptr_t, uintptr_t) __asm__("GC_GetAllocatedBytesForCurrentThread");
+    int64_t RuntimeHelper_GC_GetCurrentObjSize (uintptr_t, uintptr_t) __asm__("GC_GetCurrentObjSize");
+    int64_t RuntimeHelper_GC_GetGCNow (uintptr_t, uintptr_t) __asm__("GC_GetGCNow");
     int32_t RuntimeHelper_GC_GetGenerationInternal (uintptr_t, void *, uintptr_t) __asm__("GC_GetGenerationInternal");
     uint64_t RuntimeHelper_GC_GetGenerationSize (uintptr_t, int32_t, uintptr_t) __asm__("GC_GetGenerationSize");
+    int64_t RuntimeHelper_GC_GetLastGCDuration (uintptr_t, uintptr_t) __asm__("GC_GetLastGCDuration");
     int32_t RuntimeHelper_GC_GetLastGCPercentTimeInGC (uintptr_t, uintptr_t) __asm__("GC_GetLastGCPercentTimeInGC");
+    int64_t RuntimeHelper_GC_GetLastGCStartTime (uintptr_t, uintptr_t) __asm__("GC_GetLastGCStartTime");
     int32_t RuntimeHelper_GC_GetMaxGeneration (uintptr_t, uintptr_t) __asm__("GC_GetMaxGeneration");
     void RuntimeHelper_GC_GetMemoryInfo (uintptr_t, void *, int32_t, uintptr_t) __asm__("GC_GetMemoryInfo");
     uint64_t RuntimeHelper_GC_GetSegmentSize (uintptr_t, uintptr_t) __asm__("GC_GetSegmentSize");
@@ -924,6 +926,8 @@ extern "C" {
     void RuntimeHelper_NativeRuntimeEventSource_LogContentionLockCreated (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogContentionLockCreated");
     void RuntimeHelper_NativeRuntimeEventSource_LogContentionStart (uint32_t, uint32_t, void *, void *, uint64_t, void *) __asm__("NativeRuntimeEventSource_LogContentionStart");
     void RuntimeHelper_NativeRuntimeEventSource_LogContentionStop (uint32_t, uint32_t, double, void *) __asm__("NativeRuntimeEventSource_LogContentionStop");
+    void RuntimeHelper_NativeRuntimeEventSource_LogDecreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogDecreaseMemoryPressure");
+    void RuntimeHelper_NativeRuntimeEventSource_LogIncreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogIncreaseMemoryPressure");
     void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIODequeue (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIODequeue");
     void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (void *, void *, int32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOEnqueue");
     void RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOPack (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOPack");
@@ -1249,7 +1253,6 @@ static const Entry s_RuntimeHelpers[] = {
     { "GCHandle_InternalSet", (void*)&RuntimeHelper_GCHandle_InternalSet },
     { "GCHandle__InternalAlloc", (void*)&RuntimeHelper_GCHandle__InternalAlloc },
     { "GCHandle__InternalFree", (void*)&RuntimeHelper_GCHandle__InternalFree },
-    { "GCInterface_AddMemoryPressure", (void*)&RuntimeHelper_GCInterface_AddMemoryPressure },
     { "GCInterface_AllocateNewArray", (void*)&RuntimeHelper_GCInterface_AllocateNewArray },
     { "GCInterface_Collect", (void*)&RuntimeHelper_GCInterface_Collect },
     { "GCInterface_EnableNoGCRegionCallback", (void*)&RuntimeHelper_GCInterface_EnableNoGCRegionCallback },
@@ -1262,7 +1265,6 @@ static const Entry s_RuntimeHelpers[] = {
     { "GCInterface_ReRegisterForFinalize", (void*)&RuntimeHelper_GCInterface_ReRegisterForFinalize },
     { "GCInterface_RefreshMemoryLimit", (void*)&RuntimeHelper_GCInterface_RefreshMemoryLimit },
     { "GCInterface_RegisterFrozenSegment", (void*)&RuntimeHelper_GCInterface_RegisterFrozenSegment },
-    { "GCInterface_RemoveMemoryPressure", (void*)&RuntimeHelper_GCInterface_RemoveMemoryPressure },
     { "GCInterface_StartNoGCRegion", (void*)&RuntimeHelper_GCInterface_StartNoGCRegion },
     { "GCInterface_UnregisterFrozenSegment", (void*)&RuntimeHelper_GCInterface_UnregisterFrozenSegment },
     { "GCInterface_WaitForFullGCApproach", (void*)&RuntimeHelper_GCInterface_WaitForFullGCApproach },
@@ -1274,9 +1276,13 @@ static const Entry s_RuntimeHelpers[] = {
     { "GCSettings_SetLOHCompactionMode", (void*)&RuntimeHelper_GCSettings_SetLOHCompactionMode },
     { "GCSettings_get_IsServerGC", (void*)&RuntimeHelper_GCSettings_get_IsServerGC },
     { "GC_GetAllocatedBytesForCurrentThread", (void*)&RuntimeHelper_GC_GetAllocatedBytesForCurrentThread },
+    { "GC_GetCurrentObjSize", (void*)&RuntimeHelper_GC_GetCurrentObjSize },
+    { "GC_GetGCNow", (void*)&RuntimeHelper_GC_GetGCNow },
     { "GC_GetGenerationInternal", (void*)&RuntimeHelper_GC_GetGenerationInternal },
     { "GC_GetGenerationSize", (void*)&RuntimeHelper_GC_GetGenerationSize },
+    { "GC_GetLastGCDuration", (void*)&RuntimeHelper_GC_GetLastGCDuration },
     { "GC_GetLastGCPercentTimeInGC", (void*)&RuntimeHelper_GC_GetLastGCPercentTimeInGC },
+    { "GC_GetLastGCStartTime", (void*)&RuntimeHelper_GC_GetLastGCStartTime },
     { "GC_GetMaxGeneration", (void*)&RuntimeHelper_GC_GetMaxGeneration },
     { "GC_GetMemoryInfo", (void*)&RuntimeHelper_GC_GetMemoryInfo },
     { "GC_GetSegmentSize", (void*)&RuntimeHelper_GC_GetSegmentSize },
@@ -1430,6 +1436,8 @@ static const Entry s_RuntimeHelpers[] = {
     { "NativeRuntimeEventSource_LogContentionLockCreated", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogContentionLockCreated },
     { "NativeRuntimeEventSource_LogContentionStart", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogContentionStart },
     { "NativeRuntimeEventSource_LogContentionStop", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogContentionStop },
+    { "NativeRuntimeEventSource_LogDecreaseMemoryPressure", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogDecreaseMemoryPressure },
+    { "NativeRuntimeEventSource_LogIncreaseMemoryPressure", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogIncreaseMemoryPressure },
     { "NativeRuntimeEventSource_LogThreadPoolIODequeue", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIODequeue },
     { "NativeRuntimeEventSource_LogThreadPoolIOEnqueue", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOEnqueue },
     { "NativeRuntimeEventSource_LogThreadPoolIOPack", (void*)&RuntimeHelper_NativeRuntimeEventSource_LogThreadPoolIOPack },

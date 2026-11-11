@@ -1512,9 +1512,9 @@ public:
         if (m_pAuxData.Load())
             return m_pAuxData;
 
-        NewHolder<SimpleCCWAuxData> pAuxData = new SimpleCCWAuxData();
+        NewHolder<SimpleCCWAuxData> pAuxData(new SimpleCCWAuxData());
         if (InterlockedCompareExchangeT(&m_pAuxData, (SimpleCCWAuxData *)pAuxData, NULL) == NULL)
-            pAuxData.SuppressRelease();
+            pAuxData.Detach();
 
         return m_pAuxData;
     }

@@ -66,6 +66,26 @@ void MethodDesc::Init()
     m_GCCoverCrst.Init(CrstGCCover);
 }
 
+#ifdef FEATURE_READYTORUN
+void MethodDesc::SetupGcCoverageForPrecompiledCode(PCODE pCode)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Image-backed code may not be patchable under Apple's write/execute restrictions.
+#ifndef HOST_APPLE
+    if (GCStress<cfg_instr_ngen>::IsEnabled())
+    {
+        CrstHolder gcCoverLock(&m_GCCoverCrst);
+        EECodeInfo codeInfo(pCode);
+        _ASSERTE(codeInfo.IsValid());
+
+        // Shared R2R code must use the same MethodDesc as the interrupt handler.
+        SetupGcCoverage(NativeCodeVersion(codeInfo.GetMethodDesc()), (BYTE*)pCode);
+    }
+#endif // !HOST_APPLE
+}
+#endif // FEATURE_READYTORUN
+
 #endif
 
 #define LOG_USING_R2R_CODE(method)  LOG((LF_ZAP, LL_INFO10000,                                                            \
@@ -616,7 +636,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
-        JitListLock::LockHolder pJitLock(AppDomain::GetCurrentDomain()->GetJitLock());
+        JitListLock::LockHolder pJitLock = AppDomain::GetCurrentDomain()->GetJitLock()->TakeLock();
 
         // It is possible that another thread stepped in before we entered the global lock for the first time.
         if ((pCode = pConfig->IsJitCancellationRequested()))
@@ -632,13 +652,13 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             pJitLock, version, description));
 
         // We have an entry now, we can release the global lock
-        pJitLock.Release();
+        pJitLock.Free();
 
         // Take the entry lock
         {
-            JitListLockEntry::LockHolder pEntryLock(pEntry, FALSE);
+            JitListLockEntry::LockHolder pEntryLock;
 
-            if (pEntryLock.DeadlockAwareAcquire())
+            if (pEntryLock.DeadlockAwareAcquire(pEntry))
             {
                 if (pEntry->m_hrResultCode == S_FALSE)
                 {
@@ -713,7 +733,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 }
             }
 
-            return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock);
+            return JitCompileCodeLockedEventWrapper(pConfig, pEntry);
         }
     }
 }

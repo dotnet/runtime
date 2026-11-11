@@ -78,8 +78,6 @@ extern "C"
     FCDECL3(VOID, Buffer_BulkMoveWithWriteBarrierInternal, void *dst, void *src, size_t byteCount);
 }
 
-const UINT MEM_PRESSURE_COUNT = 4;
-
 struct GCGenerationInfo
 {
     UINT64 sizeBefore;
@@ -135,35 +133,19 @@ struct GCHeapHardLimitInfo
 };
 
 class GCInterface {
-private:
-    static INT32    m_gc_counts[3];
-
-    static UINT64   m_addPressure[MEM_PRESSURE_COUNT];
-    static UINT64   m_remPressure[MEM_PRESSURE_COUNT];
-    static UINT     m_iteration;
-
 public:
-    static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
-
-    NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
-    static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
-
-    static void CheckCollectionCount();
-    static void RemoveMemoryPressure(UINT64 bytesAllocated);
-    static void AddMemoryPressure(UINT64 bytesAllocated);
-
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
     static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
     static uint64_t GetGenerationBudget(int generation);
-
-private:
-    // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-    NOINLINE static void GarbageCollectModeAny(int generation);
 };
 
 extern "C"
 {
+    FCDECL0(INT64, GC_GetCurrentObjSize);
+    FCDECL0(INT64, GC_GetGCNow);
+    FCDECL0(INT64, GC_GetLastGCStartTime);
+    FCDECL0(INT64, GC_GetLastGCDuration);
     FCDECL0(INT64,   GC__GetTotalPauseDuration);
     FCDECL2(void,    GC_GetMemoryInfo, Object* objUNSAFE, int kind);
     FCDECL0(int,     GCSettings_GetGCLatencyMode);
@@ -206,10 +188,6 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC, QCallExceptionStatus* qcallError);
 
 extern "C" int QCALLTYPE GCInterface_EndNoGCRegion(QCallExceptionStatus* qcallError);
-
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError);
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj, QCallExceptionStatus* qcallError);
 

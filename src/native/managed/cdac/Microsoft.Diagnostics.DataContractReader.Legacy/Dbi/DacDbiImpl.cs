@@ -604,7 +604,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             pData->vmPEAssembly = loader.GetPEAssembly(handle).Value;
             bool isDynamic = loader.IsDynamic(handle);
             pData->fIsDynamic = isDynamic ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            string path = loader.GetPath(handle);
+            string path = string.Empty;
+            try
+            {
+                path = loader.GetPath(handle);
+            }
+            catch (VirtualReadException)
+            {
+
+            }
             pData->fInMemory = string.IsNullOrEmpty(path) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             if (!isDynamic && loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint _))
             {
@@ -6786,7 +6794,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             dstCtx.CopyContext(srcCtx);
             int destinationSize = (int)Math.Min(destinationContext.contextSize, dstCtx.Size);
-            dstCtx.GetBytes().AsSpan(0, destinationSize).CopyTo(new Span<byte>(destinationContext.pContextBytes, destinationSize));
+            dstCtx.GetBytes()[..destinationSize].CopyTo(new Span<byte>(destinationContext.pContextBytes, destinationSize));
         }
         catch (System.Exception ex)
         {
@@ -6840,7 +6848,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     ctx.TrySetRegister(name, new TargetNUInt(values[i]));
             }
 
-            ctx.GetBytes().AsSpan(0, (int)ctx.Size).CopyTo(bufSpan);
+            ctx.GetBytes()[..(int)ctx.Size].CopyTo(bufSpan);
         }
         catch (System.Exception ex)
         {
@@ -7081,7 +7089,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 throw new ArgumentException($"Register {reg} is not a float register", nameof(reg));
             }
-            ctx.GetBytes().AsSpan().CopyTo(buf);
+            ctx.GetBytes().CopyTo(buf);
         }
         catch (System.Exception ex)
         {

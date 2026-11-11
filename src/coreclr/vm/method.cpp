@@ -1572,6 +1572,21 @@ ReturnKind MethodDesc::GetReturnKind()
     TypeHandle thValueType;
 
     MetaSig sig(this);
+    // R2R callers may leave the return type unloaded, and this stack-walk path cannot load it.
+    if (sig.GetReturnType() == ELEMENT_TYPE_VALUETYPE)
+    {
+        TypeHandle thRet = sig.GetReturnProps().GetTypeHandleThrowing(
+            sig.GetModule(),
+            sig.GetSigTypeContext(),
+            ClassLoader::DontLoadTypes,
+            CLASS_LOAD_APPROXPARENTS,
+            TRUE /* dropGenericArgumentLevel */);
+        if (thRet.IsNull())
+        {
+            return RT_Illegal;
+        }
+    }
+
     CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
 
     switch (et)

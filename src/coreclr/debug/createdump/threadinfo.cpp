@@ -109,8 +109,8 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         // Unwind the native frame adding all the memory accessed to the core dump via the read memory adapter.
         ULONG64 functionStart;
         isSignalFrame = false;
-        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter, &isSignalFrame)) {
-            TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
+        if (!VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter, &isSignalFrame)) {
+            TRACE("Unwind: VirtualUnwindOutOfProc returned false\n");
             break;
         }
 
@@ -191,7 +191,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
                     {
-                        WStringHolder typeName = new WCHAR[MAX_LONGPATH + 1];
+                        WStringHolder typeName(new WCHAR[MAX_LONGPATH + 1]);
                         if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName)))
                         {
                             m_exceptionType = ConvertString(typeName);

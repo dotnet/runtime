@@ -9,3 +9,23 @@
 .macro TAILCALL_GC_POLL_RARE
         tail    C_FUNC(RhpGcPollRare)
 .endm
+
+// CallEHFunclet loads and writes back the preserved registers of the parent frame through the REGDISPLAY.
+// reg and index are the register numbers; the REGDISPLAY holds the integer and floating point registers in order.
+.macro LOAD_FUNCLET_REGISTER base, reg, scratch
+        ld      \scratch, (OFFSETOF__REGDISPLAY__pFP + (\reg - 8) * 8)(\base)
+        ld      x\reg, 0(\scratch)
+.endm
+
+.macro STORE_FUNCLET_REGISTER base, reg, scratch
+        ld      \scratch, (OFFSETOF__REGDISPLAY__pFP + (\reg - 8) * 8)(\base)
+        sd      x\reg, 0(\scratch)
+.endm
+
+.macro LOAD_FUNCLET_FP_REGISTER base, index
+        fld     f\index, (OFFSETOF__REGDISPLAY__F + \index * 8)(\base)
+.endm
+
+.macro STORE_FUNCLET_FP_REGISTER base, index
+        fsd     f\index, (OFFSETOF__REGDISPLAY__F + \index * 8)(\base)
+.endm

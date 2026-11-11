@@ -603,6 +603,7 @@
   <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ILAssembler\ILAssembler.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" Test="true" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ilasm.Tests\ilasm.Tests.csproj" Category="tools" Test="true" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj"
                     Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"
@@ -632,10 +633,6 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\**\src\*.csproj" Category="clr" />
-  </ItemGroup>
-  <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(TargetsWasm)' == 'true'">
-    <!-- Test.CoreLib fails to build with the stubbed out nativeaot corelib -->
-    <ProjectToBuild Remove="$(CoreClrProjectRoot)nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
   </ItemGroup>
 
   <!-- Mono sets -->
