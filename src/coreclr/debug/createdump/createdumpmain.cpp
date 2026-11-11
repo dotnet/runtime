@@ -3,7 +3,6 @@
 
 #include "createdump.h"
 #include "minipal/time.h"
-#include <minipal/environ.h>
 
 uint64_t g_ticksPerMS = 0;
 uint64_t g_startTime = 0;
@@ -22,11 +21,13 @@ bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
         return false;
     }
 #else
-    char* tmpDirAlloc = minipal_environ_getenv("TMPDIR");
-    const char* tmpDir = (tmpDirAlloc != nullptr && tmpDirAlloc[0] != '\0') ? tmpDirAlloc : "/tmp/";
+    const char* tmpDir = getenv("TMPDIR");
+    if (tmpDir == nullptr || tmpDir[0] == '\0')
+    {
+        tmpDir = "/tmp/";
+    }
     const char* slash = (tmpDir[strlen(tmpDir) - 1] == '/') ? "" : "/";
     int len = snprintf(buffer, bufferSize, "%s%s", tmpDir, slash);
-    free(tmpDirAlloc);
     if (len < 0 || static_cast<size_t>(len) >= bufferSize)
     {
         printf_error("TMPDIR is too long\n");

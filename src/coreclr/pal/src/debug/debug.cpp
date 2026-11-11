@@ -148,7 +148,7 @@ OutputDebugStringA(
     // As we don't support debug events, we are going to output the debug string
     // to stderr instead of generating OUT_DEBUG_STRING_EVENT.
     if ((lpOutputString != NULL) &&
-        (minipal_environ_get_variable(PAL_OUTPUTDEBUGSTRING, NULL, 0) != 0))
+        (getenv(PAL_OUTPUTDEBUGSTRING) != NULL))
     {
         fprintf(stderr, "%s", lpOutputString);
     }
@@ -339,7 +339,7 @@ DebugBreakCommand()
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
     extern MODSTRUCT exe_module;
 
-    char *command_string = minipal_environ_getenv(PAL_RUN_ON_DEBUG_BREAK);
+    const char *command_string = getenv(PAL_RUN_ON_DEBUG_BREAK);
     if (command_string)
     {
         char pid_buf[sizeof (PID_TEXT) + 32];
@@ -376,7 +376,6 @@ DebugBreakCommand()
             goto FAILED;
         }
 
-        free(command_string);
         return 1;
     }
 
@@ -386,7 +385,6 @@ FAILED:
     if (command_string)
     {
         fprintf (stderr, "Failed to execute command: '%s'\n", command_string);
-        free(command_string);
     }
 
     return -1;

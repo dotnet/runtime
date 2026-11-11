@@ -213,15 +213,14 @@ void minipal_environ_free_strings_u16(void* strings)
     free(strings);
 }
 
+#ifndef HOST_WINDOWS
 char** minipal_environ_get(void)
 {
-#ifdef HOST_WINDOWS
-    // Windows callers should use minipal_environ_get_strings_u16.
-    return NULL;
-#elif defined(HOST_APPLE)
+#ifdef HOST_APPLE
     return *(_NSGetEnviron());
 #else
     extern char** environ;
     return environ;
 #endif
 }
+#endif // !HOST_WINDOWS

@@ -287,7 +287,7 @@ BOOL DBG_init_channels(void)
     free(env_pcache);
 
     /* select output file */
-    env_string = minipal_environ_getenv(ENV_FILE);
+    env_string = getenv(ENV_FILE);
     if(env_string && *env_string!='\0')
     {
         if(!strcmp(env_string, "stderr"))
@@ -316,10 +316,9 @@ BOOL DBG_init_channels(void)
     {
         output_file = stderr; /* output to stderr by default */
     }
-    free(env_string);
 
     /* see if we need to disable assertions */
-    env_string = minipal_environ_getenv(ENV_ASSERTS);
+    env_string = getenv(ENV_ASSERTS);
     if(env_string && 0 == strcmp(env_string,"1"))
     {
         g_Dbg_asserts_enabled = FALSE;
@@ -328,10 +327,9 @@ BOOL DBG_init_channels(void)
     {
         g_Dbg_asserts_enabled = TRUE;
     }
-    free(env_string);
 
     /* select ENTRY level limitation */
-    env_string = minipal_environ_getenv(ENV_ENTRY_LEVELS);
+    env_string = getenv(ENV_ENTRY_LEVELS);
     if(env_string)
     {
         max_entry_level = atoi(env_string);
@@ -340,7 +338,6 @@ BOOL DBG_init_channels(void)
     {
         max_entry_level = 1;
     }
-    free(env_string);
 
     /* if necessary, allocate TLS key for entry nesting level */
     if(0 != max_entry_level)
@@ -660,12 +657,10 @@ bool DBG_ShouldCheckStackAlignment()
 
     if (caMode == CheckAlignment_Uninitialized)
     {
-        char* checkAlignmentSettings = minipal_environ_getenv(PAL_CHECK_ALIGNMENT_MODE);
+        const char* checkAlignmentSettings = getenv(PAL_CHECK_ALIGNMENT_MODE);
 
         caMode = checkAlignmentSettings ?
             (CheckAlignmentMode)atoi(checkAlignmentSettings) : CheckAlignment_Default;
-
-        free(checkAlignmentSettings);
     }
 
     return caMode == CheckAlignment_On;
@@ -703,11 +698,10 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
 
     if (dispDialog == DisplayDialog_Uninitialized)
     {
-        char* displayDialog = minipal_environ_getenv(PAL_DISPLAY_DIALOG);
+        const char* displayDialog = getenv(PAL_DISPLAY_DIALOG);
         if (displayDialog)
         {
             int i = atoi(displayDialog);
-            free(displayDialog);
 
             switch (i)
             {

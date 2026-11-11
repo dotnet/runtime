@@ -44,11 +44,13 @@ CHAR16_T* minipal_environ_get_strings_u16(void);
  */
 void minipal_environ_free_strings_u16(void* strings);
 
+#ifndef HOST_WINDOWS
 /**
  * The process environment array ("NAME=VALUE" strings, NULL-terminated), for example
- * to pass to execve. Do not modify or free. Returns NULL on Windows.
+ * to pass to execve. Do not modify or free.
  */
 char** minipal_environ_get(void);
+#endif
 
 #ifdef __cplusplus
 }

@@ -19,7 +19,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <minipal/getexepath.h>
-#include <minipal/environ.h>
 #endif // TARGET_UNIX
 
 // Forward declare the conversion method. Including spmiutil.h pulls in other headers
@@ -697,10 +696,10 @@ static bool RegisterCtrlHandler()
 
 static bool GetTempFolderPath(char* tempPath)
 {
-    char* tmpDirAlloc = minipal_environ_getenv("TMPDIR");
-    const char* tmpDir = tmpDirAlloc != nullptr ? tmpDirAlloc : "/tmp";
+    const char* tmpDir = getenv("TMPDIR");
+    if (tmpDir == nullptr)
+        tmpDir = "/tmp";
     snprintf(tempPath, MAX_PATH, "%s/", tmpDir);
-    free(tmpDirAlloc);
     return true;
 }
 

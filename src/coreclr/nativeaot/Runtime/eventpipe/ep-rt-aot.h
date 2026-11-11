@@ -10,7 +10,6 @@
 #include <sys/time.h>
 #endif
 
-#include <minipal/environ.h>
 #include <minipal/utf8.h>
 #include <minipal/time.h>
 
@@ -1123,11 +1122,11 @@ ep_rt_temp_path_get (
     EP_ASSERT (buffer_len > 0);
 
     // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
-    char *tmpdir = minipal_environ_getenv ("TMPDIR");
-    const ep_char8_t *path = (tmpdir != NULL && tmpdir[0] != '\0') ? tmpdir : "/tmp/";
+    const ep_char8_t *path = getenv ("TMPDIR");
+    if (path == NULL || path[0] == '\0')
+        path = "/tmp/";
 
     int32_t result = snprintf (buffer, buffer_len, path[strlen(path) - 1] == '/' ? "%s" : "%s/", path);
-    free (tmpdir);
     if (result <= 0 || (uint32_t)result >= buffer_len)
         ep_raise_error ();
 
