@@ -24,13 +24,14 @@ public unsafe class StackWalkTests
     private const uint X86TransitionBlockSize = 7 * sizeof(uint);
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FindGCRefMap_ResolvesImportRecord(bool inlineGCRefMap)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void FindGCRefMap_ResolvesImportRecord(bool inlineGCRefMap, bool compositeComponent)
     {
         (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
             nameof(Data.ExternalMethodFrame), gcRefMap: [0x83, 0x05], hasMethodDesc: false,
-            inlineGCRefMap: inlineGCRefMap);
+            inlineGCRefMap: inlineGCRefMap, compositeComponent: compositeComponent);
 
         TargetPointer map = new FrameHelpers(target).FindGCRefMap(new TargetPointer(0x100108));
 
@@ -846,6 +847,7 @@ public unsafe class StackWalkTests
         return (builder.AddTypes(types).AddGlobals((frameType + "Identifier", 0x100), (Constants.Globals.ObjectToMethodTableUnmask, markedReceiver ? 3UL : 0UL))
             .AddMockContract<IRuntimeTypeSystem>(rts).AddMockContract(runtimeInfo)
             .AddMockContract(Mock.Of<IGC>()).AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .AddMockContract(Mock.Of<IExecutionManager>()).Build(), rts);
 
         void AddMemory(uint address, byte[] data)
@@ -1207,7 +1209,8 @@ public unsafe class StackWalkTests
         string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null,
         uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
         RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86, bool hasCodeData = true,
-        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true)
+        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true,
+        bool compositeComponent = false)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -1259,11 +1262,20 @@ public unsafe class StackWalkTests
             byte[] module = new byte[4];
             helpers.Write(module, 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x3000, Data = module, Name = "Module" });
-            byte[] r2rInfo = new byte[12];
-            helpers.Write(r2rInfo.AsSpan(0), ImageBase);
+            byte[] r2rInfo = new byte[16];
+            // A component assembly of a composite image leaves LoadedImageBase unset; the composite's info holds it.
+            helpers.Write(r2rInfo.AsSpan(0), compositeComponent ? 0u : ImageBase);
             helpers.Write(r2rInfo.AsSpan(4), 1u);
             helpers.Write(r2rInfo.AsSpan(8), 0x5000u);
+            helpers.Write(r2rInfo.AsSpan(12), compositeComponent ? 0x4100u : 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4000, Data = r2rInfo, Name = "ReadyToRun info" });
+            if (compositeComponent)
+            {
+                byte[] compositeInfo = new byte[16];
+                helpers.Write(compositeInfo.AsSpan(0), ImageBase);
+                helpers.Write(compositeInfo.AsSpan(12), 0x4100u);
+                builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4100, Data = compositeInfo, Name = "Composite ReadyToRun info" });
+            }
             byte[] importSection = new byte[20];
             helpers.Write(importSection.AsSpan(0), ImportSectionRva);
             helpers.Write(importSection.AsSpan(4), 3u * sizeof(uint));
@@ -1339,7 +1351,8 @@ public unsafe class StackWalkTests
                 (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
             [DataType.Module] = CreateTypeInfo((nameof(Data.Module.ReadyToRunInfo), 0)),
             [DataType.ReadyToRunInfo] = CreateTypeInfo(
-                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8)),
+                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8),
+                (nameof(Data.ReadyToRunInfo.CompositeInfo), 12)),
         };
         if (methodDescMap)
         {
@@ -1371,6 +1384,7 @@ public unsafe class StackWalkTests
             .AddMockContract(Mock.Of<IGC>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .AddMockContract(runtimeInfo)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
         ContextHolder<X86Context> context = new()
         {
@@ -1608,8 +1622,10 @@ public unsafe class StackWalkTests
         Assert.NotEqual(0u, context.ContextFlags & (uint)RISCV64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
-    [Fact]
-    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext(bool hasPac)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
@@ -1623,6 +1639,7 @@ public unsafe class StackWalkTests
         const ulong SavedX19 = 0x1919_1919_1919_1919;
         const ulong SavedX20 = 0x2020_2020_2020_2020;
         const ulong ReturnAddress = 0x1234_5678_9abc_def0;
+        const ulong PacMask = 0xff7f_8000_0000_0000;
 
         Layout<MockRuntimeFunction> runtimeFunctionLayout = MockRuntimeFunction.CreateLayout(arch, includeEndAddress: false);
         byte[] runtimeFunctionData = new byte[runtimeFunctionLayout.Size];
@@ -1636,12 +1653,13 @@ public unsafe class StackWalkTests
             Name = "Runtime function",
         });
 
-        byte[] unwindData = new byte[2 * sizeof(uint)];
-        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (1u << 27));
+        byte[] unwindData = new byte[3 * sizeof(uint)];
+        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (2u << 27));
         unwindData[4] = 0xe7; // save_any
         unwindData[5] = 0x53; // p=1, x=0, r=19
         unwindData[6] = 0x00; // f=0, o=0
-        unwindData[7] = 0xe4; // end
+        unwindData[7] = hasPac ? (byte)0xfc : (byte)0xe4; // pac or end
+        unwindData[8] = 0xe4; // end
         targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
             Address = ImageBase + XdataRva,
@@ -1672,6 +1690,7 @@ public unsafe class StackWalkTests
                 [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
             })
             .AddMockContract(executionManager.Object)
+            .AddMockContract(Mock.Of<IPlatformMetadata>(m => m.GetPointerAuthenticationMask() == PacMask))
             .Build();
 
         ARM64Context context = new()
@@ -1688,7 +1707,9 @@ public unsafe class StackWalkTests
         Assert.Equal(SavedX19, context.X19);
         Assert.Equal(SavedX20, context.X20);
         Assert.Equal(CurrentSp, context.Sp);
-        Assert.Equal(ReturnAddress, context.Pc);
+        ulong expectedReturnAddress = hasPac ? ReturnAddress & ~PacMask : ReturnAddress;
+        Assert.Equal(expectedReturnAddress, context.Lr);
+        Assert.Equal(expectedReturnAddress, context.Pc);
         Assert.NotEqual(0u, context.ContextFlags & (uint)ARM64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
@@ -1836,6 +1857,7 @@ public unsafe class StackWalkTests
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
             .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
     }
 
@@ -2307,7 +2329,7 @@ public unsafe class StackWalkTests
         if (seedFromNativeContext)
         {
             ContextHolder<WasmContext> nativeContext = new() { InstructionPointer = new TargetCodePointer(0x0009_9000) };
-            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes());
+            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes().ToArray());
         }
         else
         {

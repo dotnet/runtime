@@ -261,7 +261,7 @@
 #endif
 
     // Miscellaneous
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
     JITHELPER(CORINFO_HELP_TAILCALL,            JIT_TailCall,             METHOD__NIL)
 #else
     JITHELPER(CORINFO_HELP_TAILCALL,            NULL,                     METHOD__NIL)

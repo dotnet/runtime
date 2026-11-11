@@ -72,17 +72,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             base.ComputeNonRelocationBasedDependencies(sink, factory);
-            MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
-                !Method.IsAbstract &&
-                !Method.HasInstantiation &&
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry)
+            {
+                AddVirtualEntryDependencies(sink, factory, Method);
+            }
+        }
+
+        /// <summary>
+        /// Adds the dependencies of a virtual dispatch to <paramref name="method"/>.
+        /// </summary>
+        internal static void AddVirtualEntryDependencies(IDependencySink sink, NodeFactory factory, MethodDesc method)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (!method.IsAbstract &&
+                !method.HasInstantiation &&
                 !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
                 factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
                 factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
                 try
                 {
-                    factory.DetectGenericCycles(_method.Method, canonMethod);
+                    factory.DetectGenericCycles(method, canonMethod);
                     sink.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
                 }
                 catch (TypeSystemException)
@@ -92,30 +102,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // For generic virtual method calls, create a virtual dependency node that will
             // dynamically discover implementations on types as they are added to the graph.
-            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
-                Method.IsVirtual &&
-                Method.HasInstantiation &&
-                !Method.IsFinal &&
-                !Method.IsGenericMethodDefinition &&
-                !Method.OwningType.IsGenericDefinition &&
-                (Method.OwningType.IsInterface || !Method.OwningType.IsSealed()))
+            if (method.IsVirtual &&
+                method.HasInstantiation &&
+                !method.IsFinal &&
+                !method.IsGenericMethodDefinition &&
+                !method.OwningType.IsGenericDefinition &&
+                (method.OwningType.IsInterface || !method.OwningType.IsSealed()))
             {
                 // Because methods with generic parameters are already compiled in their canonical form, we are only interested in finding
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
-                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
+                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(method))
                 {
-                    sink.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                    sink.Add(factory.GVMDependencies(method), "Virtual dispatch dependency");
                 }
             }
 
             // For non-GVM virtual method calls, mark the virtual slot as used so that
             // conditional dependencies on InheritedVirtualMethodsNode can trigger compilation
             // of concrete implementations.
-            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
-                Method.IsVirtual &&
-                !Method.HasInstantiation &&
-                !Method.IsFinal &&
-                !Method.OwningType.IsGenericDefinition)
+            if (method.IsVirtual &&
+                !method.HasInstantiation &&
+                !method.IsFinal &&
+                !method.OwningType.IsGenericDefinition)
             {
                 sink.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
             }

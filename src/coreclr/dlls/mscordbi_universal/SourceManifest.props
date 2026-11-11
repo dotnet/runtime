@@ -25,7 +25,6 @@
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/amd64/AsmMacros_Unix.inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/arm/AsmMacros_Unix.inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/arm64/AsmMacros_Unix.inc" />
-    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/i386/AsmMacros_Unix.inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/loongarch64/AsmMacros_Unix.inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/riscv64/AsmMacros_Unix.inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/unix/CLREventBase.cpp" />
