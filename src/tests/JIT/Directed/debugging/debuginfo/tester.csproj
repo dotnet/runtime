@@ -2,9 +2,10 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, UnloadabilityIncompatible, NativeAotIncompatible, CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- TODO: Re-enable when browser diagnostics exposes the required interpreter or JIT debug maps.
+    <!-- TODO: Re-enable when WebAssembly diagnostics expose the required interpreter or JIT debug maps;
+         the test also starts a process, which WebAssembly cannot do.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>

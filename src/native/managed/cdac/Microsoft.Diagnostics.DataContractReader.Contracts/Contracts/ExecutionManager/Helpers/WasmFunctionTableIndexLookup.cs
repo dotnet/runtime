@@ -14,6 +14,8 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 /// </summary>
 internal sealed class WasmFunctionTableIndexLookup
 {
+    private const ulong WasmInitialVirtualIP = 0x8000_0001;
+
     // Reader resource budget, not a limit imposed by native range registration.
     private const int MaxFunctionTableIndexRangeNodes = 65_536;
 
@@ -119,4 +121,39 @@ internal sealed class WasmFunctionTableIndexLookup
         unwindDataAddress = new TargetPointer(r2rInfo.LoadedImageBase.Value + runtimeFunction.UnwindData);
         return true;
     }
+
+    public bool TryGetCoreLibVirtualIPBase(uint runtimeFunctionIndex, out ulong baseVirtualIP)
+    {
+        baseVirtualIP = 0;
+        if (!_target.TryReadGlobalPointer(Constants.Globals.FunctionTableIndexRangeList, out TargetPointer? listHeadSlot))
+            return false;
+
+        TargetPointer current = _target.ReadPointer(listHeadSlot.Value);
+        HashSet<TargetPointer> visited = new();
+        while (current != TargetPointer.Null)
+        {
+            if (visited.Count == MaxFunctionTableIndexRangeNodes || !visited.Add(current))
+                return false;
+
+            Data.FunctionTableIndexRangeSection section = _target.ProcessedData.GetOrAdd<Data.FunctionTableIndexRangeSection>(current);
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
+            if (r2rInfo.MinVirtualIP is TargetPointer minVirtualIP && minVirtualIP.Value == WasmInitialVirtualIP)
+            {
+                if (runtimeFunctionIndex >= r2rInfo.NumRuntimeFunctions)
+                    return false;
+
+                Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, runtimeFunctionIndex);
+                if (_runtimeFunctions.IsFunclet(runtimeFunction))
+                    return false;
+
+                baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
+                return true;
+            }
+
+            current = section.Next;
+        }
+
+        return false;
+    }
+
 }

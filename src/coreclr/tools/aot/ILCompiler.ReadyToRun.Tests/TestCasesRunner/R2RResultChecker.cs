@@ -939,7 +939,7 @@ internal static class R2RAssert
                 if (kind is not (ReadyToRunFixupKind.ResumptionStubEntryPoint or ReadyToRunFixupKind.StoreMultiCallableAddrOfCode))
                     continue;
 
-                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                int offset = entry.GetSignatureOffset(reader) + sizeof(byte);
                 uint targetIndex = BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(offset, sizeof(uint)));
 
                 if (kind == ReadyToRunFixupKind.StoreMultiCallableAddrOfCode)
@@ -1009,7 +1009,7 @@ internal static class R2RAssert
                 if (entry.Signature?.FixupKind != ReadyToRunFixupKind.InjectStringThunks)
                     continue;
 
-                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                int offset = entry.GetSignatureOffset(reader) + sizeof(byte);
                 while (reader.Image[offset] != 0)
                 {
                     int terminator = reader.Image.AsSpan(offset).IndexOf((byte)0);

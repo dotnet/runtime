@@ -102,16 +102,7 @@ namespace System.Text.Json
             {
                 newLines = 1;
                 data = data.Slice(0, lastLineFeedIndex);
-#if NET
                 newLines += data.Count(JsonConstants.LineFeed);
-#else
-                int pos;
-                while ((pos = data.IndexOf(JsonConstants.LineFeed)) >= 0)
-                {
-                    newLines++;
-                    data = data.Slice(pos + 1);
-                }
-#endif
             }
 
             return (newLines, lastLineFeedIndex);
@@ -164,7 +155,7 @@ namespace System.Text.Json
                 return TryGetEscapedDateTime(segment, out value);
             }
 
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!segment.Contains(JsonConstants.BackSlash));
 
             if (JsonHelpers.TryParseAsISO(segment, out DateTime tmp))
             {
@@ -212,7 +203,7 @@ namespace System.Text.Json
                 return TryGetEscapedDateTimeOffset(segment, out value);
             }
 
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!segment.Contains(JsonConstants.BackSlash));
 
             if (JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp))
             {
@@ -260,7 +251,7 @@ namespace System.Text.Json
                 return TryGetEscapedGuid(segment, out value);
             }
 
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!segment.Contains(JsonConstants.BackSlash));
 
             if (segment.Length == JsonConstants.MaximumFormatGuidLength
                 && Utf8Parser.TryParse(segment, out Guid tmp, out _, 'D'))

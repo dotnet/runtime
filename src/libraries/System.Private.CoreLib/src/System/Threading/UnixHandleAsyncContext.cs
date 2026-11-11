@@ -101,6 +101,9 @@ namespace System.Threading
 
             public bool IsStopped => _state == QueueState.Stopped;
 
+            // Whether an enqueued operation is waiting for the handle to become ready.
+            public bool IsWaiting => _state == QueueState.Waiting;
+
             public void Init()
             {
                 Debug.Assert(_queueLock == null);

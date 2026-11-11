@@ -15,6 +15,7 @@
 
 #define UNICODE
 #include <palsuite.h>
+#include <dn-u16.h>
 
 PALTEST(miscellaneous_GetEnvironmentVariableW_test4_paltest_getenvironmentvariablew_test4, "miscellaneous/GetEnvironmentVariableW/test4/paltest_getenvironmentvariablew_test4")
 {
@@ -49,7 +50,7 @@ PALTEST(miscellaneous_GetEnvironmentVariableW_test4_paltest_getenvironmentvariab
                            pResultBuffer,
                            size);
 
-    if(wcsncmp(pResultBuffer,convert("TEST"),wcslen(pResultBuffer) * 2) != 0)
+    if(u16_strncmp(pResultBuffer,convert("TEST"),u16_strlen(pResultBuffer) * 2) != 0)
     {
         Fail("ERROR: The value in the buffer should have been 'TEST' but was "
              "really '%s'.",convertC(pResultBuffer));

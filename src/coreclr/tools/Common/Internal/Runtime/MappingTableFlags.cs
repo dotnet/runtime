@@ -20,6 +20,7 @@ namespace Internal.Runtime
         RequiresInstArg = 0x00000008,
         HasEntrypoint = 0x00000010,
         NeedsParameterInterpretation = 0x00000020,
+        HasVirtualIP = 0x00000040,
     }
 
     [Flags]

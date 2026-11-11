@@ -244,12 +244,12 @@ namespace ILCompiler.Metadata
 
                 if (entity.IsModuleType)
                 {
-                    // These don't get added to the global namespace.
+                    // These don't get added to the scope's type definitions.
                     // Instead, they have a dedicated field on the scope record.
                 }
                 else
                 {
-                    namespaceDefinition.TypeDefinitions.Add(record);
+                    HandleScopeDefinition(entity.Module).TypeDefinitions.Add(record);
                 }
             }
 

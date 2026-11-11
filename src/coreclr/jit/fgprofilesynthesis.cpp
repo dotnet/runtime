@@ -242,13 +242,15 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
-    // If a method has just one edge, we simulate having PGO data for it since we typically
-    // don't instrument such methods. To avoid giving excessive inlining boost to large and/or
-    // infrequently executed methods, we apply the following heuristics to exclude:
-    //
+    // We don't normally instrument single-edge methods, so treat their synthetic profiles as trusted.
+    // For roots, require observed hotness or an explicit speed preference to avoid over-inlining.
     const bool preferSize   = m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
     const bool isCctor      = (m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR;
-    m_comp->fgPgoSingleEdge = !isCctor && !preferSize && (m_comp->opts.callInstrCount < 10);
+    const bool eligibleRoot = ((m_comp->info.compFlags & CORINFO_FLG_AGGRESSIVE_OPT) != 0) ||
+                              m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT) ||
+                              m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    m_comp->fgPgoSingleEdge =
+        !isCctor && !preferSize && (m_comp->compIsForInlining() || eligibleRoot) && (m_comp->opts.callInstrCount < 10);
 
     if (m_comp->fgPgoSingleEdge)
     {

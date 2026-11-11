@@ -37,7 +37,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Compile Include="CborTestHelpers.netcoreapp.cs" />
     <Compile Include="PropertyTests\CborPropertyTests.cs" />
     <Compile Include="PropertyTests\CborRandomGenerators.cs" />
     <Compile Include="Reader\CborReaderTests.Simple.netcoreapp.cs" />
@@ -45,7 +44,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Compile Include="CborTestHelpers.netstandard.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

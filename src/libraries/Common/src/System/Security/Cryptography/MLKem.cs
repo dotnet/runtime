@@ -182,7 +182,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the shared secret.
         /// </param>
         /// <remarks>
-        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   Decapsulation can only decapsulate a shared secret created with the decapsulation key's
         ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
         ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
         ///   deterministic but incorrect result.
@@ -226,7 +226,7 @@ namespace System.Security.Cryptography
         ///   The shared secret.
         /// </returns>
         /// <remarks>
-        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   Decapsulation can only decapsulate a shared secret created with the decapsulation key's
         ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
         ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
         ///   deterministic but incorrect result.

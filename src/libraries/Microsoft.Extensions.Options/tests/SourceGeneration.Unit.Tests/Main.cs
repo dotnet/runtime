@@ -25,9 +25,102 @@ using Xunit;
 
 namespace Microsoft.Gen.OptionsValidation.Unit.Test;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Roslyn workspaces block on SemaphoreSlim
 public class EmitterTests
 {
+    public static IEnumerable<object[]> ConditionalEnclosingDeclarationData()
+    {
+        string[] declarations =
+        [
+            """
+            public partial class Outer<
+            #if TRIVIA_BRANCH
+                T>
+            #else
+                T>
+            #endif
+            """,
+            """
+            public partial struct Outer<T>
+                where T :
+            #if TRIVIA_BRANCH
+                class, new()
+            #else
+                struct
+            #endif
+            """,
+            """
+            public partial record class @class<
+            #if TRIVIA_BRANCH
+                [Parameter] @event, T>
+                where T : class, new()
+            #else
+                [Parameter] @return, U>
+                where U : struct
+            #endif
+            """,
+            """
+            public partial record struct Outer<
+            #if TRIVIA_BRANCH
+                [Parameter] T>
+            #else
+                [Parameter] U>
+            #endif
+            """
+        ];
+
+        foreach (string declaration in declarations)
+        {
+            yield return new object[] { declaration, true };
+            yield return new object[] { declaration, false };
+        }
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [MemberData(nameof(ConditionalEnclosingDeclarationData))]
+    public async Task ConditionalEnclosingDeclaration_Compiles(string declaration, bool branchDefined)
+    {
+        string source = (branchDefined ? "#define TRIVIA_BRANCH\n" : "") + $$"""
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                public class Model
+                {
+                    [Range(0, 10)]
+                    public int Value { get; set; }
+                }
+
+                [AttributeUsage(AttributeTargets.GenericParameter)]
+                public sealed class ParameterAttribute : Attribute { }
+
+                {{declaration}}
+                {
+                    public partial class @struct<[Parameter] @int /* parameter trivia */>
+                        where @int : class, new()
+                    {
+                        [OptionsValidator]
+                        public sealed partial class Validator : IValidateOptions<Model>
+                        {
+                        }
+                    }
+                }
+            }
+            """;
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName(), source);
+        Assert.All(compilation.SyntaxTrees, tree => Assert.Empty(tree.GetDiagnostics()));
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+        Assert.Empty(diagnostics);
+        compilation = compilation.AddSyntaxTrees(Assert.Single(generatedSources).SyntaxTree);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
+
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task TestEmitterWithCustomValidator()
     {

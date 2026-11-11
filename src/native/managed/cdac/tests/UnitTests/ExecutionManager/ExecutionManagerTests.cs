@@ -441,8 +441,10 @@ public class ExecutionManagerTests
         }
     }
 
-    [Fact]
-    public void GetMethodDesc_R2R_WasmVirtualIPRangeList_ResolvesCapturedShape()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetMethodDesc_R2R_WasmVirtualIPRangeList_ResolvesCapturedShape(bool compositeComponent)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
@@ -466,7 +468,16 @@ public class ExecutionManagerTests
                     emBuilder.AllocateJittedCodeRange(VirtualIPRangeStart, VirtualIPRangeSize);
                 MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x200], []);
                 r2rInfo.MinVirtualIP = VirtualIPRangeStart;
-                r2rInfo.LoadedImageBase = LoadedImageBase;
+
+                // A component assembly of a composite image leaves LoadedImageBase unset; the image base
+                // and entry point map belong to the composite image's ReadyToRunInfo.
+                MockReadyToRunInfo compositeInfo = r2rInfo;
+                if (compositeComponent)
+                {
+                    compositeInfo = emBuilder.AddReadyToRunInfo([0x80, FunctionBeginAddress, 0x200], []);
+                    r2rInfo.CompositeInfo = compositeInfo.Address;
+                }
+                compositeInfo.LoadedImageBase = LoadedImageBase;
                 runtimeFunctionsAddress = r2rInfo.RuntimeFunctions;
                 runtimeFunctionSize = emBuilder.RuntimeFunctionLayout.Size;
                 Assert.Equal(8, runtimeFunctionSize);
@@ -476,7 +487,7 @@ public class ExecutionManagerTests
 
                 MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
                 hashMapBuilder.PopulatePtrMap(
-                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    compositeInfo.EntryPointToMethodDescMapAddress,
                     [(CapturedVirtualIP, ExpectedMethodDescAddress)]);
 
                 MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
@@ -498,7 +509,7 @@ public class ExecutionManagerTests
     }
 
     [Fact]
-    public void ReadyToRunInfo_WasmMissingOptionalFields_EnsureAllFieldsRead()
+    public void ReadyToRunInfo_WasmMissingOptionalFields_TryReadAllFields()
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
         MockExecutionManagerBuilder emBuilder = new(
@@ -516,14 +527,20 @@ public class ExecutionManagerTests
 
         Data.ReadyToRunInfo data =
             target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(r2rInfo.Address);
-        ((Data.IReadableData)data).EnsureAllFieldsRead();
+        Assert.True(data.TryReadAllFields());
 
         Assert.Null(data.NumHotColdMap);
         Assert.Null(data.DelayLoadMethodCallThunks);
     }
 
-    [Fact]
-    public void GetGCInfo_R2R_WasmVirtualIPUsesLoadedImageBase()
+    [Theory]
+    [InlineData(10, 3u)]
+    [InlineData(11, 4u)]
+    [InlineData(20, 4u)]
+    [InlineData(21, 5u)]
+    [InlineData(32, 5u)]
+    [InlineData(33, 5u)]
+    public void GetGCInfo_R2R_WasmVirtualIPUsesLoadedImageBase(ushort majorVersion, uint expectedGCVersion)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
@@ -545,7 +562,7 @@ public class ExecutionManagerTests
         MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([FunctionBeginAddress], []);
         r2rInfo.MinVirtualIP = VirtualIPRangeStart;
         r2rInfo.LoadedImageBase = LoadedImageBase;
-        r2rInfo.ReadyToRunHeader = emBuilder.AddReadyToRunHeader(majorVersion: 21).Address;
+        r2rInfo.ReadyToRunHeader = emBuilder.AddReadyToRunHeader(majorVersion).Address;
         emBuilder.SetRuntimeFunctionUnwindData(r2rInfo, index: 0, UnwindDataRva);
         emBuilder.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
@@ -564,7 +581,7 @@ public class ExecutionManagerTests
 
         IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
         Mock<IGCInfo> gcInfoContract = new(MockBehavior.Strict);
-        gcInfoContract.Setup(c => c.DecodePlatformSpecificGCInfo(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), 5))
+        gcInfoContract.Setup(c => c.DecodePlatformSpecificGCInfo(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), expectedGCVersion))
             .Returns(gcInfoHandle);
         gcInfoContract.Setup(c => c.GetCodeLength(gcInfoHandle)).Returns(32u);
         Target target = CreateTarget(
@@ -579,7 +596,7 @@ public class ExecutionManagerTests
         Assert.NotNull(handle);
         em.GetGCInfo(handle.Value, out TargetPointer gcInfo, out uint gcVersion);
         Assert.Equal(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), gcInfo);
-        Assert.Equal(5u, gcVersion);
+        Assert.Equal(expectedGCVersion, gcVersion);
         Assert.Equal(ExpectedGCInfoByte, target.Read<byte>(gcInfo));
         em.GetMethodRegionInfo(handle.Value, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
         Assert.Equal(32u, hotSize);

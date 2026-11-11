@@ -142,6 +142,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task Connect_Http11Endpoint_Throws(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             using var server = new LoopbackServer(new LoopbackServer.Options
             {
                 UseSsl = useSsl

@@ -22,7 +22,7 @@ export function extractLegacyModuleCallbacks<T extends object> (moduleConfig: T)
 
     const { onConfigLoaded, onDotnetReady, onDownloadResourceProgress, ...rest } = moduleConfig as T & LegacyModuleCallbacks;
     if (onConfigLoaded !== undefined) {
-        loaderHelpers.callbacks.configLoaded = onConfigLoaded;
+        loaderHelpers.callbacks.configLoaded = [onConfigLoaded];
     }
     if (onDotnetReady !== undefined) {
         loaderHelpers.callbacks.dotnetReady = onDotnetReady;

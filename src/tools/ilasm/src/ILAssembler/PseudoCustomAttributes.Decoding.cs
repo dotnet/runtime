@@ -5,7 +5,7 @@ using System;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {

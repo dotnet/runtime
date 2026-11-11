@@ -11,6 +11,9 @@ namespace System.Threading
 {
     /// # Wait subsystem
     ///
+    /// The following design describes the multithreaded implementation. Single-threaded
+    /// implementations retain signal and ownership state without cross-thread wait registration.
+    ///
     /// ## Types
     ///
     /// <see cref="WaitSubsystem"/>
@@ -31,23 +34,23 @@ namespace System.Threading
     ///   - Provides functionality to allocate a handle associated with a <see cref="WaitableObject"/>, to retrieve the object
     ///     from a handle, and to delete a handle.
     ///
-    /// <see cref="LowLevelLock"/> and <see cref="LowLevelMonitor"/>
+    /// <see cref="LowLevelLock"/> and <c>LowLevelMonitor</c>
     ///   - These are "low level" in the sense they don't depend on this wait subsystem, and any waits done are not
     ///     interruptible
     ///   - <see cref="LowLevelLock"/> is used for the process-wide lock <see cref="s_lock"/>
-    ///   - <see cref="LowLevelMonitor"/> is the main system dependency of the wait subsystem, and all waits are done through
+    ///   - <c>LowLevelMonitor</c> is the main system dependency of the wait subsystem, and all waits are done through
     ///   it. It is backed by a native implementation in System.Native that uses a minipal mutex/condition pair.
-    ///   Each thread has an instance in <see cref="ThreadWaitInfo._waitMonitor"/>, which is used to synchronize the
+    ///   Each thread has an instance in <c>ThreadWaitInfo._waitMonitor</c>, which is used to synchronize the
     ///     thread's wait state and for waiting. <see cref="LowLevelLock"/> also uses an instance of
-    ///     <see cref="LowLevelMonitor"/> for waiting.
+    ///     <c>LowLevelMonitor</c> for waiting.
     ///
     /// ## Design goals
     ///
     /// Behave similarly to wait operations on Windows
     ///   - Waiting
     ///     - A waiter keeps an array of objects on which it is waiting (see <see cref="ThreadWaitInfo._waitedObjects"/>).
-    ///     - The waiter registers a <see cref="ThreadWaitInfo.WaitedListNode"/> with each <see cref="WaitableObject"/>
-    ///     - The waiter waits on its own <see cref="ThreadWaitInfo._waitMonitor"/> to go into a wait state
+    ///     - The waiter registers a <c>ThreadWaitInfo.WaitedListNode</c> with each <see cref="WaitableObject"/>
+    ///     - The waiter waits on its own <c>ThreadWaitInfo._waitMonitor</c> to go into a wait state
     ///     - Upon timeout, the waiter unregisters the wait and continues
     ///   - Sleeping
     ///     - Sleeping is just another way of waiting, only there would not be any waited objects
@@ -79,8 +82,8 @@ namespace System.Threading
     ///       cases, it is probably not worth optimizing for the single-wait case. It is possible with a small design change to
     ///       bypass the lock and use interlocked operations for uncontended cases, but at the cost of making multi-waits more
     ///       complicated and slower.
-    ///     - The wait state of a thread (<see cref="ThreadWaitInfo._waitSignalState"/>), among other things, is synchronized
-    ///       using the thread's <see cref="ThreadWaitInfo._waitMonitor"/>, so signalers and interrupters acquire the monitor's
+    ///     - The wait state of a thread (<c>ThreadWaitInfo._waitSignalState</c>), among other things, is synchronized
+    ///       using the thread's <c>ThreadWaitInfo._waitMonitor</c>, so signalers and interrupters acquire the monitor's
     ///       lock before checking the wait state of a thread and signaling the thread to wake up.
     ///
     /// Self-consistent in the event of any exception
@@ -98,7 +101,7 @@ namespace System.Threading
     ///     <see cref="WaitHandle.MaxWaitHandles"/>, arrays necessary for holding information about a multi-wait, and list nodes
     ///     necessary for registering a wait, are precreated with a low initial capacity that covers most typical cases
     ///   - Threads track owned mutexes by linking the <see cref="WaitableObject.OwnershipInfo"/> instance into a linked list
-    ///     <see cref="ThreadWaitInfo.LockedMutexesHead"/>. <see cref="WaitableObject.OwnershipInfo"/> is itself a list node,
+    ///     <c>ThreadWaitInfo.LockedMutexesHead</c>. <see cref="WaitableObject.OwnershipInfo"/> is itself a list node,
     ///     and is created along with the mutex <see cref="WaitableObject"/>.
     ///
     /// Minimal p/invokes in typical uncontended cases
@@ -107,7 +110,7 @@ namespace System.Threading
     ///   - Most of the wait subsystem is written in C#, so there is no initially required p/invoke
     ///   - <see cref="LowLevelLock"/>, used by the process-wide lock <see cref="s_lock"/>, uses interlocked operations to
     ///     acquire and release the lock when there is no need to wait or to release a waiter. This is significantly faster than
-    ///     using <see cref="LowLevelMonitor"/> as a lock, which uses native synchronization through p/invoke. The lock is
+    ///     using <c>LowLevelMonitor</c> as a lock, which uses native synchronization through p/invoke. The lock is
     ///     typically not held for very long, especially since allocations inside the lock will be rare.
     ///   - Since <see cref="s_lock"/> provides mutual exclusion for the states of all <see cref="WaitableObject"/>s in the
     ///     process, any operation that does not involve waiting or releasing a wait can occur with minimal p/invokes
@@ -143,7 +146,7 @@ namespace System.Threading
         }
 
 #pragma warning disable CA1859 // Change type of parameter 'waitableObject' from 'System.Threading.IWaitableObject' to 'System.Threading.WaitableObject' for improved performance
-                               // Some platforms have more implementations of IWaitableObject than just WaitableObject.
+        // Some platforms have more implementations of IWaitableObject than just WaitableObject.
         private static SafeWaitHandle NewHandle(IWaitableObject waitableObject)
 #pragma warning restore CA1859 // Change type of parameter 'waitableObject' from 'System.Threading.IWaitableObject' to 'System.Threading.WaitableObject' for improved performance
         {
@@ -186,7 +189,7 @@ namespace System.Threading
             }
 
             // Acquire the mutex. A thread's <see cref="ThreadWaitInfo"/> has a reference to all <see cref="Mutex"/>es locked
-            // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
+            // by the thread in the multithreaded implementation. So, acquire the lock only after all
             // possibilities for exceptions have been exhausted.
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
             bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false) == 0;
@@ -239,7 +242,7 @@ namespace System.Threading
                 }
 
                 // Acquire the mutex. A thread's <see cref="ThreadWaitInfo"/> has a reference to all <see cref="Mutex"/>es locked
-                // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
+                // by the thread in the multithreaded implementation. So, acquire the lock only after all
                 // possibilities for exceptions have been exhausted.
                 ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
                 int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, ref lockHolder);
@@ -426,17 +429,14 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    for (int i = 0; i < waitHandles.Length; ++i)
-                    {
-                        waitableObjects[i] = null;
-                    }
+                    Array.Clear(waitableObjects, 0, waitHandles.Length);
                 }
             }
 
             if (waitHandles.Length == 1)
             {
                 WaitableObject waitableObject = waitableObjects[0]!;
-                waitableObjects[0] = null;
+                Array.Clear(waitableObjects, 0, 1);
                 return
                     waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
             }

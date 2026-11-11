@@ -2625,6 +2625,8 @@ void NarrowAndDuplicateSimdLong(var_types baseType, TSimd* result, const TSimd& 
 
 #ifdef FEATURE_SIMD
 
+bool SimdConstantContains(var_types simdBaseType, const simd_t& simdValue, unsigned simdSize, int64_t value);
+
 #ifdef TARGET_ARM64
 
 struct Arm64SimdScalableConstInfo

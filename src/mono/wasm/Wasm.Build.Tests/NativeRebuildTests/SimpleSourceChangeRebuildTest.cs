@@ -30,9 +30,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             pathsDict.UpdateTo(unchanged: false, mainAssembly);
-            bool dotnetFilesSizeUnchanged = !aot;
-            pathsDict.UpdateTo(unchanged: dotnetFilesSizeUnchanged, "dotnet.native.wasm", "dotnet.native.js");
-        
+            bool dotnetNativeFilesUnchanged = !aot;
+            pathsDict.UpdateTo(unchanged: dotnetNativeFilesUnchanged, "dotnet.native.wasm", "dotnet.native.js");
+
             if (aot)
                 pathsDict.UpdateTo(unchanged: false, $"{info.ProjectName}.dll.bc", $"{info.ProjectName}.dll.o");
 
@@ -41,7 +41,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SimpleSourceChange.cs"));
 
             // Rebuild
-            Rebuild(info, config, aot, nativeRelink, invariant, assertAppBundle: dotnetFilesSizeUnchanged);
+            Rebuild(info, config, aot, nativeRelink, invariant, assertAppBundle: !aot);
             var newStat = StatFilesAfterRebuild(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);

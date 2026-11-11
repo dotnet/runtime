@@ -218,19 +218,22 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity, ui
 	dn_simdhash_assert(ok);
 	*ok = 0;
 
-	size_t bucket_count = (capacity + hash->meta->bucket_capacity - 1) / hash->meta->bucket_capacity;
+	size_t bucket_count = capacity / hash->meta->bucket_capacity +
+		(capacity % hash->meta->bucket_capacity != 0);
 	// FIXME: Only apply this when capacity == 0?
 	if (bucket_count < DN_SIMDHASH_MIN_BUCKET_COUNT)
 		bucket_count = DN_SIMDHASH_MIN_BUCKET_COUNT;
 	dn_simdhash_assert(bucket_count < UINT32_MAX);
+	size_t required_bucket_count = bucket_count;
 #if DN_SIMDHASH_POWER_OF_TWO_BUCKETS
 	// Bucket count must be a power of two (this enables more efficient hashcode -> bucket mapping)
 	bucket_count = next_power_of_two((uint32_t)bucket_count);
 #else
 	bucket_count = next_prime_number((uint32_t)bucket_count);
 #endif
+	dn_simdhash_assert(bucket_count >= required_bucket_count);
+	dn_simdhash_assert(bucket_count <= UINT32_MAX / hash->meta->bucket_capacity);
 	size_t value_count = bucket_count * hash->meta->bucket_capacity;
-	dn_simdhash_assert(value_count <= UINT32_MAX);
 
 	dn_simdhash_buffers_t result = { 0, };
 	if (bucket_count <= hash->buffers.buckets_length) {
@@ -249,6 +252,8 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity, ui
 	*/
 
 	// pad buckets allocation by the width of one vector so we can align it
+	dn_simdhash_assert(bucket_count <= (SIZE_MAX - DN_SIMDHASH_VECTOR_WIDTH) / hash->meta->bucket_size_bytes);
+	dn_simdhash_assert(!hash->meta->value_size || value_count <= SIZE_MAX / hash->meta->value_size);
 	size_t buckets_size_bytes = (bucket_count * hash->meta->bucket_size_bytes) + DN_SIMDHASH_VECTOR_WIDTH,
 		values_size_bytes = value_count * hash->meta->value_size;
 
@@ -267,9 +272,10 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity, ui
 
 	// Store old buffers so caller can rehash and then free them
 	result = hash->buffers;
-	size_t grow_at_count = value_count;
+	uint64_t grow_at_count = value_count;
 	grow_at_count *= 100;
 	grow_at_count /= DN_SIMDHASH_SIZING_PERCENTAGE;
+	dn_simdhash_assert(grow_at_count <= UINT32_MAX);
 	hash->grow_at_count = (uint32_t)grow_at_count;
 	hash->buffers.buckets_length = (uint32_t)bucket_count;
 	hash->buffers.values_length = (uint32_t)value_count;
@@ -303,7 +309,8 @@ dn_simdhash_clear (dn_simdhash_t *hash)
 		hash->vtable.destroy_all(hash);
 	hash->count = 0;
 	// TODO: Implement a fast clear algorithm that scans buckets and only clears ones w/nonzero count
-	memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta->bucket_size_bytes);
+	dn_simdhash_assert(hash->buffers.buckets_length <= SIZE_MAX / hash->meta->bucket_size_bytes);
+	memset(hash->buffers.buckets, 0, (size_t)hash->buffers.buckets_length * hash->meta->bucket_size_bytes);
 	// Skip this for performance; memset is especially slow in wasm
 	// memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta->value_size);
 }
@@ -328,7 +335,7 @@ dn_simdhash_overflow_count (dn_simdhash_t *hash)
 	dn_simdhash_assert(hash);
 	uint32_t result = 0;
 	for (uint32_t bucket_index = 0; bucket_index < hash->buffers.buckets_length; bucket_index++) {
-		uint8_t *suffixes = ((uint8_t *)hash->buffers.buckets) + (bucket_index * hash->meta->bucket_size_bytes);
+		uint8_t *suffixes = ((uint8_t *)hash->buffers.buckets) + ((size_t)bucket_index * hash->meta->bucket_size_bytes);
 		uint8_t cascade_count = suffixes[DN_SIMDHASH_CASCADED_SLOT];
 		result += cascade_count;
 	}

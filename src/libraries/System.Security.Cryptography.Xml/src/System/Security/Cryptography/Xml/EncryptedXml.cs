@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
@@ -54,6 +55,18 @@ namespace System.Security.Cryptography.Xml
 
         public const string XmlEncSHA256Url = "http://www.w3.org/2001/04/xmlenc#sha256";
         public const string XmlEncSHA512Url = "http://www.w3.org/2001/04/xmlenc#sha512";
+
+        [ThreadStatic]
+        private static int t_decryptionScopeDepth;
+
+        [ThreadStatic]
+        private static int t_decryptionCount;
+
+        [ThreadStatic]
+        private static int t_decryptDataCallCount;
+
+        [ThreadStatic]
+        private static int t_encryptedDataCandidateCount;
 
         //
         // private members
@@ -293,33 +306,41 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(encryptedData);
 
-            int initBytesSize;
-            // If the Uri is not provided by the application, try to get it from the EncryptionMethod
-            if (symmetricAlgorithmUri == null)
+            EnterDecryptionOperation();
+            try
             {
-                if (encryptedData.EncryptionMethod == null)
-                    throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
-                symmetricAlgorithmUri = encryptedData.EncryptionMethod.KeyAlgorithm;
+                int initBytesSize;
+                // If the Uri is not provided by the application, try to get it from the EncryptionMethod
+                if (symmetricAlgorithmUri == null)
+                {
+                    if (encryptedData.EncryptionMethod == null)
+                        throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
+                    symmetricAlgorithmUri = encryptedData.EncryptionMethod.KeyAlgorithm;
+                }
+                switch (symmetricAlgorithmUri)
+                {
+                    case EncryptedXml.XmlEncDESUrl:
+                    case EncryptedXml.XmlEncTripleDESUrl:
+                        initBytesSize = 8;
+                        break;
+                    case EncryptedXml.XmlEncAES128Url:
+                    case EncryptedXml.XmlEncAES192Url:
+                    case EncryptedXml.XmlEncAES256Url:
+                        initBytesSize = 16;
+                        break;
+                    default:
+                        // The Uri is not supported.
+                        throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
+                }
+                byte[] IV = new byte[initBytesSize];
+                byte[] cipherValue = GetCipherValue(encryptedData.CipherData);
+                Buffer.BlockCopy(cipherValue, 0, IV, 0, IV.Length);
+                return IV;
             }
-            switch (symmetricAlgorithmUri)
+            finally
             {
-                case EncryptedXml.XmlEncDESUrl:
-                case EncryptedXml.XmlEncTripleDESUrl:
-                    initBytesSize = 8;
-                    break;
-                case EncryptedXml.XmlEncAES128Url:
-                case EncryptedXml.XmlEncAES192Url:
-                case EncryptedXml.XmlEncAES256Url:
-                    initBytesSize = 16;
-                    break;
-                default:
-                    // The Uri is not supported.
-                    throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
+                ExitDecryptionOperation();
             }
-            byte[] IV = new byte[initBytesSize];
-            byte[] cipherValue = GetCipherValue(encryptedData.CipherData);
-            Buffer.BlockCopy(cipherValue, 0, IV, 0, IV.Length);
-            return IV;
         }
 
         // default behaviour is to look for keys defined by an EncryptedKey clause
@@ -330,6 +351,21 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(encryptedData);
 
+            EnterDecryptionOperation();
+            try
+            {
+                return GetDecryptionKeyCore(encryptedData, symmetricAlgorithmUri);
+            }
+            finally
+            {
+                ExitDecryptionOperation();
+            }
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
+        private SymmetricAlgorithm? GetDecryptionKeyCore(EncryptedData encryptedData, string? symmetricAlgorithmUri)
+        {
             if (encryptedData.KeyInfo == null)
                 return null;
             IEnumerator keyInfoEnum = encryptedData.KeyInfo.GetEnumerator();
@@ -416,6 +452,22 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(encryptedKey);
 
+            EnterDecryptionOperation();
+            try
+            {
+                IncrementDecryptionCount();
+                return DecryptEncryptedKeyCore(encryptedKey);
+            }
+            finally
+            {
+                ExitDecryptionOperation();
+            }
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
+        private byte[]? DecryptEncryptedKeyCore(EncryptedKey encryptedKey)
+        {
             if (encryptedKey.KeyInfo == null)
                 return null;
 
@@ -670,23 +722,31 @@ namespace System.Security.Cryptography.Xml
         [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public void DecryptDocument()
         {
-            // Look for all EncryptedData elements and decrypt them
-            XmlNamespaceManager nsm = new XmlNamespaceManager(_document.NameTable);
-            nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-            XmlNodeList? encryptedDataList = _document.SelectNodes("//enc:EncryptedData", nsm);
-            if (encryptedDataList != null)
+            EnterDecryptionOperation();
+            try
             {
-                foreach (XmlNode encryptedDataNode in encryptedDataList)
+                // Look for all EncryptedData elements and decrypt them
+                XmlNamespaceManager nsm = new XmlNamespaceManager(_document.NameTable);
+                nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
+                XmlNodeList? encryptedDataList = _document.SelectNodes("//enc:EncryptedData", nsm);
+                if (encryptedDataList != null)
                 {
-                    XmlElement encryptedDataElement = (encryptedDataNode as XmlElement)!;
-                    EncryptedData ed = new EncryptedData();
-                    ed.LoadXml(encryptedDataElement);
-                    SymmetricAlgorithm? symAlg = GetDecryptionKey(ed, null);
-                    if (symAlg == null)
-                        throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
-                    byte[] decrypted = DecryptData(ed, symAlg);
-                    ReplaceData(encryptedDataElement, decrypted);
+                    foreach (XmlNode encryptedDataNode in encryptedDataList)
+                    {
+                        XmlElement encryptedDataElement = (encryptedDataNode as XmlElement)!;
+                        EncryptedData ed = new EncryptedData();
+                        ed.LoadXml(encryptedDataElement);
+                        SymmetricAlgorithm? symAlg = GetDecryptionKey(ed, null);
+                        if (symAlg == null)
+                            throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
+                        byte[] decrypted = DecryptData(ed, symAlg);
+                        ReplaceData(encryptedDataElement, decrypted);
+                    }
                 }
+            }
+            finally
+            {
+                ExitDecryptionOperation();
             }
         }
 
@@ -747,43 +807,54 @@ namespace System.Security.Cryptography.Xml
             ArgumentNullException.ThrowIfNull(encryptedData);
             ArgumentNullException.ThrowIfNull(symmetricAlgorithm);
 
-            // get the cipher value and decrypt
-            byte[] cipherValue = GetCipherValue(encryptedData.CipherData);
-
-            // save the original symmetric algorithm
-            CipherMode origMode = symmetricAlgorithm.Mode;
-            PaddingMode origPadding = symmetricAlgorithm.Padding;
-            byte[] origIV = symmetricAlgorithm.IV;
-
-            // read the IV from cipherValue
-            byte[]? decryptionIV = null;
-            if (_mode != CipherMode.ECB)
-                decryptionIV = GetDecryptionIV(encryptedData, null);
-
-            byte[]? output = null;
+            EnterDecryptionOperation();
             try
             {
-                int lengthIV = 0;
-                if (decryptionIV != null)
-                {
-                    symmetricAlgorithm.IV = decryptionIV;
-                    lengthIV = decryptionIV.Length;
-                }
-                symmetricAlgorithm.Mode = _mode;
-                symmetricAlgorithm.Padding = _padding;
+                IncrementDecryptionCount();
+                IncrementDecryptDataCallCount();
 
-                using ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
-                output = dec.TransformFinalBlock(cipherValue, lengthIV, cipherValue.Length - lengthIV);
+                // get the cipher value and decrypt
+                byte[] cipherValue = GetCipherValue(encryptedData.CipherData);
+
+                // save the original symmetric algorithm
+                CipherMode origMode = symmetricAlgorithm.Mode;
+                PaddingMode origPadding = symmetricAlgorithm.Padding;
+                byte[] origIV = symmetricAlgorithm.IV;
+
+                // read the IV from cipherValue
+                byte[]? decryptionIV = null;
+                if (_mode != CipherMode.ECB)
+                    decryptionIV = GetDecryptionIV(encryptedData, null);
+
+                byte[]? output = null;
+                try
+                {
+                    int lengthIV = 0;
+                    if (decryptionIV != null)
+                    {
+                        symmetricAlgorithm.IV = decryptionIV;
+                        lengthIV = decryptionIV.Length;
+                    }
+                    symmetricAlgorithm.Mode = _mode;
+                    symmetricAlgorithm.Padding = _padding;
+
+                    using ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
+                    output = dec.TransformFinalBlock(cipherValue, lengthIV, cipherValue.Length - lengthIV);
+                }
+                finally
+                {
+                    // now restore the original symmetric algorithm
+                    symmetricAlgorithm.Mode = origMode;
+                    symmetricAlgorithm.Padding = origPadding;
+                    symmetricAlgorithm.IV = origIV;
+                }
+
+                return output;
             }
             finally
             {
-                // now restore the original symmetric algorithm
-                symmetricAlgorithm.Mode = origMode;
-                symmetricAlgorithm.Padding = origPadding;
-                symmetricAlgorithm.IV = origIV;
+                ExitDecryptionOperation();
             }
-
-            return output;
         }
 
         // This method replaces an EncryptedData element with the decrypted sequence of bytes
@@ -806,7 +877,15 @@ namespace System.Security.Cryptography.Xml
                 {
                     using (XmlReader xr = XmlReader.Create(sr, Utils.GetSecureXmlReaderSettings(_xmlResolver)))
                     {
-                        importDocument.Load(xr);
+                        long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                        if (maxDepth > 0)
+                        {
+                            Utils.LoadXmlDocumentWithMaxDepthCheck(importDocument, xr, maxDepth);
+                        }
+                        else
+                        {
+                            importDocument.Load(xr);
+                        }
                     }
                 }
 
@@ -825,13 +904,21 @@ namespace System.Security.Cryptography.Xml
 
                     // Replace the children of the dummy node with the sequence of bytes passed in.
                     // The string will be parsed into DOM objects in the context of the parent of the EncryptedData element.
-                    dummy.InnerXml = _encoding.GetString(decryptedData);
+                    string decryptedString = _encoding.GetString(decryptedData);
+                    long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                    bool allowDtdProcessing = LocalAppContextSwitches.CryptoXmlAllowDtdProcessing;
+                    if (maxDepth > 0 || !allowDtdProcessing)
+                    {
+                        Utils.ValidateInputXmlMaxDepth(dummy, decryptedString, maxDepth, allowDtdProcessing);
+                    }
+
+                    dummy.InnerXml = decryptedString;
 
                     // Move the children of the dummy node up to the parent.
                     XmlNode? child = dummy.FirstChild;
                     XmlNode? sibling = inputElement.NextSibling;
 
-                    XmlNode? nextChild = null;
+                    XmlNode? nextChild;
                     while (child != null)
                     {
                         nextChild = child.NextSibling;
@@ -997,6 +1084,95 @@ namespace System.Security.Cryptography.Xml
             }
 
             return false;
+        }
+        internal static void EnterDecryptionOperation()
+        {
+            Debug.Assert(t_decryptionScopeDepth >= 0);
+            Debug.Assert(t_decryptionScopeDepth > 0 || t_decryptionCount == 0, "Decryption count must be zero when entering the first decryption scope.");
+            Debug.Assert(t_decryptionScopeDepth > 0 || t_decryptDataCallCount == 0, "Decrypt data call count must be zero when entering the first decryption scope.");
+            Debug.Assert(t_decryptionScopeDepth > 0 || t_encryptedDataCandidateCount == 0, "Encrypted data candidate count must be zero when entering the first decryption scope.");
+
+            // Defensively reset the decryption count, decrypt data call count, and encrypted data candidate count
+            if (t_decryptionScopeDepth == 0)
+            {
+                t_decryptionCount = 0;
+                t_decryptDataCallCount = 0;
+                t_encryptedDataCandidateCount = 0;
+            }
+
+            t_decryptionScopeDepth++;
+        }
+
+        internal static void ExitDecryptionOperation()
+        {
+            Debug.Assert(t_decryptionScopeDepth > 0);
+
+            t_decryptionScopeDepth--;
+
+            if (t_decryptionScopeDepth == 0)
+            {
+                // Reset the decryption count, decrypt data call count, and encrypted data candidate count when exiting the last decryption scope
+                t_decryptionCount = 0;
+                t_decryptDataCallCount = 0;
+                t_encryptedDataCandidateCount = 0;
+            }
+        }
+
+        internal static void IncrementEncryptedDataCandidateCount()
+        {
+            Debug.Assert(t_decryptionScopeDepth > 0);
+
+            int maxDecryptionCount = LocalAppContextSwitches.DangerousMaxDecryptionCount;
+
+            if (maxDecryptionCount <= 0)
+            {
+                return;
+            }
+
+            if (t_encryptedDataCandidateCount >= maxDecryptionCount)
+            {
+                throw new CryptographicException(SR.Cryptography_Xml_MaxEncryptedDataElementsExceeded);
+            }
+
+            t_encryptedDataCandidateCount++;
+        }
+
+        internal static void IncrementDecryptDataCallCount()
+        {
+            Debug.Assert(t_decryptionScopeDepth > 0);
+
+            int maxDecryptedDataElements = LocalAppContextSwitches.MaxDecryptedDataElements;
+
+            if (maxDecryptedDataElements <= 0)
+            {
+                return;
+            }
+
+            if (t_decryptDataCallCount >= maxDecryptedDataElements)
+            {
+                throw new CryptographicException(SR.Cryptography_Xml_MaxEncryptedDataElementsExceeded);
+            }
+
+            t_decryptDataCallCount++;
+        }
+
+        internal static void IncrementDecryptionCount()
+        {
+            Debug.Assert(t_decryptionScopeDepth > 0);
+
+            int maxDecryptionCount = LocalAppContextSwitches.DangerousMaxDecryptionCount;
+
+            if (maxDecryptionCount <= 0)
+            {
+                return;
+            }
+
+            if (t_decryptionCount >= maxDecryptionCount)
+            {
+                throw new CryptographicException(SR.Cryptography_Xml_MaxDecryptionCountExceeded);
+            }
+
+            t_decryptionCount++;
         }
     }
 }

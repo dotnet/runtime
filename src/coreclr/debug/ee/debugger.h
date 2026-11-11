@@ -35,6 +35,7 @@
 #include "appdomain.hpp"
 #include "eedbginterface.h"
 #include "dbginterface.h"
+#include "debugdebugger.h"
 #include "corhost.h"
 #include "debugwait.h"
 
@@ -91,6 +92,7 @@ class DebuggerControllerQueue;
 class DebuggerController;
 class Crst;
 class ExternalMemoryHandle;
+class DebuggerFuncEvalResult;
 
 typedef CUnorderedArray<DebuggerControllerPatch *, 17> PATCH_UNORDERED_ARRAY;
 template<class T> void DeleteInteropSafe(T *p);
@@ -369,8 +371,6 @@ inline bool ThisMaybeHelperThread() { return true; }
 extern void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc);
 bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent *e);
 
-HRESULT ValidateObject(Object *objPtr);
-
 //-----------------------------------------------------------------------------
 // Execution control needs several ways to get at the context of a thread
 // stopped in mangaged code (stepping, setip, func-eval).
@@ -455,9 +455,20 @@ class DebuggerModule
  * Hash to hold pending func evals by thread id
  * ------------------------------------------------------------------------ */
 
-struct DebuggerPendingFuncEval
+// Array allocation for SHash elements must not take a heap lock held by a suspended thread.
+class DebuggerHeapHashEntry
 {
-    FREEHASHENTRY   entry;
+public:
+#ifndef DACCESS_COMPILE
+    static void *operator new[](size_t size);
+    static void *operator new[](size_t size, const std::nothrow_t &) noexcept;
+    static void operator delete[](void *memory);
+    static void operator delete[](void *memory, const std::nothrow_t &) noexcept;
+#endif
+};
+
+struct DebuggerPendingFuncEval : DebuggerHeapHashEntry
+{
     PTR_Thread          pThread;
     PTR_DebuggerEval    pDE;
 };
@@ -1886,8 +1897,6 @@ public:
 
     void CleanupTransportSocket();
 
-    void InitializeLazyDataIfNecessary();
-
     void LazyInit(); // will throw
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
 
@@ -2526,6 +2535,19 @@ public:
     HRESULT FuncEvalRudeAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
 
+#ifndef DACCESS_COMPILE
+    virtual bool ReadFuncEvalTypeHandles(
+        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count);
+    virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
+    virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType);
+    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
+    virtual BOOL ReadFuncEvalPrimitiveRegister(
+        DebuggerEval* pDE, UINT32 index, UINT64* pValue);
+    virtual void WriteFuncEvalRegister(
+        DebuggerEval* pDE, UINT32 index, const void* pValue, UINT32 size);
+    virtual void SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType);
+#endif // !DACCESS_COMPILE
+
     HRESULT SetReference(void *objectRefAddress, VMPTR_OBJECTHANDLE vmObjectHandle, void *newReference);
     HRESULT SetValueClass(void *oldData, void *newData, DebuggerIPCE_BasicTypeData *type);
 
@@ -2940,8 +2962,7 @@ void ApcActivationCallbackStubEnd();
 };
 
 
-// CNewZeroData is the allocator used by the all the hash tables that the helper thread could possibly alter. It uses
-// the interop safe allocator.
+// Zero-initialized allocations on the debugger's interop-safe heap.
 class CNewZeroData
 {
 public:
@@ -2987,193 +3008,93 @@ public:
 
         pHeap->Free(pPtr);
     }
-    static BYTE *Grow(BYTE *&pPtr, int iCurSize)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            PRECONDITION(g_pDebugger != NULL);
-        }
-        CONTRACTL_END;
-
-        void *p;
-
-        DebuggerHeap* pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
-        _ASSERTE(pHeap != NULL); // should already exist
-
-        _ASSERTE( iCurSize >= 0 );
-        S_UINT32 iNewSize = S_UINT32( iCurSize ) + S_UINT32( GrowSize(iCurSize) );
-        if( iNewSize.IsOverflow() )
-        {
-            return NULL;
-        }
-        p = pHeap->Realloc(pPtr, iNewSize.Value(), iCurSize);
-        if (p == NULL)
-        {
-            return NULL;
-        }
-
-        memset((BYTE*)p+iCurSize, 0, GrowSize(iCurSize));
-        return (pPtr = (BYTE *)p);
-    }
-
-    // A hashtable may recycle memory. We need to zero it out again.
-    static void Clean(BYTE * pData, int iSize)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        memset(pData, 0, iSize);
-    }
 #endif // DACCESS_COMPILE
-
-    static int RoundSize(int iSize)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (iSize);
-    }
-    static int GrowSize(int iCurSize)
-    {
-        LIMITED_METHOD_CONTRACT;
-        int newSize = (3 * iCurSize) / 2;
-        return (newSize < 256) ? 256 : newSize;
-    }
 };
 
-class DebuggerPendingFuncEvalTable : private CHashTableAndData<CNewZeroData>
+inline COUNT_T DebuggerHashPointer(TADDR pointer)
 {
-  public:
-    virtual ~DebuggerPendingFuncEvalTable() = default;
+    LIMITED_METHOD_DAC_CONTRACT;
 
-  private:
+    COUNT_T hash = static_cast<COUNT_T>(pointer);
+#ifdef HOST_64BIT
+    hash = HashCOUNT_T(hash, static_cast<COUNT_T>(pointer >> 32));
+#endif
+    return hash;
+}
 
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
+class EMPTY_BASES DebuggerPendingFuncEvalTraits : public DefaultSHashTraits<DebuggerPendingFuncEval>
+{
+public:
+    typedef PTR_Thread key_t;
+    static key_t GetKey(const element_t &element) { return element.pThread; }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key) { return DebuggerHashPointer(dac_cast<TADDR>(key)); }
+    static element_t Null() { return {}; }
+    static element_t Deleted()
     {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-#if defined(DACCESS_COMPILE)
-        // This function hasn't been tested yet in the DAC build.  Make sure the DACization is correct.
-        DacNotImpl();
-#endif // DACCESS_COMPILE
-
-        Thread * pThread1 = reinterpret_cast<Thread *>(k1);
-        Thread * pThread2 = dac_cast<PTR_DebuggerPendingFuncEval>(const_cast<HASHENTRY *>(pc2))->pThread;
-
-        return (pThread1 != pThread2);
+        element_t element = {};
+        element.pThread = dac_cast<PTR_Thread>(static_cast<TADDR>(-1));
+        return element;
     }
+    static bool IsNull(const element_t &element) { return element.pThread == nullptr; }
+    static bool IsDeleted(const element_t &element) { return element.pThread == dac_cast<PTR_Thread>(static_cast<TADDR>(-1)); }
+};
 
-    ULONG HASH(Thread* pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ULONG)((SIZE_T)pThread);   // only use low 32-bits if 64-bit
-    }
-
-
-    SIZE_T KEY(Thread * pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T)pThread;
-    }
-
-  public:
-
+class DebuggerPendingFuncEvalTable
+{
+    SHash<DebuggerPendingFuncEvalTraits> m_table;
+public:
 #ifndef DACCESS_COMPILE
-    DebuggerPendingFuncEvalTable() : CHashTableAndData<CNewZeroData>(11)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        NewInit(11, sizeof(DebuggerPendingFuncEval), 11);
-    }
-
-    void AddPendingEval(Thread *pThread, DebuggerEval *pDE)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE((pThread != NULL) && (pDE != NULL));
-
-        DebuggerPendingFuncEval *pfe = (DebuggerPendingFuncEval*)Add(HASH(pThread));
-        pfe->pThread = pThread;
-        pfe->pDE = pDE;
-    }
-
-    void RemovePendingEval(Thread* pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(pThread != NULL);
-
-        DebuggerPendingFuncEval *entry = (DebuggerPendingFuncEval*)Find(HASH(pThread), KEY(pThread));
-        Delete(HASH(pThread), (HASHENTRY*)entry);
-   }
-
+    HRESULT AddPendingEval(Thread *pThread, DebuggerEval *pDE);
+    void RemovePendingEval(Thread *pThread);
 #endif // #ifndef DACCESS_COMPILE
 
-    DebuggerPendingFuncEval *GetPendingEval(Thread* pThread)
+    const DebuggerPendingFuncEval *GetPendingEval(Thread* pThread) const
     {
         WRAPPER_NO_CONTRACT;
 
-        DebuggerPendingFuncEval *entry = (DebuggerPendingFuncEval*)Find(HASH(pThread), KEY(pThread));
-        return entry;
+        return m_table.LookupPtr(dac_cast<PTR_Thread>(pThread));
     }
 };
 
-struct DebuggerModuleEntry
+struct DebuggerModuleEntry : DebuggerHeapHashEntry
 {
-    FREEHASHENTRY   entry;
     PTR_DebuggerModule  module;
 };
 
 typedef DPTR(struct DebuggerModuleEntry) PTR_DebuggerModuleEntry;
 
-class DebuggerModuleTable : private CHashTableAndData<CNewZeroData>
+class EMPTY_BASES DebuggerModuleTraits : public DefaultSHashTraits<DebuggerModuleEntry>
 {
-#ifdef DACCESS_COMPILE
-  public:
-    virtual ~DebuggerModuleTable() = default;
-#endif
-
-  private:
-
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
+public:
+    typedef PTR_Module key_t;
+    static key_t GetKey(const element_t &element) { return dac_cast<PTR_Module>(element.module->GetRuntimeModule()); }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key) { return DebuggerHashPointer(dac_cast<TADDR>(key)); }
+    static element_t Null() { return {}; }
+    static element_t Deleted()
     {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-#if defined(DACCESS_COMPILE)
-        // This function hasn't been tested yet in the DAC build.  Make sure the DACization is correct.
-        DacNotImpl();
-#endif // DACCESS_COMPILE
-
-        Module * pModule1 = reinterpret_cast<Module *>(k1);
-        Module * pModule2 =
-            dac_cast<PTR_DebuggerModuleEntry>(const_cast<HASHENTRY *>(pc2))->module->GetRuntimeModule();
-
-        return (pModule1 != pModule2);
+        element_t element = {};
+        element.module = dac_cast<PTR_DebuggerModule>(static_cast<TADDR>(-1));
+        return element;
     }
+    static bool IsNull(const element_t &element) { return element.module == nullptr; }
+    static bool IsDeleted(const element_t &element) { return element.module == dac_cast<PTR_DebuggerModule>(static_cast<TADDR>(-1)); }
+};
 
-    ULONG HASH(Module* module)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ULONG)((SIZE_T)module);   // only use low 32-bits if 64-bit
-    }
-
-    SIZE_T KEY(Module * pModule)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T)pModule;
-    }
-
+class DebuggerModuleTable
+{
+    SHash<DebuggerModuleTraits> m_table;
 #ifdef _DEBUG
     bool ThreadHoldsLock();
 #endif
 
 public:
+    typedef SHash<DebuggerModuleTraits>::Iterator Iterator;
 
 #ifndef DACCESS_COMPILE
 
-    DebuggerModuleTable();
-    virtual ~DebuggerModuleTable();
+    ~DebuggerModuleTable();
 
     void AddModule(DebuggerModule *module);
 
@@ -3185,9 +3106,8 @@ public:
 
     DebuggerModule *GetModule(Module* module);
 
-    // We should never look for a NULL Module *
-    DebuggerModule *GetFirstModule(HASHFIND *info);
-    DebuggerModule *GetNextModule(HASHFIND *info);
+    Iterator Begin();
+    Iterator End();
 };
 
 // struct DebuggerMethodInfoKey:   Key for each of the method info hash table entries.
@@ -3203,20 +3123,18 @@ struct DebuggerMethodInfoKey
 } ;
 
 // struct DebuggerMethodInfoEntry:  Entry for the JIT info hash table.
-// FREEHASHENTRY entry:   Needed for use by the hash table
 // DebuggerMethodInfo * ji:   The actual DebuggerMethodInfo to
 //          hash.  Note that DMI's will be hashed by MethodDesc.
 typedef DPTR(struct DebuggerMethodInfoEntry) PTR_DebuggerMethodInfoEntry;
-struct DebuggerMethodInfoEntry
+struct DebuggerMethodInfoEntry : DebuggerHeapHashEntry
 {
-    FREEHASHENTRY          entry;
     DebuggerMethodInfoKey  key;
     SIZE_T                 nVersion;
     SIZE_T                 nVersionLastRemapped;
     PTR_DebuggerMethodInfo   mi;
 
 #ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) const;
 #endif
 };
 
@@ -3228,7 +3146,28 @@ struct DebuggerMethodInfoEntry
 // INVARIANT: There is only one DebuggerMethodInfo per method
 // in the table. Note that DMI's will be hashed by MethodDesc.
 //
-class DebuggerMethodInfoTable : private CHashTableAndData<CNewZeroData>
+class EMPTY_BASES DebuggerMethodInfoTraits : public DefaultSHashTraits<DebuggerMethodInfoEntry>
+{
+public:
+    typedef DebuggerMethodInfoKey key_t;
+    static key_t GetKey(const element_t &element) { return element.key; }
+    static BOOL Equals(key_t left, key_t right)
+    {
+        return left.pModule == right.pModule && left.token == right.token;
+    }
+    static count_t Hash(key_t key) { return HashCOUNT_T(key.token, DebuggerHashPointer(dac_cast<TADDR>(key.pModule))); }
+    static element_t Null() { return {}; }
+    static element_t Deleted()
+    {
+        element_t element = {};
+        element.key.pModule = dac_cast<PTR_Module>(static_cast<TADDR>(-1));
+        return element;
+    }
+    static bool IsNull(const element_t &element) { return element.key.pModule == nullptr; }
+    static bool IsDeleted(const element_t &element) { return element.key.pModule == dac_cast<PTR_Module>(static_cast<TADDR>(-1)); }
+};
+
+class DebuggerMethodInfoTable
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerMethodInfoTable);
 
@@ -3236,32 +3175,7 @@ class DebuggerMethodInfoTable : private CHashTableAndData<CNewZeroData>
     virtual ~DebuggerMethodInfoTable() = default;
 
   private:
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        // This is the inverse of the KEY() function.
-        DebuggerMethodInfoKey * pDjik = reinterpret_cast<DebuggerMethodInfoKey *>(k1);
-
-        DebuggerMethodInfoEntry * pDjie = dac_cast<PTR_DebuggerMethodInfoEntry>(const_cast<HASHENTRY *>(pc2));
-
-        return (pDjik->pModule != pDjie->key.pModule) ||
-               (pDjik->token != pDjie->key.token);
-    }
-
-    ULONG HASH(DebuggerMethodInfoKey* pDjik)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return HashPtr( pDjik->token, pDjik->pModule );
-    }
-
-    SIZE_T KEY(DebuggerMethodInfoKey * pDjik)
-    {
-        // This is casting a host pointer to a SIZE_T. So that key is restricted to the host address space.
-        // This key is just passed to Cmp(), which will cast it back to a DebuggerMethodInfoKey*.
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (SIZE_T)pDjik;
-    }
+    SHash<DebuggerMethodInfoTraits> m_table;
 
 //#define _DEBUG_DMI_TABLE
 
@@ -3280,10 +3194,11 @@ public:
 #endif // _DEBUG_DMI_TABLE
 
   public:
+    typedef SHash<DebuggerMethodInfoTraits>::Iterator Iterator;
 
 #ifndef DACCESS_COMPILE
 
-    DebuggerMethodInfoTable();
+    DebuggerMethodInfoTable() = default;
 
     HRESULT AddMethodInfo(Module *pModule,
                        mdMethodDef token,
@@ -3300,13 +3215,13 @@ public:
     //      {Module*,mdMethodDef}
     // (b) Perf: don't waste the memory!
     void ClearMethodsOfModule(Module *pModule);
-    void DeleteEntryDMI(DebuggerMethodInfoEntry *entry);
+    void DeleteEntryDMI(DebuggerMethodInfoEntry &entry);
 
 #endif // #ifndef DACCESS_COMPILE
 
     DebuggerMethodInfo *GetMethodInfo(Module *pModule, mdMethodDef token);
-    DebuggerMethodInfo *GetFirstMethodInfo(HASHFIND *info);
-    DebuggerMethodInfo *GetNextMethodInfo(HASHFIND *info);
+    Iterator Begin();
+    Iterator End();
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -3355,13 +3270,18 @@ public:
  * type arguments <string,List<int>> you get string followed by List followed by int.
  * ------------------------------------------------------------------------ */
 
-// Owns an interop-safe buffer and the ExternalMemoryHandle registration that keeps references in
-// the buffer visible to the GC.
+void ReleaseDebuggerExternalMemoryHandle(ExternalMemoryHandle* pHandle);
+
+// Owns an interop-safe buffer and external registrations for its references and collectible layout.
 class DebuggerExternalMemoryOwner
 {
 public:
+    static DebuggerExternalMemoryOwner *Create(MethodTable *pMT, SIZE_T size);
     DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory);
     ~DebuggerExternalMemoryOwner();
+
+    DebuggerExternalMemoryOwner(const DebuggerExternalMemoryOwner&) = delete;
+    DebuggerExternalMemoryOwner& operator=(const DebuggerExternalMemoryOwner&) = delete;
 
     BYTE *GetMemory() const
     {
@@ -3372,6 +3292,27 @@ private:
     ExternalMemoryHandle *m_pHandle;
     BYTE                 *m_pMemory;
 };
+
+
+typedef Wrapper<DebuggerExternalMemoryOwner*, DoNothing<DebuggerExternalMemoryOwner*>,
+    DeleteInteropSafe<DebuggerExternalMemoryOwner>> DebuggerExternalMemoryOwnerHolder;
+
+// Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
+class DebuggerFuncEvalResult
+{
+public:
+    DebuggerFuncEvalResult(DebuggerEval* pDE, TypeHandle resultType);
+    ~DebuggerFuncEvalResult();
+
+    DebuggerFuncEvalResult(const DebuggerFuncEvalResult&) = delete;
+    DebuggerFuncEvalResult& operator=(const DebuggerFuncEvalResult&) = delete;
+
+private:
+    ExternalMemoryHandle* m_resultHandle;
+};
+
+typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
+    DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
 
 class DebuggerEval
 {
@@ -3389,6 +3330,7 @@ public:
 
     T_CONTEXT                          m_context;
     Thread                            *m_thread;
+    DebuggerEval                      *m_nextPendingEval;
     DebuggerIPCE_FuncEvalType          m_evalType;
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
@@ -3402,18 +3344,16 @@ public:
     unsigned int                       m_genericArgsNodeCount;
     SIZE_T                             m_stringSize;
     BYTE                              *m_argData;
-    MethodDesc                        *m_md;
-    PCODE                              m_targetCodeAddr;
     ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
-    DebuggerExternalMemoryOwner       *m_externalMemoryOwner;
+    DebuggerExternalMemoryOwnerHolder m_externalMemoryOwner;
+    DebuggerFuncEvalResultHolder       m_funcEvalResult;
     SIZE_T                             m_arrayRank;
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
     bool                               m_aborted;           // Was this eval aborted
     bool                               m_completed;          // Is the eval complete - successfully or by aborting
     bool                               m_evalUsesHijack;
     VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
-    TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
@@ -3455,26 +3395,21 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        if (m_externalMemoryOwner != NULL)
-        {
-            DeleteInteropSafe(m_externalMemoryOwner);
-        }
-
-        // Clean up any temporary buffers used to send the argument type information.  These were allocated
-        // in response to a GET_BUFFER message.
-        DebuggerIPCE_FuncEvalArgData *argData = GetArgData();
-        for (unsigned int i = 0; i < m_argCount; i++)
-        {
-            if (argData[i].fullArgType != (CORDB_ADDRESS)0)
-            {
-                _ASSERTE(g_pDebugger != NULL);
-                g_pDebugger->ReleaseRemoteBuffer((BYTE*)CORDB_ADDRESS_TO_PTR(argData[i].fullArgType), true);
-            }
-        }
-
-        // Clean up the array of argument information.  This was allocated as part of Func Eval setup.
         if (m_argData)
         {
+            // Clean up any temporary buffers used to send the argument type information.  These were allocated
+            // in response to a GET_BUFFER message.
+            DebuggerIPCE_FuncEvalArgData *argData = GetArgData();
+            for (unsigned int i = 0; i < m_argCount; i++)
+            {
+                if (argData[i].fullArgType != (CORDB_ADDRESS)0)
+                {
+                    _ASSERTE(g_pDebugger != NULL);
+                    g_pDebugger->ReleaseRemoteBuffer((BYTE*)CORDB_ADDRESS_TO_PTR(argData[i].fullArgType), true);
+                }
+            }
+
+            // Clean up the array of argument information.  This was allocated as part of Func Eval setup.
             DeleteInteropSafe(m_argData);
         }
 

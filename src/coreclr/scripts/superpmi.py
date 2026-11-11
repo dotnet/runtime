@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import glob
 import html
 import json
 import locale
@@ -45,7 +46,7 @@ from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_n
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory, run_command
+    get_deepest_existing_directory, run_command, get_assembly_simple_name, is_managed_assembly
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -310,6 +311,8 @@ collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
 collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or 'ilc.rsps' files.")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
+collect_parser.add_argument("-crossgen2_reference_directory", help="Directory containing the assemblies crossgen2 should resolve references against. Optional; defaults to the Core_Root directory. Used for cross-target crossgen2 collections, where the assemblies being compiled are built for the target and not for the host.")
+collect_parser.add_argument("--crossgen2_composite", action="store_true", help="Run crossgen2 in composite mode: compile all the assemblies in one invocation, with the whole reference set in the version bubble, so cross-assembly generic instantiations are compiled as well. Slower, but collects many more method contexts.")
 collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -573,6 +576,18 @@ def decode_clrjit_build_string(clrjit_path):
 # Helper classes
 ################################################################################
 
+def get_crossgen2_reference_assemblies(reference_directory):
+    """ Get managed composite inputs, filtering out native binaries and rejecting an empty result. """
+
+    candidates = []
+    for extension in [".dll", ".exe"]:
+        candidates += glob.glob(os.path.join(reference_directory, "*" + extension))
+    assemblies = [path for path in sorted(candidates) if is_managed_assembly(path)]
+    if not assemblies:
+        raise RuntimeError("No managed assemblies found in crossgen2 reference directory: " + reference_directory)
+    return assemblies
+
+
 class AsyncSubprocessHelper:
     """ Class to help with async multiprocessing tasks.
     """
@@ -639,8 +654,6 @@ class AsyncSubprocessHelper:
             subprocess_count
         """
 
-        reset_env = os.environ.copy()
-
         try:
             if sys.version_info[:2] >= (3, 7):
                 loop = asyncio.get_running_loop()
@@ -656,8 +669,6 @@ class AsyncSubprocessHelper:
             asyncio.set_event_loop(loop)
 
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
-        os.environ.clear()
-        os.environ.update(reset_env)
 
 ################################################################################
 # SuperPMI Collect
@@ -988,7 +999,8 @@ class SuperPMICollect:
                         proc = await asyncio.create_subprocess_shell(
                             command_string,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=pmi_command_env)
 
                         await proc.communicate()
 
@@ -1034,25 +1046,30 @@ class SuperPMICollect:
 
                 set_and_report_env(pmi_command_env, pmi_root_env, pmi_dotnet_env)
 
-                old_env = os.environ.copy()
-                os.environ.update(pmi_command_env)
-
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_pmi, self)
-
-                os.environ.clear()
-                os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.pmi is True"
 
             ################################################################################################ Do collection using crossgen2
             if self.coreclr_args.crossgen2 is True:
                 logging.debug("Starting collection using crossgen2")
 
-                async def run_crossgen2(print_prefix, assembly, self):
-                    """ Run crossgen2 over all dlls
+                async def run_crossgen2(print_prefix, input_assemblies, self):
+                    """ Run crossgen2 over a set of assemblies.
+
+                        In the default (non-composite) mode `input_assemblies` holds a single
+                        assembly and each assembly is compiled in its own version bubble. In
+                        composite mode it holds the partition's positional input assemblies,
+                        which root eligible methods. The rest of the framework is passed as
+                        -u unrooted composite inputs in the same compilation and version bubble,
+                        not independently rooted, but able to contribute compiled methods and
+                        generic instantiations as dependencies.
                     """
 
-                    root_crossgen2_output_filename = make_safe_filename("crossgen2_" + assembly) + ".out.dll"
+                    is_composite = self.coreclr_args.crossgen2_composite
+                    output_tag = "composite" if is_composite else input_assemblies[0]
+
+                    root_crossgen2_output_filename = make_safe_filename("crossgen2_" + output_tag) + ".out.dll"
                     crossgen2_output_assembly_filename = os.path.join(self.temp_location, root_crossgen2_output_filename)
                     try:
                         if os.path.exists(crossgen2_output_assembly_filename):
@@ -1065,18 +1082,29 @@ class SuperPMICollect:
                         else:
                             raise ose
 
-                    root_output_filename = make_safe_filename("crossgen2_" + assembly + "_")
+                    root_output_filename = make_safe_filename("crossgen2_" + output_tag + "_")
 
                     # Create a temporary response file to put all the arguments to crossgen2 (otherwise the path length limit could be exceeded):
                     #
-                    # <dll to compile>
+                    # <dll to compile>                 /// one line per input assembly
                     # -o:<output dll>
-                    # -r:<Core_Root>\System.*.dll
-                    # -r:<Core_Root>\Microsoft.*.dll
-                    # -r:<Core_Root>\System.Private.CoreLib.dll
-                    # -r:<Core_Root>\netstandard.dll
+                    # --composite                      /// composite mode only
+                    # -O                               /// composite mode only
+                    # -u:"<reference_dir>\<other>.dll" /// composite mode only, for each unrooted input
+                    # -r:<reference_dir>\System.*.dll
+                    # -r:<reference_dir>\Microsoft.*.dll
+                    # -r:<reference_dir>\mscorlib.dll   /// System.*.dll above includes CoreLib
+                    # -r:<reference_dir>\netstandard.dll
+                    # -r:<reference_dir>\*.dll          /// cross-target non-composite mode only
+                    # -r:<input_dir>\*.dll              /// cross-target non-composite mode only
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of dotnet_env
+                    #
+                    # where <reference_dir> is Core_Root unless -crossgen2_reference_directory
+                    # was passed, which cross-target collections use to resolve references
+                    # against target-built assemblies instead of the host's.
+                    # Positional input paths remain unquoted, matching RunReadyToRunCompiler.
+                    # Response-file lines are individual tokens; -u values use its quoting convention.
                     #
                     # invoke with:
                     #
@@ -1087,14 +1115,43 @@ class SuperPMICollect:
                     # 2. "dotnet" on PATH
                     # 3. corerun in Core_Root
 
+                    reference_directory = self.coreclr_args.crossgen2_reference_directory or self.core_root
+                    reference_assemblies = get_crossgen2_reference_assemblies(reference_directory) if is_composite else []
+
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
-                        rsp_write_handle.write(assembly + "\n")
+                        for input_assembly in input_assemblies:
+                            rsp_write_handle.write(input_assembly + "\n")
                         rsp_write_handle.write("-o:" + crossgen2_output_assembly_filename + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        if is_composite:
+                            # Positional inputs root eligible methods in this partition. The
+                            # rest of the framework joins the same compilation and version
+                            # bubble as -u unrooted composite inputs, contributing methods and
+                            # generic instantiations as dependencies without independent rooting.
+                            rsp_write_handle.write("--composite" + "\n")
+                            # Composite mode does not infer optimization from assembly attributes.
+                            rsp_write_handle.write("-O" + "\n")
+                            # crossgen2 keys modules by assembly simple name, so exclude by
+                            # simple name rather than file name: a rooted `Foo.exe` and a
+                            # reference `Foo.dll` are the same module to it, and loading both
+                            # is a hard failure rather than a skip.
+                            rooted = set(get_assembly_simple_name(a) for a in input_assemblies)
+                            for reference_assembly in reference_assemblies:
+                                if get_assembly_simple_name(reference_assembly) in rooted:
+                                    continue
+                                rsp_write_handle.write('-u:"' + reference_assembly + '"\n')
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "netstandard.dll") + "\n")
+                        if self.coreclr_args.crossgen2_reference_directory and not is_composite:
+                            # A cross-target reference directory is a staged set of target assemblies
+                            # (e.g. xunit and test infrastructure besides the framework), so reference
+                            # all of it. Then let an input such as a test resolve dependencies copied
+                            # next to it. crossgen2 binds a reference simple name to the first match,
+                            # so the staged set wins over stale copies in the input's directory.
+                            rsp_write_handle.write("-r:" + os.path.join(reference_directory, "*.dll") + "\n")
+                            rsp_write_handle.write("-r:" + os.path.join(os.path.dirname(input_assemblies[0]), "*.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         # If we are cross-compiling (target != host), tell crossgen2 explicitly which
@@ -1124,10 +1181,12 @@ class SuperPMICollect:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
                         stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
 
-                        proc = await asyncio.create_subprocess_shell(
-                            command_string,
+                        # Avoid shell splitting when the crossgen2 or response-file path contains spaces.
+                        proc = await asyncio.create_subprocess_exec(
+                            *command,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=crossgen2_command_env)
 
                         await proc.communicate()
 
@@ -1164,19 +1223,39 @@ class SuperPMICollect:
                 crossgen2_command_env = env_copy.copy()
                 set_and_report_env(crossgen2_command_env, root_env)
 
-                old_env = os.environ.copy()
-                os.environ.update(crossgen2_command_env)
-
                 # Note: crossgen2 compiles in parallel by default. However, it seems to lead to sharing violations
                 # in SuperPMI collection, accessing the MC file. So, disable crossgen2 parallism by using
                 # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
                 # It turns out this works better anyway, as there is a lot of non-parallel time between
                 # crossgen2 parallel compilations.
-                helper = AsyncSubprocessHelper(assemblies, verbose=True)
-                helper.run_to_completion(run_crossgen2, self)
+                # Composite mode compiles all of a work item's assemblies in one invocation
+                # so they share a version bubble; per-assembly parallelism is traded for the
+                # extra cross-assembly coverage, and parallelism across work items remains.
+                if self.coreclr_args.crossgen2_composite:
+                    # crossgen2 parses composite inputs into a dictionary keyed by assembly
+                    # simple name and throws on the first collision, so catch it here with a
+                    # message that names the culprits instead of letting the compile abort.
+                    # Partition payloads preserve directory structure precisely because
+                    # duplicate file names across directories are expected for some
+                    # collections (see copy_files in jitutil.py).
+                    simple_names = {}
+                    for assembly in assemblies:
+                        simple_names.setdefault(get_assembly_simple_name(assembly), []).append(assembly)
+                    duplicates = {name: paths for name, paths in simple_names.items() if len(paths) > 1}
+                    if len(duplicates) > 0:
+                        for name, paths in duplicates.items():
+                            logging.error("Duplicate assembly simple name '%s':", name)
+                            for path in paths:
+                                logging.error("  %s", path)
+                        raise RuntimeError(
+                            "Composite crossgen2 collection requires unique assembly simple names; found {} duplicate(s)".format(len(duplicates)))
 
-                os.environ.clear()
-                os.environ.update(old_env)
+                    crossgen2_work_items = [assemblies]
+                else:
+                    crossgen2_work_items = [[assembly] for assembly in assemblies]
+
+                helper = AsyncSubprocessHelper(crossgen2_work_items, verbose=True)
+                helper.run_to_completion(run_crossgen2, self)
             ################################################################################################ end of "self.coreclr_args.crossgen2 is True"
 
             ################################################################################################ Do collection using nativeaot
@@ -1296,7 +1375,8 @@ class SuperPMICollect:
                         proc = await asyncio.create_subprocess_shell(
                             command_string,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=nativeaot_command_env)
 
                         await proc.communicate()
 
@@ -1333,15 +1413,9 @@ class SuperPMICollect:
                 nativeaot_command_env = env_copy.copy()
                 set_and_report_env(nativeaot_command_env, root_env)
 
-                old_env = os.environ.copy()
-                os.environ.update(nativeaot_command_env)
-
                 ilc_rsps = list(filter(lambda ilc_rsp: ilc_rsp.endswith(".ilc.rsp"), ilc_rsps))
                 helper = AsyncSubprocessHelper(ilc_rsps, verbose=True)
                 helper.run_to_completion(run_nativeaot, self)
-
-                os.environ.clear()
-                os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.nativeaot is True"
 
         mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
@@ -2637,16 +2711,8 @@ class SuperPMIReplayAsmDiffs:
                     os.remove(overall_md_summary_file)
 
                 with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-                    write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
+                    write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
-
-                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_short_summary", "md")
-                if os.path.isfile(short_md_summary_file):
-                    os.remove(short_md_summary_file)
-
-                with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-                    write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
-                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
         # Report the set of MCH files with asm diffs and replay failures.
 
@@ -2708,13 +2774,17 @@ class SuperPMIReplayAsmDiffs:
                     diff_text = "Could not find a git executable in PATH"
                 else:
                     git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
-                    git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
-                    (stdout, _) = git_diff_proc.communicate()
+                    git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    (stdout, stderr) = git_diff_proc.communicate()
                     code = git_diff_proc.returncode
                     diff_lines = stdout.decode().splitlines()
                     diff_lines = diff_lines[4:] # Exclude patch header
 
-                    if code == 0 or len(diff_lines) <= 0:
+                    # git diff --no-index exits with 0 for no differences, 1 for differences, and anything else on failure.
+                    if code not in (0, 1):
+                        diff_text = "git diff failed with exit code {}:\n```\n{}\n```".format(code, stderr.decode().strip())
+                        logging.warning("Warning: '%s' failed with exit code %d: %s", " ".join(git_diff_command), code, stderr.decode().strip())
+                    elif code == 0 or len(diff_lines) <= 0:
                         diff_text = "No diffs found?"
                     else:
                         if len(diff_lines) > 250:
@@ -2835,7 +2905,7 @@ class SuperPMIReplayAsmDiffs:
         final_contexts_indices.sort()
         return (final_contexts_indices, examples)
 
-def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, asm_diffs, include_details):
+def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, asm_diffs):
     """ Write a markdown summary file of the diffs that were found.
 
     Args:
@@ -2917,107 +2987,105 @@ def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options
         write_pivot_section("MinOpts")
         write_pivot_section("FullOpts")
 
-        if include_details:
-            # Next add a section with example diffs for each collection.
-            write_example_diffs_to_markdown_summary(write_fh, asm_diffs)
-    elif include_details:
+        # Next add a section with example diffs for each collection.
+        write_example_diffs_to_markdown_summary(write_fh, asm_diffs)
+    else:
         write_top_context_section()
         write_fh.write("No diffs found.\n")
 
-    if include_details:
-        # Next write a detailed section
-        with DetailsSection(write_fh, "Details"):
-            if any_diffs:
-                write_fh.write("#### Size improvements/regressions per collection\n\n")
-                write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
-                write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
+    # Next write a detailed section
+    with DetailsSection(write_fh, "Details"):
+        if any_diffs:
+            write_fh.write("#### Size improvements/regressions per collection\n\n")
+            write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
+            write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
 
-                def write_row(name, diffs):
-                    base_diff_sizes = [(int(r["Base ActualCodeBytes"]), int(r["Diff ActualCodeBytes"])) for r in diffs]
-                    (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
-                    write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
-                        name,
-                        len(diffs),
-                        html_color("green", "{:,d}".format(num_improvements)),
-                        html_color("red", "{:,d}".format(num_regressions)),
-                        html_color("blue", "{:,d}".format(num_same)),
-                        html_color("green", "-{:,d}".format(byte_improvements)),
-                        html_color("red", "+{:,d}".format(byte_regressions))))
-
-                for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
-                    write_row(mch_file, diffs)
-
-                if len(asm_diffs) > 1:
-                    write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
-
-                write_fh.write("\n---\n\n")
-                write_fh.write("#### PerfScore improvements/regressions per collection\n\n")
-                write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same PerfScore|Improvements (PerfScore)|Regressions (PerfScore)|PerfScore Overall in FullOpts|\n")
-                write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
-
-                def write_ps_row(name, diffs, perfscore_geomean):
-                    base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
-                    (num_improvements, num_regressions, num_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
-                    write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
-                        name,
-                        len(diffs),
-                        html_color("green", "{:,d}".format(num_improvements)),
-                        html_color("red", "{:,d}".format(num_regressions)),
-                        html_color("blue", "{:,d}".format(num_same)),
-                        format_pct(ps_improvements * 100),
-                        format_pct(ps_regressions * 100),
-                        format_pct(perfscore_geomean * 100, 4)))
-
-                for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
-                    write_ps_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] - 1)
-
-                write_fh.write("\n---\n\n")
-
-            write_fh.write("#### Context information\n\n")
-            write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
-            write_fh.write("|---|--:|--:|--:|--:|--:|\n")
-
-            rows = [(mch_file,
-                        diff_metrics["Overall"]["Diffed contexts"],
-                        diff_metrics["MinOpts"]["Diffed contexts"],
-                        diff_metrics["FullOpts"]["Diffed contexts"],
-                        base_metrics["Overall"]["Missing compiles"],
-                        diff_metrics["Overall"]["Missing compiles"],
-                        base_metrics["Overall"]["Successful compiles"] + base_metrics["Overall"]["Failing compiles"] + base_metrics["Overall"]["Missing compiles"])
-                        for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
-
-            def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
-                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({}%)|{:,d} ({}%)|\n".format(
+            def write_row(name, diffs):
+                base_diff_sizes = [(int(r["Base ActualCodeBytes"]), int(r["Diff ActualCodeBytes"])) for r in diffs]
+                (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
+                write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
                     name,
-                    diffed_contexts,
-                    num_minopts,
-                    num_fullopts,
-                    num_missed_base,
-                    "{:1.2f}".format(num_missed_base / total_num_contexts * 100) if total_num_contexts != 0 else "N/A",
-                    num_missed_diff,
-                    "{:1.2f}".format(num_missed_diff / total_num_contexts * 100) if total_num_contexts != 0 else "N/A"))
+                    len(diffs),
+                    html_color("green", "{:,d}".format(num_improvements)),
+                    html_color("red", "{:,d}".format(num_regressions)),
+                    html_color("blue", "{:,d}".format(num_same)),
+                    html_color("green", "-{:,d}".format(byte_improvements)),
+                    html_color("red", "+{:,d}".format(byte_regressions))))
 
-            for t in rows:
-                write_row(*t)
+            for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                write_row(mch_file, diffs)
 
-            if len(rows) > 1:
-                def sum_row(index):
-                    return sum(r[index] for r in rows)
+            if len(asm_diffs) > 1:
+                write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
 
-                write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5), sum_row(6))
+            write_fh.write("\n---\n\n")
+            write_fh.write("#### PerfScore improvements/regressions per collection\n\n")
+            write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same PerfScore|Improvements (PerfScore)|Regressions (PerfScore)|PerfScore Overall in FullOpts|\n")
+            write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
 
-            write_fh.write("\n\n")
+            def write_ps_row(name, diffs, perfscore_geomean):
+                base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
+                (num_improvements, num_regressions, num_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
+                write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
+                    name,
+                    len(diffs),
+                    html_color("green", "{:,d}".format(num_improvements)),
+                    html_color("red", "{:,d}".format(num_regressions)),
+                    html_color("blue", "{:,d}".format(num_same)),
+                    format_pct(ps_improvements * 100),
+                    format_pct(ps_regressions * 100),
+                    format_pct(perfscore_geomean * 100, 4)))
 
-            if any(has_diff for (_, _, _, has_diff, _, _) in asm_diffs):
-                write_fh.write("---\n\n")
-                write_fh.write("#### jit-analyze output\n")
+            for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                write_ps_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] - 1)
 
-                for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary, _) in asm_diffs:
-                    if not has_diffs or jit_analyze_summary is None:
-                        continue
+            write_fh.write("\n---\n\n")
 
-                    with DetailsSection(write_fh, mch_file):
-                        write_fh.write(jit_analyze_summary)
+        write_fh.write("#### Context information\n\n")
+        write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
+        write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+
+        rows = [(mch_file,
+                    diff_metrics["Overall"]["Diffed contexts"],
+                    diff_metrics["MinOpts"]["Diffed contexts"],
+                    diff_metrics["FullOpts"]["Diffed contexts"],
+                    base_metrics["Overall"]["Missing compiles"],
+                    diff_metrics["Overall"]["Missing compiles"],
+                    base_metrics["Overall"]["Successful compiles"] + base_metrics["Overall"]["Failing compiles"] + base_metrics["Overall"]["Missing compiles"])
+                    for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
+
+        def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
+            write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({}%)|{:,d} ({}%)|\n".format(
+                name,
+                diffed_contexts,
+                num_minopts,
+                num_fullopts,
+                num_missed_base,
+                "{:1.2f}".format(num_missed_base / total_num_contexts * 100) if total_num_contexts != 0 else "N/A",
+                num_missed_diff,
+                "{:1.2f}".format(num_missed_diff / total_num_contexts * 100) if total_num_contexts != 0 else "N/A"))
+
+        for t in rows:
+            write_row(*t)
+
+        if len(rows) > 1:
+            def sum_row(index):
+                return sum(r[index] for r in rows)
+
+            write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5), sum_row(6))
+
+        write_fh.write("\n\n")
+
+        if any(has_diff for (_, _, _, has_diff, _, _) in asm_diffs):
+            write_fh.write("---\n\n")
+            write_fh.write("#### jit-analyze output\n")
+
+            for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary, _) in asm_diffs:
+                if not has_diffs or jit_analyze_summary is None:
+                    continue
+
+                with DetailsSection(write_fh, mch_file):
+                    write_fh.write(jit_analyze_summary)
 
 def write_example_diffs_to_markdown_summary(write_fh, asm_diffs):
     """ Write a section with example diffs to the markdown summary.
@@ -3238,23 +3306,14 @@ class SuperPMIReplayThroughputDiff:
                     os.remove(overall_md_summary_file)
 
                 with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
+                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
-
-                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_short_summary", "md")
-
-                if os.path.isfile(short_md_summary_file):
-                    os.remove(short_md_summary_file)
-
-                with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
-                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
 
 
-def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, include_details):
+def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs):
 
     def write_top_context_section():
         if not base_jit_build_string_decoded:
@@ -3318,25 +3377,23 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
         write_pivot_section("Overall")
         write_pivot_section("MinOpts")
         write_pivot_section("FullOpts")
-        if include_details:
-            write_tpdiff_context_examples(write_fh, tp_diffs)
-    elif include_details:
+        write_tpdiff_context_examples(write_fh, tp_diffs)
+    else:
         write_top_context_section()
         write_fh.write("No significant throughput differences found\n")
 
-    if include_details:
-        with DetailsSection(write_fh, "Details"):
-            for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
-                write_fh.write("{} contexts:\n\n".format(disp))
-                write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
-                write_fh.write("|---|--:|--:|--:|\n")
-                for mch_file, base, diff, _ in tp_diffs:
-                    base_instructions = base[row]["Diff executed instructions"]
-                    diff_instructions = diff[row]["Diff executed instructions"]
-                    write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                        mch_file, base_instructions, diff_instructions,
-                        compute_and_format_pct(base_instructions, diff_instructions)))
-                write_fh.write("\n")
+    with DetailsSection(write_fh, "Details"):
+        for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+            write_fh.write("{} contexts:\n\n".format(disp))
+            write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|\n")
+            for mch_file, base, diff, _ in tp_diffs:
+                base_instructions = base[row]["Diff executed instructions"]
+                diff_instructions = diff[row]["Diff executed instructions"]
+                write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                    mch_file, base_instructions, diff_instructions,
+                    compute_and_format_pct(base_instructions, diff_instructions)))
+            write_fh.write("\n")
 
 
 def write_tpdiff_context_examples(write_fh, tp_diffs):
@@ -3595,17 +3652,9 @@ class SuperPMIReplayMetricDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, True)
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs)
                 logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_short_summary", "md")
-
-            if os.path.isfile(short_md_summary_file):
-                os.remove(short_md_summary_file)
-
-            with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, False)
-                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
         return True
         ################################################################################################ end of replay_with_metric_diff()
 
@@ -3667,7 +3716,7 @@ def aggregate_metric_diff_metrics(details_file):
     return (metrics_list, base_totals, diff_totals)
 
 
-def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, include_details):
+def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs):
 
     def fmt_val(v):
         return "{:,.2f}".format(v) if isinstance(v, float) else "{:,d}".format(v)
@@ -3718,29 +3767,27 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
                     compute_and_format_pct(base[metric], diff[metric])))
 
     if not any_significant:
-        if include_details:
-            write_fh.write("No significant metric differences found\n")
+        write_fh.write("No significant metric differences found\n")
 
-    if include_details:
-        no_diff_metrics = [m for m in all_metrics if m not in metrics_with_diffs]
-        no_diff_rows_by_metric = []
-        for metric in no_diff_metrics:
-            rows = [(mch, base.get(metric, 0), diff.get(metric, 0)) for (mch, _, base, diff) in metric_diffs
-                    if base.get(metric, 0) != 0 or diff.get(metric, 0) != 0]
-            if rows:
-                no_diff_rows_by_metric.append((metric, rows))
+    no_diff_metrics = [m for m in all_metrics if m not in metrics_with_diffs]
+    no_diff_rows_by_metric = []
+    for metric in no_diff_metrics:
+        rows = [(mch, base.get(metric, 0), diff.get(metric, 0)) for (mch, _, base, diff) in metric_diffs
+                if base.get(metric, 0) != 0 or diff.get(metric, 0) != 0]
+        if rows:
+            no_diff_rows_by_metric.append((metric, rows))
 
-        if no_diff_rows_by_metric:
-            write_fh.write("\n")
-            with DetailsSection(write_fh, "Metrics with no diffs"):
-                for metric, rows in no_diff_rows_by_metric:
-                    with DetailsSection(write_fh, metric):
-                        write_fh.write("|Collection|Base|Diff|PDIFF|\n")
-                        write_fh.write("|---|--:|--:|--:|\n")
-                        for mch_file, base_val, diff_val in rows:
-                            write_fh.write("|{}|{}|{}|{}|\n".format(
-                                mch_file, fmt_val(base_val), fmt_val(diff_val),
-                                compute_and_format_pct(base_val, diff_val)))
+    if no_diff_rows_by_metric:
+        write_fh.write("\n")
+        with DetailsSection(write_fh, "Metrics with no diffs"):
+            for metric, rows in no_diff_rows_by_metric:
+                with DetailsSection(write_fh, metric):
+                    write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+                    write_fh.write("|---|--:|--:|--:|\n")
+                    for mch_file, base_val, diff_val in rows:
+                        write_fh.write("|{}|{}|{}|{}|\n".format(
+                            mch_file, fmt_val(base_val), fmt_val(diff_val),
+                            compute_and_format_pct(base_val, diff_val)))
 
 ################################################################################
 # Argument handling helpers
@@ -4723,10 +4770,6 @@ def summarize_json_summaries(coreclr_args):
         if os.path.isfile(overall_md_summary_file):
             os.remove(overall_md_summary_file)
 
-    short_md_summary_file = create_unique_file_name(coreclr_args.spmi_location, file_name_prefix + "_short_summary", "md")
-    if os.path.isfile(short_md_summary_file):
-        os.remove(short_md_summary_file)
-
     if coreclr_args.summary_type == "asmdiffs":
         base_jit_options = []
         diff_jit_options = []
@@ -4741,12 +4784,9 @@ def summarize_json_summaries(coreclr_args):
         summarizable_asm_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
+            write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
-            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     elif coreclr_args.summary_type == "metricdiff":
         base_jit_options = []
         diff_jit_options = []
@@ -4764,12 +4804,9 @@ def summarize_json_summaries(coreclr_args):
         summarizable_metric_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs, True)
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs, False)
-            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     else:
         base_jit_build_string_decoded = ""
         diff_jit_build_string_decoded = ""
@@ -4786,12 +4823,8 @@ def summarize_json_summaries(coreclr_args):
         summarizable_tp_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, True)
+            write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
-
-        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, False)
-            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
 def get_mch_files_for_replay(local_mch_paths, filters):
     """ Given a list of local MCH files, and any specified filters (in coreclr_args.filter),
@@ -5416,6 +5449,17 @@ def setup_args(args):
                             "Unable to set crossgen2")
 
         coreclr_args.verify(args,
+                            "crossgen2_reference_directory",
+                            lambda directory: directory is None or os.path.isdir(directory),
+                            "crossgen2_reference_directory doesn't exist",
+                            modify_arg=lambda directory: None if directory is None else os.path.abspath(directory))
+
+        coreclr_args.verify(args,
+                            "crossgen2_composite",
+                            lambda unused: True,
+                            "Unable to set crossgen2_composite")
+
+        coreclr_args.verify(args,
                             "nativeaot",
                             lambda unused: True,
                             "Unable to set nativeaot")
@@ -5536,6 +5580,10 @@ def setup_args(args):
 
         if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
+            sys.exit(1)
+
+        if (args.crossgen2_composite is True) and (args.crossgen2 is False):
+            print("`--crossgen2_composite` requires `--crossgen2`")
             sys.exit(1)
 
         if ((args.nativeaot is True)) and (len(args.ilc_rsps) == 0):

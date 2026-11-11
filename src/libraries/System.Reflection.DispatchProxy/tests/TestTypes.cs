@@ -75,6 +75,24 @@ public interface TestType_IPropertyService
     string ReadWrite { get; set; }
 }
 
+// Demonstrates proxies can be made for init-only properties.
+public interface TestType_IInitPropertyService
+{
+    string ReadInit { get; init; }
+}
+
+// Demonstrates proxies can be made for init-only properties of generic interfaces.
+public interface TestType_IGenericInitPropertyService<T>
+{
+    T ReadInit { get; init; }
+}
+
+// Demonstrates proxies can be made for init-only indexed properties.
+public interface TestType_IInitIndexerService
+{
+    string this[string key] { get; init; }
+}
+
 // Demonstrates proxies can be made for static virtual properties.
 public interface TestType_IStaticVirtualPropertyService
 {

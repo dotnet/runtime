@@ -196,6 +196,69 @@ internal struct AMD64Context : IPlatformContext
         }
     }
 
+    // XMM0-XMM15 occupy the FltSave area with a 16-byte (128-bit) stride.
+    private const int XmmRegisterCount = 16;
+    private const int XmmRegisterStride = 16;
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, out value);
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, value);
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<AMD64Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ds));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ss));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rsp));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rbp));
+            source[start..end].CopyTo(destination[start..end]);
+            // Native CORDbgCopyThreadContext includes the unnamed legacy x87 save area.
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rsp));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rbp));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_SEGMENTS) == (uint)ContextFlagsValues.CONTEXT_SEGMENTS)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ds));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ss));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(MxCsr));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm));
+            end = start + (XmmRegisterCount * XmmRegisterStride);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
 
     [FieldOffset(0x0)]
     public ulong P1Home;
@@ -218,12 +281,13 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x30)]
     public uint ContextFlags;
 
+    [Register(RegisterType.FloatingPoint)]
     [FieldOffset(0x34)]
     public uint MxCsr;
 
     #region Segment registers
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x38)]
     public ushort Cs;
 
@@ -243,13 +307,13 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x40)]
     public ushort Gs;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x42)]
     public ushort Ss;
 
     #endregion
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x44)]
     public int EFlags;
 
@@ -303,7 +367,7 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x98)]
     public ulong Rsp;
 
-    [Register(RegisterType.Control | RegisterType.FramePointer)]
+    [Register(RegisterType.General | RegisterType.FramePointer)]
     [FieldOffset(0xa0)]
     public ulong Rbp;
 
@@ -355,33 +419,24 @@ internal struct AMD64Context : IPlatformContext
 
     #region Floating point registers
 
-    // [Register(RegisterType.FloatPoint)]
-    // [FieldOffset(0x100)]
-    // public XmmSaveArea FltSave;
-
-    // [Register(RegisterType.FloatPoint)]
-    // [FieldOffset(0x300)]
-    // public VectorRegisterArea VectorRegisters;
+    [Register(RegisterType.FloatingPoint)]
+    [FieldOffset(0x1a0)]
+    public unsafe fixed ulong Xmm[16 * 2];
 
     #endregion
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4a8)]
     public ulong DebugControl;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4b0)]
     public ulong LastBranchToRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4b8)]
     public ulong LastBranchFromRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4c0)]
     public ulong LastExceptionToRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4c8)]
     public ulong LastExceptionFromRip;
 }

@@ -538,8 +538,9 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 {
     CONTRACTL
     {
-       THROWS;
-       GC_TRIGGERS;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -668,11 +669,7 @@ Dictionary::PopulateEntry(
     DWORD              dictionaryIndexAndSlot, /* = -1 */
     Module *           pModule /* = NULL */)
 {
-     CONTRACTL {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+     STANDARD_VM_CONTRACT;
 
     CORINFO_GENERIC_HANDLE result = NULL;
     *ppSlot = NULL;
@@ -1213,17 +1210,26 @@ Dictionary::PopulateEntry(
                 }
 #endif
 
+                if (isReadyToRunModule)
+                    pResolvedMD->PrepareForUseAsACallTargetOfANativeImage();
+
                 result = (CORINFO_GENERIC_HANDLE)pResolvedMD->GetMultiCallableAddrOfCode();
             }
             else
             if (kind == MethodEntrySlot)
             {
+                if (isReadyToRunModule)
+                    pMethod->PrepareForUseAsACallTargetOfANativeImage();
+
                 result = (CORINFO_GENERIC_HANDLE)pMethod->GetMultiCallableAddrOfCode();
             }
             else
             if (kind == DispatchStubAddrSlot)
             {
                 _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+                if (isReadyToRunModule)
+                    pMethod->PrepareForUseAsACallTargetOfANativeImage();
+
                 PCODE *ppCode = (PCODE*)(void*)pMethod->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE)));
                 *ppCode = pMethod->GetMultiCallableAddrOfCode();
                 result = (CORINFO_GENERIC_HANDLE)ppCode;

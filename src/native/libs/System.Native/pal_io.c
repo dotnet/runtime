@@ -315,7 +315,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
             return -1;
     }
 
-    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW))
+    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW | PAL_O_DIRECTORY))
     {
         assert_msg(false, "Unknown Open flag", (int)flags);
         return -1;
@@ -335,18 +335,15 @@ static int32_t ConvertOpenFlags(int32_t flags)
         ret |= O_SYNC;
     if (flags & PAL_O_NOFOLLOW)
         ret |= O_NOFOLLOW;
+    if (flags & PAL_O_DIRECTORY)
+        ret |= O_DIRECTORY;
 
     assert(ret != -1);
     return ret;
 }
 
-intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
+static int32_t ConvertOpenFlagsAndAddDefaults(int32_t flags)
 {
-// these two ifdefs are for platforms where we dont have the open version of CLOEXEC and thus
-// must simulate it by doing a fcntl with the SETFFD version after the open instead
-#if !HAVE_O_CLOEXEC
-    int32_t old_flags = flags;
-#endif
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
     {
@@ -360,15 +357,47 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 #ifndef TARGET_WASM
     flags |= O_NOCTTY;
 #endif
+    return flags;
+}
 
-    int result;
-    while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
+static void SetCloseOnExecIfNeeded(int result, int32_t flags)
+{
 #if !HAVE_O_CLOEXEC
-    if (old_flags & PAL_O_CLOEXEC)
+    if (result >= 0 && (flags & PAL_O_CLOEXEC))
     {
         fcntl(result, F_SETFD, FD_CLOEXEC);
     }
+#else
+    (void)result;
+    (void)flags;
 #endif
+}
+
+intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
+{
+    int32_t nativeFlags = ConvertOpenFlagsAndAddDefaults(flags);
+    if (nativeFlags == -1)
+    {
+        return -1;
+    }
+
+    int result;
+    while ((result = open(path, nativeFlags, (mode_t)mode)) < 0 && errno == EINTR);
+    SetCloseOnExecIfNeeded(result, flags);
+    return result;
+}
+
+intptr_t SystemNative_OpenAt(intptr_t dirfd, const char* path, int32_t flags, int32_t mode)
+{
+    int32_t nativeFlags = ConvertOpenFlagsAndAddDefaults(flags);
+    if (nativeFlags == -1)
+    {
+        return -1;
+    }
+
+    int result;
+    while ((result = openat(ToFileDescriptor(dirfd), path, nativeFlags, (mode_t)mode)) < 0 && errno == EINTR);
+    SetCloseOnExecIfNeeded(result, flags);
     return result;
 }
 
@@ -400,6 +429,27 @@ int32_t SystemNative_Unlink(const char* path)
 {
     int32_t result;
     while ((result = unlink(path)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_UnlinkAt(intptr_t dirfd, const char* path, int32_t flags)
+{
+    int nativeFlags;
+    switch (flags)
+    {
+        case 0:
+            nativeFlags = 0;
+            break;
+        case PAL_AT_REMOVEDIR:
+            nativeFlags = AT_REMOVEDIR;
+            break;
+        default:
+            errno = EINVAL;
+            return -1;
+    }
+
+    int32_t result;
+    while ((result = unlinkat(ToFileDescriptor(dirfd), path, nativeFlags)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -767,6 +817,13 @@ int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;
     while ((result = mkdir(path, (mode_t)mode)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_MkDirAt(intptr_t dirfd, const char* path, int32_t mode)
+{
+    int32_t result;
+    while ((result = mkdirat(ToFileDescriptor(dirfd), path, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
 }
 

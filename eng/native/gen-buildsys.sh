@@ -63,8 +63,8 @@ done
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
     platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
-    # OSX doesn't use rootfs
-    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" ]]; then
+    # OSX doesn't use rootfs; OpenHarmony uses its NDK toolchain
+    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" || "$target_os" == "openharmony" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
@@ -76,6 +76,9 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
 
     if [[ "$platform" == "darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
+    elif [[ "$target_os" == "openharmony" ]]; then
+        # OpenHarmony NDK toolchain is injected by build-commons.sh; do not override it.
+        true
     else
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
     fi
@@ -108,6 +111,20 @@ if [[ "$host_arch" == "wasm" ]]; then
         # The -C flag must be early in the command line to be effective
         cmake_extra_defines="-C $scriptroot/tryrun.browser.cmake $cmake_extra_defines"
     elif [[ "$target_os" == "wasi" ]]; then
+        # Like eng/AcquireWasiSdk.targets, only use $WASI_SDK_PATH when it is the expected version,
+        # so native code built here links with the runtime built by MSBuild.
+        if [[ -n "$WASI_SDK_PATH" ]]; then
+            wasi_sdk_expected_version="$(tr -d '[:space:]' < "$reporoot"/eng/wasm/wasi-sdk-version.txt)"
+            wasi_sdk_actual_version=
+            if [[ -f "$WASI_SDK_PATH/VERSION" ]]; then
+                read -r wasi_sdk_actual_version _ < "$WASI_SDK_PATH/VERSION"
+            fi
+            if [[ "$wasi_sdk_actual_version" != "$wasi_sdk_expected_version" ]] && \
+                wasi_sdk_cache_path="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
+                echo "WASI_SDK_PATH is version '$wasi_sdk_actual_version', not '$wasi_sdk_expected_version'; using $wasi_sdk_cache_path"
+                export WASI_SDK_PATH="$wasi_sdk_cache_path"
+            fi
+        fi
         if [[ -z "$WASI_SDK_PATH" ]]; then
             if WASI_SDK_PATH="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
                 export WASI_SDK_PATH

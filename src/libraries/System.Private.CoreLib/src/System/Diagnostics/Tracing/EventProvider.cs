@@ -871,14 +871,6 @@ namespace System.Diagnostics.Tracing
             };
         }
 
-        // Get or set the per-thread activity ID.
-        internal override int ActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
-        {
-            return Interop.Advapi32.EventActivityIdControl(
-                ControlCode,
-                ref ActivityId);
-        }
-
         // Define an EventPipeEvent handle.
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
@@ -1048,9 +1040,9 @@ namespace System.Diagnostics.Tracing
                     {
                         byte* toFree = buffer;
                         buffer = null;
-                        Marshal.FreeHGlobal((IntPtr)toFree);
+                        NativeMemory.Free(toFree);
                     }
-                    buffer = (byte*)Marshal.AllocHGlobal(buffSize);
+                    buffer = (byte*)NativeMemory.Alloc((nuint)buffSize);
                 }
 
                 var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
@@ -1077,7 +1069,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (buffer != null && buffer != stackSpace)
                 {
-                    Marshal.FreeHGlobal((IntPtr)buffer);
+                    NativeMemory.Free(buffer);
                 }
             }
         }
@@ -1179,11 +1171,6 @@ namespace System.Diagnostics.Tracing
             EventProvider.EventData* userData)
         {
             return EventProvider.WriteEventErrorCode.NoError;
-        }
-
-        internal virtual int ActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
-        {
-            return 0;
         }
 
         // Define an EventPipeEvent handle.

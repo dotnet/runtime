@@ -158,12 +158,12 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, true);
+            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: false);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, false);
+            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: true);
         }
 
         public override Type GetModifiedParameterType() =>

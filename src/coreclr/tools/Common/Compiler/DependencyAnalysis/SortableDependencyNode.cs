@@ -103,6 +103,7 @@ namespace ILCompiler.DependencyAnalysis
             StackTraceDocumentsNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
+            UnboxingStubMapNode,
             ArrayOfEmbeddedDataNode,
             InterfaceDispatchCellInfoSection,
             InterfaceDispatchCellSection,

@@ -749,8 +749,7 @@ DWORD WINAPI ResetWatsonBucketsCallbackForStackOverflow(LPVOID pParam)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(IsWatsonEnabled());
         PRECONDITION(pParam != NULL);
     }
