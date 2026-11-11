@@ -480,6 +480,8 @@ namespace ObjectStackAllocation
             return array.Length + 42;
         }
 
+        // R2R does not inline Span<T>.op_Implicit here, so escape analysis treats the arrays as escaping.
+        // AggressiveOptimization defers these tests to the runtime JIT, where inlining enables stack allocation.
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray1()
         {
