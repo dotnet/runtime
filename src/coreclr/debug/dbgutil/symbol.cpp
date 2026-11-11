@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <dbgutil.h>
-#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(__linux__))
+#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_APPLE) || defined(__linux__))
 #include "elfreader.h"
 #include "machoreader.h"
 
@@ -59,7 +59,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
     }
     *symbolAddress = 0;
 
-#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(__linux__))
+#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_APPLE) || defined(__linux__))
     switch (GetTargetOperatingSystem(dataTarget, baseAddress))
     {
         case TargetOperatingSystem::Windows:

@@ -28,7 +28,8 @@ namespace System.Reflection.Emit
                                           module,
                                           m_methodBuilder.Name,
                                           (byte[])m_scope[m_methodSigToken]!,
-                                          new DynamicResolver(this));
+                                          new DynamicResolver(this),
+                                          dm.IsDiagnosticsHidden);
         }
 
         // *** ILGenerator api ***
@@ -880,7 +881,8 @@ namespace System.Reflection.Emit
         internal void GetCallableMethod(RuntimeModule module, DynamicMethod dm)
         {
             dm._methodHandle = ModuleHandle.GetDynamicMethod(
-                module, m_method.Name, (byte[])m_scope[m_methodSignature]!, new DynamicResolver(this));
+                module, m_method.Name, (byte[])m_scope[m_methodSignature]!, new DynamicResolver(this),
+                dm.IsDiagnosticsHidden);
         }
 
         internal byte[] LocalSignature => m_localSignature ??= SignatureHelper.GetLocalVarSigHelper().InternalGetSignatureArray();

@@ -5,7 +5,7 @@ set -e
 usage()
 {
     echo "Usage: $0 [BuildArch] [CodeName] [lldbx.y] [llvmx[.y]] [--skipunmount] --rootfsdir <directory>]"
-    echo "BuildArch can be: arm(default), arm64, loongarch64, ppc64le, riscv64, s390x, x64, x86"
+    echo "BuildArch can be: arm(default), arm64, loongarch64, ppc64le, riscv64, s390x, x64"
     echo "CodeName - optional, Code name for Linux, can be: xenial(default), zesty, bionic, alpine"
     echo "                               for alpine can be specified with version: alpineX.YY or alpineedge"
     echo "                               for FreeBSD can be: freebsd14, freebsd15"
@@ -228,12 +228,6 @@ while :; do
             __OpenBSDMachineArch=amd64
             __illumosArch=x86_64
             __HaikuArch=x86_64
-            __UbuntuRepo="https://archive.ubuntu.com/ubuntu/"
-            ;;
-        x86)
-            __BuildArch=x86
-            __UbuntuArch=i386
-            __AlpineArch=x86
             __UbuntuRepo="https://archive.ubuntu.com/ubuntu/"
             ;;
         lldb*)
@@ -460,9 +454,6 @@ case "$__AlpineVersion" in
         if [[ "$__AlpineArch" =~ s390x|ppc64le ]]; then
             __AlpineVersion=3.15 # minimum version that supports lldb-dev
             __AlpinePackages+=" llvm12-libs"
-        elif [[ "$__AlpineArch" == "x86" ]]; then
-            __AlpineVersion=3.17 # minimum version that supports lldb-dev
-            __AlpinePackages+=" llvm15-libs"
         elif [[ "$__AlpineArch" == "loongarch64" ]]; then
             __AlpineVersion=3.21 # minimum version that supports lldb-dev
             __AlpinePackages+=" llvm19-libs"
@@ -532,7 +523,7 @@ ensureDownloadTool()
 }
 
 if [[ "$__CodeName" == "alpine" ]]; then
-    __ApkToolsVersion=2.14.4-r1
+    __ApkToolsVersion=3.0.8-r0
     __ApkToolsDir="$(mktemp -d)"
     __ApkKeysDir="$(mktemp -d)"
     arch="$(uname -m)"
@@ -540,7 +531,7 @@ if [[ "$__CodeName" == "alpine" ]]; then
 
     ensureDownloadTool
     __ApkToolsPackage="$__ApkToolsDir/apk-tools-static.apk"
-    __ApkToolsUrl="$__AlpineRepo/v3.20/main/$arch/apk-tools-static-$__ApkToolsVersion.apk"
+    __ApkToolsUrl="$__AlpineRepo/v3.24/main/$arch/apk-tools-static-$__ApkToolsVersion.apk"
 
     if [[ "$__hasWget" == 1 ]]; then
         wget -O "$__ApkToolsPackage" "$__ApkToolsUrl"
@@ -549,9 +540,9 @@ if [[ "$__CodeName" == "alpine" ]]; then
     fi
 
     if [[ "$arch" == "x86_64" ]]; then
-        __ApkToolsSHA512SUM="b1b3cc382aa0ec26a2c24b742701a1f9885d0678365f9aea15d3d005926b06ecc802659cec8a7deba2717af99c19c708a17c23e1f0f07742268ee5be5400eb9e"
+        __ApkToolsSHA512SUM="6ab4f5e521efbfff75a4b0ecc6a028b4df0c22eadc46c18a30fa03faca0f6efd6c546b3682a856e66865f0152993a9cc843c15633a7d01b6e0f9d225b1e31ef8"
     elif [[ "$arch" == "aarch64" ]]; then
-        __ApkToolsSHA512SUM="61f9a636c5ac4e96e7a3f69fd65e60fc57b3ec8b23619c4df86f59b89e71d1309b3e406388945bdf0dd9168dac22df376943a70ff3efa179e5687e586f825fb0"
+        __ApkToolsSHA512SUM="c592bfefe3b3bc73d56fef5293a2c5c27a71d0555df7ca7db638a70c7ac81be6509f6348f28fe7474ae9adbda6f21c00a8c20d8a6ba6d5579f2ffa78d55184d2"
     else
         >&2 echo "ERROR: Unsupported apk-tools-static host architecture '$arch'."
         exit 1

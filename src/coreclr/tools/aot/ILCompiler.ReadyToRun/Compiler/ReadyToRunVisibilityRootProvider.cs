@@ -28,15 +28,19 @@ namespace ILCompiler
         {
             foreach (MetadataType type in _module.GetAllTypes())
             {
+                bool skipCanonicalInstantiation = ReadyToRunLibraryRootProvider.SkipCanonicalInstantiation(type);
                 MetadataType typeWithMethods = type;
                 if (type.HasInstantiation)
                 {
-                    typeWithMethods = ReadyToRunLibraryRootProvider.InstantiateIfPossible(type);
+                    if (skipCanonicalInstantiation)
+                        continue;
+
+                    typeWithMethods = ReadyToRunLibraryRootProvider.InstantiateTypeIfPossible(type);
                     if (typeWithMethods == null)
                         continue;
                 }
 
-                RootMethods(typeWithMethods, "Library module method", rootProvider, ((EcmaAssembly)_module.Assembly).HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"));
+                RootMethods(typeWithMethods, skipCanonicalInstantiation, "Library module method", rootProvider, ((EcmaAssembly)_module.Assembly).HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"));
             }
 
             if (_module.EntryPoint is not null)
@@ -45,8 +49,9 @@ namespace ILCompiler
             }
         }
 
-        private void RootMethods(MetadataType type, string reason, IRootingServiceProvider rootProvider, bool anyInternalsVisibleTo)
+        private void RootMethods(MetadataType type, bool skipCanonicalInstantiation, string reason, IRootingServiceProvider rootProvider, bool anyInternalsVisibleTo)
         {
+            bool typeHasInstantiation = type.HasInstantiation;
             MethodImplRecord[] methodImplRecords = GetAllMethodImplRecordsForType((EcmaType)type.GetTypeDefinition());
             foreach (MethodDesc method in type.GetAllMethods())
             {
@@ -55,6 +60,11 @@ namespace ILCompiler
                     continue;
 
                 if (method.IsInternalCall)
+                    continue;
+
+                bool methodHasInstantiation = method.HasInstantiation;
+                if ((typeHasInstantiation || methodHasInstantiation)
+                    && ReadyToRunLibraryRootProvider.SkipCanonicalInstantiation(method, skipCanonicalInstantiation))
                     continue;
 
                 // String factories implement InternalCall constructors and are invoked by the runtime.
@@ -98,9 +108,9 @@ namespace ILCompiler
                 }
 
                 MethodDesc methodToRoot = method;
-                if (method.HasInstantiation)
+                if (methodHasInstantiation)
                 {
-                    methodToRoot = ReadyToRunLibraryRootProvider.InstantiateIfPossible(method);
+                    methodToRoot = ReadyToRunLibraryRootProvider.InstantiateMethodIfPossible(method);
 
                     if (methodToRoot == null)
                         continue;

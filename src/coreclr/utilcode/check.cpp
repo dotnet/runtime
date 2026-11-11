@@ -84,7 +84,7 @@ void CHECK::Trigger(LPCSTR reason)
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     const char *messageString = NULL;
-    NewHolder<StackSString> pMessage(NULL);
+    NewHolder<StackSString> pMessage;
 
     EX_TRY
     {

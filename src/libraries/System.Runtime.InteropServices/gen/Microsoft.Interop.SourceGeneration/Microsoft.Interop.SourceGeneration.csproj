@@ -19,6 +19,8 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
+    <Compile Include="$(CommonPath)Roslyn\MemorySafetyRulesPolyfills.cs" Link="Common\Roslyn\MemorySafetyRulesPolyfills.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
     <Compile Include="$(CommonPath)SourceGenerators\ContainingTypeUtilities.cs" Link="Common\SourceGenerators\ContainingTypeUtilities.cs" />
     <Compile Include="$(CommonPath)SourceGenerators\DeclarationHeader.cs" Link="Common\SourceGenerators\DeclarationHeader.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\InterpolatedStringHandlerArgumentAttribute.cs" Link="Common\System\Runtime\CompilerServices\InterpolatedStringHandlerArgumentAttribute.cs" />
@@ -28,7 +30,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
     <Compile Include="../../tests/Common/MarshalDirection.cs" />
-    <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
+    <Compile Include="$(CommonPath)System\Diagnostics\UnreachableException.cs" Link="Common\System\Diagnostics\UnreachableException.cs" />
   </ItemGroup>
 
   <ItemGroup>

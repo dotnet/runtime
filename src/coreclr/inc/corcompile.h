@@ -82,13 +82,6 @@ typedef DPTR(struct CORCOMPILE_RUNTIME_DLL_INFO)
     PTR_CORCOMPILE_RUNTIME_DLL_INFO;
 typedef DPTR(struct COR_ILMETHOD) PTR_COR_ILMETHOD;
 
-//
-// GCRefMap blob starts with DWORDs lookup index of relative offsets into the blob. This lookup index is used to limit amount
-// of linear scanning required to find entry in the GCRefMap. The size of this lookup index is
-// <totalNumberOfEntries in the GCRefMap> / GCREFMAP_LOOKUP_STRIDE.
-//
-#define GCREFMAP_LOOKUP_STRIDE 1024
-
 enum CORCOMPILE_GCREFMAP_TOKENS
 {
     GCREFMAP_SKIP = 0,
@@ -96,7 +89,9 @@ enum CORCOMPILE_GCREFMAP_TOKENS
     GCREFMAP_INTERIOR = 2,
     GCREFMAP_METHOD_PARAM = 3,
     GCREFMAP_TYPE_PARAM = 4,
-    GCREFMAP_VASIG_COOKIE = 5,
+    GCREFMAP_THIS_REF = 5,
+    GCREFMAP_THIS_BYREF = 6,
+    GCREFMAP_VASIG_COOKIE = 7,
 };
 
 enum EncodeMethodSigFlags

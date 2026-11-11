@@ -16,6 +16,53 @@ namespace System.Threading.ThreadPools.Tests
         {
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SingleThreadedRegistrationPreservesTimeoutValidation(bool useUnsafe)
+        {
+            using var handle = new ManualResetEvent(false);
+            WaitOrTimerCallback callback = (_, _) => Assert.Fail("The callback must not run.");
+            if (useUnsafe)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, -2, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, (uint)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, (long)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("timeout", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, TimeSpan.FromMilliseconds(-2), true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, 0, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, uint.MaxValue, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(handle, callback, null, -1L, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(null, null, null, Timeout.InfiniteTimeSpan, true));
+            }
+            else
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, -2, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, (uint)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, (long)int.MaxValue + 1, true));
+                Assert.Throws<ArgumentOutOfRangeException>("timeout", () =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, TimeSpan.FromMilliseconds(-2), true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, 0, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, uint.MaxValue, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(handle, callback, null, -1L, true));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    ThreadPool.RegisterWaitForSingleObject(null, null, null, Timeout.InfiniteTimeSpan, true));
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void QueueRegisterPositiveAndFlowTest()
         {

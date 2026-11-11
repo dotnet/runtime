@@ -12,7 +12,7 @@ using Xunit;
 // The description parameter is not read: it names the generated case in the test's display name.
 #pragma warning disable xUnit1026
 
-namespace ILAssembler.Tests.GeneratedCases
+namespace Microsoft.DotNet.ILAssembler.Tests.GeneratedCases
 {
     /// <summary>
     /// Local slots, lexical name scopes and the errors for LocalScope and LocalVariable rows that the Portable PDB

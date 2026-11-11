@@ -62,12 +62,11 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 #endif
             {
                 instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
-                info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
             }
         }
         else
         {
-            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
@@ -111,12 +110,11 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 #endif
             {
                 instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
             }
         }
         else
         {
-            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
@@ -848,9 +846,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
-    CORINFO_CLASS_HANDLE actualMethodRetTypeSigClass;
-    actualMethodRetTypeSigClass = sig->retTypeSigClass;
-
     /* Check for varargs */
     if (!compFeatureVarArg() && ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
                                  (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG))
@@ -890,24 +885,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
 
-            // For vararg calls we must be sure to load the return type of the
-            // method actually being called, as well as the return types of the
-            // specified in the vararg signature. With type equivalency, these types
-            // may not be the same.
-            if (sig->retTypeSigClass != actualMethodRetTypeSigClass)
-            {
-                if (actualMethodRetTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_CLASS &&
-                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR)
-                {
-                    // Make sure that all valuetypes (including enums) that we push are loaded.
-                    // This is to guarantee that if a GC is triggered from the prestub of this methods,
-                    // all valuetypes in the method signature are already loaded.
-                    // We need to be able to find the size of the valuetypes, but we cannot
-                    // do a class-load from within GC.
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(actualMethodRetTypeSigClass);
-                }
-            }
-
             assert(numArgsDef <= sig->numArgs);
         }
 
@@ -920,12 +897,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // If this is a call to a PInvoke method, we may be able to inline the invocation frame.
     //
     impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, compCurBB);
-
-#ifdef UNIX_X86_ABI
-    // On Unix x86 we use caller-cleaned convention.
-    if ((call->gtFlags & GTF_CALL_UNMANAGED) == 0)
-        call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
@@ -2236,9 +2207,6 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
 
     call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
-#ifdef UNIX_X86_ABI
-    call->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif
 
     return call;
 }
@@ -4409,7 +4377,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             retNode = gtNewIconNode(eeIsValueClass(hClass) ? 1 : 0);
                             break;
                         case NI_System_Type_get_IsByRefLike:
-                            retNode = gtNewIconNode(eeIsByrefLike(hClass) ? 1 : 0);
+                            retNode = gtNewIconNode(eeIsByRefLike(hClass) ? 1 : 0);
                             break;
                         case NI_System_Type_get_IsPrimitive:
                             // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
@@ -5339,8 +5307,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     {
                         JITDUMP("Optimizing constrained box-this obj.getType() to direct type construction\n");
                         impPopStack();
-                        GenTree* typeHandleOp =
-                            impTokenToHandle(pConstrainedResolvedToken, nullptr, true /* mustRestoreHandle */);
+                        GenTree* typeHandleOp = impTokenToHandle(pConstrainedResolvedToken);
                         if (typeHandleOp == nullptr)
                         {
                             assert(compDonotInline());
@@ -7441,8 +7408,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     // We will iterate and pop the args in reverse order as we sometimes need
     // to spill some args. However, we need signature information and the
     // JIT-EE interface only allows us to iterate the signature forwards. We
-    // will collect the needed information here and at the same time notify the
-    // EE that the signature types need to be loaded.
+    // will collect the needed information here.
     CORINFO_ARG_LIST_HANDLE sigArg                = sig->args;
     bool                    hasSecretStubArgument = false;
     for (unsigned i = 0; i < sig->numArgs; i++)
@@ -7465,32 +7431,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             hasSecretStubArgument = true;
         }
 
-        if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR)
-        {
-            CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
-            if (argRealClass != nullptr)
-            {
-                // Make sure that all valuetypes (including enums) that we push are loaded.
-                // This is to guarantee that if a GC is triggered from the prestub of this methods,
-                // all valuetypes in the method signature are already loaded.
-                // We need to be able to find the size of the valuetypes, but we cannot
-                // do a class-load from within GC.
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
-            }
-        }
-
         sigArg = info.compCompHnd->getArgNext(sigArg);
-    }
-
-    if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
-        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR))
-    {
-        // Make sure that all valuetypes (including enums) that we push are loaded.
-        // This is to guarantee that if a GC is triggered from the prestub of this methods,
-        // all valuetypes in the method signature are already loaded.
-        // We need to be able to find the size of the valuetypes, but we cannot
-        // do a class-load from within GC.
-        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(sig->retTypeSigClass);
     }
 
     // Now create the arguments in reverse.
@@ -7529,10 +7470,11 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
 
-            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm) &&
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm ||
+                 TargetArchitecture::IsLoongArch64) &&
                 call->IsUnmanaged() && varTypeIsSmall(jitSigType))
             {
-                // Wasm, Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                // These native ABIs require arguments to be zero/sign
                 // extended up to 32 bit. The managed ABI does not require
                 // this.
                 if (fgCastNeeded(argNode, jitSigType))

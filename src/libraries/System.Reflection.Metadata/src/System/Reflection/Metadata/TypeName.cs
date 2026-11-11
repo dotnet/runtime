@@ -76,9 +76,11 @@ namespace System.Reflection.Metadata
             TypeName? declaringType,
             ImmutableArray<TypeName> genericTypeArguments,
             int rankOrModifier = default,
-            int nestedNameLength = -1)
+            int nestedNameLength = -1,
+            string? name = null)
         {
             _fullName = fullName;
+            _name = name;
             AssemblyName = assemblyName;
             _elementOrGenericType = elementOrGenericType;
             _declaringType = declaringType;
@@ -226,6 +228,12 @@ namespace System.Reflection.Metadata
                     GetElementType().AppendFullName(ref builder);
                     TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
                 }
+                else if (IsNested)
+                {
+                    _declaringType.AppendFullName(ref builder);
+                    builder.Append('+');
+                    builder.Append(_name);
+                }
                 else
                 {
                     Debug.Fail("Pre-allocated full name should have been provided in the ctor");
@@ -338,6 +346,10 @@ namespace System.Reflection.Metadata
             {
                 GetElementType().AppendName(ref builder);
                 TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+            }
+            else if (_name is not null)
+            {
+                builder.Append(_name);
             }
             else
             {
@@ -610,7 +622,55 @@ namespace System.Reflection.Metadata
                 elementOrGenericType: null,
                 declaringType: declaringType,
                 genericTypeArguments: ImmutableArray<TypeName>.Empty,
-                nestedNameLength: _nestedNameLength);
+                nestedNameLength: _nestedNameLength,
+                name: _name);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="TypeName" /> object that represents a simple type name.
+        /// </summary>
+        /// <param name="metadataName">The unescaped name of the type as it appears in metadata, including the namespace; e.g., "System.Int32".
+        /// For a nested type, only the name of the nested type; e.g., "NestedType".</param>
+        /// <param name="declaringType">The declaring type of a nested type, or null.</param>
+        /// <param name="assemblyInfo">The assembly name, or null. A nested type has the assembly name of its declaring type, so this must be null when <paramref name="declaringType"/> is specified.</param>
+        /// <returns>Created simple name.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="metadataName"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="metadataName"/> is empty, <paramref name="declaringType"/> is not a simple type name,
+        /// or both <paramref name="declaringType"/> and <paramref name="assemblyInfo"/> are specified.</exception>
+        public static TypeName CreateSimpleTypeName(string metadataName, TypeName? declaringType = null, AssemblyNameInfo? assemblyInfo = null)
+        {
+            if (metadataName is null)
+            {
+                TypeNameParserHelpers.ThrowArgumentNullException(nameof(metadataName));
+            }
+
+            if (metadataName.Length == 0)
+            {
+                Throw.ArgumentEmptyString(nameof(metadataName));
+            }
+
+            string escapedName = TypeNameParserHelpers.Escape(metadataName);
+            if (declaringType is null)
+            {
+                return new TypeName(escapedName, assemblyInfo);
+            }
+
+            if (!declaringType.IsSimple)
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_NotSimpleTypeName, declaringType.FullName), nameof(declaringType));
+            }
+
+            if (assemblyInfo is not null)
+            {
+                throw new ArgumentException(SR.Arg_NestedTypeAssemblyInfo, nameof(assemblyInfo));
+            }
+
+            return new TypeName(fullName: null,
+                assemblyName: declaringType.AssemblyName,
+                elementOrGenericType: null,
+                declaringType: declaringType,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                name: escapedName);
         }
 
         /// <summary>

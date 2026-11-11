@@ -801,7 +801,7 @@ namespace System.ComponentModel
         ////// Methods
 
         /// <summary>
-        /// Attempts to add the specified charactert to the last unoccupied positions in the test string (append text to
+        /// Attempts to add the specified character to the last unoccupied positions in the test string (append text to
         /// the virtual string).
         /// Returns true on success, false otherwise.
         /// </summary>
@@ -811,7 +811,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Attempts to add the specified charactert to the last unoccupied positions in the test string (append text to
+        /// Attempts to add the specified character to the last unoccupied positions in the test string (append text to
         /// the virtual string).
         /// On exit the testPosition contains last position where the primary operation was actually performed if successful,
         /// otherwise the first position that made the test fail. This position is relative to the test string.

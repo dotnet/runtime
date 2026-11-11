@@ -839,6 +839,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void Export_Pfx_WindowsRsaLegacy()
+        {
+            // Exercises a quirk of PKCS#12 exports with CSP-backed non-ephemeral keys. When PFXExportCertStoreEx is
+            // called with a NULL buffer, the cbData can be oversized. Only when it does the actual export with a
+            // real buffer does it return the real size. When combined with new byte[cbData] that means there are trailing
+            // zeros. Import is tolerant of that, but not all ecosystems tolerate trailing zeros.
+            using RSACryptoServiceProvider key = new(1024, new CspParameters(1)
+            {
+                KeyContainerName = $"pkcs12-test-{nameof(Export_Pfx_WindowsRsaLegacy)}{Guid.NewGuid()}",
+                Flags = CspProviderFlags.NoPrompt
+            });
+
+            key.PersistKeyInCsp = false;
+            key.ImportCspBlob(TestData.LegacyRsaPkcs12PaddedRsaCspBlob);
+
+            using X509Certificate2 publicCertificate =
+                X509Certificate2.CreateFromPem(TestData.LegacyRsaPkcs12PaddedCertificatePem);
+            using X509Certificate2 certificate = publicCertificate.CopyWithPrivateKey(key);
+
+            byte[] pkcs12 = certificate.Export(X509ContentType.Pkcs12)!;
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                null,
+                expectedIterations: 2000,
+                HashAlgorithmName.SHA1,
+                PbeEncryptionAlgorithm.TripleDes3KeyPkcs12);
+            Assert.Equal(1, certs);
+            Assert.Equal(1, keys);
+        }
+
         private static (byte[] Pkcs12, TKey key) CreateSimplePkcs12<TKey>() where TKey : AsymmetricAlgorithm
         {
             using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))

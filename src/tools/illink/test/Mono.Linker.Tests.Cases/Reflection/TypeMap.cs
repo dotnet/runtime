@@ -99,6 +99,10 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ProxyTargetIsAlsoTrimTarget", typeof(ProxyTargetIsAlsoTrimTargetTarget), typeof(ProxyTargetIsAlsoTrimTarget))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(ProxyTargetIsAlsoTrimTargetSource), typeof(ProxyTargetIsAlsoTrimTarget))]
 
+// Verify that a type only reachable through typeof (and therefore relevant to variant casting) also processes the type map entries of its base types.
+[assembly: TypeMap<UsedTypeMap>("BaseOfTypeofOnlyDerived", typeof(BaseOfTypeofOnlyDerivedTarget), typeof(BaseOfTypeofOnlyDerived))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "BaseOfTypeofOnlyDerived", typeof(BaseOfTypeofOnlyDerivedTarget), typeof(BaseOfTypeofOnlyDerived), By = Tool.Trimmer)]
+
 namespace Mono.Linker.Tests.Cases.Reflection
 {
     [SetupLinkerAction("link", "System.Private.CoreLib")] // Needed to get the RemoveAttributeInstances in embedded xml
@@ -256,6 +260,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
             // is processed first via MarkTypeMapAttribute → MarkRequirementsForInstantiatedTypes.
             _ = new ProxyTargetIsAlsoTrimTargetSource();
             Console.WriteLine(new ProxyTargetIsAlsoTrimTarget());
+
+            // Neither type is instantiated, but typeof makes TypeofOnlyDerived relevant to variant casting,
+            // which makes its base type relevant to variant casting too, so the base type's type map entries must be kept.
+            Console.WriteLine(typeof(TypeofOnlyDerived));
         }
 
         [ExpectBodyModified]
@@ -615,4 +623,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [Kept]
     [KeptMember(".ctor()")]
     class ProxyTargetIsAlsoTrimTargetSource;
+
+    [Kept]
+    class BaseOfTypeofOnlyDerived;
+    [Kept]
+    class BaseOfTypeofOnlyDerivedTarget;
+    [Kept]
+    [KeptBaseType(typeof(BaseOfTypeofOnlyDerived))]
+    class TypeofOnlyDerived : BaseOfTypeofOnlyDerived;
 }

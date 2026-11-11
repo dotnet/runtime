@@ -53,7 +53,7 @@ namespace System.ComponentModel
 
             if (value is Version version)
             {
-                return new Version(version.Major, version.Minor, version.Build, version.Revision); // return new instance
+                return version.Clone(); // return new instance
             }
 
             return base.ConvertFrom(context, culture, value);
@@ -71,9 +71,28 @@ namespace System.ComponentModel
             {
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo? ctor = typeof(Version).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(int), typeof(int), typeof(int), typeof(int) }, null);
+                    ConstructorInfo? ctor;
+                    object[] arguments;
+
+                    // Build and Revision are -1 when undefined, which the four-argument constructor rejects.
+                    if (version.Build < 0)
+                    {
+                        ctor = typeof(Version).GetConstructor([typeof(int), typeof(int)]);
+                        arguments = [version.Major, version.Minor];
+                    }
+                    else if (version.Revision < 0)
+                    {
+                        ctor = typeof(Version).GetConstructor([typeof(int), typeof(int), typeof(int)]);
+                        arguments = [version.Major, version.Minor, version.Build];
+                    }
+                    else
+                    {
+                        ctor = typeof(Version).GetConstructor([typeof(int), typeof(int), typeof(int), typeof(int)]);
+                        arguments = [version.Major, version.Minor, version.Build, version.Revision];
+                    }
+
                     Debug.Assert(ctor != null, "Couldn't find constructor");
-                    return new InstanceDescriptor(ctor, new object[] { version.Major, version.Minor, version.Build, version.Revision });
+                    return new InstanceDescriptor(ctor, arguments);
                 }
 
                 if (destinationType == typeof(string))
@@ -83,7 +102,7 @@ namespace System.ComponentModel
 
                 if (destinationType == typeof(Version))
                 {
-                    return new Version(version.Major, version.Minor, version.Build, version.Revision);
+                    return version.Clone();
                 }
             }
 

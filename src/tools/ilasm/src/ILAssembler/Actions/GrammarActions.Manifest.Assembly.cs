@@ -10,7 +10,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
@@ -94,6 +94,7 @@ internal sealed partial class GrammarActions
 
     private void MaterializeAssemblyDefinition(AssemblyDefinitionValue definition)
     {
+        _entityRegistry.IsCoreLibrary |= EntityRegistry.IsCoreLibAssemblyName(definition.Name);
         string assemblyName = _options.AssemblyName ?? definition.Name;
         _entityRegistry.Assembly ??= new EntityRegistry.AssemblyEntity(assemblyName);
         EntityRegistry.AssemblyEntity assembly = _entityRegistry.Assembly;

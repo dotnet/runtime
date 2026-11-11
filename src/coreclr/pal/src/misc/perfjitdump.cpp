@@ -45,9 +45,7 @@ namespace
         JIT_DUMP_VERSION = 1,
         JITDUMP_FLAGS_ARCH_TIMESTAMP = 1 << 0,
 
-#if defined(HOST_X86)
-        ELF_MACHINE = EM_386,
-#elif defined(HOST_ARM)
+#if   defined(HOST_ARM)
         ELF_MACHINE = EM_ARM,
 #elif defined(HOST_AMD64)
         ELF_MACHINE = EM_X86_64,

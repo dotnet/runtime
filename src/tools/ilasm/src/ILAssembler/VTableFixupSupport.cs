@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>
 /// Support for VTable fixups and native exports in IL assembly.

@@ -9,6 +9,176 @@ namespace System.Threading.Tests
 {
     public static partial class WaitHandleTests
     {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(Timeout.Infinite)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(20)]
+        public static void SingleThreadedUnsatisfiedWaits(int millisecondsTimeout)
+        {
+            using AutoResetEvent first = new(true);
+            using ManualResetEvent second = new(false);
+            using Semaphore signal = new(0, 1);
+            using Mutex mutex = new(initiallyOwned: true);
+            WaitHandle[] handles = [first, second];
+
+            AssertUnsatisfiedWait(() => second.WaitOne(millisecondsTimeout));
+            AssertUnsatisfiedWait(() => WaitHandle.WaitAll(handles, millisecondsTimeout));
+            Assert.True(first.WaitOne(0));
+            AssertUnsatisfiedWait(() => WaitHandle.WaitAll([mutex, second], millisecondsTimeout));
+            mutex.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => mutex.ReleaseMutex());
+            AssertUnsatisfiedWait(() => WaitHandle.WaitAny(handles, millisecondsTimeout) != WaitHandle.WaitTimeout);
+            AssertUnsatisfiedWait(() => WaitHandle.SignalAndWait(signal, second, millisecondsTimeout, exitContext: false));
+            Assert.True(signal.WaitOne(0));
+            Assert.False(signal.WaitOne(0));
+
+            first.Set();
+            second.Set();
+            Assert.True(WaitHandle.WaitAll(handles, millisecondsTimeout));
+            Assert.True(second.WaitOne(millisecondsTimeout));
+            Assert.Equal(1, WaitHandle.WaitAny(handles, millisecondsTimeout));
+
+            void AssertUnsatisfiedWait(Func<bool> wait)
+            {
+                if (millisecondsTimeout == Timeout.Infinite)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => wait());
+                }
+                else
+                {
+                    Assert.False(wait());
+                }
+            }
+        }
+
+        [Fact]
+        public static void RecursiveMutexWaitAllRemainsBalanced()
+        {
+            using Mutex mutex = new();
+            using AutoResetEvent signal = new(true);
+            Assert.True(mutex.WaitOne(0));
+            Assert.True(WaitHandle.WaitAll([mutex, signal], 0));
+            mutex.ReleaseMutex();
+            mutex.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => mutex.ReleaseMutex());
+            Assert.True(mutex.WaitOne(0));
+            mutex.ReleaseMutex();
+        }
+
+        [Fact]
+        public static void WaitAllDoesNotConsumePartialSignals()
+        {
+            using AutoResetEvent first = new(true);
+            using Semaphore second = new(0, 1);
+            WaitHandle[] handles = [first, second];
+            Assert.False(WaitHandle.WaitAll(handles, 0));
+            Assert.True(first.WaitOne(0));
+            Assert.False(first.WaitOne(0));
+            first.Set();
+            second.Release();
+            Assert.True(WaitHandle.WaitAll(handles, 0));
+            Assert.False(first.WaitOne(0));
+            Assert.False(second.WaitOne(0));
+        }
+
+        [Fact]
+        public static void WaitAnyConsumesTheLowestSignaledIndex()
+        {
+            using AutoResetEvent first = new(true);
+            using AutoResetEvent second = new(true);
+            WaitHandle[] handles = [first, second];
+            Assert.Equal(0, WaitHandle.WaitAny(handles, 0));
+            Assert.Equal(1, WaitHandle.WaitAny(handles, 0));
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(handles, 0));
+        }
+
+        [Fact]
+        public static void SignalAndWaitRetainsTheSignalOnTimeout()
+        {
+            using Semaphore signal = new(0, 1);
+            using ManualResetEvent target = new(true);
+            Assert.True(WaitHandle.SignalAndWait(signal, target, 0, exitContext: false));
+            Assert.True(signal.WaitOne(0));
+            target.Reset();
+            Assert.False(WaitHandle.SignalAndWait(signal, target, 0, exitContext: false));
+            Assert.True(signal.WaitOne(0));
+            Assert.False(signal.WaitOne(0));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public static void SingleThreadedPendingInterruptPrecedesSignaling(int operation)
+        {
+            using AutoResetEvent target = new(true);
+            using AutoResetEvent signal = new(false);
+            Thread.CurrentThread.Interrupt();
+            Assert.Throws<ThreadInterruptedException>(() =>
+            {
+                switch (operation)
+                {
+                    case 0: target.WaitOne(0); break;
+                    case 1: WaitHandle.WaitAny([target, signal], 0); break;
+                    case 2: WaitHandle.WaitAll([target, signal], 0); break;
+                    case 3: WaitHandle.SignalAndWait(signal, target, 0, exitContext: false); break;
+                }
+            });
+            Assert.True(target.WaitOne(0));
+            Assert.False(signal.WaitOne(0));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SingleThreadedMultiWaitValidatesEveryHandleBeforeInterrupting(bool waitAll)
+        {
+            using AutoResetEvent signal = new(true);
+            using TestWaitHandle invalid = new() { SafeWaitHandle = new SafeWaitHandle(IntPtr.Zero, ownsHandle: false) };
+            WaitHandle[] handles = [signal, invalid];
+
+            Thread.CurrentThread.Interrupt();
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                if (waitAll)
+                {
+                    WaitHandle.WaitAll(handles, 0);
+                }
+                else
+                {
+                    WaitHandle.WaitAny(handles, 0);
+                }
+            });
+            Assert.Throws<ThreadInterruptedException>(() => signal.WaitOne(0));
+            Assert.True(signal.WaitOne(0));
+            Assert.False(signal.WaitOne(0));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void SingleThreadedDuplicateWaitAllPreservesSignalAndInterrupt()
+        {
+            using AutoResetEvent signal = new(true);
+            Thread.CurrentThread.Interrupt();
+            Assert.Throws<DuplicateWaitObjectException>(() => WaitHandle.WaitAll([signal, signal], 0));
+            Assert.Throws<ThreadInterruptedException>(() => signal.WaitOne(0));
+            Assert.True(signal.WaitOne(0));
+            Assert.False(signal.WaitOne(0));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SignalAndWaitOnTheSameObjectConsumesTheSignal(bool useSemaphore)
+        {
+            using WaitHandle signal = useSemaphore ? new Semaphore(0, 1) : new AutoResetEvent(false);
+            Assert.True(WaitHandle.SignalAndWait(signal, signal, 0, exitContext: false));
+            Assert.False(signal.WaitOne(0));
+            Assert.True(WaitHandle.SignalAndWait(signal, signal, 0, exitContext: false));
+            Assert.False(signal.WaitOne(0));
+        }
+
         [Fact]
         public static void WaitOne()
         {

@@ -597,13 +597,16 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [InlineData(false, "test\nxwow\nmore\n", false)]
-        [InlineData(false, "test\rwow\rmore\r\n", false)]
-        [InlineData(true, "one\0two\0three\0", false)]
-        [InlineData(false, "test\nxwow\nmore\n", true)]
-        [InlineData(false, "test\rwow\rmore\r\n", true)]
-        [InlineData(true, "one\0two\0three\0", true)]
-        public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value, bool testTrailers)
+        [InlineData(false, "test\nxwow\nmore\n", false, "test")]
+        [InlineData(false, "test\rwow\rmore\r\n", false, "test")]
+        [InlineData(true, "one\0two\0three\0", false, "test")]
+        [InlineData(false, "test\nxwow\nmore\n", true, "test")]
+        [InlineData(false, "test\rwow\rmore\r\n", true, "test")]
+        [InlineData(true, "one\0two\0three\0", true, "test")]
+        [InlineData(false, "test\nxwow\nmore\n", false, "Location")]
+        [InlineData(false, "test\rwow\rmore\r\n", false, "Location")]
+        [InlineData(true, "one\0two\0three\0", false, "Location")]
+        public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value, bool testTrailers, string headerName)
         {
             if (!testHttp11 && UseVersion == HttpVersion.Version11)
             {
@@ -624,12 +627,12 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpResponseMessage response = await client.SendAsync(request);
                     HttpResponseHeaders headerCollection = testTrailers ? response.TrailingHeaders : response.Headers;
-                    Assert.Equal(expectedValue, headerCollection.GetValues("test").Single());
+                    Assert.Equal(expectedValue, Assert.Single(headerCollection.NonValidated[headerName]));
                 },
                 async server =>
                 {
-                    List<HttpHeaderData>? headers = testTrailers ? null : [new HttpHeaderData("test", value)];
-                    List<HttpHeaderData>? trailers = testTrailers ? [new HttpHeaderData("test", value)] : null;
+                    List<HttpHeaderData>? headers = testTrailers ? null : [new HttpHeaderData(headerName, value)];
+                    List<HttpHeaderData>? trailers = testTrailers ? [new HttpHeaderData(headerName, value)] : null;
                     string content = "hello";
 
                     if (testTrailers && UseVersion == HttpVersion.Version11)

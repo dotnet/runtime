@@ -16,7 +16,22 @@
 
 <body>
     <Routes />
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["_framework/blazor.web.js"]" autostart="false"></script>
+    <script>
+        if (globalThis.cacheTestConfig) {
+            Blazor.start({
+                webAssembly: {
+                    configureRuntime: builder => builder
+                        .withConfig(globalThis.cacheTestConfig)
+                        .withDownloadResourceProgress((loaded, total) => globalThis.cacheTestProgress.push([loaded, total]))
+                }
+            }).catch(error => {
+                console.error(error);
+            });
+        } else {
+            Blazor.start();
+        }
+    </script>
 </body>
 
 </html>

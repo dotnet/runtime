@@ -2788,6 +2788,26 @@ GenTree* Lowering::LowerCall(GenTree* node)
     assert(!call->IsRuntimeLookupHelperCall(m_compiler) ||
            (call->gtCallDebugFlags & GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED) != 0);
 
+#ifdef TARGET_WASM
+    // Wasm ReadyToRun looks up virtual function pointers with CORINFO_HELP_VIRTUAL_FUNC_PTR instead of a
+    // VirtualEntry dynamic helper cell, so report each lookup that survived to lowering to let the EE add
+    // the dependencies the cell would have carried.
+    if (m_compiler->IsReadyToRun() && call->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    {
+        GenTree* methodHandle = call->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
+        if (methodHandle->OperIs(GT_IND))
+        {
+            methodHandle = methodHandle->AsIndir()->Addr();
+        }
+
+        if (methodHandle->IsIconHandle() && (methodHandle->AsIntCon()->GetCompileTimeHandle() != 0))
+        {
+            m_compiler->info.compCompHnd->recordWasmVirtualFunctionPointerLookup(
+                (CORINFO_METHOD_HANDLE)methodHandle->AsIntCon()->GetCompileTimeHandle());
+        }
+    }
+#endif // TARGET_WASM
+
     // Also, always expand static cctor helper for NativeAOT, see
     // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
     if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && m_compiler->IsStaticHelperEligibleForExpansion(call))
@@ -6981,7 +7001,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // First argument is the address of the frame variable.
         GenTree* frameAddr = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaInlinedPInvokeFrameVar, TYP_BYREF);
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking
@@ -7352,21 +7372,28 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
-    GenTree* thisArgNode;
+    CallArg* thisArg;
     if (call->IsTailCallViaJitHelper())
     {
         assert(call->gtArgs.CountArgs() > 0);
-        thisArgNode = call->gtArgs.GetArgByIndex(0)->GetNode();
+        thisArg = call->gtArgs.GetArgByIndex(0);
     }
     else
     {
         assert(call->gtArgs.HasThisPointer());
-        thisArgNode = call->gtArgs.GetThisArg()->GetNode();
+        thisArg = call->gtArgs.GetThisArg();
     }
 
     // get a reference to the thisPtr being passed
+    GenTree* thisArgNode = thisArg->GetNode();
+#if HAS_FIXED_REGISTER_SET
     assert(thisArgNode->OperIs(GT_PUTARG_REG));
     GenTree* thisPtr = thisArgNode->AsUnOp()->gtGetOp1();
+    LIR::Use thisPtrUse(BlockRange(), &thisArgNode->AsUnOp()->gtOp1, thisArgNode);
+#else
+    GenTree* thisPtr = thisArgNode;
+    LIR::Use thisPtrUse(BlockRange(), &thisArg->NodeRef(), call);
+#endif
 
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
@@ -7383,7 +7410,6 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             vtableCallTemp = m_compiler->lvaGrabTemp(true DEBUGARG("virtual vtable call"));
         }
 
-        LIR::Use thisPtrUse(BlockRange(), &thisArgNode->AsUnOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisPtrUse, vtableCallTemp);
 
         lclNum = vtableCallTemp;
@@ -12100,7 +12126,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     // to use as the target. That is non-optimal because it will be modeled as conflicting
     // with the source register(s).
     // So, to summarize:
-    // - On ARM64, always use GT_NULLCHECK for a dead indirection.
+    // - Volatile loads always use GT_IND to preserve acquire semantics.
+    // - On ARM64, use GT_NULLCHECK for a dead non-volatile indirection.
     // - On ARM, always use GT_IND.
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
     // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
@@ -12108,6 +12135,21 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
     // on XARCH as an optimization.
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK));
+
+    // Null checks do not provide the acquire semantics of volatile loads.
+    if (ind->IsVolatile())
+    {
+        if (ind->TypeIs(TYP_STRUCT))
+        {
+            ind->ChangeType(TYP_UBYTE);
+        }
+        if (!ind->OperIs(GT_IND))
+        {
+            ind->SetOper(GT_IND);
+            ind->SetUnusedValue();
+        }
+        return;
+    }
 
     ind->ChangeType(m_compiler->gtTypeForNullCheck(ind));
 

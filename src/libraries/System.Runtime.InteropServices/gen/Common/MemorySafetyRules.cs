@@ -45,21 +45,6 @@ namespace Microsoft.Interop
             internal static SyntaxKind SafeKeyword => s_safeKeyword;
         }
 
-        extension(SyntaxTree tree)
-        {
-            /// <summary>
-            /// Mirrors <c>CSharpCompilationOptions.UseUpdatedMemorySafetyRules</c>, reporting whether the
-            /// compilation the tree belongs to uses the updated memory safety rules.
-            /// </summary>
-            /// <remarks>
-            /// Roslyn does not expose the memory safety rules version through a public API yet
-            /// (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself
-            /// treats as the temporary way to opt in is read here.
-            /// </remarks>
-            internal bool UseUpdatedMemorySafetyRules
-                => tree.Options.Features.ContainsKey(UpdatedMemorySafetyRulesFeature);
-        }
-
         extension(SyntaxTokenList modifiers)
         {
             /// <summary>

@@ -10,6 +10,7 @@ namespace System.Runtime.Intrinsics
     /// <summary>Defines a single instruction, multiple data (SIMD) vector type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     internal unsafe interface ISimdVector<TSelf, T>
         : IAdditionOperators<TSelf, TSelf, TSelf>,
        // IAdditiveIdentity<TSelf, TSelf>,
