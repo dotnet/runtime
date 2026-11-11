@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq;
 using System.Threading.Tasks;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
@@ -26,6 +27,72 @@ namespace ILLink.RoslynAnalyzer.Tests
                 consoleApplication,
                 TestCaseUtils.UseMSBuildProperties(MSBuildPropertyOptionNames.EnableTrimAnalyzer),
                 expected: expected);
+        }
+
+        [Theory]
+        [InlineData(4_999, false)]
+        [InlineData(5_000, true)]
+        public Task AnalysisVisitBudgetHasStrictDiagnosticCoverage(int branches, bool overBudget)
+        {
+            // Each conditional contributes two CFG blocks, plus entry and exit.
+            string body = string.Concat(Enumerable.Repeat("if (condition) Marker(); ", branches));
+            string source = $$"""
+                class C
+                {
+                    static void Marker() { }
+
+                    static void M(bool condition)
+                    {
+                        {{body}}
+                    }
+                }
+                """;
+            DiagnosticResult[] expected = overBudget
+                ? new[]
+                {
+                    VerifyCS.Diagnostic(DiagnosticId.DataflowAnalysisDidNotConverge)
+                        .WithSeverity(DiagnosticSeverity.Warning)
+                        .WithSpan(6, 5, 8, 6)
+                        .WithArguments("C.M(Boolean)")
+                }
+                : System.Array.Empty<DiagnosticResult>();
+
+            return VerifyDynamicallyAccessedMembersAnalyzer(source, consoleApplication: false, expected);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task NewNestedMethodsStillPropagateHoistedLocalChanges(bool nested)
+        {
+            string declaration = nested
+                ? "void Change() { void Inner() { value = unknown; } Inner(); }"
+                : "void Change() { value = unknown; }";
+            string source = $$"""
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M(Type unknown)
+                    {
+                        Type value = typeof(C);
+                        {{declaration}}
+                        Change();
+                        NeedsMethods(value);
+                    }
+
+                    static void NeedsMethods(
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type value) { }
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersAnalyzer(source, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
+                    .WithSpan(11, 9, 11, 28)
+                    .WithSpan(6, 19, 6, 31)
+                    .WithArguments("value", "C.NeedsMethods(Type)", "unknown", "C.M(Type)",
+                        "'DynamicallyAccessedMemberTypes.PublicMethods'"));
         }
 
         [Theory]

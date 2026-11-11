@@ -26,7 +26,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             TTransfer,
             TConditionValue
         >
-        where TValue : struct, IEquatable<TValue>
+        where TValue : struct, IEquatable<TValue>, IDeepCopyValue<TValue>, IValueWithMutableState
         where TContext : struct, IEquatable<TContext>
         where TLattice : ILattice<TValue>
         where TContextLattice : ILattice<TContext>
@@ -92,11 +92,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
             while (!interproceduralState.Equals(oldInterproceduralState))
             {
+                ValueSet<MethodBodyValue> analyzedMethods = oldInterproceduralState.Methods;
+                bool hoistedLocalsChanged = !interproceduralState.HoistedLocals.Equals(oldInterproceduralState.HoistedLocals);
                 oldInterproceduralState = interproceduralState.Clone();
 
                 Debug.Assert(!oldInterproceduralState.Methods.IsUnknown());
                 foreach (var method in oldInterproceduralState.Methods.GetKnownValues())
                 {
+                    if (!hoistedLocalsChanged && analyzedMethods.Contains(method))
+                        continue;
+
                     succeeded &= AnalyzeMethod(method, ref interproceduralState);
                 }
             }

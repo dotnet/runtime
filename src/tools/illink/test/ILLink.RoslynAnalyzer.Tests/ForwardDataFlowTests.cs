@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -52,6 +53,8 @@ namespace ILLink.RoslynAnalyzer.Tests
                 block.Block.Operations.Any(operation => operation.Syntax.ToString().Contains(text)) ||
                 (block.Block.BranchValue?.Syntax.ToString().Contains(text) ?? false)));
         }
+
+        private static ulong Bit(BlockProxy block) => 1UL << block.Block.Ordinal;
 
         internal static object CreateCompilationState() => Activator.CreateInstance(
             typeof(ControlFlowGraphProxy).Assembly.GetType("ILLink.RoslynAnalyzer.AnalyzerCompilationState", throwOnError: true)!, nonPublic: true)!;
@@ -281,5 +284,124 @@ namespace ILLink.RoslynAnalyzer.Tests
             }
         }
 
+        [Fact]
+        public void AcyclicBlocksAreTransferredOnce()
+        {
+            ControlFlowGraphProxy graph = CreateGraph("if (condition) Marker(\"left\"); else Marker(\"right\"); Marker(\"end\");");
+            var transfer = new TransferFunctions();
+
+            Assert.True(new Analysis().Fixpoint(graph, transfer));
+
+            foreach (BlockProxy block in graph.Blocks.Where(block => !block.Equals(graph.Entry)))
+                Assert.Equal(1, transfer.Visits[block.Block.Ordinal]);
+            BlockProxy end = FindMarker(graph, "end");
+            ulong expected = Bit(FindMarker(graph, "left")) | Bit(FindMarker(graph, "right"));
+            Assert.Equal(expected, transfer.Inputs[end.Block.Ordinal].Bits & expected);
+        }
+
+        [Theory]
+        [InlineData("try { Marker(\"try\"); } finally { Marker(\"finally\"); } Marker(\"end\");")]
+        [InlineData("try { try { Marker(\"try\"); } finally { Marker(\"nested\"); } } finally { Marker(\"finally\"); } Marker(\"end\");")]
+        public void FinallyInputsAndExitsRescheduleDependentBlocks(string body)
+        {
+            ControlFlowGraphProxy graph = CreateGraph(body);
+            var transfer = new TransferFunctions();
+
+            Assert.True(new Analysis().Fixpoint(graph, transfer));
+
+            BlockProxy end = FindMarker(graph, "end");
+            ulong expected = Bit(FindMarker(graph, "try")) | Bit(FindMarker(graph, "finally"));
+            if (body.Contains("\"nested\""))
+                expected |= Bit(FindMarker(graph, "nested"));
+            Assert.Equal(expected, transfer.Inputs[end.Block.Ordinal].Bits & expected);
+        }
+
+        [Theory]
+        [InlineData("do { try { Marker(\"try\"); } catch { Marker(\"handler\"); } Marker(\"late\"); } while (condition);", "handler")]
+        [InlineData("do { try { Marker(\"try\"); } catch (Exception) when (Check(\"filter\")) { Marker(\"handler\"); } catch { Marker(\"other\"); } Marker(\"late\"); } while (condition);", "other")]
+        [InlineData("do { try { Marker(\"try\"); } catch { Marker(\"handler\"); } finally { Marker(\"finally\"); } Marker(\"late\"); } while (condition);", "handler")]
+        [InlineData("do { try { try { Marker(\"try\"); } finally { Marker(\"finally\"); } } catch { Marker(\"handler\"); } Marker(\"late\"); } while (condition);", "handler")]
+        public void ExceptionDependenciesPropagateBackEdgeChanges(string body, string handler)
+        {
+            ControlFlowGraphProxy graph = CreateGraph(body);
+            var transfer = new TransferFunctions();
+
+            Assert.True(new Analysis().Fixpoint(graph, transfer));
+
+            ulong expected = Bit(FindMarker(graph, "late"));
+            Assert.Equal(expected, transfer.Inputs[FindMarker(graph, handler).Block.Ordinal].Bits & expected);
+        }
+
+        [Fact]
+        public void ExceptionalFinallyInputsRemainIndependent()
+        {
+            ControlFlowGraphProxy graph = CreateGraph("try { Marker(\"try\"); throw new Exception(); } finally { Marker(\"finally\"); }");
+            var transfer = new TransferFunctions();
+
+            Assert.True(new Analysis().Fixpoint(graph, transfer));
+
+            ulong expected = Bit(FindMarker(graph, "try"));
+            Assert.Equal(expected, transfer.Inputs[FindMarker(graph, "finally").Block.Ordinal].Bits & expected);
+        }
+
+        [Fact]
+        public void ExhaustingTheVisitBudgetDoesNotReportConvergence()
+        {
+            ControlFlowGraphProxy graph = CreateGraph("while (condition) { Marker(\"body\"); }");
+            var transfer = new TransferFunctions { KeepChanging = true };
+
+            Assert.False(new Analysis().Fixpoint(graph, transfer));
+            Assert.InRange(transfer.Visits.Values.Sum(), 9_000, 10_000);
+        }
+
+        private readonly record struct Facts(ulong Bits, int Generation = 0);
+
+        private readonly struct FactsLattice : ILattice<Facts>
+        {
+            public Facts Top => default;
+            public Facts Meet(Facts left, Facts right) => new(left.Bits | right.Bits, Math.Max(left.Generation, right.Generation));
+        }
+
+        private readonly struct NoCondition : INegate<NoCondition>
+        {
+            public NoCondition Negate() => this;
+        }
+
+        private sealed class State : IDataFlowState<Facts, FactsLattice>
+        {
+            public State() { }
+            public Facts Current { get; set; }
+            public Box<Facts>? Exception { get; set; }
+            public FactsLattice Lattice { get; init; }
+            public Facts CreateBranchOutput(bool canTransferOwnership) => Lattice.Meet(Lattice.Top, Current);
+        }
+
+        private sealed class TransferFunctions : ITransfer<BlockProxy, Facts, State, FactsLattice, NoCondition>
+        {
+            public readonly Dictionary<int, int> Visits = new();
+            public readonly Dictionary<int, Facts> Inputs = new();
+            public bool KeepChanging { get; init; }
+
+            public NoCondition? Transfer(BlockProxy block, State state)
+            {
+                int ordinal = block.Block.Ordinal;
+                Visits.TryGetValue(ordinal, out int visits);
+                Visits[ordinal] = visits + 1;
+                Inputs.TryGetValue(ordinal, out Facts input);
+                Inputs[ordinal] = state.Lattice.Meet(input, state.Current);
+                state.Current = new Facts(state.Current.Bits | Bit(block), state.Current.Generation + (KeepChanging ? 1 : 0));
+                if (state.Exception is not null)
+                    state.Exception.Value = state.Lattice.Meet(state.Exception.Value, state.Current);
+                return null;
+            }
+
+            public void ApplyCondition(NoCondition condition, ref Facts value) { }
+        }
+
+        private sealed class Analysis : ForwardDataFlowAnalysis<
+            Facts, State, FactsLattice, BlockProxy, RegionProxy, ControlFlowGraphProxy, TransferFunctions, NoCondition>
+        {
+            public Analysis() : base(default, new Facts(1)) { }
+        }
     }
 }

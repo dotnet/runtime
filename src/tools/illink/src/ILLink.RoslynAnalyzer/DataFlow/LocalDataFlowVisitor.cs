@@ -32,7 +32,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             TConditionValue>
         // This struct constraint prevents warnings due to possible null returns from the visitor methods.
         // Note that this assumes that default(TValue) is equal to the TopValue.
-        where TValue : struct, IEquatable<TValue>
+        where TValue : struct, IEquatable<TValue>, IDeepCopyValue<TValue>, IValueWithMutableState
         where TContext : struct, IEquatable<TContext>
         where TValueLattice : ILattice<TValue>
         where TContextLattice : ILattice<TContext>
@@ -93,6 +93,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             BlockProxy block,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
+            // Predecessor states have already flowed through exited finally regions and been copied.
+            if (_scopeExits is not null && _scopeExits.TryGetValue(block.Block.Ordinal, out var regions))
+            {
+                foreach (ControlFlowRegion region in regions)
+                    state.RemoveLocals(region);
+            }
+
             foreach (IOperation operation in block.Block.Operations)
                 Visit(operation, state);
 
