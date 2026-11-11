@@ -4,17 +4,16 @@
 using System.Collections.Generic;
 using System.Runtime;
 using System.Text;
-using System.Threading;
 
 namespace System
 {
     public static partial class AppContext
     {
         // Reading these slots must not trigger AppContext's static constructor.
-        private static class ExceptionCallbacks
+        private static unsafe class ExceptionCallbacks
         {
-            internal static nint s_firstChanceException;
-            internal static nint s_unhandledException;
+            internal static volatile delegate*<object, void> s_firstChanceException;
+            internal static volatile delegate*<object, void> s_unhandledException;
         }
 
         private static unsafe Dictionary<string, object?> InitializeDataStore()
@@ -32,17 +31,16 @@ namespace System
             return dataStore;
         }
 
-        // The event add accessor's Interlocked.CompareExchange provides the publication fence.
         internal static unsafe void SetFirstChanceExceptionHandler() =>
-            ExceptionCallbacks.s_firstChanceException = (nint)(delegate*<object, void>)&OnFirstChanceExceptionCore;
+            ExceptionCallbacks.s_firstChanceException = &OnFirstChanceExceptionCore;
 
         internal static unsafe void SetUnhandledExceptionHandler() =>
-            ExceptionCallbacks.s_unhandledException = (nint)(delegate*<object, void>)&OnUnhandledExceptionCore;
+            ExceptionCallbacks.s_unhandledException = &OnUnhandledExceptionCore;
 
         [RuntimeExport("OnFirstChanceException")]
         internal static unsafe void OnFirstChanceException(object e)
         {
-            delegate*<object, void> callback = (delegate*<object, void>)Volatile.Read(ref ExceptionCallbacks.s_firstChanceException);
+            delegate*<object, void> callback = ExceptionCallbacks.s_firstChanceException;
             if (callback != null)
                 callback(e);
         }
@@ -55,7 +53,7 @@ namespace System
         {
             RuntimeExceptionHelpers.SerializeCrashInfo(RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
 
-            delegate*<object, void> callback = (delegate*<object, void>)Volatile.Read(ref ExceptionCallbacks.s_unhandledException);
+            delegate*<object, void> callback = ExceptionCallbacks.s_unhandledException;
             if (callback != null)
                 callback(e);
         }

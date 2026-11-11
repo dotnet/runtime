@@ -55,9 +55,7 @@ namespace System
             add
             {
                 AppContext.UnhandledException += value;
-#if NATIVEAOT
-                AppContext.SetUnhandledExceptionHandler();
-#endif
+                SetUnhandledExceptionHandler();
             }
             remove { AppContext.UnhandledException -= value; }
         }
@@ -89,15 +87,16 @@ namespace System
             add
             {
                 AppContext.FirstChanceException += value;
-#if !MONO
                 // Once a handler is added, the runtime will attempt
                 // to deliver first chance notifications for all exceptions.
                 // We don't care if handlers are removed.
-                AppContext.SetFirstChanceExceptionHandler();
-#endif
+                SetFirstChanceExceptionHandler();
             }
             remove { AppContext.FirstChanceException -= value; }
         }
+
+        static partial void SetFirstChanceExceptionHandler();
+        static partial void SetUnhandledExceptionHandler();
 
         public event EventHandler? ProcessExit;
 
