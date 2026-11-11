@@ -4631,6 +4631,74 @@ namespace System.Tests
             Assert.All(array2, Assert.Null);
         }
 
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(5, 10)]
+        [InlineData(1000, 10)]
+        [InlineData(0, 0)]
+        [InlineData(5, 0)]
+        [InlineData(1000, 0)]
+        public void CreateFilled_Value_ValueType(int length, int value)
+        {
+            int[] array = Array.CreateFilled(length, value);
+            var expected = new int[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(5, 10)]
+        [InlineData(1000, 10)]
+        [InlineData(0, null)]
+        [InlineData(5, null)]
+        [InlineData(1000, null)]
+        public void CreateFilled_Value_NullableValueType(int length, int? value)
+        {
+            int?[] array = Array.CreateFilled(length, value);
+            var expected = new int?[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Theory]
+        [InlineData(0, "test")]
+        [InlineData(5, "test")]
+        [InlineData(1000, "test")]
+        [InlineData(0, null)]
+        [InlineData(5, null)]
+        [InlineData(1000, null)]
+        public void CreateFilled_Value_ReferenceType(int length, string? value)
+        {
+            string?[] array = Array.CreateFilled(length, value);
+            var expected = new string?[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Fact]
+        public void CreateFilled_Value_Empty()
+        {
+            int[] array = Array.CreateFilled(0, 0);
+            Assert.Empty(array);
+        }
+
+        [Fact]
+        public void CreateFilled_NegativeLength_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<object>(-1, new object()));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<int>(-1, 8));
+        }
+
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             VerifyArray(array, elementType, lengths, lowerBounds);
@@ -4923,6 +4991,7 @@ namespace System.Tests
 
         public abstract class AbstractClass { }
         public static class StaticClass { }
+        private record Foo2(int Value);
 
         public enum SByteEnum : sbyte
         {

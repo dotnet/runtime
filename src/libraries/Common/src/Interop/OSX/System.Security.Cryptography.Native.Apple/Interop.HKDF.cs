@@ -26,7 +26,7 @@ internal static partial class Interop
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(!prk.IsEmpty);
 
-            PAL_HashAlgorithm algorithm = PalAlgorithmFromAlgorithmName(hashAlgorithm);
+            PAL_HashAlgorithm algorithm = PalAlgorithmFromHkdfAlgorithmName(hashAlgorithm);
 
             int ret = AppleCryptoNative_HKDFExpand(
                 algorithm,
@@ -53,7 +53,7 @@ internal static partial class Interop
         {
             Debug.Assert(!destination.IsEmpty);
 
-            PAL_HashAlgorithm algorithm = PalAlgorithmFromAlgorithmName(hashAlgorithm);
+            PAL_HashAlgorithm algorithm = PalAlgorithmFromHkdfAlgorithmName(hashAlgorithm);
 
             int ret = AppleCryptoNative_HKDFExtract(
                 algorithm,
@@ -81,7 +81,7 @@ internal static partial class Interop
         {
             Debug.Assert(!destination.IsEmpty);
 
-            PAL_HashAlgorithm algorithm = PalAlgorithmFromAlgorithmName(hashAlgorithm);
+            PAL_HashAlgorithm algorithm = PalAlgorithmFromHkdfAlgorithmName(hashAlgorithm);
 
             int ret = AppleCryptoNative_HKDFDeriveKey(
                 algorithm,
@@ -101,6 +101,17 @@ internal static partial class Interop
 
             Debug.Assert(ret == destination.Length);
         }
+
+        private static PAL_HashAlgorithm PalAlgorithmFromHkdfAlgorithmName(HashAlgorithmName hashAlgorithmName) =>
+            hashAlgorithmName == HashAlgorithmName.MD5 ? PAL_HashAlgorithm.Md5 :
+            hashAlgorithmName == HashAlgorithmName.SHA1 ? PAL_HashAlgorithm.Sha1 :
+            hashAlgorithmName == HashAlgorithmName.SHA256 ? PAL_HashAlgorithm.Sha256 :
+            hashAlgorithmName == HashAlgorithmName.SHA384 ? PAL_HashAlgorithm.Sha384 :
+            hashAlgorithmName == HashAlgorithmName.SHA512 ? PAL_HashAlgorithm.Sha512 :
+            hashAlgorithmName == HashAlgorithmName.SHA3_256 ? PAL_HashAlgorithm.Sha3_256 :
+            hashAlgorithmName == HashAlgorithmName.SHA3_384 ? PAL_HashAlgorithm.Sha3_384 :
+            hashAlgorithmName == HashAlgorithmName.SHA3_512 ? PAL_HashAlgorithm.Sha3_512 :
+            throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]

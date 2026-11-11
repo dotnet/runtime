@@ -19,6 +19,7 @@ internal static partial class Interop
             GSS_C_ANON_FLAG = 0x40,
             GSS_C_PROT_READY_FLAG = 0x80,
             GSS_C_TRANS_FLAG = 0x100,
+            GSS_C_CHANNEL_BOUND_FLAG = 0x800,
             GSS_C_DCE_STYLE = 0x1000,
             GSS_C_IDENTIFY_FLAG = 0x2000,
             GSS_C_EXTENDED_ERROR_FLAG = 0x4000,

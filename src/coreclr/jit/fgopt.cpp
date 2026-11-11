@@ -129,6 +129,8 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             changed |= block->NumSucc() > 0;
 
             block->RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
+            // The block's code is gone, so it no longer needs a GC poll.
+            block->RemoveFlags(BBF_NEEDS_GCPOLL);
             block->SetFlags(BBF_IMPORTED);
             block->SetKindAndTargetEdge(BBJ_THROW);
             block->bbSetRunRarely();
@@ -4808,6 +4810,18 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             if (fgCanCompactBlock(block))
             {
+                // Removing an empty source can avoid repeatedly moving a shared target's predecessor list.
+                // Compaction only needs to redirect the target's other incoming edges.
+                BasicBlock* const target = block->GetTarget();
+                if ((target->countOfInEdges() > 1) && (block->countOfInEdges() < (target->countOfInEdges() - 1)) &&
+                    !block->HasFlag(BBF_DONT_REMOVE) && fgOptimizeEmptyBlock(block))
+                {
+                    assert(block->HasFlag(BBF_REMOVED));
+                    change   = true;
+                    modified = true;
+                    continue;
+                }
+
                 fgCompactBlock(block);
 
                 // we compacted two blocks - goto REPEAT to catch similar cases

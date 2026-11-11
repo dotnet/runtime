@@ -10,7 +10,7 @@ namespace Internal.TypeSystem
 {
     /// <summary>
     /// Formats type names in the 'SerString' format as defined by the ECMA-335 standard.
-    /// This is the inverse of what <see cref="CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(ModuleDesc, string, bool)"/> does.
+    /// This is the inverse of what <see cref="CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(ModuleDesc, string, bool, Func{ModuleDesc, string, TypeDesc})"/> does.
     /// </summary>
     public sealed class CustomAttributeTypeNameFormatter : TypeNameFormatter<IAssemblyDesc, bool>
     {

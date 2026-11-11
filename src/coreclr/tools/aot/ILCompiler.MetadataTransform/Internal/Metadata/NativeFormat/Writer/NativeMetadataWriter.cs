@@ -353,6 +353,11 @@ namespace Internal.Metadata.NativeFormat.Writer
                 section.Place(rec);
             }
 
+            foreach (var rec in records)
+            {
+                rec.PlaceHashtables(section);
+            }
+
             writer.Save(stream);
 
             if (LogWriter != null)
@@ -534,6 +539,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal abstract void Visit(IRecordVisitor visitor);
 
+        internal virtual void PlaceHashtables(Section section)
+        {
+        }
+
         public override string ToString()
         {
             return "[@TODO:" + this.GetType().ToString() + "]";
@@ -555,6 +564,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     /// </summary>
     public partial class ConstantStringValue
     {
+        public override string ToString() => Value is null ? "null" : $"\"{Value}\"";
+
         public static explicit operator string(ConstantStringValue value)
         {
             if (value == null)
@@ -567,6 +578,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             return new ConstantStringValue() { Value = value };
         }
+    }
+
+    public partial class ConstantStringArray
+    {
+        public override string ToString() => "(String[]) {" + string.Join(", ", Value) + "}";
+    }
+
+    public partial class Constant
+    {
+        public override string ToString() => TypeCode.ToString();
     }
 
     public partial class ScopeDefinition
@@ -616,15 +637,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceDefinition;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-            }
             return str;
         }
     }
@@ -651,25 +663,21 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceReference;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-                else
-                {
-                    //str = ParentScopeOrNamespace.ToString() + " : " + str;
-                }
-            }
             return str;
         }
     }
 
     public partial class TypeDefinition
     {
+        internal int GetLookupHashCode()
+        {
+            Debug.Assert(NamespaceOrEnclosingType is NamespaceDefinition);
+            NamespaceDefinition namespaceDefinition = (NamespaceDefinition)NamespaceOrEnclosingType;
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((namespaceDefinition.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
             return ToString(false);
@@ -720,9 +728,16 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public partial class TypeForwarder
     {
+        internal int GetLookupHashCode()
+        {
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((Namespace.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
-            return this.Name.Value + " -> " + this.Scope.Name.Value;
+            return this.Name.Value + " -> " + this.Namespace.Scope.Name.Value;
         }
     }
 
@@ -839,19 +854,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string str = Constructor.ToString();
-            str += "(" + string.Join(", ", FixedArguments)
-                + string.Join(", ", NamedArguments) + ")";
-            str += "(ctor: " + Constructor.Handle.ToString();
-            return str;
-        }
-    }
-
-    public partial class NamedArgument
-    {
-        public override string ToString()
-        {
-            return Name + " = " + Value.ToString();
+            return Constructor.ToString();
         }
     }
 
@@ -987,42 +990,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public static bool SequenceEqual<T>(this List<T> first, List<T> second)
         {
-            return first.SequenceEqual(second, null);
-        }
-
-        public static bool SequenceEqual<T>(this List<T> first, List<T> second, IEqualityComparer<T> comparer)
-        {
-            return CollectionsMarshal.AsSpan(first).SequenceEqual(CollectionsMarshal.AsSpan(second), comparer);
+            return CollectionsMarshal.AsSpan(first).SequenceEqual(CollectionsMarshal.AsSpan(second), comparer: null);
         }
     }
 
-    // Distinguishes positive and negative zeros for float and double values
-    public static class CustomComparer
-    {
-        public static bool Equals(float x, float y)
-        {
-            return BitConverter.SingleToInt32Bits(x) == BitConverter.SingleToInt32Bits(y);
-        }
-
-        public static bool Equals(double x, double y)
-        {
-            return BitConverter.DoubleToInt64Bits(x) == BitConverter.DoubleToInt64Bits(y);
-        }
-    }
-
-    public sealed class SingleComparer : IEqualityComparer<float>
-    {
-        public static readonly SingleComparer Instance = new SingleComparer();
-
-        public bool Equals(float x, float y) => CustomComparer.Equals(x, y);
-        public int GetHashCode(float obj) => obj.GetHashCode();
-    }
-
-    public sealed class DoubleComparer : IEqualityComparer<double>
-    {
-        public static readonly DoubleComparer Instance = new DoubleComparer();
-
-        public bool Equals(double x, double y) => CustomComparer.Equals(x, y);
-        public int GetHashCode(double obj) => obj.GetHashCode();
-    }
 }

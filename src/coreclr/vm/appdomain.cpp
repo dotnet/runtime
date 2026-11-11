@@ -61,9 +61,6 @@
 #include "../binder/inc/defaultassemblybinder.h"
 #include "../binder/inc/assemblybindercommon.hpp"
 
-// this file handles string conversion errors for itself
-#undef  MAKE_TRANSLATIONFAILED
-
 // Define these macro's to do strict validation for jit lock and class
 // init entry leaks.  This defines determine if the asserts that
 // verify for these leaks are defined or not.  These asserts can
@@ -524,9 +521,9 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
                     qualifiedPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
                 }
 
-                NewHolder<SString> stringHolder(new SString(qualifiedPath));
-                IfFailThrow(m_NativeDllSearchDirectories.Append(stringHolder.GetValue()));
-                stringHolder.SuppressRelease();
+                NewHolder<SString> stringHolder{ new SString(qualifiedPath) };
+                IfFailThrow(m_NativeDllSearchDirectories.Append(stringHolder));
+                stringHolder.Detach();
             }
         }
     }
@@ -878,14 +875,14 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
     CONTRACTL_END;
 
     // Allocate the global string literal map.
-    NewHolder<GlobalStringLiteralMap> pGlobalStringLiteralMap(new GlobalStringLiteralMap());
+    NewHolder<GlobalStringLiteralMap> pGlobalStringLiteralMap{ new GlobalStringLiteralMap() };
 
     // Initialize the global string literal map.
     pGlobalStringLiteralMap->Init();
 
     if (InterlockedCompareExchangeT<GlobalStringLiteralMap *>(&m_pGlobalStringLiteralMap, pGlobalStringLiteralMap, NULL) == NULL)
     {
-        pGlobalStringLiteralMap.SuppressRelease();
+        pGlobalStringLiteralMap.Detach();
     }
 }
 
@@ -899,10 +896,10 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
     CONTRACTL_END;
 
-    NewHolder<FrozenObjectHeapManager> pFoh(new FrozenObjectHeapManager());
+    NewHolder<FrozenObjectHeapManager> pFoh{ new FrozenObjectHeapManager() };
     if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_FrozenObjectHeapManager, pFoh, nullptr) == nullptr)
     {
-        pFoh.SuppressRelease();
+        pFoh.Detach();
     }
 }
 
@@ -927,8 +924,10 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
 }
 
+#ifndef TARGET_WASM
 extern "C" PCODE g_pPollGC;
 PCODE g_pPollGC;
+#endif // !TARGET_WASM
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 extern "C" PCODE g_pThrowOverflowException;
 PCODE g_pThrowOverflowException;
@@ -1065,7 +1064,13 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pExceptionServicesInternalCallsClass = CoreLibBinder::GetClass(CLASS__EXCEPTIONSERVICES_INTERNALCALLS);
         g_pStackFrameIteratorClass = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
 
+#ifndef TARGET_WASM
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
+#endif // !TARGET_WASM
+#if defined(FEATURE_PERFTRACING) && defined(FEATURE_MULTITHREADING)
+        // Bind before managed execution; stack walks cannot load methods.
+        CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC_WORKER);
+#endif // FEATURE_PERFTRACING && FEATURE_MULTITHREADING
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
         g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();
@@ -1411,11 +1416,11 @@ void AppDomain::Create()
 
     _ASSERTE(m_pTheAppDomain == NULL);
 
-    NewHolder<AppDomain> pDomain(new AppDomain());
+    NewHolder<AppDomain> pDomain{ new AppDomain() };
     pDomain->Init();
     pDomain->CreateDefaultBinder();
 
-    m_pTheAppDomain = pDomain.Extract();
+    m_pTheAppDomain = pDomain.Detach();
 
     LOG((LF_CLASSLOADER | LF_CORDB,
          LL_INFO10,
@@ -1655,12 +1660,12 @@ void AppDomain::AddAssembly(Assembly * assem)
         CrstHolder ch(GetAssemblyListLock());
 
         // Attempt to find empty space in assemblies list
-        DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-        for (DWORD i = 0; i < asmCount; ++i)
+        ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+        while (i.Next())
         {
-            if (m_Assemblies.Get_UnlockedNoReference(i) == NULL)
+            if (i.GetElement() == nullptr)
             {
-                m_Assemblies.Set_Unlocked(i, assem);
+                m_Assemblies.Set_Unlocked(i.GetIndex(), assem);
                 return;
             }
         }
@@ -1680,12 +1685,12 @@ void AppDomain::RemoveAssembly(Assembly * pAsm)
     CONTRACTL_END;
 
     CrstHolder ch(GetAssemblyListLock());
-    DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-    for (DWORD i = 0; i < asmCount; ++i)
+    ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+    while (i.Next())
     {
-        if (m_Assemblies.Get_UnlockedNoReference(i) == pAsm)
+        if (i.GetElement() == pAsm)
         {
-            m_Assemblies.Set_Unlocked(i, NULL);
+            m_Assemblies.Set_Unlocked(i.GetIndex(), nullptr);
             return;
         }
     }
@@ -1776,11 +1781,11 @@ FileLoadLock* FileLoadLock::Create(PEFileListLock* pLock, PEAssembly* pPEAssembl
     }
     CONTRACTL_END;
 
-    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pPEAssembly));
+    NewHolder<FileLoadLock> result{ new FileLoadLock(pLock, pPEAssembly) };
 
     pLock->AddElement(result);
     result->AddRef(); // Add one ref on behalf of the ListLock's reference. The corresponding Release() happens in FileLoadLock::CompleteLoadLevel.
-    return result.Extract();
+    return result.Detach();
 }
 
 FileLoadLock::~FileLoadLock()
@@ -2833,6 +2838,7 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
     CONTRACTL
     {
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
     }
     CONTRACTL_END;
@@ -3399,10 +3405,10 @@ RCWRefCache *AppDomain::GetRCWRefCache()
     CONTRACTL_END;
 
     if (!m_pRCWRefCache) {
-        NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
+        NewHolder<RCWRefCache> pRCWRefCache{ new RCWRefCache(this) };
         if (InterlockedCompareExchangeT(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
         {
-            pRCWRefCache.SuppressRelease();
+            pRCWRefCache.Detach();
         }
     }
     return m_pRCWRefCache;
@@ -3435,10 +3441,10 @@ RCWCache *AppDomain::CreateRCWCache()
 
     if (!m_pRCWCache)
     {
-        NewHolder<RCWCache> pRCWCache = new RCWCache(this);
+        NewHolder<RCWCache> pRCWCache{ new RCWCache(this) };
         if (InterlockedCompareExchangeT(&m_pRCWCache, (RCWCache *)pRCWCache, NULL) == NULL)
         {
-            pRCWCache.SuppressRelease();
+            pRCWCache.Detach();
         }
     }
 
@@ -3700,10 +3706,13 @@ PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
 
 //------------------------------------------------------------------------
 UINT32 AppDomain::GetTypeID(PTR_MethodTable pMT) {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     return m_typeIDMap.GetTypeID(pMT, true);
 }

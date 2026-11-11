@@ -64,19 +64,15 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
-        public void ConstructorExceptionsArePropagated()
+        [Theory]
+        [InlineData(typeof(ThrowingConstructorTarget))]
+        [InlineData(typeof(ThrowingDefaultConstructorTarget))]
+        public void ConstructorExceptionsArePropagated(Type target)
         {
             for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
             {
-                // NativeAOT materializes attributes through ConstructorInfo.Invoke.
-                Exception exception = Assert.Throws(
-                    PlatformDetection.IsNativeAot ? typeof(TargetInvocationException) : typeof(InvalidOperationException),
-                    () => typeof(ThrowingConstructorTarget).GetCustomAttribute<ThrowingConstructorAttribute>());
-                if (PlatformDetection.IsNativeAot)
-                {
-                    exception = Assert.IsType<InvalidOperationException>(exception.InnerException);
-                }
+                InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                    () => target.GetCustomAttribute<ThrowingConstructorAttribute>());
                 Assert.Equal("Attribute constructor failure", exception.Message);
             }
         }
@@ -147,11 +143,15 @@ namespace System.Reflection.Tests
 
         public sealed class ThrowingConstructorAttribute : Attribute
         {
+            public ThrowingConstructorAttribute() : this("Attribute constructor failure") { }
             public ThrowingConstructorAttribute(string message) => throw new InvalidOperationException(message);
         }
 
         [ThrowingConstructor("Attribute constructor failure")]
         private sealed class ThrowingConstructorTarget { }
+
+        [ThrowingConstructor]
+        private sealed class ThrowingDefaultConstructorTarget { }
 
         public static IEnumerable<object[]> GenericConstructorArguments_TestData()
         {

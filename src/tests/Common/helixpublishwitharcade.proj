@@ -248,6 +248,11 @@
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
+  <!-- NativeAOT WASI tests run directly under the provisioned wasmtime, without a host dotnet runtime. -->
+  <PropertyGroup Condition="'$(TargetsWasiOnCoreCLR)' == 'true' and '$(NativeAotTest)' == 'true'">
+    <IncludeDotNetCli>false</IncludeDotNetCli>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true' Or ('$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true')">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
@@ -286,7 +291,7 @@
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\tieringtest.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_TieringTest)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/tieringtest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_TieringTest)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\nativeaottest.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_NativeAotTest)' == 'true'" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/nativeaottest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_NativeAotTest)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/nativeaottest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_NativeAotTest)' == 'true' and '$(TargetsWasiOnCoreCLR)' != 'true'" />
 
     <ItemGroup Condition=" '$(SuperPmiCollect)' == 'true' ">
       <!-- We need superpmi.py and its dependencies; this is an over-approximation. The HelixCorrelationPayload directory is CoreRootDirectory, so copy the scripts there. -->
@@ -661,8 +666,10 @@
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe 2&gt;nul" />
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
-    <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
-    <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
+    <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks.
+         PDB has the native (coreclr, clrjit, etc.) symbols; IL has managed symbols resolved directly
+         from their build output, such as System.Private.CoreLib.pdb. -->
+    <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB%3B%HELIX_CORRELATION_PAYLOAD%\IL" />
     <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="set CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
@@ -733,7 +740,7 @@
     <HelixPreCommand Include="export LargeVersionBubble=1" Condition=" '$(LargeVersionBubble)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/tieringtest.sh" Condition=" '$(TieringTest)' == 'true' " />
-    <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/nativeaottest.sh" Condition=" '$(NativeAotTest)' == 'true' " />
+    <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/nativeaottest.sh" Condition=" '$(NativeAotTest)' == 'true' and '$(TargetsWasiOnCoreCLR)' != 'true' " />
     <HelixPreCommand Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="export __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />

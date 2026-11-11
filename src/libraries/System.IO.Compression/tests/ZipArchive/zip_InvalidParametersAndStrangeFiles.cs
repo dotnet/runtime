@@ -327,9 +327,8 @@ namespace System.IO.Compression.Tests
             // the window portion [0, s_bufferSize), so the tail [s_bufferSize, end) must
             // never be touched regardless of how many iterations the loop takes.
             const int sentinelSize = 64;
-            byte[] buffer = new byte[s_bufferSize + sentinelSize];
-            Array.Fill<byte>(buffer, 0xDE);
-
+            byte[] buffer = Array.CreateFilled<byte>(s_bufferSize + sentinelSize, 0xDE);
+            
             await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
                 int read;

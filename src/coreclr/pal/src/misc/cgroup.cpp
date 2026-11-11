@@ -17,7 +17,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include <limits>
 #include <limits.h>
 #include <sys/resource.h>
-#include "pal/virtual.h"
 #include "pal/cgroup.h"
 #include <algorithm>
 

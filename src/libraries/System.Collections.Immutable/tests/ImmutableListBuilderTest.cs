@@ -289,6 +289,56 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(Enumerable.Range(1, 3).Reverse(), mutable);
         }
 
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(1, false)]
+        [InlineData(1, true)]
+        [InlineData(2, false)]
+        [InlineData(2, true)]
+        [InlineData(3, false)]
+        [InlineData(3, true)]
+        [InlineData(4, false)]
+        [InlineData(4, true)]
+        [InlineData(7, false)]
+        [InlineData(7, true)]
+        [InlineData(8, false)]
+        [InlineData(8, true)]
+        [InlineData(1000, false)]
+        [InlineData(1000, true)]
+        public void ReverseEntireList(int count, bool frozen)
+        {
+            ImmutableList<int>.Builder builder = ImmutableList.CreateBuilder<int>();
+            for (int i = 0; i < count; i++)
+            {
+                builder.Add(i);
+            }
+
+            ImmutableList<int>? original = frozen ? builder.ToImmutable() : null;
+            builder.Reverse();
+            Assert.Equal(Enumerable.Range(0, count).Reverse(), builder);
+            Assert.Equal(count, builder.Count);
+            builder.GetBinaryTreeProxy().VerifyBalanced();
+            for (int i = 0; i < count; i++)
+            {
+                Assert.Equal(count - i - 1, builder[i]);
+            }
+
+            ImmutableList<int> reversed = builder.ToImmutable();
+            builder.Add(-1);
+            builder.Reverse(0, builder.Count);
+            Assert.Equal(new[] { -1 }.Concat(Enumerable.Range(0, count)), builder);
+            builder.RemoveAt(0);
+            builder.Insert(count / 2, -2);
+            Assert.Equal(Enumerable.Range(0, count).Take(count / 2).Concat(new[] { -2 }).Concat(Enumerable.Range(0, count).Skip(count / 2)), builder);
+            builder.GetBinaryTreeProxy().VerifyBalanced();
+            Assert.Equal(Enumerable.Range(0, count).Reverse(), reversed);
+            if (original is not null)
+            {
+                Assert.Equal(Enumerable.Range(0, count), original);
+            }
+        }
+
         [Fact]
         public void Clear()
         {

@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -312,20 +313,18 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
-            List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
-
             if (IsReflectionVisible)
             {
-                factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type, allocated: EmitVirtualSlots);
+                factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(sink, factory, _type, allocated: EmitVirtualSlots);
 
                 if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     foreach (DefType iface in _type.RuntimeInterfaces)
                     {
                         var ifaceDefinition = (DefType)iface.GetTypeDefinition();
-                        result.Add(new CombinedDependencyListEntry(
+                        sink.Add(new CombinedDependencyListEntry(
                             GetInterfaceTypeNode(factory, iface),
                             factory.InterfaceUse(ifaceDefinition),
                             "Interface definition was visible"));
@@ -342,22 +341,22 @@ namespace ILCompiler.DependencyAnalysis
                 // that was dynamically created at runtime).
                 if (CanonFormTypeMayExist)
                 {
-                    result.Add(new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Trigger full type generation if canonical form exists"));
+                    sink.Add(new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Trigger full type generation if canonical form exists"));
                 }
-                return result;
+                return;
             }
 
             TypeDesc canonOwningType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
             if (_type.IsDefType && _type != canonOwningType)
             {
-                result.Add(new CombinedDependencyListEntry(
+                sink.Add(new CombinedDependencyListEntry(
                     factory.GenericStaticBaseInfo((MetadataType)_type),
                     factory.NativeLayout.TemplateTypeLayout(canonOwningType),
                     "Information about static bases for type with template"));
             }
 
             if (!EmitVirtualSlots)
-                return result;
+                return;
 
             DefType defType = _type.GetClosestDefType();
 
@@ -403,9 +402,9 @@ namespace ILCompiler.DependencyAnalysis
                             IMethodNode implNode = canUseTentativeMethod ?
                                 factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
                                 factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
-                            result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+                            sink.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
 
-                            result.Add(new CombinedDependencyListEntry(
+                            sink.Add(new CombinedDependencyListEntry(
                                 factory.AddressTakenMethodEntrypoint(canonImpl, impl.OwningType.IsValueType),
                                 factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Slot is a delegate target"));
                         }
@@ -415,7 +414,7 @@ namespace ILCompiler.DependencyAnalysis
                             factory.MetadataManager.NoteOverridingMethod(decl, impl);
                         }
 
-                        factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
+                        factory.MetadataManager.GetDependenciesForOverridingMethod(sink, factory, decl, impl);
                     }
                 }
 
@@ -480,20 +479,20 @@ namespace ILCompiler.DependencyAnalysis
                                 MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
                                 // If the interface method is used virtually, the implementation body is used
-                                result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                sink.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
                                 // If the interface method is virtual delegate target, the implementation is address taken
-                                result.Add(new CombinedDependencyListEntry(
+                                sink.Add(new CombinedDependencyListEntry(
                                     factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
                                     factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Interface slot is delegate target"));
                             }
                             else
                             {
                                 // If the interface method is used virtually, the slot is used virtually
-                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                sink.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
                                 // If the interface method is virtual delegate target, the slot is virtual delegate target
-                                result.Add(new CombinedDependencyListEntry(
+                                sink.Add(new CombinedDependencyListEntry(
                                     factory.DelegateTargetVirtualMethod(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                                     factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                                     "Interface slot is delegate target"));
@@ -509,14 +508,14 @@ namespace ILCompiler.DependencyAnalysis
                                 object implMethodUseNode = isStaticInterfaceMethod ?
                                     factory.CanonicalEntrypoint(implMethod) : factory.VirtualMethodUse(implMethod);
 
-                                result.Add(new CombinedDependencyListEntry(implMethodUseNode, factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
-                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
+                                sink.Add(new CombinedDependencyListEntry(implMethodUseNode, factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
+                                sink.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
                             TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
                             factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
-                            factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
+                            factory.MetadataManager.GetDependenciesForOverridingMethod(sink, factory, interfaceMethod, implMethod);
                         }
                         else
                         {
@@ -538,28 +537,26 @@ namespace ILCompiler.DependencyAnalysis
                                     // The above thunk will index into interface list to find the right context. Make sure to keep all interfaces prior to this one
                                     for (int i = 0; i <= providingInterfaceIndex; i++)
                                     {
-                                        result.Add(new CombinedDependencyListEntry(
+                                        sink.Add(new CombinedDependencyListEntry(
                                             factory.InterfaceUse(defTypeRuntimeInterfaces[i].GetTypeDefinition()),
                                             factory.VirtualMethodUse(interfaceMethod), "Interface with shared default methods folows this"));
                                     }
                                 }
-                                result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                sink.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
-                                result.Add(new CombinedDependencyListEntry(
+                                sink.Add(new CombinedDependencyListEntry(
                                     factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
                                     factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                                     "Slot is delegate target"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
 
-                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(sink, factory, interfaceMethod, implMethod);
                             }
                         }
                     }
                 }
             }
-
-            return result;
         }
 
         public static bool IsTypeNodeShareable(TypeDesc type)
@@ -589,12 +586,10 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             if (_type.IsInterface)
-                dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
+                sink.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
 
             // Array types that don't have generic interface methods can be created out of thin air
             // at runtime by the type loader. We should never emit non-constructed forms of these MethodTables.
@@ -605,7 +600,7 @@ namespace ILCompiler.DependencyAnalysis
                 IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
                 if (maximallyConstructableType != this)
                 {
-                    dependencies.Add(maximallyConstructableType, "Type is template-loadable");
+                    sink.Add(maximallyConstructableType, "Type is template-loadable");
                 }
             }
 
@@ -614,21 +609,21 @@ namespace ILCompiler.DependencyAnalysis
                 if (!_type.IsArrayTypeWithoutGenericInterfaces())
                 {
                     // Sealed vtables have relative pointers, so to minimize size, we build sealed vtables for the canonical types
-                    dependencies.Add(new DependencyListEntry(factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Sealed Vtable"));
+                    sink.Add(new DependencyListEntry(factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Sealed Vtable"));
                 }
 
                 // Also add the un-normalized vtable slices of implemented interfaces.
                 // This is important to do in the scanning phase so that the compilation phase can find
                 // vtable information for things like IEnumerator<List<__Canon>>.
                 foreach (TypeDesc intface in _type.RuntimeInterfaces)
-                    dependencies.Add(factory.VTable(intface), "Interface vtable slice");
+                    sink.Add(factory.VTable(intface), "Interface vtable slice");
 
                 // Generated type contains generic virtual methods that will get added to the GVM tables
                 if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
                 {
                     TypeDesc canonicalType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
                     if (canonicalType != _type)
-                        dependencies.Add(factory.ConstructedTypeSymbol(canonicalType), "Type with generic virtual methods");
+                        sink.Add(factory.ConstructedTypeSymbol(canonicalType), "Type with generic virtual methods");
                 }
             }
 
@@ -652,7 +647,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (!MethodHasNonGenericILMethodBody(method))
                             continue;
 
-                        dependencies.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                        sink.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                             "Ensure all methods on type due to CompilationModuleGroup policy");
                     }
                 }
@@ -662,17 +657,16 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // If necessary MethodTable is the highest load level for this type, ask the metadata manager
                 // if we have any dependencies due to presence of the EEType.
-                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
+                factory.MetadataManager.GetDependenciesDueToEETypePresence(sink, factory, _type);
 
                 // If necessary MethodTable is the highest load level, consider this a module use
                 if (_type is MetadataType mdType)
-                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, mdType.Module);
             }
 
             if (_type.IsFunctionPointer)
-                FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
+                FunctionPointerMapNode.AddHashtableDependencies(sink, factory, (FunctionPointerType)_type);
 
-            return dependencies;
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)

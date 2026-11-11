@@ -53,7 +53,10 @@ namespace ILCompiler
             {
                 ByteCountUnaligned = instanceFieldSize,
                 ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
-                FieldAlignment = layoutFromMetadata.FieldAlignment,
+                // On WASM Vector<T> is passed as a v128 and requires 16-byte alignment.
+                FieldAlignment = targetDetails.IsWasm
+                    ? new LayoutInt(16)
+                    : layoutFromMetadata.FieldAlignment,
                 FieldSize = instanceFieldSize,
                 Offsets = layoutFromMetadata.Offsets,
                 IsVectorTOrHasVectorTFields = true,

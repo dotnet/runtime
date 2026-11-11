@@ -17,16 +17,19 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
             Debug.Assert(sessionID != 0);
 
-            m_dispatchTaskCancellationSource = new CancellationTokenSource();
+            CancellationTokenSource cancellationSource = new CancellationTokenSource();
+            m_dispatchTaskCancellationSource = cancellationSource;
+            CancellationToken token = cancellationSource.Token;
             Task? previousDispatchTask = m_dispatchTask;
             if (previousDispatchTask != null)
             {
-                m_dispatchTask = previousDispatchTask.ContinueWith(_ => DispatchEventsToEventListeners(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency, m_dispatchTaskCancellationSource.Token),
-                    m_dispatchTaskCancellationSource.Token, TaskContinuationOptions.None, TaskScheduler.Default);
+                // The continuation must always run, even if already cancelled, because it owns disabling the session.
+                m_dispatchTask = previousDispatchTask.ContinueWith(_ => DispatchEventsToEventListeners(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency, token),
+                    CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
             }
             else
             {
-                m_dispatchTask = DispatchEventsToEventListeners(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency, m_dispatchTaskCancellationSource.Token);
+                m_dispatchTask = DispatchEventsToEventListeners(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency, token);
             }
         }
 
@@ -34,17 +37,25 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(sessionID != 0);
 
-            while (!token.IsCancellationRequested)
+            try
             {
-                DispatchEventsToEventListenersOnce(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency, token);
-                await Task.Delay(DispatcherDelayMs, token).ConfigureAwait(false);
+                while (!token.IsCancellationRequested)
+                {
+                    DispatchEventsToEventListenersOnce(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency, token);
+                    await Task.Delay(DispatcherDelayMs, token).ConfigureAwait(false);
+                }
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                // Wait for SignalSession() to be called before we call disable, otherwise
+                // the SignalSession() call could be on a disabled session.
+                await Task.Yield();
 
-            // Wait for SignalSession() to be called before we call disable, otherwise
-            // the SignalSession() call could be on a disabled session.
-            await Task.Yield();
-
-            EventPipeInternal.Disable(sessionID);
+                EventPipeInternal.Disable(sessionID);
+            }
         }
     }
 }

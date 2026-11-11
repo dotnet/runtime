@@ -26,6 +26,11 @@ namespace System.Numerics.Tests
             yield return new object[] { -746.000005337263383695030642m, (ushort)0xC43B };
             yield return new object[] { 128917739299112.37073918939888m, (ushort)0x56EB };
             yield return new object[] { 100000000000000000000m, (ushort)0x60AD };
+
+            // Decimal values just above or below BFloat16 midpoints must round to the nearer neighbor.
+            yield return new object[] { 1.0039062500000000000000000001m, (ushort)0x3F81 };
+            yield return new object[] { 3.0234374999999999999999999999m, (ushort)0x4041 };
+            yield return new object[] { 0.0000000000000173749903353837m, (ushort)0x289D };
         }
 
         [Theory]
@@ -854,7 +859,6 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromInt128_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromInt128(Int128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;
@@ -886,7 +890,6 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromUInt128_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromUInt128(UInt128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;

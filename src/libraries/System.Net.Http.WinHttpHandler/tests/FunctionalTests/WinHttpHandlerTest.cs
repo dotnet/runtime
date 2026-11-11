@@ -24,8 +24,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
     // to separately Dispose (or have a 'using' statement) for the handler.
     public class WinHttpHandlerTest
     {
-        private const string SlowServer = "http://httpbin.org/drip?numbytes=1&duration=1&delay=40&code=200";
-
         private readonly ITestOutputHelper _output;
 
         public static IEnumerable<object[]> HttpVersions = [[HttpVersion.Version11, Configuration.Http.SecureRemoteEchoServer], [HttpVersion20.Value, Configuration.Http.Http2RemoteEchoServer]];
@@ -272,22 +270,23 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [OuterLoop]
         [Fact]
         public async Task SendAsync_SlowServerAndCancel_ThrowsTaskCanceledException()
         {
-            var handler = new WinHttpHandler();
-            using (var client = new HttpClient(handler))
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                var cts = new CancellationTokenSource();
-                Task<HttpResponseMessage> t = client.GetAsync(SlowServer, cts.Token);
+                using var client = new HttpClient(new WinHttpHandler());
+                using var cts = new CancellationTokenSource();
+                Task<HttpResponseMessage> t = client.GetAsync(uri, cts.Token);
 
-                await Task.Delay(500);
-                cts.Cancel();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    cts.Cancel();
 
-                AggregateException ag = Assert.Throws<AggregateException>(() => t.Wait());
-                Assert.IsType<TaskCanceledException>(ag.InnerException);
-            }
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => t);
+                });
+            });
         }
 
         [OuterLoop]

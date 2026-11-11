@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Unicode;
 
 namespace Internal
 {
@@ -99,6 +101,26 @@ namespace Internal
             hash2 = unchecked(hash2 + RotateLeft(hash2, 8));
 
             return unchecked((int)(hash1 ^ hash2));
+        }
+
+        public static int NameHashCode(ReadOnlySpan<char> src)
+        {
+            const int Utf8BufferSize = 256;
+            Span<byte> buffer = stackalloc byte[Utf8BufferSize];
+            HashCodeBuilder builder = new HashCodeBuilder(ReadOnlySpan<byte>.Empty);
+
+            while (!src.IsEmpty)
+            {
+                OperationStatus status = Utf8.FromUtf16(src, buffer, out int charsRead, out int bytesWritten,
+                    replaceInvalidSequences: true, isFinalBlock: true);
+                Debug.Assert(status is OperationStatus.Done or OperationStatus.DestinationTooSmall);
+                Debug.Assert(charsRead > 0);
+
+                builder.Append(buffer.Slice(0, bytesWritten));
+                src = src.Slice(charsRead);
+            }
+
+            return builder.ToHashCode();
         }
 
         /// <summary>

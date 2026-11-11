@@ -50,19 +50,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1450734452;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ElementType == null ? 0 : ElementType.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ Rank.GetHashCode();
+            var hash = new HashCode();
+            hash.Add(-1450734452);
+            hash.Add(ElementType);
+            hash.Add(Rank);
             for (int i = 0; i < Sizes.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Sizes[i].GetHashCode();
-            }
+                hash.Add(Sizes[i]);
             for (int i = 0; i < LowerBounds.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ LowerBounds[i].GetHashCode();
-            }
+                hash.Add(LowerBounds[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -134,10 +131,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -2085375797;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-2085375797);
+            hash.Add(Type);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -174,26 +172,28 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // ByReferenceSignature
 
-    public partial class ConstantBooleanArray : MetadataRecord
+    public partial class Constant : MetadataRecord
     {
         public override HandleType HandleType
         {
             get
             {
-                return HandleType.ConstantBooleanArray;
+                return HandleType.Constant;
             }
         } // HandleType
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            Blob.Visit(this, visitor);
         } // Visit
 
         public override sealed bool Equals(Object obj)
         {
             if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantBooleanArray;
+            var other = obj as Constant;
             if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
+            if (TypeCode != other.TypeCode) return false;
+            if (!Blob.Equals(other.Blob)) return false;
             return true;
         } // Equals
 
@@ -202,26 +202,26 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1817079014;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
+            var hash = new HashCode();
+            hash.Add(-464276854);
+            hash.Add(TypeCode);
+            hash.Add(Blob);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
         internal override void Save(NativeWriter writer)
         {
-            writer.Write(Value);
+            writer.Write(TypeCode);
+            Blob.Save(writer);
         } // Save
 
-        internal static ConstantBooleanArrayHandle AsHandle(ConstantBooleanArray record)
+        internal static ConstantHandle AsHandle(Constant record)
         {
             if (record == null)
             {
-                return new ConstantBooleanArrayHandle(0);
+                return new ConstantHandle(0);
             }
             else
             {
@@ -229,1371 +229,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // AsHandle
 
-        internal new ConstantBooleanArrayHandle Handle
+        internal new ConstantHandle Handle
         {
             get
             {
-                return new ConstantBooleanArrayHandle(HandleOffset);
+                return new ConstantHandle(HandleOffset);
             }
         } // Handle
 
-        public Boolean[] Value;
-    } // ConstantBooleanArray
-
-    public partial class ConstantBooleanValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantBooleanValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantBooleanValue;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 555429541;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantBooleanValueHandle AsHandle(ConstantBooleanValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantBooleanValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantBooleanValueHandle Handle
-        {
-            get
-            {
-                return new ConstantBooleanValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public bool Value;
-    } // ConstantBooleanValue
-
-    public partial class ConstantByteArray : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantByteArray;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantByteArray;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 2080036690;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantByteArrayHandle AsHandle(ConstantByteArray record)
-        {
-            if (record == null)
-            {
-                return new ConstantByteArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantByteArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantByteArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public Byte[] Value;
-    } // ConstantByteArray
-
-    public partial class ConstantByteValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantByteValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantByteValue;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -452758418;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantByteValueHandle AsHandle(ConstantByteValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantByteValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantByteValueHandle Handle
-        {
-            get
-            {
-                return new ConstantByteValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public byte Value;
-    } // ConstantByteValue
-
-    public partial class ConstantCharArray : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantCharArray;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantCharArray;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -210173789;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantCharArrayHandle AsHandle(ConstantCharArray record)
-        {
-            if (record == null)
-            {
-                return new ConstantCharArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantCharArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantCharArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public Char[] Value;
-    } // ConstantCharArray
-
-    public partial class ConstantCharValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantCharValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantCharValue;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 2135306273;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantCharValueHandle AsHandle(ConstantCharValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantCharValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantCharValueHandle Handle
-        {
-            get
-            {
-                return new ConstantCharValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public char Value;
-    } // ConstantCharValue
-
-    public partial class ConstantDoubleArray : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantDoubleArray;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantDoubleArray;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value, DoubleComparer.Instance)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 1195490519;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantDoubleArrayHandle AsHandle(ConstantDoubleArray record)
-        {
-            if (record == null)
-            {
-                return new ConstantDoubleArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantDoubleArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantDoubleArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public Double[] Value;
-    } // ConstantDoubleArray
-
-    public partial class ConstantDoubleValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantDoubleValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantDoubleValue;
-            if (other == null) return false;
-            if (!CustomComparer.Equals(Value, other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -621001209;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantDoubleValueHandle AsHandle(ConstantDoubleValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantDoubleValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantDoubleValueHandle Handle
-        {
-            get
-            {
-                return new ConstantDoubleValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public double Value;
-    } // ConstantDoubleValue
-
-    public partial class ConstantEnumArray : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantEnumArray;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            ElementType = visitor.Visit(this, ElementType);
-            Value = visitor.Visit(this, Value);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantEnumArray;
-            if (other == null) return false;
-            if (!Object.Equals(ElementType, other.ElementType)) return false;
-            if (!Object.Equals(Value, other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 1812865730;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ElementType == null ? 0 : ElementType.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(ElementType);
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantEnumArrayHandle AsHandle(ConstantEnumArray record)
-        {
-            if (record == null)
-            {
-                return new ConstantEnumArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantEnumArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantEnumArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public MetadataRecord ElementType;
-        public MetadataRecord Value;
-    } // ConstantEnumArray
-
-    public partial class ConstantEnumValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantEnumValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            Value = visitor.Visit(this, Value);
-            Type = visitor.Visit(this, Type);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantEnumValue;
-            if (other == null) return false;
-            if (!Object.Equals(Value, other.Value)) return false;
-            if (!Object.Equals(Type, other.Type)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 1536570168;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-            writer.Write(Type);
-        } // Save
-
-        internal static ConstantEnumValueHandle AsHandle(ConstantEnumValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantEnumValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantEnumValueHandle Handle
-        {
-            get
-            {
-                return new ConstantEnumValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public MetadataRecord Value;
-        public MetadataRecord Type;
-    } // ConstantEnumValue
-
-    public partial class ConstantHandleArray : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantHandleArray;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            Value = visitor.Visit(this, Value);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantHandleArray;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1728604822;
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantHandleArrayHandle AsHandle(ConstantHandleArray record)
-        {
-            if (record == null)
-            {
-                return new ConstantHandleArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantHandleArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantHandleArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public List<MetadataRecord> Value = new List<MetadataRecord>();
-    } // ConstantHandleArray
-
-    public partial class ConstantInt16Array : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantInt16Array;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantInt16Array;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1341795012;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantInt16ArrayHandle AsHandle(ConstantInt16Array record)
-        {
-            if (record == null)
-            {
-                return new ConstantInt16ArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantInt16ArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantInt16ArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public Int16[] Value;
-    } // ConstantInt16Array
-
-    public partial class ConstantInt16Value : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantInt16Value;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantInt16Value;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 813581618;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantInt16ValueHandle AsHandle(ConstantInt16Value record)
-        {
-            if (record == null)
-            {
-                return new ConstantInt16ValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantInt16ValueHandle Handle
-        {
-            get
-            {
-                return new ConstantInt16ValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public short Value;
-    } // ConstantInt16Value
-
-    public partial class ConstantInt32Array : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantInt32Array;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantInt32Array;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -889690268;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantInt32ArrayHandle AsHandle(ConstantInt32Array record)
-        {
-            if (record == null)
-            {
-                return new ConstantInt32ArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantInt32ArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantInt32ArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public Int32[] Value;
-    } // ConstantInt32Array
-
-    public partial class ConstantInt32Value : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantInt32Value;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantInt32Value;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1381815736;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantInt32ValueHandle AsHandle(ConstantInt32Value record)
-        {
-            if (record == null)
-            {
-                return new ConstantInt32ValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantInt32ValueHandle Handle
-        {
-            get
-            {
-                return new ConstantInt32ValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public int Value;
-    } // ConstantInt32Value
-
-    public partial class ConstantInt64Array : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantInt64Array;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantInt64Array;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1304463479;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantInt64ArrayHandle AsHandle(ConstantInt64Array record)
-        {
-            if (record == null)
-            {
-                return new ConstantInt64ArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantInt64ArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantInt64ArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public Int64[] Value;
-    } // ConstantInt64Array
-
-    public partial class ConstantInt64Value : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantInt64Value;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantInt64Value;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 826277577;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantInt64ValueHandle AsHandle(ConstantInt64Value record)
-        {
-            if (record == null)
-            {
-                return new ConstantInt64ValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantInt64ValueHandle Handle
-        {
-            get
-            {
-                return new ConstantInt64ValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public long Value;
-    } // ConstantInt64Value
-
-    public partial class ConstantReferenceValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantReferenceValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantReferenceValue;
-            if (other == null) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -2104982909;
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-        } // Save
-
-        internal static ConstantReferenceValueHandle AsHandle(ConstantReferenceValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantReferenceValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantReferenceValueHandle Handle
-        {
-            get
-            {
-                return new ConstantReferenceValueHandle(HandleOffset);
-            }
-        } // Handle
-
-    } // ConstantReferenceValue
-
-    public partial class ConstantSByteArray : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantSByteArray;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantSByteArray;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 234859551;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantSByteArrayHandle AsHandle(ConstantSByteArray record)
-        {
-            if (record == null)
-            {
-                return new ConstantSByteArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantSByteArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantSByteArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public SByte[] Value;
-    } // ConstantSByteArray
-
-    public partial class ConstantSByteValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantSByteValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantSByteValue;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -222060848;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantSByteValueHandle AsHandle(ConstantSByteValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantSByteValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantSByteValueHandle Handle
-        {
-            get
-            {
-                return new ConstantSByteValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public sbyte Value;
-    } // ConstantSByteValue
-
-    public partial class ConstantSingleArray : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantSingleArray;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantSingleArray;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value, SingleComparer.Instance)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -2043917844;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantSingleArrayHandle AsHandle(ConstantSingleArray record)
-        {
-            if (record == null)
-            {
-                return new ConstantSingleArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantSingleArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantSingleArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public Single[] Value;
-    } // ConstantSingleArray
-
-    public partial class ConstantSingleValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantSingleValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantSingleValue;
-            if (other == null) return false;
-            if (!CustomComparer.Equals(Value, other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 1809397893;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantSingleValueHandle AsHandle(ConstantSingleValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantSingleValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantSingleValueHandle Handle
-        {
-            get
-            {
-                return new ConstantSingleValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public float Value;
-    } // ConstantSingleValue
+        public ConstantTypeCode TypeCode;
+        public MetadataBlob Blob = new MetadataBlob();
+    } // Constant
 
     public partial class ConstantStringArray : MetadataRecord
     {
@@ -1624,17 +270,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -106723178;
+            var hash = new HashCode();
+            hash.Add(-106723178);
+            for (int i = 0; i < Value.Count; i++)
+                hash.Add(Value[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(Value.TrueForAll(handle => handle == null ||
-                handle.HandleType == HandleType.ConstantStringValue ||
-                handle.HandleType == HandleType.ConstantReferenceValue));
             writer.Write(Value);
         } // Save
 
@@ -1658,7 +304,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public List<MetadataRecord> Value = new List<MetadataRecord>();
+        public List<ConstantStringValue> Value = new List<ConstantStringValue>();
     } // ConstantStringArray
 
     public partial class ConstantStringValue : MetadataRecord
@@ -1689,10 +335,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 697695316;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(697695316);
+            hash.Add(Value);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -1730,393 +377,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public string Value;
     } // ConstantStringValue
 
-    public partial class ConstantUInt16Array : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantUInt16Array;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantUInt16Array;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -89281077;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantUInt16ArrayHandle AsHandle(ConstantUInt16Array record)
-        {
-            if (record == null)
-            {
-                return new ConstantUInt16ArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantUInt16ArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantUInt16ArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public UInt16[] Value;
-    } // ConstantUInt16Array
-
-    public partial class ConstantUInt16Value : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantUInt16Value;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantUInt16Value;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1363963764;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantUInt16ValueHandle AsHandle(ConstantUInt16Value record)
-        {
-            if (record == null)
-            {
-                return new ConstantUInt16ValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantUInt16ValueHandle Handle
-        {
-            get
-            {
-                return new ConstantUInt16ValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public ushort Value;
-    } // ConstantUInt16Value
-
-    public partial class ConstantUInt32Array : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantUInt32Array;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantUInt32Array;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1294553100;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantUInt32ArrayHandle AsHandle(ConstantUInt32Array record)
-        {
-            if (record == null)
-            {
-                return new ConstantUInt32ArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantUInt32ArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantUInt32ArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public UInt32[] Value;
-    } // ConstantUInt32Array
-
-    public partial class ConstantUInt32Value : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantUInt32Value;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantUInt32Value;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1681229940;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantUInt32ValueHandle AsHandle(ConstantUInt32Value record)
-        {
-            if (record == null)
-            {
-                return new ConstantUInt32ValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantUInt32ValueHandle Handle
-        {
-            get
-            {
-                return new ConstantUInt32ValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public uint Value;
-    } // ConstantUInt32Value
-
-    public partial class ConstantUInt64Array : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantUInt64Array;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantUInt64Array;
-            if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 47301549;
-            for (int i = 0; i < Value.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantUInt64ArrayHandle AsHandle(ConstantUInt64Array record)
-        {
-            if (record == null)
-            {
-                return new ConstantUInt64ArrayHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantUInt64ArrayHandle Handle
-        {
-            get
-            {
-                return new ConstantUInt64ArrayHandle(HandleOffset);
-            }
-        } // Handle
-
-        public UInt64[] Value;
-    } // ConstantUInt64Array
-
-    public partial class ConstantUInt64Value : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantUInt64Value;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantUInt64Value;
-            if (other == null) return false;
-            if (Value != other.Value) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1162192418;
-            hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Value);
-        } // Save
-
-        internal static ConstantUInt64ValueHandle AsHandle(ConstantUInt64Value record)
-        {
-            if (record == null)
-            {
-                return new ConstantUInt64ValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantUInt64ValueHandle Handle
-        {
-            get
-            {
-                return new ConstantUInt64ValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public ulong Value;
-    } // ConstantUInt64Value
-
     public partial class CustomAttribute : MetadataRecord
     {
         public CustomAttribute()
@@ -2135,8 +395,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Constructor = visitor.Visit(this, Constructor);
-            FixedArguments = visitor.Visit(this, FixedArguments);
-            NamedArguments = visitor.Visit(this, NamedArguments);
+            Blob.Visit(this, visitor);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2150,8 +409,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             try
             {
             if (!Object.Equals(Constructor, other.Constructor)) return false;
-            if (!FixedArguments.SequenceEqual(other.FixedArguments)) return false;
-            if (!NamedArguments.SequenceEqual(other.NamedArguments)) return false;
+            if (!Blob.Equals(other.Blob)) return false;
             }
             finally
             {
@@ -2167,18 +425,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 478371161;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Constructor == null ? 0 : Constructor.GetHashCode());
-            for (int i = 0; i < FixedArguments.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (FixedArguments[i] == null ? 0 : FixedArguments[i].GetHashCode());
-            }
-            for (int i = 0; i < NamedArguments.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (NamedArguments[i] == null ? 0 : NamedArguments[i].GetHashCode());
-            }
+            var hash = new HashCode();
+            hash.Add(478371161);
+            hash.Add(Constructor);
+            hash.Add(Blob);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2188,42 +440,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 Constructor.HandleType == HandleType.QualifiedMethod ||
                 Constructor.HandleType == HandleType.MemberReference);
             writer.Write(Constructor);
-            Debug.Assert(FixedArguments.TrueForAll(handle => handle == null ||
-                handle.HandleType == HandleType.TypeDefinition ||
-                handle.HandleType == HandleType.TypeReference ||
-                handle.HandleType == HandleType.TypeSpecification ||
-                handle.HandleType == HandleType.ConstantBooleanArray ||
-                handle.HandleType == HandleType.ConstantBooleanValue ||
-                handle.HandleType == HandleType.ConstantByteArray ||
-                handle.HandleType == HandleType.ConstantByteValue ||
-                handle.HandleType == HandleType.ConstantCharArray ||
-                handle.HandleType == HandleType.ConstantCharValue ||
-                handle.HandleType == HandleType.ConstantDoubleArray ||
-                handle.HandleType == HandleType.ConstantDoubleValue ||
-                handle.HandleType == HandleType.ConstantEnumArray ||
-                handle.HandleType == HandleType.ConstantEnumValue ||
-                handle.HandleType == HandleType.ConstantHandleArray ||
-                handle.HandleType == HandleType.ConstantInt16Array ||
-                handle.HandleType == HandleType.ConstantInt16Value ||
-                handle.HandleType == HandleType.ConstantInt32Array ||
-                handle.HandleType == HandleType.ConstantInt32Value ||
-                handle.HandleType == HandleType.ConstantInt64Array ||
-                handle.HandleType == HandleType.ConstantInt64Value ||
-                handle.HandleType == HandleType.ConstantReferenceValue ||
-                handle.HandleType == HandleType.ConstantSByteArray ||
-                handle.HandleType == HandleType.ConstantSByteValue ||
-                handle.HandleType == HandleType.ConstantSingleArray ||
-                handle.HandleType == HandleType.ConstantSingleValue ||
-                handle.HandleType == HandleType.ConstantStringArray ||
-                handle.HandleType == HandleType.ConstantStringValue ||
-                handle.HandleType == HandleType.ConstantUInt16Array ||
-                handle.HandleType == HandleType.ConstantUInt16Value ||
-                handle.HandleType == HandleType.ConstantUInt32Array ||
-                handle.HandleType == HandleType.ConstantUInt32Value ||
-                handle.HandleType == HandleType.ConstantUInt64Array ||
-                handle.HandleType == HandleType.ConstantUInt64Value));
-            writer.Write(FixedArguments);
-            writer.Write(NamedArguments);
+            Blob.Save(writer);
         } // Save
 
         internal static CustomAttributeHandle AsHandle(CustomAttribute record)
@@ -2247,8 +464,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         } // Handle
 
         public MetadataRecord Constructor;
-        public List<MetadataRecord> FixedArguments = new List<MetadataRecord>();
-        public List<NamedArgument> NamedArguments = new List<NamedArgument>();
+        public MetadataBlob Blob = new MetadataBlob();
     } // CustomAttribute
 
     public partial class Event : MetadataRecord
@@ -2287,20 +503,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1454825650;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1454825650);
+            hash.Add(Flags);
+            hash.Add(Name);
+            hash.Add(Type);
             for (int i = 0; i < MethodSemantics.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
-            }
+                hash.Add(MethodSemantics[i]);
             for (int i = 0; i < CustomAttributes.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-            }
+                hash.Add(CustomAttributes[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2381,18 +594,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -540975116;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ Offset.GetHashCode();
+            var hash = new HashCode();
+            hash.Add(-540975116);
+            hash.Add(Flags);
+            hash.Add(Name);
+            hash.Add(Signature);
+            hash.Add(DefaultValue);
+            hash.Add(Offset);
             for (int i = 0; i < CustomAttributes.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-            }
+                hash.Add(CustomAttributes[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2401,40 +613,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(Flags);
             writer.Write(Name);
             writer.Write(Signature);
-            Debug.Assert(DefaultValue == null ||
-                DefaultValue.HandleType == HandleType.TypeDefinition ||
-                DefaultValue.HandleType == HandleType.TypeReference ||
-                DefaultValue.HandleType == HandleType.TypeSpecification ||
-                DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
-                DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
-                DefaultValue.HandleType == HandleType.ConstantByteArray ||
-                DefaultValue.HandleType == HandleType.ConstantByteValue ||
-                DefaultValue.HandleType == HandleType.ConstantCharArray ||
-                DefaultValue.HandleType == HandleType.ConstantCharValue ||
-                DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
-                DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
-                DefaultValue.HandleType == HandleType.ConstantEnumArray ||
-                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
-                DefaultValue.HandleType == HandleType.ConstantHandleArray ||
-                DefaultValue.HandleType == HandleType.ConstantInt16Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt16Value ||
-                DefaultValue.HandleType == HandleType.ConstantInt32Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt32Value ||
-                DefaultValue.HandleType == HandleType.ConstantInt64Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt64Value ||
-                DefaultValue.HandleType == HandleType.ConstantReferenceValue ||
-                DefaultValue.HandleType == HandleType.ConstantSByteArray ||
-                DefaultValue.HandleType == HandleType.ConstantSByteValue ||
-                DefaultValue.HandleType == HandleType.ConstantSingleArray ||
-                DefaultValue.HandleType == HandleType.ConstantSingleValue ||
-                DefaultValue.HandleType == HandleType.ConstantStringArray ||
-                DefaultValue.HandleType == HandleType.ConstantStringValue ||
-                DefaultValue.HandleType == HandleType.ConstantUInt16Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt16Value ||
-                DefaultValue.HandleType == HandleType.ConstantUInt32Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt32Value ||
-                DefaultValue.HandleType == HandleType.ConstantUInt64Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt64Value);
             writer.Write(DefaultValue);
             writer.Write(Offset);
             writer.Write(CustomAttributes);
@@ -2463,7 +641,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public FieldAttributes Flags;
         public ConstantStringValue Name;
         public FieldSignature Signature;
-        public MetadataRecord DefaultValue;
+        public Constant DefaultValue;
         public uint Offset;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Field
@@ -2497,10 +675,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1865977400;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(1865977400);
+            hash.Add(Type);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2566,10 +745,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1400760676;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(1400760676);
+            hash.Add(Signature);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2637,17 +817,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1389630306;
-            hash = ((hash << 13) - (hash >> 19)) ^ Number.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ Kind.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(1389630306);
+            hash.Add(Number);
+            hash.Add(Flags);
+            hash.Add(Kind);
+            hash.Add(Name);
             for (int i = 0; i < Constraints.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (Constraints[i] == null ? 0 : Constraints[i].GetHashCode());
-            }
+                hash.Add(Constraints[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2727,12 +906,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -875402938;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Parent == null ? 0 : Parent.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-875402938);
+            hash.Add(Parent);
+            hash.Add(Name);
+            hash.Add(Signature);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2814,21 +994,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1225154478;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ ImplFlags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1225154478);
+            hash.Add(Flags);
+            hash.Add(ImplFlags);
+            hash.Add(Name);
+            hash.Add(Signature);
             for (int i = 0; i < Parameters.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-            }
+                hash.Add(Parameters[i]);
             for (int i = 0; i < GenericParameters.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (GenericParameters[i] == null ? 0 : GenericParameters[i].GetHashCode());
-            }
+                hash.Add(GenericParameters[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2903,10 +1080,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1777408040;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1777408040);
+            hash.Add(Method);
+            for (int i = 0; i < GenericTypeArguments.Count; i++)
+                hash.Add(GenericTypeArguments[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -2978,11 +1158,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1967828724;
-            hash = ((hash << 13) - (hash >> 19)) ^ Attributes.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(1967828724);
+            hash.Add(Attributes);
+            hash.Add(Method);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3051,20 +1232,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1362083279;
-            hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ GenericParameterCount.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (ReturnType == null ? 0 : ReturnType.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1362083279);
+            hash.Add(CallingConvention);
+            hash.Add(GenericParameterCount);
+            hash.Add(ReturnType);
             for (int i = 0; i < Parameters.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-            }
+                hash.Add(Parameters[i]);
             for (int i = 0; i < VarArgParameters.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (VarArgParameters[i] == null ? 0 : VarArgParameters[i].GetHashCode());
-            }
+                hash.Add(VarArgParameters[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3147,10 +1325,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 542622499;
-            hash = ((hash << 13) - (hash >> 19)) ^ Number.GetHashCode();
+            var hash = new HashCode();
+            hash.Add(542622499);
+            hash.Add(Number);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3214,12 +1393,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -707476144;
-            hash = ((hash << 13) - (hash >> 19)) ^ IsOptional.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (ModifierType == null ? 0 : ModifierType.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-707476144);
+            hash.Add(IsOptional);
+            hash.Add(ModifierType);
+            hash.Add(Type);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3264,122 +1444,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // ModifiedType
 
-    public partial class NamedArgument : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.NamedArgument;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            Name = visitor.Visit(this, Name);
-            Type = visitor.Visit(this, Type);
-            Value = visitor.Visit(this, Value);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as NamedArgument;
-            if (other == null) return false;
-            if (Flags != other.Flags) return false;
-            if (!Object.Equals(Name, other.Name)) return false;
-            if (!Object.Equals(Type, other.Type)) return false;
-            if (!Object.Equals(Value, other.Value)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -469180039;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(Flags);
-            writer.Write(Name);
-            Debug.Assert(Type == null ||
-                Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
-            writer.Write(Type);
-            Debug.Assert(Value == null ||
-                Value.HandleType == HandleType.TypeDefinition ||
-                Value.HandleType == HandleType.TypeReference ||
-                Value.HandleType == HandleType.TypeSpecification ||
-                Value.HandleType == HandleType.ConstantBooleanArray ||
-                Value.HandleType == HandleType.ConstantBooleanValue ||
-                Value.HandleType == HandleType.ConstantByteArray ||
-                Value.HandleType == HandleType.ConstantByteValue ||
-                Value.HandleType == HandleType.ConstantCharArray ||
-                Value.HandleType == HandleType.ConstantCharValue ||
-                Value.HandleType == HandleType.ConstantDoubleArray ||
-                Value.HandleType == HandleType.ConstantDoubleValue ||
-                Value.HandleType == HandleType.ConstantEnumArray ||
-                Value.HandleType == HandleType.ConstantEnumValue ||
-                Value.HandleType == HandleType.ConstantHandleArray ||
-                Value.HandleType == HandleType.ConstantInt16Array ||
-                Value.HandleType == HandleType.ConstantInt16Value ||
-                Value.HandleType == HandleType.ConstantInt32Array ||
-                Value.HandleType == HandleType.ConstantInt32Value ||
-                Value.HandleType == HandleType.ConstantInt64Array ||
-                Value.HandleType == HandleType.ConstantInt64Value ||
-                Value.HandleType == HandleType.ConstantReferenceValue ||
-                Value.HandleType == HandleType.ConstantSByteArray ||
-                Value.HandleType == HandleType.ConstantSByteValue ||
-                Value.HandleType == HandleType.ConstantSingleArray ||
-                Value.HandleType == HandleType.ConstantSingleValue ||
-                Value.HandleType == HandleType.ConstantStringArray ||
-                Value.HandleType == HandleType.ConstantStringValue ||
-                Value.HandleType == HandleType.ConstantUInt16Array ||
-                Value.HandleType == HandleType.ConstantUInt16Value ||
-                Value.HandleType == HandleType.ConstantUInt32Array ||
-                Value.HandleType == HandleType.ConstantUInt32Value ||
-                Value.HandleType == HandleType.ConstantUInt64Array ||
-                Value.HandleType == HandleType.ConstantUInt64Value);
-            writer.Write(Value);
-        } // Save
-
-        internal static NamedArgumentHandle AsHandle(NamedArgument record)
-        {
-            if (record == null)
-            {
-                return new NamedArgumentHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new NamedArgumentHandle Handle
-        {
-            get
-            {
-                return new NamedArgumentHandle(HandleOffset);
-            }
-        } // Handle
-
-        public NamedArgumentMemberKind Flags;
-        public ConstantStringValue Name;
-        public MetadataRecord Type;
-        public MetadataRecord Value;
-    } // NamedArgument
-
     public partial class NamespaceDefinition : MetadataRecord
     {
         public override HandleType HandleType
@@ -3392,11 +1456,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
+            Scope = visitor.Visit(this, Scope);
             Name = visitor.Visit(this, Name);
-            TypeDefinitions = visitor.Visit(this, TypeDefinitions);
-            TypeForwarders = visitor.Visit(this, TypeForwarders);
-            NamespaceDefinitions = visitor.Visit(this, NamespaceDefinitions);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3404,7 +1465,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as NamespaceDefinition;
             if (other == null) return false;
-            if (!Object.Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace)) return false;
+            if (!Object.Equals(Scope, other.Scope)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             return true;
         } // Equals
@@ -3414,24 +1475,19 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 633688634;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ParentScopeOrNamespace == null ? 0 : ParentScopeOrNamespace.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(633688634);
+            hash.Add(Scope);
+            hash.Add(Name);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(ParentScopeOrNamespace == null ||
-                ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition ||
-                ParentScopeOrNamespace.HandleType == HandleType.ScopeDefinition);
-            writer.Write(ParentScopeOrNamespace);
+            writer.Write(Scope);
             writer.Write(Name);
-            writer.Write(TypeDefinitions);
-            writer.Write(TypeForwarders);
-            writer.Write(NamespaceDefinitions);
         } // Save
 
         internal static NamespaceDefinitionHandle AsHandle(NamespaceDefinition record)
@@ -3454,11 +1510,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public MetadataRecord ParentScopeOrNamespace;
+        public ScopeDefinition Scope;
         public ConstantStringValue Name;
-        public List<TypeDefinition> TypeDefinitions = new List<TypeDefinition>();
-        public List<TypeForwarder> TypeForwarders = new List<TypeForwarder>();
-        public List<NamespaceDefinition> NamespaceDefinitions = new List<NamespaceDefinition>();
     } // NamespaceDefinition
 
     public partial class NamespaceReference : MetadataRecord
@@ -3473,7 +1526,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
+            Scope = visitor.Visit(this, Scope);
             Name = visitor.Visit(this, Name);
         } // Visit
 
@@ -3482,7 +1535,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as NamespaceReference;
             if (other == null) return false;
-            if (!Object.Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace)) return false;
+            if (!Object.Equals(Scope, other.Scope)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             return true;
         } // Equals
@@ -3492,20 +1545,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1563382231;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ParentScopeOrNamespace == null ? 0 : ParentScopeOrNamespace.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(1563382231);
+            hash.Add(Scope);
+            hash.Add(Name);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(ParentScopeOrNamespace == null ||
-                ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference ||
-                ParentScopeOrNamespace.HandleType == HandleType.ScopeReference);
-            writer.Write(ParentScopeOrNamespace);
+            writer.Write(Scope);
             writer.Write(Name);
         } // Save
 
@@ -3529,7 +1580,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public MetadataRecord ParentScopeOrNamespace;
+        public ScopeReference Scope;
         public ConstantStringValue Name;
     } // NamespaceReference
 
@@ -3568,13 +1619,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1049753891;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ Sequence.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1049753891);
+            hash.Add(Flags);
+            hash.Add(Sequence);
+            hash.Add(Name);
+            hash.Add(DefaultValue);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3583,40 +1635,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(Flags);
             writer.Write(Sequence);
             writer.Write(Name);
-            Debug.Assert(DefaultValue == null ||
-                DefaultValue.HandleType == HandleType.TypeDefinition ||
-                DefaultValue.HandleType == HandleType.TypeReference ||
-                DefaultValue.HandleType == HandleType.TypeSpecification ||
-                DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
-                DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
-                DefaultValue.HandleType == HandleType.ConstantByteArray ||
-                DefaultValue.HandleType == HandleType.ConstantByteValue ||
-                DefaultValue.HandleType == HandleType.ConstantCharArray ||
-                DefaultValue.HandleType == HandleType.ConstantCharValue ||
-                DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
-                DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
-                DefaultValue.HandleType == HandleType.ConstantEnumArray ||
-                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
-                DefaultValue.HandleType == HandleType.ConstantHandleArray ||
-                DefaultValue.HandleType == HandleType.ConstantInt16Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt16Value ||
-                DefaultValue.HandleType == HandleType.ConstantInt32Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt32Value ||
-                DefaultValue.HandleType == HandleType.ConstantInt64Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt64Value ||
-                DefaultValue.HandleType == HandleType.ConstantReferenceValue ||
-                DefaultValue.HandleType == HandleType.ConstantSByteArray ||
-                DefaultValue.HandleType == HandleType.ConstantSByteValue ||
-                DefaultValue.HandleType == HandleType.ConstantSingleArray ||
-                DefaultValue.HandleType == HandleType.ConstantSingleValue ||
-                DefaultValue.HandleType == HandleType.ConstantStringArray ||
-                DefaultValue.HandleType == HandleType.ConstantStringValue ||
-                DefaultValue.HandleType == HandleType.ConstantUInt16Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt16Value ||
-                DefaultValue.HandleType == HandleType.ConstantUInt32Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt32Value ||
-                DefaultValue.HandleType == HandleType.ConstantUInt64Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt64Value);
             writer.Write(DefaultValue);
             writer.Write(CustomAttributes);
         } // Save
@@ -3644,7 +1662,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ParameterAttributes Flags;
         public ushort Sequence;
         public ConstantStringValue Name;
-        public MetadataRecord DefaultValue;
+        public Constant DefaultValue;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Parameter
 
@@ -3677,10 +1695,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 747249584;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(747249584);
+            hash.Add(Type);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3755,21 +1774,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1324612544;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1324612544);
+            hash.Add(Flags);
+            hash.Add(Name);
+            hash.Add(Signature);
             for (int i = 0; i < MethodSemantics.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
-            }
-            hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
+                hash.Add(MethodSemantics[i]);
+            hash.Add(DefaultValue);
             for (int i = 0; i < CustomAttributes.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-            }
+                hash.Add(CustomAttributes[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3779,40 +1795,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(Name);
             writer.Write(Signature);
             writer.Write(MethodSemantics);
-            Debug.Assert(DefaultValue == null ||
-                DefaultValue.HandleType == HandleType.TypeDefinition ||
-                DefaultValue.HandleType == HandleType.TypeReference ||
-                DefaultValue.HandleType == HandleType.TypeSpecification ||
-                DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
-                DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
-                DefaultValue.HandleType == HandleType.ConstantByteArray ||
-                DefaultValue.HandleType == HandleType.ConstantByteValue ||
-                DefaultValue.HandleType == HandleType.ConstantCharArray ||
-                DefaultValue.HandleType == HandleType.ConstantCharValue ||
-                DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
-                DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
-                DefaultValue.HandleType == HandleType.ConstantEnumArray ||
-                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
-                DefaultValue.HandleType == HandleType.ConstantHandleArray ||
-                DefaultValue.HandleType == HandleType.ConstantInt16Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt16Value ||
-                DefaultValue.HandleType == HandleType.ConstantInt32Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt32Value ||
-                DefaultValue.HandleType == HandleType.ConstantInt64Array ||
-                DefaultValue.HandleType == HandleType.ConstantInt64Value ||
-                DefaultValue.HandleType == HandleType.ConstantReferenceValue ||
-                DefaultValue.HandleType == HandleType.ConstantSByteArray ||
-                DefaultValue.HandleType == HandleType.ConstantSByteValue ||
-                DefaultValue.HandleType == HandleType.ConstantSingleArray ||
-                DefaultValue.HandleType == HandleType.ConstantSingleValue ||
-                DefaultValue.HandleType == HandleType.ConstantStringArray ||
-                DefaultValue.HandleType == HandleType.ConstantStringValue ||
-                DefaultValue.HandleType == HandleType.ConstantUInt16Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt16Value ||
-                DefaultValue.HandleType == HandleType.ConstantUInt32Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt32Value ||
-                DefaultValue.HandleType == HandleType.ConstantUInt64Array ||
-                DefaultValue.HandleType == HandleType.ConstantUInt64Value);
             writer.Write(DefaultValue);
             writer.Write(CustomAttributes);
         } // Save
@@ -3841,7 +1823,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ConstantStringValue Name;
         public PropertySignature Signature;
         public List<MethodSemantics> MethodSemantics = new List<MethodSemantics>();
-        public MetadataRecord DefaultValue;
+        public Constant DefaultValue;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Property
 
@@ -3877,15 +1859,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1535652143;
-            hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1535652143);
+            hash.Add(CallingConvention);
+            hash.Add(Type);
             for (int i = 0; i < Parameters.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-            }
+                hash.Add(Parameters[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -3962,11 +1943,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1470437688;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Field == null ? 0 : Field.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (EnclosingType == null ? 0 : EnclosingType.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(1470437688);
+            hash.Add(Field);
+            hash.Add(EnclosingType);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4031,11 +2013,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -620024567;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (EnclosingType == null ? 0 : EnclosingType.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-620024567);
+            hash.Add(Method);
+            hash.Add(EnclosingType);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4098,10 +2081,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -179535243;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ElementType == null ? 0 : ElementType.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-179535243);
+            hash.Add(ElementType);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4152,7 +2136,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             Name = visitor.Visit(this, Name);
             Culture = visitor.Visit(this, Culture);
-            RootNamespaceDefinition = visitor.Visit(this, RootNamespaceDefinition);
+            TypeDefinitions = visitor.Visit(this, TypeDefinitions);
+            TypeForwarders = visitor.Visit(this, TypeForwarders);
             EntryPoint = visitor.Visit(this, EntryPoint);
             GlobalModuleType = visitor.Visit(this, GlobalModuleType);
             CustomAttributes = visitor.Visit(this, CustomAttributes);
@@ -4167,7 +2152,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (other == null) return false;
             if (Flags != other.Flags) return false;
             if (!Object.Equals(Name, other.Name)) return false;
-            if (HashAlgorithm != other.HashAlgorithm) return false;
             if (MajorVersion != other.MajorVersion) return false;
             if (MinorVersion != other.MinorVersion) return false;
             if (BuildNumber != other.BuildNumber) return false;
@@ -4184,41 +2168,57 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1490364984;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ HashAlgorithm.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ MajorVersion.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ MinorVersion.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ BuildNumber.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ RevisionNumber.GetHashCode();
+            var hash = new HashCode();
+            hash.Add(1490364984);
+            hash.Add(Flags);
+            hash.Add(Name);
+            hash.Add(MajorVersion);
+            hash.Add(MinorVersion);
+            hash.Add(BuildNumber);
+            hash.Add(RevisionNumber);
             for (int i = 0; i < PublicKey.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ PublicKey[i].GetHashCode();
-            }
-            hash = ((hash << 13) - (hash >> 19)) ^ (Culture == null ? 0 : Culture.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (ModuleName == null ? 0 : ModuleName.GetHashCode());
+                hash.Add(PublicKey[i]);
+            hash.Add(Culture);
+            hash.Add(ModuleName);
             for (int i = 0; i < Mvid.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Mvid[i].GetHashCode();
-            }
+                hash.Add(Mvid[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
+
+        internal override void PlaceHashtables(Section section)
+        {
+            Debug.Assert(_typeDefinitionsHashtable is null);
+            _typeDefinitionsHashtable = new VertexHashtable();
+
+            foreach (TypeDefinition record in TypeDefinitions)
+            {
+                _typeDefinitionsHashtable.Append((uint)record.GetLookupHashCode(), record);
+            }
+            section.Place(_typeDefinitionsHashtable);
+            Debug.Assert(_typeForwardersHashtable is null);
+            _typeForwardersHashtable = new VertexHashtable();
+
+            foreach (TypeForwarder record in TypeForwarders)
+            {
+                _typeForwardersHashtable.Append((uint)record.GetLookupHashCode(), record);
+            }
+            section.Place(_typeForwardersHashtable);
+        } // PlaceHashtables
 
         internal override void Save(NativeWriter writer)
         {
             writer.Write(Flags);
             writer.Write(Name);
-            writer.Write(HashAlgorithm);
             writer.Write(MajorVersion);
             writer.Write(MinorVersion);
             writer.Write(BuildNumber);
             writer.Write(RevisionNumber);
             writer.Write(PublicKey);
             writer.Write(Culture);
-            writer.Write(RootNamespaceDefinition);
+            writer.WriteRelativeOffset(_typeDefinitionsHashtable);
+            writer.WriteRelativeOffset(_typeForwardersHashtable);
             writer.Write(EntryPoint);
             writer.Write(GlobalModuleType);
             writer.Write(CustomAttributes);
@@ -4249,14 +2249,16 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public AssemblyFlags Flags;
         public ConstantStringValue Name;
-        public AssemblyHashAlgorithm HashAlgorithm;
         public ushort MajorVersion;
         public ushort MinorVersion;
         public ushort BuildNumber;
         public ushort RevisionNumber;
         public Byte[] PublicKey;
         public ConstantStringValue Culture;
-        public NamespaceDefinition RootNamespaceDefinition;
+        public List<TypeDefinition> TypeDefinitions = new List<TypeDefinition>();
+        private VertexHashtable _typeDefinitionsHashtable;
+        public List<TypeForwarder> TypeForwarders = new List<TypeForwarder>();
+        private VertexHashtable _typeForwardersHashtable;
         public QualifiedMethod EntryPoint;
         public TypeDefinition GlobalModuleType;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
@@ -4302,20 +2304,19 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 2056651797;
-            hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ MajorVersion.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ MinorVersion.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ BuildNumber.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ RevisionNumber.GetHashCode();
+            var hash = new HashCode();
+            hash.Add(2056651797);
+            hash.Add(Flags);
+            hash.Add(Name);
+            hash.Add(MajorVersion);
+            hash.Add(MinorVersion);
+            hash.Add(BuildNumber);
+            hash.Add(RevisionNumber);
             for (int i = 0; i < PublicKeyOrToken.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ PublicKeyOrToken[i].GetHashCode();
-            }
-            hash = ((hash << 13) - (hash >> 19)) ^ (Culture == null ? 0 : Culture.GetHashCode());
+                hash.Add(PublicKeyOrToken[i]);
+            hash.Add(Culture);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4401,11 +2402,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1095947977;
-            hash = ((hash << 13) - (hash >> 19)) ^ (NamespaceOrEnclosingType == null ? 0 : NamespaceOrEnclosingType.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-1095947977);
+            hash.Add(NamespaceOrEnclosingType);
+            hash.Add(Name);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4486,7 +2488,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Scope = visitor.Visit(this, Scope);
+            Namespace = visitor.Visit(this, Namespace);
             Name = visitor.Visit(this, Name);
             NestedTypes = visitor.Visit(this, NestedTypes);
         } // Visit
@@ -4496,7 +2498,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeForwarder;
             if (other == null) return false;
-            if (!Object.Equals(Scope, other.Scope)) return false;
+            if (!Object.Equals(Namespace, other.Namespace)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             if (!NestedTypes.SequenceEqual(other.NestedTypes)) return false;
             return true;
@@ -4507,17 +2509,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 467167184;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Scope == null ? 0 : Scope.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(467167184);
+            hash.Add(Namespace);
+            hash.Add(Name);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
         internal override void Save(NativeWriter writer)
         {
-            writer.Write(Scope);
+            writer.Write(Namespace);
             writer.Write(Name);
             writer.Write(NestedTypes);
         } // Save
@@ -4542,7 +2545,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public ScopeReference Scope;
+        public NamespaceReference Namespace;
         public ConstantStringValue Name;
         public List<TypeForwarder> NestedTypes = new List<TypeForwarder>();
     } // TypeForwarder
@@ -4578,10 +2581,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 770132338;
-            hash = ((hash << 13) - (hash >> 19)) ^ (GenericType == null ? 0 : GenericType.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(770132338);
+            hash.Add(GenericType);
+            for (int i = 0; i < GenericTypeArguments.Count; i++)
+                hash.Add(GenericTypeArguments[i]);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4655,11 +2661,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -540108450;
-            hash = ((hash << 13) - (hash >> 19)) ^ (NamespaceOrEnclosingType == null ? 0 : NamespaceOrEnclosingType.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (TypeName == null ? 0 : TypeName.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-540108450);
+            hash.Add(NamespaceOrEnclosingType);
+            hash.Add(TypeName);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4725,10 +2732,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -902636182;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
+            var hash = new HashCode();
+            hash.Add(-902636182);
+            hash.Add(Signature);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 
@@ -4799,10 +2807,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 711693641;
-            hash = ((hash << 13) - (hash >> 19)) ^ Number.GetHashCode();
+            var hash = new HashCode();
+            hash.Add(711693641);
+            hash.Add(Number);
             LeaveGetHashCode();
-            _hash = hash;
+            _hash = hash.ToHashCode();
             return _hash;
         } // GetHashCode
 

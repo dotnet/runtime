@@ -24,7 +24,7 @@
 #include <fcntl.h>
 
 #if defined(__linux__)
-#if !defined(HAVE_CLOSE_RANGE)
+#if !HAVE_CLOSE_RANGE
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
 // close_range was added in Linux 5.9. The syscall number is 436 for all
@@ -37,7 +37,7 @@
 #  define __NR_close_range 436
 # endif
 #endif // !defined(__NR_close_range)
-#endif // !defined(HAVE_CLOSE_RANGE)
+#endif // !HAVE_CLOSE_RANGE
 #endif // defined(__linux__)
 #if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
@@ -246,44 +246,16 @@ static int SetCloexecForFd(void* context, int fd)
 }
 #endif
 
-// Used when OS-specific bulk methods (close_range, fdwalk) are unavailable or fail.
-// Always sets FD_CLOEXEC rather than closing fds directly. Closing fds directly would close
-// waitForChildToExecPipe[WRITE_END_OF_PIPE] (which has O_CLOEXEC), making it impossible to
-// report exec() failures back to the parent when execve() fails after RestrictHandleInheritance.
-static void SetCloexecForAllFdsFallback(void)
-{
-    struct rlimit rl;
-    int maxFd;
-    if (getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY)
-    {
-        maxFd = (int)rl.rlim_cur;
-    }
-    else
-    {
-        maxFd = (int)sysconf(_SC_OPEN_MAX);
-        if (maxFd <= 0)
-        {
-            maxFd = 65536; // reasonable upper bound
-        }
-    }
-
-    // Fallback: iterate over all file descriptors and set FD_CLOEXEC on each open one >= 3.
-    for (int fd = 3; fd < maxFd; fd++)
-    {
-        int flags = fcntl(fd, F_GETFD);
-        if (flags == -1)
-        {
-            continue; // fd not open
-        }
-
-        if ((flags & FD_CLOEXEC) == 0)
-        {
-            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
-        }
-    }
-}
-
-static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFdCount)
+// Returns 0 on success, or -1 (with errno set to ENOTSUP) if this platform/kernel doesn't provide
+// a performant native way (close_range()/fdwalk()) to restrict which fds a child process inherits.
+//
+// We intentionally do NOT fall back to manually scanning every possible fd via fcntl() in that
+// case: without close_range()/fdwalk(), there is no reliable way to learn only the fds that are
+// actually open, so such a scan would need to cover the entire valid fd range (up to INT_MAX) to
+// be correct -- something that has been measured to take multiple minutes of CPU time per
+// Process.Start call. That's not an acceptable cost, so we report failure instead and let the
+// managed layer surface a clear, actionable error.
+static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFdCount)
 {
     // FDs 0-2 are stdin/stdout/stderr; this method must be called AFTER the dup2 calls.
     // We always set FD_CLOEXEC rather than closing fds directly. This is critical because
@@ -291,28 +263,26 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     // until execve() is called so that exec failures can be reported back to the parent.
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
+    int result;
 #if HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
-    if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
-    {
-        SetCloexecForAllFdsFallback();
-    }
+    result = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif defined(__NR_close_range)
     // On Linux with older glibc that doesn't expose close_range() as a function,
     // use the raw syscall number if the kernel supports it (kernel >= 5.9).
-    if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
-    {
-        SetCloexecForAllFdsFallback();
-    }
+    result = (int)syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif HAVE_FDWALK
     // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
-    if (fdwalk(SetCloexecForFd, NULL) != 0)
-    {
-        SetCloexecForAllFdsFallback();
-    }
+    result = fdwalk(SetCloexecForFd, NULL);
 #else
-    SetCloexecForAllFdsFallback();
+    result = -1;
 #endif
+
+    if (result != 0)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
 
     // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.
     for (int i = 0; i < inheritedFdCount; i++)
@@ -327,6 +297,8 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
             }
         }
     }
+
+    return 0;
 }
 
 // Forward declaration of the internal fork+exec function
@@ -907,9 +879,9 @@ static int32_t ForkAndExecProcessInternal(
             }
         }
 
-        if (inheritedFdCount >= 0)
+        if (inheritedFdCount >= 0 && RestrictHandleInheritance(inheritedFds, inheritedFdCount) != 0)
         {
-            RestrictHandleInheritance(inheritedFds, inheritedFdCount);
+            ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
 
 #if HAVE_PR_SET_PDEATHSIG

@@ -906,13 +906,18 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
                 m_Reader.Skip(m_SafePointIndex * numSlots);
             }
 
-            for(UINT32 slotIndex = 0; slotIndex < numSlots; slotIndex++)
+            UINT32 slotIndex = 0;
+            while (slotIndex < numSlots)
             {
-                if(m_Reader.ReadOneFast())
+                UINT32 bitsRead;
+                size_t word = m_Reader.ReadWord(numSlots - slotIndex, bitsRead);
+                while (word != 0)
                 {
+                    UINT32 bitOffset = BitOperations::TrailingZeroCount(word);
+                    word &= word - 1;
                     ReportSlotToGC(
                             slotDecoder,
-                            slotIndex,
+                            slotIndex + bitOffset,
                             pRD,
                             reportScratchSlots,
                             inputFlags,
@@ -920,6 +925,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
                             hCallBack
                             );
                 }
+                slotIndex += bitsRead;
             }
             goto ReportUntracked;
         }
@@ -993,10 +999,17 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
             }
             else
             {
-                for(UINT32 i = 0; i < numSlots; i++)
+                UINT32 slotsRemaining = numSlots;
+                while (slotsRemaining > 0)
                 {
-                    if(m_Reader.ReadOneFast())
+                    UINT32 bitsRead;
+                    size_t word = m_Reader.ReadWord(slotsRemaining, bitsRead);
+                    while (word != 0)
+                    {
+                        word &= word - 1;
                         numCouldBeLiveSlots++;
+                    }
+                    slotsRemaining -= bitsRead;
                 }
             }
             _ASSERTE(numCouldBeLiveSlots > 0);
@@ -1020,8 +1033,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
             {
                 if (fSimple)
                 {
-                    while(!couldBeLiveReader.ReadOneFast())
-                        slotIndex++;
+                    slotIndex += couldBeLiveReader.SkipZerosAndReadOne();
                 }
                 else if (cnt > 0)
                 {
@@ -2211,7 +2223,11 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
         // Wasm is a bit strange and when we do SetStackBaseRegister(REG_FPBASE)
         //  what that actually does is set it to REG_NA, which currently has the value 2.
         _ASSERTE( 2 == m_StackBaseRegister );
+#ifdef FEATURE_NATIVEAOT
+        TADDR pFrameReg = pRD->GetFP();
+#else
         TADDR pFrameReg = (TADDR)pRD->pCurrentContext->InterpreterFP;
+#endif
 
         pObjRef = (OBJECTREF*)(pFrameReg + spOffset);
 

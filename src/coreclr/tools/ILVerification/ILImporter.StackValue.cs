@@ -692,9 +692,7 @@ namespace Internal.IL
             if (value.Kind == StackValueKind.ByRef)
                 return true;
 
-            // TODO: Check for other by-ref like types Slice<T>, ArgIterator, TypedReference
-
-            return false;
+            return value.Type?.IsByRefLike == true;
         }
     }
 }

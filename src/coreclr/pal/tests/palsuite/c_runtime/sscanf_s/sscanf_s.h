@@ -13,6 +13,8 @@
 #ifndef __SSCANF_S_H__
 #define __SSCANF_S_H__
 
+#include <dn-u16.h>
+
 inline void DoVoidTest_scanf_s(char *inputstr, const char *formatstr)
 {
     char buf[256] = { 0 };
@@ -72,7 +74,7 @@ inline void DoWStrTest_scanf_s(char *inputstr, const char *formatstr, const WCHA
             "Using \"%s\" in \"%s\".\n", ret, inputstr, formatstr);
     }
 
-    if (memcmp(checkstr, buf, wcslen(checkstr)*2 + 2) != 0)
+    if (memcmp(checkstr, buf, u16_strlen(checkstr)*2 + 2) != 0)
     {
         Fail("ERROR: scanned wide string incorrectly from \"%s\" using \"%s\".\n"
             "Expected \"%s\", got \"%s\".\n", inputstr, formatstr,

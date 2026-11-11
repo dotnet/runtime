@@ -359,8 +359,6 @@ static class Templates
     public static TemplateConfig SveScatterVector = new TemplateConfig("SveScatterVector.template");
     public static TemplateConfig SveScatterVectorBases = new TemplateConfig("SveScatterVectorBases.template");
     public static TemplateConfig SveGatherVectorFirstFaulting = new TemplateConfig("SveGatherVectorFirstFaulting.template");
-    public static TemplateConfig AesBinOpTest = new TemplateConfig("AesBinOpTest.template");
-    public static TemplateConfig AesUnOpTest = new TemplateConfig("AesUnOpTest.template");
     public static TemplateConfig ExtractTest = new TemplateConfig("ExtractTest.template");
     public static TemplateConfig ExtractVectorTest = new TemplateConfig("ExtractVectorTest.template");
     public static TemplateConfig InsertScalarTest = new TemplateConfig("InsertScalarTest.template");

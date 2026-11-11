@@ -139,17 +139,17 @@ public:
     IMDInternalImport *GetMDImport();
     IMDInternalEmit *GetMDInternalEmit();
 
-#ifdef PROFILING_SUPPORTED
-    IMetaDataEmit *GetEmitter();
-    IMetaDataImport2 *GetRWImporter();
-#elif defined(DACCESS_COMPILE)
+#ifdef DACCESS_COMPILE
     TADDR GetMDInternalRWAddress();
     BOOL HasReadWriteMetadata()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_MDImportIsRW_Debugger_Use_Only;
     }
-#endif // PROFILING_SUPPORTED
+#elif defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+    IMetaDataEmit *GetEmitter();
+    IMetaDataImport2 *GetRWImporter();
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
     void ConvertMDInternalToReadWrite();
 
@@ -340,10 +340,10 @@ private:
 #endif
 
     void OpenMDImport();
-#ifdef PROFILING_SUPPORTED
+#if !defined(DACCESS_COMPILE) && (defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER))
     void OpenImporter();
     void OpenEmitter();
-#endif // PROFILING_SUPPORTED
+#endif // !DACCESS_COMPILE && (PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER)
 
 private:
 
@@ -380,10 +380,10 @@ private:
 #endif
     };
 
-#ifdef PROFILING_SUPPORTED_DATA
+#if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
     IMetaDataImport2* m_pImporter;
     IMetaDataEmit* m_pEmitter;
-#endif // PROFILING_SUPPORTED_DATA
+#endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
     IMDInternalEmit* m_pMDInternalEmit;
 
     Volatile<LONG>           m_refCount;

@@ -500,7 +500,7 @@ namespace System
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
                             int fraction = (int)(dateTime.Ticks % TimeSpan.TicksPerSecond);
-                            fraction /= TimeSpanParse.Pow10UpToMaxFractionDigits(MaxSecondsFractionDigits - tokenLen);
+                            fraction /= (int)uint.PowersOf10[MaxSecondsFractionDigits - tokenLen];
                             if (ch == 'f')
                             {
                                 FormatFraction(ref result, fraction, fixedNumberFormats[tokenLen - 1]);

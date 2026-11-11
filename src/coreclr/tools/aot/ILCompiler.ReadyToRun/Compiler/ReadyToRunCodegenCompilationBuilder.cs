@@ -300,6 +300,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
             }
+            if (_r2rContext.TargetIsSingleThreaded)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -324,8 +328,12 @@ namespace ILCompiler
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
-            
-            List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };
+            List<CorJitFlag> corJitFlags = new List<CorJitFlag>();
+            if (!_nodeFactoryOptimizationFlags.StripDebugInfo)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+            }
+
             if (_hotColdSplitting)
             {
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROCSPLIT);

@@ -148,7 +148,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #endif
 #else // _MSC_VER
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__x86_64__)
 
 #if __has_builtin(__builtin_ia32_pause)
  // clang added this intrinsic in 3.8

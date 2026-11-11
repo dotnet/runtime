@@ -39,6 +39,30 @@ namespace System
                 new ReadOnlyCollection<T>(array);
         }
 
+        /// <summary>
+        /// Creates a new array of the specified length, with each element initialized to the specified value.
+        /// </summary>
+        /// <param name="length">The length of the array.</param>
+        /// <param name="value">The value with which to initialize each element.</param>
+        /// <typeparam name="T">The type of the elements in the array.</typeparam>
+        /// <returns>A new array of the specified length, with each element initialized to <paramref name="value"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
+        public static T[] CreateFilled<T>(int length, T value)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            if (value is null)
+            {
+                // We are sure value is bitwise equal to default(T) so we might be able to skip the Fill call. This benefits cases where
+                // RuntimeHelpers.IsReferenceOrContainsReferences<T>() is because then GC.AllocateUninitializedArray is zero initialized.
+                return new T[length];
+            }
+
+            T[] array = GC.AllocateUninitializedArray<T>(length);
+            Fill(array, value);
+            return array;
+        }
+
         public static void Resize<T>([NotNull] ref T[]? array, int newSize)
         {
             if (newSize < 0)

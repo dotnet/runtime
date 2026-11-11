@@ -271,6 +271,10 @@ bool Compiler::optCopyProp(
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
+        if (newLclVarDsc->RequiresGlobRefFlag())
+        {
+            tree->gtFlags |= GTF_GLOB_REF;
+        }
 
         // Update VN to match, and propagate up through any enclosing commas.
         // (we could in principle try updating through other parents, but

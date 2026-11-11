@@ -461,7 +461,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     {
         // The return buffer argument is implicit in both signatures.
 
-#if !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
+#ifndef HAS_RETBUFF_ARGUMENT_REGISTER
         // The ifdef above disables this code if the ret buff arg is always in the same register, which
         // means that we don't need to do any shuffling for it.
 
@@ -470,7 +470,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
             return FALSE;
-#endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
+#endif // !HAS_RETBUFF_ARGUMENT_REGISTER
     }
 
     // Handle async continuation argument.
@@ -515,7 +515,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         //   RDI->RSI, RDX->RCX, R8->RDX, R9->R8, stack[0]->R9, xmm0->xmm1, xmm1->xmm2, ... xmm6->xmm7, xmm7->stack[0], stack[1]->xmm0, stack[2]->stack[1], stack[3]->stack[2]
         // To prevent overwriting of slots before they are moved, we need to perform the shuffling in correct order
 
-        NewArrayHolder<ShuffleGraphNode> pGraphNodes = new ShuffleGraphNode[argSlots];
+        NewArrayHolder<ShuffleGraphNode> pGraphNodes(new ShuffleGraphNode[argSlots]);
 
         // Initialize the graph array
         for (unsigned int i = 0; i < argSlots; i++)
@@ -667,12 +667,7 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
     UINT stackSizeDelta;
 
-#ifdef UNIX_X86_ABI
-    // Stack does not shrink as UNIX_X86_ABI uses CDECL (instead of STDCALL).
-    stackSizeDelta = 0;
-#else
     stackSizeDelta = stackSizeSrc - stackSizeDst;
-#endif
 
     INT ofsSrc, ofsDst;
 
@@ -991,13 +986,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     //TODO: depending on what we decide for generics method we may want to move this check to better places
     if (method->IsGenericMethodDefinition() || method->HasMethodInstantiation())
@@ -1194,9 +1183,7 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pDelegateMT));
         PRECONDITION(CheckPointer(pTargetMethod));
         PRECONDITION(CheckPointer(pExactMethodType));
@@ -1943,6 +1930,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pMD != NULL);
         PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
     }

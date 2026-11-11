@@ -8,7 +8,7 @@ namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
     ///     Base class for validation attributes that require asynchronous operations, such as database lookups or API calls.
-    ///     Derived implementations must be thread-safe, as instances of this attribute may be invoked concurrently from multiple threads.
+    ///     Derived implementations must be thread-safe, as instances of this attribute might be invoked concurrently from multiple threads.
     /// </summary>
     public abstract class AsyncValidationAttribute : ValidationAttribute
     {
@@ -29,10 +29,10 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         /// <summary>
-        ///     Allows for providing a resource accessor function that will be used by the <see cref="ValidationAttribute.ErrorMessageString" />
+        ///     Allows for providing a resource accessor function that is used by the <see cref="ValidationAttribute.ErrorMessageString" />
         ///     property to retrieve the error message.
         /// </summary>
-        /// <param name="errorMessageAccessor">The <see cref="Func{T}" /> that will return an error message.</param>
+        /// <param name="errorMessageAccessor">The <see cref="Func{T}" /> that returns an error message.</param>
         protected AsyncValidationAttribute(Func<string> errorMessageAccessor)
             : base(errorMessageAccessor)
         {
@@ -99,7 +99,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     </para>
         ///     <para>
         ///         Implementations must observe the supplied <paramref name="cancellationToken" /> and stop work
-        ///         promptly when cancellation is requested. The validation infrastructure may cancel this token after
+        ///         promptly when cancellation is requested. The validation infrastructure might cancel this token after
         ///         a validation failure to stop sibling validators and awaits all started validation tasks before
         ///         returning. An implementation that ignores cancellation can delay failure and short-circuiting.
         ///     </para>
@@ -151,8 +151,9 @@ namespace System.ComponentModel.DataAnnotations
         ///         <see cref="CancellationTokenSource.CancelAfter(TimeSpan)" />.
         ///     </para>
         /// </remarks>
-        /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
+        /// <exception cref="InvalidOperationException">The current attribute is malformed.</exception>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="OperationCanceledException">The validation operation was canceled.</exception>
         public async Task<ValidationResult?> GetValidationResultAsync(
             object? value,
             ValidationContext validationContext,
