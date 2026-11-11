@@ -275,7 +275,7 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
 // They set up a new stack frame for calling a function which provides the TERMINATE_R2R_STACK_WALK flag so that unwinds from the funclet terminate correctly.
 // then invoke the new funclet with SP pointing to the top of the new frame.
 // There are two versions of the function, one for funclets that need to pass a Throwable (catch/filter), and one for those that do not (finally/fault)
-__attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
+static __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
          "local.get       3\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
@@ -304,7 +304,7 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInv
 }
 
 // Finally/fault version of the CallFunclet function which does not need to pass a Throwable
-__attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP)
+static __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
          "local.get       2\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
@@ -329,6 +329,27 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletTo
          "i32.const       0\n"
          "return\n"
           ::);
+}
+
+EXTERN_C DWORD_PTR CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP)
+{
+    TADDR fp = GetFP(pContext);
+    _ASSERTE(fp != 0);
+
+    if (pThrowable != NULL)
+    {
+        return CallFuncletWithThrowable(pFuncletToInvoke, fp, pThrowable, pFuncletCallerSP);
+    }
+
+    return CallFuncletWithoutThrowable(pFuncletToInvoke, fp, pFuncletCallerSP);
+}
+
+EXTERN_C DWORD_PTR CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP)
+{
+    TADDR fp = GetFP(pContext);
+    _ASSERTE(fp != 0);
+
+    return CallFuncletWithThrowable(pFuncletToInvoke, fp, pThrowable, pFuncletCallerSP);
 }
 
 extern "C" void TheUMEntryPrestub(void)
