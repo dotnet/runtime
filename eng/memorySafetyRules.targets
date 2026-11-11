@@ -5,12 +5,13 @@
     <MemorySafetyRulesVersion>2</MemorySafetyRulesVersion> in its project file. AllowUnsafeBlocks stays the library's
     own decision: a library without unsafe operations needs neither it nor any safe/unsafe annotations.
 
-    MemorySafetyRulesVersion is the compiler's own MSBuild property (dotnet/roslyn#85980). The compiler we build with
-    predates it, so it is mapped to the legacy feature flag here. Delete the Features line when a compiler that passes
-    MemorySafetyRulesVersion to csc flows in: the flag is deprecated there and warns (dotnet/roslyn#86224).
+    Older compiler targets do not pass MemorySafetyRulesVersion to csc (dotnet/roslyn#85980), so map it to the legacy
+    feature flag and suppress its deprecation warning (dotnet/roslyn#86224). Remove both the mapping and suppression
+    once all compilers used to build the repo support MemorySafetyRulesVersion.
   -->
   <PropertyGroup Condition="'$(MemorySafetyRulesVersion)' == '2'">
     <Features>$(Features);updated-memory-safety-rules</Features>
+    <NoWarn>$(NoWarn);CS9402</NoWarn>
   </PropertyGroup>
 
   <!--
