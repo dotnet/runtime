@@ -31,10 +31,12 @@
           DependsOnTargets="$(BuildRuntimeDependsOnTargets)"
           BeforeTargets="Build">
     <ItemGroup>
-      <!-- build-runtime prepends each -cmakeargs, so this comes first to end up after, and take precedence over, the user's CMakeArgs. -->
-      <_CoreClrBuildArg Condition="'$(ClrCrossComponentsBuild)' == 'true'" Include="-cmakeargs &quot;-DCLR_CROSS_COMPONENTS_BUILD=1&quot;" />
-      <_CMakeArgs Include="$(CMakeArgs)" />
-      <_CoreClrBuildArg Include="@(_CMakeArgs->'-cmakeargs &quot;%(Identity)&quot;')" />
+      <!-- On Windows build-runtime prepends each -cmakeargs, so this comes first to end up after,
+           and take precedence over, the user's CMakeArgs. On Unix the user's CMakeArgs are instead
+           forwarded as trailing arguments, so the flag is appended after them; see
+           _CoreClrBuildCommand below. -->
+      <_CoreClrBuildArg Condition="'$(ClrCrossComponentsBuild)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))" Include="-cmakeargs &quot;-DCLR_CROSS_COMPONENTS_BUILD=1&quot;" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows))" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(CppCompilerAndLinker)" />
@@ -64,7 +66,7 @@
       <_CoreClrBuildArg Include="-targetrid $(TargetRid)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(PortableTargetRid)&quot;" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH='$(DOTNET_HOST_PATH)'&quot;" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacDumpCollectProvider)' == 'true'" Include="-cmakeargs &quot;-DCLR_DUMP_ENUMERATOR_PATH=$(RuntimeBinDir)$(LibPrefix)mscordaccore$(LibSuffix)&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
@@ -128,6 +130,9 @@
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
       <_CoreClrBuildCommand>&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ') @(NativeCMakeArg, ' ')</_CoreClrBuildCommand>
+      <_CoreClrBuildCommand Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_CoreClrBuildCommand) -- $(CMakeArgs)</_CoreClrBuildCommand>
+      <!-- Last -D wins in CMake, so this must follow the user's CMakeArgs to keep precedence. -->
+      <_CoreClrBuildCommand Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(ClrCrossComponentsBuild)' == 'true'">$(_CoreClrBuildCommand) -DCLR_CROSS_COMPONENTS_BUILD=1</_CoreClrBuildCommand>
       <_CoreClrBuildEnvironmentVariables>EMSDK_PATH=$(EMSDK_PATH)</_CoreClrBuildEnvironmentVariables>
       <!-- Use the SDK resolved by AcquireWasiSdk rather than a preinstalled $(WASI_SDK_PATH) of a different version. -->
       <_CoreClrBuildEnvironmentVariables Condition="'$(TargetsWasi)' == 'true'">$(_CoreClrBuildEnvironmentVariables);WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_CoreClrBuildEnvironmentVariables>
