@@ -801,20 +801,10 @@ int minipal_getcpufeatures(void)
             result |= RiscV64IntrinsicConstants_Zbs;
         }
 
-#ifndef RISCV_HWPROBE_EXT_ZICOND
-// Alpine 3.21's linux-headers package was built on 6.6 LTS kernel, which doesn't define this extension
-#define RISCV_HWPROBE_EXT_ZICOND (1ULL << 35)
-#endif
-
         if (pairs[0].value & RISCV_HWPROBE_EXT_ZICOND)
         {
             result |= RiscV64IntrinsicConstants_Zicond;
         }
-
-#ifndef RISCV_HWPROBE_EXT_ZACAS
-// Older linux-headers packages do not define this extension.
-#define RISCV_HWPROBE_EXT_ZACAS (1ULL << 34)
-#endif
 
         if (pairs[0].value & RISCV_HWPROBE_EXT_ZACAS)
         {
