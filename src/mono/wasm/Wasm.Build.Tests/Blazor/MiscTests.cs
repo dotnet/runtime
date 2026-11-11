@@ -128,7 +128,7 @@ public class MiscTests : BlazorWasmTestBase
                                     .WithWorkingDirectory(serverDir);
         _ = cmd
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-            .ExecuteWithCapturedOutput(command, $"-p:Configuration={config}", $"-bl:{logPath}")
+            .ExecuteWithCapturedOutput(command, $"-p:Configuration={config}", $"-bl:{logPath}", "-nr:false")
             .EnsureSuccessful();
 
         if (publish)
