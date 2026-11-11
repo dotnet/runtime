@@ -62,6 +62,7 @@ namespace Microsoft.Extensions.Configuration.Test
             ("$ref( Target )", "hit"),
             ("$ref(Both)", "both-value"),
             ("$ref(Chain:First)", "hit"),
+            ("$ref('Deep:Target')", "deep"),
             ("$ref(Weird(1):Key)", "parens"),
             ("$ref('With Space')", "spaced"),
 
@@ -636,6 +637,61 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.DoesNotContain("cycle", error.Message, StringComparison.OrdinalIgnoreCase);
         }
 
+        [Theory]
+        [MemberData(nameof(RootKinds))]
+        public void TotalReads_BranchingReferences_AreBounded(RootKind kind)
+        {
+            const int MaxReads = 4096;
+            CountingProvider provider = CreateBranchingProvider(depth: 20);
+            IConfigurationRoot root = BuildRoot(kind, provider);
+            using IDisposable rootLifetime = (IDisposable)root;
+
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => root["K20"]);
+            Assert.Contains("K20", error.Message, StringComparison.Ordinal);
+            Assert.Contains("after reading 4096 configuration values", error.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("cycle", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(MaxReads, provider.Reads);
+
+            InvalidOperationException sectionError = Assert.Throws<InvalidOperationException>(() => TryGetViaSection(root, "K20", out _));
+            Assert.Equal(error.Message, sectionError.Message);
+            Assert.Equal(2 * MaxReads, provider.Reads);
+        }
+
+        [Theory]
+        [InlineData(RootKind.Builder, 12, false)]
+        [InlineData(RootKind.Builder, 13, true)]
+        [InlineData(RootKind.Manager, 12, false)]
+        [InlineData(RootKind.Manager, 13, true)]
+        public void TotalReads_AtAndBeyondTheLimit(RootKind kind, int leafReads, bool exceedsLimit)
+        {
+            const int MaxReads = 4096;
+            CountingProvider provider = CreateBranchingProvider(depth: 10);
+            // These five sub-references require 4,082 reads. The initial and final lookups add two, and each K0 adds one.
+            provider.Set("Probe", "$ref({K10}{K8}{K6}{K4}{K2}" + string.Concat(Enumerable.Repeat("{K0}", leafReads)) + ")");
+            string target = new string('x', 5 + leafReads);
+            provider.Set(target, "hit");
+
+            IConfigurationRoot root = BuildRoot(kind, provider);
+            using IDisposable rootLifetime = (IDisposable)root;
+
+            if (exceedsLimit)
+            {
+                string expected = SR.Format(SR.Error_ReferenceReadLimit, "Probe", MaxReads, "Probe -> " + target);
+                Assert.Equal(expected, Assert.Throws<InvalidOperationException>(() => root["Probe"]).Message);
+                Assert.Equal(expected, Assert.Throws<InvalidOperationException>(() => TryGetViaSection(root, "Probe", out _)).Message);
+            }
+            else
+            {
+                Assert.Equal("hit", root["Probe"]);
+                Assert.True(TryGetViaSection(root, "Probe", out string? value));
+                Assert.Equal("hit", value);
+            }
+
+            Assert.Equal(2 * MaxReads, provider.Reads);
+            Assert.Equal("x", root["K0"]);
+            Assert.Equal(2 * MaxReads + 1, provider.Reads);
+        }
+
         // === Writes and reloads ===
 
         [Theory]
@@ -669,6 +725,38 @@ namespace Microsoft.Extensions.Configuration.Test
             source.Built.TriggerReload();
 
             Assert.Equal("after", root["Probe"]);
+        }
+
+        [Theory]
+        [MemberData(nameof(RootKinds))]
+        public void Reload_ReferenceTargetNotifiesReferringSection(RootKind kind)
+        {
+            var source = new ReloadableMemorySource
+            {
+                InitialData = new Dictionary<string, string?>
+                {
+                    ["Shared:Value"] = "before",
+                    ["Client:Value"] = "$ref(Shared:Value)",
+                }
+            };
+            IConfigurationRoot root = BuildRoot(kind, source);
+            using IDisposable rootLifetime = (IDisposable)root;
+            IConfigurationSection section = root.GetSection("Client");
+            IChangeToken token = section.GetReloadToken();
+            int notifications = 0;
+            using IDisposable registration = ChangeToken.OnChange(section.GetReloadToken, () => notifications++);
+
+            Assert.Equal("before", section["Value"]);
+            source.Built!.Set("Shared:Value", "after");
+            Assert.False(token.HasChanged);
+            Assert.Equal(0, notifications);
+
+            source.Built.TriggerReload();
+
+            Assert.True(token.HasChanged);
+            Assert.Equal(1, notifications);
+            Assert.Equal("after", section["Value"]);
+            Assert.False(section.GetReloadToken().HasChanged);
         }
 
         // === Root kinds and providers ===
@@ -1131,6 +1219,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 // Elsewhere in the expression ".." still moves to the parent, so this is A:Uncle.
                 ("$ref(A:B:..:Uncle)", "uncle"),
                 ("$ref(A:..:Root)", "root-value"),
+                ("$ref(A:..:..:Root)", null),
                 // Ending on a move names the section it lands on rather than leaving a dangling separator.
                 ("$ref(A:B:..)", "a-value"),
                 ("$ref(A:B:.)", "b-value"),
@@ -1387,6 +1476,33 @@ namespace Microsoft.Extensions.Configuration.Test
                 dictionary[key] = value;
             }
             return dictionary;
+        }
+
+        private static CountingProvider CreateBranchingProvider(int depth)
+        {
+            var provider = new CountingProvider();
+            provider.Set("K0", "x");
+            provider.Set("xx", "x");
+            for (int i = 1; i <= depth; i++)
+            {
+                string target = "K" + (i - 1);
+                provider.Set("K" + i, "$ref({" + target + "}{" + target + "})");
+            }
+
+            return provider;
+        }
+
+        private sealed class CountingProvider : ConfigurationProvider, IConfigurationSource
+        {
+            public int Reads { get; private set; }
+
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => this;
+
+            public override bool TryGet(string key, out string? value)
+            {
+                Reads++;
+                return base.TryGet(key, out value);
+            }
         }
 
         private sealed class MinimalSource : IConfigurationSource

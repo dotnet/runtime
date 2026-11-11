@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -15,11 +16,11 @@ namespace Microsoft.Extensions.Configuration
     internal static class ReferenceResolver
     {
         private const string SwitchName = "Microsoft.Extensions.Configuration.DisableConfigurationReferences";
-        // The three ways one read can grow, each bounded on its own: steps from one reference to the next, levels of
-        // sub-reference, and values put into any single key expression.
+        // Bound both the depth of a reference and the total work across all of its branches.
         private const int MaxChain = 64;
         private const int MaxNesting = 32;
         private const int MaxExpansion = 32;
+        private const int MaxReads = 4096;
         private const int StackKeyLength = 128;
 
         [FeatureSwitchDefinition(SwitchName)]
@@ -27,38 +28,49 @@ namespace Microsoft.Extensions.Configuration
 
         internal static bool TryGet(IList<IConfigurationProvider> providers, string key, out string? value)
         {
-            Trail trail = default;
-            bool read = Read(providers, key, nesting: 0, hops: 0, ref trail, out value);
+            ErrorTrail errorTrail = default;
+            int remainingReads = MaxReads;
+            bool read = Read(providers, key, nesting: 0, hops: 0, ref remainingReads, ref errorTrail, out value);
 
-            if (!trail.Recording)
+            if (!errorTrail.HasError)
             {
                 return read;
             }
 
-            throw new InvalidOperationException(trail.Stopped switch
+            throw new InvalidOperationException(errorTrail.Reason switch
             {
-                Trail.Stop.Cycle => SR.Format(SR.Error_ReferenceCycle, key, trail.Path()),
-                Trail.Stop.Nesting => SR.Format(SR.Error_ReferenceNestingLimit, key, MaxNesting, trail.Path()),
-                Trail.Stop.Expansion => SR.Format(SR.Error_ReferenceExpansionLimit, key, MaxExpansion, trail.Path()),
-                _ => SR.Format(SR.Error_ReferenceChainLimit, key, MaxChain, trail.Path()),
+                ErrorTrail.StopReason.Cycle => SR.Format(SR.Error_ReferenceCycle, key, errorTrail.Path()),
+                ErrorTrail.StopReason.Nesting => SR.Format(SR.Error_ReferenceNestingLimit, key, MaxNesting, errorTrail.Path()),
+                ErrorTrail.StopReason.Expansion => SR.Format(SR.Error_ReferenceExpansionLimit, key, MaxExpansion, errorTrail.Path()),
+                ErrorTrail.StopReason.Reads => SR.Format(SR.Error_ReferenceReadLimit, key, MaxReads, errorTrail.Path()),
+                _ => SR.Format(SR.Error_ReferenceChainLimit, key, MaxChain, errorTrail.Path()),
             });
         }
 
-        private static bool Read(IList<IConfigurationProvider> providers, string key, int nesting, int hops, ref Trail trail, out string? value)
+        private static bool Read(IList<IConfigurationProvider> providers, string key, int nesting, int hops, ref int remainingReads, ref ErrorTrail errorTrail, out string? value)
         {
+            if (remainingReads == 0)
+            {
+                errorTrail.Begin(ErrorTrail.StopReason.Reads);
+                errorTrail.Record(key);
+                value = null;
+                return false;
+            }
+
+            remainingReads--;
             IConfigurationProvider? provider = ConfigurationRoot.GetValueProvider(providers, key, out value);
             if (provider is null)
             {
                 return false;
             }
 
-            if (value is not string raw)
+            if (value is null)
             {
                 return true;
             }
 
             // A chained configuration has already read its own values, so what it serves is text.
-            if (!ReferenceSyntax.IsReference(raw, out int bodyStart, out int bodyLength)
+            if (!ReferenceSyntax.IsReference(value, out int bodyStart, out int bodyLength)
              || provider is ChainedConfigurationProvider)
             {
                 return true;
@@ -68,14 +80,14 @@ namespace Microsoft.Extensions.Configuration
 
             if (hops >= MaxChain)
             {
-                trail.Open(Trail.Stop.Chain);
+                errorTrail.Begin(ErrorTrail.StopReason.Chain);
             }
-            else if (BuildKey(providers, raw.AsSpan(bodyStart, bodyLength), key, nesting, hops, ref trail) is { } target)
+            else if (BuildKey(providers, value.AsSpan(bodyStart, bodyLength), key, nesting, hops, ref remainingReads, ref errorTrail) is { } target)
             {
-                followed = Read(providers, target, nesting, hops + 1, ref trail, out value);
+                followed = Read(providers, target, nesting, hops + 1, ref remainingReads, ref errorTrail, out value);
             }
 
-            trail.Record(key);
+            errorTrail.Record(key);
 
             if (!followed)
             {
@@ -85,7 +97,7 @@ namespace Microsoft.Extensions.Configuration
             return followed;
         }
 
-        private static string? BuildKey(IList<IConfigurationProvider> providers, ReadOnlySpan<char> body, string baseKey, int nesting, int hops, ref Trail trail)
+        private static string? BuildKey(IList<IConfigurationProvider> providers, ReadOnlySpan<char> body, string baseKey, int nesting, int hops, ref int remainingReads, ref ErrorTrail errorTrail)
         {
             body = body.Trim();
             if (body.IsEmpty)
@@ -106,6 +118,7 @@ namespace Microsoft.Extensions.Configuration
 
                 while (read < text.Length)
                 {
+                    Debug.Assert(write <= read);
                     char c = text[read];
 
                     if (c == ReferenceSyntax.BraceOpen)
@@ -113,24 +126,24 @@ namespace Microsoft.Extensions.Configuration
                         int close = ReferenceSyntax.FindMatchingBrace(text.AsSpan(), read, baseKey);
                         if (nesting >= MaxNesting)
                         {
-                            trail.Open(Trail.Stop.Nesting);
+                            errorTrail.Begin(ErrorTrail.StopReason.Nesting);
                             return null;
                         }
 
                         if (++expansions > MaxExpansion)
                         {
-                            trail.Open(Trail.Stop.Expansion);
+                            errorTrail.Begin(ErrorTrail.StopReason.Expansion);
                             return null;
                         }
 
-                        string? inner = BuildKey(providers, text.AsSpan(read + 1, close - read - 1), baseKey, nesting, hops, ref trail);
+                        string? inner = BuildKey(providers, text.AsSpan(read + 1, close - read - 1), baseKey, nesting, hops, ref remainingReads, ref errorTrail);
                         if (inner is null)
                         {
                             return null;
                         }
 
                         // Neither an absent key nor one held as null has any text to put in.
-                        if (!Read(providers, inner, nesting + 1, hops, ref trail, out string? value) || value is null)
+                        if (!Read(providers, inner, nesting + 1, hops, ref remainingReads, ref errorTrail, out string? value) || value is null)
                         {
                             return null;
                         }
@@ -139,7 +152,7 @@ namespace Microsoft.Extensions.Configuration
                     }
                     else if (c == ReferenceSyntax.BraceClose)
                     {
-                        throw ThrowMalformedException(baseKey);
+                        ThrowMalformedException(baseKey);
                     }
                     else if (ReferenceSyntax.IsQuote(c))
                     {
@@ -223,7 +236,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        // Puts <paramref name="value"/> where the text spanning [start, start + length) was, leaving everything before
+        // Puts value where the text spanning [start, start + length) was, leaving everything before
         // it untouched so the key built so far survives.
         private static void Replace(ref ValueStringBuilder text, int start, int length, string value)
         {
@@ -234,77 +247,9 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [DoesNotReturn]
-        private static InvalidOperationException ThrowMalformedException(string key)
+        private static void ThrowMalformedException(string key)
         {
             throw new InvalidOperationException(SR.Format(SR.Error_MalformedReference, key));
-        }
-
-        // What a read that went too far leaves behind. Nothing is written down until one of the bounds is reached, so
-        // a read that resolves carries a null reference and never looks at it again.
-        private struct Trail
-        {
-            private List<string>? _keys;
-            private Stop _stopped;
-
-            internal readonly bool Recording => _keys is not null;
-
-            // Starts recording, naming the bound that noticed.
-            internal void Open(Stop stopped)
-            {
-                _keys = new List<string>();
-                _stopped = stopped;
-            }
-
-            // Writes a key down on the way out, and stops once the path leads back to one already written: that closes
-            // the loop, and the trail holds it entire. What lies shallower is how the read reached the loop rather
-            // than part of it, so there is nothing there worth keeping.
-            internal void Record(string key)
-            {
-                if (_keys is null || _stopped is Stop.Cycle)
-                {
-                    return;
-                }
-
-                // Configuration keys match without regard to case.
-                foreach (string seen in _keys)
-                {
-                    if (string.Equals(seen, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        _stopped = Stop.Cycle;
-                        break;
-                    }
-                }
-
-                _keys.Add(key);
-            }
-
-            // Why the read stopped, which decides what there is to say about the path.
-            internal readonly Stop Stopped => _stopped;
-
-            // The keys the read passed through, in the order it read them. Where a loop closed that is the loop and
-            // nothing else, since the keys that led to it were never written down; where none did it is the whole path,
-            // from the key that was asked for to wherever the read ran out.
-            internal readonly string Path()
-            {
-                // Written down on the way out, so it reads deepest first and has to be turned round.
-                StringBuilder path = new StringBuilder(_keys![_keys.Count - 1]);
-                for (int i = _keys.Count - 2; i >= 0; i--)
-                {
-                    path.Append(" -> ").Append(_keys[i]);
-                }
-
-                return path.ToString();
-            }
-
-            // Why a read stopped, and so what there is to say about it. A loop closing overrides whichever bound noticed
-            // first, because the bound is only how the read found out.
-            public enum Stop
-            {
-                Chain,
-                Nesting,
-                Expansion,
-                Cycle,
-            }
         }
 
         // Drops a trailing separator, so the key built so far ends at a segment boundary rather than part-way through
@@ -328,18 +273,77 @@ namespace Microsoft.Extensions.Configuration
                 return -1;
             }
 
-            while (write > 0 && text[write - 1] != ReferenceSyntax.KeyDelimiter)
+            int separator = text.AsSpan(0, write).LastIndexOf(ReferenceSyntax.KeyDelimiter);
+
+            return separator < 0 ? 0 : separator;
+        }
+
+        // What a read that went too far leaves behind. Nothing is written down until one of the bounds is reached, so
+        // a read that resolves carries a null reference and never looks at it again.
+        private struct ErrorTrail
+        {
+            private List<string>? _keys;
+            private StopReason _reason;
+
+            internal readonly bool HasError => _keys is not null;
+
+            internal void Begin(StopReason reason)
             {
-                write--;
+                _keys = new List<string>();
+                _reason = reason;
             }
 
-            if (write > 0)
+            // Writes a key down on the way out, and stops once the path leads back to one already written: that closes
+            // the loop, and the trail holds it entire. What lies shallower is how the read reached the loop rather
+            // than part of it, so there is nothing there worth keeping.
+            internal void Record(string key)
             {
-                // The separator belongs to the segment being dropped.
-                write--;
+                if (_keys is null || _reason is StopReason.Cycle)
+                {
+                    return;
+                }
+
+                // Configuration keys match without regard to case.
+                foreach (string seen in _keys)
+                {
+                    if (string.Equals(seen, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _reason = StopReason.Cycle;
+                        break;
+                    }
+                }
+
+                _keys.Add(key);
             }
 
-            return write;
+            // Why the read stopped, which decides what there is to say about the path.
+            internal readonly StopReason Reason => _reason;
+
+            // The keys the read passed through, in the order it read them. Where a loop closed that is the loop and
+            // nothing else, since the keys that led to it were never written down; where none did it is the whole path,
+            // from the key that was asked for to wherever the read ran out.
+            internal readonly string Path()
+            {
+                // Written down on the way out, so it reads deepest first and has to be turned round.
+                StringBuilder path = new StringBuilder(_keys![_keys.Count - 1]);
+                for (int i = _keys.Count - 2; i >= 0; i--)
+                {
+                    path.Append(" -> ").Append(_keys[i]);
+                }
+
+                return path.ToString();
+            }
+
+            // Why a read stopped, and so what there is to say about it. A loop closing overrides whichever bound noticed
+            // first, because the bound is only how the read found out.
+            public enum StopReason
+            {
+                Chain,
+                Nesting,
+                Expansion,
+                Reads,
+                Cycle,
+            }
         }
     }
 }

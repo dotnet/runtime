@@ -14,14 +14,13 @@ namespace Microsoft.Extensions.Configuration
         internal const char BraceOpen = '{';
         internal const char BraceClose = '}';
 
-        private const char Sigil = '$';
-        private const string Keyword = "ref(";
+        private const string SigilAndKeyword = "$ref(";
         private const char BodyClose = ')';
 
-        // The shortest a reference can be, "$ref()", which is also what makes the keyword comparison below safe.
+        // The shortest a reference can be, "$ref()".
         private const int MinLength = 6;
 
-        // Whether <paramref name="value"/> is a reference, and if so the span between the opening parenthesis and the
+        // Whether value is a reference, and if so the span between the opening parenthesis and the
         // final ')'. The keyword is matched case-insensitively, in keeping with configuration keys generally. There is
         // no escape: a value that spells a reference is one, and an application holding text that cannot be read any
         // other way disables reference resolution rather than learning a syntax to say so.
@@ -32,22 +31,21 @@ namespace Microsoft.Extensions.Configuration
 
             if (value.Length < MinLength
              || value[value.Length - 1] != BodyClose
-             || value[0] != Sigil
-             || string.Compare(value, 1, Keyword, 0, Keyword.Length, StringComparison.OrdinalIgnoreCase) != 0)
+             || !value.StartsWith(SigilAndKeyword, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
-            bodyStart = 1 + Keyword.Length;
+            bodyStart = SigilAndKeyword.Length;
             bodyLength = value.Length - 1 - bodyStart;
             return true;
         }
 
-        // Whether <paramref name="c"/> opens a quoted run. Either quote character will do, so a key containing one is
+        // Whether c opens a quoted run. Either quote character will do, so a key containing one is
         // written in the other.
         internal static bool IsQuote(char c) => c == '\'' || c == '"';
 
-        // Advances past a quoted run that starts at <paramref name="start"/>, returning the index just past its closing
+        // Advances past a quoted run that starts at start, returning the index just past its closing
         // quote, or -1 when the run is never closed. A doubled quote is content, not the terminator.
         internal static int SkipQuoted(ReadOnlySpan<char> s, int start)
         {
@@ -69,8 +67,8 @@ namespace Microsoft.Extensions.Configuration
             return -1;
         }
 
-        // Writes the content of the quoted run spanning [start, pastEnd) - as returned by <see cref="SkipQuoted"/> -
-        // at <paramref name="write"/>, with the surrounding quotes removed and each doubled quote collapsed to one,
+        // Writes the content of the quoted run spanning [start, pastEnd) - as returned by SkipQuoted -
+        // at write, with the surrounding quotes removed and each doubled quote collapsed to one,
         // and returns where the key now ends. Reading and writing share the buffer, which is safe because the run is
         // always written shorter than it is read.
         internal static int WriteQuoted(ref ValueStringBuilder text, int start, int pastEnd, int write)
@@ -90,7 +88,7 @@ namespace Microsoft.Extensions.Configuration
             return write;
         }
 
-        // Finds the brace closing the one at <paramref name="open"/>, skipping quoted runs, and throws if the text ends
+        // Finds the brace closing the one at open, skipping quoted runs, and throws if the text ends
         // first. What a placeholder names is a key expression with no placeholder of its own, so a second opening brace
         // is a mistake rather than a level to descend into.
         internal static int FindMatchingBrace(ReadOnlySpan<char> s, int open, string key)
@@ -126,9 +124,9 @@ namespace Microsoft.Extensions.Configuration
             throw new InvalidOperationException(SR.Format(SR.Error_MalformedReference, key));
         }
 
-        // The length of the move at <paramref name="i"/>, or 0 when the dots there are part of a name rather than a
+        // The length of the move at i, or 0 when the dots there are part of a name rather than a
         // move. A move has to fill a whole segment, so it starts one and ends one. What it starts from is the key built
-        // so far, of which <paramref name="written"/> characters stand at the head of <paramref name="s"/>, rather than
+        // so far, of which written characters stand at the head of s, rather than
         // the text they were read from, which may have held quotes that were dropped on the way.
         internal static int MoveLength(ReadOnlySpan<char> s, int i, int written)
         {
