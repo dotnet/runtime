@@ -66,17 +66,16 @@ their resolution. Reject mismatched assembly filenames and path-shaped metadata 
 Leave root and XML assembly-name validation to ILLink, which treats path-shaped names as unresolved
 rather than probing outside the inventory.
 
-Inspect CodeView paths, portable-PDB document paths, embedded portable PDBs, and custom-debug blobs.
+Inspect CodeView paths, portable-PDB document paths, and embedded portable PDBs.
 Accept relative non-escaping paths and conventional synthetic `/_N/` paths; reject physical symbol
 paths, native PDBs, MDBs, malformed symbols, and unsupported debug-directory kinds. External portable
 PDB emission requires explicit `PreserveSymbolPaths=true` with already-normalized inputs. Copy
 actions also require shareable input bytes. Explicit skipped references are metadata-inspected and
 fully hashed, without output-symbol restrictions because their symbols are not emitted.
 
-Conservatively reject literal physical source-root prefixes in emitted-input PE bytes, auxiliary
-files, and portable-PDB custom-debug blobs using UTF-8/UTF-16 spellings. This catches ordinary
-physical `CallerFilePath` strings, but is not a general proof about opaque or compressed application
-data. Compiler and symbol defaults are unchanged.
+Do not scan input contents for physical source-root prefixes. Embedded checkout paths, including
+`CallerFilePath` strings and custom-debug blobs, participate in full-content hashes: changing them
+changes the key, while identical bytes can share an entry. Compiler and symbol defaults are unchanged.
 
 The inventory includes the task assembly, selected dotnet host executable, and entire linker
 assembly. Hash the linker without loading it or relying on MVID, timestamps, or length; do not scan

@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -435,7 +434,7 @@ namespace ILLink.Tasks
                 }
                 foreach (ITaskItem assembly in ReferenceAssemblyPaths ?? Array.Empty<ITaskItem>())
                 {
-                    if (!AddAssembly(assembly.ItemSpec, checkOutputPaths: false))
+                    if (!AddAssembly(assembly.ItemSpec, checkOutputSymbols: false))
                         return null;
                 }
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
@@ -470,26 +469,15 @@ namespace ILLink.Tasks
                 AddFile(taskAssemblyPath);
                 AddFile(pathToTool);
                 AddFile(ILLinkPath);
-                var toolFiles = new HashSet<string>(StringComparer.Ordinal)
-                {
-                    Path.GetFullPath(pathToTool),
-                    Path.GetFullPath(ILLinkPath),
-                    Path.GetFullPath(taskAssemblyPath)
-                };
-
                 var commands = invocation.RelativeInvocation is { } relative
                     ? (relative.CommandLine, relative.ResponseFile)
                     : GenerateMappedCommands(paths.Map, invocation.ExtraPaths);
                 var logicalFiles = new SortedDictionary<string, string>(StringComparer.Ordinal);
                 foreach (string file in files)
-                    logicalFiles.Add(paths.Map(file), file);
-                foreach (var file in logicalFiles)
                 {
-                    using var input = File.OpenRead(file.Value);
-                    if (!assemblies.Contains(file.Value) && !toolFiles.Contains(file.Value))
-                    {
-                        paths.CheckForPhysicalRoots(input, 0, input.Length);
-                    }
+                    // Required inputs must be readable, not represented as absent by shared hashing.
+                    using var input = File.OpenRead(file);
+                    logicalFiles.Add(paths.Map(file), file);
                 }
 
                 return new InvocationDescription(InvocationInputs.FromFiles(logicalFiles.Values.ToArray()),
@@ -505,7 +493,7 @@ namespace ILLink.Tasks
                         AddFile(path);
                 }
 
-                bool AddAssembly(string path, bool checkOutputPaths = true)
+                bool AddAssembly(string path, bool checkOutputSymbols = true)
                 {
                     path = Path.GetFullPath(path);
                     if (!assemblies.Add(path))
@@ -520,7 +508,7 @@ namespace ILLink.Tasks
                     foreach (string satelliteDirectory in Directory.EnumerateDirectories(directory))
                     {
                         string satellite = Path.Combine(satelliteDirectory, satelliteName);
-                        if (File.Exists(satellite) && !AddAssembly(satellite, checkOutputPaths))
+                        if (File.Exists(satellite) && !AddAssembly(satellite, checkOutputSymbols))
                             return false;
                     }
 
@@ -542,14 +530,8 @@ namespace ILLink.Tasks
                             return false;
                         }
                     }
-                    using (var scan = File.OpenRead(path))
-                    {
-                        paths.CheckForPhysicalRoots(scan,
-                            checkOutputPaths ? 0 : pe.PEHeaders.MetadataStartOffset,
-                            checkOutputPaths ? scan.Length : pe.PEHeaders.MetadataSize);
-                    }
-                    if (checkOutputPaths)
-                        CheckCacheableSymbols(path, pe, paths);
+                    if (checkOutputSymbols)
+                        CheckCacheableSymbols(path, pe);
                     return true;
                 }
             }
@@ -638,7 +620,7 @@ namespace ILLink.Tasks
             }
         }
 
-        private void CheckCacheableSymbols(string assemblyPath, PEReader pe, CachePathMap paths)
+        private void CheckCacheableSymbols(string assemblyPath, PEReader pe)
         {
             if (File.Exists(assemblyPath + ".mdb"))
                 throw new NotSupportedException("MDB symbols are not supported by the shared cache.");
@@ -654,7 +636,7 @@ namespace ILLink.Tasks
                         break;
                     case DebugDirectoryEntryType.EmbeddedPortablePdb:
                         using (MetadataReaderProvider provider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(entry))
-                            CheckDocuments(provider.GetMetadataReader(), paths);
+                            CheckDocuments(provider.GetMetadataReader());
                         break;
                     case DebugDirectoryEntryType.Reproducible:
                     case DebugDirectoryEntryType.PdbChecksum:
@@ -671,22 +653,19 @@ namespace ILLink.Tasks
                     throw new NotSupportedException("Portable PDB emission requires explicit PreserveSymbolPaths for the shared cache.");
                 using var input = File.OpenRead(pdbPath);
                 using var provider = MetadataReaderProvider.FromPortablePdbStream(input);
-                CheckDocuments(provider.GetMetadataReader(), paths);
+                CheckDocuments(provider.GetMetadataReader());
             }
 
-            static void CheckDocuments(MetadataReader metadata, CachePathMap paths)
+            static void CheckDocuments(MetadataReader metadata)
             {
                 foreach (DocumentHandle handle in metadata.Documents)
                     CachePathMap.CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
-                foreach (CustomDebugInformationHandle handle in metadata.CustomDebugInformation)
-                    paths.CheckForPhysicalRoots(metadata.GetBlobBytes(metadata.GetCustomDebugInformation(handle).Value));
             }
         }
 
         private sealed class CachePathMap
         {
             private readonly List<(string Physical, string Logical)> _roots = new();
-            private readonly List<byte[]> _physicalPrefixes = new();
             internal string ExecutionRoot { get; }
             private static StringComparison PathComparison => Path.DirectorySeparatorChar == '\\'
                 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
@@ -728,11 +707,6 @@ namespace ILLink.Tasks
                             throw new NotSupportedException("Duplicate logical SourceRoots are not supported.");
                         CheckNested(physical, logical, previous.Physical, previous.Logical);
                         CheckNested(previous.Physical, previous.Logical, physical, logical);
-                    }
-                    foreach (string prefix in new[] { physical, physical.Replace('\\', '/') }.Distinct(StringComparer.Ordinal))
-                    {
-                        _physicalPrefixes.Add(Encoding.UTF8.GetBytes(prefix));
-                        _physicalPrefixes.Add(Encoding.Unicode.GetBytes(prefix));
                     }
                 }
 
@@ -786,43 +760,6 @@ namespace ILLink.Tasks
                 if ((path.Length > 0 && path[0] is '/' or '\\') ||
                     (path.Length > 1 && path[1] == ':') || path.Split('/', '\\').Any(part => part == ".."))
                     throw new NotSupportedException($"Physical or escaping symbol path '{path}' is not supported by the shared cache.");
-            }
-
-            internal void CheckForPhysicalRoots(ReadOnlySpan<byte> bytes)
-            {
-                foreach (byte[] prefix in _physicalPrefixes)
-                {
-                    if (bytes.IndexOf(prefix) >= 0)
-                        throw new NotSupportedException("An input contains a physical SourceRoot path.");
-                }
-            }
-
-            internal void CheckForPhysicalRoots(FileStream input, long offset, long length)
-            {
-                int overlap = _physicalPrefixes.Max(prefix => prefix.Length) - 1;
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(64 * 1024, checked(2 * overlap + 1)));
-                long originalPosition = input.Position;
-                try
-                {
-                    input.Position = offset;
-                    int retained = 0;
-                    while (length > 0)
-                    {
-                        int read = input.Read(buffer, retained, (int)Math.Min(length, buffer.Length - retained));
-                        if (read == 0)
-                            throw new EndOfStreamException("An input changed while checking shared-cache paths.");
-                        int count = retained + read;
-                        CheckForPhysicalRoots(buffer.AsSpan(0, count));
-                        retained = Math.Min(overlap, count);
-                        Buffer.BlockCopy(buffer, count - retained, buffer, 0, retained);
-                        length -= read;
-                    }
-                }
-                finally
-                {
-                    input.Position = originalPosition;
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
             }
 
             private static bool IsLogicalPath(string path)

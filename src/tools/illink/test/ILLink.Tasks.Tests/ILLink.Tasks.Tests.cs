@@ -1759,7 +1759,7 @@ namespace ILLink.Tasks.Tests
                 bool corruptEntry = bool.Parse(corrupt);
                 using var test = new OutputDirectoryTest();
                 string input = Path.Combine(test.Root, "Input.dll");
-                WriteTestAssembly(input);
+                WriteTestAssembly(input, test.Root + "/src/Input.cs");
                 var task = test.Task;
                 task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
                 task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
@@ -2043,9 +2043,6 @@ namespace ILLink.Tasks.Tests
         [InlineData("mdb")]
         [InlineData("physical-codeview")]
         [InlineData("physical-document")]
-        [InlineData("physical-string")]
-        [InlineData("physical-config")]
-        [InlineData("physical-xml")]
         public void CacheKeyRejectsNonShareableInputPaths(string kind)
         {
             using var test = new OutputDirectoryTest();
@@ -2064,15 +2061,6 @@ namespace ILLink.Tasks.Tests
                     break;
                 case "physical-document":
                     WriteSymbolAssembly(input, test.Root + "/src/Input.cs");
-                    break;
-                case "physical-string":
-                    WriteTestAssembly(input, test.Root + "/src/Input.cs");
-                    break;
-                case "physical-config":
-                    File.WriteAllText(input + ".config", test.Root + "/src/Input.cs");
-                    break;
-                case "physical-xml":
-                    File.WriteAllText(test.Task.RootDescriptorFiles[0].ItemSpec, test.Root + "/src/Input.cs");
                     break;
             }
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
@@ -2273,18 +2261,65 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void CacheKeyRejectsPhysicalRootAcrossScanBoundary(bool utf16)
+        [InlineData("assembly")]
+        [InlineData("reference")]
+        [InlineData("config-utf8")]
+        [InlineData("config-utf16")]
+        [InlineData("xml")]
+        public void CacheKeyTracksPhysicalRootContents(string kind)
         {
-            using var test = new OutputDirectoryTest();
-            string host = PrepareCacheKeyTest(test);
-            string contents = new string('x', utf16 ? 32 * 1024 - 5 : 64 * 1024 - 5) + test.Root + "/source.cs";
-            byte[] bytes = (utf16 ? Encoding.Unicode : Encoding.UTF8).GetBytes(contents);
-            File.WriteAllBytes(test.Task.AssemblyPaths[0].ItemSpec + ".config", bytes);
-            Assert.False(test.Task.TryGetCacheKey(host, out string key));
-            Assert.Empty(key);
-            Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("physical SourceRoot"));
+            using var first = new OutputDirectoryTest();
+            using var second = new OutputDirectoryTest();
+            string firstHost = PrepareCacheKeyTest(first);
+            string secondHost = PrepareCacheKeyTest(second);
+            string input = first.Task.AssemblyPaths[0].ItemSpec;
+            string path;
+            switch (kind)
+            {
+                case "assembly":
+                    path = input;
+                    WriteTestAssembly(path, first.Root + "/src/Input.cs");
+                    break;
+                case "reference":
+                    path = first.Task.ReferenceAssemblyPaths[0].ItemSpec;
+                    WriteTestAssembly(path, first.Root + "/src/Input.cs");
+                    break;
+                case "xml":
+                    path = first.Task.RootDescriptorFiles[0].ItemSpec;
+                    File.WriteAllText(path, $"<linker><!-- {first.Root}/src/Input.cs --></linker>");
+                    break;
+                default:
+                    path = input + ".config";
+                    File.WriteAllText(path, first.Root + "/src/Input.cs",
+                        kind == "config-utf16" ? Encoding.Unicode : Encoding.UTF8);
+                    break;
+            }
+            foreach (string file in Directory.GetFiles(first.Root, "*", SearchOption.AllDirectories))
+            {
+                string destination = Path.Combine(second.Root, Path.GetRelativePath(first.Root, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                File.Copy(file, destination, overwrite: true);
+            }
+            Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstKey));
+            Assert.True(second.Task.TryGetCacheKey(secondHost, out string secondKey));
+            Assert.Equal(firstKey, secondKey);
+
+            string secondPath = Path.Combine(second.Root, Path.GetRelativePath(first.Root, path));
+            byte[] contents = File.ReadAllBytes(secondPath);
+            Encoding encoding = kind == "config-utf16" ? Encoding.Unicode : Encoding.UTF8;
+            byte[] originalRoot = encoding.GetBytes(first.Root);
+            byte[] changedRoot = encoding.GetBytes(second.Root);
+            Assert.Equal(originalRoot.Length, changedRoot.Length);
+            int offset = contents.AsSpan().IndexOf(originalRoot);
+            Assert.True(offset >= 0);
+            byte[] changedContents = (byte[])contents.Clone();
+            changedRoot.CopyTo(changedContents, offset);
+            File.WriteAllBytes(secondPath, changedContents);
+            Assert.True(second.Task.TryGetCacheKey(secondHost, out string changed));
+            Assert.NotEqual(firstKey, changed);
+            File.WriteAllBytes(secondPath, contents);
+            Assert.True(second.Task.TryGetCacheKey(secondHost, out string restored));
+            Assert.Equal(firstKey, restored);
         }
 
         [Theory]
