@@ -41,11 +41,13 @@
     <PropertyGroup>
       <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
       <!-- Lanes that run with the workload installed and with the default fingerprinting/bundler/wasm-opt
-           settings fan out per test class (this includes the webcil permutations); every other
-           lane runs as a single work item. Identical for every runtime flavor - only
-           $(BuildWasmAppsJobsList) differs. -->
+           settings fan out per test class (this includes the webcil permutations), for every runtime
+           flavor - only $(BuildWasmAppsJobsList) differs. The CoreCLR no-workload lane with default
+           settings also fans out, using the no-workload list, because it is too slow for a single work
+           item. Every other lane runs as a single work item. -->
       <_FanOutPerTestClass>false</_FanOutPerTestClass>
       <_FanOutPerTestClass Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false' and '$(WasmRunWasmOpt)' != 'true'">true</_FanOutPerTestClass>
+      <_FanOutPerTestClass Condition="'$(TestUsingWorkloads)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEnableWebcil)' != 'false' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false' and '$(WasmRunWasmOpt)' != 'true'">true</_FanOutPerTestClass>
     </PropertyGroup>
 
     <!-- The fan-out lane has no catch-all work item, so a missing list means the tests silently do not run. -->

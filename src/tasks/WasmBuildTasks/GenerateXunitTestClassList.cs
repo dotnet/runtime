@@ -51,6 +51,14 @@ public class GenerateXunitTestClassList : Task
     /// </summary>
     public string[] ExcludedTestCategories { get; set; } = [];
 
+    /// <summary>
+    /// <c>[TestCategory(...)]</c> values that the consuming lane selects with <c>-trait</c>. When set, a class
+    /// is listed only if at least one of its test methods that is not excluded carries one of these,
+    /// either directly or through the class. Otherwise every test in the resulting work item would be
+    /// filtered out.
+    /// </summary>
+    public string[] IncludedTestCategories { get; set; } = [];
+
     public override bool Execute()
     {
         if (!File.Exists(Assembly))
@@ -60,11 +68,12 @@ public class GenerateXunitTestClassList : Task
         }
 
         HashSet<string> excluded = new(ExcludedTestCategories.Where(c => !string.IsNullOrWhiteSpace(c)), StringComparer.OrdinalIgnoreCase);
+        HashSet<string> included = new(IncludedTestCategories.Where(c => !string.IsNullOrWhiteSpace(c)), StringComparer.OrdinalIgnoreCase);
 
         List<string> classNames;
         try
         {
-            classNames = GetTestClasses(excluded);
+            classNames = GetTestClasses(excluded, included);
         }
         catch (Exception ex) when (IsIoException(ex))
         {
@@ -79,8 +88,11 @@ public class GenerateXunitTestClassList : Task
 
         if (classNames.Count == 0)
         {
+            string categoryHint = IncludedTestCategories.Length > 0
+                ? $" in categories [{string.Join(", ", IncludedTestCategories)}]"
+                : string.Empty;
             Log.LogError($"No xunit test classes found in '{Assembly}'. Expected at least one public non-abstract " +
-                         $"class declaring a method attributed with one of: {string.Join(", ", s_testMethodAttributeNames)}.");
+                         $"class declaring a method attributed with one of: {string.Join(", ", s_testMethodAttributeNames)}{categoryHint}.");
             return false;
         }
 
@@ -102,7 +114,7 @@ public class GenerateXunitTestClassList : Task
     private static bool IsIoException(Exception ex) =>
         ex is IOException or UnauthorizedAccessException;
 
-    private List<string> GetTestClasses(HashSet<string> excluded)
+    private List<string> GetTestClasses(HashSet<string> excluded, HashSet<string> included)
     {
         using FileStream stream = File.OpenRead(Assembly);
         using PEReader peReader = new(stream);
@@ -123,10 +135,11 @@ public class GenerateXunitTestClassList : Task
                 continue;
             }
 
-            if (GetCategories(reader, type.GetCustomAttributes()).Overlaps(excluded))
+            HashSet<string> classCategories = GetCategories(reader, type.GetCustomAttributes());
+            if (classCategories.Overlaps(excluded))
                 continue;
 
-            if (!HasRunnableTestMethod(reader, type, excluded))
+            if (!HasRunnableTestMethod(reader, type, classCategories, excluded, included))
                 continue;
 
             string ns = reader.GetString(type.Namespace);
@@ -137,7 +150,7 @@ public class GenerateXunitTestClassList : Task
         return classNames;
     }
 
-    private static bool HasRunnableTestMethod(MetadataReader reader, TypeDefinition type, HashSet<string> excluded)
+    private static bool HasRunnableTestMethod(MetadataReader reader, TypeDefinition type, HashSet<string> classCategories, HashSet<string> excluded, HashSet<string> included)
     {
         // GetMethods() only returns methods declared on this type, so a test class is not picked up
         // through tests it inherits from a shared base class.
@@ -159,7 +172,10 @@ public class GenerateXunitTestClassList : Task
                     categories.Add(category);
             }
 
-            if (isTest && !categories.Overlaps(excluded))
+            if (!isTest || categories.Overlaps(excluded))
+                continue;
+
+            if (included.Count == 0 || categories.Overlaps(included) || classCategories.Overlaps(included))
                 return true;
         }
 
