@@ -105,7 +105,11 @@ namespace System
         internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
+#if NATIVEAOT
+        internal static void OnUnhandledExceptionInternal(object e)
+#else
         internal static void OnUnhandledException(object e)
+#endif
         {
             if (UnhandledException is UnhandledExceptionEventHandler handlers)
             {

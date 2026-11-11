@@ -37,7 +37,7 @@ namespace System
             ExceptionCallbacks.s_firstChanceException = (nint)(delegate*<object, void>)&OnFirstChanceExceptionCore;
 
         internal static unsafe void SetUnhandledExceptionHandler() =>
-            ExceptionCallbacks.s_unhandledException = (nint)(delegate*<object, void>)&OnUnhandledException;
+            ExceptionCallbacks.s_unhandledException = (nint)(delegate*<object, void>)&OnUnhandledExceptionInternal;
 
         [RuntimeExport("OnFirstChanceException")]
         internal static unsafe void OnFirstChanceException(object e)
@@ -51,7 +51,7 @@ namespace System
             => OnFirstChanceException((Exception)e, sender: null);
 
         [RuntimeExport("OnUnhandledException")]
-        private static unsafe void OnUnhandledExceptionNative(object e)
+        internal static unsafe void OnUnhandledException(object e)
         {
             RuntimeExceptionHelpers.SerializeCrashInfo(RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
 

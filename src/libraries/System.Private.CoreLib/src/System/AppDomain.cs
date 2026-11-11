@@ -89,7 +89,7 @@ namespace System
             add
             {
                 AppContext.FirstChanceException += value;
-#if CORECLR || NATIVEAOT
+#if !MONO
                 // Once a handler is added, the runtime will attempt
                 // to deliver first chance notifications for all exceptions.
                 // We don't care if handlers are removed.
