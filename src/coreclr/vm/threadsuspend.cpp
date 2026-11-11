@@ -3408,14 +3408,12 @@ void Thread::Hijack()
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     {
-        Thread::WorkingOnThreadContextHolder workingOnThreadContext(this);
-
         // Note that pTargetThread->HandledJITCase is not a simple predicate - it actually will hijack the thread if that's possible.
         // So HandledJITCase can do one of these:
         //   - Return TRUE, in which case it's our responsibility to redirect the thread
         //   - Return FALSE after hijacking the thread - we shouldn't try to redirect
         //   - Return FALSE but not hijack the thread - there's nothing we can do either
-        if (workingOnThreadContext.Acquired() && HandledJITCase())
+        if (!HasActivePatchSkip() && HandledJITCase())
         {
             // Thread is in cooperative state and stopped in interruptible code.
             // Redirect thread so we can capture a good thread context
@@ -3734,8 +3732,7 @@ BOOL Thread::HandleJITCaseForAbort()
 
     _ASSERTE(ThreadStore::HoldingThreadStore());
 
-    WorkingOnThreadContextHolder workingOnThreadContext(this);
-    if (!workingOnThreadContext.Acquired())
+    if (HasActivePatchSkip())
     {
         return FALSE;
     }
@@ -3991,8 +3988,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 #if !defined(DISABLE_THREADSUSPEND) && defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
             if (UseContextBasedThreadRedirection())
             {
-                WorkingOnThreadContextHolder workingOnThreadContext(thread);
-                if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
+                if (!thread->HasActivePatchSkip() && thread->HandledJITCase())
                 {
                     // Redirect thread so we can capture a good thread context
                     // (GetThreadContext is not sufficient, due to an OS bug).
@@ -4231,8 +4227,7 @@ RetrySuspension:
         else
         {
             _ASSERTE(str == STR_Success);
-            WorkingOnThreadContextHolder workingOnThreadContext(thread);
-            if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
+            if (!thread->HasActivePatchSkip() && thread->HandledJITCase())
             {
                 // Redirect thread so we can capture a good thread context
                 // (GetThreadContext is not sufficient, due to an OS bug).
@@ -4520,10 +4515,10 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     }
 
     // Don't hijack if a profiler stackwalk is in progress
-    HijackLockHolder hijackLockHolder(this);
-    if (!hijackLockHolder.Acquired())
+    HijackLockHolder hijackLockHolder;
+    if (!TryAcquireHijackLock(hijackLockHolder))
     {
-        STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - !hijackLockHolder.Acquired. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
+        STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - hijack lock unavailable. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
         return;
     }
 
@@ -5769,8 +5764,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     // an activation safe point.
     _ASSERTE(CheckActivationSafePoint(ip));
 
-    Thread::WorkingOnThreadContextHolder workingOnThreadContext(pThread);
-    if (!workingOnThreadContext.Acquired())
+    if (pThread->HasActivePatchSkip())
         return;
 
 #if defined(DEBUGGING_SUPPORTED) && defined(TARGET_WINDOWS)
