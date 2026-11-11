@@ -99,11 +99,13 @@ extern "C" {
     int32_t SystemNative_FcntlSetIsNonBlocking (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
+    void SystemNative_FreeCommandLine (void *);
     void SystemNative_FreeHostEntry (void *);
     void SystemNative_FreeLibrary (void *);
     int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
     int32_t SystemNative_GetAtOutOfBandMark (void *, void *);
     int32_t SystemNative_GetBytesAvailable (void *, void *);
+    void * SystemNative_GetCommandLine (void *);
     int32_t SystemNative_GetControlMessageBufferSize (int32_t, int32_t);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
@@ -413,11 +415,13 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FcntlSetIsNonBlocking) // System.Net.Sockets
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FreeCommandLine) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeHostEntry) // System.Net.NameResolution
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives, System.Net.Sockets
     DllImportEntry(SystemNative_GetAtOutOfBandMark) // System.Net.Sockets
     DllImportEntry(SystemNative_GetBytesAvailable) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetCommandLine) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetControlMessageBufferSize) // System.Net.Sockets
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Security.Cryptography
@@ -593,7 +597,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
-    {"libSystem.Native", s_libSystem_Native, 141},
+    {"libSystem.Native", s_libSystem_Native, 143},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
