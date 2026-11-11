@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
@@ -106,18 +105,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private bool AnalyzeAttribute(ISymbol owningSymbol, IAttributeOperation attribute)
         {
-            var cfg = Context.GetControlFlowGraph(attribute);
-            var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures(cfg);
-            var visitor = GetVisitor(owningSymbol, cfg, lValueFlowCaptures, default);
-            return Fixpoint(new ControlFlowGraphProxy(cfg), visitor);
+            var cfg = GetControlFlowGraph(Context.GetControlFlowGraph(attribute));
+            var visitor = GetVisitor(owningSymbol, cfg, default);
+            return Fixpoint(cfg, visitor);
         }
 
         private bool AnalyzeMethod(MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
         {
-            var cfg = method.ControlFlowGraph;
-            var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures(cfg);
-            var visitor = GetVisitor(method.OwningSymbol, cfg, lValueFlowCaptures, interproceduralState);
-            bool succeeded = Fixpoint(new ControlFlowGraphProxy(cfg), visitor);
+            var cfg = GetControlFlowGraph(method.ControlFlowGraph);
+            var visitor = GetVisitor(method.OwningSymbol, cfg, interproceduralState);
+            bool succeeded = Fixpoint(cfg, visitor);
 
             // The interprocedural state struct is stored as a field of the visitor and modified
             // in-place there, but we also need those modifications to be reflected here.
@@ -125,10 +122,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return succeeded;
         }
 
+        protected abstract ControlFlowGraphProxy GetControlFlowGraph(ControlFlowGraph graph);
+
         protected abstract TTransfer GetVisitor(
             ISymbol owningSymbol,
-            ControlFlowGraph methodCFG,
-            ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
+            ControlFlowGraphProxy methodCFG,
             InterproceduralState<TValue, TLattice> interproceduralState);
     }
 }

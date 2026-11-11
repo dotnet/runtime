@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
@@ -47,6 +48,65 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
     public readonly record struct ControlFlowGraphProxy(ControlFlowGraph ControlFlowGraph) : IControlFlowGraph<BlockProxy, RegionProxy>
     {
+        private readonly EdgeData _edges = new(ControlFlowGraph);
+
+        private sealed class EdgeData
+        {
+            public readonly ReadOnlyCollection<ControlFlowBranch>[] Predecessors;
+            public readonly ReadOnlyCollection<ControlFlowBranch>[] Successors;
+            public readonly IReadOnlyDictionary<int, ImmutableArray<ControlFlowRegion>>? ScopeExits;
+            public readonly ImmutableDictionary<CaptureId, FlowCaptureKind> LValueFlowCaptures;
+            public readonly ImmutableHashSet<CaptureId> DeconstructionLValueFlowCaptures;
+
+            public EdgeData(ControlFlowGraph graph)
+            {
+                Predecessors = new ReadOnlyCollection<ControlFlowBranch>[graph.Blocks.Length];
+                Successors = new ReadOnlyCollection<ControlFlowBranch>[graph.Blocks.Length];
+                foreach (BasicBlock block in graph.Blocks)
+                {
+                    var conditional = block.ConditionalSuccessor;
+                    var fallThrough = block.FallThroughSuccessor;
+                    ControlFlowBranch[] successors = conditional is null
+                        ? fallThrough is null ? Array.Empty<ControlFlowBranch>() : [CreateProxyBranch(fallThrough)]
+                        : fallThrough is null ? [CreateProxyBranch(conditional)] : [CreateProxyBranch(conditional), CreateProxyBranch(fallThrough)];
+                    Successors[block.Ordinal] = Array.AsReadOnly(successors);
+                }
+                Dictionary<int, ImmutableArray<ControlFlowRegion>>? scopeExits = null;
+                foreach (BasicBlock block in graph.Blocks)
+                {
+                    var predecessors = new ControlFlowBranch[block.Predecessors.Length];
+                    HashSet<ControlFlowRegion>? leavingRegions = null;
+                    for (int i = 0; i < predecessors.Length; i++)
+                    {
+                        var predecessor = block.Predecessors[i];
+                        int index = predecessor.IsConditionalSuccessor || predecessor.Source.ConditionalSuccessor is null ? 0 : 1;
+                        predecessors[i] = Successors[predecessor.Source.Ordinal][index];
+                        foreach (ControlFlowRegion region in predecessor.LeavingRegions)
+                        {
+                            if (region.Locals.IsEmpty && region.CaptureIds.IsEmpty)
+                                continue;
+                            if (block.Ordinal >= region.FirstBlockOrdinal && block.Ordinal <= region.LastBlockOrdinal)
+                                continue;
+
+                            (leavingRegions ??= new()).Add(region);
+                        }
+                    }
+                    Predecessors[block.Ordinal] = Array.AsReadOnly(predecessors);
+                    if (leavingRegions is not null)
+                        (scopeExits ??= new()).Add(block.Ordinal, leavingRegions.ToImmutableArray());
+                }
+                ScopeExits = scopeExits;
+                LValueFlowCaptures = LValueFlowCapturesProvider.ComputeCaptureInfo(graph, out var deconstructionCaptures);
+                DeconstructionLValueFlowCaptures = deconstructionCaptures;
+            }
+        }
+
+        internal IReadOnlyDictionary<int, ImmutableArray<ControlFlowRegion>>? ScopeExits => _edges.ScopeExits;
+
+        internal ImmutableDictionary<CaptureId, FlowCaptureKind> LValueFlowCaptures => _edges.LValueFlowCaptures;
+
+        internal ImmutableHashSet<CaptureId> DeconstructionLValueFlowCaptures => _edges.DeconstructionLValueFlowCaptures;
+
         public IEnumerable<BlockProxy> Blocks
         {
             get
@@ -60,13 +120,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public static ControlFlowBranch CreateProxyBranch(Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch branch)
         {
-            var finallyRegions = ImmutableArray.CreateBuilder<RegionProxy>();
-            foreach (var region in branch.FinallyRegions)
+            ImmutableArray<RegionProxy> finallyRegions = ImmutableArray<RegionProxy>.Empty;
+            if (!branch.FinallyRegions.IsEmpty)
             {
-                Debug.Assert(region != null);
-                if (region == null)
-                    continue;
-                finallyRegions.Add(new RegionProxy(region));
+                var builder = ImmutableArray.CreateBuilder<RegionProxy>(branch.FinallyRegions.Length);
+                foreach (var region in branch.FinallyRegions)
+                {
+                    Debug.Assert(region != null);
+                    if (region == null)
+                        continue;
+                    builder.Add(new RegionProxy(region));
+                }
+                finallyRegions = builder.Count == builder.Capacity ? builder.MoveToImmutable() : builder.ToImmutable();
             }
 
             // Translate from the Roslyn CFG condition kind to our model.
@@ -90,28 +155,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return new ControlFlowBranch(
                 new BlockProxy(branch.Source),
                 branch.Destination == null ? null : new BlockProxy(branch.Destination),
-                finallyRegions.ToImmutable(),
+                finallyRegions,
                 conditionKind);
         }
 
-        // This is implemented by getting predecessors of the underlying Roslyn BasicBlock.
-        // This is fine as long as the blocks come from the correct control-flow graph.
-        public IEnumerable<ControlFlowBranch> GetPredecessors(BlockProxy block)
-        {
-            foreach (var predecessor in block.Block.Predecessors)
-            {
-                if (CreateProxyBranch(predecessor) is ControlFlowBranch branch)
-                    yield return branch;
-            }
-        }
+        public IEnumerable<ControlFlowBranch> GetPredecessors(BlockProxy block) => _edges.Predecessors[block.Block.Ordinal];
 
-        public IEnumerable<ControlFlowBranch> GetSuccessors(BlockProxy block)
-        {
-            if (block.Block.ConditionalSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch conditionalSuccessor)
-                yield return CreateProxyBranch(conditionalSuccessor);
-            if (block.Block.FallThroughSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch fallThroughSuccessor)
-                yield return CreateProxyBranch(fallThroughSuccessor);
-        }
+        public IEnumerable<ControlFlowBranch> GetSuccessors(BlockProxy block) => _edges.Successors[block.Block.Ordinal];
 
         public bool TryGetEnclosingTryOrCatchOrFilter(BlockProxy block, out RegionProxy tryOrCatchOrFilterRegion)
         {

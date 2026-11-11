@@ -210,7 +210,6 @@ namespace ILLink.RoslynAnalyzer
                 ImmutableArray<ISymbol>.Empty,
                 diagnosticContext);
 
-            var dataFlowAnalyzerContext = DataFlowAnalyzerContext.Create(context.Options, context.Compilation, ImmutableArray.Create(this));
             var typeNameResolver = new TypeNameResolver(context.Compilation);
             var genericArgumentDataFlow = new GenericArgumentDataFlow(this, FeatureContext.None, typeNameResolver, implicitCtor, typeSymbol.Locations[0], context.ReportDiagnostic);
             if (typeSymbol.BaseType is INamedTypeSymbol baseType)

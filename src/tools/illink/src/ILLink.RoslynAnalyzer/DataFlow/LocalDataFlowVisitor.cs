@@ -48,6 +48,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private readonly ControlFlowGraph ControlFlowGraph;
 
+        private readonly IReadOnlyDictionary<int, ImmutableArray<ControlFlowRegion>>? _scopeExits;
+
         private readonly SemanticModel _semanticModel;
 
         protected TValue TopValue => LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Top;
@@ -68,23 +70,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             Compilation compilation,
             LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> lattice,
             ISymbol owningSymbol,
-            ControlFlowGraph cfg,
-            ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
+            ControlFlowGraphProxy graph,
             InterproceduralState<TValue, TValueLattice> interproceduralState)
         {
             Compilation = compilation;
             LocalStateAndContextLattice = lattice;
             InterproceduralStateLattice = default;
             OwningSymbol = owningSymbol;
+            ControlFlowGraph cfg = graph.ControlFlowGraph;
             ControlFlowGraph = cfg;
+            _scopeExits = graph.ScopeExits;
             _semanticModel = cfg.OriginalOperation.SemanticModel ??
                 compilation.GetSemanticModel(cfg.OriginalOperation.Syntax.SyntaxTree);
-            this.lValueFlowCaptures = lValueFlowCaptures;
-            _deconstructionLValueFlowCaptures = cfg
-                .DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference)
-                .Where(reference => reference.IsInLeftOfDeconstructionAssignment(out _))
-                .Select(reference => reference.Id)
-                .ToImmutableHashSet();
+            lValueFlowCaptures = graph.LValueFlowCaptures;
+            _deconstructionLValueFlowCaptures = graph.DeconstructionLValueFlowCaptures;
             InterproceduralState = interproceduralState;
         }
 
