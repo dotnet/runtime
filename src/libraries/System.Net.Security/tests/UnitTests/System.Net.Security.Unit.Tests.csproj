@@ -26,6 +26,9 @@
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <Compile Include="MD4Tests.cs" />
     <Compile Include="NegotiateAuthenticationTests.cs" />
+    <Compile Include="..\..\src\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
+             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
@@ -59,16 +62,12 @@
     <Compile Include="SslStreamCertificateContextOcspLinuxTests.cs" />
 
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Linux.cs" />
-    <Compile Include="..\..\src\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
     <Compile Include="..\..\src\System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
     <Compile Include="..\..\src\System\Net\Security\CipherSuitesPolicy.cs" />
 
     <!-- these are not specific to linux, but they are not necessary for tests on other platforms -->
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
-             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
-
     <Compile Include="$(CommonPath)System\Net\Http\X509ResourceClient.cs"
              Link="Common\System\Net\Http\X509ResourceClient.cs" />
     <Compile Include="$(CommonPath)System\Text\UrlBase64Encoding.cs"
