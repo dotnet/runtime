@@ -5080,6 +5080,10 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
+#ifdef TARGET_WASM
+    _ASSERTE(!"Native JIT function lookup is not supported on Wasm");
+    return PTR_NULL;
+#else // TARGET_WASM
     if (!pCodeInfo->IsValid())
     {
         return NULL;
@@ -5105,6 +5109,7 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
     }
 
     return NULL;
+#endif // TARGET_WASM
 }
 
 DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)

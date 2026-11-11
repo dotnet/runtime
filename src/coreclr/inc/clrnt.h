@@ -537,12 +537,6 @@ RtlVirtualUnwind (
 
 UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
 
-ULONG
-RtlpGetFunctionEndAddress (
-    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
-    _In_ TADDR GCInfoBase
-    );
-
 struct RUNTIME_FUNCTION_GROUP
 {
     // Keep the virtual-IP fields in the first cache line and cluster sparse fields for compression.
@@ -617,8 +611,6 @@ inline uint32_t RUNTIME_FUNCTION__GetUnwindDataOffset(DPTR(T_RUNTIME_FUNCTION) f
 
     return (high << 16) | offset;
 }
-
-#define RUNTIME_FUNCTION__EndAddress(FunctionEntry, GCInfoBase)     (RtlpGetFunctionEndAddress(FunctionEntry, (TADDR)(GCInfoBase)))
 
 typedef struct _UNWIND_INFO {
     // dummy

@@ -624,18 +624,6 @@ void FlushWriteBarrierInstructionCache()
     // Nothing to do - wasm has static write barriers
 }
 
-ULONG
-RtlpGetFunctionEndAddress (
-    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
-    _In_ TADDR GCInfoBase
-    )
-{
-    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(RUNTIME_FUNCTION__GetUnwindDataOffset(FunctionEntry) + GCInfoBase);
-    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
-    uint32_t logicalVirtualIPLength = DecodeULEB128AsU32(&pUnwindData) * 2; // Read the function length in virtual IP units, then multiply by 2 to report them as even numbers.
-    return logicalVirtualIPLength + RUNTIME_FUNCTION__BeginAddress(FunctionEntry);
-}
-
 EXTERN_C Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 {
     PORTABILITY_ASSERT("JIT_InitPInvokeFrame is not implemented on wasm");
