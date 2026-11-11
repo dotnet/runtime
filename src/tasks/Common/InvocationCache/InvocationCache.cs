@@ -113,9 +113,10 @@ internal sealed partial class InvocationCache
             // Check the entire entry before modifying outputs. Copies can still fail if the cache is wiped concurrently.
             if (outputs.DirectoryPath is not null)
             {
-                if (Directory.Exists(outputs.DirectoryPath))
-                    Directory.Delete(outputs.DirectoryPath, recursive: true);
-                Directory.CreateDirectory(outputs.DirectoryPath);
+                string directory = outputs.ResolvePath(outputs.DirectoryPath);
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, recursive: true);
+                Directory.CreateDirectory(directory);
             }
             for (int i = 0; i < files.Count; i++)
             {

@@ -19,4 +19,7 @@ internal sealed class InvocationInputs
 
     internal static InvocationInputs FromFiles(params string[] files) =>
         new InvocationInputs(Array.ConvertAll(files, Path.GetFullPath));
+
+    internal InvocationInputs Map(InvocationPathMap pathMap) =>
+        new InvocationInputs(Array.ConvertAll(Files, pathMap.Map));
 }

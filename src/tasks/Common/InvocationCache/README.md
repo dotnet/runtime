@@ -19,13 +19,14 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
-An `InvocationDescription` can specify an effective working directory and a path mapping that
-assigns logical identities to input files, output locations, and that working directory. File
-access, output validation, and restoration still use the physical absolute paths; only key
-serialization uses the mapped identities, captured when the description is constructed rather than
-recomputed while hashing. Without a mapping, identities remain absolute.
+An `InvocationDescription` can specify an effective working directory and a reversible path mapping.
+The description stores only logical identities for input files, output locations, and that working
+directory. Hashing serializes those identities directly; file access, output validation, and
+restoration resolve them to physical absolute paths through the same mapping. Without a mapping,
+identities are absolute paths.
 Consumers must preserve complete relative layouts and distinguish external paths rather than
-mapping unrelated files to the same identity. ILLink supplies its root-aware mapping this way.
+mapping unrelated files to the same identity. Mappings must remain stable and reversible throughout
+discovery, hashing, execution, and restoration. ILLink supplies its root-aware mapping this way.
 
 Prepare any execution-path normalization independently of the cache callbacks so disabling or
 bypassing caching does not change the invocation.

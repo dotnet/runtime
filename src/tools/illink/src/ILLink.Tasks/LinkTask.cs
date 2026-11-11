@@ -411,7 +411,7 @@ namespace ILLink.Tasks
                         AdjustCommandsForOperatingSystem(" " + invocation.CommandIdentity),
                         AdjustCommandsForOperatingSystem(invocation.ResponseIdentity) },
                     InvocationOutputs.FromDirectory(invocation.OutputDirectory),
-                    workingDirectory: paths.ExecutionRoot ?? Environment.CurrentDirectory, pathMap: paths.Map);
+                    workingDirectory: paths.ExecutionRoot ?? Environment.CurrentDirectory, pathMap: paths);
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(path));
 

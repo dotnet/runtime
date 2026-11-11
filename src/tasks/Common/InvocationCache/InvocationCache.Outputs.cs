@@ -20,7 +20,7 @@ internal sealed partial class InvocationCache
         string cachePrefix = CacheDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         if (outputs.DirectoryPath is not null)
         {
-            string outputPrefix = outputs.DirectoryPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            string outputPrefix = outputs.ResolvePath(outputs.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
             if (cachePrefix.StartsWith(outputPrefix, comparison) || outputPrefix.StartsWith(cachePrefix, comparison))
                 throw new ArgumentException("The cache and output directories must not contain each other.", nameof(outputs));
         }
@@ -28,8 +28,9 @@ internal sealed partial class InvocationCache
         {
             var paths = new HashSet<string>(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-            foreach (string file in outputs.Files)
+            foreach (string identity in outputs.Files)
             {
+                string file = outputs.ResolvePath(identity);
                 string filePrefix = file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
                 foreach (string existing in paths)
                 {
@@ -49,7 +50,7 @@ internal sealed partial class InvocationCache
         var files = new List<string>();
         if (outputs.DirectoryPath is not null)
         {
-            Collect(outputs.DirectoryPath, "");
+            Collect(outputs.ResolvePath(outputs.DirectoryPath), "");
             files.Sort(StringComparer.Ordinal);
         }
         else
@@ -73,7 +74,9 @@ internal sealed partial class InvocationCache
     }
 
     private static string GetOutputPath(InvocationOutputs outputs, string name, int index) =>
-        outputs.DirectoryPath is not null ? Path.Combine(outputs.DirectoryPath, name) : outputs.Files[index];
+        outputs.DirectoryPath is not null
+            ? Path.Combine(outputs.ResolvePath(outputs.DirectoryPath), name)
+            : outputs.ResolvePath(outputs.Files[index]);
 
     private static void DeleteOutputFile(string path)
     {

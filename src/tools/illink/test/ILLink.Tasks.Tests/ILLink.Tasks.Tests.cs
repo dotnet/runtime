@@ -2011,6 +2011,33 @@ namespace ILLink.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public void SourceRootIdentitiesResolvePhysicalPaths(bool nested)
+        {
+            using var first = new OutputDirectoryTest();
+            using var second = new OutputDirectoryTest();
+            string otherRoot = nested ? Path.Combine(first.Root, "nested") : second.Root;
+            var paths = new SourceRootPathMap(new[]
+            {
+                new TaskItem(first.Root, new Dictionary<string, string> { { "MappedPath", "/_/" } }),
+                new TaskItem(otherRoot, new Dictionary<string, string> { { "MappedPath", nested ? "/_/nested/" : "/_1/" } })
+            });
+            paths.ValidateMappings();
+            foreach (string path in new[]
+            {
+                first.Root, Path.Combine(first.Root, "inputs", "a file.dll"),
+                otherRoot, Path.Combine(otherRoot, "output", "a file.dll"),
+                Path.Combine(first.Root + "-outside", "external.dll")
+            })
+                Assert.Equal(path, paths.Resolve(paths.Map(path)));
+
+            Assert.Throws<ArgumentException>(() => paths.Resolve("mapped:/_/../outside.dll"));
+            Assert.Throws<ArgumentException>(() => paths.Resolve("mapped:/_99/unknown.dll"));
+            Assert.Throws<ArgumentException>(() => paths.Resolve("absolute:relative.dll"));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public void CacheKeyKeepsUnmappedExternalPaths(bool adjacentPrefix)
         {
             using var test = new OutputDirectoryTest();

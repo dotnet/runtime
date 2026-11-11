@@ -37,7 +37,7 @@ internal sealed partial class InvocationCache
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
         writer.Write("invocation-cache-key-v1");
-        writer.Write(invocation.WorkingDirectoryIdentity);
+        writer.Write(invocation.WorkingDirectory);
         writer.Write(RuntimeInformation.OSDescription);
         writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
         writer.Write(CultureInfo.CurrentCulture.Name);
@@ -45,19 +45,19 @@ internal sealed partial class InvocationCache
         writer.Write(invocation.Context.Length);
         foreach (string value in invocation.Context)
             writer.Write(value);
-        writer.Write(invocation.OutputDirectoryIdentity is not null);
-        if (invocation.OutputDirectoryIdentity is { } outputDirectoryIdentity)
+        writer.Write(invocation.Outputs.DirectoryPath is not null);
+        if (invocation.Outputs.DirectoryPath is { } outputDirectoryIdentity)
             writer.Write(outputDirectoryIdentity);
         writer.Write(invocation.Outputs.Files.Length);
-        foreach (string identity in invocation.OutputFileIdentities)
+        foreach (string identity in invocation.Outputs.Files)
             writer.Write(identity);
         writer.Write(invocation.Inputs.Files.Length);
-        for (int i = 0; i < invocation.Inputs.Files.Length; i++)
+        foreach (string identity in invocation.Inputs.Files)
         {
-            writer.Write(invocation.InputIdentities[i]);
+            writer.Write(identity);
             try
             {
-                using FileStream file = File.OpenRead(invocation.Inputs.Files[i]);
+                using FileStream file = File.OpenRead(invocation.ResolvePath(identity));
                 writer.Write(true);
                 writer.Write(sha256.ComputeHash(file));
             }

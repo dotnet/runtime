@@ -24,8 +24,9 @@ one walk over the task inputs. The command-line and response-file hooks reuse th
 `ExecuteTool` does not reconstruct or compare arguments.
 The description callback expands the recorded inputs through `DescribeInvocation`, supplies
 the effective working directory, and declares one `InvocationOutputs.FromDirectory`; it runs only
-when caching is enabled. The description captures logical file identities during construction;
-hashing reads physical files without performing path mapping. Normal execution uses
+when caching is enabled. The description stores logical path identities without parallel physical
+path inventories; its reversible source-root map resolves identities for file reads, output
+validation, and restoration. Normal execution uses
 the already-generated arguments regardless of cache eligibility. ILLink owns metadata inspection
 and path-independence checks; the shared layer owns key serialization, full-content hashing,
 publication, restoration, and writer coordination.

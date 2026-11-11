@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
+using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks;
 
-internal sealed class SourceRootPathMap
+internal sealed class SourceRootPathMap : InvocationPathMap
 {
     private readonly List<(string Physical, string Logical)> _roots = new();
     internal string ExecutionRoot { get; }
@@ -64,7 +65,7 @@ internal sealed class SourceRootPathMap
         }
     }
 
-    internal string Map(string path)
+    internal override string Map(string path)
     {
         path = GetValidatedFullPath(path);
         foreach (var root in _roots)
@@ -75,6 +76,33 @@ internal sealed class SourceRootPathMap
                 return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
         }
         return "absolute:" + path;
+    }
+
+    internal override string Resolve(string identity)
+    {
+        const string AbsolutePrefix = "absolute:";
+        const string MappedPrefix = "mapped:";
+        if (identity.StartsWith(AbsolutePrefix, StringComparison.Ordinal))
+        {
+            string path = identity.Substring(AbsolutePrefix.Length);
+            if (Path.IsPathRooted(path) && GetValidatedFullPath(path) == path)
+                return path;
+        }
+        else if (identity.StartsWith(MappedPrefix, StringComparison.Ordinal))
+        {
+            foreach (var root in _roots)
+            {
+                string prefix = MappedPrefix + root.Logical;
+                if (!identity.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
+                string path = Path.GetFullPath(Path.Combine(root.Physical,
+                    identity.Substring(prefix.Length).Replace('/', Path.DirectorySeparatorChar)));
+                if (Map(path) == identity)
+                    return path;
+                break;
+            }
+        }
+        throw new ArgumentException($"Unknown or noncanonical invocation path identity '{identity}'.", nameof(identity));
     }
 
     internal string MapForExecution(string path)

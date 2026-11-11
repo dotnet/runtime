@@ -59,6 +59,7 @@
     <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationOutputs.cs" Link="InvocationCache\InvocationOutputs.cs" />
     <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationDescription.cs" Link="InvocationCache\InvocationDescription.cs" />
     <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationInputs.cs" Link="InvocationCache\InvocationInputs.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationPathMap.cs" Link="InvocationCache\InvocationPathMap.cs" />
     <InternalsVisibleTo Include="ILLink.Tasks.Tests" />
 
     <ProjectReference Include="..\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
