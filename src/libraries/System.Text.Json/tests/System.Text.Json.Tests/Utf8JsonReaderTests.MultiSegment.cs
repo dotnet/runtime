@@ -1909,7 +1909,7 @@ namespace System.Text.Json.Tests
 
                 for (int split = 1; split < utf8.Length; split++)
                 {
-                    IEnumerable<byte[]> segments = [utf8[..split], [], utf8[split..], []];
+                    IEnumerable<byte[]> segments = [utf8.AsSpan(0, split).ToArray(), [], utf8.AsSpan(split).ToArray(), []];
                     ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(segments);
                     var sequenceReader = new Utf8JsonReader(sequence, isFinalBlock: true, state);
                     JsonException actual = ReadToError(ref sequenceReader);
