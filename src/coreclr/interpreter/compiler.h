@@ -1084,6 +1084,9 @@ private:
     // Passes
     int32_t* m_pMethodCode;
     int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    InterpInst* m_pEntrySafepointIns = nullptr;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
     int32_t* m_pDebugMethodEnterSeqPointSlot = nullptr; // fixup slot for first seq point offset in INTOP_DEBUG_METHOD_ENTER
 
     void FixLocallocRet();

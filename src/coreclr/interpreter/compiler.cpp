@@ -773,7 +773,7 @@ int32_t InterpCompiler::CreateVarExplicit(InterpType interpType, CORINFO_CLASS_H
         m_varsCapacity *= 2;
         if (m_varsCapacity < 16)
             m_varsCapacity = 16;
-        
+
         m_pVars = getAllocator(IMK_Var).allocateZeroed<InterpVar>(m_varsCapacity);
         if (oldVars != NULL)
         {
@@ -799,7 +799,7 @@ void InterpCompiler::EnsureStack(int additional)
         m_stackCapacity *= 2;
         if (m_stackCapacity < 4)
             m_stackCapacity = 4;
-        
+
         m_pStackBase = new (getAllocator(IMK_StackInfo)) StackInfo[m_stackCapacity];
         if (oldStackBase != NULL)
         {
@@ -2062,29 +2062,33 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
     new (pMethodRW) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems,
                                   m_initLocals, m_unmanagedCallersOnly, m_publishSecretStubParam,
                                   m_methodCodeSize);
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    assert(m_pEntrySafepointIns != nullptr);
+    pMethodRW->auxiliaryEntryOpcodeIndex = m_pEntrySafepointIns->nativeOffset;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     // Copy async suspend data and fix up pointers
     uint32_t currentAsyncOffset = asyncSuspendDataOffset;
     uint32_t currentIntervalMapOffset = intervalMapsOffset;
     const uint32_t asyncSuspendDataSectionEnd = asyncSuspendDataOffset + asyncSuspendDataSectionSize;
     const uint32_t intervalMapsSectionEnd = intervalMapsOffset + intervalMapsSectionSize;
-    
+
     InterpByteCodeStart* pByteCodeStart = (InterpByteCodeStart*)rxBase;
-    
+
     for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
     {
         assert(currentAsyncOffset + sizeof(InterpAsyncSuspendData) <= asyncSuspendDataSectionEnd);
 
         InterpAsyncSuspendData* srcData = m_asyncSuspendDataItems.Get(i);
         InterpAsyncSuspendData* dstDataRW = (InterpAsyncSuspendData*)(rwBase + currentAsyncOffset);
-        
+
         // Copy the struct
         memcpy(dstDataRW, srcData, sizeof(InterpAsyncSuspendData));
-        
+
         // Fix up the methodStartIP to point to the final bytecode start
         dstDataRW->methodStartIP = pByteCodeStart;
         dstDataRW->resumeInfo.DiagnosticIP += (TARGET_SIZE_T)pByteCodeStart;
-        
+
         // Fix up interval map pointers if they exist
         // Note: The interval maps were allocated via AllocMethodData in the old model,
         // we need to copy them to the new allocation and fix up the pointers
@@ -2097,14 +2101,14 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
 
             uint32_t mapSize = (uint32_t)count * sizeof(InterpIntervalMapEntry);
             assert(currentIntervalMapOffset + mapSize <= intervalMapsSectionEnd);
-            
+
             InterpIntervalMapEntry* dstMapRW = (InterpIntervalMapEntry*)(rwBase + currentIntervalMapOffset);
             InterpIntervalMapEntry* dstMapRX = (InterpIntervalMapEntry*)(rxBase + currentIntervalMapOffset);
             memcpy(dstMapRW, srcData->liveLocalsIntervals, mapSize);
             dstDataRW->liveLocalsIntervals = dstMapRX;
             currentIntervalMapOffset += mapSize;
         }
-        
+
         if (srcData->zeroedLocalsIntervals != nullptr)
         {
             // Count entries
@@ -2114,7 +2118,7 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
 
             uint32_t mapSize = (uint32_t)count * sizeof(InterpIntervalMapEntry);
             assert(currentIntervalMapOffset + mapSize <= intervalMapsSectionEnd);
-            
+
             InterpIntervalMapEntry* dstMapRW = (InterpIntervalMapEntry*)(rwBase + currentIntervalMapOffset);
             InterpIntervalMapEntry* dstMapRX = (InterpIntervalMapEntry*)(rxBase + currentIntervalMapOffset);
             memcpy(dstMapRW, srcData->zeroedLocalsIntervals, mapSize);
@@ -2163,7 +2167,7 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
         {
             DataItemAsyncSuspendRef ref = m_dataItemAsyncSuspendRefs.Get(i);
             // Calculate the final address of this async suspend data in the RX allocation
-            InterpAsyncSuspendData* finalAddr = (InterpAsyncSuspendData*)(rxBase + asyncSuspendDataOffset + 
+            InterpAsyncSuspendData* finalAddr = (InterpAsyncSuspendData*)(rxBase + asyncSuspendDataOffset +
                                                                           ref.asyncSuspendDataIndex * sizeof(InterpAsyncSuspendData));
             pDataItemsRW[ref.dataItemIndex] = finalAddr;
         }
@@ -4590,7 +4594,7 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     {
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
         {
-            // If we remove this restriction, we should handle the track transitions scenario by forcing a 
+            // If we remove this restriction, we should handle the track transitions scenario by forcing a
             // p/invoke marshaling calli stub even when not needed.
             BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
         }
@@ -6345,7 +6349,7 @@ void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHan
         }
         InterpType interpType = m_pVars[var].interpType;
         CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
-        
+
         int32_t alignUNUSED;
         int32_t size = GetInterpTypeStackSize(clsHnd, interpType, &alignUNUSED);
 
@@ -6392,7 +6396,7 @@ void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHan
                 SetSlotToTrue(objRefSlots, currentOffset + slotInfo.m_offsetBytes);
             }
         }
-        
+
         currentOffset += size;
     }
 
@@ -6433,7 +6437,7 @@ void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHan
     suspendData->suspensionPointIndex = suspensionPointIndex;
     CORINFO_ASYNC_INFO asyncInfo;
     m_compHnd->getAsyncInfo(&asyncInfo);
-    
+
     GetDataForHelperFtn(CORINFO_HELP_ALLOC_CONTINUATION);
     suspendData->continuationTypeHnd = continuationTypeHnd;
     AllocateIntervalMapData_ForVars(&suspendData->liveLocalsIntervals, liveVars);
@@ -6571,13 +6575,13 @@ void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHan
 
     AddIns(handleContinuationOpcode);
     int32_t suspendDataIndex = GetDataItemIndex(suspendData);
-    
+
     // Track this data item -> async suspend data reference for fixup during finalization
     DataItemAsyncSuspendRef ref;
     ref.dataItemIndex = suspendDataIndex;
     ref.asyncSuspendDataIndex = m_asyncSuspendDataItems.GetSize() - 1;  // suspendData was just added
     m_dataItemAsyncSuspendRefs.Add(ref);
-    
+
     m_pLastNewIns->data[0] = suspendDataIndex;
     m_pLastNewIns->data[1] = GetDataForHelperFtn(helperFuncForAllocatingContinuation);
     PushInterpType(InterpTypeO, NULL);
@@ -6618,7 +6622,7 @@ void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHan
     // Add location to resume to. The implementation of this opcode will:
     // - restore the data captured
     // - If there is an exception, throw it
-    // - if there is a captured exec context, call the restoration function. 
+    // - if there is a captured exec context, call the restoration function.
     AddIns(INTOP_HANDLE_CONTINUATION_RESUME);
     m_pLastNewIns->data[0] = suspendDataIndex;
 
@@ -8928,7 +8932,13 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // For auxiliary modules, we use a variant that will attempt to activate the method as well as perform the safepoint
+    m_pEntrySafepointIns = AddIns(INTOP_SAFEPOINT_TRY_ACTIVATE);
+    m_pEntrySafepointIns->data[0] = 0;
+#else
     AddIns(INTOP_SAFEPOINT);
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 #ifdef PERFTRACING_DISABLE_THREADS
     if (m_emitSamplingProfiler)
         AddIns(INTOP_PROF_SAMPLEPOINT);
@@ -10630,7 +10640,7 @@ retry_emit:
                 // a normal call in this case.
                 bool isTailCall = !m_isAsyncVersionOfSyncMethod;
                 EmitCall(m_pConstrainedToken, readonly, isTailCall /* tailcall */, false /*newObj*/, false /*isCalli*/);
-                EmitRet(methodInfo); // The tail-call infrastructure in the interpreter is not 100% guaranteed to do a 
+                EmitRet(methodInfo); // The tail-call infrastructure in the interpreter is not 100% guaranteed to do a
                            // tail-call, so inject the ret logic here to cover that case.
                 linkBBlocks = false;
                 break;

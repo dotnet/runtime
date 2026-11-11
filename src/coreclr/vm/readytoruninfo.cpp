@@ -1081,25 +1081,23 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-    IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
-    if (auxiliaryModuleMetadata != NULL)
-    {
-        // We should only be here in composite mode assemblies
-        // m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata)
+    if (m_isComponentAssembly)
+        m_pAuxiliaryModuleMetadata = m_pCompositeInfo->GetAuxiliaryModuleMetadata();
 
+    IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
+    if (auxiliaryModuleMetadata != NULL && m_pAuxiliaryModuleMetadata == nullptr)
+    {
         // Fake an AuxiliaryModuleMetadata for now.
-        m_pAuxiliaryModuleMetadata = pamTracker->Track(pLoaderAllocator->GetStataicsHeap()->AllocMem(sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizeof(ReadytoRun_AuxiliaryModuleMetadataEntry) + 2 /* '.\0' */))
-        m_pAuxiliaryModuleMetadata->EntryPointsFilenameRVA = auxiliaryModuleMetadata.VirtualAddress + sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizoef(ReadyToRun_AuxiliaryModuleMetadataEntry);
-        m_pAuxiliaryModuleMetadata->InstanceMethodEntryPointsRVA = 0;
-        m_pAuxiliaryModuleMetadata->MethodDefEntryPointsInfoRVA = 0;
-        m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus = 0;
-        m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount = 0;
-        m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount = 1;
-        ReadyToRun_AuxiliaryModuleMetadataEntry* entries = m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries()
-        entries->FileNameRVA = m_pAuxiliaryModuleMetadata->EntryPointsFilenameRVA;
-        entries->RelativeTableBase = 0;
-        entries->MethodCount = m_nRuntimeFunctions
-        entrries->ActivationStatue = 0;
+        size_t metadataSize = sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizeof(ReadyToRun_AuxiliaryModuleMetadataEntry);
+        BYTE* metadata = static_cast<BYTE*>(pamTracker->Track(
+            pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(metadataSize + 2))));
+        uint32_t filenameRVA = auxiliaryModuleMetadata->VirtualAddress + static_cast<uint32_t>(metadataSize);
+        m_pAuxiliaryModuleMetadata = new (metadata) ReadyToRun_AuxiliaryModuleMetadata
+            { filenameRVA, 0, 0, 0, 0, 1 };
+        new (m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries())
+            ReadyToRun_AuxiliaryModuleMetadataEntry { filenameRVA, 0, m_nRuntimeFunctions, 0 };
+        metadata[metadataSize] = '.';
+        metadata[metadataSize + 1] = '\0';
     }
 #endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 }
@@ -1356,6 +1354,18 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (pMD->IsReturnDroppingThunk() || pMD->IsCovariantForwardingThunk())
         goto done;
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    if (m_pAuxiliaryModuleMetadata != nullptr &&
+        VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 0)
+    {
+        if (pMD->GetModule() == m_pModule)
+        {
+            pConfig->SetAuxiliaryActivationFlag(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus);
+        }
+        goto done;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
@@ -1412,27 +1422,17 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #endif // PROFILING_SUPPORTED
 
     uint id;
+    bool hasFixups;
     offset = m_nativeReader.DecodeUnsigned(offset, &id);
+    hasFixups = (id & 1) != 0;
 
-    if (id & 1)
+    if (hasFixups)
     {
         if (id & 2)
         {
             uint val;
             m_nativeReader.DecodeUnsigned(offset, &val);
             offset -= val;
-        }
-
-        if (fFixups)
-        {
-            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
-            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
-
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
-            {
-                pConfig->SetReadyToRunRejectedPrecompiledCode();
-                goto done;
-            }
         }
 
         id >>= 2;
@@ -1445,36 +1445,46 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     _ASSERTE(id < m_nRuntimeFunctions);
 
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-    uint32_t primaryMethodCount = m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount;
-    if (id >= primaryMethodCount)
+    if (m_pAuxiliaryModuleMetadata != nullptr && id >= m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount)
     {
         uint32_t auxModuleCount = m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount;
-        _ASSERTE(auxModuleCount != 0);
+        _ASSERTE(auxModuleCount == 1); // Only one auxiliary module is currently supported
         ReadyToRun_AuxiliaryModuleMetadataEntry* entries = m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries();
-        uint32_t entryBase = primaryModuleCount;
-        for(int i = 0; i < auxModuleCount; i++)
+        uint32_t entryBase = m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount;
+        if (auxModuleCount == 1 && id - entryBase < entries[0].MethodCount)
         {
-            _ASSERTE(entryBase == entry->RelativeTableBase);
-            if (id >= entryBase && id < entryBase + entry->MethodCount)
+            if (VolatileLoad(&entries[0].ActivationStatus) == 0)
             {
-                if (entry->ActivationStatus | 1 != 0)
+                if (pMD->GetModule() == m_pModule)
                 {
-                    break;
+                    pConfig->SetAuxiliaryActivationFlag(entries[0].GetActivationFlag());
                 }
-                else
-                {
-                    pConfig->SetAwaitingModuleActivation(&entry->ActivationStatus);
-                    goto done;
-                }
+                goto done;
             }
-            entryBase += entry->MethodCount;
+            // Module is activated, continue
         }
-        // AuxModuleMetadata says it's not anywhere to be found
-        pConfig->SetReadyToRunRejectedPrecompiledCode();
-        goto done;
+        else
+        {
+            // AuxModuleMetadata says it's nowhere to be found
+            // This maybe should be validated at image load time to ensure all method IDs are accounted for
+            pConfig->SetReadyToRunRejectedPrecompiledCode();
+            goto done;
+        }
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
+    if (hasFixups && fFixups)
+    {
+        BOOL mayUsePrecompiledPInvokeMethods = TRUE;
+        mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
+
+        if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
+        {
+            pConfig->SetReadyToRunRejectedPrecompiledCode();
+            goto done;
+        }
     }
 
-#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
 #ifdef TARGET_ARM

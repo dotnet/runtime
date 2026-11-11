@@ -2390,10 +2390,10 @@ public:
     bool TryPublishR2RCodeForUnmanagedCallersOnly();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-    void TryActivateDelayedR2RCode(InterpByteCodeStart* interpreterMethod, CallerGCMode callerGCMode);
-    AuxiliaryMethodState GetAuxiliaryMethodState();
-#endif // FEATURE_AUXILIARY_R2R_MODULES
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Returns the next readiness flag, or nullptr when no further activation checks are needed.
+    uint32_t* TryActivateDelayedR2RCode(CallerGCMode callerGCMode);
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
@@ -2604,6 +2604,19 @@ public:
     bool FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+public:
+    void SetAuxiliaryActivationFlag(uint32_t* flag)
+    {
+        m_auxiliaryActivationFlag = flag;
+    }
+
+    uint32_t* GetAuxiliaryActivationFlag() const
+    {
+        return m_auxiliaryActivationFlag;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
 protected:
     MethodDesc* m_pMethodDesc;
     NativeCodeVersion m_nativeCodeVersion;
@@ -2634,6 +2647,10 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    uint32_t* m_auxiliaryActivationFlag = nullptr;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 };
 
 #ifdef FEATURE_CODE_VERSIONING

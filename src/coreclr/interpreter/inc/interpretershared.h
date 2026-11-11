@@ -47,6 +47,9 @@ struct InterpMethod
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
     int32_t codeSize; // size in int32_t slots
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    int32_t auxiliaryEntryOpcodeIndex;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     // Maps Continuation.State (suspension-point index) to the byte offset of the matching
     // INTOP_HANDLE_CONTINUATION_RESUME opcode from InterpByteCodeStart.
@@ -71,6 +74,9 @@ struct InterpMethod
         this->unmanagedCallersOnly = unmanagedCallersOnly;
         this->publishSecretStubParam = publishSecretStubParam;
         this->codeSize = codeSize;
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+        this->auxiliaryEntryOpcodeIndex = -1;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
         this->numSuspensionPoints = 0;
         this->suspensionPointIPOffsets = NULL;
         pCallStub = NULL;
@@ -87,49 +93,6 @@ struct InterpMethod
     }
 };
 
-#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-enum class AuxiliaryModuleStateDiscriminator
-{
-    AlwaysInterpret,
-    WaitingForEntryPointsModule,
-    WaitingForAuxiliaryModule,
-    Activated
-};
-
-struct AuxiliaryModuleState
-{
-private:
-    union{
-        uint32_t* AuxModuleActivationFlag;
-        PCODE ActivatedCode;
-    }
-    AuxiliaryModuleStateDiscriminator Discriminator;
-
-public:
-    AuxiliaryModuleState(AuxiliaryModuleStateDiscriminator discriminator, uint32_t auxModuleActivationFlag)
-    {
-        _ASSERTE(discriminator == AuxiliaryModuleStateDiscriminator::AlwaysInterpret ? true :
-             discriminator == AuxiliaryModuleStateDiscriminator::WaitingForEntryPointsModule ? auxModuleActivationFlag != NULL :
-             discriminator == AuxiliaryModuleStateDiscriminator::WaitingForAuxiliaryModule ? auxModuleActivationFlag != NULL :
-             discriminator == AuxiliaryModuleStateDiscriminator::Activated ? ActivatedCode != NULL :
-             false);
-        AuxModuleActivationFlag = auxModuleActivationFlag;
-        Discriminator = discriminator;
-    }
-
-    bool CanBeActivated() const
-    {
-        return Discriminator != AlwaysInterpret && *AuxModuleActivationFlag;
-    }
-
-    bool IsActivated() const
-    {
-        return Discriminator == Activated && ActivatedCode != NULL;
-    }
-}
-#endif
-
-
 struct InterpByteCodeStart
 {
 #ifndef DPTR
@@ -137,13 +100,24 @@ struct InterpByteCodeStart
 #else
     DPTR(InterpMethod) const Method; // Pointer to the InterpMethod structure
 #endif
-#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-    AuxiliaryModuleState AuxModuleState;
-#endif
     const int32_t* GetByteCodes() const
     {
         return reinterpret_cast<const int32_t*>(this + 1);
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    void InitializeAuxiliaryEntry(uint32_t* activationFlag)
+    {
+        static_assert(sizeof(uintptr_t) == sizeof(int32_t));
+        int32_t index = Method->auxiliaryEntryOpcodeIndex;
+        assert(index >= 0 && index < Method->codeSize - 1);
+        int32_t* entry = const_cast<int32_t*>(GetByteCodes()) + index;
+        assert(entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE);
+        entry[1] = static_cast<int32_t>(reinterpret_cast<uintptr_t>(activationFlag));
+        if (activationFlag == nullptr)
+            entry[0] = INTOP_SAFEPOINT_AND_SKIP;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 };
 
 typedef class ICorJitInfo* COMP_HANDLE;

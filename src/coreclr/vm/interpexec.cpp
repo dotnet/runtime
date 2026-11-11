@@ -904,6 +904,70 @@ NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t
     COMPlusThrow(exType);
 }
 
+NOINLINE static void InterpHandleThreadTrap()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    Thread* pThread = GetThread();
+    if (pThread->IsAbortRequested())
+    {
+        CallWithSEHWrapper(
+        [&pThread]() {
+            pThread->HandleThreadAbort();
+            return 0;
+        });
+    }
+
+    GCX_PREEMP_REGION_BEGIN();
+    GCX_PREEMP_REGION_END();
+}
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+NOINLINE static void InterpTryActivateDelayedR2RCode(InterpreterFrame* pInterpreterFrame,
+                                                     InterpMethodContextFrame* pFrame,
+                                                     InterpMethod* pMethod, const int32_t* ip)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+    int32_t* entry = const_cast<int32_t*>(ip);
+    struct RestoreFlagOperand
+    {
+        int32_t* Operand;
+        int32_t Value;
+        ~RestoreFlagOperand() { *Operand = Value; }
+    } restoreFlag { entry + 1, entry[1] };
+
+    // Reentrant calls interpret while the outer activation is in progress.
+    entry[1] = 0;
+    uint32_t* nextActivationFlag;
+    {
+        GCX_PREEMP_REGION_BEGIN();
+        nextActivationFlag = CallWithSEHWrapper([pMethod]() {
+            return pMethod->methodHnd->TryActivateDelayedR2RCode(CallerGCMode::Coop);
+        });
+        GCX_PREEMP_REGION_END();
+    }
+    restoreFlag.Value = static_cast<int32_t>(reinterpret_cast<uintptr_t>(nextActivationFlag));
+    // A debugger breakpoint may own this slot; it dispatches the saved opcode, so leave it in place.
+    _ASSERTE(entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE || entry[0] == INTOP_BREAKPOINT);
+    if (restoreFlag.Value == 0 && entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE)
+        entry[0] = INTOP_SAFEPOINT_AND_SKIP;
+}
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
 #define NULL_CHECK(o) do { if ((o) == NULL) { INTERP_THROW(kNullReferenceException); } } while (0)
 #define INTERP_THROW(exType) InterpThrow(pFrame, ip, exType)
 
@@ -2093,23 +2157,32 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
                 }
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+                INTOP_CASE(INTOP_SAFEPOINT_TRY_ACTIVATE)
+                {
+                    pFrame->ip = ip;
+                    if (g_TrapReturningThreads)
+                        InterpHandleThreadTrap();
+
+                    uint32_t* flag = reinterpret_cast<uint32_t*>(static_cast<uintptr_t>(static_cast<uint32_t>(ip[1])));
+                    if (flag != nullptr && VolatileLoad(flag) != 0)
+                        InterpTryActivateDelayedR2RCode(pInterpreterFrame, pFrame, pMethod, ip);
+                    ip += 2;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_SAFEPOINT_AND_SKIP)
+                    pFrame->ip = ip;
+                    if (g_TrapReturningThreads)
+                        InterpHandleThreadTrap();
+                    ip += 2;
+                    INTOP_NEXT;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
                 INTOP_CASE(INTOP_SAFEPOINT)
                     pFrame->ip = ip;
                     if (g_TrapReturningThreads)
-                    {
-                        Thread *pThread = GetThread();
-                        if (pThread->IsAbortRequested())
-                        {
-                            CallWithSEHWrapper(
-                            [&pThread]() {
-                                pThread->HandleThreadAbort();
-                                return 0;
-                            });
-                        }
-                        // Transition into preemptive mode to allow the GC to suspend us
-                        GCX_PREEMP_REGION_BEGIN();
-                        GCX_PREEMP_REGION_END();
-                    }
+                        InterpHandleThreadTrap();
                     ip++;
                     INTOP_NEXT;
 
@@ -3581,29 +3654,13 @@ SWITCH_OPCODE:
                         {
                             targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
                         }
+
                         PTR_InterpByteCodeStart targetIp;
                         if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
                         {
                             targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                         }
 
-#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-                        if (targetIp != NULL && targetIp->AuxiliaryModuleState.CanBeActivated())
-                        {
-                            pFrame->ip = ip;
-                            pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                            {
-                                GCX_PREEMP_REGION_BEGIN();
-                                CallWithSEHWrapper(
-                                    [pActualMethod, targetIp]() {
-                                        pActualMethod->TryActivateDelayedR2RCode(targetIp->Method, CallerGCMode::Coop);
-                                        return 0;
-                                    });
-                                GCX_PREEMP_REGION_END();
-                            }
-                            targetIp = targetMethod->GetInterpreterCode();
-                        }
-#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
                         if (targetIp != NULL)
                         {
                             pFrame->ip = ip;
@@ -3702,23 +3759,6 @@ CALL_INTERP_METHOD:
                     {
                         targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                     }
-#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-                    if (targetIp != NULL && targetIp->AuxiliaryModuleState.CanBeActivated())
-                    {
-                        pFrame->ip = ip;
-                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                        {
-                            GCX_PREEMP_REGION_BEGIN();
-                            CallWithSEHWrapper(
-                                [pActualMethod, targetIp]() {
-                                    pActualMethod->TryActivateDelayedR2RCode(targetIp->Method, CallerGCMode::Coop);
-                                    return 0;
-                                });
-                            GCX_PREEMP_REGION_END();
-                        }
-                        targetIp = targetMethod->GetInterpreterCode();
-                    }
-#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
                     if (targetIp == NULL)
                     {
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.

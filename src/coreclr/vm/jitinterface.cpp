@@ -13532,6 +13532,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
 
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+            // Passing auxiliary state through the JIT-EE interface would allow direct
+            // emission. Backpatch before publication to avoid extending that interface.
+            reinterpret_cast<InterpByteCodeStart*>(ret)->InitializeAuxiliaryEntry(config->GetAuxiliaryActivationFlag());
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
             _ASSERTE(portableEntryPoint != NULL);

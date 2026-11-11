@@ -553,9 +553,9 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-// Retry R2R lookup when the known code module is available or the lookup era has changed.
-void MethodDesc::TryActivateDelayedR2RCode(InterpByteCodeStart* interpreterMethod, CallerGCMode callerGCMode)
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+// Retry R2R code lookup part of the prestub
+uint32_t* MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
 {
     CONTRACTL
     {
@@ -564,35 +564,21 @@ void MethodDesc::TryActivateDelayedR2RCode(InterpByteCodeStart* interpreterMetho
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-    _ASSERTE(interpreterMethod->AuxModuleState.CanBeActivated())
+    PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+    config.SetCallerGCMode(callerGCMode);
+    PCODE code = GetPrecompiledCode(&config, false);
+    if (code != (PCODE)NULL)
+    {
+        SetCodeEntryPoint(code);
+        PoisonInterpreterCode();
+        PerfMap::LogPreCompiledMethod(this, code);
+        DACNotifyCompilationFinished(this, code);
+        return nullptr;
+    }
 
-    // Set state to avoid reentering activation in a cycle
-    interpreterMethod->AuxModuleState = AuxiliaryModuleState(AuxiliaryModuleStateDiscriminator::AlwaysInterpret, NULL);
-    EX_TRY
-    {
-        PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
-        config.SetCallerGCMode(callerGCMode);
-        PCODE code = GetPrecompiledCode(&config, false);
-        if (code != (PCODE)NULL)
-        {
-            interpreterMethod->AuxModuleState = AuxiliaryModuleState(AuxiliaryModuleStateDiscriminator::Activated, code);
-            PoisonInterpreterCode();
-            PerfMap::LogPreCompiledMethod(this, code);
-            DACNotifyCompilationFinished(this, code);
-        }
-        else
-        {
-            // Module state is already set to AlwaysInterpret, no further action needed
-        }
-    }
-    EX_CATCH
-    {
-        // Nonterminal lookup or fixup failures leave the method interpreted without retry.
-        RethrowTerminalExceptions();
-        // Module state is already set to AlwaysInterpret, no further action needed
-    }
-    EX_END_CATCH
+    return config.GetAuxiliaryActivationFlag();
 }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
@@ -2378,7 +2364,9 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoin
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
+// Returns NULL after interpreting the method. Otherwise the method now runs native code and nothing was
+// executed; the caller must call the returned entrypoint with its native signature instead.
+extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
 {
     _ASSERTE(pMD != NULL);
 
@@ -2387,17 +2375,29 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
     // protection for the arguments, but since this from an unmanaged caller, no protection is needed.
 
     InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
-    if (targetIp == NULL)
+    if (targetIp == NULL && !pMD->IsInterpreterCodePoisoned())
     {
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         targetIp = pMD->GetInterpreterCode();
     }
-    // The g_ReverseThunks reverse thunk is only used for UnmanagedCallersOnly methods that are executed
-    // by the interpreter. Methods compiled to native (R2R) code are dispatched directly to their R2R
-    // entrypoint by GetUnmanagedCallersOnlyThunk and never reach this path, so the interpreter byte code
-    // must exist here.
-    _ASSERTE(targetIp != NULL);
+
+    if (targetIp == NULL)
+    {
+        // The g_ReverseThunks reverse thunk is handed out for UnmanagedCallersOnly methods that are executed
+        // by the interpreter. Native code may keep calling it after the method switches to native code, for
+        // example when delayed R2R code is activated and the interpreter code is poisoned.
+#ifdef TARGET_WASM
+        void* nativeCode = GetR2RNativeCodeForUnmanagedCallersOnly(pMD);
+        _ASSERTE(nativeCode != NULL);
+        return nativeCode;
+#else
+        _ASSERTE(!"ExecuteInterpretedMethodFromUnmanaged: method has no interpreter code");
+        return NULL;
+#endif // TARGET_WASM
+    }
+
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
+    return NULL;
 }
 #endif // FEATURE_INTERPRETER
 

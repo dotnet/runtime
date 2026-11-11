@@ -12,7 +12,7 @@
 // WASM-TODO: The method lookup would ideally be fully qualified assembly and then methodDef token.
 // The current approach has limitations with overloaded methods.
 extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
-extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
+extern "C" void* ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD);
 
 static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid = nullptr;
@@ -25,7 +25,12 @@ static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g_
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid = nullptr;
@@ -38,7 +43,8 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -50,7 +56,13 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
         ((void(*)())r2r)();
         return;
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)())nativeCode)();
+        return;
+    }
 }
 
 extern "C" void SystemJS_ExecuteBackgroundJobCallback()
@@ -68,7 +80,8 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "BindAssemblyExports", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -82,7 +95,13 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 extern "C" void SystemInteropJS_BindAssemblyExports(void * arg0)
@@ -100,7 +119,12 @@ static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelp
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid = nullptr;
@@ -113,7 +137,12 @@ static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeH
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid = nullptr;
@@ -126,7 +155,8 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallDelegate", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -140,7 +170,13 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 extern "C" void SystemInteropJS_CallDelegate(void * arg0)
@@ -158,7 +194,12 @@ static void Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I3
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, int32_t, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid = nullptr;
@@ -171,7 +212,8 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallJSExport", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -185,7 +227,13 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)(int32_t, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 extern "C" void SystemInteropJS_CallJSExport(int32_t arg0, void * arg1)
@@ -203,7 +251,12 @@ static void Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHo
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid = nullptr;
@@ -216,7 +269,12 @@ static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeH
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid = nullptr;
@@ -229,7 +287,12 @@ static void Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEven
     }
 
     int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, int32_t, uint32_t, int64_t, int64_t, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid = nullptr;
@@ -242,7 +305,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid = nullptr;
@@ -255,7 +323,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid = nullptr;
@@ -268,7 +341,8 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CompleteTask", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -282,7 +356,13 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 extern "C" void SystemInteropJS_CompleteTask(void * arg0)
@@ -300,7 +380,12 @@ static void Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, int32_t, int64_t))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid = nullptr;
@@ -313,7 +398,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid = nullptr;
@@ -326,7 +416,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid = nullptr;
@@ -339,7 +434,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_Convert
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32 = nullptr;
@@ -353,7 +453,11 @@ static void * Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_Conve
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
     void * result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((void *(*)(void *, void *))nativeCode)(arg0, arg1);
+    }
     return result;
 }
 
@@ -367,7 +471,12 @@ static void Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -380,7 +489,12 @@ static void Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_
     }
 
     int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, int32_t, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4, arg5);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -393,7 +507,12 @@ static void Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I
     }
 
     int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(int32_t, void *, void *, int32_t, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -406,7 +525,12 @@ static void Call_System_Private_CoreLib_System_Exception_CreateArgumentException
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(int32_t, void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid = nullptr;
@@ -419,7 +543,12 @@ static void Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAss
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid = nullptr;
@@ -432,7 +561,12 @@ static void Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedExc
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid = nullptr;
@@ -445,7 +579,12 @@ static void Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationE
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid = nullptr;
@@ -458,7 +597,12 @@ static void Call_System_Private_CoreLib_System_Exception_CreateTypeInitializatio
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid = nullptr;
@@ -471,7 +615,12 @@ static void Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCa
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32 = nullptr;
@@ -485,7 +634,11 @@ static int32_t Call_System_Private_CoreLib_System_Environment_ExecuteInDefaultAp
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((int32_t(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+    }
     return result;
 }
 
@@ -499,7 +652,12 @@ static void Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_
     }
 
     int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4, arg5);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -512,7 +670,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -525,7 +688,12 @@ static void Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I3
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 = nullptr;
@@ -539,7 +707,11 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
 
     int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((int32_t(*)(void *, void *, void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4, arg5);
+    }
     return result;
 }
 
@@ -553,7 +725,12 @@ static void Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicIn
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid = nullptr;
@@ -566,7 +743,12 @@ static void Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I3
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid = nullptr;
@@ -579,7 +761,12 @@ static void Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid = nullptr;
@@ -592,7 +779,8 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "GetManagedStackTrace", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -606,7 +794,13 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 extern "C" void SystemInteropJS_GetManagedStackTrace(void * arg0)
@@ -624,7 +818,12 @@ static void Call_System_Private_CoreLib_System_Environment_GetResourceString_I32
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid = nullptr;
@@ -637,7 +836,12 @@ static void Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -650,7 +854,12 @@ static void Call_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTy
     }
 
     int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, int32_t, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -663,7 +872,12 @@ static void Call_System_Private_CoreLib_System_Environment_InitializeCommandLine
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid = nullptr;
@@ -676,7 +890,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid = nullptr;
@@ -689,7 +908,12 @@ static void Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_I
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid = nullptr;
@@ -702,7 +926,12 @@ static void Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonit
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, int32_t, uint32_t, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid = nullptr;
@@ -715,7 +944,12 @@ static void Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTr
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -728,7 +962,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArr
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Diagnostics_Debugger_InvokeFunction_I32_RetVoid = nullptr;
@@ -741,7 +980,12 @@ static void Call_System_Private_CoreLib_System_Diagnostics_Debugger_InvokeFuncti
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Debugger_InvokeFunction_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Debugger_InvokeFunction_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Debugger_InvokeFunction_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Debugger_InvokeFunction_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -754,7 +998,12 @@ static void Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicIn
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid = nullptr;
@@ -767,7 +1016,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTyp
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid = nullptr;
@@ -780,7 +1034,12 @@ static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTyp
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32 = nullptr;
@@ -794,7 +1053,11 @@ static void * Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeL
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
     void * result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((void *(*)(void *, void *, int32_t, uint32_t, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+    }
     return result;
 }
 
@@ -808,7 +1071,12 @@ static void Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartu
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 = nullptr;
@@ -822,7 +1090,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((int32_t(*)(void *, void *))nativeCode)(arg0, arg1);
+    }
     return result;
 }
 
@@ -837,7 +1109,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 
     int64_t args[1] = { (int64_t)arg0 };
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((int32_t(*)(void *))nativeCode)(arg0);
+    }
     return result;
 }
 
@@ -852,7 +1128,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 
     int64_t args[1] = { (int64_t)arg0 };
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((int32_t(*)(void *))nativeCode)(arg0);
+    }
     return result;
 }
 
@@ -867,7 +1147,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((int32_t(*)(void *, void *))nativeCode)(arg0, arg1);
+    }
     return result;
 }
 
@@ -881,7 +1165,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid = nullptr;
@@ -894,7 +1183,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid = nullptr;
@@ -907,7 +1201,12 @@ static void Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid = nullptr;
@@ -920,7 +1219,12 @@ static void Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetV
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid = nullptr;
@@ -933,7 +1237,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid = nullptr;
@@ -946,7 +1255,12 @@ static void Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid = nullptr;
@@ -959,7 +1273,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid = nullptr;
@@ -972,7 +1291,12 @@ static void Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid = nullptr;
@@ -985,7 +1309,12 @@ static void Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAs
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid = nullptr;
@@ -998,7 +1327,8 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "ReleaseJSOwnedObjectByGCHandle", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -1012,7 +1342,13 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)(void *))nativeCode)(arg0);
+        return;
+    }
 }
 
 extern "C" void SystemInteropJS_ReleaseJSOwnedObjectByGCHandle(void * arg0)
@@ -1030,7 +1366,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid = nullptr;
@@ -1043,7 +1384,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -1056,7 +1402,12 @@ static void Call_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32
     }
 
     int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, int32_t, int32_t, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
@@ -1069,7 +1420,12 @@ static void Call_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32
     }
 
     int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3, arg4, arg5);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32 = nullptr;
@@ -1083,7 +1439,11 @@ static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadCont
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
     void * result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((void *(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+    }
     return result;
 }
 
@@ -1098,7 +1458,11 @@ static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadCont
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
     void * result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((void *(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+    }
     return result;
 }
 
@@ -1112,7 +1476,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid = nullptr;
@@ -1125,7 +1494,12 @@ static void Call_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetV
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid = nullptr;
@@ -1138,7 +1512,12 @@ static void Call_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetV
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid = nullptr;
@@ -1151,7 +1530,12 @@ static void Call_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_Re
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(uint32_t, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32 = nullptr;
@@ -1163,7 +1547,11 @@ static uint32_t Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32(
         LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "RunFinalizers", &MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
     }
     uint32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, nullptr, 0, (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, nullptr, 0, (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
+    if (nativeCode != nullptr)
+    {
+        return ((uint32_t(*)())nativeCode)();
+    }
     return result;
 }
 
@@ -1177,7 +1565,12 @@ static void Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_
     }
 
     int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *))nativeCode)(arg0, arg1, arg2, arg3);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid = nullptr;
@@ -1190,7 +1583,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *, void *))nativeCode)(arg0, arg1, arg2);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid = nullptr;
@@ -1203,7 +1601,12 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
 
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        ((void(*)(void *, void *))nativeCode)(arg0, arg1);
+        return;
+    }
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid = nullptr;
@@ -1216,7 +1619,8 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Resolve once and cache; if the method gains native code later, the interpreter
+    // fallback below reports it and refreshes the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -1228,7 +1632,13 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
         ((void(*)())r2r)();
         return;
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+    void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+    if (nativeCode != nullptr)
+    {
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nativeCode, __ATOMIC_RELEASE);
+        ((void(*)())nativeCode)();
+        return;
+    }
 }
 
 extern "C" void SystemJS_ExecuteTimerCallback()
