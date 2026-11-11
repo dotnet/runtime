@@ -37,7 +37,7 @@ namespace System
             ExceptionCallbacks.s_firstChanceException = (nint)(delegate*<object, void>)&OnFirstChanceExceptionCore;
 
         internal static unsafe void SetUnhandledExceptionHandler() =>
-            ExceptionCallbacks.s_unhandledException = (nint)(delegate*<object, void>)&OnUnhandledExceptionInternal;
+            ExceptionCallbacks.s_unhandledException = (nint)(delegate*<object, void>)&OnUnhandledExceptionCore;
 
         [RuntimeExport("OnFirstChanceException")]
         internal static unsafe void OnFirstChanceException(object e)

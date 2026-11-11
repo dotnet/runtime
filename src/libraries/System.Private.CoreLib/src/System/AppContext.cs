@@ -106,7 +106,7 @@ namespace System
 #pragma warning restore CS0067
 
 #if NATIVEAOT
-        internal static void OnUnhandledExceptionInternal(object e)
+        internal static void OnUnhandledExceptionCore(object e)
 #else
         internal static void OnUnhandledException(object e)
 #endif
