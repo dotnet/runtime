@@ -626,6 +626,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
         }
 
+        case GT_STORE_LCL_VARS:
+            return LowerStoreLclVars(node->AsStoreLclVars());
+
         case GT_STORE_LCL_VAR:
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
             FALLTHROUGH;
@@ -6175,6 +6178,9 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
         GenTree* user = callUse.User();
         switch (user->OperGet())
         {
+            case GT_STORE_LCL_VARS:
+                break;
+
             case GT_RETURN:
             case GT_STORE_LCL_VAR:
             case GT_STORE_BLK:
@@ -6231,11 +6237,66 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerStoreSingleRegCallStruct: Lowers a store block where the source is a struct typed call.
+// LowerStoreLclVars: Keep direct register definitions or expand stores through a stack local.
 //
 // Arguments:
-//     store - The store node to lower.
+//     store - The multiple-definition store
 //
+// Returns:
+//     The next node to lower, including any newly inserted stores.
+//
+GenTree* Lowering::LowerStoreLclVars(GenTreeStoreLclVars* store)
+{
+    GenTree*       source = store->Data();
+    GenTree*       next   = store->gtNext;
+    GenTreeCall*   call   = source->IsCall() ? source->AsCall() : nullptr;
+    ReturnTypeDesc retStorage;
+    if (call != nullptr)
+    {
+        retStorage.InitializeStructCallReturnType(m_compiler, call);
+    }
+    const ReturnTypeDesc* ret    = call == nullptr ? nullptr : &retStorage;
+    unsigned              count  = ret == nullptr ? 0 : ret->GetReturnRegCount();
+    bool                  direct = (count == store->gtCount);
+    for (unsigned i = 0; direct && i < count; i++)
+    {
+        GenTreeStoreLclVars::Destination& dest    = store->GetDestination(i);
+        var_types                         type    = m_compiler->lvaGetDesc(dest.LclNum)->TypeGet();
+        var_types                         regType = ret->GetReturnRegType(i);
+        direct                                    = (dest.Offset == ret->GetReturnFieldOffset(i)) &&
+                 (((genTypeSize(type) == genTypeSize(regType)) && (genActualType(type) == genActualType(regType))) ||
+                  (varTypeIsSmall(type) && varTypeIsIntegral(regType) && (genTypeSize(type) <= genTypeSize(regType))));
+    }
+    if (direct)
+    {
+        return next;
+    }
+
+    // Preserve the source's layout, including GC slots, when fields do not map
+    // directly to return registers.
+    unsigned     temp = m_compiler->lvaGrabTemp(true DEBUGARG("Spilled local for multi-local store"));
+    ClassLayout* layout =
+        call != nullptr ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : source->GetLayout(m_compiler);
+    m_compiler->lvaSetStruct(temp, layout, false);
+    m_compiler->lvaSetVarDoNotEnregister(temp DEBUGARG(DoNotEnregisterReason::LocalField));
+
+    GenTree* spill = m_compiler->gtNewStoreLclVarNode(temp, source);
+    BlockRange().InsertBefore(store, spill);
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+        var_types                         type = m_compiler->lvaGetDesc(dest.LclNum)->TypeGet();
+        GenTree*                          load = m_compiler->gtNewLclFldNode(temp, type, dest.Offset);
+        GenTree*                          def  = m_compiler->gtNewStoreLclVarNode(dest.LclNum, load);
+        BlockRange().InsertBefore(store, LIR::SeqTree(m_compiler, def));
+    }
+    BlockRange().Remove(store);
+    return spill;
+}
+
+//------------------------------------------------------------------------
+// LowerStoreSingleRegCallStruct: Lower a block store from a single-register
+// struct call, spilling odd-sized return values if necessary.
 // Notes:
 //    The call returns its value in a single register. If the layout has a primitive register
 //    type, the store becomes a STOREIND of that type, so it writes exactly the struct's size
@@ -9226,6 +9287,29 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 {
     switch (node->OperGet())
     {
+        case GT_STORE_LCL_VARS:
+        {
+            GenTreeStoreLclVars* store  = node->AsStoreLclVars();
+            GenTree*             source = store->Data()->gtSkipReloadOrCopy();
+            assert(source->IsCall() && !source->AsCall()->ShouldHaveRetBufArg());
+            ReturnTypeDesc retStorage;
+            retStorage.InitializeStructCallReturnType(compiler, source->AsCall());
+            const ReturnTypeDesc* ret = &retStorage;
+            assert(store->gtCount == ret->GetReturnRegCount());
+            for (unsigned i = 0; i < store->gtCount; i++)
+            {
+                GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+                assert(dest.Offset == ret->GetReturnFieldOffset(i));
+                var_types type    = compiler->lvaGetDesc(dest.LclNum)->TypeGet();
+                var_types regType = ret->GetReturnRegType(i);
+                assert(
+                    ((genTypeSize(type) == genTypeSize(regType)) && (genActualType(type) == genActualType(regType))) ||
+                    (varTypeIsSmall(type) && varTypeIsIntegral(regType) &&
+                     (genTypeSize(type) <= genTypeSize(regType))));
+            }
+            break;
+        }
+
         case GT_CALL:
             CheckCall(node->AsCall());
             break;

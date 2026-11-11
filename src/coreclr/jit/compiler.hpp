@@ -4441,6 +4441,11 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 template <typename TDerived>
 struct LocalDefProvider
 {
+    GenTreeFlags& FlagsRef() const
+    {
+        return static_cast<const TDerived*>(this)->GetDefNode()->gtFlags;
+    }
+
     bool HasMultiDefIndex() const
     {
         return static_cast<const TDerived*>(this)->GetMultiDefIndex() != BAD_VAR_NUM;
@@ -4571,6 +4576,78 @@ struct PromotedStoreLclVarDef : LocalDefProvider<PromotedStoreLclVarDef>
     ValueSize GetStoreSize(Compiler* compiler) const
     {
         return compiler->lvaLclValueSize(m_def->GetLclNum());
+    }
+};
+
+struct StoreLclVarsDef
+{
+    GenTreeStoreLclVars* m_store;
+    unsigned             m_index;
+
+    StoreLclVarsDef(GenTreeStoreLclVars* store, unsigned index)
+        : m_store(store)
+        , m_index(index)
+    {
+    }
+
+    GenTree* GetDefNode() const
+    {
+        return m_store;
+    }
+
+    GenTreeStoreLclVars::Destination& GetDestination() const
+    {
+        return m_store->GetDestination(m_index);
+    }
+
+    GenTreeFlags& FlagsRef() const
+    {
+        return GetDestination().Flags;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return GetDestination().LclNum;
+    }
+
+    bool HasMultiDefIndex() const
+    {
+        return true;
+    }
+
+    unsigned GetSsaNum(Compiler* compiler) const
+    {
+        return GetDestination().SsaNum;
+    }
+
+    void SetSsaNum(Compiler* compiler, unsigned num) const
+    {
+        GetDestination().SsaNum = num;
+    }
+
+    bool IsEntire(Compiler* compiler) const
+    {
+        return true;
+    }
+
+    ssize_t GetOffset(Compiler* compiler) const
+    {
+        return 0;
+    }
+
+    ValueSize GetSize(Compiler* compiler) const
+    {
+        return compiler->lvaLclValueSize(GetLclNum());
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return m_store->GetDestination(m_index).Offset;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return ValueSize(m_store->Data()->GetLayout(compiler)->GetSize());
     }
 };
 
@@ -4890,6 +4967,15 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor)
 {
+    if (OperIs(GT_STORE_LCL_VARS))
+    {
+        GenTreeStoreLclVars* store = AsStoreLclVars();
+        for (unsigned i = 0; i < store->gtCount; i++)
+        {
+            RETURN_IF_ABORT(visitor(StoreLclVarsDef(store, i)));
+        }
+        return VisitResult::Continue;
+    }
     if (OperIs(GT_STORE_LCL_VAR))
     {
         return VisitLocalDef(comp, AsLclVarCommon(), visitor);
@@ -4987,6 +5073,36 @@ inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
+// StoreLclVarsOccurrence::GetAccessType:
+//   Get the type of the destination local defined by this occurrence.
+//
+// Arguments:
+//   compiler - The compiler instance.
+//
+// Return Value:
+//   The destination local's type.
+//
+inline var_types StoreLclVarsOccurrence::GetAccessType(Compiler* compiler) const
+{
+    return compiler->lvaGetDesc(GetLclNum())->TypeGet();
+}
+
+//------------------------------------------------------------------------
+// StoreLclVarsOccurrence::GetAccessSize:
+//   Get the size of the destination local defined by this occurrence.
+//
+// Arguments:
+//   compiler - The compiler instance.
+//
+// Return Value:
+//   The destination size in bytes.
+//
+inline unsigned StoreLclVarsOccurrence::GetAccessSize(Compiler* compiler) const
+{
+    return compiler->lvaLclValueSize(GetLclNum()).GetExact();
+}
+
+//------------------------------------------------------------------------
 // VisitLogicalLocalOccurrencesViaLocalsTreeList:
 //   Visit occurrences in locals-list order without expanding promoted parents.
 //
@@ -5006,7 +5122,18 @@ GenTree::VisitResult Statement::VisitLogicalLocalOccurrencesViaLocalsTreeList(TV
 
     for (GenTree* node : LocalsTreeList())
     {
-        if (visitor(LocalOccurrence(node->AsLclVarCommon())) == GenTree::VisitResult::Abort)
+        if (node->OperIs(GT_STORE_LCL_VARS))
+        {
+            GenTreeStoreLclVars* store = node->AsStoreLclVars();
+            for (unsigned i = 0; i < store->gtCount; i++)
+            {
+                if (visitor(StoreLclVarsOccurrence(store, i)) == GenTree::VisitResult::Abort)
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+            }
+        }
+        else if (visitor(LocalOccurrence(node->AsLclVarCommon())) == GenTree::VisitResult::Abort)
         {
             return GenTree::VisitResult::Abort;
         }

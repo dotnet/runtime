@@ -257,6 +257,10 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
+        case GT_STORE_LCL_VARS:
+            srcCount = BuildStoreLclVars(tree->AsStoreLclVars());
+            break;
+
         case GT_NOP:
             srcCount = 0;
             assert(tree->TypeIs(TYP_VOID));

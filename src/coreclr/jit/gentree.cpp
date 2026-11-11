@@ -295,6 +295,7 @@ void GenTree::InitNodeSize()
 #endif // FEATURE_SIMD
     static_assert(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeStoreLclVars) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
@@ -560,7 +561,7 @@ void GenTree::DumpNodeSizes()
 LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
     GenTree* first = m_stmt->GetTreeList();
-    assert((first == nullptr) || first->OperIsAnyLocal());
+    assert((first == nullptr) || first->OperIsAnyLocal() || first->OperIs(GT_STORE_LCL_VARS));
     return iterator(first);
 }
 
@@ -2926,6 +2927,24 @@ AGAIN:
             // these should be included in the comparison.
             switch (oper)
             {
+                case GT_STORE_LCL_VARS:
+                {
+                    GenTreeStoreLclVars* left  = op1->AsStoreLclVars();
+                    GenTreeStoreLclVars* right = op2->AsStoreLclVars();
+                    if (left->gtCount != right->gtCount)
+                    {
+                        return false;
+                    }
+                    for (unsigned i = 0; i < left->gtCount; i++)
+                    {
+                        if ((left->GetDestination(i).LclNum != right->GetDestination(i).LclNum) ||
+                            (left->GetDestination(i).Offset != right->GetDestination(i).Offset))
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                }
                 case GT_STORE_LCL_FLD:
                     if ((op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
                         (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
@@ -3558,6 +3577,13 @@ AGAIN:
             {
                 case GT_STORE_LCL_VAR:
                     hash = genTreeHashAdd(hash, tree->AsLclVar()->GetLclNum());
+                    break;
+                case GT_STORE_LCL_VARS:
+                    for (unsigned i = 0; i < tree->AsStoreLclVars()->gtCount; i++)
+                    {
+                        hash = genTreeHashAdd(hash, tree->AsStoreLclVars()->GetDestination(i).LclNum);
+                        hash = genTreeHashAdd(hash, tree->AsStoreLclVars()->GetDestination(i).Offset);
+                    }
                     break;
                 case GT_STORE_LCL_FLD:
                     hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLclNum());
@@ -7291,6 +7317,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                     break;
 
+                case GT_STORE_LCL_VARS:
+                    costEx = tree->AsStoreLclVars()->gtCount;
+                    costSz = 3 * tree->AsStoreLclVars()->gtCount;
+                    break;
+
                 case GT_STORE_LCL_VAR:
                     if (gtIsLikelyRegVar(tree))
                     {
@@ -8668,6 +8699,7 @@ bool GenTree::OperRequiresAsgFlag() const
 {
     switch (OperGet())
     {
+        case GT_STORE_LCL_VARS:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_STOREIND:
@@ -9034,6 +9066,19 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
 {
     switch (OperGet())
     {
+        case GT_STORE_LCL_VARS:
+        {
+            const GenTreeStoreLclVars* store = AsStoreLclVars();
+            for (unsigned i = 0; i < store->gtCount; i++)
+            {
+                if (comp->lvaGetDesc(store->GetDestination(i).LclNum)->IsAddressExposed())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         case GT_LCL_VAR:
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
@@ -10248,14 +10293,38 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
 }
 
 //------------------------------------------------------------------------
-// gtNewStoreLclVarNode: Create a local store node.
+// gtNewStoreLclVarsNode: Create a simultaneous scalar-local store.
 //
 // Arguments:
-//    lclNum - Number of the local being stored to
-//    value  - Value to store
+//    source - The sole evaluated operand
+//    count  - Number of destination records to initialize
 //
 // Return Value:
-//    The created STORE_LCL_VAR node.
+//    The created node; initialize every destination before using it.
+//
+GenTreeStoreLclVars* Compiler::gtNewStoreLclVarsNode(GenTree* source, unsigned count)
+{
+    GenTreeStoreLclVars::Destination* destinations = new (this, CMK_ASTNode) GenTreeStoreLclVars::Destination[count]{};
+    return new (this, GT_STORE_LCL_VARS) GenTreeStoreLclVars(source, destinations, count);
+}
+
+// Each definition record owns ordinary scalar SSA/liveness/register state.
+void Compiler::gtSetStoreLclVarsDestination(GenTreeStoreLclVars* store,
+                                            unsigned             index,
+                                            unsigned             lclNum,
+                                            unsigned             offset)
+{
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    assert(!varTypeIsStruct(dsc) && !dsc->lvPromoted && !dsc->IsAddressExposed());
+    assert(offset <= store->Data()->GetLayout(this)->GetSize() &&
+           genTypeSize(dsc) <= store->Data()->GetLayout(this)->GetSize() - offset);
+    GenTreeStoreLclVars::Destination& destination = store->GetDestination(index);
+    destination.LclNum                            = lclNum;
+    destination.Offset                            = offset;
+}
+
+//------------------------------------------------------------------------
+// gtNewStoreLclVarNode: Create a store of value to lclNum.
 //
 GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
 {
@@ -11535,6 +11604,18 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
         switch (oper)
         {
+            case GT_STORE_LCL_VARS:
+            {
+                GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+                GenTreeStoreLclVars* clone = gtNewStoreLclVarsNode(store->Data(), store->gtCount);
+                for (unsigned i = 0; i < store->gtCount; i++)
+                {
+                    GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+                    clone->GetDestination(i)               = dest;
+                }
+                copy = clone;
+                break;
+            }
             case GT_STORE_LCL_VAR:
                 // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
                 tree->gtFlags |= GTF_VAR_MOREUSES;
@@ -12310,6 +12391,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NEG:
         case GT_COPY:
         case GT_RELOAD:
+        case GT_STORE_LCL_VARS:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
@@ -13567,6 +13649,31 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
             }
 
+            if (tree->OperIs(GT_STORE_LCL_VARS))
+            {
+                GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+                for (unsigned i = 0; i < store->gtCount; i++)
+                {
+                    GenTreeStoreLclVars::Destination& dest = store->GetDestination(i);
+                    printf(" V%02u[%u]", dest.LclNum, dest.Offset);
+                    if (dest.SsaNum != SsaConfig::RESERVED_SSA_NUM)
+                    {
+                        printf(" d:%u", dest.SsaNum);
+                    }
+                    if ((dest.Flags & GTF_VAR_DEATH) != 0)
+                    {
+                        printf(" (last use)");
+                    }
+                    if (dest.RegNum != REG_NA)
+                    {
+                        printf(" %s", getRegName(static_cast<regNumber>(dest.RegNum)));
+                    }
+                    if ((dest.Flags & GTF_SPILL) != 0)
+                    {
+                        printf(" (spill)");
+                    }
+                }
+            }
             if (tree->OperIs(GT_RUNTIMELOOKUP))
             {
                 printf(" %p", dspPtr(tree->AsRuntimeLookup()->gtHnd));
@@ -34868,6 +34975,24 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
         return gtNewOperNode(GT_COMMA, type, node, dummyNode);
     }
     return node;
+}
+
+//---------------------------------------------------------------------------------------
+// InitializeStructCallReturnType: Describe a struct call's return ABI, including
+// targets that do not keep a return descriptor on individual call nodes.
+//
+void ReturnTypeDesc::InitializeStructCallReturnType(Compiler* comp, const GenTreeCall* call)
+{
+    assert(!m_inited);
+    const ReturnTypeDesc* existing = call->GetReturnTypeDesc();
+    if (existing != nullptr)
+    {
+        *this = *existing;
+    }
+    else
+    {
+        InitializeStructReturnType(comp, call->gtRetClsHnd, call->GetUnmanagedCallConv());
+    }
 }
 
 //---------------------------------------------------------------------------------------

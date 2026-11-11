@@ -7823,16 +7823,81 @@ void CodeGen::genJmpPlaceArgs(GenTree* jmp)
 }
 
 //----------------------------------------------------------------------------------
-// genMultiRegStoreToLocal: store multi-reg value to a local
+// genStoreLclVars: Store each source register into its explicit scalar destination.
 //
 // Arguments:
-//    lclNode  -  GenTree of GT_STORE_LCL_VAR
+//    store - The lowered multiple-definition node
 //
 // Return Value:
 //    None
 //
-// Assumption:
-//    The child of store is a multi-reg node.
+// Notes:
+//    Keep consume/copy/definition interleaved, matching the LSRA locations.
+//    In particular, do not consume all COPY/RELOAD registers up front.
+//
+void CodeGen::genStoreLclVars(GenTreeStoreLclVars* store)
+{
+    GenTree* source = store->Data();
+    for (unsigned i = 0; i < store->gtCount; i++)
+    {
+        regNumber sourceReg = source->IsMultiRegNode() ? genConsumeReg(source, i) : genConsumeReg(source);
+        GenTreeStoreLclVars::Destination& def          = store->GetDestination(i);
+        LclVarDsc*                        dsc          = m_compiler->lvaGetDesc(def.LclNum);
+        regNumber                         targetReg    = static_cast<regNumber>(def.RegNum);
+        bool                              writeThrough = dsc->lvTracked && dsc->IsAlwaysAliveInMemory();
+        bool                              spill        = (def.Flags & GTF_SPILL) != 0;
+        // A last-use definition may still require a write-through spill for EH.
+        bool      storeToStack = spill || writeThrough || ((targetReg == REG_NA) && ((def.Flags & GTF_VAR_DEATH) == 0));
+        var_types type         = dsc->TypeGet();
+        regNumber storeReg     = sourceReg;
+        if (varTypeIsSmall(type) && ((targetReg != REG_NA) || (storeToStack && dsc->lvNormalizeOnStore())))
+        {
+            // A consumed call-result register can be normalized in place when
+            // the destination has no assigned register.
+            regNumber normalizedReg = targetReg != REG_NA ? targetReg : sourceReg;
+#if defined(TARGET_LOONGARCH64)
+            if (varTypeIsUnsigned(type))
+            {
+                GetEmitter()->emitIns_R_R_I_I(INS_bstrpick_d, EA_PTRSIZE, normalizedReg, sourceReg,
+                                              genTypeSize(type) * BITS_PER_BYTE - 1, 0);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R(varTypeIsByte(type) ? INS_ext_w_b : INS_ext_w_h, EA_PTRSIZE, normalizedReg,
+                                          sourceReg);
+            }
+#elif defined(TARGET_RISCV64)
+            unsigned shift = TARGET_POINTER_SIZE * BITS_PER_BYTE - genTypeSize(type) * BITS_PER_BYTE;
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, normalizedReg, sourceReg, shift);
+            GetEmitter()->emitIns_R_R_I(varTypeIsUnsigned(type) ? INS_srli : INS_srai, EA_PTRSIZE, normalizedReg,
+                                        normalizedReg, shift);
+#else
+            inst_Mov_Extend(type, /* srcInReg */ true, normalizedReg, sourceReg, /* canSkip */ false,
+#ifdef TARGET_XARCH
+                            emitTypeSize(type));
+#else
+                            emitActualTypeSize(type));
+#endif
+#endif
+            storeReg = normalizedReg;
+        }
+        else if (targetReg != REG_NA)
+        {
+            inst_Mov(type, targetReg, sourceReg, /* canSkip */ true);
+        }
+        if (storeToStack)
+        {
+            var_types storeType = dsc->lvNormalizeOnStore() ? genActualType(type) : type;
+            GetEmitter()->emitIns_S_R(ins_StoreFromSrc(storeReg, storeType), emitTypeSize(storeType), storeReg,
+                                      def.LclNum, 0);
+        }
+        dsc->SetRegNum(targetReg == REG_NA ? REG_STK : targetReg);
+        treeLifeUpdater->UpdateLifeScalar(store, def.LclNum, def.Flags, targetReg);
+    }
+}
+
+//------------------------------------------------------------------------
+// genMultiRegStoreToLocal: Store a multi-register source to a struct local.
 //
 void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 {

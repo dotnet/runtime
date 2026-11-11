@@ -2234,12 +2234,24 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             FALLTHROUGH;
 
+        case GT_LCL_ADDR:
+            if ((m_parameterUses != nullptr) && !node->TypeIs(TYP_STRUCT))
+            {
+                RecordParameterUse(node, node->AsLclVarCommon()->GetLclNum(),
+                                   node->OperIs(GT_LCL_FLD) ? ParameterUseKind::FieldRead : ParameterUseKind::Kill);
+            }
+            break;
+
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
-        case GT_LCL_ADDR:
+        case GT_STORE_LCL_VARS:
             if (m_parameterUses != nullptr)
             {
-                RecordParameterUse(node);
+                // RewriteNode runs in postorder: all operand reads precede these definitions.
+                node->VisitLogicalLocalDefs(m_compiler, [=](const auto& def) {
+                    RecordParameterUse(node, def.GetLclNum(), ParameterUseKind::Kill);
+                    return GenTree::VisitResult::Continue;
+                });
             }
             break;
 
@@ -2558,20 +2570,16 @@ PhaseStatus Rationalizer::DoPhase()
 
 //------------------------------------------------------------------------
 // ShouldRecordParameterUse:
-//   Check whether a local node reads or kills a register-passed parameter we track.
+//   Check whether a logical local is a register-passed parameter we track.
 //
 // Arguments:
-//   node - The node visited by rationalization.
+//   lclNum - The logical local read or defined by the node.
 //
 // Returns:
-//   True if the node should be recorded.
+//   True if uses of this local should be recorded.
 //
-bool Rationalizer::ShouldRecordParameterUse(GenTree* node)
+bool Rationalizer::ShouldRecordParameterUse(unsigned lclNum)
 {
-    assert(node->OperIs(GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR));
-
-    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
-    unsigned             lclNum = lcl->GetLclNum();
     if (lclNum >= m_compiler->info.compArgsCount)
     {
         return false;
@@ -2580,11 +2588,6 @@ bool Rationalizer::ShouldRecordParameterUse(GenTree* node)
     LclVarDsc* param = m_compiler->lvaGetDesc(lclNum);
     if (param->lvPromoted || (!param->TypeIs(TYP_STRUCT) && !param->lvDoNotEnregister) ||
         !m_compiler->lvaGetParameterABIInfo(lclNum).HasAnyRegisterSegment())
-    {
-        return false;
-    }
-
-    if (node->OperIs(GT_LCL_FLD) && node->TypeIs(TYP_STRUCT))
     {
         return false;
     }
@@ -2598,27 +2601,27 @@ bool Rationalizer::ShouldRecordParameterUse(GenTree* node)
 //
 // Arguments:
 //   node - The node visited by rationalization.
+//   lclNum - The logical local read or defined by the node.
+//   kind - Whether this event reads the incoming value or kills it.
 //
-void Rationalizer::RecordParameterUse(GenTree* node)
+void Rationalizer::RecordParameterUse(GenTree* node, unsigned lclNum, ParameterUseKind kind)
 {
     assert(m_parameterUses != nullptr);
 
-    if (!ShouldRecordParameterUse(node))
+    if (!ShouldRecordParameterUse(lclNum))
     {
         return;
     }
 
-    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
-    unsigned             lclNum = lcl->GetLclNum();
-    ParameterUses*&      uses   = m_parameterUses[lclNum];
+    ParameterUses*& uses = m_parameterUses[lclNum];
     if (uses == nullptr)
     {
         uses = new (m_compiler, CMK_ABI) ParameterUses(m_compiler->getAllocator(CMK_ABI));
     }
 
-    uses->Uses.Push(ParameterUse{lcl, m_block});
-    uses->HasKills |= !node->OperIs(GT_LCL_FLD);
-    uses->HasReads |= node->OperIs(GT_LCL_FLD);
+    uses->Uses.Push(ParameterUse{node, m_block, kind});
+    uses->HasKills |= kind == ParameterUseKind::Kill;
+    uses->HasReads |= kind == ParameterUseKind::FieldRead;
 }
 
 //------------------------------------------------------------------------
@@ -2637,7 +2640,8 @@ void Rationalizer::ForgetParameterUses(const LIR::ReadOnlyRange& range)
 
     for (GenTree* node : range)
     {
-        if (!node->OperIs(GT_LCL_FLD, GT_LCL_ADDR) || !ShouldRecordParameterUse(node))
+        if (!node->OperIs(GT_LCL_FLD, GT_LCL_ADDR) || node->TypeIs(TYP_STRUCT) ||
+            !ShouldRecordParameterUse(node->AsLclVarCommon()->GetLclNum()))
         {
             continue;
         }
@@ -2705,7 +2709,7 @@ void Rationalizer::RewriteParameterUses()
             BasicBlock* lastKillBlock = nullptr;
             for (const ParameterUse& use : uses->Uses.BottomUpOrder())
             {
-                if ((use.Node != nullptr) && !use.Node->OperIs(GT_LCL_FLD) && (use.Block != lastKillBlock))
+                if ((use.Node != nullptr) && (use.Kind == ParameterUseKind::Kill) && (use.Block != lastKillBlock))
                 {
                     use.Block->VisitAllSuccs(m_compiler, queueSuccessor);
                     lastKillBlock = use.Block;
@@ -2735,7 +2739,7 @@ void Rationalizer::RewriteParameterUses()
                 killed = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
             }
 
-            if (!use.Node->OperIs(GT_LCL_FLD))
+            if (use.Kind == ParameterUseKind::Kill)
             {
                 // Once we see a kill consider all subsequent uses killed
                 killed = true;
