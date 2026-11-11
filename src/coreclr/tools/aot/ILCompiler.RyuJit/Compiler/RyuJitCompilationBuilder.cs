@@ -22,7 +22,6 @@ namespace ILCompiler
         private ILProvider _ilProvider = new NativeAotILProvider();
         private ProfileDataManager _profileDataManager;
         private string _orderFile;
-        private int _methodPadding;
         private string _jitPath;
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
@@ -40,12 +39,6 @@ namespace ILCompiler
         public RyuJitCompilationBuilder UseSymbolOrder(string filePath)
         {
             _orderFile = filePath;
-            return this;
-        }
-
-        public RyuJitCompilationBuilder UseMethodPadding(int bytes)
-        {
-            _methodPadding = bytes;
             return this;
         }
 
@@ -173,8 +166,7 @@ namespace ILCompiler
                 _methodLayoutAlgorithm,
                 _fileLayoutAlgorithm,
                 _parallelism,
-                _orderFile,
-                _methodPadding);
+                _orderFile);
         }
     }
 }

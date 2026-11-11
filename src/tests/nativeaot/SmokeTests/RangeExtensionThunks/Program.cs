@@ -8,11 +8,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-// The compiler pads every method body (--methodpadding) so the 4096 instantiations of Worker<,,>
-// span more than the 128 MB reach of an arm64 direct branch, and the linker places range extension
-// thunks between the code sections the compiler split. Run calls the rotated instantiation
-// directly and the unboxing stub of Work branches to the method, so the direct calls and the
-// stubs whose target is out of range go through thunks.
+// The compiler aligns every method body to a page (--function-alignment) so the 21952
+// instantiations of Worker<,,> span more than the 128 MB reach of an arm64 direct branch, and the
+// linker places range extension thunks between the code sections the compiler split. Run calls
+// the rotated instantiation directly and the unboxing stub of Work branches to the method, so the
+// direct calls and the stubs whose target is out of range go through thunks.
 public interface IWork
 {
     int Work(int depth);
@@ -42,10 +42,23 @@ public struct X12 { }
 public struct X13 { }
 public struct X14 { }
 public struct X15 { }
+public struct X16 { }
+public struct X17 { }
+public struct X18 { }
+public struct X19 { }
+public struct X20 { }
+public struct X21 { }
+public struct X22 { }
+public struct X23 { }
+public struct X24 { }
+public struct X25 { }
+public struct X26 { }
+public struct X27 { }
 
 public static unsafe class Program
 {
-    private const int Count = 16 * 16 * 16;
+    private const int Types = 28;
+    private const int Count = Types * Types * Types;
     private const long BranchReach = 128 * 1024 * 1024;
 
     private static readonly nint[] s_run = new nint[Count];
@@ -61,7 +74,7 @@ public static unsafe class Program
         int farCalls = 0;
         for (int i = 0; i < Count; i++)
         {
-            int rotated = ((i & 0xff) << 4) | (i >> 8);
+            int rotated = i % (Types * Types) * Types + i / (Types * Types);
             if (Math.Abs((long)(s_run[i] - s_run[rotated])) > BranchReach)
                 farCalls++;
         }
@@ -127,6 +140,18 @@ public static unsafe class Program
         Each<X13>();
         Each<X14>();
         Each<X15>();
+        Each<X16>();
+        Each<X17>();
+        Each<X18>();
+        Each<X19>();
+        Each<X20>();
+        Each<X21>();
+        Each<X22>();
+        Each<X23>();
+        Each<X24>();
+        Each<X25>();
+        Each<X26>();
+        Each<X27>();
     }
 
     private static void Each<T1>()
@@ -147,6 +172,18 @@ public static unsafe class Program
         Each<T1, X13>();
         Each<T1, X14>();
         Each<T1, X15>();
+        Each<T1, X16>();
+        Each<T1, X17>();
+        Each<T1, X18>();
+        Each<T1, X19>();
+        Each<T1, X20>();
+        Each<T1, X21>();
+        Each<T1, X22>();
+        Each<T1, X23>();
+        Each<T1, X24>();
+        Each<T1, X25>();
+        Each<T1, X26>();
+        Each<T1, X27>();
     }
 
     private static void Each<T1, T2>()
@@ -167,6 +204,18 @@ public static unsafe class Program
         Add(&Worker<T1, T2, X13>.Run, new Worker<T1, T2, X13>());
         Add(&Worker<T1, T2, X14>.Run, new Worker<T1, T2, X14>());
         Add(&Worker<T1, T2, X15>.Run, new Worker<T1, T2, X15>());
+        Add(&Worker<T1, T2, X16>.Run, new Worker<T1, T2, X16>());
+        Add(&Worker<T1, T2, X17>.Run, new Worker<T1, T2, X17>());
+        Add(&Worker<T1, T2, X18>.Run, new Worker<T1, T2, X18>());
+        Add(&Worker<T1, T2, X19>.Run, new Worker<T1, T2, X19>());
+        Add(&Worker<T1, T2, X20>.Run, new Worker<T1, T2, X20>());
+        Add(&Worker<T1, T2, X21>.Run, new Worker<T1, T2, X21>());
+        Add(&Worker<T1, T2, X22>.Run, new Worker<T1, T2, X22>());
+        Add(&Worker<T1, T2, X23>.Run, new Worker<T1, T2, X23>());
+        Add(&Worker<T1, T2, X24>.Run, new Worker<T1, T2, X24>());
+        Add(&Worker<T1, T2, X25>.Run, new Worker<T1, T2, X25>());
+        Add(&Worker<T1, T2, X26>.Run, new Worker<T1, T2, X26>());
+        Add(&Worker<T1, T2, X27>.Run, new Worker<T1, T2, X27>());
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_methodPtr")]

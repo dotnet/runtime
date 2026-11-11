@@ -66,11 +66,6 @@ namespace ILCompiler.ObjectWriter
         private protected virtual bool UsesSubsectionsViaSymbols => false;
 
         /// <summary>
-        /// Bytes of padding emitted after each method body, to inflate the code for tests.
-        /// </summary>
-        public int MethodPadding { get; set; }
-
-        /// <summary>
         /// Whether the linker for this format places range-extension thunks between sections, so that
         /// code larger than <see cref="GetCodeSectionSplitSize"/> can be emitted as several sections of
         /// the same name.
@@ -580,11 +575,6 @@ namespace ILCompiler.ObjectWriter
 
                 // Note that this has to be done last as not to advance the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
-
-                if (MethodPadding > 0 && node is IMethodBodyNode)
-                {
-                    sectionWriter.WritePadding(MethodPadding);
-                }
             }
 
             RecordFoldedSymbolDefinitions(_definedSymbols);

@@ -9,6 +9,7 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Numerics;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -123,6 +124,13 @@ namespace ILCompiler
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
+            int functionAlignment = Get(_command.FunctionAlignment);
+            if (functionAlignment != 0)
+            {
+                if (!BitOperations.IsPow2(functionAlignment))
+                    throw new CommandLineException("Function alignment must be a power of two");
+                targetDetails.OptimumFunctionAlignment = functionAlignment;
+            }
             CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
@@ -366,7 +374,6 @@ namespace ILCompiler
             var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
                 .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
                 .UseSymbolOrder(Get(_command.OrderFile))
-                .UseMethodPadding(Get(_command.MethodPadding))
                 .UseCompilationUnitPrefix(compilationUnitPrefix);
 
             string[] mibcFilePaths = Get(_command.MibcFilePaths);
