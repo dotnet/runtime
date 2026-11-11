@@ -942,15 +942,15 @@ NOINLINE static void InterpTryActivateDelayedR2RCode(InterpreterFrame* pInterpre
     CONTRACTL_END;
 
     pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+    // entry[0] is the INTOP_SAFEPOINT_TRY_ACTIVATE opcode; entry[1] is the readiness flag pointer.
+    // A debugger breakpoint on this instruction replaces entry[0] and dispatches the saved opcode, and
+    // a concurrent activation may already have rewritten entry[0] after this thread dispatched it.
     int32_t* entry = const_cast<int32_t*>(ip);
-    struct RestoreFlagOperand
-    {
-        int32_t* Operand;
-        int32_t Value;
-        ~RestoreFlagOperand() { *Operand = Value; }
-    } restoreFlag { entry + 1, entry[1] };
+    _ASSERTE(entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE || entry[0] == INTOP_BREAKPOINT ||
+             entry[0] == INTOP_SAFEPOINT_AND_SKIP);
 
-    // Reentrant calls interpret while the outer activation is in progress.
+    // Reentrant calls interpret while activation is in progress. If activation throws, leave
+    // the flag cleared so later calls do not retry it.
     entry[1] = 0;
     uint32_t* nextActivationFlag;
     {
@@ -960,11 +960,13 @@ NOINLINE static void InterpTryActivateDelayedR2RCode(InterpreterFrame* pInterpre
         });
         GCX_PREEMP_REGION_END();
     }
-    restoreFlag.Value = static_cast<int32_t>(reinterpret_cast<uintptr_t>(nextActivationFlag));
-    // A debugger breakpoint may own this slot; it dispatches the saved opcode, so leave it in place.
-    _ASSERTE(entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE || entry[0] == INTOP_BREAKPOINT);
-    if (restoreFlag.Value == 0 && entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE)
+    // Checked after activation because the debugger can patch entry[0] with INTOP_BREAKPOINT while this
+    // thread is in preemptive mode. The breakpoint dispatches the saved opcode, so leave it in place.
+    if (nextActivationFlag == nullptr && entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE)
         entry[0] = INTOP_SAFEPOINT_AND_SKIP;
+
+    // A non-null flag means another module is still pending.
+    entry[1] = static_cast<int32_t>(reinterpret_cast<uintptr_t>(nextActivationFlag));
 }
 #endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
@@ -3660,7 +3662,6 @@ SWITCH_OPCODE:
                         {
                             targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                         }
-
                         if (targetIp != NULL)
                         {
                             pFrame->ip = ip;

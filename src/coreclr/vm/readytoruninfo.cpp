@@ -1085,19 +1085,33 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_pAuxiliaryModuleMetadata = m_pCompositeInfo->GetAuxiliaryModuleMetadata();
 
     IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
-    if (auxiliaryModuleMetadata != NULL && m_pAuxiliaryModuleMetadata == nullptr)
+    if (auxiliaryModuleMetadata == NULL && m_pAuxiliaryModuleMetadata == nullptr)
     {
         // Fake an AuxiliaryModuleMetadata for now.
         size_t metadataSize = sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizeof(ReadyToRun_AuxiliaryModuleMetadataEntry);
         BYTE* metadata = static_cast<BYTE*>(pamTracker->Track(
-            pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(metadataSize + 2))));
-        uint32_t filenameRVA = auxiliaryModuleMetadata->VirtualAddress + static_cast<uint32_t>(metadataSize);
+            pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(metadataSize))));
         m_pAuxiliaryModuleMetadata = new (metadata) ReadyToRun_AuxiliaryModuleMetadata
-            { filenameRVA, 0, 0, 0, 0, 1 };
+            {
+                0, // EntryPointsFilenameRVA
+                0, // InstanceMethodEntryPointsRVA
+                0, // MethodDefEntryPointsInfoRVA
+                0, // EntryPointsModuleActivationStatus
+                0, // PrimaryModuleMethodCount
+                1  // AuxiliaryModuleCount
+            };
         new (m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries())
-            ReadyToRun_AuxiliaryModuleMetadataEntry { filenameRVA, 0, m_nRuntimeFunctions, 0 };
-        metadata[metadataSize] = '.';
-        metadata[metadataSize + 1] = '\0';
+            ReadyToRun_AuxiliaryModuleMetadataEntry
+            {
+                0,                   // FileNameRVA
+                0,                   // RelativeTableBase
+                m_nRuntimeFunctions, // MethodCount
+                0                    // ActivationStatus
+            };
+    }
+    else if (m_pAuxiliaryModuleMetadata == nullptr)
+    {
+        m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata);
     }
 #endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 }
@@ -1445,6 +1459,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     _ASSERTE(id < m_nRuntimeFunctions);
 
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Ensure the auxiliary module is activated before attempting fixups
     if (m_pAuxiliaryModuleMetadata != nullptr && id >= m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount)
     {
         uint32_t auxModuleCount = m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount;
