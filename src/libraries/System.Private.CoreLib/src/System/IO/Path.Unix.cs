@@ -54,7 +54,7 @@ namespace System.IO
             return GetFullPathInternal(CombineInternal(basePath, path));
         }
 
-        // Gets the full path without argument validation
+        // Gets the full path with a length check
         private static string GetFullPathInternal(string path)
         {
             Debug.Assert(!string.IsNullOrEmpty(path));
