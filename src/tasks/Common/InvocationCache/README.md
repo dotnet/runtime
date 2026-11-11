@@ -19,6 +19,18 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
+An `InvocationDescription` can specify an effective working directory and a reversible path mapping.
+The description stores only logical identities for input files, output locations, and that working
+directory. Hashing serializes those identities directly; file access, output validation, and
+restoration resolve them to physical absolute paths through the same mapping. Without a mapping,
+identities are absolute paths.
+Consumers must preserve complete relative layouts and distinguish external paths rather than
+mapping unrelated files to the same identity. Mappings must remain stable and reversible throughout
+discovery, hashing, execution, and restoration. ILLink supplies its root-aware mapping this way.
+
+Prepare any execution-path normalization independently of the cache callbacks so disabling or
+bypassing caching does not change the invocation.
+
 ## Behavior and limitations
 
 Disabled caching skips discovery and cache I/O. Hits validate and restore outputs without running the
@@ -31,7 +43,8 @@ The cache owns reconciliation only on hits, including deleting declared files re
 Restoration is not transactional. Empty directories are not preserved, and symbolic links are not
 checked.
 
-Keys retain absolute input/output paths and execution context; cross-worktree reuse is not promised.
+Cross-worktree reuse requires stable logical path identities and a matching execution contract;
+mapping identities does not rewrite tool arguments or normalize embedded paths in file contents.
 Hits do not replay diagnostics or non-file task outputs. Cache operations do not observe cancellation.
 Consumers must bypass invocations whose dependencies or required side effects cannot be modeled.
 

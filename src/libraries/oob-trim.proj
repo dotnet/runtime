@@ -48,6 +48,7 @@
 
     <MakeDir Directories="$(OOBAssembliesTrimDir)" />
     <ILLink AssemblyPaths="@(OOBAssemblyToTrim)"
+        SourceRoots="@(SourceRoot)"
         RootAssemblyNames="@(_OOBRootAssemblyName)"
         ReferenceAssemblyPaths="@(OOBAssemblyReference)"
         OutputDirectory="$(OOBAssembliesTrimDir)"

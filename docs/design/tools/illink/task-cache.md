@@ -2,8 +2,8 @@
 
 ILLink opts eligible task invocations into the
 [shared invocation cache](../../../../src/tasks/Common/InvocationCache/README.md). This document
-covers ILLink's input discovery, output ownership, and deliberate omissions; the shared README owns
-hashing, storage, restoration, and concurrency. The feature is experimental and may change or be
+covers ILLink's input discovery, root-aware identity, output ownership, and deliberate omissions;
+the shared README owns storage, restoration, and concurrency. The feature is experimental and may change or be
 removed without notice.
 
 ## Configuration and task boundary
@@ -19,17 +19,72 @@ platform cache location; a path alone never enables caching. See
 [task usage](../../../tools/illink/illink-tasks.md#experimental-task-cache) for configuration and
 maintenance commands.
 
-`ExecuteTool` calls `InvocationCache.ExecuteCached` with parameterless callbacks for the task's
-`DescribeInvocation` and `ExecuteNormally` methods. The description supplies input paths, effective
-arguments/context, and one `InvocationOutputs.FromDirectory` declaration. Eligibility and metadata
-inspection stay in ILLink; content hashing and cache operations stay in the shared layer.
+Argument construction records input roles and renders execution paths and logical identities in
+one walk over the task inputs. The command-line and response-file hooks reuse that construction;
+`ExecuteTool` does not reconstruct or compare arguments.
+The description callback expands the recorded inputs through `DescribeInvocation`, supplies
+the effective working directory, and declares one `InvocationOutputs.FromDirectory`; it runs only
+when caching is enabled. The description stores logical path identities without parallel physical
+path inventories; its reversible source-root map resolves identities for file reads, output
+validation, and restoration. Normal execution uses
+the already-generated arguments regardless of cache eligibility. ILLink owns metadata inspection
+and path-independence checks; the shared layer owns key serialization, full-content hashing,
+publication, restoration, and writer coordination.
+
+## Root identity and execution
+
+Share eligible results across clones/worktrees with equivalent relative layouts. Accept physical
+`SourceRoots` with stable logical `MappedPath` metadata (`/_/`, `/_1/`, etc.). Map known paths to
+tagged logical-root/relative-path identities; retain absolute external paths. Require distinct roots
+and consistent nested mappings. Missing or invalid mappings run uncached.
+
+For one enclosing physical root, run ILLink from that root with known in-root paths rendered
+relative to it, whether caching is enabled, disabled, or bypassed by input eligibility checks.
+Relative execution does not require stable logical `MappedPath` metadata. Resolve original
+relative inputs against the caller's cwd first. Do not change process-wide cwd or task inputs.
+Disjoint-root invocations retain their original execution with logical key mapping only.
+Missing execution roots and unsupported argument shapes retain the original invocation in both
+cache modes.
+
+Use the shared SHA-256 key builder over a length-delimited description with ILLink-specific context. Include
+execution mode, effective working directory, exact generated arguments, logical output identity,
+platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
+replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
+sidecar associations, and ordered search directories. The model describes the task's built-in
+argument generation and working directory; it does not detect or protect against subclass overrides.
+
+Runtime per-library, shared-framework, out-of-band, and SDK publish targets forward the compiler's
+existing `@(SourceRoot)` items after `InitializeSourceRootMappedPaths`. Aggregate runtime projects
+import the managed compiler's mapping target explicitly because their SDK does not compile sources.
+Initialization uses the existing `DeterministicSourcePaths` setting: deterministic builds normally
+receive stable logical prefixes; other builds receive physical mappings and run uncached, still
+using relative execution when supported. Root forwarding does not normalize upstream assemblies or
+enable symbol preservation or compiler path mapping.
 
 ## Input discovery and eligibility
 
-Hash all supplied assemblies, reference assemblies, and root descriptors. Include adjacent PDBs,
-MDBs, configuration files, and satellite assemblies even when symbols are disabled. Follow assembly
-metadata file entries for linked resources and additional modules. Adding or removing a sidecar
-changes identity.
+Hash effective assemblies, reference assemblies, and root descriptors recorded during argument
+construction. Include adjacent PDBs,
+configuration files, and satellite assemblies even when symbols are disabled. Adding or removing a
+sidecar changes identity. Leave assembly filename/name mismatches and unsupported additional modules
+to ILLink rather than preflight-rejecting them. Reject path-shaped metadata assembly references.
+Leave root and XML assembly-name validation to ILLink, which treats path-shaped names as unresolved
+rather than probing outside the inventory.
+
+Linked resources with stored hashes do not introduce an external file read during rewriting.
+Dependency tracking for the unusual missing-hash case, where Cecil can read the resource file to
+compute an output hash, is deferred; such inputs are outside the cache's supported dependency model.
+
+Inspect CodeView paths, portable-PDB document paths, and embedded portable PDBs.
+Accept relative non-escaping paths and conventional synthetic `/_N/` paths; reject physical symbol
+paths, native PDBs, MDBs, malformed symbols, and unsupported debug-directory kinds. External portable
+PDB emission requires explicit `PreserveSymbolPaths=true` with already-normalized inputs. Copy
+actions also require shareable input bytes. Explicit skipped references are metadata-inspected and
+fully hashed, without output-symbol restrictions because their symbols are not emitted.
+
+Do not scan input contents for physical source-root prefixes. Embedded checkout paths, including
+`CallerFilePath` strings and custom-debug blobs, participate in full-content hashes: changing them
+changes the key, while identical bytes can share an entry. Compiler and symbol defaults are unchanged.
 
 The inventory includes the task assembly, selected dotnet host executable, and entire linker
 assembly. Hash the linker without loading it or relying on MVID, timestamps, or length; do not scan
@@ -46,7 +101,7 @@ process. Runtime installation changes alone therefore need not invalidate entrie
 requiring that distinction must clear or isolate storage.
 
 Inherited environment variables are not enumerated, hashed, or used as a bypass list. Platform,
-architecture, and culture are part of the shared key, but callers must disable caching when inherited
+architecture, and culture are part of the ILLink key, but callers must disable caching when inherited
 settings introduce untracked dependencies, affect outputs, or require side effects such as startup
 hooks or profiling.
 
@@ -57,13 +112,17 @@ effects.
 For runtime library builds, support `--ignore-link-attributes true` followed by zero or more
 `--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Require the XML files to be
 readable. Inventory every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory,
-including sidecars, modules, and resources. Preserve directory order and leave linker resolution
+including supported sidecars. Preserve directory order and leave linker resolution
 unchanged; adding, changing, or removing even a shadowed candidate invalidates identity. Other SDK
 options supplied through `ExtraArgs` remain unsupported.
 
+Bypass `ExtraArgs` containing backslashes immediately before quotes, including even-length runs.
+The supported tokenizer does not model the linker's escape rules; leave those invocations
+unchanged rather than reconstruct different argument boundaries.
+
 Unreadable directories, uninspectable assemblies (including PE images without managed metadata), and
-other input-read failures bypass caching with diagnostics. Missing declared files have explicit
-absence markers; normal linking decides whether an invocation can succeed. Inputs must remain stable
+other input-read failures bypass caching with diagnostics. Required files must be readable; normal
+linking decides whether an unsupported invocation can succeed. Inputs must remain stable
 throughout discovery, hashing, and linking.
 
 ## Output preparation and diagnostics

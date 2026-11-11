@@ -1,5 +1,9 @@
 <Project>
 
+  <!-- Aggregate trimming projects do not import a managed compiler's targets. -->
+  <Import Project="$(RoslynTargetsPath)/Microsoft.Managed.Core.targets"
+          Condition="'$(UsingMicrosoftNoTargetsSdk)' == 'true'" />
+
   <PropertyGroup>
     <!-- Custom trimming logic should always use live ILLink, even when none of the
          trimming-related SDK properties are set. -->
@@ -175,7 +179,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PrepareForAssembliesTrim">
+  <Target Name="PrepareForAssembliesTrim"
+          DependsOnTargets="InitializeSourceRootMappedPaths">
     <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
     <PropertyGroup>
       <_ILLinkHasCustomArgs Condition="'$(ILLinkArgs)' != ''">true</_ILLinkHasCustomArgs>
@@ -288,6 +293,7 @@
     </PropertyGroup>
 
     <ILLink AssemblyPaths="@(_ILLinkAssemblyToTrim)"
+            SourceRoots="@(SourceRoot)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             RootDescriptorFiles="@(_ILLinkRootDescriptors)"
             TrimMode="$(_ILLinkTrimMode)"

@@ -18,6 +18,10 @@ namespace ILLink.Tasks.Tests
     {
 
         public List<(MessageImportance Importance, string Line)> Messages { get; } = new List<(MessageImportance Importance, string Line)>();
+        public List<string> WorkingDirectories { get; } = new();
+        public List<string> ResponseFiles { get; } = new();
+        public string WorkingDirectory => GetWorkingDirectory() ?? Environment.CurrentDirectory;
+        public (string WorkingDirectory, string CommandLine, string ResponseFile)? CacheInvocation { get; private set; }
 
         public string GetResponseFileCommands() => GenerateResponseFileCommands();
 
@@ -26,14 +30,28 @@ namespace ILLink.Tasks.Tests
             // Match the normalization ToolTask.Execute applies before calling ExecuteTool.
             string commandLine = GenerateCommandLineCommands();
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
-            object[] arguments = {
-                pathToTool,
-                AdjustCommandsForOperatingSystem(GenerateResponseFileCommands()),
-                AdjustCommandsForOperatingSystem(commandLine)
-            };
-            var invocation = (InvocationDescription)typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
+            string responseFile = AdjustCommandsForOperatingSystem(GenerateResponseFileCommands());
+            var invocation = (InvocationBuilder)typeof(ILLink).GetField("_invocation", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(this);
+            MethodInfo method = typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
+            var description = (InvocationDescription)method.Invoke(this, new object[] { pathToTool });
             key = string.Empty;
-            return invocation is not null && InvocationCache.TryComputeKey(Log, "ILLink", invocation, out key);
+            bool result = description is not null && InvocationCache.TryComputeKey(Log, "ILLink", description, out key);
+            CacheInvocation = result && invocation.Paths.ExecutionRoot is { } root
+                ? (root, AdjustCommandsForOperatingSystem(commandLine), responseFile) : null;
+            return result;
+        }
+
+        protected override string GetWorkingDirectory()
+        {
+            string directory = base.GetWorkingDirectory();
+            WorkingDirectories.Add(directory ?? Environment.CurrentDirectory);
+            return directory;
+        }
+
+        protected override string GetResponseFileSwitch(string responseFilePath)
+        {
+            ResponseFiles.Add(File.ReadAllText(responseFilePath));
+            return base.GetResponseFileSwitch(responseFilePath);
         }
 
         public MockTask()
