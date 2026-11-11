@@ -48,6 +48,7 @@ class FieldDesc;
 //
 #ifdef FEATURE_COMINTEROP
 BOOL IsManagedObject(IUnknown *pErrInfo);
+HRESULT ClearThreadErrorInfo();
 #endif // FEATURE_COMINTEROP
 
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject);

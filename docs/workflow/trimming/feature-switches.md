@@ -10,6 +10,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 |-|-|-|
 | DynamicCodeSupport | System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported | Changes RuntimeFeature.IsDynamicCodeSupported to false to allow testing AOT-safe fallback code without publishing for Native AOT. |
 | EnableGeneratedComInterfaceComImportInterop | System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop | When set to true, enables casting source-generated COM object wrappers to built-in COM-based COM interfaces. |
+| (none) | System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled | Defaults to true. When false, CoreCLR throws MarshalDirectiveException for interop requiring runtime marshalling, allowing unused runtime marshalling helpers to be trimmed. Built-in COM interop is also disabled; ComWrappers and source-generated COM remain available. |
 | VerifyDependencyInjectionOpenGenericServiceTrimmability | Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability | When set to true, DependencyInjection will verify trimming annotations applied to open generic services are correct. |
 | _ComObjectDescriptorSupport | System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported | When set to true, supports creating a TypeDescriptor based view of COM objects. |
 | _DataSetXmlSerializationSupport | System.Data.DataSet.XmlSerializationIsSupported | When set to false, DataSet implementation of IXmlSerializable will throw instead of using trim-incompatible XML serialization. |

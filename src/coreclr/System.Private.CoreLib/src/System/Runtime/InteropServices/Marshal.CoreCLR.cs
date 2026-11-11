@@ -107,6 +107,9 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
+            if (!IsRuntimeMarshallingEnabled)
+                throw new MarshalDirectiveException(SR.Marshaler_RuntimeMarshallingDisabled);
+
             const int Flags =
                 (int)AsAnyMarshaler.AsAnyFlags.In |
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi |
@@ -171,6 +174,9 @@ namespace System.Runtime.InteropServices
             {
                 throw new AccessViolationException();
             }
+
+            if (!IsRuntimeMarshallingEnabled)
+                throw new MarshalDirectiveException(SR.Marshaler_RuntimeMarshallingDisabled);
 
             const int Flags =
                 (int)AsAnyMarshaler.AsAnyFlags.In |
@@ -313,6 +319,14 @@ namespace System.Runtime.InteropServices
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool HasLayout(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] out bool isBlittable, out int nativeSize);
 
+        private static int GetBlittableNativeSize(RuntimeType type, string parameterName)
+        {
+            if (!HasLayout(new QCallTypeHandle(ref type), out _, out int nativeSize))
+                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, parameterName);
+
+            return nativeSize;
+        }
+
         /// <summary>
         /// Marshals data from a structure class to a native memory block. If the
         /// structure contains pointers to allocated blocks and "fDeleteOld" is
@@ -329,6 +343,13 @@ namespace System.Runtime.InteropServices
 
             if (type.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
+
+            if (!IsRuntimeMarshallingEnabled)
+            {
+                int nativeSize = GetBlittableNativeSize(type, nameof(structure));
+                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), (nuint)nativeSize);
+                return;
+            }
 
             LayoutTypeMarshalerMethods methods;
             try
@@ -358,6 +379,13 @@ namespace System.Runtime.InteropServices
 
             if (!allowValueClasses && type.IsValueType)
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
+
+            if (!IsRuntimeMarshallingEnabled)
+            {
+                int nativeSize = GetBlittableNativeSize(type, nameof(structure));
+                Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, (nuint)nativeSize);
+                return;
+            }
 
             LayoutTypeMarshalerMethods methods;
             try
@@ -390,6 +418,15 @@ namespace System.Runtime.InteropServices
             if (rt.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
+            if (!IsRuntimeMarshallingEnabled)
+            {
+                if (rt.IsPointer || rt.IsFunctionPointer || rt.IsByRefLike)
+                    throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
+
+                _ = GetBlittableNativeSize(rt, nameof(structuretype));
+                return;
+            }
+
             try
             {
                 LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(rt);
@@ -407,9 +444,20 @@ namespace System.Runtime.InteropServices
         internal static unsafe bool IsPinnable(object? obj)
             => (obj == null) || !RuntimeHelpers.GetMethodTable(obj)->ContainsGCPointers;
 
+        [FeatureSwitchDefinition("System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled")]
+        internal static bool IsRuntimeMarshallingEnabled { get; } = IsRuntimeMarshallingEnabledInternal();
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsRuntimeMarshallingEnabled")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsRuntimeMarshallingEnabledInternal();
+
 #if TARGET_WINDOWS
+        internal static bool IsBuiltInComSupported =>
+            IsRuntimeMarshallingEnabled && IsBuiltInComSupportedWhenMarshallingEnabled;
+
         [FeatureSwitchDefinition("System.Runtime.InteropServices.BuiltInComInterop.IsSupported")]
-        internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
+        private static bool IsBuiltInComSupportedWhenMarshallingEnabled { get; } = IsBuiltInComSupportedInternal();
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
@@ -453,8 +501,8 @@ namespace System.Runtime.InteropServices
 
 #if FEATURE_COMINTEROP
         /// <summary>
-        /// Converts the CLR exception to an HRESULT. This function also sets
-        /// up an IErrorInfo for the exception.
+        /// Converts the CLR exception to an HRESULT. When runtime marshalling is enabled,
+        /// this function also sets up an IErrorInfo for the exception.
         /// </summary>
         public static int GetHRForException(Exception? e)
             => GetHRForException(ObjectHandleOnStack.Create(ref e));

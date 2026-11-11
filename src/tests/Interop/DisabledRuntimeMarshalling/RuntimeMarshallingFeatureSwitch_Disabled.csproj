@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="RuntimeMarshallingFeatureSwitch_Default.csproj" />
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled" Value="false" />
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="true" />
+  </ItemGroup>
+</Project>

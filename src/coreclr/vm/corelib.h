@@ -70,7 +70,7 @@
 
 //
 // BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH allow IL linker to guard types behind a feature switch.
-// Current support is only around class scope and not for standalone members of classes.
+// Guards can cover whole classes or standalone members, and can be nested two levels deep.
 // See usage in this file itself and on the link (the assembly name for feature switch in this file will be System.Private.CoreLib),
 // https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md#generate-the-right-input-for-the-linker-in-sdk
 //
@@ -103,7 +103,9 @@ DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  S
 DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, SM_PtrException_PtrException_RetVoid)
 
 #ifdef FEATURE_VARARGS
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.
 
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
@@ -112,10 +114,12 @@ DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandl
 DEFINE_CLASS(ARRAY,                 System,                 Array)
 DEFINE_METHOD(ARRAY,                CTOR,                   Ctor,                       NoSig)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
 DEFINE_METHOD(ASSEMBLY_NAME,        CREATE_ASSEMBLY_SPEC,   CreateAssemblyName,        SM_PtrAssemblyName_PtrNativeAssemblyNameParts_PtrException_RetVoid)
@@ -147,11 +151,14 @@ DEFINE_FIELD_U(m_cache,                ReflectClassBaseObject,        m_cache)
 DEFINE_FIELD_U(m_handle,               ReflectClassBaseObject,        m_typeHandle)
 DEFINE_FIELD_U(m_keepalive,            ReflectClassBaseObject,        m_keepalive)
 DEFINE_CLASS(CLASS,                 System,                 RuntimeType)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_FIELD(CLASS,                 TYPEHANDLE,             m_handle)
+END_ILLINK_FEATURE_SWITCH()
 #ifdef FOR_ILLINK
 DEFINE_METHOD(CLASS,                CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  NoSig)
 #endif // FEATURE_COMINTEROP
@@ -191,6 +198,7 @@ DEFINE_FIELD(CRITICAL_HANDLE,       HANDLE,                 handle)
 DEFINE_CLASS(HANDLE_REF,            Interop,                HandleRef)
 DEFINE_FIELD(HANDLE_REF,            WRAPPER,                _wrapper)
 DEFINE_FIELD(HANDLE_REF,            HANDLE,                 _handle)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS_U(Reflection,             RuntimeConstructorInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
@@ -199,7 +207,9 @@ DEFINE_CLASS(CONSTRUCTOR,           Reflection,             RuntimeConstructorIn
 DEFINE_CLASS_U(System,                 RuntimeMethodInfoStub,     ReflectMethodObject)
 DEFINE_FIELD_U(m_value,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(STUBMETHODINFO,      System,                 RuntimeMethodInfoStub)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_FIELD(STUBMETHODINFO,      HANDLE,                 m_value)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,                      SM_IntPtr_RetObj)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(STUBMETHODINFO,       CTOR,                   .ctor,                      IM_RetVoid)
@@ -208,18 +218,24 @@ DEFINE_METHOD(STUBMETHODINFO,       CTOR,                   .ctor,              
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_CULTURE,      CurrentCulture,     CultureInfo)
 
 DEFINE_CLASS(CURRENCY,              System,                 Currency)
 DEFINE_METHOD(CURRENCY,             DECIMAL_CTOR,           .ctor,                      IM_Dec_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(DATE_TIME,             System,                 DateTime)
 DEFINE_METHOD(DATE_TIME,            LONG_CTOR,              .ctor,                      IM_Long_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(DECIMAL,               System,                 Decimal)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,                      IM_Currency_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS_U(System,        Delegate,           NoClass)
 DEFINE_FIELD_U(_helperObject, DelegateObject,     _helperObject)
@@ -316,9 +332,11 @@ DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPrese
 DEFINE_METHOD(EXCEPTION,            CREATE_RUNTIME_WRAPPED_EXCEPTION, CreateRuntimeWrappedException, SM_PtrObj_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_TYPE_INIT_EXCEPTION, CreateTypeInitializationException, SM_PtrChar_PtrException_PtrObj_PtrException_RetVoid)
 #ifdef FEATURE_COMINTEROP
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr,         SM_PtrException_PtrException_RetIntPtr)
 DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,              SM_PtrException_PtrException_RetIntPtr)
 DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,  GetHelpContextBstr,         SM_PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            CREATE_TARGET_INVOCATION_EXCEPTION, CreateTargetInvocationException, SM_PtrException_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_ARGUMENT_EXCEPTION, CreateArgumentException,         NoSig)
@@ -344,11 +362,13 @@ DEFINE_METHOD(TASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetTask)
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLE,GetRuntimeTypeFromHandle,  SM_IntPtr_RetRuntimeType)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,                   SM_RuntimeTypeHandle_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
 #endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
+END_ILLINK_FEATURE_SWITCH()
 
 // DEFINE_CLASS(TYPED_REFERENCE,  System,           TypedReference)
 DEFINE_METHOD(TYPED_REFERENCE, GETREFANY,        GetRefAny,                   NoSig)
@@ -363,7 +383,9 @@ DEFINE_CLASS(RT_FIELD_INFO,         Reflection,             RtFieldInfo)
 DEFINE_CLASS_U(System,              RuntimeFieldInfoStub,   ReflectFieldObject)
 DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(STUBFIELDINFO,         System,                 RuntimeFieldInfoStub)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_FIELD(STUBFIELDINFO,         HANDLE,                 m_fieldHandle)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(STUBFIELDINFO,        FROMPTR,                FromPtr,                    SM_IntPtr_RetObj)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,                      IM_RetVoid)
@@ -372,7 +394,9 @@ DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,              
 DEFINE_CLASS(FIELD,                 Reflection,             RuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_HANDLE,          System,                 RuntimeFieldHandle)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(FIELD_HANDLE,         GETFIELDADDR,           GetFieldAddr,       SM_Obj_VoidPtr_RetVoidPtr)
 DEFINE_METHOD(FIELD_HANDLE,         GETSTATICFIELDADDR,     GetStaticFieldAddr, SM_VoidPtr_RetVoidPtr)
 
@@ -380,6 +404,7 @@ DEFINE_CLASS(FIELD_INFO,            Reflection,             FieldInfo)
 
 DEFINE_CLASS(GUID,                  System,                 Guid)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT,               System,                 Variant)
@@ -389,10 +414,13 @@ DEFINE_METHOD(VARIANT,              CONVERT_VARIANT_TO_OBJECT, MarshalHelperConv
 
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(IASYNCRESULT,          System,                 IAsyncResult)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(ICUSTOM_MARSHALER,     Interop,                ICustomMarshaler)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(ICUSTOMADAPTER,    Interop,    ICustomAdapter)
 
@@ -401,6 +429,7 @@ DEFINE_CLASS(DYNAMICINTERFACECASTABLEHELPERS,   Interop,   DynamicInterfaceCasta
 DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  IS_INTERFACE_IMPLEMENTED,       IsInterfaceImplemented,     SM_PtrIDynamicInterfaceCastable_PtrClass_CLR_BOOL_PtrCLR_BOOL_PtrException_RetVoid)
 DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  GET_INTERFACE_IMPLEMENTATION,   GetInterfaceImplementation, SM_PtrIDynamicInterfaceCastable_PtrClass_PtrClass_PtrException_RetVoid)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterface)
@@ -408,6 +437,7 @@ DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterfac
 DEFINE_CLASS(ENUMERATORTOENUMVARIANTMARSHALER,   CustomMarshalers,  EnumeratorToEnumVariantMarshaler)
 DEFINE_METHOD(ENUMERATORTOENUMVARIANTMARSHALER,  INTERNALMARSHALNATIVETOMANAGED,    InternalMarshalNativeToManaged,   SM_IntPtr_PtrObj_PtrException_RetVoid)
 #endif //FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 END_ILLINK_FEATURE_SWITCH()
 
 #ifdef FEATURE_COMWRAPPERS
@@ -458,13 +488,16 @@ DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)
 
 DEFINE_CLASS(IREFLECT,              Reflection,             IReflect)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(LCID_CONVERSION_TYPE,  Interop,                LCIDConversionAttribute)
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MARSHAL,               Interop,                Marshal)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(MARSHAL,              GET_HR_FOR_EXCEPTION,              GetHRForException,             SM_Exception_RetInt)
 #endif // FEATURE_COMINTEROP
@@ -480,6 +513,7 @@ DEFINE_METHOD(MARSHAL,              STRUCTURE_TO_PTR,                  Structure
 DEFINE_METHOD(MARSHAL,              PTR_TO_STRUCTURE,                  PtrToStructure,                SM_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(MARSHAL,              DESTROY_STRUCTURE,                 DestroyStructure,              SM_IntPtr_Type_RetVoid)
 DEFINE_METHOD(MARSHAL,              SIZEOF_TYPE,                       SizeOf,                        SM_Type_RetInt)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(NATIVELIBRARY, Interop, NativeLibrary)
 DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallbackStub, SM_PtrChar_PtrAssemblyBase_CLR_BOOL_UInt_PtrException_RetIntPtr)
@@ -544,8 +578,10 @@ DEFINE_METHOD(RUNTIME_METHOD_BODY,  CTOR,   .ctor,  IM_RetVoid)
 DEFINE_CLASS(METHOD_INFO,           Reflection,             MethodInfo)
 
 DEFINE_CLASS(METHOD_HANDLE,         System,                 RuntimeMethodHandle)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_FIELD(METHOD_HANDLE,         METHOD,                 m_value)
 DEFINE_METHOD(METHOD_HANDLE,        TO_INTPTR,              ToIntPtr,           SM_RuntimeMethodHandle_RetIntPtr)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MISSING,               Reflection,             Missing)
 DEFINE_FIELD(MISSING,               VALUE,                  Value)
@@ -567,22 +603,30 @@ DEFINE_CLASS(BYREFERENCE,           System,                 ByReference)
 DEFINE_METHOD(BYREFERENCE,          CTOR,                   .ctor, NoSig)
 DEFINE_FIELD(BYREFERENCE,           VALUE,                  Value)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(SPAN,                 CTOR_PTR_INT,           .ctor, IM_VoidPtr_Int_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
 
 // Defined as element type alias
 // DEFINE_CLASS(OBJECT,                System,                 Object)
 DEFINE_METHOD(OBJECT,               FINALIZE,               Finalize,                   IM_RetVoid)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(OBJECT,               GET_TYPE,               GetType,                    IM_RetType)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(OBJECT,               GET_HASH_CODE,          GetHashCode,                IM_RetInt)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(OBJECT,               EQUALS,                 Equals,                     IM_Obj_RetBool)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(__CANON,              System,                 __Canon)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 #endif // FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
@@ -622,7 +666,9 @@ DEFINE_METHOD(RESOLVER,             RESOLVE_SIGNATURE,      ResolveSignature,   
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  NoSig)
@@ -755,8 +801,10 @@ DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET, Subtract
 DEFINE_METHOD(UNSAFE,               UNBOX,                  Unbox, NoSig)
 DEFINE_METHOD(UNSAFE,               WRITE,                  Write, NoSig)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
 DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDataReference, SM_Array_RetRefByte)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
@@ -828,8 +876,10 @@ DEFINE_CLASS(SWIFT_ERROR,                    Swift,                  SwiftError)
 DEFINE_CLASS(SWIFT_INDIRECT_RESULT,          Swift,                  SwiftIndirectResult)
 #endif // TARGET_APPLE
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
 DEFINE_FIELD_U(rgiOffset,                  StackFrameHelper,   rgiOffset)
@@ -877,7 +927,9 @@ DEFINE_FIELD(BITCONVERTER,          ISLITTLEENDIAN,         IsLittleEndian)
 // DEFINE_CLASS(STRING,                System,                 String)
 DEFINE_FIELD(STRING,                M_FIRST_CHAR,           _firstChar)
 DEFINE_FIELD(STRING,                EMPTY,                  Empty)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(STRING,               CTOR_CHARPTR,           .ctor,                      IM_PtrChar_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(STRING,               CTORF_CHARARRAY,        Ctor,                       SM_ArrChar_RetStr)
 DEFINE_METHOD(STRING,               CTORF_CHARARRAY_START_LEN,Ctor,                     SM_ArrChar_Int_Int_RetStr)
 DEFINE_METHOD(STRING,               CTORF_CHAR_COUNT,       Ctor,                       SM_Char_Int_RetStr)
@@ -887,11 +939,14 @@ DEFINE_METHOD(STRING,               CTORF_READONLYSPANOFCHAR,Ctor,              
 DEFINE_METHOD(STRING,               CTORF_SBYTEPTR,         Ctor,                       SM_PtrSByt_RetStr)
 DEFINE_METHOD(STRING,               CTORF_SBYTEPTR_START_LEN, Ctor,                     SM_PtrSByt_Int_Int_RetStr)
 DEFINE_METHOD(STRING,               CTORF_SBYTEPTR_START_LEN_ENCODING, Ctor,            SM_PtrSByt_Int_Int_Encoding_RetStr)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,               SM_Str_IntPtr_Int_RetVoid)
 DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)
 DEFINE_PROPERTY(STRING_BUILDER,     LENGTH,                 Length,                     Int)
 DEFINE_PROPERTY(STRING_BUILDER,     CAPACITY,               Capacity,                   Int)
@@ -900,6 +955,7 @@ DEFINE_METHOD(STRING_BUILDER,       TO_STRING,              ToString,           
 DEFINE_METHOD(STRING_BUILDER,       INTERNAL_COPY,          InternalCopy,               IM_IntPtr_Int_RetVoid)
 DEFINE_METHOD(STRING_BUILDER,       REPLACE_BUFFER_INTERNAL,ReplaceBufferInternal,      IM_PtrChar_Int_RetVoid)
 DEFINE_METHOD(STRING_BUILDER,       REPLACE_BUFFER_ANSI_INTERNAL,ReplaceBufferAnsiInternal, IM_PtrSByt_Int_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
 DEFINE_FIELD_U(_name,                     ThreadBaseObject,   m_Name)
@@ -1020,24 +1076,31 @@ DEFINE_FIELD_U(Flags,           DebuggerFuncEvalArgument, flags)
 #endif // DEBUGGING_SUPPORTED
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_RuntimeTypeHandle_IntPtr_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_Int_RefIntPtr_RefBool_RetIntPtr)
 #endif // FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,               SM_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,             SM_RetVoid)
 
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_PARAM_EXCEPTION, ThrowInteropParamException,   SM_Int_Int_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_EXCEPTION,    ThrowInteropException,        SM_Int_Int_RetVoid)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_SAFEHANDLE,    AddToCleanupList,           SM_RefCleanupWorkListElement_SafeHandle_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObject,      SM_Int_RetException)
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(STUBHELPERS,          GET_PENDING_EXCEPTION_OBJECT, GetPendingExceptionObject,      SM_RetException)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(STUBHELPERS,          CREATE_CUSTOM_MARSHALER, CreateCustomMarshaler, SM_IntPtr_Int_IntPtr_RetObj)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER, GetIEnumeratorToEnumVariantMarshaler, SM_PtrObj_PtrException_RetVoid)
@@ -1086,12 +1149,15 @@ DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_MANAGED_VA_LIST,         MarshalT
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_UNMANAGED_VA_LIST,       MarshalToUnmanagedVaList,       SM_IntPtr_UInt_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CALC_VA_LIST_SIZE,                  CalcVaListSize,                 SM_IntPtr_RetUInt)
 #endif // FEATURE_VARARGS
+END_ILLINK_FEATURE_SWITCH()
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    ValidateObject,                 SM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
+END_ILLINK_FEATURE_SWITCH()
 
 #ifdef PROFILING_SUPPORTED
 DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_PtrVoid_RetPtrVoid)
@@ -1100,6 +1166,7 @@ DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   Profiler
 
 DEFINE_METHOD(STUBHELPERS,          MULTICAST_DEBUGGER_TRACE_HELPER,    MulticastDebuggerTraceHelper,    SM_Obj_Int_RetVoid)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(CLEANUP_WORK_LIST_ELEMENT,     StubHelpers,            CleanupWorkListElement)
 
 DEFINE_CLASS(ANSICHARMARSHALER,     StubHelpers,            AnsiCharMarshaler)
@@ -1227,6 +1294,7 @@ DEFINE_CLASS(VARIANT_ARRAY_ELEMENT_MARSHALER,  StubHelpers,  VariantArrayElement
 #endif // FEATURE_COMINTEROP
 DEFINE_CLASS(MARSHALER_OPTION_ENABLED,  StubHelpers,         IMarshalerOption+EnabledOption)
 DEFINE_CLASS(MARSHALER_OPTION_DISABLED, StubHelpers,         IMarshalerOption+DisabledOption)
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(SZARRAYHELPER,         System,                        SZArrayHelper)
 // Note: The order of methods here has to match order they are implemented on the interfaces in
@@ -1275,6 +1343,7 @@ DEFINE_FIELD_U(m_nativeLoaderAllocator,  LoaderAllocatorScoutObject,      m_nati
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled, true, true)
 DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_PtrByte_RetStr)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
@@ -1288,6 +1357,7 @@ DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FREE, Free, IM_RetVoid)
 DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
+END_ILLINK_FEATURE_SWITCH()
 
 // Classes referenced in EqualityComparer<T>.Default optimization
 

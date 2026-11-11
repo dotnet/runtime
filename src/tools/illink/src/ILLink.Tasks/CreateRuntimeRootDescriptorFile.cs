@@ -67,16 +67,22 @@ namespace ILLink.Tasks
             public string Feature { get; }
             public string FeatureValue { get; }
             public string FeatureDefault { get; }
+            public string ParentFeature { get; }
+            public string ParentFeatureValue { get; }
+            public string ParentFeatureDefault { get; }
             // Unique value to track the key
             private readonly string _key;
 
-            public FeatureSwitchMembers(string feature, string featureValue, string featureDefault)
+            public FeatureSwitchMembers(string feature, string featureValue, string featureDefault, FeatureSwitchMembers? parent = null)
             {
                 Feature = feature;
                 FeatureValue = featureValue;
                 FeatureDefault = featureDefault;
+                ParentFeature = parent?.Feature;
+                ParentFeatureValue = parent?.FeatureValue;
+                ParentFeatureDefault = parent?.FeatureDefault;
                 // Use a separator that is not going to be in any of the strings to ensure uniqueness
-                _key = feature + ',' + featureValue + ',' + featureDefault;
+                _key = feature + ',' + featureValue + ',' + featureDefault + ',' + parent?._key;
             }
 
             public override int GetHashCode()
@@ -144,6 +150,9 @@ namespace ILLink.Tasks
 
             ProcessExceptionTypes(rexcepFilePath);
 
+            if (Log.HasLoggedErrors)
+                return false;
+
             OutputXml(iLLinkTrimXmlFilePath, RuntimeRootDescriptorFilePath.ItemSpec);
 
             return true;
@@ -188,6 +197,7 @@ namespace ILLink.Tasks
             DefineTracker defineTracker = new DefineTracker(defineConstants, Log, typeFile);
             string classId;
             FeatureSwitchMembers? currentFeatureSwitch = null;
+            var featureSwitchStack = new Stack<FeatureSwitchMembers>();
 
             foreach (string def in types)
             {
@@ -197,9 +207,11 @@ namespace ILLink.Tasks
                 //We will handle BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH
                 if (def.StartsWith("BEGIN_ILLINK_FEATURE_SWITCH"))
                 {
-                    if (currentFeatureSwitch.HasValue)
+                    // XML conditions on the assembly and type can express two nested switches.
+                    if (featureSwitchStack.Count == 2)
                     {
-                        Log.LogError($"Could not figure out feature switch status in '{typeFile}' for line {def}.");
+                        Log.LogError($"More than two nested feature switches in '{typeFile}' for line {def}.");
+                        return;
                     }
                     else
                     {
@@ -210,7 +222,8 @@ namespace ILLink.Tasks
                             Log.LogError($"BEGIN_ILLINK_FEATURE_SWITCH is not formatted correctly '{typeFile}' for line {def}.");
                             return;
                         }
-                        currentFeatureSwitch = new FeatureSwitchMembers(featureSwitchElements[1], featureSwitchElements[2], featureSwitchElements[3]);
+                        currentFeatureSwitch = new FeatureSwitchMembers(featureSwitchElements[1], featureSwitchElements[2], featureSwitchElements[3], currentFeatureSwitch);
+                        featureSwitchStack.Push(currentFeatureSwitch.Value);
                         if (!featureSwitchMembers.ContainsKey(currentFeatureSwitch.Value))
                         {
                             featureSwitchMembers.Add(currentFeatureSwitch.Value, new Dictionary<string, ClassMembers>());
@@ -225,7 +238,8 @@ namespace ILLink.Tasks
                     }
                     else
                     {
-                        currentFeatureSwitch = null;
+                        featureSwitchStack.Pop();
+                        currentFeatureSwitch = featureSwitchStack.Count == 0 ? null : featureSwitchStack.Peek();
                     }
                 }
 
@@ -277,7 +291,7 @@ namespace ILLink.Tasks
                     classId = defElements[1];                      // ARRAY or THREAD
                     AddMethod("get_" + propertyName, classId, null, null, currentFeatureSwitch);
                 }
-                else if (def.StartsWith("DEFINE_SET_PROPERTY("))
+                else if (def.StartsWith("DEFINE_SET_PROPERTY(") || def.StartsWith("DEFINE_STATIC_SET_PROPERTY("))
                 {
                     // E.g., DEFINE_SET_PROPERTY(THREAD,         UI_CULTURE,             CurrentUICulture,           CultureInfo)
                     string propertyName = defElements[3]; // CurrentUICulture
@@ -286,6 +300,9 @@ namespace ILLink.Tasks
                     AddMethod("set_" + propertyName, classId, null, null, currentFeatureSwitch);
                 }
             }
+
+            if (featureSwitchStack.Count != 0)
+                Log.LogError($"Unclosed BEGIN_ILLINK_FEATURE_SWITCH in '{typeFile}'.");
         }
 
         public void ProcessCoreTypes(string corTypeFile)
@@ -373,7 +390,7 @@ namespace ILLink.Tasks
 
                     foreach (var type in members)
                     {
-                        AddXmlTypeNode(doc, featureAssemblyNode, type.Key, type.Value);
+                        AddXmlTypeNode(doc, featureAssemblyNode, type.Key, type.Value, fs);
                     }
                     linkerNode.AppendChild(featureAssemblyNode);
                 }
@@ -388,12 +405,19 @@ namespace ILLink.Tasks
             doc.Save(outputFileName);
         }
 
-        static void AddXmlTypeNode(XmlDocument doc, XmlNode assemblyNode, string typeName, ClassMembers members)
+        static void AddXmlTypeNode(XmlDocument doc, XmlNode assemblyNode, string typeName, ClassMembers members, FeatureSwitchMembers? featureSwitch = null)
         {
             XmlElement typeNode = doc.CreateElement("type");
             XmlAttribute typeFullName = doc.CreateAttribute("fullname");
             typeFullName.Value = typeName;
             typeNode.Attributes.Append(typeFullName);
+
+            if (featureSwitch?.ParentFeature is string parentFeature)
+            {
+                typeNode.SetAttribute("feature", parentFeature);
+                typeNode.SetAttribute("featurevalue", featureSwitch.Value.ParentFeatureValue);
+                typeNode.SetAttribute("featuredefault", featureSwitch.Value.ParentFeatureDefault);
+            }
 
             // We need to keep everyting in System.Runtime.InteropServices.WindowsRuntime and
             // System.Threading.Volatile.
@@ -451,41 +475,29 @@ namespace ILLink.Tasks
                     classIdsToClassNames[classId] = fullClassName;
                 }
 
-                ClassMembers members;
-                if (!featureSwitch.HasValue)
-                {
-                    if (!classNamesToClassMembers.TryGetValue(fullClassName, out members))
-                    {
-                        members = new ClassMembers();
-                        classNamesToClassMembers[fullClassName] = members;
-                    }
-                }
-                else
-                {
-                    Dictionary<string, ClassMembers> currentFeatureSwitchMembers = featureSwitchMembers[featureSwitch.Value];
-                    if (!currentFeatureSwitchMembers.TryGetValue(fullClassName, out members))
-                    {
-                        members = new ClassMembers();
-                        currentFeatureSwitchMembers[fullClassName] = members;
-                    }
-                }
+                ClassMembers members = GetClassMembers(fullClassName, featureSwitch);
                 members.keepAllFields |= keepAllFields;
             }
+        }
+
+        ClassMembers GetClassMembers(string className, FeatureSwitchMembers? featureSwitch)
+        {
+            Dictionary<string, ClassMembers> classes = featureSwitch.HasValue
+                ? featureSwitchMembers[featureSwitch.Value]
+                : classNamesToClassMembers;
+            if (!classes.TryGetValue(className, out ClassMembers members))
+            {
+                members = new ClassMembers();
+                classes.Add(className, members);
+            }
+
+            return members;
         }
 
         void AddField(string fieldName, string classId, FeatureSwitchMembers? featureSwitch = null)
         {
             string className = classIdsToClassNames[classId];
-            ClassMembers members;
-
-            if (!featureSwitch.HasValue)
-            {
-                members = classNamesToClassMembers[className];
-            }
-            else
-            {
-                members = featureSwitchMembers[featureSwitch.Value][className];
-            }
+            ClassMembers members = GetClassMembers(className, featureSwitch);
 
             members.fields ??= new HashSet<string>();
             members.fields.Add(fieldName);
@@ -503,16 +515,7 @@ namespace ILLink.Tasks
                 fullClassName = GetFullClassName(classNamespace, className);
             }
 
-            ClassMembers members;
-
-            if (!featureSwitch.HasValue)
-            {
-                members = classNamesToClassMembers[fullClassName];
-            }
-            else
-            {
-                members = featureSwitchMembers[featureSwitch.Value][fullClassName];
-            }
+            ClassMembers members = GetClassMembers(fullClassName, featureSwitch);
 
             members.methods ??= new HashSet<string>();
             members.methods.Add(methodName);

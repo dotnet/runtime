@@ -267,6 +267,9 @@ HRESULT CLRException::SetErrorInfo()
     }
     CONTRACTL_END;
 
+    if (g_pConfig != nullptr && !g_pConfig->IsRuntimeMarshallingEnabled())
+        return ClearThreadErrorInfo();
+
     HRESULT hr = S_OK;
 
     IErrorInfo *pErrorInfo = NULL;
@@ -333,6 +336,9 @@ IErrorInfo *CLRException::GetErrorInfo()
     // Not all codepaths expect to have it initialized (e.g. hosting APIs).
     if (g_fComStarted)
     {
+        if (!g_pConfig->IsRuntimeMarshallingEnabled())
+            return nullptr;
+
         // Get errorinfo only when our SO probe succeeds
         {
             // Switch to coop mode since GetComIPFromObjectRef requires that
@@ -2322,5 +2328,3 @@ bool IsHRESULTForExceptionKind(HRESULT hr, RuntimeExceptionKind kind)
 
     return false;
 }
-
-

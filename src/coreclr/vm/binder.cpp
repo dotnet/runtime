@@ -566,13 +566,15 @@ namespace
 
     bool IsTrimmed(LPCSTR nameSpace, LPCSTR className)
     {
-        bool isInDisabledFeatureSwitch = false;
-        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) isInDisabledFeatureSwitch = FeatureSwitchDisabled(W(#s), e, d);
-        #define END_ILLINK_FEATURE_SWITCH() isInDisabledFeatureSwitch = false;
+        int disabledFeatureSwitchCount = 0;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) \
+            { const bool disabledFeatureSwitch = FeatureSwitchDisabled(W(#s), e, d); \
+              disabledFeatureSwitchCount += disabledFeatureSwitch;
+        #define END_ILLINK_FEATURE_SWITCH() disabledFeatureSwitchCount -= disabledFeatureSwitch; }
         #define DEFINE_CLASS_U(ns, stringName, unmanagedType) \
             if (strcmp(nameSpace, g_ ## ns ## NS) == 0 \
                 && strcmp(className, #stringName) == 0) \
-                return isInDisabledFeatureSwitch;
+                return disabledFeatureSwitchCount != 0;
 
         #include "corelib.h"
 
@@ -964,13 +966,13 @@ namespace
 {
     bool IsTrimmed(BinderClassID classId)
     {
-        LPCWSTR featureSwitch = nullptr;
-        bool enabledValue = true;
-        bool defaultValue = true;
+        int disabledFeatureSwitchCount = 0;
         #define DEFINE_CLASS(i,n,s) if (classId == CLASS__ ## i) \
-            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
-        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
-        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+            return disabledFeatureSwitchCount != 0;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) \
+            { const bool disabledFeatureSwitch = FeatureSwitchDisabled(W(#s), e, d); \
+              disabledFeatureSwitchCount += disabledFeatureSwitch;
+        #define END_ILLINK_FEATURE_SWITCH() disabledFeatureSwitchCount -= disabledFeatureSwitch; }
         #include "corelib.h"
 
         return false;
@@ -978,13 +980,13 @@ namespace
 
     bool IsTrimmed(BinderMethodID methodId)
     {
-        LPCWSTR featureSwitch = nullptr;
-        bool enabledValue = true;
-        bool defaultValue = true;
+        int disabledFeatureSwitchCount = 0;
         #define DEFINE_METHOD(c,i,s,g) if (methodId == METHOD__ ## c ## __ ## i) \
-            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
-        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
-        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+            return disabledFeatureSwitchCount != 0;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) \
+            { const bool disabledFeatureSwitch = FeatureSwitchDisabled(W(#s), e, d); \
+              disabledFeatureSwitchCount += disabledFeatureSwitch;
+        #define END_ILLINK_FEATURE_SWITCH() disabledFeatureSwitchCount -= disabledFeatureSwitch; }
         #include "corelib.h"
 
         return false;
@@ -992,13 +994,13 @@ namespace
 
     extern bool IsTrimmed(BinderFieldID fieldId)
     {
-        LPCWSTR featureSwitch = nullptr;
-        bool enabledValue = true;
-        bool defaultValue = true;
+        int disabledFeatureSwitchCount = 0;
         #define DEFINE_FIELD(c,i,s) if (fieldId == FIELD__ ## c ## __ ## i) \
-            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
-        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
-        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+            return disabledFeatureSwitchCount != 0;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) \
+            { const bool disabledFeatureSwitch = FeatureSwitchDisabled(W(#s), e, d); \
+              disabledFeatureSwitchCount += disabledFeatureSwitch;
+        #define END_ILLINK_FEATURE_SWITCH() disabledFeatureSwitchCount -= disabledFeatureSwitch; }
         #include "corelib.h"
 
         return false;

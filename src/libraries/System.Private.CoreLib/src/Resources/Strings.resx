@@ -2960,6 +2960,9 @@
   <data name="ManualResetEventSlim_ctor_TooManyWaiters" xml:space="preserve">
     <value>There are too many threads currently waiting on the event. A maximum of {0} waiting threads are supported.</value>
   </data>
+  <data name="Marshaler_RuntimeMarshallingDisabled" xml:space="preserve">
+    <value>Cannot marshal managed types when the runtime marshalling system is disabled.</value>
+  </data>
   <data name="Marshaler_StringTooLong" xml:space="preserve">
     <value>Marshaler restriction: Excessively long string.</value>
   </data>

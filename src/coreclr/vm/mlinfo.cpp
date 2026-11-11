@@ -744,6 +744,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_BestFit                       = BestFit;
     m_ThrowOnUnmappableChar         = ThrowOnUnmappableChar;
     m_ms                            = ms;
+    m_byref                         = FALSE;
     m_fAnsi                         = (ms == MARSHAL_SCENARIO_NDIRECT || ms == MARSHAL_SCENARIO_FIELD) && (nlType == nltAnsi);
     m_nativeArgSize                 = 0;
     m_pCMInfo                     = NULL;
@@ -798,7 +799,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_iArg = argidx;
 
     m_in = m_out = FALSE;
-    m_byref = TRUE;
 #endif
 
     // For COM IL-stub scenarios, we do not support disabling the runtime marshalling support.
@@ -911,6 +911,19 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     m_byref = FALSE;
                 }
             }
+        }
+    }
+
+    if (!g_pConfig->IsRuntimeMarshallingEnabled())
+    {
+        // Reject conversions before classification can load a trimmed marshalling helper.
+        if (nativeType == NATIVE_TYPE_CUSTOMMARSHALER ||
+            mtype == ELEMENT_TYPE_CLASS || mtype == ELEMENT_TYPE_OBJECT || mtype == ELEMENT_TYPE_STRING ||
+            mtype == ELEMENT_TYPE_VAR ||
+            mtype == ELEMENT_TYPE_SZARRAY || mtype == ELEMENT_TYPE_ARRAY ||
+            (mtype == ELEMENT_TYPE_VALUETYPE && !sig.GetTypeHandleThrowing(pModule, pTypeContext).IsBlittable()))
+        {
+            goto lFail;
         }
     }
 
@@ -1945,6 +1958,35 @@ MarshalInfo::MarshalInfo(Module* pModule,
     }
 
 lExit:
+    if (!g_pConfig->IsRuntimeMarshallingEnabled())
+    {
+        switch (m_type)
+        {
+            case MARSHAL_TYPE_GENERIC_1:
+            case MARSHAL_TYPE_GENERIC_U1:
+            case MARSHAL_TYPE_GENERIC_2:
+            case MARSHAL_TYPE_GENERIC_U2:
+            case MARSHAL_TYPE_GENERIC_4:
+            case MARSHAL_TYPE_GENERIC_U4:
+            case MARSHAL_TYPE_GENERIC_8:
+            case MARSHAL_TYPE_FLOAT:
+            case MARSHAL_TYPE_DOUBLE:
+            case MARSHAL_TYPE_POINTER:
+            case MARSHAL_TYPE_DECIMAL:
+            case MARSHAL_TYPE_GUID:
+            case MARSHAL_TYPE_BLITTABLEVALUECLASS:
+                break;
+
+            default:
+                if (!fEmitsIL)
+                    COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_MARSHAL_DISABLED);
+
+                m_type = MARSHAL_TYPE_UNKNOWN;
+                m_resID = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+                break;
+        }
+    }
+
     if (m_byref && !isParam)
     {
         // byref returns don't work: the thing pointed to lives on

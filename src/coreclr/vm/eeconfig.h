@@ -308,6 +308,8 @@ public:
     bool IsBuiltInCOMSupported() const { LIMITED_METHOD_CONTRACT;  return m_fBuiltInCOMInteropSupported; }
 #endif // FEATURE_COMINTEROP
 
+    bool IsRuntimeMarshallingEnabled() const { LIMITED_METHOD_CONTRACT; return m_fRuntimeMarshallingEnabled; }
+
 #ifdef _DEBUG
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
@@ -503,6 +505,8 @@ private: //----------------------------------------------------------------
     bool fEnableRCWCleanupOnSTAShutdown;  // Register our IInitializeSpy even in classic processes
     bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
+
+    bool m_fRuntimeMarshallingEnabled;
 
 #ifdef _DEBUG
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly

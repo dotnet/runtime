@@ -102,6 +102,30 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported(QCallExceptionStat
     return ret;
 }
 
+extern "C" BOOL QCALLTYPE MarshalNative_IsRuntimeMarshallingEnabled(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = TRUE;
+
+    BEGIN_QCALL;
+    ret = g_pConfig->IsRuntimeMarshallingEnabled();
+    END_QCALL;
+
+    return ret;
+}
+
+static void EnsureRuntimeMarshallingEnabled(TypeHandle th)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (!g_pConfig->IsRuntimeMarshallingEnabled() &&
+        !th.IsBlittable() && !th.IsPointer() && !th.IsFnPtrType())
+    {
+        COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_MARSHAL_DISABLED);
+    }
+}
+
 extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -121,6 +145,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIs
 
     if (th.HasLayout())
     {
+        EnsureRuntimeMarshallingEnabled(th);
         *pIsBlittable = th.IsBlittable();
         *pNativeSize = th.GetMethodTable()->GetNativeSize();
         ret = TRUE;
@@ -149,6 +174,12 @@ extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL 
 
     // refClass is validated to be non-NULL RuntimeType by callers
     TypeHandle th = t.AsTypeHandle();
+
+    if (!g_pConfig->IsRuntimeMarshallingEnabled() &&
+        (!throwIfNotMarshalable || (!th.IsArray() && th.HasLayout())))
+    {
+        EnsureRuntimeMarshallingEnabled(th);
+    }
 
     if (throwIfNotMarshalable && (!th.IsBlittable() || th.IsArray()))
     {
@@ -183,6 +214,11 @@ extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD, QCallExceptio
     BEGIN_QCALL;
 
     TypeHandle th = TypeHandle(pFD->GetApproxEnclosingMethodTable());
+
+    if (!g_pConfig->IsRuntimeMarshallingEnabled() && th.HasLayout())
+    {
+        EnsureRuntimeMarshallingEnabled(th);
+    }
 
     if (th.IsBlittable())
     {

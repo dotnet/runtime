@@ -19,6 +19,18 @@ struct StructWithWCharAndShort
     WCHAR c;
 };
 
+struct DecimalValue
+{
+    uint32_t flags;
+    uint32_t hi;
+    uint64_t lo;
+};
+
+struct NonBlittableBool
+{
+    int32_t value;
+};
+
 extern "C" DLL_EXPORT uint8_t STDMETHODCALLTYPE CheckStructWithShortAndBool(StructWithShortAndBool str, int16_t s, uint8_t b)
 {
     return str.s == s && str.b == b;
@@ -51,6 +63,41 @@ extern "C" DLL_EXPORT uint8_t STDMETHODCALLTYPE CallCheckStructWithShortAndBoolC
 extern "C" DLL_EXPORT uint8_t PassThrough(uint8_t b)
 {
     return b;
+}
+
+static int32_t PassThroughInt32(int32_t value)
+{
+    return value;
+}
+
+static int32_t ReadNonBlittableBool(NonBlittableBool value)
+{
+    return value.value;
+}
+
+static NonBlittableBool ReturnNonBlittableBool()
+{
+    return { 1 };
+}
+
+extern "C" DLL_EXPORT decltype(&PassThroughInt32) GetCalliBooleanTarget()
+{
+    return &PassThroughInt32;
+}
+
+extern "C" DLL_EXPORT decltype(&ReadNonBlittableBool) GetCalliStructureTarget()
+{
+    return &ReadNonBlittableBool;
+}
+
+extern "C" DLL_EXPORT decltype(&ReturnNonBlittableBool) GetCalliStructureReturnTarget()
+{
+    return &ReturnNonBlittableBool;
+}
+
+extern "C" DLL_EXPORT uint64_t DecimalLow64(DecimalValue value)
+{
+    return value.lo;
 }
 
 extern "C" DLL_EXPORT void Invalid(...) {}

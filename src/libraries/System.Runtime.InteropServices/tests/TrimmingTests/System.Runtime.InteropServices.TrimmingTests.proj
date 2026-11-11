@@ -2,6 +2,16 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
+    <TestConsoleAppSourceFiles Include="GeneratedComBuiltInComSupport.cs" Condition="'$(UseMonoRuntime)' == 'true' or '$(RunNativeAotTestApps)' == 'true'">
+      <EnabledFeatureSwitches>System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled;System.Runtime.InteropServices.BuiltInComInterop.IsSupported</EnabledFeatureSwitches>
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="RuntimeMarshallingDisabled.cs" NativeAotIncompatible="true" Condition="'$(UseMonoRuntime)' != 'true'">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled</DisabledFeatureSwitches>
+      <EnabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</EnabledFeatureSwitches>
+      <AdditionalSourceFiles>$(RepoRoot)src\tests\Interop\DisabledRuntimeMarshalling\RuntimeHostTest.cs</AdditionalSourceFiles>
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
     <!-- Validate that disabling the interop feature switch trims the interop code. -->
     <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
       <DisabledFeatureSwitches>System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop</DisabledFeatureSwitches>

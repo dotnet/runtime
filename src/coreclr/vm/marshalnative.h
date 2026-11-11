@@ -41,6 +41,7 @@ extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD, QCallExceptio
 
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported(QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE MarshalNative_IsRuntimeMarshallingEnabled(QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize, QCallExceptionStatus* qcallError);
 extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable, QCallExceptionStatus* qcallError);

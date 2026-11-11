@@ -7451,7 +7451,8 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
 
                 ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
             }
-            else if (CoreLibBinder::IsClass(pMT->GetTypicalMethodTable(), CLASS__STRUCTURE_MARSHALER))
+            else if (g_pConfig->IsRuntimeMarshallingEnabled() &&
+                CoreLibBinder::IsClass(pMT->GetTypicalMethodTable(), CLASS__STRUCTURE_MARSHALER))
             {
                 DynamicResolver* newResolver;
                 COR_ILMETHOD_DECODER* newHeader;

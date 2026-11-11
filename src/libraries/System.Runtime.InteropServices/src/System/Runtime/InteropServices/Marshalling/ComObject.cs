@@ -6,6 +6,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -16,8 +17,18 @@ namespace System.Runtime.InteropServices.Marshalling
     /// </summary>
     public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider, ComImportInteropInterfaceDetailsStrategy.IComImportAdapter
     {
+        internal static bool BuiltInComSupported =>
+            RuntimeMarshallingEnabled && BuiltInComSupportedWhenMarshallingEnabled && IsBuiltInComSupported(null);
+
+        [FeatureSwitchDefinition("System.Runtime.InteropServices.RuntimeMarshalling.IsEnabled")]
+        private static bool RuntimeMarshallingEnabled => true;
+
         [FeatureSwitchDefinition("System.Runtime.InteropServices.BuiltInComInterop.IsSupported")]
-        internal static bool BuiltInComSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool supported) ? supported : true;
+        private static bool BuiltInComSupportedWhenMarshallingEnabled { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool supported) ? supported : true;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsBuiltInComSupported")]
+        private static extern bool IsBuiltInComSupported(
+            [UnsafeAccessorType("System.Runtime.InteropServices.Marshal, System.Private.CoreLib")] object? _);
 
         [FeatureSwitchDefinition("System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop")]
         internal static bool ComImportInteropEnabled { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop", out bool enabled) ? enabled : false;

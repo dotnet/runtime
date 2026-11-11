@@ -94,6 +94,34 @@ HRESULT GetHRFromCLRErrorInfo(IErrorInfo* pErr)
     return pSimpleWrap->IErrorInfo_hr();
 }
 
+HRESULT ClearThreadErrorInfo()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (ClrTeb::GetOleReservedPtr() == nullptr)
+        return S_OK;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        GCX_PREEMP();
+        hr = ::SetErrorInfo(0, nullptr);
+    }
+    EX_CATCH
+    {
+        hr = GET_EXCEPTION()->GetHR();
+    }
+    EX_END_CATCH
+
+    return hr;
+}
+
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 {
     CONTRACTL
@@ -103,6 +131,16 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
+    if (!g_pConfig->IsRuntimeMarshallingEnabled())
+    {
+        if (pThrownObject == NULL)
+            return S_OK;
+
+        HRESULT hr = GetExceptionHResult(pThrownObject);
+        HRESULT clearHR = ClearThreadErrorInfo();
+        return FAILED(clearHR) ? clearHR : hr;
+    }
 
     HRESULT hr = E_FAIL;
 

@@ -3899,6 +3899,13 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
 #endif // _DEBUG
 
     bool runtimeMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pMetadataModule->IsRuntimeMarshallingEnabled();
+    if (!g_pConfig->IsRuntimeMarshallingEnabled() &&
+        (SF_IsCOMStub(dwStubFlags) || SF_IsVarArgStub(dwStubFlags) ||
+         SF_IsHRESULTSwapping(dwStubFlags) || iLCIDArg != -1))
+    {
+        COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_MARSHAL_DISABLED);
+    }
+
     if (SF_IsCOMStub(dwStubFlags))
     {
         _ASSERTE(0 == nlType);

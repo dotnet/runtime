@@ -749,6 +749,7 @@ extern "C" {
     void QCall_MarshalNative_GetExceptionForHR (int32_t, void *, void *, void *) __asm__("MarshalNative_GetExceptionForHR");
     void * QCall_MarshalNative_GetFunctionPointerForDelegateInternal (void *, void *) __asm__("MarshalNative_GetFunctionPointerForDelegateInternal");
     int32_t QCall_MarshalNative_HasLayout (void *, void *, void *, void *) __asm__("MarshalNative_HasLayout");
+    int32_t QCall_MarshalNative_IsRuntimeMarshallingEnabled (void *) __asm__("MarshalNative_IsRuntimeMarshallingEnabled");
     void * QCall_MarshalNative_OffsetOf (void *, void *) __asm__("MarshalNative_OffsetOf");
     void QCall_MarshalNative_Prelink (void *, void *) __asm__("MarshalNative_Prelink");
     int32_t QCall_MarshalNative_SizeOfHelper (void *, int32_t, void *) __asm__("MarshalNative_SizeOfHelper");
@@ -1051,6 +1052,7 @@ static const Entry s_QCall[] = {
     { "MarshalNative_GetExceptionForHR", (void*)&QCall_MarshalNative_GetExceptionForHR },
     { "MarshalNative_GetFunctionPointerForDelegateInternal", (void*)&QCall_MarshalNative_GetFunctionPointerForDelegateInternal },
     { "MarshalNative_HasLayout", (void*)&QCall_MarshalNative_HasLayout },
+    { "MarshalNative_IsRuntimeMarshallingEnabled", (void*)&QCall_MarshalNative_IsRuntimeMarshallingEnabled },
     { "MarshalNative_OffsetOf", (void*)&QCall_MarshalNative_OffsetOf },
     { "MarshalNative_Prelink", (void*)&QCall_MarshalNative_Prelink },
     { "MarshalNative_SizeOfHelper", (void*)&QCall_MarshalNative_SizeOfHelper },
