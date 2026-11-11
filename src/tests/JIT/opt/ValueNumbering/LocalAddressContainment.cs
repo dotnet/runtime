@@ -25,6 +25,7 @@ public class LocalAddressContainment
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/137359", TestRuntimes.Mono)]
     public static void TestEntryPoint()
     {
         Assert.Equal(BitConverter.IsLittleEndian ? 0x0000000300000002L : 0x0000000200000003L, ReadAcrossFields());
