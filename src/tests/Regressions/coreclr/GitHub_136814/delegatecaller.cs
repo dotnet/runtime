@@ -1,15 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.CompilerServices;
 
-public delegate int Callback(DayOfWeek? value);
+// Test-only signature types, so no other test in a merged runner can load them first and hide the bug.
+public enum CallbackValue { Default }
+
+public enum KindCallbackValue { Default }
+
+public delegate int Callback(CallbackValue? value);
+
+public delegate int KindCallback(KindCallbackValue? value);
 
 public static class DelegateCaller
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Invoke(Callback callback)
+    {
+        return callback(null);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Invoke(KindCallback callback)
     {
         return callback(null);
     }
