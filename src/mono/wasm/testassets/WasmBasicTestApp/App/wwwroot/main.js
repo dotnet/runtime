@@ -136,6 +136,44 @@ switch (testCase) {
             return defaultUri;
         });
         break;
+    case "NativeSymbolsDownload": {
+        const failure = params.get("failure");
+        const originalFetch = globalThis.fetch.bind(globalThis);
+        dotnet.withConfig({
+            enableDownloadRetry: true,
+            ignorePdbLoadErrors: params.get("ignorePdbLoadErrors") === "true"
+        }).withModuleConfig({ onConfigLoaded: config => {
+            config.resources.wasmSymbols = [{
+                name: params.get("symbolsName"),
+                hash: params.get("symbolsHash"),
+                cache: "force-cache"
+            }];
+            if (config.resources.wasmSymbols?.length !== 1 || !config.resources.jsModuleDiagnostics?.length) {
+                throw new Error("Expected emitted native symbols and a diagnostics module");
+            }
+            const symbols = config.resources.wasmSymbols[0];
+            if (symbols.cache !== "force-cache" || !symbols.hash?.startsWith("sha256-")) {
+                throw new Error("Expected fingerprinted native symbols with integrity");
+            }
+            globalThis.fetch = (input, options) => {
+                const url = input instanceof Request ? input.url : String(input);
+                if (url.includes(symbols.name)) {
+                    testOutput(`Native symbols fetch: ${options?.cache}`);
+                    if (failure === "not-found") {
+                        return Promise.resolve(new Response(null, { status: 404, statusText: "Not Found" }));
+                    }
+                    if (failure === "network") {
+                        return Promise.reject(new TypeError("Simulated native-symbol network failure"));
+                    }
+                    if (failure !== "none") {
+                        throw new Error(`Unknown native-symbol failure '${failure}'`);
+                    }
+                }
+                return originalFetch(input, options);
+            };
+        } });
+        break;
+    }
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -351,6 +389,10 @@ try {
             break;
         case "DownloadResourceProgressTest":
         case "AssetIntegrity":
+            exit(0);
+            break;
+        case "NativeSymbolsDownload":
+            testOutput("Native symbols startup completed");
             exit(0);
             break;
         case "OutErrOverrideWorks":

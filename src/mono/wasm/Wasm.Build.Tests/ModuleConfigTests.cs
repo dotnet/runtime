@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -102,6 +103,54 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             result.ConsoleOutput.Any(m => m.Contains("Emscripten err override works!")),
             "Emscripten err override doesn't work"
         );
+    }
+
+    [Theory]
+    [InlineData("not-found", false)]
+    [InlineData("network", false)]
+    [InlineData("not-found", true)]
+    [InlineData("network", true)]
+    [InlineData("none", false)]
+    [TestCategory("coreclr"), TestCategory("native"), TestCategory("no-workload")]
+    public async Task NativeSymbolsDownloadDoesNotHang(string failure, bool ignorePdbLoadErrors)
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(
+            config, aot: false, TestAsset.WasmBasicTestApp,
+            $"NativeSymbolsDownload_{failure}_{ignorePdbLoadErrors}",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap><WasmBuildNative>true</WasmBuildNative><PublishReadyToRun>false</PublishReadyToRun>");
+        PublishProject(info, config, new PublishOptions(
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: "-p:RuntimeFlavor=CoreCLR -p:WasmFingerprintAssets=true"));
+
+        // The .NET 11 SDK does not stage newly linked CoreCLR symbol maps into its boot resources.
+        // Supply the emitted map through the runtime configuration rather than backporting SDK changes.
+        string symbolsPath = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish", "dotnet.native.js.symbols");
+        byte[] symbolsHash = SHA256.HashData(File.ReadAllBytes(symbolsPath));
+        string symbolsName = $"dotnet.native.{Convert.ToHexString(symbolsHash).ToLowerInvariant()}.js.symbols";
+        File.Copy(symbolsPath, Path.Combine(GetBinFrameworkDir(config, forPublish: true), symbolsName));
+
+        bool expectSuccess = failure is "none" || (failure is "not-found" && ignorePdbLoadErrors);
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "NativeSymbolsDownload",
+            DetectRuntimeFailures: expectSuccess,
+            ExpectedExitCode: expectSuccess ? 0 : 1,
+            BrowserQueryString: new NameValueCollection
+            {
+                { "failure", failure },
+                { "symbolsName", symbolsName },
+                { "symbolsHash", Uri.EscapeDataString($"sha256-{Convert.ToBase64String(symbolsHash)}") },
+                { "ignorePdbLoadErrors", ignorePdbLoadErrors.ToString().ToLowerInvariant() }
+            }));
+
+        Assert.Equal("Native symbols fetch: force-cache", Assert.Single(
+            result.TestOutput, message => message.StartsWith("Native symbols fetch:", StringComparison.Ordinal)));
+        Assert.Equal(expectSuccess, result.TestOutput.Contains("Native symbols startup completed"));
+        if (!expectSuccess)
+        {
+            Assert.Contains(result.ConsoleOutput, message => message.Contains("Failed to load resource 'dotnet.native.", StringComparison.Ordinal));
+        }
     }
 
     [Fact, TestCategory("bundler-friendly")]

@@ -146,7 +146,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
 
-    private void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
+    protected void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
     {
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
@@ -154,7 +154,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-    private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
     {
         if (!s_buildEnv.IsCoreClrRuntime)
             return;
@@ -168,7 +168,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         """;
         extraItems +=
         $$"""
-            <KnownFrameworkReference Update="Microsoft.NETCore.App">
+            <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                     Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
               <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
               <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
               <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
