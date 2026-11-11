@@ -371,6 +371,12 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(debug)
 endif()
 
+# singlefilehost links the runtimeinfo archive directly. Ensure the target
+# exists before the link step when the build is running in parallel.
+if (TARGET singlefilehost AND TARGET runtimeinfo)
+  add_dependencies(singlefilehost runtimeinfo)
+endif()
+
 add_subdirectory(binder)
 add_subdirectory(dlls)
 
