@@ -96,6 +96,25 @@ The following shows how to run tests for a specific library
     make -C src/mono/wasm/ run-browser-tests-System.AppContext
     ```
 
+### Custom JavaScript entry points
+
+Regular browser test projects can configure the runtime before the shared test runner starts by setting:
+
+```xml
+<WasmMainJSPath>$(MSBuildThisFileDirectory)custom-main.mjs</WasmMainJSPath>
+```
+
+When the filename is not `test-main.mjs`, the common test infrastructure generates an `index.html` that loads that module and includes the module in the test output. The shared `test-main.mjs` remains available, so `custom-main.mjs` can configure `dotnet` and then start the normal runner:
+
+```javascript
+import { dotnet } from "./_framework/dotnet.js";
+
+dotnet.withApplicationEnvironment("Development");
+await import("./test-main.mjs");
+```
+
+Use a dynamic import for the shared runner so the custom configuration executes first. Functional tests (`IsFunctionalTest=true`) continue to provide their own HTML entry point.
+
 ### Passing arguments to xharness
 
 - `$(WasmXHarnessArgsCli)` - xharness command arguments

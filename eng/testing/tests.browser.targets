@@ -111,8 +111,32 @@
 
   <ItemGroup>
     <Content Include="$(MonoProjectRoot)browser\test-main.mjs" Link="wwwroot\test-main.mjs" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
-    <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
+    <!-- Always copy the index so switching back from a custom entry point cannot leave a newer generated page in the output. -->
+    <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="Always" Condition="'$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
+
+  <Target Name="_GenerateWasmTestIndexHtml"
+          BeforeTargets="AssignTargetPaths"
+          Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainJSPath)' != '' and $([System.IO.Path]::GetFileName('$(WasmMainJSPath)')) != 'test-main.mjs'">
+    <PropertyGroup>
+      <_WasmTestIndexHtml>$(IntermediateOutputPath)wasm-test-index.html</_WasmTestIndexHtml>
+      <_WasmTestMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmTestMainJSFileName>
+      <_WasmTestMainJSUrl>$([MSBuild]::Escape($([System.Uri]::EscapeDataString('$(_WasmTestMainJSFileName)'))))</_WasmTestMainJSUrl>
+    </PropertyGroup>
+    <ReadLinesFromFile File="$(MonoProjectRoot)browser\test-index.html">
+      <Output TaskParameter="Lines" ItemName="_WasmTestIndexHtmlTemplate" />
+    </ReadLinesFromFile>
+    <WriteLinesToFile File="$(_WasmTestIndexHtml)"
+                      Lines="@(_WasmTestIndexHtmlTemplate->Replace('test-main.mjs', '$(_WasmTestMainJSUrl)'))"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmTestIndexHtml)" />
+      <Content Remove="$(MonoProjectRoot)browser\test-index.html" />
+      <Content Include="$(_WasmTestIndexHtml)" Link="wwwroot\index.html" CopyToOutputDirectory="Always" />
+      <Content Include="$(WasmMainJSPath)" Exclude="@(Content)" Link="wwwroot\$(_WasmTestMainJSFileName)" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 
   <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
   <!-- by default we make their icu small by sharding. -->
