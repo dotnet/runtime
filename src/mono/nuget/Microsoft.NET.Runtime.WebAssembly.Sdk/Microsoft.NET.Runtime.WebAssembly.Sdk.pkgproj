@@ -19,6 +19,10 @@
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.Timezone.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)src\native\libs\System.Native\pal_datetime_time_zone_data.c;$(RepoRoot)src\native\libs\System.Native\pal_datetime.h" TargetPath="Sdk\timezone\libs\System.Native" />
+    <PackageFile Include="$(RepoRoot)src\native\libs\Common\pal_compiler.h;$(RepoRoot)src\native\libs\Common\pal_types.h" TargetPath="Sdk\timezone\libs\Common" />
+    <PackageFile Include="$(RepoRoot)src\native\minipal\types.h;$(RepoRoot)src\native\minipal\utils.h" TargetPath="Sdk\timezone\minipal" />
     <PackageFile Include="$(RepoRoot)eng\wasm\WasmPInvokeModules.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)eng/native.wasm.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\coreclr_compat.h" TargetPath="Sdk" />

@@ -1,0 +1,75 @@
+<Project>
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateWasmTimezoneData" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
+  <PropertyGroup>
+    <_WasmTimezoneSourceRoot>$(MSBuildThisFileDirectory)timezone\</_WasmTimezoneSourceRoot>
+    <_WasmTimezoneSourceRoot Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', '..', 'native'))</_WasmTimezoneSourceRoot>
+  </PropertyGroup>
+
+  <Target Name="_WasmValidateCustomTimezoneData"
+          BeforeTargets="_SetWasmBuildNativeDefaults;_CoreCLRSetWasmBuildNativeDefaults"
+          Condition="'$(WasmCustomTimezoneDataDirectory)' != '' and '$(IsBrowserWasmProject)' == 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+    <Error Condition="'$(InvariantTimezone)' == 'true'"
+           Text="WasmCustomTimezoneDataDirectory cannot be used with InvariantTimezone=true." />
+    <Error Condition="'$(WasmBuildNative)' == 'false'"
+           Text="WasmCustomTimezoneDataDirectory requires native relinking, but WasmBuildNative is already set to 'false'." />
+    <PropertyGroup>
+      <WasmBuildNative>true</WasmBuildNative>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmCompileCustomTimezoneData"
+          BeforeTargets="_BrowserWasmWriteRspForLinking;_CoreCLRWriteLinkRsp"
+          Condition="'$(WasmCustomTimezoneDataDirectory)' != '' and '$(WasmBuildNative)' == 'true'">
+    <PropertyGroup>
+      <_WasmTimezoneOutputDirectory>$(_WasmIntermediateOutputPath)timezone\</_WasmTimezoneOutputDirectory>
+      <_WasmTimezoneConfig>$(_WasmTimezoneOutputDirectory)pal_datetime_time_zone_data-config.h</_WasmTimezoneConfig>
+      <_WasmTimezoneCompileRsp>$(_WasmTimezoneOutputDirectory)timezone-compile.rsp</_WasmTimezoneCompileRsp>
+      <_WasmTimezoneObject>$(_WasmTimezoneOutputDirectory)timezone-data.o</_WasmTimezoneObject>
+    </PropertyGroup>
+
+    <GenerateWasmTimezoneData TimezoneDataDirectory="$(WasmCustomTimezoneDataDirectory)"
+                              ProjectDirectory="$(MSBuildProjectDirectory)"
+                              OutputFile="$(_WasmTimezoneConfig)">
+      <Output TaskParameter="DataFiles" ItemName="_WasmTimezoneDataFile" />
+    </GenerateWasmTimezoneData>
+
+    <ItemGroup>
+      <_WasmTimezoneCFlags Include="&quot;@$(_WasmDefaultFlagsRsp)&quot;" Condition="'$(_WasmDefaultFlagsRsp)' != ''" />
+      <_WasmTimezoneCFlags Include="$(_EmccDefaultFlags)" Condition="'$(_EmccDefaultFlags)' != ''" />
+      <_WasmTimezoneCFlags Include="@(_EmccCFlags)" />
+      <!-- Resolve .incbin during compilation so data edits change the object, not just its dependencies. -->
+      <_WasmTimezoneCFlags Remove="-emit-llvm" />
+      <_WasmTimezoneCFlags Include="-fno-lto" />
+      <_WasmTimezoneCFlags Include="-DTZ_DATA_ENABLED" />
+      <_WasmTimezoneCFlags Include="-I&quot;$(_WasmTimezoneSourceRoot).&quot;" />
+      <_WasmTimezoneCFlags Include="-I&quot;$(_WasmTimezoneSourceRoot)libs/Common&quot;" />
+      <_WasmTimezoneCFlags Include="-I&quot;$(_WasmTimezoneOutputDirectory).&quot;" />
+
+      <_WasmTimezoneHeader Include="$(_WasmTimezoneSourceRoot)libs\System.Native\pal_datetime.h" />
+      <_WasmTimezoneHeader Include="$(_WasmTimezoneSourceRoot)libs\Common\pal_compiler.h;$(_WasmTimezoneSourceRoot)libs\Common\pal_types.h" />
+      <_WasmTimezoneHeader Include="$(_WasmTimezoneSourceRoot)minipal\types.h;$(_WasmTimezoneSourceRoot)minipal\utils.h" />
+
+      <_WasmTimezoneSource Include="$(_WasmTimezoneSourceRoot)libs\System.Native\pal_datetime_time_zone_data.c"
+                           ObjectFile="$(_WasmTimezoneObject)"
+                           Dependencies="@(_WasmTimezoneDataFile);@(_WasmTimezoneHeader);$(_WasmTimezoneConfig);$(_WasmTimezoneCompileRsp);$(_WasmDefaultFlagsRsp)" />
+      <_WasmTimezoneEnvironmentVariable Include="@(WasmToolchainEnvVars)" />
+      <_WasmTimezoneEnvironmentVariable Include="@(EmscriptenEnvVars)" Condition="'@(WasmToolchainEnvVars)' == ''" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_WasmTimezoneCompileRsp)" Lines="@(_WasmTimezoneCFlags)"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <EmccCompile SourceFiles="@(_WasmTimezoneSource)"
+                 Arguments="&quot;@$(_WasmTimezoneCompileRsp)&quot;"
+                 CompilerBinaryPath="$(WasmClang)"
+                 EnvironmentVariables="@(_WasmTimezoneEnvironmentVariable)"
+                 MessageToIndicateCompiling="Compiling custom timezone data.">
+      <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
+    </EmccCompile>
+
+    <ItemGroup>
+      <_WasmNativeFileForLinking Include="$(_WasmTimezoneObject)" />
+      <FileWrites Include="$(_WasmTimezoneConfig);$(_WasmTimezoneCompileRsp)" />
+    </ItemGroup>
+  </Target>
+</Project>
