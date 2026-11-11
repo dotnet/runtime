@@ -77,11 +77,6 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
         }
 
-        internal static int GetNewHashCode()
-        {
-            return Random.Shared.Next();
-        }
-
         public static unsafe int GetHashCode(object o)
         {
             return ObjectHeader.GetHashCode(o);

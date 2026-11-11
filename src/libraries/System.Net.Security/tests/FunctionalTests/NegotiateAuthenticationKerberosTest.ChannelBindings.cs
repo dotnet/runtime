@@ -103,8 +103,7 @@ namespace System.Net.Security.Tests
         {
             const int HashLength = 32;
             SafeChannelBindingHandle handle = new SafeChannelBindingHandle(kind);
-            byte[] hash = new byte[HashLength];
-            Array.Fill(hash, hashSeed);
+            byte[] hash = Array.CreateFilled(HashLength, hashSeed);
             handle.SetCertHash(hash);
             return handle;
         }

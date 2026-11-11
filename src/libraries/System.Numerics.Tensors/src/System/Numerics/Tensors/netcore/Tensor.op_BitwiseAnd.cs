@@ -14,7 +14,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
             TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
             return destination;
         }

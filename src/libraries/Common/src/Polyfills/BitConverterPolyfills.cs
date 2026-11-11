@@ -10,6 +10,12 @@ internal static class BitConverterPolyfills
 {
     extension(BitConverter)
     {
+        public static unsafe int SingleToInt32Bits(float value) => *(int*)&value;
+
+        public static unsafe float Int32BitsToSingle(int value) => *(float*)&value;
+
+        public static float UInt32BitsToSingle(uint value) => BitConverter.Int32BitsToSingle((int)value);
+
         public static uint SingleToUInt32Bits(float value)
         {
             unsafe
@@ -28,6 +34,7 @@ internal static class BitConverterPolyfills
 
         // ---- ReadOnlySpan<byte> read overloads (host-endian, semantics match BCL net5+) ----
 
+        public static char ToChar(ReadOnlySpan<byte> value) => MemoryMarshal.Read<char>(value);
         public static short ToInt16(ReadOnlySpan<byte> value) => MemoryMarshal.Read<short>(value);
         public static ushort ToUInt16(ReadOnlySpan<byte> value) => MemoryMarshal.Read<ushort>(value);
         public static int ToInt32(ReadOnlySpan<byte> value) => MemoryMarshal.Read<int>(value);

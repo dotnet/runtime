@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource, VfsAsset } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
@@ -11,6 +11,9 @@ import { loaderConfig, validateLoaderConfig } from "./config";
 import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
 import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
+import { loaderCallbacks } from "./callbacks";
+import { getAppSettingsAssets } from "../appsettings";
+import { fetchAppSettings } from "./assets";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
@@ -44,9 +47,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
 
-            if (typeof Module.onDotnetReady === "function") {
-                await Module.onDotnetReady();
-            }
+            await loaderCallbacks.dotnetReady?.();
 
             const resources = loaderConfig.resources;
             // modulesAfterRuntimeReady were only prefetched during download(), now load and call onRuntimeReady.
@@ -58,14 +59,14 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
         const resources = loaderConfig.resources;
 
-        // Run config initialization once: onConfigLoaded, modulesAfterConfigLoaded, polyfills.
+        // Run config initialization once: callbacks, modulesAfterConfigLoaded, polyfills.
         // This must happen before any asset fetches so that URL overrides take effect.
         let modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = [];
         if (!configInitialized) {
             await validateEngineFeatures();
 
-            if (typeof Module.onConfigLoaded === "function") {
-                await Module.onConfigLoaded(loaderConfig);
+            for (const callback of [...loaderCallbacks.configLoaded]) {
+                await callback(loaderConfig);
             }
             validateLoaderConfig();
 
@@ -89,18 +90,18 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
                 Module.printErr = Module.err;
             }
 
-            // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
+            // after config-loaded callbacks that could install polyfills, our polyfills can be initialized
             await initPolyfillsLoader();
 
             configInitialized = true;
             modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
         }
 
-        const appsettingsVfs = getAppsettingsVfs();
+        const appsettings = getAppSettingsAssets(loaderConfig);
 
         // HTTP cache only path: just fetch all resources into browser cache and discard
         if (downloadOnly && httpCacheOnly) {
-            await prefetchAllResources(appsettingsVfs);
+            await prefetchAllResources(appsettings);
             downloadMode = "cacheOnly";
             downloadDeferred?.resolve(undefined as unknown as void);
             return;
@@ -127,7 +128,8 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             ? fetchSatelliteAssemblies(Object.keys(resources.satelliteResources))
             : Promise.resolve();
 
-        const vfsPromise = forEachResource([...normalizeCollection(resources.vfs), ...appsettingsVfs], fetchVfs);
+        const vfsPromise = forEachResource(resources.vfs, fetchVfs);
+        const appsettingsPromise = forEachResource(appsettings, fetchAppSettings);
 
         // WASM-TODO: also check that the debugger is linked in and check feature flags
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
@@ -158,6 +160,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         runtimeState.nativeReady = true;
         await coreAssembliesPromise;
         await vfsPromise;
+        await appsettingsPromise;
         await icuDataPromise;
         await wasmNativePromise; // this is just to propagate errors
 
@@ -181,9 +184,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             return;
         }
 
-        if (typeof Module.onDotnetReady === "function") {
-            await Module.onDotnetReady();
-        }
+        await loaderCallbacks.dotnetReady?.();
 
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
 
@@ -236,24 +237,4 @@ function normalizeCollection<T>(collection: T[] | undefined): T[] {
         return [];
     }
     return collection;
-}
-
-function getAppsettingsVfs(): VfsAsset[] {
-    const result: VfsAsset[] = [];
-    if (!loaderConfig.appsettings) {
-        return result;
-    }
-    for (const configUrl of loaderConfig.appsettings) {
-        const lastSlash = configUrl.lastIndexOf("/");
-        const configFileName = lastSlash >= 0 ? configUrl.substring(lastSlash + 1) : configUrl;
-        if (configFileName === "appsettings.json" || configFileName === `appsettings.${loaderConfig.applicationEnvironment}.json`) {
-            result.push({
-                name: configUrl,
-                virtualPath: configFileName,
-                cache: "no-cache",
-                useCredentials: true,
-            } as any);
-        }
-    }
-    return result;
 }

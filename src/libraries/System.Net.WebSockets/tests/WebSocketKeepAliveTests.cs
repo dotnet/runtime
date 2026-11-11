@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,7 +13,7 @@ namespace System.Net.WebSockets.Tests
 {
     public class WebSocketKeepAliveTests
     {
-        public static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
+        public static readonly TimeSpan TestTimeout = TestHelper.PassingTestTimeout;
         public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(100);
         public static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromSeconds(1);
         public const int FramesToTestCount = 5;
@@ -237,13 +238,14 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [OuterLoop("Uses Task.Delay")]
+        [OuterLoop("Waits for the keep-alive timeout")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task WebSocket_NoPongResponseWithinTimeout_Aborted(bool outstandingUserRead)
         {
-            var cancellationToken = new CancellationTokenSource(TestTimeout).Token;
+            using var cancellation = new CancellationTokenSource(TestTimeout);
+            CancellationToken cancellationToken = cancellation.Token;
 
             using WebSocketTestStream testStream = new();
             Stream localEndpointStream = testStream;
@@ -264,7 +266,13 @@ namespace System.Net.WebSockets.Tests
                 userReadTask = webSocket.ReceiveAsync(Memory<byte>.Empty, cancellationToken);
             }
 
-            await Task.Delay(2 * (KeepAliveTimeout + KeepAliveInterval), cancellationToken);
+            byte[] pingBuffer = new byte[Server_FrameHeaderLength + PingPayloadLength];
+            await remoteEndpointStream.ReadExactlyAsync(pingBuffer, cancellationToken);
+            Assert.Equal(FirstByte_PingFrame, pingBuffer[0]);
+            Assert.Equal(SecondByte_Server_8bPayload, pingBuffer[1]);
+
+            // Stream disposal signals that the timeout heartbeat has aborted the WebSocket.
+            Assert.Equal(0, await remoteEndpointStream.ReadAsync(pingBuffer, cancellationToken));
 
             Assert.Equal(WebSocketState.Aborted, webSocket.State);
 

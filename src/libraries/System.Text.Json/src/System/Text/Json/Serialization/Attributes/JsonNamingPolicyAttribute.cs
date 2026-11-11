@@ -43,10 +43,7 @@ namespace System.Text.Json.Serialization
         /// </exception>
         protected JsonNamingPolicyAttribute(JsonNamingPolicy namingPolicy)
         {
-            if (namingPolicy is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(namingPolicy));
-            }
+            ArgumentNullException.ThrowIfNull(namingPolicy);
 
             NamingPolicy = namingPolicy;
         }
@@ -65,6 +62,7 @@ namespace System.Text.Json.Serialization
                 JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
                 JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
                 JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                JsonKnownNamingPolicy.PascalCase => JsonNamingPolicy.PascalCase,
                 _ => throw new ArgumentOutOfRangeException(nameof(namingPolicy)),
             };
         }

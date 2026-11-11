@@ -9,39 +9,19 @@ namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 internal sealed class TypeValidation
 {
     private readonly Target _target;
-    private TargetPointer _continuationMethodTablePointer;
-    private TargetPointer _continuationSingletonEEClassPointer;
+    private readonly CachedValue<TargetPointer> _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationSingletonEEClassPointer;
 
-    internal TypeValidation(Target target, TargetPointer continuationMethodTablePointer, TargetPointer continuationSingletonEEClassPointer)
+    internal TypeValidation(Target target, CachedValue<TargetPointer> continuationMethodTablePointer, CachedValue<TargetPointer> continuationSingletonEEClassPointer)
     {
         _target = target;
         _continuationMethodTablePointer = continuationMethodTablePointer;
         _continuationSingletonEEClassPointer = continuationSingletonEEClassPointer;
     }
 
-    private TargetPointer ContinuationMethodTablePointer
-    {
-        get
-        {
-            if (_continuationMethodTablePointer != TargetPointer.Null)
-                return _continuationMethodTablePointer;
-            _continuationMethodTablePointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-            return _continuationMethodTablePointer;
-        }
-    }
+    private TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
 
-    private TargetPointer ContinuationSingletonEEClassPointer
-    {
-        get
-        {
-            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
-                return _continuationSingletonEEClassPointer;
-            _continuationSingletonEEClassPointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-            return _continuationSingletonEEClassPointer;
-        }
-    }
+    private TargetPointer ContinuationSingletonEEClassPointer => _continuationSingletonEEClassPointer;
 
     // This doesn't need as many properties as MethodTable because we don't want to be operating on
     // a NonValidatedMethodTable for too long
@@ -96,7 +76,8 @@ internal sealed class TypeValidation
             }
         }
 
-        internal readonly bool ValidateReadable() => ValidateDataReadable<MethodTable>(_target, Address);
+        internal readonly bool ValidateReadable() => new MethodTable(_target, Address).TryReadAllFields();
+
         internal TargetPointer ParentMethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(ParentMethodTable)].Offset);
     }
 
@@ -116,7 +97,7 @@ internal sealed class TypeValidation
 
         internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
 
-        internal readonly bool ValidateReadable() => ValidateDataReadable<EEClass>(_target, Address);
+        internal readonly bool ValidateReadable() => new EEClass(_target, Address).TryReadAllFields();
     }
 
     internal static NonValidatedMethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
@@ -218,22 +199,6 @@ internal sealed class TypeValidation
             }
         }
         return true;
-    }
-
-    private static bool ValidateDataReadable<T>(Target target, TargetPointer dataAddress) where T : IData<T>
-    {
-        try
-        {
-            T dataClass = T.Create(target, dataAddress);
-            // Fields are read lazily, so force a full read to validate that the
-            // entire structure is readable (an unreadable field throws below).
-            (dataClass as IReadableData)?.EnsureAllFieldsRead();
-            return true;
-        }
-        catch (VirtualReadException)
-        {
-            return false;
-        }
     }
 
     private TargetPointer GetClassThrowing(NonValidatedMethodTable methodTable)

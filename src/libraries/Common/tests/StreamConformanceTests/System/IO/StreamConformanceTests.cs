@@ -2938,6 +2938,8 @@ namespace System.IO.Tests
         [InlineData(true, true)]
         public virtual async Task Dispose_Flushes(bool useAsync, bool leaveOpen)
         {
+            if (OperatingSystem.IsWasi() && !useAsync) return;
+
             if (leaveOpen && !SupportsLeaveOpen)
             {
                 return;
@@ -3093,6 +3095,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public virtual async Task NestedWithinSelf_ReadWrite_Success()
         {
             using StreamPair streams = ConnectedStreams.CreateBidirectional();

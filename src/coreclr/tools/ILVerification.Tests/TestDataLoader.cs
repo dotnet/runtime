@@ -63,7 +63,7 @@ namespace ILVerification.Tests
                     var verificationErrors = new List<VerifierError>();
                     foreach (var expectedError in mparams[2].Split('@'))
                     {
-                        verificationErrors.Add((VerifierError)Enum.Parse(typeof(VerifierError), expectedError));
+                        verificationErrors.Add(ParseExpectedError(expectedError, mparams[0]));
                     }
                     var newItem = new InvalidTypeTestCase { MetadataToken = MetadataTokens.GetToken(typeDefinitionHandle) };
                     newItem.ExpectedVerifierErrors = verificationErrors;
@@ -143,10 +143,7 @@ namespace ILVerification.Tests
 
                     foreach (var item in expectedErrors)
                     {
-                        if (Enum.TryParse(item, out VerifierError expectedError))
-                        {
-                            verificationErrors.Add(expectedError);
-                        }
+                        verificationErrors.Add(ParseExpectedError(item, mparams[0]));
                     }
 
                     var newItem = new InvalidILTestCase { MetadataToken = MetadataTokens.GetToken(methodHandle) };
@@ -161,6 +158,20 @@ namespace ILVerification.Tests
                 return null;
             });
             return GetTestMethodsFromDll(methodSelector);
+        }
+
+        /// <summary>
+        /// Parses an expected error name from a test name. An unknown name throws, so that a misspelled
+        /// name fails the tests instead of silently dropping out of the expected errors.
+        /// </summary>
+        private static VerifierError ParseExpectedError(string name, string testName)
+        {
+            if (!Enum.TryParse(name, out VerifierError error))
+            {
+                throw new ArgumentException($"Test '{testName}' expects '{name}', which is not a {nameof(VerifierError)}.");
+            }
+
+            return error;
         }
 
         private static List<TestCase[]> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
@@ -247,7 +258,7 @@ namespace ILVerification.Tests
             }
         }
 
-        public static EcmaModule GetModuleForTestAssembly(string assemblyName)
+        public static EcmaModule GetModuleForTestAssembly(string assemblyName, bool allowIgnoresAccessChecksTo = false)
         {
             var simpleNameToPathMap = new Dictionary<string, string>();
 
@@ -267,7 +278,7 @@ namespace ILVerification.Tests
             simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
 
             var resolver = new TestResolver(simpleNameToPathMap);
-            var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
+            var typeSystemContext = new ILVerifyTypeSystemContext(resolver) { AllowIgnoresAccessChecksTo = allowIgnoresAccessChecksTo };
             typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName().Name)));
 
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)).Name));

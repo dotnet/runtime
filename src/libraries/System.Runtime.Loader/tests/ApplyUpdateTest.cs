@@ -142,19 +142,27 @@ namespace System.Reflection.Metadata
             ApplyUpdateUtil.TestCase(static () =>
             {
                 var assm = typeof (ApplyUpdate.Test.MethodBody1).Assembly;
+                Func<string> method = ApplyUpdate.Test.MethodBody1.StaticMethod1;
+                int initialCallCount = ApplyUpdate.Test.MethodBody1.CallCount;
 
                 var r = ApplyUpdate.Test.MethodBody1.StaticMethod1();
                 Assert.Equal("OLD STRING", r);
+                Assert.Equal("OLD STRING", method());
+                Assert.Equal(initialCallCount + 2, ApplyUpdate.Test.MethodBody1.CallCount);
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 r = ApplyUpdate.Test.MethodBody1.StaticMethod1();
                 Assert.Equal("NEW STRING", r);
+                Assert.Equal("NEW STRING", method());
+                Assert.Equal(initialCallCount + 4, ApplyUpdate.Test.MethodBody1.CallCount);
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 r = ApplyUpdate.Test.MethodBody1.StaticMethod1 ();
                 Assert.Equal ("NEWEST STRING", r);
+                Assert.Equal("NEWEST STRING", method());
+                Assert.Equal(initialCallCount + 6, ApplyUpdate.Test.MethodBody1.CallCount);
             });
         }
 
@@ -1026,8 +1034,11 @@ namespace System.Reflection.Metadata
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
-                // there are two updates - the first adds the fields, the second one updates the
-                // methods to use the new fields
+                x.TestMethod();
+                Assert.Equal("spqr", x.GetField());
+                Assert.Equal(0.0, y.GetField());
+
+                // The second update switches the methods to the newly added field.
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 x.TestMethod();

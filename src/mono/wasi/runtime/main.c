@@ -5,7 +5,6 @@
 
 // This symbol's implementation is generated during the build
 const char* dotnet_wasi_getentrypointassemblyname();
-char *monoeg_g_getenv(const char *variable);
 
 #ifdef WASI_AFTER_RUNTIME_LOADED_DECLARATIONS
 // This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
@@ -121,13 +120,8 @@ int main(int argc, char * argv[]) {
 	}
 	ret = ret < 0 ? -ret : ret;
 
-	// until WASI can work with unix exit code https://github.com/WebAssembly/wasi-cli/pull/44
-	char* dotnet_wasi_print_exit_code = monoeg_g_getenv ("DOTNET_WASI_PRINT_EXIT_CODE");
-	if (ret != 0 && dotnet_wasi_print_exit_code && strcmp(dotnet_wasi_print_exit_code, "1") == 0)
-	{
-		fprintf(stderr, "WASM EXIT %d\n", ret);
-	}
-
-	return ret;
+	// Returning from main only reports success/failure through wasi:cli/run.
+	// exit() reports the actual code through wasi:cli/exit's exit-with-code.
+	exit(ret);
 }
 #endif

@@ -73,6 +73,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
         }
 
+        // Every work item here is queued with preferLocal: false. The accept loop blocks its
+        // thread pool thread in GetContext for as long as the listener lives, so a work item put
+        // in that thread's local queue can only run when another worker steals it, and workers
+        // steal only after the global queue is empty. While a busy test process keeps the global
+        // queue non-empty, a request queued locally waits until the chain builder's fetch timeout
+        // (3 seconds in trustd on macOS) and the chain reports RevocationStatusUnknown instead
+        // of Revoked.
         private void HandleRequests()
         {
             ThreadPool.QueueUserWorkItem(
@@ -84,7 +91,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     }
                 },
                 this,
-                true);
+                preferLocal: false);
         }
 
         internal void HandleRequest()
@@ -104,7 +111,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 ThreadPool.QueueUserWorkItem(
                     state => HandleRequest(state),
                     context,
-                    true);
+                    preferLocal: false);
             }
         }
 
@@ -125,7 +132,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 ThreadPool.QueueUserWorkItem(
                     state => HandleRequest(state),
                     context,
-                    true);
+                    preferLocal: false);
             }
         }
 

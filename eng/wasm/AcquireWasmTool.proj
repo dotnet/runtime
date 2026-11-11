@@ -14,6 +14,7 @@
   Properties:
     WasmToolName            (required) name used in messages
     WasmToolUrl             (required) archive to download
+    WasmToolSha256          optional expected SHA-256 hash of the downloaded archive
     WasmToolKind            (required) zip | targz | tarxz | firefox-installer
     WasmToolCacheEntryDir   (required) final directory, must live under $(WasmToolCacheDir)
     WasmToolStampFile       (required) sentinel written once the entry is complete
@@ -66,6 +67,22 @@
                   SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_Archive" />
     </DownloadFile>
+
+    <GetFileHash Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolSha256)' != ''"
+                 Files="$(_Archive)"
+                 Algorithm="SHA256"
+                 HashEncoding="Hex">
+      <Output TaskParameter="Items" ItemName="_ArchiveWithHash" />
+    </GetFileHash>
+
+    <PropertyGroup Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolSha256)' != ''">
+      <_ActualSha256>%(_ArchiveWithHash.FileHash)</_ActualSha256>
+      <_NormalizedActualSha256>$(_ActualSha256.ToLowerInvariant())</_NormalizedActualSha256>
+      <_NormalizedExpectedSha256>$(WasmToolSha256.ToLowerInvariant())</_NormalizedExpectedSha256>
+    </PropertyGroup>
+
+    <Error Condition="'$(_NormalizedActualSha256)' != '$(_NormalizedExpectedSha256)'"
+           Text="The SHA-256 hash of the downloaded $(WasmToolName) archive does not match the expected value. Expected '$(WasmToolSha256)', actual '$(_ActualSha256)', archive '$(_Archive)'." />
 
     <Unzip Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'zip'"
            SourceFiles="$(_Archive)"

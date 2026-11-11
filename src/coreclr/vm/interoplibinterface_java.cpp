@@ -20,6 +20,23 @@ namespace
     Volatile<bool> g_GCBridgeActive = false;
     CLREvent* g_bridgeFinished = nullptr;
 
+    void ClearPendingBridgeBits(
+        _In_reads_(handleCount) uintptr_t* handles,
+        size_t handleCount)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        for (size_t i = 0; i < handleCount; i++)
+        {
+            OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(handles[i]);
+            Object* object = OBJECTREFToObject(ObjectFromHandle(handle));
+            if (object != nullptr)
+            {
+                object->GetHeader()->ClrBit(BIT_SBLK_BRIDGE_PENDING);
+            }
+        }
+    }
+
     void ReleaseGCBridgeArgumentsWorker(
         _In_ MarkCrossReferencesArgs* args)
     {
@@ -51,6 +68,42 @@ bool Interop::IsGCBridgeActive()
     return g_GCBridgeActive;
 }
 
+bool Interop::TryGetObjectFromHandleWithoutBridgeWait(
+    _In_ OBJECTHANDLE handle,
+    _Out_ Object** result)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // g_GCBridgeActive is Volatile<bool> and pending bit clear uses InterlockedAnd. These should be set with release
+    // stores guaranteeing the order: weak-reference nulling -> pending-bit clearing -> g_GCBridgeActive = false
+    Object* object = OBJECTREFToObject(ObjectFromHandle(handle));
+    if (g_GCBridgeActive && object != nullptr &&
+        (object->GetHeader()->GetBitsAcquire() & BIT_SBLK_BRIDGE_PENDING) != 0)
+    {
+        return false;
+    }
+
+    // If object is nullptr, the handle value is stable, refetching is harmless
+    // If bridge is not active, refetching the handle should guarantee we get the right value
+    // since `g_GCBridgeActive` is Volatile<bool>
+    // The only remaining interesting case is gc bridge being active, with non-null object which
+    // had the bridge pending bit not set.
+    //
+    // If the bridge pending bit was never set because the object was not due for collection, handle value is stable
+    // If the bridge pending bit was set but got cleared in the meantime due to this code racing with the bridge
+    // finisher, refetching the handle will guarantee that we see the new value of the handle, because the
+    // bit is cleared with InterlockedAnd which does a release barrier (guaranteeing that the potential handle nulling
+    // was already published).
+    Object* confirmedObject = OBJECTREFToObject(ObjectFromHandle(handle));
+    if (confirmedObject != object)
+    {
+        return false;
+    }
+
+    *result = confirmedObject;
+    return true;
+}
+
 void Interop::WaitForGCBridgeFinish()
 {
     CONTRACTL
@@ -80,13 +133,10 @@ void Interop::TriggerClientBridgeProcessing(
     }
     CONTRACTL_END;
 
-    if (g_GCBridgeActive)
-    {
-        // Release the memory allocated since the GCBridge
-        // is already running and we're not passing them to it.
-        ReleaseGCBridgeArgumentsWorker(args);
-        return;
-    }
+    size_t pendingBridgeHandleCount;
+    uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
+
+    _ASSERTE(!g_GCBridgeActive);
 
     bool gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(args);
 
@@ -94,6 +144,7 @@ void Interop::TriggerClientBridgeProcessing(
     {
         // Release the memory allocated since the GCBridge
         // wasn't trigger for some reason.
+        ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
         ReleaseGCBridgeArgumentsWorker(args);
         return;
     }
@@ -122,11 +173,13 @@ void Interop::FinishCrossReferenceProcessing(
         GCX_COOP();
 
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+        size_t pendingBridgeHandleCount;
+        uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
+        ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
 
         IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
         for (size_t i = 0; i < length; i++)
             pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
-
         g_GCBridgeActive = false;
         g_bridgeFinished->Set();
     }

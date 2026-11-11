@@ -259,6 +259,8 @@ namespace System.Reflection.Emit
 
         public override bool IsTypeDefinition => false;
 
+        public override bool IsByRefLike => false;
+
         public override bool IsSZArray => _rank <= 1 && _isSzArray;
 
         public override Type? GetNullableUnderlyingType() => null;

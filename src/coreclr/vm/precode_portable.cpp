@@ -29,7 +29,7 @@ bool PortableEntryPoint::HasInterpreterData(PCODE addr)
 
 void* PortableEntryPoint::GetActualCode(PCODE addr)
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
     _ASSERTE_ALL_BUILDS(portableEntryPoint->HasNativeCode());
@@ -38,7 +38,7 @@ void* PortableEntryPoint::GetActualCode(PCODE addr)
 
 void PortableEntryPoint::SetActualCode(PCODE addr, void* actualCode)
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
     _ASSERTE_ALL_BUILDS(actualCode != NULL);

@@ -12,7 +12,7 @@
 #include "gcdesc.h"
 #include "softwarewritewatch.h"
 #include "handletable.h"
-#include "handletable.inl"
+#include "gchandletableimpl.h"
 #include "gcenv.inl"
 #include "gceventstatus.h"
 #include <minipal/memorybarrierprocesswide.h>
@@ -1112,7 +1112,7 @@ public:
 #endif //DOUBLY_LINKED_FL
     }
 
-    void UnsetFree()
+    void UnsetFree(size_t object_size)
     {
         size_t size = free_object_base_size - plug_skew;
 
@@ -1120,6 +1120,15 @@ public:
         PTR_PTR m = (PTR_PTR) this;
         for (size_t i = 0; i < size / sizeof(PTR_PTR); i++)
             *(m++) = 0;
+
+#ifdef DOUBLY_LINKED_FL
+        if (object_size >= min_free_list)
+        {
+            free_list_prev (this) = 0;
+        }
+#else
+        UNREFERENCED_PARAMETER(object_size);
+#endif //DOUBLY_LINKED_FL
     }
 
     BOOL IsFree () const
@@ -1276,6 +1285,14 @@ public:
         return (int) elapsed_cycles;
     }
 
+    // Mapping processors to heaps requires both the ability to query the current processor
+    // and to affinitize GC threads to the processors of their heaps. A platform that can do the former
+    // but not the latter (e.g. macOS) would get a meaningless processor-to-heap table.
+    static bool use_proc_no_for_heap_select()
+    {
+        return GCToOSInterface::CanGetCurrentProcessorNumber() && GCToOSInterface::CanSetThreadAffinity();
+    }
+
 public:
     static BOOL init(int n_heaps)
     {
@@ -1290,7 +1307,7 @@ public:
 
         memset(proc_no_to_heap_no, 0, maxCpuCount*sizeof(uint16_t));
 
-        if (!GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (!use_proc_no_for_heap_select())
         {
             n_sniff_buffers = n_heaps*2+1;
             size_t n_cache_lines = 1 + n_heaps * n_sniff_buffers + 1;
@@ -1352,7 +1369,7 @@ public:
 
     static void init_cpu_mapping(int heap_number)
     {
-        if (GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (use_proc_no_for_heap_select())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
             proc_no_to_heap_no[proc_no] = (uint16_t)heap_number;
@@ -1361,7 +1378,7 @@ public:
 
     static void mark_heap(int heap_number)
     {
-        if (GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (use_proc_no_for_heap_select())
             return;
 
         for (unsigned sniff_index = 0; sniff_index < n_sniff_buffers; sniff_index++)
@@ -1374,7 +1391,7 @@ public:
         UNREFERENCED_PARAMETER(acontext); // only referenced by dprintf
 #endif //TRACE_GC
 
-        if (GCToOSInterface::CanGetCurrentProcessorNumber())
+        if (use_proc_no_for_heap_select())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
             int adjusted_heap = proc_no_to_heap_no[proc_no];
@@ -1426,7 +1443,7 @@ public:
 
     static bool can_find_heap_fast()
     {
-        return GCToOSInterface::CanGetCurrentProcessorNumber();
+        return use_proc_no_for_heap_select();
     }
 
     static uint16_t find_proc_no_from_heap_no(int heap_number)

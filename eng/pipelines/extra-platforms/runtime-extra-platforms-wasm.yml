@@ -23,22 +23,6 @@ jobs:
 # - rest are covered by runtime
 #
 - ${{ if eq(parameters.isExtraPlatformsBuild, true) }}:
-  # Full trimmed CoreCLR ReadyToRun library tests
-  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-      nameSuffix: _R2R
-      readyToRun: true
-      timeoutInMinutes: 480
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: true
-      useHelixMonitor: ${{ parameters.useHelixMonitor }}
-      scenarios:
-        - WasmTestOnChrome
-
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
@@ -115,6 +99,18 @@ jobs:
         useHelixMonitor: ${{ parameters.useHelixMonitor }}
         scenarios:
           - WasmTestOnChrome
+
+    - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
+      parameters:
+        platforms:
+          - wasi_wasm
+        nameSuffix: _R2R
+        readyToRun: true
+        timeoutInMinutes: 480
+        isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+        alwaysRun: true
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
   # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml

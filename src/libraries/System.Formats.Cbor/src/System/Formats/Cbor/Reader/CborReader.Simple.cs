@@ -36,7 +36,7 @@ namespace System.Formats.Cbor
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(float));
-                    result = CborHelpers.ReadSingleBigEndian(buffer.Slice(1));
+                    result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
@@ -77,14 +77,14 @@ namespace System.Formats.Cbor
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(float));
-                    result = CborHelpers.ReadSingleBigEndian(buffer.Slice(1));
+                    result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(double));
-                    result = CborHelpers.ReadDoubleBigEndian(buffer.Slice(1));
+                    result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(double));
                     AdvanceDataItemCounters();
                     return result;
@@ -179,6 +179,12 @@ namespace System.Formats.Cbor
                     AdvanceDataItemCounters();
                     return (CborSimpleValue)value;
                 default:
+                    // Additional information values 28-30 are reserved: https://www.rfc-editor.org/rfc/rfc8949.html#section-3.3
+                    if (header.AdditionalInfo is > CborAdditionalInfo.Additional64BitData and < CborAdditionalInfo.IndefiniteLength)
+                    {
+                        throw new CborContentException(SR.Cbor_Reader_InvalidCbor_InvalidSimpleValueEncoding);
+                    }
+
                     throw new InvalidOperationException(SR.Cbor_Reader_NotASimpleValueEncoding);
             }
         }

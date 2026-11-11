@@ -88,7 +88,7 @@ namespace {Namespace}
                 int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
                 int sizeOfmaskArray = maskArray.Length * sizeof({Op1BaseType});
 
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 4) < sizeOfoutArray || (alignment * 2) < sizeOfmaskArray)
+                if (!int.IsPow2(alignment) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 4) < sizeOfoutArray || (alignment * 2) < sizeOfmaskArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
@@ -148,14 +148,14 @@ namespace {Namespace}
                 for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._storeMask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
 
-                ulong alignment  = (ulong)LargestVectorSize;
+                ulong alignment  = (ulong)VectorAlignment;
                 byte[] _outArray = new byte[alignment * 4];
                 testStruct._outHandle = GCHandle.Alloc(_outArray, GCHandleType.Pinned);
 
                 return testStruct;
             }
 
-            public void* _outArrayPtr => DataTable.Align((byte*)(_outHandle.AddrOfPinnedObject().ToPointer()), (ulong)LargestVectorSize);
+            public void* _outArrayPtr => DataTable.Align((byte*)(_outHandle.AddrOfPinnedObject().ToPointer()), (ulong)VectorAlignment);
 
             public void Dispose()
             {
@@ -170,7 +170,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int LargestVectorSize = {LargestVectorSize};
+        private static readonly int VectorAlignment = (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count);
 
         private static readonly int Op1ElementCount  = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
         private static readonly int Op2ElementCount  = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
@@ -191,7 +191,7 @@ namespace {Namespace}
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp1}; }
             for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
 
-            _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], _maskData, LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], _maskData, VectorAlignment);
         }
 
         public bool IsSupported => Sve.IsSupported;

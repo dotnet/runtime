@@ -1973,7 +1973,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(HttpClientHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MaxConcurrentStreams_LimitEnforced()
         {
-            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options { EnsureThreadSafeIO = true }))
             using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);

@@ -62,7 +62,7 @@ void SimpleRWLock::EnterRead()
             if (spinCount > 0) {
                 YieldProcessorNormalizedForPreSkylakeCount(spinCount);
             }
-            __SwitchToThread(0, ++dwSwitchCount);
+            minipal_switch_to_thread(++dwSwitchCount);
         }
 
         if (TryEnterRead())
@@ -91,7 +91,7 @@ void SimpleRWLock::EnterRead()
         }
         while (i < g_SpinConstants.dwMaximumDuration);
 
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
 }
 
@@ -181,7 +181,7 @@ void SimpleRWLock::EnterWrite()
         }
         while (i < g_SpinConstants.dwMaximumDuration);
 
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
 }
 

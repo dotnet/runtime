@@ -27,8 +27,7 @@ namespace
         { _X("--runtimeconfig"), _X("<path>"), _X("Path to <application>.runtimeconfig.json file.") },
         { _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.") },
         { _X("--roll-forward"), _X("<value>"), _X("Roll forward to framework version (LatestPatch, Minor, LatestMinor, Major, LatestMajor, Disable)") },
-        { _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.") },
-        { _X("--roll-forward-on-no-candidate-fx"), _X("<n>"), _X("<obsolete>") }
+        { _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.") }
     };
     static_assert((sizeof(KnownHostOptions) / sizeof(*KnownHostOptions)) == static_cast<size_t>(known_options::__last), "Invalid host option count");
 
@@ -56,12 +55,6 @@ namespace
             known_opts.push_back(known_options::fx_version);
             known_opts.push_back(known_options::roll_forward);
             known_opts.push_back(known_options::additional_deps);
-
-            if (!for_cli_usage)
-            {
-                // Intentionally leave this one out of for_cli_usage since we don't want to show it in command line help (it's deprecated).
-                known_opts.push_back(known_options::roll_forward_on_no_candidate_fx);
-            }
         }
 
         return known_opts;

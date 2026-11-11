@@ -225,22 +225,15 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
-    QCall::ObjectHandleOnStack target,
-    PVOID* args,
-    QCall::ObjectHandleOnStack pSigUNSAFE,
-    BOOL fConstructor,
-    QCall::ObjectHandleOnStack result,
-    QCallExceptionStatus* qcallError);
-
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
 extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod, QCallExceptionStatus* qcallError);
+extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(MethodDesc* pMethod, QCall::TypeHandle declaringType, QCall::ObjectHandleOnStack target, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod, QCallExceptionStatus* qcallError);
 extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation, QCallExceptionStatus* qcallError);
-extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod, QCallExceptionStatus* qcallError);
+extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetDiagnosticCodeStart(MethodDesc* pMethod, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 
 class RuntimeFieldHandle
@@ -280,7 +273,7 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule,
 
 extern "C" void QCALLTYPE ModuleHandle_GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPEKind, DWORD* pdwMachine, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, BOOL isDiagnosticsHidden, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
 
 class AssemblyHandle
 {

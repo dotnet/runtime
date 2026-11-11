@@ -162,6 +162,75 @@ namespace System.Linq.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ThenBy_AsynchronousKeySelector_MatchesEnumerable(bool descending, bool thirdLevel)
+        {
+            TaskCompletionSource<bool> gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            IOrderedAsyncEnumerable<int> source = new[] { 2, 1 }.ToAsyncEnumerable().OrderBy(i => 0);
+            if (thirdLevel)
+            {
+                source = source.ThenBy(i => 0);
+            }
+
+            Func<int, CancellationToken, ValueTask<int>> keySelector = async (i, ct) =>
+            {
+                await gate.Task;
+                return i;
+            };
+
+            IOrderedAsyncEnumerable<int> ordered = descending ?
+                source.ThenByDescending(keySelector) :
+                source.ThenBy(keySelector);
+
+            Task<int[]> result = ordered.ToArrayAsync().AsTask();
+            gate.SetResult(true);
+
+            Assert.Equal(descending ? new[] { 2, 1 } : new[] { 1, 2 }, await result);
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task ThenBy_KeySelectorThrows_PropagatesException(bool descending, bool thirdLevel, bool suspend)
+        {
+            TaskCompletionSource<bool> gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            FormatException exception = new("Key selector failed.");
+            IOrderedAsyncEnumerable<int> source = new[] { 2, 1 }.ToAsyncEnumerable().OrderBy(i => i);
+            if (thirdLevel)
+            {
+                source = source.ThenBy(i => i);
+            }
+
+            Func<int, CancellationToken, ValueTask<int>> keySelector = async (i, ct) =>
+            {
+                if (suspend)
+                {
+                    await gate.Task;
+                }
+
+                throw exception;
+            };
+
+            IOrderedAsyncEnumerable<int> ordered = descending ?
+                source.ThenByDescending(keySelector) :
+                source.ThenBy(keySelector);
+
+            Task<int[]> result = ordered.ToArrayAsync().AsTask();
+            gate.SetResult(true);
+
+            Assert.Same(exception, await Assert.ThrowsAsync<FormatException>(() => result));
+        }
+
         [Fact]
         public async Task Cancellation_Cancels()
         {

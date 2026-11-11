@@ -273,13 +273,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void ComputedTPA_NoTrailingPathSeparator()
+        public void AppDirectoryContainsPathSeparator()
         {
-            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
-                .EnableTracingAndCaptureOutputs()
+            // TPA paths going through the runtime property string cannot handle a path with the path separator character.
+            // Going through the host contract (.NET 12+), a path with the path separator character should work properly.
+            TestApp app = sharedTestState.App.Copy();
+            string appDirectory = Path.Combine(app.Location, $"path{Path.PathSeparator}separator");
+            Directory.CreateDirectory(appDirectory);
+            foreach (string file in Directory.GetFiles(app.Location, "*.*", SearchOption.TopDirectoryOnly))
+            {
+                File.Copy(file, Path.Combine(appDirectory, Path.GetFileName(file)));
+            }
+
+            Command.Create(Path.Combine(appDirectory, Path.GetFileName(app.AppExe)))
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture)
+                .CaptureStdOut()
+                .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrMatching($"Property TRUSTED_PLATFORM_ASSEMBLIES = .*[^{Path.PathSeparator}]$", System.Text.RegularExpressions.RegexOptions.Multiline);
+                .And.HaveStdOutContaining("Hello World");
         }
 
         [Theory]

@@ -295,13 +295,6 @@
 #endif
 #endif
 
-// If the UNIX_X86_ABI is defined make sure that TARGET_X86 is also defined.
-#if defined(UNIX_X86_ABI)
-#if !defined(TARGET_X86)
-#error When UNIX_X86_ABI is defined you must define TARGET_X86 defined as well.
-#endif
-#endif
-
 typedef ptrdiff_t ssize_t;
 
 // Include the AMD64 unwind codes when appropriate.

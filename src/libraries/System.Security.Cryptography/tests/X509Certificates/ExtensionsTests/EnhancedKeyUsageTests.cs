@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using Test.Cryptography;
 using Xunit;
 
@@ -67,6 +68,39 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             e.EnhancedKeyUsages.Add(oid1);
             Assert.Equal(0, e.EnhancedKeyUsages.Count);
             Assert.NotSame(e.EnhancedKeyUsages, e.EnhancedKeyUsages);
+        }
+
+        [Fact]
+        public static void EnhancedKeyUsagesIsThreadSafe()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                X509EnhancedKeyUsageExtension ext = new(
+                    new AsnEncodedData("301606082b06010505070301060a2b0601040182370a0301".HexToByteArray()),
+                    critical: false);
+
+                Thread t1 = new(ThreadCallback);
+                Thread t2 = new(ThreadCallback);
+                ExtensionCount state1 = new(ext);
+                ExtensionCount state2 = new(ext);
+                t1.Start(state1);
+                t2.Start(state2);
+                t1.Join();
+                t2.Join();
+                Assert.Equal(2, state1.Count);
+                Assert.Equal(2, state2.Count);
+            }
+
+            static void ThreadCallback(object state)
+            {
+                ExtensionCount s = (ExtensionCount)state;
+                s.Count = s.Extensions.EnhancedKeyUsages.Count;
+            }
+        }
+
+        private sealed record ExtensionCount(X509EnhancedKeyUsageExtension Extensions)
+        {
+            public int Count { get; set; }
         }
 
         private static void EncodeDecode(

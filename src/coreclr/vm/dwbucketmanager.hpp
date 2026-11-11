@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
+// ============================================================================
 // FILE: dwbucketmanager.hpp
 //
 // This file contains the manager types for differents types of Watson buckets
 // and various helper types.
-//
-
-//
-
-//
 // ============================================================================
 
 #ifndef DWBUCKETMANAGER_HPP
@@ -302,7 +298,6 @@ private:
     // misc helper functions
     DWORD GetILOffset();
     bool GetFileVersionInfoForModule(Module* pModule, USHORT& major, USHORT& minor, USHORT& build, USHORT& revision);
-    bool IsCodeContractsFrame(MethodDesc* pMD);
     OBJECTREF GetRealExceptionObject();
     WCHAR* GetParamBufferForIndex(BucketParameterIndex paramIndex);
     void LogParam(_In_z_ LPCWSTR paramValue, BucketParameterIndex paramIndex);
@@ -550,12 +545,13 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
         // Get the assembly name, and determine its length, including terminating NULL.
         Assembly* pAssembly = pModule->GetAssembly();
         LPCUTF8 utf8AssemblyName = pAssembly->GetSimpleName();
-        const int assemblyNameLength = MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, NULL, 0);
+        const size_t utf8AssemblyNameLength = strlen(utf8AssemblyName) + 1;
+        const size_t assemblyNameLength = minipal_get_length_utf8_to_utf16(utf8AssemblyName, utf8AssemblyNameLength, 0);
 
         // Allocate a buffer and convert assembly name - multi-module assemblies are no longer supported.
-        int fullNameLength = assemblyNameLength;
+        size_t fullNameLength = assemblyNameLength;
         WCHAR *fullName = reinterpret_cast< WCHAR* >(_alloca(sizeof(WCHAR)*(fullNameLength)));
-        MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, fullNameLength);
+        minipal_convert_utf8_to_utf16(utf8AssemblyName, utf8AssemblyNameLength, (CHAR16_T*)fullName, fullNameLength, 0);
 
         if (!failed)
         {
@@ -883,40 +879,6 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
     }
 
     return succeeded;
-}
-
-// attempts to determine if the specified MethodDesc is one of the code contracts methods.
-// this is defined as any method on the System.Diagnostics.Contracts.__ContractsRuntime type.
-bool BaseBucketParamsManager::IsCodeContractsFrame(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(pMD != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!pMD)
-        return false;
-
-    MethodTable* pMT = pMD->GetMethodTable();
-    LPCUTF8 pszNamespace = NULL;
-    LPCUTF8 pszName = NULL;
-    pszName = pMT->GetFullyQualifiedNameInfo(&pszNamespace);
-
-    if (!pszName || !pszNamespace)
-        return false;
-
-    LPCUTF8 pszContractsNamespace = "System.Diagnostics.Contracts";
-    LPCUTF8 pszContractsRuntimeType = "__ContractsRuntime";
-
-    if (strcmp(pszNamespace, pszContractsNamespace) == 0 &&
-        strcmp(pszName, pszContractsRuntimeType) == 0)
-        return true;
-
-    return false;
 }
 
 // gets the "real" exception object.  it might be m_pException or the exception object on the thread

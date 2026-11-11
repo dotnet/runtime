@@ -2069,7 +2069,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 
 //------------------------------------------------------------------------
 // VNIgnoreIntToLongCast: Looks through a sign-extending int-to-long cast
-//    or convert long-typed integral constants to int.
+//    or converts non-handle long-typed integral constants to int.
 //
 // Arguments:
 //    vn - The value number to inspect.
@@ -2077,7 +2077,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 // Return Value:
 //    The value number of the original TYP_INT operand if 'vn' is a VNF_Cast
 //    that sign-extends a TYP_INT to TYP_LONG; or the value number of a TYP_INT
-//    constant if 'vn' is a TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
+//    constant if 'vn' is a non-handle TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
 //
 ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
 {
@@ -2099,7 +2099,7 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
             }
         }
 
-        // Also look through any long-typed integral constant that fits in an int.
+        // Also look through any non-handle long-typed integral constant that fits in an int.
         int intCns;
         if (IsVNIntegralConstant(vn, &intCns))
         {
@@ -4936,6 +4936,10 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+            case GT_GT:
+            case GT_GE:
+            case GT_LT:
+            case GT_LE:
                 if (m_compiler->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
                 {
                     return false;
@@ -4944,10 +4948,6 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
 
             case GT_EQ:
             case GT_NE:
-            case GT_GT:
-            case GT_GE:
-            case GT_LT:
-            case GT_LE:
                 break;
 
             default:
@@ -7227,7 +7227,7 @@ bool ValueNumStore::IsVNLog2(ValueNum vn, int* upperBound)
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
-        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
+        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)) || IsVNHandle(vn))
         {
             return VNVisit::Abort;
         }
@@ -13496,6 +13496,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // An untracked local, and other odd cases.
                     lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
                 }
+
+                // Treat Span lengths like array lengths: comparisons against them are worth analyzing.
+                if (varDsc->IsNeverNegative() && lcl->TypeIs(TYP_INT))
+                {
+                    ValueNum lenVN = vnStore->VNConservativeNormalValue(lcl->gtVNPair);
+                    if (!vnStore->IsVNConstant(lenVN))
+                    {
+                        vnStore->SetVNIsCheckedBound(lenVN);
+                    }
+                }
             }
             break;
 
@@ -14401,6 +14411,18 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
             }
         }
+    }
+
+    // Vector division can throw both arithmetic overflow, if signed, and divide by zero exceptions
+    if (intrinsicId == NI_Vector_op_Division)
+    {
+        assert(opCount == 2);
+        assert(varTypeIsInt(tree->GetSimdBaseType()));
+
+        genTreeOps   oper = varTypeIsSigned(tree->GetSimdBaseType()) ? GT_DIV : GT_UDIV;
+        ValueNumPair divisionExc =
+            fgValueNumberDivisionExceptions(oper, tree->Op(1), tree->Op(2), tree->GetSimdBaseType());
+        excSetPair = vnStore->VNPExcSetUnion(excSetPair, divisionExc);
     }
 
     // Some intrinsics should always be unique
@@ -15379,6 +15401,12 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             vnf = VNF_GetdynamicNongcthreadstaticBase;
             break;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            vnf = VNF_GetdynamicGcthreadstaticBaseOptimized;
+            break;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseOptimized;
+            break;
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetdynamicGcthreadstaticBaseNoctor;
             break;
@@ -15489,6 +15517,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_GVMLookupForSlot;
             break;
 
+        case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            vnf = VNF_InterfaceLookupForSlot;
+            break;
+
         case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
             vnf = VNF_ReadyToRunVirtualFuncPtr;
             break;
@@ -15546,8 +15578,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
     bool pure        = s_helperCallProperties.IsPure(helpFunc);
     bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
-    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc);
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
+    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc) || mayRunCctor; // a cctor may modify the heap
     bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
@@ -15636,9 +15668,11 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
-                // These take ThreadStaticInfo as parameters.
+                // These take ThreadStaticInfo or a thread static block index as parameters.
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_ThreadClassInitExc,
                                            vnStore->VNPNormalPair(
@@ -15668,6 +15702,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
             case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                 vnpExc = fgValueNumberIndirNullCheckExceptions(call->gtArgs.GetThisArg()->GetNode());
                 break;
 
@@ -15697,15 +15732,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         {
             VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
 
-            if (mayRunCctor)
-            {
-                if ((call->gtFlags & GTF_CALL_HOISTABLE) == 0)
-                {
-                    modHeap = true;
-                }
-            }
-
-            if (isAlloc && ((call->gtCallMoreFlags & GTF_CALL_M_STACK_ARRAY) != 0))
+            if (isAlloc && (call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal) != nullptr))
             {
                 if (vnf == VNF_JitNewArr)
                 {
@@ -15860,14 +15887,18 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
 //   Compute exception set for a division operation
 //
 // Arguments:
-//    oper - Division operation (signed/unsigned division/modulo)
-//    dividend - Tree representing dividend
-//    divisor  - Tree representing divisor
+//    oper         - Division operation (signed/unsigned division/modulo)
+//    dividend     - Tree representing dividend
+//    divisor      - Tree representing divisor
+//    simdBaseType - SIMD base type, or TYP_UNDEF for scalar division
 //
 // Return Value:
 //    VNP representing exception set
 //
-ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor)
+ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper,
+                                                       GenTree*   dividend,
+                                                       GenTree*   divisor,
+                                                       var_types  simdBaseType)
 {
     // A Divide By Zero exception may be possible.
     //
@@ -15877,8 +15908,11 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     bool needArithmeticExcLib   = !isUnsignedOper; // Overflow isn't possible for unsigned divide
     bool needArithmeticExcCon   = !isUnsignedOper;
 
+    bool isSimdOper = simdBaseType != TYP_UNDEF;
+    assert(isSimdOper == varTypeIsSIMD(dividend));
+
     // Determine if we have a 32-bit or 64-bit divide operation
-    var_types typ = genActualType(dividend);
+    var_types typ = isSimdOper ? genActualType(simdBaseType) : genActualType(dividend);
     assert((typ == TYP_INT) || (typ == TYP_LONG));
 
     // Retrieve the Norm VN for divisor to use it for the DivideByZeroExc
@@ -15886,7 +15920,29 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     ValueNum     vnDivisorNormLib = vnpDisivorNorm.GetLiberal();
     ValueNum     vnDivisorNormCon = vnpDisivorNorm.GetConservative();
 
-    if (typ == TYP_INT)
+#if defined(FEATURE_SIMD)
+    if (isSimdOper && !varTypeHasUnknownSize(dividend))
+    {
+        unsigned simdSize = genTypeSize(dividend);
+
+        // DivideByZero exception unneeded for simd if constant divisor has all nonzero lanes
+        // Arithmetic exception unneeded if constant divisor has all lanes not equal to -1
+        if (vnStore->IsVNConstant(vnDivisorNormLib))
+        {
+            simd_t simdValue       = vnStore->GetConstantSimd(vnDivisorNormLib);
+            needDivideByZeroExcLib = SimdConstantContains(simdBaseType, simdValue, simdSize, 0);
+            needArithmeticExcLib = needArithmeticExcLib && SimdConstantContains(simdBaseType, simdValue, simdSize, -1);
+        }
+        if (vnStore->IsVNConstant(vnDivisorNormCon))
+        {
+            simd_t simdValue       = vnStore->GetConstantSimd(vnDivisorNormCon);
+            needDivideByZeroExcCon = SimdConstantContains(simdBaseType, simdValue, simdSize, 0);
+            needArithmeticExcCon = needArithmeticExcCon && SimdConstantContains(simdBaseType, simdValue, simdSize, -1);
+        }
+    }
+#endif // FEATURE_SIMD
+
+    if (!isSimdOper && (typ == TYP_INT))
     {
         if (vnStore->IsVNConstant(vnDivisorNormLib))
         {
@@ -15913,7 +15969,7 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
             }
         }
     }
-    else // (typ == TYP_LONG)
+    else if (!isSimdOper) // (typ == TYP_LONG)
     {
         if (vnStore->IsVNConstant(vnDivisorNormLib))
         {
@@ -15946,7 +16002,26 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     ValueNum     vnDividendNormLib = vnpDividendNorm.GetLiberal();
     ValueNum     vnDividendNormCon = vnpDividendNorm.GetConservative();
 
-    if (needArithmeticExcLib || needArithmeticExcCon)
+#if defined(FEATURE_SIMD)
+    if (isSimdOper && !varTypeHasUnknownSize(dividend))
+    {
+        unsigned simdSize = genTypeSize(dividend);
+        INT64    minValue = (typ == TYP_INT) ? INT32_MIN : INT64_MIN;
+
+        if (needArithmeticExcLib && vnStore->IsVNConstant(vnDividendNormLib))
+        {
+            simd_t simdValue     = vnStore->GetConstantSimd(vnDividendNormLib);
+            needArithmeticExcLib = SimdConstantContains(simdBaseType, simdValue, simdSize, minValue);
+        }
+        if (needArithmeticExcCon && vnStore->IsVNConstant(vnDividendNormCon))
+        {
+            simd_t simdValue     = vnStore->GetConstantSimd(vnDividendNormCon);
+            needArithmeticExcCon = SimdConstantContains(simdBaseType, simdValue, simdSize, minValue);
+        }
+    }
+#endif // FEATURE_SIMD
+
+    if (!isSimdOper && (needArithmeticExcLib || needArithmeticExcCon))
     {
         if (typ == TYP_INT)
         {
@@ -16214,6 +16289,16 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_INTRINSIC:
+                if (tree->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_Log2)
+                {
+                    // The signed Log2 fallback throws ArgumentOutOfRangeException for negative inputs.
+                    ValueNumPair excSet = vnStore->VNPExcSetSingleton(
+                        vnStore->VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc,
+                                               vnStore->VNPairForExpr(compCurBB, TYP_I_IMPL)));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSet);
+                    break;
+                }
+
                 assert(tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIntrinsic()->gtGetOp1());
                 break;

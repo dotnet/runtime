@@ -361,6 +361,9 @@ public class AssetsData
 
     [DataMember(EmitDefaultValue = false)]
     public List<VfsAsset> vfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<AppSettings> appsettings { get; set; }
 }
 
 [DataContract]
@@ -415,6 +418,14 @@ public class WebcilAsset : GeneralAsset
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public int? payloadSize { get; set; }
+
+    /// <summary>
+    /// Set on the composite ReadyToRun owner image. It holds native code for its component assemblies
+    /// but is not itself a managed assembly: the loader keeps its <c>.wasm</c> virtual path (component
+    /// stubs probe for it by that name) and excludes it from the trusted platform assemblies.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? isCompositeImage { get; set; }
 }
 
 [DataContract]
@@ -425,6 +436,12 @@ public class VfsAsset
     public string hash { get; set; }
     public string resolvedUrl { get; set; }
     public string cache { get; set; }
+}
+
+[DataContract]
+public class AppSettings : VfsAsset
+{
+    public bool loadIntoVfs { get; set; }
 }
 
 public enum GlobalizationMode : int

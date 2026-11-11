@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System;
 using System.Collections.Immutable;
 using System.Threading;
@@ -22,6 +22,7 @@ namespace ILLink.RoslynAnalyzer
     {
         public const string PointerSignatureProperty = nameof(PointerSignatureProperty);
         public const string RequiresExplicitSafetyModifierProperty = nameof(RequiresExplicitSafetyModifierProperty);
+        public const string ContainsInactiveUnsafeCodeProperty = nameof(ContainsInactiveUnsafeCodeProperty);
 
         private static readonly DiagnosticDescriptor s_rule =
             DiagnosticDescriptors.GetDiagnosticDescriptor(
@@ -78,9 +79,14 @@ namespace ILLink.RoslynAnalyzer
                 // Pointer signatures were caller-unsafe under the legacy rules, so the fixer must retain unsafe.
                 if (UnsafeMigrationAnalyzerHelpers.HasPointerOrFunctionPointerSignature(symbol))
                     properties = properties.Add(PointerSignatureProperty, bool.TrueString);
-                // Explicit and extended layouts still require an explicit safe/unsafe marker after migration.
+                // Extern and LibraryImport methods, and fields in explicit, extended, packed and sized layouts, must keep an
+                // explicit safe/unsafe marker after migration.
                 if (UnsafeMigrationAnalyzerHelpers.RequiresExplicitSafetyModifier(declaration, symbol))
                     properties = properties.Add(RequiresExplicitSafetyModifierProperty, bool.TrueString);
+                // Pointer operations in an inactive #if branch may rely on the lexical unsafe context of the modifier in
+                // another configuration, or in another assembly compiling the same file, and can't be checked here.
+                if (UnsafeMigrationSyntaxHelpers.ContainsInactiveUnsafeCode(declaration))
+                    properties = properties.Add(ContainsInactiveUnsafeCodeProperty, bool.TrueString);
 
                 reportDiagnostic(Diagnostic.Create(
                     s_rule,

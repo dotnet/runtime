@@ -208,13 +208,13 @@ Disp::OpenRawScope(
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(pMeta);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 
 ErrExit:
@@ -291,13 +291,13 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(pMeta);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 ErrExit:
     if (FAILED(hr))
@@ -629,11 +629,12 @@ Disp::SetOption(
         }
         else
         {
-            INT32 len = WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, NULL, 0, NULL, NULL);
+            size_t cchVersion = u16_strlen(V_BSTR(pvalue)) + 1;
+            size_t len = minipal_get_length_utf16_to_utf8((const CHAR16_T*)V_BSTR(pvalue), cchVersion, 0);
             m_OptionValue.m_RuntimeVersion = new (nothrow) char[len];
             if (m_OptionValue.m_RuntimeVersion == NULL)
             IfFailGo(E_INVALIDARG);
-            WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, m_OptionValue.m_RuntimeVersion, len, NULL, NULL);
+            minipal_convert_utf16_to_utf8((const CHAR16_T*)V_BSTR(pvalue), cchVersion, m_OptionValue.m_RuntimeVersion, len, 0);
         }
     }
     else if (optionid == MetaDataInitialSize)

@@ -103,7 +103,7 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(stream2))
             using (var certificate = Configuration.Certificates.GetServerCertificate())
             {
-                Name = "incorrectServer";
+                Name = $"incorrectServer-{Guid.NewGuid():N}";
                 Task t1 = client.AuthenticateAsClientAsync(Name);
                 Task t2 = server.AuthenticateAsServerAsync(certificate);
 

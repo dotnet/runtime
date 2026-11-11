@@ -9,14 +9,12 @@ using namespace System::Runtime::Loader;
 
 public ref class ManagedClass
 {
-private:
-    static int s_count = 0;
 public:
     static void Print()
     {
         Assembly^ assembly = Assembly::GetExecutingAssembly();
         AssemblyLoadContext^ alc = AssemblyLoadContext::GetLoadContext(assembly);
-        Console::WriteLine("[C++/CLI] ManagedClass: AssemblyLoadContext = " + alc->ToString());
+        Console::WriteLine("[C++/CLI] " + assembly->GetName()->Name + ": AssemblyLoadContext = " + alc->ToString());
     }
 };
 

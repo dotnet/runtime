@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
         // .NET does not support AllowOnlyFipsAlgorithms
         public static bool AllowOnlyFipsAlgorithms => false;
 
-#if !BROWSER
+#if !BROWSER && !WASI
         private const string AssemblyName_Pkcs = "System.Security.Cryptography.Pkcs";
 
         private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
@@ -307,7 +307,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static void AddAlgorithm(Type algorithm, params string[] names)
         {
-#if BROWSER
+#if BROWSER || WASI
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
             ArgumentNullException.ThrowIfNull(algorithm);
@@ -338,7 +338,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(name);
 
-#if BROWSER
+#if BROWSER || WASI
             switch (name)
             {
 #pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
@@ -516,7 +516,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static void AddOID(string oid, params string[] names)
         {
-#if BROWSER
+#if BROWSER || WASI
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
             ArgumentNullException.ThrowIfNull(oid);
@@ -543,7 +543,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static string? MapNameToOID(string name)
         {
-#if BROWSER
+#if BROWSER || WASI
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
             ArgumentNullException.ThrowIfNull(name);
@@ -568,7 +568,7 @@ namespace System.Security.Cryptography
         [Obsolete(Obsoletions.CryptoConfigEncodeOIDMessage, DiagnosticId = Obsoletions.CryptoConfigEncodeOIDDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static byte[] EncodeOID(string str)
         {
-#if BROWSER
+#if BROWSER || WASI
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
             ArgumentNullException.ThrowIfNull(str);
@@ -618,7 +618,7 @@ namespace System.Security.Cryptography
 #endif
         }
 
-#if !BROWSER
+#if !BROWSER && !WASI
         private static void EncodeSingleOidNum(uint value, byte[]? destination, ref int index)
         {
             // Write directly to destination starting at index, and update index based on how many bytes written.

@@ -201,6 +201,12 @@ bool Compiler::optCopyProp(
             continue;
         }
 
+        // Avoid having to DNER an otherwise enregisterable local
+        if (tree->OperIs(GT_LCL_FLD) && !newLclVarDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
         if (varDsc->lvOnlyUsedOnSynchronousPath || newLclVarDsc->lvOnlyUsedOnSynchronousPath)
         {
             // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
@@ -265,6 +271,10 @@ bool Compiler::optCopyProp(
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
+        if (newLclVarDsc->RequiresGlobRefFlag())
+        {
+            tree->gtFlags |= GTF_GLOB_REF;
+        }
 
         // Update VN to match, and propagate up through any enclosing commas.
         // (we could in principle try updating through other parents, but

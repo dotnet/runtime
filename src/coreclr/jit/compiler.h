@@ -770,6 +770,16 @@ public:
         return m_addrExposed;
     }
 
+    bool RequiresGlobRefFlag() const
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        // Copy-omission candidates must be ordered before their addresses escape.
+        return IsAddressExposed() || lvIsLastUseCopyOmissionCandidate;
+#else
+        return IsAddressExposed();
+#endif // FEATURE_IMPLICIT_BYREFS
+    }
+
 #ifdef DEBUG
     void SetDefinedViaAddress(char value)
     {
@@ -1045,13 +1055,17 @@ private:
 public:
     int GetStackOffset() const
     {
-        assert(lvValueSize().IsExact());
+        assert(lvValueSize().IsExact() || lvIsOSRLocal);
         return lvStkOffs;
     }
 
     void SetStackOffset(int offset)
     {
-        assert(lvValueSize().IsExact());
+        // If the local is a vector or a mask and has unknown size, we have to deal with VL
+        // scaled offsets and shouldn't be using this function. There is an exception for OSR
+        // locals, because OSR is a JIT only feature. We can derive an exact offset in this
+        // situation.
+        assert(lvValueSize().IsExact() || lvIsOSRLocal);
         lvStkOffs = offset;
     }
 
@@ -1146,7 +1160,7 @@ public:
     ClassLayout* GetLayout() const
     {
 #if FEATURE_IMPLICIT_BYREFS
-        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_BYREF)));
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_I_IMPL, TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
 #endif
@@ -1809,6 +1823,21 @@ constexpr unsigned ROOT_FUNC_IDX = 0;
 
 class emitLocation;
 
+#if defined(TARGET_AMD64)
+// Unwind Information V3 for a function or funclet. Like the V1 codes in FuncInfoDsc, the prolog
+// WODs and their IP offsets are filled from the end of their arrays backwards, which leaves them
+// in the reverse execution order V3 requires. Maximum of 31 prolog WODs, each at most the size of
+// WOD_ALLOC_HUGE; the JIT emits at most 24 (see "Limits" in unwindamd64.cpp).
+struct UnwindInfoV3
+{
+    UNWIND_INFO_V3 header;
+    BYTE           wods[UNWIND_INFO_V3_MAX_OPS * sizeof(WOD_ALLOC_HUGE)];
+    unsigned       wodSlot;
+    BYTE           ipOffsets[UNWIND_INFO_V3_MAX_OPS];
+    unsigned       ipOffsetSlot;
+};
+#endif // TARGET_AMD64
+
 struct FuncInfoDsc
 {
     FuncKind       funKind;
@@ -1862,6 +1891,9 @@ struct FuncInfoDsc
     // number of codes, the VM or Zapper will 4-byte align the whole thing.
     BYTE     unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF * sizeof(UNWIND_CODE))];
     unsigned unwindCodeSlot;
+
+    // Unwind Information V3, allocated by unwindBegPrologV3; nullptr unless V3 is used.
+    UnwindInfoV3* unwindV3;
 
 #elif defined(TARGET_X86)
 
@@ -3259,11 +3291,9 @@ public:
     // empty BB's when necessary:
     //   * No block is both the first block of a handler and the first block of a try.
     //   * No block is the first block of multiple 'try' regions.
-    //   * No block is the last block of multiple EH regions.
     void fgNormalizeEH();
     bool fgNormalizeEHCase1();
     bool fgNormalizeEHCase2();
-    bool fgNormalizeEHCase3();
 
     bool fgCreateFiltersForGenericExceptions();
 
@@ -3328,6 +3358,12 @@ public:
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
 
+    GenTree* gtNewValueSize(ValueSize size, var_types type);
+
+#ifdef FEATURE_SIMD
+    GenTree* gtNewVectorTSizeNode(var_types type);
+#endif
+
     GenTreeILOffset* gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset));
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
@@ -3371,6 +3407,8 @@ public:
     GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
 #if defined(TARGET_ARM64)
     GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(float value);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(double value);
 
     inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
     {
@@ -4337,8 +4375,8 @@ public:
     ABIPassingInformation* lvaParameterPassingInfo = nullptr;
     unsigned lvaParameterStackSize = 0;
 
-    unsigned lvaTrackedCount;             // actual # of locals being tracked
-    unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
+    unsigned lvaTrackedCount             = 0; // actual # of locals being tracked
+    unsigned lvaTrackedCountInSizeTUnits = 0; // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
 #ifdef DEBUG
     VARSET_TP lvaTrackedVars; // set of tracked variables
@@ -4393,8 +4431,9 @@ public:
 
 #if defined(TARGET_WASM)
     unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+    unsigned lvaWasmPortableEntryPointArg = BAD_VAR_NUM; // lcl var index of the incoming portable entrypoint
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
-    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
+    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm frame identity slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
 
     struct WasmSpillSlot
@@ -4404,6 +4443,7 @@ public:
         bool     inUse;
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
+    BitVec* m_wasmGCRefCandidates = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -4748,6 +4788,15 @@ public:
             return GetOffset((unsigned)tmpDsc->tdTempOffs(), tmpDsc->tdTempType() == TYP_MASK);
         }
 
+        // When the VL is known at compile-time (JIT mode), we can determine the absolute
+        // offset relative to the initial state of SP after the prolog.
+        int GetExactOffset(LclVarDsc* varDsc, unsigned vl)
+        {
+            assert(isPow2(vl) && (vl >= MIN_SVE_REGSIZE_BYTES) && (vl <= MAX_SVE_REGSIZE_BYTES));
+            int scale = varDsc->TypeIs(TYP_MASK) ? vl / 8 : vl;
+            return GetAddressingOffset(varDsc) * scale;
+        }
+
         // This system ensures we don't try and generate an address on the frame
         // without finishing all allocations.
         void Finalize()
@@ -4864,6 +4913,28 @@ public:
 #endif
     }
 
+    //----------------------------------------------------------------------------------
+    // lvaIsLocalOnUnknownSizeFrame: Is this local allocated on the UnknownSizeFrame,
+    //                               instead of in traditional stack memory?
+    //
+    // If `varTypeHasUnknownSize(lclType) == true`, the local should be allocated on
+    // UnknownSizeFrame. There are some exceptions however:
+    //  1. If the local is a field of a dependently promoted structure, that structure
+    //     will be placed on the original stack frame.
+    //  2. If the local is an OSR local, it will be placed on the traditional stack
+    //     frame, and have an exact virtual address assigned.
+    //
+    // TODO-SVE: Situation 1 is inherently not VL-agnostic, and needs to be handled
+    //           with VL-agnostic struct layouts.
+    //
+    // Returns:
+    //     True if the local has a stack home on the UnknownSizeFrame.
+    bool lvaLocalIsOnUnknownSizeFrame(unsigned varNum)
+    {
+        return lvaIsUnknownSizeLocal(varNum)
+        && !lvaIsOSRLocal(varNum) && !lvaIsFieldOfDependentlyPromotedStruct(lvaGetDesc(varNum));
+    }
+
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
     unsigned lvaGrabTemp(bool shortLifetime DEBUGARG(const char* reason));
@@ -4905,7 +4976,8 @@ public:
 
     bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 
-    bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    bool      lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    var_types lvaGetImplicitByRefParamType();
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
@@ -5184,7 +5256,7 @@ public:
 #endif // defined(DEBUG)
     );
 
-    bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
+    void impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
     {
@@ -5596,15 +5668,13 @@ public:
     GenTree* impNormStructVal(GenTree* structVal, unsigned curLevel);
 
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                              bool*                   pRuntimeLookup    = nullptr,
-                              bool                    mustRestoreHandle = false,
-                              bool                    importParent      = false);
+                              bool*                   pRuntimeLookup = nullptr,
+                              bool                    importParent   = false);
 
     GenTree* impParentClassTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                         bool*                   pRuntimeLookup    = nullptr,
-                                         bool                    mustRestoreHandle = false)
+                                         bool*                   pRuntimeLookup = nullptr)
     {
-        return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
+        return impTokenToHandle(pResolvedToken, pRuntimeLookup, true);
     }
 
     GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
@@ -6244,10 +6314,6 @@ public:
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
 
-#ifdef DEBUG
-    void fgPostGlobalMorphChecks();
-#endif
-
     void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool allowFGChange = true, bool invalidateDFSTreeOnFGChange = true);
@@ -6645,7 +6711,10 @@ public:
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
     // Compute exceptions for a division operation
-    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor);
+    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper,
+                                                 GenTree*   dividend,
+                                                 GenTree*   divisor,
+                                                 var_types  simdBaseType = TYP_UNDEF);
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
@@ -6994,7 +7063,9 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
+    PhaseStatus fgWasmProfInstrument();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
@@ -7074,7 +7145,7 @@ public:
 
     void fgDebugCheckType(GenTree* node);
     void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
-    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
+    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);
@@ -7308,7 +7379,6 @@ private:
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
     bool fgAddrCouldBeHeap(GenTree* addr);
-    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphFieldAddr(GenTree* tree);
@@ -7430,6 +7500,7 @@ public:
     void fgAsyncLiveness();
     void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
+    PhaseStatus fgLateLiveness();
 
     void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
@@ -7804,7 +7875,6 @@ protected:
 
     void optScaleLoopBlocks(FlowGraphNaturalLoop* loop);
 
-    bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
     bool optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** ppIncr);
 
@@ -7993,6 +8063,9 @@ protected:
     void     optValnumCSE_Init();
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
+#ifdef TARGET_XARCH
+    void optValnumCSE_ScreenMemoryUpdates();
+#endif
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
@@ -9167,7 +9240,7 @@ public:
             return dsc;
         }
 
-        // Create an exact-type or sub-type assertion: objVN is (exactly of | subtype of) typeHndVN
+        // Create an exact-type or sub-type assertion about a non-null object.
         static AssertionDsc CreateSubtype(const Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
         {
             assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));
@@ -9182,23 +9255,23 @@ public:
             return dsc;
         }
 
-        // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
-        // Effectively, this means "idxVN is in range [0, lenVN)".
-        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        // Create a no-throw bounds check assertion: idxVN u< lenVN
+        // When lenVN is never negative, this means "idxVN is in range [0, lenVN)".
+        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp,
+                                                ValueNum        idxVN,
+                                                ValueNum        lenVN,
+                                                bool            isLenNeverNegative)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc    = CreateEmptyAssertion(comp);
-            dsc.m_assertionKind = OAK_LT_UN;
-            dsc.m_op1.m_kind    = O1K_VN;
-            dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn      = lenVN;
-
-            // Normally, the VN of an O2K_VN_ADD_CNS assertion isn't proven non-negative, but
-            // in this particular case we know it is (it's a length).
-            dsc.m_op2.m_isVNNeverNegative = true;
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = OAK_LT_UN;
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = idxVN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = lenVN;
+            dsc.m_op2.m_isVNNeverNegative = isLenNeverNegative;
             dsc.m_op2.m_icon.m_iconVal    = 0;
             return dsc;
         }
@@ -9279,6 +9352,7 @@ protected:
     VNSet*         optAssertionVNsMap = nullptr;
     AssertionIndex optAssertionCount  = 0; // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    AssertionIndex optAssertionTabCapacity;
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
@@ -9341,7 +9415,6 @@ public:
     bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
     bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
-    AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
         optOp1Kind op1Kind, unsigned lclNum, optOp2Kind op2Kind, ssize_t cnsVal, ASSERT_VALARG_TP assertions);
 
@@ -9378,6 +9451,8 @@ public:
                                           Statement*       stmt,
                                           BasicBlock*      block);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    bool     optIsNeverNegativeCheckedBound(ValueNum vn, ASSERT_VALARG_TP assertions);
+    ValueNum optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP assertions);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
@@ -9556,7 +9631,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
-    bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsByRefLike(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
@@ -10160,6 +10235,14 @@ private:
     void unwindAllocStackWindows(unsigned size);
     void unwindSetFrameRegWindows(regNumber reg, unsigned offset);
     void unwindSaveRegWindows(regNumber reg, unsigned offset);
+
+    void  unwindBegPrologV3();
+    BYTE* unwindAllocWodV3(FuncInfoDsc* func, unsigned size);
+    void  unwindPushV3(regNumber reg);
+    void  unwindPush2V3(regNumber reg1, regNumber reg2);
+    void  unwindAllocStackV3(unsigned size);
+    void  unwindSetFrameRegV3(regNumber reg, unsigned offset);
+    void  unwindSaveRegV3(regNumber reg, unsigned offset);
 
 #ifdef UNIX_AMD64_ABI
     void unwindSaveRegCFI(regNumber reg, unsigned offset);
@@ -10912,7 +10995,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {
@@ -12180,20 +12263,11 @@ private:
     class ClassLayoutTable* typGetClassLayoutTable();
 
 public:
-    // Get the layout having the specified layout number.
-    ClassLayout* typGetLayoutByNum(unsigned layoutNum);
-    // Get the layout number of the specified layout.
-    unsigned typGetLayoutNum(ClassLayout* layout);
     // Get the layout for the specified class handle.
     ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
-    // Get the number of a layout for the specified class handle.
-    unsigned     typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
     ClassLayout* typGetCustomLayout(const ClassLayoutBuilder& builder);
-    unsigned     typGetCustomLayoutNum(const ClassLayoutBuilder& builder);
     // Get the layout having the specified size but no class handle.
     ClassLayout* typGetBlkLayout(unsigned blockSize);
-    // Get the number of a layout having the specified size but no class handle.
-    unsigned typGetBlkLayoutNum(unsigned blockSize);
     // Get the layout for the specified array of known length
     ClassLayout* typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length);
 
@@ -12453,11 +12527,6 @@ public:
     VarScopeDsc* compGetNextEnterScope(unsigned offs, bool scan = false);
 
     VarScopeDsc* compGetNextExitScope(unsigned offs, bool scan = false);
-
-    void compProcessScopesUntil(unsigned   offset,
-                                VARSET_TP* inScope,
-                                void (Compiler::*enterScopeFn)(VARSET_TP* inScope, VarScopeDsc*),
-                                void (Compiler::*exitScopeFn)(VARSET_TP* inScope, VarScopeDsc*));
 
 #ifdef DEBUG
     void compDispScopeLists();

@@ -589,7 +589,10 @@ int minipal_getcpufeatures(void)
         result |= ARM64IntrinsicConstants_Sve2;
 
     if (hwCap2 & HWCAP2_SVEAES)
+    {
         result |= ARM64IntrinsicConstants_SveAes;
+        result |= ARM64IntrinsicConstants_SvePmull128;
+    }
 
     if (hwCap2 & HWCAP2_SVESHA3)
         result |= ARM64IntrinsicConstants_SveSha3;
@@ -664,6 +667,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SVE_AES", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_SveAes;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SVE_PMULL128", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_SvePmull128;
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SVE_SHA3", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_SveSha3;
@@ -748,6 +754,7 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_SveAes;
+        result |= ARM64IntrinsicConstants_SvePmull128;
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_SVE_SHA3_INSTRUCTIONS_AVAILABLE))

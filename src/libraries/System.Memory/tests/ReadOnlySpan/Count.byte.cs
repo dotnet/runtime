@@ -166,8 +166,7 @@ namespace System.SpanTests
         [Fact]
         public static void TestAlignmentCount_Byte()
         {
-            byte[] array = new byte[4 * Vector<byte>.Count];
-            Array.Fill(array, (byte)5);
+            byte[] array = Array.CreateFilled<byte>(4 * Vector<byte>.Count, 5);
             for (var i = 0; i < Vector<byte>.Count; i++)
             {
                 var span = new ReadOnlySpan<byte>(array, i, 3 * Vector<byte>.Count);
@@ -181,8 +180,7 @@ namespace System.SpanTests
         [Fact]
         public static void TestAlignmentCount_RosByte()
         {
-            byte[] array = new byte[4 * Vector<byte>.Count];
-            Array.Fill(array, (byte)5);
+            byte[] array = Array.CreateFilled<byte>(4 * Vector<byte>.Count, 5);
             for (var i = 0; i < Vector<byte>.Count; i++)
             {
                 var span = new ReadOnlySpan<byte>(array, i, 3 * Vector<byte>.Count);
@@ -260,10 +258,8 @@ namespace System.SpanTests
         [Fact]
         public static void TestOverlapDoNotCount_RosByte()
         {
-            byte[] a = new byte[10];
-            Array.Fill<byte>(a, 6);
-
-
+            byte[] a = Array.CreateFilled<byte>(10, 6);
+            
             var span = new ReadOnlySpan<byte>(a);
             Assert.Equal(5, span.Count(new byte[] { 6, 6 }));
         }

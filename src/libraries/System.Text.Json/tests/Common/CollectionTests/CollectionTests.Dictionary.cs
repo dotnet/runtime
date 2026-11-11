@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -1156,6 +1157,258 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
 
             await Serializer.DeserializeWrapper("""{"a": "a", "A": "a"}""", t, options); // Assert no throw
+        }
+
+        public static IEnumerable<object[]> ImmutableSortedDictionaryKeyComparerTestData()
+        {
+            (string Json, bool HasDuplicate, int[] Keys, int[] Values)[] scenarios =
+            [
+                ("{}", false, [], []),
+                ("""{"2:0:false":20,"1:0:false":10}""", false, [1, 2], [10, 20]),
+                ("""{"1:1:false":10,"1:2:false":20}""", true, [1], [20]),
+                ("""{"1:1:false":20,"1:2:false":20}""", true, [1], [20]),
+                ("""{"1:1:false":10,"2:2:false":30,"1:1:false":20}""", true, [1, 2], [20, 30]),
+                ("""{"01:1:false":10,"1:1:false":20}""", true, [1], [20]),
+                ("""{"2:2:true":20,"1:1:true":10}""", false, [1, 2], [10, 20]),
+                ("""{"1:1:true":10,"1:2:true":20}""", true, [1], [20]),
+            ];
+
+            foreach ((string json, bool hasDuplicate, int[] keys, int[] values) in scenarios)
+            {
+                foreach (bool? allowDuplicateProperties in new bool?[] { null, true, false })
+                {
+                    yield return [json, allowDuplicateProperties, hasDuplicate, keys, values];
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ImmutableSortedDictionaryKeyComparerTestData))]
+        public async Task DeserializeImmutableSortedDictionaryUsesKeyComparer(
+            string json, bool? allowDuplicateProperties, bool hasDuplicate, int[] expectedKeys, int[] expectedValues)
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            if (allowDuplicateProperties is bool allow)
+            {
+                options.AllowDuplicateProperties = allow;
+            }
+
+            if (hasDuplicate && allowDuplicateProperties is false)
+            {
+                await Assert.ThrowsAsync<JsonException>(() =>
+                    Serializer.DeserializeWrapper<ImmutableSortedDictionary<ComparisonKey, int>>(json, options));
+                return;
+            }
+
+            ImmutableSortedDictionary<ComparisonKey, int> dictionary =
+                await Serializer.DeserializeWrapper<ImmutableSortedDictionary<ComparisonKey, int>>(json, options);
+
+            Assert.Equal(expectedKeys, dictionary.Keys.Select(key => key.ComparisonValue));
+            Assert.Equal(expectedValues, dictionary.Values);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DeserializeNestedImmutableSortedDictionaryUsesKeyComparer(bool allowDuplicateProperties)
+        {
+            const string Json = """{"items":{"2:2:false":[20,21],"1:1:false":[10,11],"1:3:false":[30,31]}}""";
+            JsonSerializerOptions options = new()
+            {
+                AllowDuplicateProperties = allowDuplicateProperties,
+                DefaultBufferSize = 1,
+            };
+
+            if (!allowDuplicateProperties)
+            {
+                await Assert.ThrowsAsync<JsonException>(() =>
+                    Serializer.DeserializeWrapper<Dictionary<string, ImmutableSortedDictionary<ComparisonKey, int[]>>>(Json, options));
+                return;
+            }
+
+            Dictionary<string, ImmutableSortedDictionary<ComparisonKey, int[]>> dictionary =
+                await Serializer.DeserializeWrapper<Dictionary<string, ImmutableSortedDictionary<ComparisonKey, int[]>>>(Json, options);
+
+            Assert.Single(dictionary);
+            ImmutableSortedDictionary<ComparisonKey, int[]> items = dictionary["items"];
+            Assert.Equal(2, items.Count);
+            Assert.Equal(new[] { 30, 31 }, items[new ComparisonKey(1, 3)]);
+            Assert.Equal(new[] { 20, 21 }, items[new ComparisonKey(2, 2)]);
+        }
+
+        public static IEnumerable<object[]> DictionaryKeyComparerTestData()
+        {
+            Type[] dictionaryTypes =
+            [
+                typeof(Dictionary<int, string>),
+                typeof(SortedDictionary<int, string>),
+                typeof(SortedList<int, string>),
+                typeof(ImmutableDictionary<int, string>),
+                typeof(IImmutableDictionary<int, string>),
+                typeof(ImmutableSortedDictionary<int, string>),
+                typeof(IDictionary<int, string>),
+                typeof(IReadOnlyDictionary<int, string>),
+                typeof(ConcurrentDictionary<int, string>),
+            ];
+
+            foreach (Type dictionaryType in dictionaryTypes)
+            {
+                foreach (bool? allowDuplicateProperties in new bool?[] { null, true, false })
+                {
+                    yield return [dictionaryType, allowDuplicateProperties];
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DictionaryKeyComparerTestData))]
+        public async Task DeserializeDictionaryWithAlternateKeyRepresentations(Type dictionaryType, bool? allowDuplicateProperties)
+        {
+            const string Json = """{"1":"first","01":"last"}""";
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            if (allowDuplicateProperties is bool allow)
+            {
+                options.AllowDuplicateProperties = allow;
+            }
+
+            if (allowDuplicateProperties is false)
+            {
+                await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper(Json, dictionaryType, options));
+                return;
+            }
+
+            IReadOnlyDictionary<int, string> dictionary =
+                (IReadOnlyDictionary<int, string>)await Serializer.DeserializeWrapper(Json, dictionaryType, options);
+
+            Assert.Single(dictionary);
+            Assert.Equal("last", dictionary[1]);
+        }
+
+        [Theory]
+        [InlineData(typeof(Dictionary<string, string>), true)]
+        [InlineData(typeof(Dictionary<string, string>), false)]
+        [InlineData(typeof(SortedDictionary<string, string>), true)]
+        [InlineData(typeof(SortedDictionary<string, string>), false)]
+        [InlineData(typeof(Hashtable), true)]
+        [InlineData(typeof(Hashtable), false)]
+        [InlineData(typeof(SortedList), true)]
+        [InlineData(typeof(SortedList), false)]
+        public async Task DeserializeDictionaryUsesCustomKeyComparer(Type dictionaryType, bool allowDuplicateProperties)
+        {
+            const string Json = """{"Key":"first","key":"last"}""";
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == dictionaryType)
+                {
+                    typeInfo.CreateObject = CreateDictionary;
+                }
+            });
+            options.AllowDuplicateProperties = allowDuplicateProperties;
+            options.DefaultBufferSize = 1;
+
+            if (!allowDuplicateProperties)
+            {
+                await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper(Json, dictionaryType, options));
+                return;
+            }
+
+            IDictionary dictionary = (IDictionary)await Serializer.DeserializeWrapper(Json, dictionaryType, options);
+            Assert.Single(dictionary);
+            Assert.Equal("last", dictionary["KEY"].ToString());
+
+            object CreateDictionary()
+            {
+                if (dictionaryType == typeof(Dictionary<string, string>))
+                {
+                    return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                if (dictionaryType == typeof(SortedDictionary<string, string>))
+                {
+                    return new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                if (dictionaryType == typeof(Hashtable))
+                {
+                    return new Hashtable(StringComparer.OrdinalIgnoreCase);
+                }
+
+                return new SortedList(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DeserializeImmutableDictionaryWithNonComparableKeys(bool? allowDuplicateProperties)
+        {
+            const string Json = """{"https://example.test/one":1,"https://example.test/two":2}""";
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            if (allowDuplicateProperties is bool allow)
+            {
+                options.AllowDuplicateProperties = allow;
+            }
+
+            ImmutableDictionary<Uri, int> dictionary = await Serializer.DeserializeWrapper<ImmutableDictionary<Uri, int>>(Json, options);
+            Assert.Equal(2, dictionary.Count);
+            Assert.Equal(1, dictionary[new Uri("https://example.test/one")]);
+            Assert.Equal(2, dictionary[new Uri("https://example.test/two")]);
+
+            IImmutableDictionary<Uri, int> interfaceDictionary = await Serializer.DeserializeWrapper<IImmutableDictionary<Uri, int>>(Json, options);
+            Assert.Equal(2, interfaceDictionary.Count);
+            Assert.Equal(1, interfaceDictionary[new Uri("https://example.test/one")]);
+            Assert.Equal(2, interfaceDictionary[new Uri("https://example.test/two")]);
+        }
+
+        [JsonConverter(typeof(ComparisonKeyConverter))]
+        public readonly struct ComparisonKey : IComparable<ComparisonKey>, IEquatable<ComparisonKey>
+        {
+            public ComparisonKey(int comparisonValue, int equalityValue, bool throwOnHashing = false)
+            {
+                ComparisonValue = comparisonValue;
+                EqualityValue = equalityValue;
+                ThrowOnHashing = throwOnHashing;
+            }
+
+            public int ComparisonValue { get; }
+            public int EqualityValue { get; }
+            public bool ThrowOnHashing { get; }
+
+            public int CompareTo(ComparisonKey other) => ComparisonValue.CompareTo(other.ComparisonValue);
+            public bool Equals(ComparisonKey other) => EqualityValue == other.EqualityValue;
+            public override bool Equals(object? obj) => obj is ComparisonKey other && Equals(other);
+
+            public override int GetHashCode() => ThrowOnHashing
+                ? throw new InvalidOperationException("The sorted dictionary must not hash its keys.")
+                : EqualityValue;
+        }
+
+        public sealed class ComparisonKeyConverter : JsonConverter<ComparisonKey>
+        {
+            public override ComparisonKey Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => Parse(reader.GetString()!);
+
+            public override ComparisonKey ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => Parse(reader.GetString()!);
+
+            public override void Write(Utf8JsonWriter writer, ComparisonKey value, JsonSerializerOptions options)
+                => writer.WriteStringValue(Format(value));
+
+            public override void WriteAsPropertyName(Utf8JsonWriter writer, ComparisonKey value, JsonSerializerOptions options)
+                => writer.WritePropertyName(Format(value));
+
+            private static ComparisonKey Parse(string propertyName)
+            {
+                string[] parts = propertyName.Split(':');
+                return new ComparisonKey(
+                    int.Parse(parts[0], CultureInfo.InvariantCulture),
+                    int.Parse(parts[1], CultureInfo.InvariantCulture),
+                    bool.Parse(parts[2]));
+            }
+
+            private static string Format(ComparisonKey value)
+                => FormattableString.Invariant($"{value.ComparisonValue}:{value.EqualityValue}:{value.ThrowOnHashing}");
         }
 
         public class ClassWithPopulatedDictionaryAndNoSetter

@@ -1729,6 +1729,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+        helperCall->gtFlags |= GTF_GLOB_REF;
     }
 
 #ifdef FEATURE_READYTORUN
@@ -1822,7 +1823,6 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     //
     GenTree* const stackLocalAddr = m_compiler->gtNewLclAddrNode(lclNum, 0);
     newArr->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(stackLocalAddr).WellKnown(WellKnownArg::StackArrayLocal));
-    newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
     // Retype the call result as an unmanaged pointer
     //
@@ -2340,7 +2340,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 }
                 else if (call->IsDelegateInvoke())
                 {
-                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    // Explicit tail calls may use helpers that need the delegate after this frame returns.
+                    if (!call->IsTailPrefixedCall() && (tree == call->gtArgs.GetThisArg()->GetNode()))
                     {
                         JITDUMP("Delegate invoke this...\n");
                         canLclVarEscapeViaParentStack = false;
@@ -3588,6 +3589,30 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                     // they are properly disjoint and things will work out just fine.
                     //
                     JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
+
+                    // Since we are walking in RPO, all appearances assigned to
+                    // earlier candidates have already been seen. The partition
+                    // is unsafe if this definition may reach those appearances
+                    // through a backedge, or if it is on a sibling flow path.
+                    //
+                    for (CloneInfo* const previousInfo : CloneMap::ValueIteration(&m_CloneMap))
+                    {
+                        if (previousInfo->m_local != enumeratorLocal)
+                        {
+                            continue;
+                        }
+
+                        EnumeratorVar* previousEnumeratorVar = nullptr;
+                        bool const     hasDominatingDef =
+                            previousInfo->m_appearanceMap->Lookup(enumeratorLocal, &previousEnumeratorVar) &&
+                            (previousEnumeratorVar->m_def != nullptr) &&
+                            m_compiler->m_domTree->Dominates(previousEnumeratorVar->m_def->m_block, block);
+
+                        if (block->HasFlag(BBF_BACKWARD_JUMP) || !hasDominatingDef)
+                        {
+                            previousInfo->m_hasConflictingRedefinition = true;
+                        }
+                    }
                 }
 
                 // We will query this info if we see CALL(enumeratorLocal)
@@ -3976,6 +4001,12 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     assert(!info->m_checkedCanClone);
     JITDUMP("** Seeing if we can clone to guarantee non-escape under V%02u\n", info->m_local);
     BasicBlock* const allocBlock = info->m_allocBlock;
+
+    if (info->m_hasConflictingRedefinition)
+    {
+        JITDUMP("V%02u has a later definition that may reach its guarded uses\n", info->m_local);
+        return false;
+    }
 
     // Cloning redirects the allocation block's sole outgoing edge to the fast path,
     // so the allocation block must be a block kind that has a single target.

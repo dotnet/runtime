@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <minipal/thread.h>
 
 #ifdef DEBUG
 #define DEBUGNOTRETURN __attribute__((noreturn))
@@ -82,16 +83,7 @@ void SystemNative_Abort(void)
     abort();
 }
 
-// Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
-uint64_t SystemNative_GetUInt64OSThreadId(void)
+uint64_t SystemNative_GetCurrentThreadId(void)
 {
-    assert(false);
-    return 0;
-}
-
-// Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
-// Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
-uint32_t SystemNative_TryGetUInt32OSThreadId(void)
-{
-    return (uint32_t)-1;
+    return minipal_get_current_thread_id();
 }

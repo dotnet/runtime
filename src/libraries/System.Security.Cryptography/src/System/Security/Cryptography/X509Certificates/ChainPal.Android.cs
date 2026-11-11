@@ -141,7 +141,8 @@ namespace System.Security.Cryptography.X509Certificates
 
                     _chainContext = Interop.AndroidCrypto.X509ChainCreateContext(
                         ((AndroidCertificatePal)cert).SafeHandle,
-                        extraCerts);
+                        extraCerts,
+                        useCustomRootTrust);
 
                     if (useCustomRootTrust)
                     {
@@ -186,14 +187,22 @@ namespace System.Security.Cryptography.X509Certificates
                 OidCollection? applicationPolicy,
                 OidCollection? certificatePolicy,
                 X509RevocationMode revocationMode,
-                X509RevocationFlag revocationFlag)
+                X509RevocationFlag revocationFlag,
+                bool useFullTrustStore = false)
             {
                 Debug.Assert(_chainContext != null);
 
                 long timeInMsFromUnixEpoch = new DateTimeOffset(verificationTime).ToUnixTimeMilliseconds();
-                _isValid = Interop.AndroidCrypto.X509ChainBuild(_chainContext, timeInMsFromUnixEpoch);
+                _isValid = Interop.AndroidCrypto.X509ChainBuild(
+                    _chainContext, timeInMsFromUnixEpoch, useFullTrustStore, out bool usedTargetedTrust);
                 if (!_isValid)
                 {
+                    if (usedTargetedTrust)
+                    {
+                        Evaluate(verificationTime, applicationPolicy, certificatePolicy, revocationMode, revocationFlag, useFullTrustStore: true);
+                        return;
+                    }
+
                     // Android always validates name, time, signature, and trusted root.
                     // There is no way bypass that validation and build a path.
                     ChainElements = Array.Empty<X509ChainElement>();
@@ -285,6 +294,19 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 CheckPolicies(certs, applicationPolicy, certificatePolicy, statuses, overallStatus);
+
+                // A usable supplied anchor must not hide a better path through another system root.
+                // Retry on validation, revocation, or managed policy errors before publishing a result.
+                if (usedTargetedTrust && overallStatus.Count > 0)
+                {
+                    foreach (X509Certificate2 certificate in certs)
+                    {
+                        certificate.Dispose();
+                    }
+
+                    Evaluate(verificationTime, applicationPolicy, certificatePolicy, revocationMode, revocationFlag, useFullTrustStore: true);
+                    return;
+                }
 
                 X509ChainElement[] elements = new X509ChainElement[certs.Length];
                 for (int i = 0; i < certs.Length; i++)
