@@ -463,7 +463,7 @@ class LifetimeHolder final
 
 public:
     LifetimeHolder() : m_value{ T::Default() } { STATIC_CONTRACT_LEAF; }
-    explicit LifetimeHolder(Type value) : m_value{ value } { STATIC_CONTRACT_LEAF; }
+    explicit LifetimeHolder(Type value) : m_value{ std::move(value) } { STATIC_CONTRACT_LEAF; }
 
     LifetimeHolder(const LifetimeHolder&) = delete;
     LifetimeHolder& operator=(const LifetimeHolder&) = delete;
@@ -491,7 +491,7 @@ public:
     {
         STATIC_CONTRACT_WRAPPER;
         Free();
-        m_value = value;
+        m_value = std::move(value);
         return *this;
     }
 
@@ -525,9 +525,7 @@ public:
     Type Detach()
     {
         STATIC_CONTRACT_WRAPPER;
-        Type value = m_value;
-        m_value = T::Default();
-        return value;
+        return std::exchange(m_value, T::Default());
     }
 };
 

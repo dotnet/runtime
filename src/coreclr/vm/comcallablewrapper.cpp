@@ -1898,19 +1898,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                 pStartWrapper = GetWrapperForObject(pServer, pTemplate);
                 if (pStartWrapper == NULL)
                 {
-                    struct RefcountedHandleTraits final
-                    {
-                        using Type = OBJECTHANDLE;
-                        static constexpr Type Default() { return NULL; }
-                        static void Free(Type value) noexcept
-                        {
-                            WRAPPER_NO_CONTRACT;
-                            if (value != NULL)
-                                DestroyRefcountedHandle(value);
-                        }
-                    };
-
-                    LifetimeHolder<RefcountedHandleTraits> ownedHandle;
+                    RefcountedHandleHolder ownedHandle;
                     OBJECTHANDLE oh = NULL;
 
                     ComCallWrapper *pRootWrapper = GetWrapperForObject(pServer, NULL);
