@@ -1419,7 +1419,7 @@ public unsafe class StackWalkTests
                 Ebp = 0x3000,
             },
         };
-        builder.MemoryBuilder.AddHeapFragment(new() { Address = ContextAddress, Data = context.GetBytes(), Name = "Context" });
+        builder.MemoryBuilder.AddHeapFragment(new() {         Address = ContextAddress, Data = context.GetBytes().ToArray(), Name = "Context" });
         builder.MemoryBuilder.AddHeapFragment(new()
         {
             Address = GcInfoAddress,
