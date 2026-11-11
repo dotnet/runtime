@@ -79,7 +79,8 @@ namespace System.Diagnostics
 
             set
             {
-                s_current = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                s_current = value;
             }
         }
 

@@ -4,7 +4,7 @@
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:System.Numerics.BigInteger</Target>
-    <Left>ref/net11.0/System.Runtime.Numerics.dll</Left>
-    <Right>lib/net11.0/System.Runtime.Numerics.dll</Right>
+    <Left>ref/net12.0/System.Runtime.Numerics.dll</Left>
+    <Right>lib/net12.0/System.Runtime.Numerics.dll</Right>
   </Suppression>
 </Suppressions>

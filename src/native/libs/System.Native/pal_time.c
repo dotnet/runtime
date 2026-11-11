@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include "pal_errno.h"
 #include "pal_time.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <utime.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -17,10 +19,33 @@
 enum
 {
     MicroSecondsToNanoSeconds = 1000,   // 10^3
+    MillisecondsPerSecond = 1000,
+    MillisecondsToNanoSeconds = 1000000,
     SecondsToNanoSeconds = 1000000000,  // 10^9
     SecondsToTicks = 10000000,          // 10^7
     TicksToNanoSeconds = 100,           // 10^2
 };
+
+int32_t SystemNative_ThreadSleep(int32_t timeoutMilliseconds)
+{
+    assert(timeoutMilliseconds >= 0);
+
+    struct timespec requested;
+    requested.tv_sec = timeoutMilliseconds / MillisecondsPerSecond;
+    requested.tv_nsec = (timeoutMilliseconds % MillisecondsPerSecond) * MillisecondsToNanoSeconds;
+
+    struct timespec remaining = {0};
+    while (nanosleep(&requested, &remaining) != 0)
+    {
+        if (errno != EINTR)
+        {
+            return ConvertErrorPlatformToPal(errno);
+        }
+        requested = remaining;
+    }
+
+    return Error_SUCCESS;
+}
 
 int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 {
@@ -65,7 +90,7 @@ int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
 
     while (CheckInterrupted(result = futimens(ToFileDescriptor(fd), updatedTimes)));
 #else
-    // Fallback on unsupported platforms (e.g. iOS, tvOS, watchOS)
+    // Fallback on unsupported platforms (e.g. iOS, tvOS)
     // to futimes (lower precision)
     struct timeval updatedTimes[2];
     updatedTimes[0].tv_sec = (long)times[0].tv_sec;

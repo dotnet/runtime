@@ -6286,7 +6286,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         }
 
         // Generate guid from name.
-        CorGuidFromNameW(pGuid, szName, cchName);
+        *pGuid = CorGuidFromNameW(szName, cchName);
 
         // Remeber we generated the guid from the type name.
         bGenerated = TRUE;
@@ -7166,9 +7166,9 @@ void MethodTable::InitMethodDataCache()
     _ASSERTE(s_pMethodDataCache == NULL);
 
     UINT32 cb = MethodDataCache::GetObjectSize(8);
-    NewArrayHolder<BYTE> hb(new BYTE[cb]);
-    s_pMethodDataCache = new (hb.GetValue()) MethodDataCache(8);
-    hb.SuppressRelease();
+    NewArrayHolder<BYTE> hb{ new BYTE[cb] };
+    s_pMethodDataCache = new (static_cast<BYTE*>(hb)) MethodDataCache(8);
+    hb.Detach();
 }
 
 //==========================================================================================

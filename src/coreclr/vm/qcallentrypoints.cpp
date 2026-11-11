@@ -22,8 +22,6 @@
 #include "nativelibrarynative.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
-#include "floatdouble.h"
-#include "floatsingle.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
 
@@ -89,6 +87,22 @@
 
 #include "MiscNativeHelpers.h"
 
+#ifdef TARGET_BROWSER
+// emscripten libc before 6.0.10 implements overlapping memmove and memset with scalar loops.
+// Compiling these wrappers with -mbulk-memory lowers the builtins to memory.copy and memory.fill.
+// TODO: Remove once emsdk is 6.0.10 or later (https://github.com/dotnet/runtime/issues/136012).
+extern "C" void* QCall_memmove(void* dest, const void* src, size_t len)
+{
+    return __builtin_memmove(dest, src, len);
+}
+
+extern "C" void* QCall_memset(void* dest, int value, size_t len)
+{
+    return __builtin_memset(dest, value, len);
+}
+#endif // TARGET_BROWSER
+
+#if !defined(TARGET_WASM) || !GEN_PINVOKE
 static const Entry s_QCall[] =
 {
 #ifdef FEATURE_VARARGS
@@ -106,6 +120,14 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_CustomNotification)
     DllImportEntry(DebugDebugger_IsLoggingHelper)
     DllImportEntry(DebugDebugger_IsManagedDebuggerAttached)
+#if defined(DEBUGGING_SUPPORTED)
+    DllImportEntry(DebugDebugger_GetFuncEvalMethod)
+    DllImportEntry(DebugDebugger_PrepareFuncEvalResult)
+    DllImportEntry(DebugDebugger_GetFuncEvalArgumentType)
+    DllImportEntry(DebugDebugger_ReadFuncEvalPrimitiveRegister)
+    DllImportEntry(DebugDebugger_WriteFuncEvalObjectRegister)
+    DllImportEntry(DebugDebugger_WriteFuncEvalRegister)
+#endif // DEBUGGING_SUPPORTED
     DllImportEntry(Delegate_BindToMethodName)
     DllImportEntry(Delegate_BindToMethodInfo)
     DllImportEntry(Delegate_InitializeVirtualCallStub)
@@ -332,10 +354,16 @@ static const Entry s_QCall[] =
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832
     {"memset", (void*)&std::memset},
+#elif defined(TARGET_BROWSER)
+    {"memset", (void*)&QCall_memset},
 #else // TARGET_SUNOS
     DllImportEntry(memset)
 #endif // TARGET_SUNOS
+#ifdef TARGET_BROWSER
+    {"memmove", (void*)&QCall_memmove},
+#else
     DllImportEntry(memmove)
+#endif // TARGET_BROWSER
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)
@@ -349,8 +377,6 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_ReRegisterForFinalize)
     DllImportEntry(GCInterface_GetNextFinalizableObject)
     DllImportEntry(GCInterface_WaitForPendingFinalizers)
-    DllImportEntry(GCInterface_AddMemoryPressure)
-    DllImportEntry(GCInterface_RemoveMemoryPressure)
     DllImportEntry(GCInterface_RegisterFrozenSegment)
     DllImportEntry(GCInterface_UnregisterFrozenSegment)
     DllImportEntry(GCInterface_EnumerateConfigurationValues)
@@ -480,6 +506,8 @@ static const Entry s_QCall[] =
     DllImportEntry(NativeRuntimeEventSource_LogContentionStop)
     DllImportEntry(NativeRuntimeEventSource_LogWaitHandleWaitStart)
     DllImportEntry(NativeRuntimeEventSource_LogWaitHandleWaitStop)
+    DllImportEntry(NativeRuntimeEventSource_LogIncreaseMemoryPressure)
+    DllImportEntry(NativeRuntimeEventSource_LogDecreaseMemoryPressure)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)
@@ -492,6 +520,9 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_GetNextEvent)
     DllImportEntry(EventPipeInternal_SignalSession)
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+    DllImportEntry(EventPipeInternal_WasiRunJobs)
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 #endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
     DllImportEntry(FreeEnvironmentStringsW)
@@ -567,3 +598,4 @@ const void* QCallResolveDllImport(const char* name)
 {
     return minipal_resolve_dllimport(s_QCall, ARRAY_SIZE(s_QCall), name);
 }
+#endif // !defined(TARGET_WASM) || !GEN_PINVOKE

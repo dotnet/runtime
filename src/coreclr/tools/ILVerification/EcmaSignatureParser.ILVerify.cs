@@ -8,6 +8,9 @@ using Internal.IL;
 
 namespace Internal.TypeSystem.Ecma
 {
+    /// <summary>
+    /// Parses ECMA-335 signature blobs into type system objects.
+    /// </summary>
     public partial struct EcmaSignatureParser
     {
         partial void ReportInvalidTypeSpecEncoding(EntityHandle typeSpecHandle) =>

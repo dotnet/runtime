@@ -4,7 +4,7 @@
 #include "pal_jni.h"
 #include <stdint.h>
 
-typedef bool (*RemoteCertificateValidationCallback)(intptr_t, jstring);
+typedef bool (*RemoteCertificateValidationCallback)(intptr_t, jstring, jobject);
 
 PALEXPORT void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback);
 
@@ -14,4 +14,4 @@ PALEXPORT void AndroidCryptoNative_ReleasePlatformValidationError(jstring platfo
 jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const char* targetHost);
 
 JNIEXPORT jboolean JNICALL Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
-    JNIEnv *env, jobject thisHandle, jlong sslStreamProxyHandle, jstring platformValidationError);
+    JNIEnv *env, jobject thisHandle, jlong sslStreamProxyHandle, jstring platformValidationError, jobject platformTrustAnchor);

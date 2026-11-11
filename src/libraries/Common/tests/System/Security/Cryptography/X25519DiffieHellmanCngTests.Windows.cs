@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Tests
             using CngKey key = X25519DiffieHellmanCngTests.GenerateCngKey(exportPolicy: CngExportPolicies.None);
             using X25519DiffieHellmanCng xdh = new(key);
             ReadOnlySpan<byte> publicKey = xdh.ExportPublicKey();
-            AssertExtensions.TrueExpression(publicKey.IndexOfAnyExcept((byte)0) >= 0);
+            AssertExtensions.TrueExpression(publicKey.ContainsAnyExcept((byte)0));
         }
     }
 

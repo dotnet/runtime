@@ -1,17 +1,68 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AssemblyName>Microsoft.DotNet.ILAssembler</AssemblyName>
+    <RootNamespace>Microsoft.DotNet.ILAssembler</RootNamespace>
+    <Description>Assembler for Common Intermediate Language (CIL).</Description>
+    <!-- Keep these targets compatible with Roslyn's test suites so they can use the ILAssembler library. -->
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetCoreAppMinimum);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);CS3021</NoWarn>
+    <!-- SDK pack omits legacy nuspec reference groups even when ref assets are present. -->
+    <NoWarn>$(NoWarn);CS3021;NU5131</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsAotCompatible>true</IsAotCompatible>
+    <IsAotCompatible Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</IsAotCompatible>
+    <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
+    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Match libraries/Directory.Build.targets: Framework references lack nullable flow annotations. -->
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <!-- Extended layout metadata values were introduced after .NET 10. -->
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MetadataPolyfills.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\BitConverterPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CharPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CollectionsPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\DictionaryPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\EncodingPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ExceptionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\HashCodePolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\IncrementalHashPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MathPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MemoryExtensionsPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MetadataPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\StringPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt32Polyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt64Polyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Diagnostics\UnreachableException.cs" />
+  </ItemGroup>
+
+  <Target Name="_AddReferenceAssemblyToPackage">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(TargetRefPath)" PackagePath="ref\$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

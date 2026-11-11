@@ -365,17 +365,18 @@ public class ComputeWasmPublishAssets : Task
             {
                 if (!resolvedPublishFilesToRemove.TryGetValue(existing.ItemSpec, out var removed))
                 {
-                    // This is a symbol asset like classlibrary.pdb or similar that was not filtered and that needs to be updated
-                    // to a publish asset.
+                    // Publish symbols must come from the selected publish file, which may have been rewritten by the linker.
                     var newAsset = CreatePromotedAsset(asset);
+                    newAsset.ItemSpec = existing.GetMetadata("FullPath");
+                    newAsset.SetMetadata("OriginalItemSpec", existing.ItemSpec);
                     if (newAsset.ItemSpec != asset.ItemSpec)
                         mappedFingerprintedAssets[asset.ItemSpec] = newAsset.ItemSpec;
 
                     symbolStaticWebAssets.Add(newAsset);
-                    updateMap.Add(newAsset.ItemSpec, newAsset);
+                    updateMap.Add(asset.ItemSpec, newAsset);
                     filesToRemove.Add(existing);
                     promotedAssets.Add(newAsset);
-                    Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
+                    Log.LogMessage(MessageImportance.Low, "Replacing symbol asset '{0}' with publish version '{1}'.", asset.ItemSpec, newAsset.ItemSpec);
                 }
                 else
                 {

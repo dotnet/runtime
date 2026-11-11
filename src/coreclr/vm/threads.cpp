@@ -391,6 +391,10 @@ void SetThread(Thread* t)
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
+
+        // Native threads may enter with the GC activation signal blocked.
+        // Unmask it on CLR attachment so GC can interrupt managed execution.
+        PAL_UnmaskActivationSignal();
 #endif // TARGET_UNIX && !TARGET_WASM
     }
     else
@@ -1207,10 +1211,15 @@ void InitThreadManager()
     if (IsWriteBarrierCopyEnabled())
     {
         s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
-        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
         if (s_barrierCopy == NULL)
         {
             _ASSERTE(!"Allocation of GC barrier code page failed");
+            COMPlusThrowWin32();
+        }
+
+        if (ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true) == NULL)
+        {
+            _ASSERTE(!"Commit of GC barrier code page failed");
             COMPlusThrowWin32();
         }
 
@@ -1507,7 +1516,7 @@ Thread::Thread()
 
     exposedObjectHolder.SuppressRelease();
     strongHndToExposedObjectHolder.SuppressRelease();
-    contextHolder.SuppressRelease();
+    contextHolder.Detach();
 
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
@@ -3166,51 +3175,55 @@ OBJECTREF Thread::GetExposedObject()
         THREADBASEREF attempt = (THREADBASEREF) AllocateObject(g_pThreadClass);
         GCPROTECT_BEGIN(attempt);
 
-        // The exposed object keeps us alive until it is GC'ed.  This
-        // doesn't mean the physical thread continues to run, of course.
-        // We have to set this outside of the ThreadStore lock, because this might trigger a GC.
-        attempt->SetInternal(this);
-
-        BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
-        // Take a lock to make sure that only one thread creates the object.
-        ThreadStoreLockHolder tsHolder(fNeedThreadStore);
-
-        // Check to see if another thread has not already created the exposed object.
-        if (ObjectFromHandle(m_ExposedObject) == NULL)
         {
-            // Keep a weak reference to the exposed object.
-            StoreObjectInHandle(m_ExposedObject, (OBJECTREF) attempt);
+            BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
+            // Take a lock to make sure that only one thread creates the object.
+            ThreadStoreLockHolder tsHolder(fNeedThreadStore);
 
-            ObjectInHandleHolder exposedHolder(m_ExposedObject);
+            // Check to see if another thread has not already created the exposed object.
+            if (ObjectFromHandle(m_ExposedObject) == NULL)
+            {
+                // The exposed object keeps us alive until it is GC'ed.  This
+                // doesn't mean the physical thread continues to run.
+                attempt->SetInternal(this);
 
-            // Increase the external ref count. We can't call IncExternalCount because we
-            // already hold the thread lock and IncExternalCount won't be able to take it.
-            ULONG retVal = InterlockedIncrement ((LONG*)&m_ExternalRefCount);
+                // Keep a weak reference to the exposed object.
+                StoreObjectInHandle(m_ExposedObject, (OBJECTREF) attempt);
 
-            // Check to see if we need to store a strong pointer to the object.
-            if (retVal > 1)
-                StoreObjectInHandle(m_StrongHndToExposedObject, (OBJECTREF) attempt);
+                ObjectInHandleHolder exposedHolder(m_ExposedObject);
 
-            ObjectInHandleHolder strongHolder(m_StrongHndToExposedObject);
+                // Increase the external ref count. We can't call IncExternalCount because we
+                // already hold the thread lock and IncExternalCount won't be able to take it.
+                ULONG retVal = InterlockedIncrement ((LONG*)&m_ExternalRefCount);
+
+                // Check to see if we need to store a strong pointer to the object.
+                if (retVal > 1)
+                    StoreObjectInHandle(m_StrongHndToExposedObject, (OBJECTREF) attempt);
+
+                ObjectInHandleHolder strongHolder(m_StrongHndToExposedObject);
 
 
-            attempt->SetManagedThreadId(GetThreadId());
+                attempt->SetManagedThreadId(GetThreadId());
 
 
-            // Note that we are NOT calling the constructor on the Thread.  That's
-            // because this is an internal create where we don't want a Start
-            // address.  And we don't want to expose such a constructor for our
-            // customers to accidentally call.  The following is in lieu of a true
-            // constructor:
-            attempt->InitExisting();
+                // Initialize the native-backed properties of the runtime-created wrapper.
+                attempt->InitExisting();
 
-            exposedHolder.SuppressRelease();
-            strongHolder.SuppressRelease();
+                exposedHolder.SuppressRelease();
+                strongHolder.SuppressRelease();
+            }
         }
-        else
+
+#ifdef FEATURE_MULTITHREADING
+        if (attempt->GetInternal() != nullptr)
         {
-            attempt->ClearInternal();
+            // Registering memory pressure can trigger a GC, so do it after
+            // releasing our ThreadStore lock.
+            _ASSERTE(!ThreadStore::HoldingThreadStore(pCurThread));
+            UnmanagedCallersOnlyCaller registerMemoryPressure(METHOD__THREAD__REGISTER_MEMORY_PRESSURE);
+            registerMemoryPressure.InvokeThrowing();
         }
+#endif // FEATURE_MULTITHREADING
 
         GCPROTECT_END();
     }
@@ -3625,10 +3638,10 @@ void Thread::PrepareApartmentAndContext()
     // only if the internal config switch is on.
     if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
-        NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
+        NewHolder<ApartmentSpyImpl> pSpyImpl(new ApartmentSpyImpl());
 
         IfFailThrow(CoRegisterInitializeSpy(pSpyImpl, &m_uliInitializeSpyCookie));
-        pSpyImpl.SuppressRelease();
+        pSpyImpl.Detach();
 
         m_fInitializeSpyRegistered = true;
     }
@@ -4192,8 +4205,8 @@ void ThreadStore::IncrementDeadThreadCountForGCTrigger()
         return;
     }
 
-    SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcHeap->GetMaxGeneration());
-    SIZE_T gcNowMilliseconds = gcHeap->GetNow();
+    int64_t gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcHeap->GetMaxGeneration());
+    int64_t gcNowMilliseconds = gcHeap->GetNow();
     if (gcNowMilliseconds - gcLastMilliseconds < s_DeadThreadGCTriggerPeriodMilliseconds)
     {
         return;
@@ -4323,8 +4336,8 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
         // Make sure that enough time has elapsed since the last GC of the desired generation. We don't want to trigger GCs
         // based on this heuristic too often. Give it some time to let the memory pressure trigger GCs automatically, and only
         // if it doesn't in the given time, this heuristic may kick in to trigger a GC.
-        SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcGenerationToTrigger);
-        SIZE_T gcNowMilliseconds = gcHeap->GetNow();
+        int64_t gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcGenerationToTrigger);
+        int64_t gcNowMilliseconds = gcHeap->GetNow();
         if (gcNowMilliseconds - gcLastMilliseconds < s_DeadThreadGCTriggerPeriodMilliseconds)
         {
             return;
@@ -4782,7 +4795,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
     {
         MEMORY_BASIC_INFORMATION mbi;
 
-        if (ClrVirtualQuery(getStackHash, &mbi, sizeof(mbi)))
+        if (VirtualQuery(getStackHash, &mbi, sizeof(mbi)))
         {
             moduleBase = (size_t)mbi.AllocationBase;
             moduleTop = (size_t)mbi.BaseAddress + mbi.RegionSize;
@@ -4790,7 +4803,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
         else
         {
             // way bad error, probably just assert and exit
-            _ASSERTE (!"ClrVirtualQuery failed");
+            _ASSERTE (!"VirtualQuery failed");
             moduleBase = 0;
             moduleTop = 0;
         }
@@ -5044,7 +5057,7 @@ void * Thread::GetStackLowerBound()
    MEMORY_BASIC_INFORMATION lowerBoundMemInfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
+    dwRes = VirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
 
     if (sizeof(MEMORY_BASIC_INFORMATION) == dwRes)
     {
@@ -5297,7 +5310,7 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
 #endif // !TARGET_UNIX
 }
 
-
+#ifndef TARGET_UNIX
 static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 {
     CONTRACTL
@@ -5315,7 +5328,7 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
     while (uStartOfThisRegion < uHighAddress)
     {
-        SIZE_T res = ClrVirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
+        SIZE_T res = VirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
 
         if (sizeof(meminfo) != res)
         {
@@ -5381,6 +5394,7 @@ void Thread::DebugLogStackMBIs()
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
 }
+#endif // !TARGET_UNIX
 #endif // _DEBUG
 
 NOINLINE void AllocateSomeStack(){
@@ -5564,8 +5578,8 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
 
     DWORD flOldProtect;
 
-    ClrVirtualProtect((LPVOID)uGuardPageBase, 1,
-                      (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
+    VirtualProtect((LPVOID)uGuardPageBase, 1,
+                   (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
 
     // Intentionally ignore return value -- if it failed, we'll find out below
     // and keep moving up the stack until we either succeed or we hit the guard
@@ -5578,7 +5592,7 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
     MEMORY_BASIC_INFORMATION meminfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
+    dwRes = VirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
 
     return ((sizeof(meminfo) == dwRes) && (meminfo.Protect & PAGE_GUARD));
 }
@@ -6807,16 +6821,14 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
         EX_TRY
         {
-            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
             INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
-            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(CURRENT_THREAD, pByteCodeStart);
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
             UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH

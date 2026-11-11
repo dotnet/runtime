@@ -53,10 +53,8 @@ Therefore the managed portion of each test **must not contain**:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Exclude test from NativeAOT runs runs by adding the following to the csproj:
     * `<NativeAotIncompatible>true</NativeAotIncompatible>`
-* Exclude the test from all ilasm round-trip testing by adding the following to the csproj. This also implies `ManagedIlasmRoundTripIncompatible`.
+* Exclude the test from all ilasm round-trip testing by adding the following to the csproj:
     * `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
-* Exclude the test only when round-trip testing with managed ilasm by adding the following to the csproj:
-    * `<ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>`
 * Exclude the test for unloadability (collectible assemblies) testing
     * `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 * If the test is specific for testing crossgen2, and should be compiled as such in all test modes

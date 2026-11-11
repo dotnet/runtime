@@ -21,7 +21,11 @@
                                     Condition="'$(TestWrapperTargetsWindows)' == 'true'" />
     <RuntimeHostConfigurationOption Include="SYSTEM_CORELIB_DIRECTORY"
                                     Value="$%28pwd)/Subdirectory"
-                                    Condition="'$(TestWrapperTargetsWindows)' != 'true'" />
+                                    Condition="'$(TestWrapperTargetsWindows)' != 'true' and '$(TargetOS)' != 'wasi'" />
+    <!-- A WASI guest sees the test working directory as its root. -->
+    <RuntimeHostConfigurationOption Include="SYSTEM_CORELIB_DIRECTORY"
+                                    Value="/Subdirectory"
+                                    Condition="'$(TargetOS)' == 'wasi'" />
   </ItemGroup>
   <PropertyGroup>
     <CoreLibSetupBatch><![CDATA[

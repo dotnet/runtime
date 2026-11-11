@@ -388,10 +388,8 @@ namespace System.Net
                 Task<DnsResult<AddressRecord>> aTask = DoResolve(async, name, AddressFamily.InterNetwork, cancellationToken);
                 Task<DnsResult<AddressRecord>> aaaaTask = DoResolve(async, name, AddressFamily.InterNetworkV6, cancellationToken);
 
-                await Task.WhenAll(aTask, aaaaTask).ConfigureAwait(false);
-                DnsResult<AddressRecord> aRes = await aTask.ConfigureAwait(false);
-                DnsResult<AddressRecord> aaaaRes = await aaaaTask.ConfigureAwait(false);
-                return MergeAddressResults(aRes, aaaaRes);
+                DnsResult<AddressRecord>[] results = await Task.WhenAll(aTask, aaaaTask).ConfigureAwait(false);
+                return MergeAddressResults(results[0], results[1]);
             }
 
             return await DoResolve(async, name, addressFamily, cancellationToken).ConfigureAwait(false);

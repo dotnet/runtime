@@ -118,7 +118,7 @@ bool RemoveDup::uniqueLegacy(MethodContext* mc)
     return true;
 }
 
-bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut)
+bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, FILE* hFileOut)
 {
     MethodContextIterator mci(/* progressReport */ true);
     if (!mci.Initialize(nameOfInput))

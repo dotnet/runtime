@@ -18,6 +18,18 @@ namespace System.IO.Compression
         private bool _nonEmptyInput;
         private volatile bool _decompressionFinished;
 
+        /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and decompression options, and optionally leaves the stream open.</summary>
+        /// <param name="stream">The stream from which data to decompress is read.</param>
+        /// <param name="decompressionOptions">The Brotli options for fine tuning the decompression stream.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="decompressionOptions"/> is <see langword="null" />.</exception>
+        public BrotliStream(Stream stream, BrotliDecompressionOptions decompressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Decompress, leaveOpen)
+        {
+            ArgumentNullException.ThrowIfNull(decompressionOptions);
+
+            _decoder.SetMaxWindowLog2(decompressionOptions.MaxWindowLog2);
+        }
+
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
         /// <param name="buffer">The array used to store decompressed bytes.</param>
         /// <param name="offset">The byte offset in <paramref name="buffer" /> at which the read bytes will be placed.</param>

@@ -91,9 +91,11 @@ namespace Wasm.Build.Tests
                 Path.Combine(_projectDir, "..", "LibraryWithResources"));
             CreateProgramForCultureTest("LibraryWithResources.resx.words", "LibraryWithResources.Class1");
             // move src/mono/wasm/testassets/SatelliteAssemblyFromProjectRef/LibraryWithResources to the test project
-            // The root D.B* should be empty
+            // The root D.B.props should be empty and D.B.targets should use the non-Wasm targeting-pack setup.
             File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), "<Project />");
-            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.targets"), "<Project />");
+            File.Copy(
+                Path.Combine(BuildEnvironment.TestDataPath, "Local.Directory.Build.targets"),
+                Path.Combine(_projectDir, "..", "Directory.Build.targets"));
             // NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
             
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);

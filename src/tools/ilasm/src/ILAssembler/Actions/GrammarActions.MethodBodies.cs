@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Antlr4.Runtime;
-using LabelHandle = ILAssembler.MethodBodyWriter.Label;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {

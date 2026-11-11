@@ -155,9 +155,11 @@ internal sealed class WasmUnwinder
 
     /// <summary>
     /// Advances <paramref name="sp"/> by one R2R frame and produces the caller's virtual IP,
-    /// mirroring <c>WasmUnwindStackFrameCore</c>. Returns false when the R2R walk terminates
-    /// (no R2R frame at <paramref name="sp"/>), in which case <paramref name="sp"/> is set to
-    /// <see cref="TargetPointer.Null"/>.
+    /// mirroring <c>WasmUnwindStackFrameCore</c>. Returns false when the R2R walk cannot advance
+    /// (no R2R frame at <paramref name="sp"/>, missing unwind data, or a zero frame size), in
+    /// which case <paramref name="sp"/> is set to <see cref="TargetPointer.Null"/>. Otherwise
+    /// <paramref name="sp"/> is the caller's stack pointer, and <paramref name="ip"/> is null when
+    /// the caller is not ReadyToRun code.
     /// </summary>
     public bool TryUnwindOneFrame(ref TargetPointer sp, TargetCodePointer controlPC, out TargetCodePointer ip)
     {
@@ -192,14 +194,9 @@ internal sealed class WasmUnwinder
             return true;
         }
 
+        // A null IP means the caller is not R2R code (an interpreter transition or the stack top).
+        // Like native, keep the caller's SP so the walk continues through the Frame chain.
         ip = GetVirtualIP(sp);
-        if (ip == TargetCodePointer.Null)
-        {
-            // The caller is not R2R-generated code (an interpreter transition or the stack top);
-            // the R2R walk is exhausted.
-            sp = TargetPointer.Null;
-            return false;
-        }
 
         return true;
     }

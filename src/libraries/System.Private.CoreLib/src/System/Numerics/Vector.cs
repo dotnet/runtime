@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -11,6 +12,7 @@ namespace System.Numerics
 {
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on generic vectors.</summary>
     [Intrinsic]
+    [SuppressReadyToRunCanonicalRooting]
     public static partial class Vector
     {
         internal static int Alignment => Vector<byte>.Count;
