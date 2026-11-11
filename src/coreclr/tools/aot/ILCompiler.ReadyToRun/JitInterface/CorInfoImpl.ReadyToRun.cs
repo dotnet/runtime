@@ -2351,6 +2351,13 @@ namespace Internal.JitInterface
                 }
             }
 
+            if (!isLdftn && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
+            {
+                // Delegate targets can be bound without being prepared as ReadyToRun call targets,
+                // for example by runtime-compiled code, so the invoking code must load them.
+                PrepareForUseAsAFunctionPointer(targetMethod);
+            }
+
             methodToCall = targetMethod;
             bool isArrayConstructor = targetMethod.OwningType.IsArray && targetMethod.IsConstructor;
             MethodDesc canonMethod = (isArrayConstructor ? null : targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
@@ -2564,6 +2571,13 @@ namespace Internal.JitInterface
 
         private void PrepareForUseAsAFunctionPointer(MethodDesc method)
         {
+            // A GC in the target's prestub scans its signature, including the return type
+            // for return-buffer placement, and cannot load types.
+            if (method.Signature.ReturnType.IsValueType)
+            {
+                classMustBeLoadedBeforeCodeIsRun(method.Signature.ReturnType);
+            }
+
             foreach (TypeDesc type in method.Signature)
             {
                 if (type.IsValueType)

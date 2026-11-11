@@ -195,6 +195,24 @@ public static class WasmWebcilModule
         return SignatureOnlyCallee(default).Reference is null;
     }
 
+    public struct DelegateParameterValue
+    {
+        public object Reference;
+    }
+
+    public struct DelegateReturnValue
+    {
+        public object Reference;
+    }
+
+    public delegate DelegateReturnValue ValueTypeSignatureDelegate(DelegateParameterValue value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool InvokeValueTypeSignatureDelegate(ValueTypeSignatureDelegate callback)
+    {
+        return callback(default).Reference is null;
+    }
+
     public sealed class LdtokenType
     {
     }

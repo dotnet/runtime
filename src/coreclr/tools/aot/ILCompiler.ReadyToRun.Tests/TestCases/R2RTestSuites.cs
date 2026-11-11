@@ -533,6 +533,42 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void DelegateInvokeSignaturesRequireTypeHandleFixups()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(DelegateInvokeSignaturesRequireTypeHandleFixups),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(DelegateInvokeSignaturesRequireTypeHandleFixups),
+            [
+                new(nameof(DelegateInvokeSignaturesRequireTypeHandleFixups), [new CrossgenAssembly(input)])
+                {
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            // A delegate target may not have been prepared as a ReadyToRun call target, so a GC in its
+            // prestub relies on the invoking code to have loaded the value types in its signature.
+            ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+                method => method.SignatureString.Contains(".InvokeValueTypeSignatureDelegate(", StringComparison.Ordinal));
+
+            SignatureFormattingOptions formatting = new();
+            foreach (string type in new[] { "DelegateParameterValue", "DelegateReturnValue" })
+            {
+                Assert.Single(method.Fixups ?? Array.Empty<FixupCell>(), fixup =>
+                    fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                    fixup.Signature.ToString(formatting) == $"Webcil.WasmWebcilModule+{type} (TYPE_HANDLE)");
+            }
+        }
+    }
+
     [Theory]
     [InlineData(false, false, false)]
     [InlineData(false, true, false)]
