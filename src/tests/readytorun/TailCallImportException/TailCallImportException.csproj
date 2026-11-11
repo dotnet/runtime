@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CLRTestPriority>1</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CrossGenTest>false</CrossGenTest>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Compile only the helper: the calli caller must remain JITted or interpreted. -->
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+setlocal
+set "DOTNET_GCName="
+set "DOTNET_GCStress="
+set "DOTNET_HeapVerify="
+set "DOTNET_ReadyToRun="
+if not exist IL_DLLS mkdir IL_DLLS
+if not exist IL_DLLS\TailCallHelper.dll copy /y TailCallHelper.dll IL_DLLS\TailCallHelper.dll
+"%Core_Root%\crossgen2\crossgen2.exe" -O --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) -r:"%Core_Root%\*.dll" -o:TailCallHelper.dll IL_DLLS\TailCallHelper.dll
+if errorlevel 1 exit /b 1
+endlocal
+]]></CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+mkdir -p IL_DLLS
+if [ ! -f IL_DLLS/TailCallHelper.dll ]; then
+    cp TailCallHelper.dll IL_DLLS/TailCallHelper.dll
+fi
+"$CORE_ROOT"/crossgen2/crossgen2 -O --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) -r:"$CORE_ROOT"/*.dll -o:TailCallHelper.dll IL_DLLS/TailCallHelper.dll
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TailCallImportException.cs" />
+    <ProjectReference Include="TailCallHelper.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

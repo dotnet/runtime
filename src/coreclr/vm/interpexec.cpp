@@ -227,10 +227,12 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
-// Filter to ignore SEH exceptions representing C++ exceptions.
-LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+// Filter to ignore SEH exceptions representing C++ exceptions and unhandled managed exceptions
+// that are being propagated to the host or external native code.
+LONG IgnoreExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
-    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
+    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC) ||
+           (GetThread()->HasThreadStateNC(Thread::TSNC_PropagatingUnhandledException)) 
         ? EXCEPTION_CONTINUE_SEARCH
         : EXCEPTION_EXECUTE_HANDLER;
 }
@@ -248,7 +250,7 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     {
         pParam->result = pParam->function();
     }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    PAL_EXCEPT_FILTER(IgnoreExceptionFilter)
     {
         // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
         // from the called method's call chain.
@@ -265,8 +267,7 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     return local.result;
 }
 
-// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
-NOINLINE
+FORCEINLINE
 void InvokeUnmanagedMethodWithTransitionInner(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
     struct Param
@@ -285,7 +286,7 @@ void InvokeUnmanagedMethodWithTransitionInner(MethodDesc *targetMethod, int8_t *
         InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
         GCX_PREEMP_NO_DTOR_END();
     }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    PAL_EXCEPT_FILTER(IgnoreExceptionFilter)
     {
         // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
         // from the native method (QCALL) call chain.
@@ -300,6 +301,7 @@ void InvokeUnmanagedMethodWithTransitionInner(MethodDesc *targetMethod, int8_t *
     PAL_ENDTRY
 }
 
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
 void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {

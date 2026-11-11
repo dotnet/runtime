@@ -1638,6 +1638,13 @@ class ExternalMethodFrame : public FramedMethodFrame
 public:
     ExternalMethodFrame(TransitionBlock * pTransitionBlock);
 
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+    ~ExternalMethodFrame() noexcept
+    {
+        PopIfChained();
+    }
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
+
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc);
 
     // Returns this frame GC ref map if it has one
