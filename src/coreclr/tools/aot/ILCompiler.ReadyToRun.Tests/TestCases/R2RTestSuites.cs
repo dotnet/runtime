@@ -1749,6 +1749,54 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void LinuxArm64AtomicsAreGuardedPerMethod()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(LinuxArm64AtomicsAreGuardedPerMethod),
+            SourceResourceNames = ["InstructionSetSupport/Arm64Atomics.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(LinuxArm64AtomicsAreGuardedPerMethod),
+            [
+                new(nameof(LinuxArm64AtomicsAreGuardedPerMethod), [new CrossgenAssembly(input)])
+                {
+                    TargetOS = "linux",
+                    TargetArchitecture = "arm64",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            SignatureFormattingOptions signatureFormatting = new();
+            string[] eagerInstructionSetSupport = reader.ImportSections
+                .Where(section => (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0)
+                .SelectMany(section => section.Entries)
+                .Select(entry => entry.Signature)
+                .OfType<ReadyToRunSignature>()
+                .Where(signature => signature.FixupKind == ReadyToRunFixupKind.Check_InstructionSetSupport)
+                .Select(signature => signature.ToString(signatureFormatting))
+                .ToArray();
+
+            Assert.NotEmpty(eagerInstructionSetSupport);
+            Assert.All(eagerInstructionSetSupport, signature =>
+            {
+                Assert.DoesNotContain("Atomics+", signature, StringComparison.Ordinal);
+                Assert.DoesNotContain("Atomics-", signature, StringComparison.Ordinal);
+            });
+
+            ReadyToRunMethod interlockedOr = Assert.Single(R2RAssert.GetAllMethods(reader),
+                method => method.SignatureString.Contains(".InterlockedOr(", StringComparison.Ordinal));
+            Assert.Contains(
+                interlockedOr.Fixups ?? Array.Empty<FixupCell>(),
+                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_InstructionSetSupport &&
+                    fixup.Signature.ToString(signatureFormatting).Contains("Atomics+", StringComparison.Ordinal));
+        }
+    }
+
     /// <summary>
     /// PR #123643: Async methods capturing GC refs across await points
     /// produce ContinuationLayout fixups encoding the GC ref map.
