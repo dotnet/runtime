@@ -49,7 +49,7 @@
       </trans-unit>
       <trans-unit id="ArraySizeMustBeSpecified">
         <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
-        <target state="translated">Realizar marshaling de uma matriz de não gerenciada para gerenciada requer que os campos 'SizeParamIndex' ou 'SizeConst' sejam definidos em um 'MarshalAsAttribute' ou nas propriedades 'ConstantElementCount' ou 'CountElementName' a serem definidos em um 'MarshalUsingAttribute'.</target>
+        <target state="translated">Realizar marshaling de uma matriz de código não gerenciado para código gerenciado requer que os campos 'SizeParamIndex' ou 'SizeConst' sejam definidos em um 'MarshalAsAttribute' ou que as propriedades 'ConstantElementCount' ou 'CountElementName' sejam definidas em um 'MarshalUsingAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
