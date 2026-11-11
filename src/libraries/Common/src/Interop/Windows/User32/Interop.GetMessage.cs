@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32)]
-        public static partial int GetMessageW(ref MSG msg, IntPtr hwnd, int msgMin, int msgMax);
+        public static unsafe partial int GetMessageW(ref MSG msg, IntPtr hwnd, int msgMin, int msgMax);
     }
 }

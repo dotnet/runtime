@@ -11,6 +11,6 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Wtsapi32)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool WTSUnRegisterSessionNotification(IntPtr hWnd);
+        public static unsafe partial bool WTSUnRegisterSessionNotification(IntPtr hWnd);
     }
 }

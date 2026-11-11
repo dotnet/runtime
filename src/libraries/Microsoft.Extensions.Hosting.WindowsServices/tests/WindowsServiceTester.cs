@@ -78,50 +78,59 @@ namespace Microsoft.Extensions.Hosting
             string commandLine = startInfo.FileName + " " + startInfo.Arguments;
 
             // install the service
-            using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
+            // SAFETY: To be audited
+            unsafe
             {
-                if (serviceManagerHandle.IsInvalid)
+                using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
                 {
-                    throw new InvalidOperationException();
-                }
-
-                // delete existing service if it exists
-                using (var existingServiceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(serviceManagerHandle, serviceName, Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL)))
-                {
-                    if (!existingServiceHandle.IsInvalid)
+                    if (serviceManagerHandle.IsInvalid)
                     {
-                        Interop.Advapi32.DeleteService(existingServiceHandle);
+                        throw new InvalidOperationException();
                     }
+
+                    // delete existing service if it exists
+                    using (var existingServiceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(serviceManagerHandle, serviceName, Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL)))
+                    {
+                        if (!existingServiceHandle.IsInvalid)
+                        {
+                            Interop.Advapi32.DeleteService(existingServiceHandle);
+                        }
+                    }
+
+                    var serviceHandle = new SafeServiceHandle(
+                        Interop.Advapi32.CreateService(serviceManagerHandle,
+                        serviceName,
+                        $"{nameof(WindowsServiceTester)} {serviceName} test service",
+                        Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL,
+                        Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS,
+                        (int)ServiceStartMode.Manual,
+                        Interop.Advapi32.ServiceStartErrorModes.ERROR_CONTROL_NORMAL,
+                        commandLine,
+                        loadOrderGroup: null,
+                        pTagId: IntPtr.Zero,
+                        dependencies: null,
+                        servicesStartName: null,
+                        password: null));
+
+                    if (serviceHandle.IsInvalid)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    return new WindowsServiceTester(serviceHandle, remoteInvokeHandle, serviceName);
                 }
-
-                var serviceHandle = new SafeServiceHandle(
-                    Interop.Advapi32.CreateService(serviceManagerHandle,
-                    serviceName,
-                    $"{nameof(WindowsServiceTester)} {serviceName} test service",
-                    Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL,
-                    Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS,
-                    (int)ServiceStartMode.Manual,
-                    Interop.Advapi32.ServiceStartErrorModes.ERROR_CONTROL_NORMAL,
-                    commandLine,
-                    loadOrderGroup: null,
-                    pTagId: IntPtr.Zero,
-                    dependencies: null,
-                    servicesStartName: null,
-                    password: null));
-
-                if (serviceHandle.IsInvalid)
-                {
-                    throw new Win32Exception();
-                }
-
-                return new WindowsServiceTester(serviceHandle, remoteInvokeHandle, serviceName);
             }
         }
 
-        internal unsafe Interop.Advapi32.SERVICE_STATUS QueryServiceStatus()
+        internal Interop.Advapi32.SERVICE_STATUS QueryServiceStatus()
         {
             Interop.Advapi32.SERVICE_STATUS status = default;
-            bool success = Interop.Advapi32.QueryServiceStatus(_serviceHandle, &status);
+            bool success;
+            // SAFETY: To be audited
+            unsafe
+            {
+                success = Interop.Advapi32.QueryServiceStatus(_serviceHandle, &status);
+            }
             if (!success)
             {
                 throw new Win32Exception();
@@ -129,10 +138,15 @@ namespace Microsoft.Extensions.Hosting
             return status;
         }
 
-        internal unsafe Interop.Advapi32.SERVICE_STATUS_PROCESS QueryServiceStatusEx()
+        internal Interop.Advapi32.SERVICE_STATUS_PROCESS QueryServiceStatusEx()
         {
             Interop.Advapi32.SERVICE_STATUS_PROCESS status = default;
-            bool success = Interop.Advapi32.QueryServiceStatusEx(_serviceHandle, &status);
+            bool success;
+            // SAFETY: To be audited
+            unsafe
+            {
+                success = Interop.Advapi32.QueryServiceStatusEx(_serviceHandle, &status);
+            }
             if (!success)
             {
                 throw new Win32Exception();
@@ -150,7 +164,11 @@ namespace Microsoft.Extensions.Hosting
             if (!_serviceHandle.IsInvalid)
             {
                 // delete the temporary test service
-                Interop.Advapi32.DeleteService(_serviceHandle);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Interop.Advapi32.DeleteService(_serviceHandle);
+                }
                 _serviceHandle.Close();
             }
         }

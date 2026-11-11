@@ -13,7 +13,7 @@ namespace System.Text
             return IsValid(value.AsSpan());
         }
 
-        public static unsafe bool IsValid(ReadOnlySpan<char> value)
+        public static bool IsValid(ReadOnlySpan<char> value)
         {
             fixed (char* src = value)
             {
@@ -22,9 +22,13 @@ namespace System.Text
 
                 while (length >= 4)
                 {
-                    if (!AllCharsInUInt32AreAscii(ptrUInt32[0] | ptrUInt32[1]))
+                    // SAFETY: To be audited
+                    unsafe
                     {
-                        return false;
+                        if (!AllCharsInUInt32AreAscii(ptrUInt32[0] | ptrUInt32[1]))
+                        {
+                            return false;
+                        }
                     }
 
                     ptrUInt32 += 2;
@@ -34,7 +38,12 @@ namespace System.Text
                 char* ptrChar = (char*)ptrUInt32;
                 while (length-- > 0)
                 {
-                    char ch = *ptrChar++;
+                    char ch;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        ch = *ptrChar++;
+                    }
                     if (ch >= 0x80)
                     {
                         return false;

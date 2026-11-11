@@ -318,7 +318,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return new IDispatchMetaObject(parameter, this);
         }
 
-        private static unsafe void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle)
+        private static void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle)
         {
             IntPtr pFuncDesc;
             typeInfo.GetFuncDesc(funcIndex, out pFuncDesc);
@@ -329,7 +329,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 throw Error.CannotRetrieveTypeInformation();
             }
 
-            funcDesc = *(ComTypes.FUNCDESC*)pFuncDesc;
+            // SAFETY: To be audited
+            unsafe
+            {
+                funcDesc = *(ComTypes.FUNCDESC*)pFuncDesc;
+            }
             funcDescHandle = pFuncDesc;
         }
 
@@ -463,7 +467,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 {
                     if (funcDescHandleToRelease != IntPtr.Zero)
                     {
-                        sourceTypeInfo.ReleaseFuncDesc(funcDescHandleToRelease);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            sourceTypeInfo.ReleaseFuncDesc(funcDescHandleToRelease);
+                        }
                     }
                 }
             }
@@ -481,14 +489,22 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     provideClassInfo.GetClassInfo(out typeInfoPtr);
                     if (typeInfoPtr != IntPtr.Zero)
                     {
-                        return Marshal.GetObjectForIUnknown(typeInfoPtr) as ComTypes.ITypeInfo;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return Marshal.GetObjectForIUnknown(typeInfoPtr) as ComTypes.ITypeInfo;
+                        }
                     }
                 }
                 finally
                 {
                     if (typeInfoPtr != IntPtr.Zero)
                     {
-                        Marshal.Release(typeInfoPtr);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            Marshal.Release(typeInfoPtr);
+                        }
                     }
                 }
             }
@@ -607,7 +623,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 {
                     if (funcDescHandleToRelease != IntPtr.Zero)
                     {
-                        typeInfo.ReleaseFuncDesc(funcDescHandleToRelease);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            typeInfo.ReleaseFuncDesc(funcDescHandleToRelease);
+                        }
                     }
                 }
             }

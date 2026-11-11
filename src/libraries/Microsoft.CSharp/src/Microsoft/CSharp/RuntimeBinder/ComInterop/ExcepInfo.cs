@@ -40,8 +40,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return null;
             }
 
-            string result = Marshal.PtrToStringBSTR(bstr);
-            Marshal.FreeBSTR(bstr);
+            string result;
+            // SAFETY: To be audited
+            unsafe
+            {
+                result = Marshal.PtrToStringBSTR(bstr);
+                Marshal.FreeBSTR(bstr);
+            }
             bstr = IntPtr.Zero;
             return result;
         }

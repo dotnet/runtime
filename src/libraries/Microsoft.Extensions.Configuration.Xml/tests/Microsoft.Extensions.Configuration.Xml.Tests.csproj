@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <MemorySafetyRulesVersion Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">2</MemorySafetyRulesVersion>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludePlatformAttributes>false</IncludePlatformAttributes>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->

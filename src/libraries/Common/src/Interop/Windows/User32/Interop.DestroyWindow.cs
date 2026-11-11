@@ -11,6 +11,6 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool DestroyWindow(IntPtr hWnd);
+        public static unsafe partial bool DestroyWindow(IntPtr hWnd);
     }
 }

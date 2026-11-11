@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways, Version = 2)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void FormattedMessage(
+        internal void FormattedMessage(
             LogLevel Level,
             int FactoryID,
             string LoggerName,
@@ -178,17 +178,21 @@ namespace Microsoft.Extensions.Logging.EventSource
                 const int eventDataCount = 9;
                 EventData* eventData = stackalloc EventData[eventDataCount];
 
-                SetEventData(ref eventData[0], ref Level);
-                SetEventData(ref eventData[1], ref FactoryID);
-                SetEventData(ref eventData[2], ref LoggerName, loggerName);
-                SetEventData(ref eventData[3], ref EventId);
-                SetEventData(ref eventData[4], ref EventName, eventName);
-                SetEventData(ref eventData[5], ref FormattedMessage, formattedMessage);
-                SetEventData(ref eventData[6], ref ActivityTraceId, activityTraceId);
-                SetEventData(ref eventData[7], ref ActivitySpanId, activitySpanId);
-                SetEventData(ref eventData[8], ref ActivityTraceFlags, activityTraceFlags);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    SetEventData(ref eventData[0], ref Level);
+                    SetEventData(ref eventData[1], ref FactoryID);
+                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                    SetEventData(ref eventData[3], ref EventId);
+                    SetEventData(ref eventData[4], ref EventName, eventName);
+                    SetEventData(ref eventData[5], ref FormattedMessage, formattedMessage);
+                    SetEventData(ref eventData[6], ref ActivityTraceId, activityTraceId);
+                    SetEventData(ref eventData[7], ref ActivitySpanId, activitySpanId);
+                    SetEventData(ref eventData[8], ref ActivityTraceFlags, activityTraceFlags);
 
-                WriteEventCore(1, eventDataCount, eventData);
+                    WriteEventCore(1, eventDataCount, eventData);
+                }
             }
         }
 
@@ -242,7 +246,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(4, Keywords = Keywords.Message | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityStop(int ID, int FactoryID, string LoggerName)
+        internal void ActivityStop(int ID, int FactoryID, string LoggerName)
         {
             if (IsEnabled())
             {
@@ -253,11 +257,15 @@ namespace Microsoft.Extensions.Logging.EventSource
                     const int eventDataCount = 3;
                     EventData* eventData = stackalloc EventData[eventDataCount];
 
-                    SetEventData(ref eventData[0], ref ID);
-                    SetEventData(ref eventData[1], ref FactoryID);
-                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        SetEventData(ref eventData[0], ref ID);
+                        SetEventData(ref eventData[1], ref FactoryID);
+                        SetEventData(ref eventData[2], ref LoggerName, loggerName);
 
-                    WriteEventCore(4, eventDataCount, eventData);
+                        WriteEventCore(4, eventDataCount, eventData);
+                    }
                 }
             }
         }
@@ -265,7 +273,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways, Version = 2)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void MessageJson(
+        internal void MessageJson(
             LogLevel Level,
             int FactoryID,
             string LoggerName,
@@ -300,26 +308,30 @@ namespace Microsoft.Extensions.Logging.EventSource
                 const int eventDataCount = 11;
                 EventData* eventData = stackalloc EventData[eventDataCount];
 
-                SetEventData(ref eventData[0], ref Level);
-                SetEventData(ref eventData[1], ref FactoryID);
-                SetEventData(ref eventData[2], ref LoggerName, loggerName);
-                SetEventData(ref eventData[3], ref EventId);
-                SetEventData(ref eventData[4], ref EventName, eventName);
-                SetEventData(ref eventData[5], ref ExceptionJson, exceptionJson);
-                SetEventData(ref eventData[6], ref ArgumentsJson, argumentsJson);
-                SetEventData(ref eventData[7], ref FormattedMessage, formattedMessage);
-                SetEventData(ref eventData[8], ref ActivityTraceId, activityTraceId);
-                SetEventData(ref eventData[9], ref ActivitySpanId, activitySpanId);
-                SetEventData(ref eventData[10], ref ActivityTraceFlags, activityTraceFlags);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    SetEventData(ref eventData[0], ref Level);
+                    SetEventData(ref eventData[1], ref FactoryID);
+                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                    SetEventData(ref eventData[3], ref EventId);
+                    SetEventData(ref eventData[4], ref EventName, eventName);
+                    SetEventData(ref eventData[5], ref ExceptionJson, exceptionJson);
+                    SetEventData(ref eventData[6], ref ArgumentsJson, argumentsJson);
+                    SetEventData(ref eventData[7], ref FormattedMessage, formattedMessage);
+                    SetEventData(ref eventData[8], ref ActivityTraceId, activityTraceId);
+                    SetEventData(ref eventData[9], ref ActivitySpanId, activitySpanId);
+                    SetEventData(ref eventData[10], ref ActivityTraceFlags, activityTraceFlags);
 
-                WriteEventCore(5, eventDataCount, eventData);
+                    WriteEventCore(5, eventDataCount, eventData);
+                }
             }
         }
 
         [Event(6, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways, ActivityOptions = EventActivityOptions.Recursive)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityJsonStart(int ID, int FactoryID, string LoggerName, string ArgumentsJson)
+        internal void ActivityJsonStart(int ID, int FactoryID, string LoggerName, string ArgumentsJson)
         {
             if (IsEnabled())
             {
@@ -332,12 +344,16 @@ namespace Microsoft.Extensions.Logging.EventSource
                     const int eventDataCount = 4;
                     EventData* eventData = stackalloc EventData[eventDataCount];
 
-                    SetEventData(ref eventData[0], ref ID);
-                    SetEventData(ref eventData[1], ref FactoryID);
-                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
-                    SetEventData(ref eventData[3], ref ArgumentsJson, argumentsJson);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        SetEventData(ref eventData[0], ref ID);
+                        SetEventData(ref eventData[1], ref FactoryID);
+                        SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                        SetEventData(ref eventData[3], ref ArgumentsJson, argumentsJson);
 
-                    WriteEventCore(6, eventDataCount, eventData);
+                        WriteEventCore(6, eventDataCount, eventData);
+                    }
                 }
             }
         }
@@ -345,7 +361,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(7, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void ActivityJsonStop(int ID, int FactoryID, string LoggerName)
+        internal void ActivityJsonStop(int ID, int FactoryID, string LoggerName)
         {
             if (IsEnabled())
             {
@@ -356,11 +372,15 @@ namespace Microsoft.Extensions.Logging.EventSource
                     const int eventDataCount = 3;
                     EventData* eventData = stackalloc EventData[eventDataCount];
 
-                    SetEventData(ref eventData[0], ref ID);
-                    SetEventData(ref eventData[1], ref FactoryID);
-                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        SetEventData(ref eventData[0], ref ID);
+                        SetEventData(ref eventData[1], ref FactoryID);
+                        SetEventData(ref eventData[2], ref LoggerName, loggerName);
 
-                    WriteEventCore(7, eventDataCount, eventData);
+                        WriteEventCore(7, eventDataCount, eventData);
+                    }
                 }
             }
         }
@@ -587,7 +607,11 @@ namespace Microsoft.Extensions.Logging.EventSource
             }
             else
             {
-                eventData.DataPointer = (IntPtr)Unsafe.AsPointer(ref value);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    eventData.DataPointer = (IntPtr)Unsafe.AsPointer(ref value);
+                }
                 eventData.Size = sizeof(T);
             }
         }

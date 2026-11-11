@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "OpenSCManagerW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial IntPtr OpenSCManager(string? machineName, string? databaseName, int access);
+        internal static unsafe partial IntPtr OpenSCManager(string? machineName, string? databaseName, int access);
 
     }
 }

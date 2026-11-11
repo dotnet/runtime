@@ -61,7 +61,12 @@ namespace Microsoft.Extensions.Hosting.Systemd
             try
             {
                 // Check whether our direct parent is 'systemd'.
-                int parentPid = Interop.libc.GetParentPid();
+                int parentPid;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    parentPid = Interop.libc.GetParentPid();
+                }
                 string ppidString = parentPid.ToString(NumberFormatInfo.InvariantInfo);
                 byte[] comm = File.ReadAllBytes("/proc/" + ppidString + "/comm");
                 return comm.AsSpan().SequenceEqual("systemd\n"u8);

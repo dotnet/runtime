@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging
 
             OriginalFormat = format;
 
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            var vsb = new ValueStringBuilder(/* SAFETY: To be audited */ unsafe(stackalloc char[256]));
             int scanIndex = 0;
             int endIndex = format.Length;
 
@@ -261,22 +261,26 @@ namespace Microsoft.Extensions.Logging
             // if the value implements IEnumerable but isn't itself a string, build a comma separated string.
             if (value is not string && value is IEnumerable enumerable)
             {
-                var vsb = new ValueStringBuilder(stackalloc char[256]);
-                bool first = true;
-                foreach (object? e in enumerable)
+                // SAFETY: To be audited
+                unsafe
                 {
-                    if (!first)
+                    var vsb = new ValueStringBuilder(stackalloc char[256]);
+                    bool first = true;
+                    foreach (object? e in enumerable)
                     {
-                        vsb.Append(", ");
-                    }
+                        if (!first)
+                        {
+                            vsb.Append(", ");
+                        }
 
-                    vsb.Append(
-                        e is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) :
-                        e is not null ? e.ToString() :
-                        NullValue);
-                    first = false;
+                        vsb.Append(
+                            e is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) :
+                            e is not null ? e.ToString() :
+                            NullValue);
+                        first = false;
+                    }
+                    stringValue = vsb.ToString();
                 }
-                stringValue = vsb.ToString();
                 return true;
             }
 

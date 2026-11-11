@@ -15,7 +15,7 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegOpenKeyExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegOpenKeyEx(
+        internal static unsafe partial int RegOpenKeyEx(
             SafeRegistryHandle hKey,
             string? lpSubKey,
             int ulOptions,
@@ -24,7 +24,7 @@ internal static partial class Interop
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegOpenKeyExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegOpenKeyEx(
+        internal static unsafe partial int RegOpenKeyEx(
             IntPtr hKey,
             string? lpSubKey,
             int ulOptions,

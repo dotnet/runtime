@@ -14,7 +14,7 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegDeleteTreeW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegDeleteTree(
+        internal static unsafe partial int RegDeleteTree(
             SafeRegistryHandle hKey,
             string lpSubKey);
     }

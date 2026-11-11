@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.OleAut32)]
-        internal static partial void VariantClear(IntPtr variant);
+        internal static unsafe partial void VariantClear(IntPtr variant);
     }
 }

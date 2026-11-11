@@ -36,16 +36,28 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
                 try
                 {
-                    varDesc = Marshal.PtrToStructure<ComTypes.VARDESC>(p);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        varDesc = Marshal.PtrToStructure<ComTypes.VARDESC>(p);
+                    }
 
                     if (varDesc.varkind == ComTypes.VARKIND.VAR_CONST)
                     {
-                        memberValues[i] = Marshal.GetObjectForNativeVariant(varDesc.desc.lpvarValue);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            memberValues[i] = Marshal.GetObjectForNativeVariant(varDesc.desc.lpvarValue);
+                        }
                     }
                 }
                 finally
                 {
-                    typeInfo.ReleaseVarDesc(p);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        typeInfo.ReleaseVarDesc(p);
+                    }
                 }
 
                 // Get the enum member name

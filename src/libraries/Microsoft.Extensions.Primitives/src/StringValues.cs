@@ -106,7 +106,11 @@ namespace Microsoft.Extensions.Primitives
                 else
                 {
                     // Not string, not null, can only be string[]
-                    return Unsafe.As<string?[]>(value).Length;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        return Unsafe.As<string?[]>(value).Length;
+                    }
                 }
             }
         }
@@ -147,7 +151,11 @@ namespace Microsoft.Extensions.Primitives
                 else if (value != null)
                 {
                     // Not string, not null, can only be string[]
-                    return Unsafe.As<string?[]>(value)[index]; // may throw
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        return Unsafe.As<string?[]>(value)[index]; // may throw
+                    }
                 }
 
                 return OutOfBounds(); // throws
@@ -191,7 +199,12 @@ namespace Microsoft.Extensions.Primitives
 
                 Debug.Assert(value is string[]);
                 // value is not null or string, array, can only be string[]
-                string?[] values = Unsafe.As<string?[]>(value);
+                string?[] values;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    values = Unsafe.As<string?[]>(value);
+                }
                 return values.Length switch
                 {
                     0 => null,
@@ -290,7 +303,11 @@ namespace Microsoft.Extensions.Primitives
             else if (value != null)
             {
                 // value not array, can only be string
-                return new[] { Unsafe.As<string>(value) };
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return new[] { Unsafe.As<string>(value) };
+                }
             }
             else
             {
@@ -327,7 +344,11 @@ namespace Microsoft.Extensions.Primitives
             if (value != null)
             {
                 // value not array, can only be string
-                return string.Equals(Unsafe.As<string>(value), item, StringComparison.Ordinal) ? 0 : -1;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return string.Equals(Unsafe.As<string>(value), item, StringComparison.Ordinal) ? 0 : -1;
+                }
             }
 
             return -1;
@@ -378,7 +399,11 @@ namespace Microsoft.Extensions.Primitives
                 }
 
                 // value not array, can only be string
-                array[arrayIndex] = Unsafe.As<string>(value);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    array[arrayIndex] = Unsafe.As<string>(value);
+                }
             }
         }
 
@@ -435,7 +460,11 @@ namespace Microsoft.Extensions.Primitives
             else
             {
                 // Not array, can only be string
-                return string.IsNullOrEmpty(Unsafe.As<string>(data));
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return string.IsNullOrEmpty(Unsafe.As<string>(data));
+                }
             }
         }
 
@@ -750,7 +779,11 @@ namespace Microsoft.Extensions.Primitives
             }
             else
             {
-                return Unsafe.As<string>(value)?.GetHashCode() ?? Count.GetHashCode();
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return Unsafe.As<string>(value)?.GetHashCode() ?? Count.GetHashCode();
+                }
             }
         }
 
@@ -773,7 +806,11 @@ namespace Microsoft.Extensions.Primitives
                 else
                 {
                     _current = null;
-                    _values = Unsafe.As<string?[]>(value);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        _values = Unsafe.As<string?[]>(value);
+                    }
                 }
                 _index = 0;
             }
