@@ -9,6 +9,64 @@ using Xunit;
 
 public class CBoolTest
 {
+    [Theory]
+    [InlineData(0, 0L)]
+    [InlineData(1, 1L)]
+    [InlineData(2, 1L << 32)]
+    [InlineData(-1, -1L)]
+    [InlineData(int.MinValue, long.MinValue)]
+    [InlineData(int.MaxValue, long.MaxValue)]
+    public static void NonZeroBranches(int value, long wideValue)
+    {
+        Assert.Equal(value == 0 ? 11 : 7, BranchOnNonZero(value));
+        Assert.Equal(value == 0 ? 7 : 11, BranchOnZero(value));
+        Assert.Equal(value != 0, NonZeroValue(value));
+        Assert.Equal(wideValue != 0, NonZeroLongValue(wideValue));
+        Assert.Equal(wideValue == 0 ? 11 : 7, BranchOnNonZeroLong(wideValue));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int BranchOnNonZero(int value)
+    {
+        if (value != 0)
+        {
+            return BranchResult(7);
+        }
+
+        return BranchResult(11);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int BranchOnZero(int value)
+    {
+        if (value == 0)
+        {
+            return BranchResult(7);
+        }
+
+        return BranchResult(11);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool NonZeroValue(int value) => value != 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool NonZeroLongValue(long value) => value != 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int BranchOnNonZeroLong(long value)
+    {
+        if (value != 0)
+        {
+            return BranchResult(7);
+        }
+
+        return BranchResult(11);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int BranchResult(int value) => value;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool AreZero(int x, int y)
     {

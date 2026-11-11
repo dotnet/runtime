@@ -38,6 +38,20 @@
         br      x9
     MEND
 
+;; CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+;; $reg is the register number: 19-28 for x19-x28, which are followed by fp (29) in the CONTEXT.
+    MACRO
+        LOAD_FUNCLET_REGISTER $base, $reg, $scratch
+
+        ldr     x$reg, [$base, #(OFFSETOF__CONTEXT__X19 + ($reg - 19) * 8)]
+    MEND
+
+    MACRO
+        LOAD_FUNCLET_FP_REGISTER $base, $index
+
+        ldr     d$index, [$base, #(OFFSETOF__CONTEXT__V + $index * 16)]
+    MEND
+
 #else
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
@@ -45,6 +59,16 @@
 .macro TAILCALL_GC_POLL_RARE
         PREPARE_EXTERNAL_VAR_INDIRECT g_pPollGC, x9
         br      x9
+.endm
+
+// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+// reg is the register number: 19-28 for x19-x28, which are followed by fp (29) in the CONTEXT.
+.macro LOAD_FUNCLET_REGISTER base, reg, scratch
+        ldr     x\reg, [\base, #(OFFSETOF__CONTEXT__X19 + (\reg - 19) * 8)]
+.endm
+
+.macro LOAD_FUNCLET_FP_REGISTER base, index
+        ldr     d\index, [\base, #(OFFSETOF__CONTEXT__V + \index * 16)]
 .endm
 
 #endif

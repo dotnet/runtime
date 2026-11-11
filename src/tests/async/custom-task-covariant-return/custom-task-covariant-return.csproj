@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/136339: AOT compilation of covariant returns of Task-derived types in runtime async methods is not yet supported. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CrossGenTest>false</CrossGenTest>
+    <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

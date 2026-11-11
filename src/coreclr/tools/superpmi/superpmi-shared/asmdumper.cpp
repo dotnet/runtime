@@ -4,7 +4,7 @@
 #include "standardpch.h"
 #include "asmdumper.h"
 
-void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
+void ASMDumper::DumpToFile(FILE* hFile, MethodContext* mc, CompileResult* cr)
 {
     CORINFO_METHOD_INFO info;
     unsigned            flags = 0;
@@ -12,7 +12,6 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     mc->repCompileMethod(&info, &flags, &os);
 
 #define bufflen 4096
-    DWORD bytesWritten;
     char  buff[bufflen];
 
     int buff_offset = 0;
@@ -22,7 +21,7 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
 
     buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n Method Name \"%s\"",
                              getMethodName(mc, info.ftn).c_str());
-    WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
+    fwrite(buff, sizeof(char), buff_offset, hFile);
 
     ULONG              hotCodeSize;
     ULONG              coldCodeSize;
@@ -90,7 +89,7 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
         for (unsigned int i = 0; i < instrSize; i++)
             buff_offset +=
                 sprintf_s(&buff[buff_offset], bufflen - buff_offset, "%02x ", *((BYTE*)(hotCodeBlock + offset + i)));
-        WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
+        fwrite(buff, sizeof(char), buff_offset, hFile);
         offset += instrSize;
     }
 
@@ -101,9 +100,9 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     buff_offset = 0;
     ZeroMemory(buff, bufflen * sizeof(char));
     buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, ";; No disassembler available");
-    WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
+    fwrite(buff, sizeof(char), buff_offset, hFile);
 
 #endif // !USE_MSVCDIS
 
-    FlushFileBuffers(hFile);
+    fflush(hFile);
 }

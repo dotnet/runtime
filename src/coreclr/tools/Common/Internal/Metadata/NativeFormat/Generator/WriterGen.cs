@@ -59,6 +59,12 @@ internal sealed class WriterGen : CsWriter
         OpenScope("internal override void Visit(IRecordVisitor visitor)");
         foreach (var member in record.Members)
         {
+            if ((member.Flags & MemberDefFlags.Blob) != 0)
+            {
+                WriteLine($"{member.Name}.Visit(this, visitor);");
+                continue;
+            }
+
             if ((member.Flags & MemberDefFlags.RecordRef) == 0)
                 continue;
 
@@ -80,28 +86,22 @@ internal sealed class WriterGen : CsWriter
         }
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             if ((record.Flags & RecordDefFlags.CustomCompare) != 0 && (member.Flags & MemberDefFlags.Compare) == 0)
                 continue;
 
+            if ((member.Flags & MemberDefFlags.Blob) != 0)
+            {
+                WriteLine($"if (!{member.Name}.Equals(other.{member.Name})) return false;");
+            }
+            else
             if ((member.Flags & MemberDefFlags.Sequence) != 0)
             {
-                if ((member.Flags & MemberDefFlags.CustomCompare) != 0)
-                    WriteLine($"if (!{member.Name}.SequenceEqual(other.{member.Name}, {member.TypeName}Comparer.Instance)) return false;");
-                else
-                    WriteLine($"if (!{member.Name}.SequenceEqual(other.{member.Name})) return false;");
+                WriteLine($"if (!{member.Name}.SequenceEqual(other.{member.Name})) return false;");
             }
             else
             if ((member.Flags & (MemberDefFlags.Map | MemberDefFlags.RecordRef)) != 0)
             {
                 WriteLine($"if (!Object.Equals({member.Name}, other.{member.Name})) return false;");
-            }
-            else
-            if ((member.Flags & MemberDefFlags.CustomCompare) != 0)
-            {
-                WriteLine($"if (!CustomComparer.Equals({member.Name}, other.{member.Name})) return false;");
             }
             else
             {
@@ -132,27 +132,18 @@ internal sealed class WriterGen : CsWriter
         byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(record.Name);
         byte[] hashBytes = System.Security.Cryptography.SHA256.HashData(nameBytes);
         int hashSeed = System.BitConverter.ToInt32(hashBytes, 0);
-        WriteLine($"int hash = {hashSeed};");
+        WriteLine("var hash = new HashCode();");
+        WriteLine($"hash.Add({hashSeed});");
 
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             if ((record.Flags & RecordDefFlags.CustomCompare) != 0 && (member.Flags & MemberDefFlags.Compare) == 0)
                 continue;
 
-            if (member.TypeName as string == "ConstantStringValue")
-            {
-                WriteLine($"hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name} == null ? 0 : {member.Name}.GetHashCode());");
-            }
-            else
             if ((member.Flags & MemberDefFlags.Array) != 0)
             {
                 WriteLine($"for (int i = 0; i < {member.Name}.Length; i++)");
-                WriteLine("{");
-                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}[i].GetHashCode();");
-                WriteLine("}");
+                WriteLine($"    hash.Add({member.Name}[i]);");
             }
             else
             if ((member.Flags & (MemberDefFlags.List | MemberDefFlags.Map)) != 0)
@@ -161,22 +152,15 @@ internal sealed class WriterGen : CsWriter
                     continue;
 
                 WriteLine($"for (int i = 0; i < {member.Name}.Count; i++)");
-                WriteLine("{");
-                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name}[i] == null ? 0 : {member.Name}[i].GetHashCode());");
-                WriteLine("}");
-            }
-            else
-            if ((member.Flags & MemberDefFlags.RecordRef) != 0 || isConstantStringValue)
-            {
-                WriteLine($"hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name} == null ? 0 : {member.Name}.GetHashCode());");
+                WriteLine($"    hash.Add({member.Name}[i]);");
             }
             else
             {
-                WriteLine($"hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}.GetHashCode();");
+                WriteLine($"hash.Add({member.Name});");
             }
         }
         WriteLine("LeaveGetHashCode();");
-        WriteLine("_hash = hash;");
+        WriteLine("_hash = hash.ToHashCode();");
         WriteLine("return _hash;");
         CloseScope("GetHashCode");
 
@@ -214,9 +198,6 @@ internal sealed class WriterGen : CsWriter
         }
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             var typeSet = member.TypeName as string[];
             if (typeSet != null)
             {
@@ -235,7 +216,9 @@ internal sealed class WriterGen : CsWriter
                             + ((i == typeSet.Length - 1) ? ");" : " ||"));
                 }
             }
-            if ((member.Flags & MemberDefFlags.HashTable) != 0)
+            if ((member.Flags & MemberDefFlags.Blob) != 0)
+                WriteLine($"{member.Name}.Save(writer);");
+            else if ((member.Flags & MemberDefFlags.HashTable) != 0)
                 WriteLine($"writer.WriteRelativeOffset({member.GetMemberFieldName()}Hashtable);");
             else
                 WriteLine($"writer.Write({member.Name});");
@@ -272,11 +255,8 @@ internal sealed class WriterGen : CsWriter
         WriteLineIfNeeded();
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             string fieldType = member.GetMemberType(MemberTypeKind.WriterField);
-            if ((member.Flags & (MemberDefFlags.List | MemberDefFlags.Map)) != 0)
+            if ((member.Flags & (MemberDefFlags.List | MemberDefFlags.Map | MemberDefFlags.Blob)) != 0)
             {
                 WriteLine($"public {fieldType} {member.Name} = new {fieldType}();");
             }

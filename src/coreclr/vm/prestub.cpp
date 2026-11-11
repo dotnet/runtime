@@ -66,6 +66,26 @@ void MethodDesc::Init()
     m_GCCoverCrst.Init(CrstGCCover);
 }
 
+#ifdef FEATURE_READYTORUN
+void MethodDesc::SetupGcCoverageForPrecompiledCode(PCODE pCode)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Image-backed code may not be patchable under Apple's write/execute restrictions.
+#ifndef HOST_APPLE
+    if (GCStress<cfg_instr_ngen>::IsEnabled())
+    {
+        CrstHolder gcCoverLock(&m_GCCoverCrst);
+        EECodeInfo codeInfo(pCode);
+        _ASSERTE(codeInfo.IsValid());
+
+        // Shared R2R code must use the same MethodDesc as the interrupt handler.
+        SetupGcCoverage(NativeCodeVersion(codeInfo.GetMethodDesc()), (BYTE*)pCode);
+    }
+#endif // !HOST_APPLE
+}
+#endif // FEATURE_READYTORUN
+
 #endif
 
 #define LOG_USING_R2R_CODE(method)  LOG((LF_ZAP, LL_INFO10000,                                                            \
@@ -1837,17 +1857,6 @@ PCODE MakeInstantiatingStubWorker(MethodDesc *pMD)
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
-extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
-
-bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
-
-    return pCode == CallDescrWorkerInternalReturnAddress;
-}
-
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
 // It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
@@ -1945,11 +1954,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
         EX_TRY
         {
-            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
             INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
-            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             // Make sure the method table is restored, and method instantiation if present
             pMD->CheckRestore();
@@ -2000,8 +2007,8 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                 pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
             }
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
             UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
@@ -2957,11 +2964,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
     pEMFrame->Push(CURRENT_THREAD);         // Push the new ExternalMethodFrame onto the frame stack
 
-    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pEMFrame);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     bool fVirtual = false;
     MethodDesc * pMD = NULL;
@@ -3301,8 +3306,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
     }
     // Ready to return
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack

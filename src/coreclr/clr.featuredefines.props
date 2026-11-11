@@ -26,6 +26,7 @@
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
         <FeatureInterpreter>true</FeatureInterpreter>
+        <FeatureJavaMarshal>false</FeatureJavaMarshal>
 
         <!-- single thread -->
         <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
@@ -33,7 +34,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux' AND !$(TargetRid.StartsWith('linux-bionic'))">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 

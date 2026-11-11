@@ -832,9 +832,9 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
 
     // Use a callback that matches DAC behavior (DacStackReferenceWalker::Callback):
     // Only call EnumGcRefs for frameless frames and GcScanRoots for explicit frames.
-    // Deliberately skip the post-scan logic (LCG resolver promotion,
-    // GcReportLoaderAllocator, generic param context) that GcStackCrawlCallBack
-    // includes — the DAC's callback has that logic disabled (#if 0).
+    // Deliberately skip LCG resolver and loader allocator promotion, including generic
+    // contexts, by leaving GcRootScan unset and omitting GcStackCrawlCallBack's post-scan
+    // logic. The DAC's callback has that logic disabled (#if 0).
     struct DiagContext { GCCONTEXT* gcctx; RuntimeRefCollectionContext* collectCtx; };
     DiagContext diagCtx = { &gcctx, &collectCtx };
 
@@ -1345,7 +1345,7 @@ static void ResolveMethodNameFromMD(CLRDATA_ADDRESS mdAddr, char* buf, int bufLe
         unsigned int nameLen = 0;
         if (SUCCEEDED(s_cdacSosDac->GetMethodDescName(mdAddr, ARRAY_SIZE(wname), wname, &nameLen)) && nameLen > 0)
         {
-            WideCharToMultiByte(CP_UTF8, 0, wname, -1, buf, bufLen, NULL, NULL);
+            minipal_convert_utf16_to_utf8((const CHAR16_T*)wname, u16_strlen(wname) + 1, buf, bufLen, 0);
             return;
         }
     }
@@ -2307,7 +2307,7 @@ static void ResolveMethodName(CLRDATA_ADDRESS source, int sourceType, char* buf,
             unsigned int nameLen = 0;
             if (SUCCEEDED(pSos->GetMethodDescName(mdAddr, ARRAY_SIZE(wname), wname, &nameLen)) && nameLen > 0)
             {
-                WideCharToMultiByte(CP_UTF8, 0, wname, -1, buf, bufLen, NULL, NULL);
+                minipal_convert_utf16_to_utf8((const CHAR16_T*)wname, u16_strlen(wname) + 1, buf, bufLen, 0);
                 return;
             }
         }

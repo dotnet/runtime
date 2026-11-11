@@ -278,7 +278,7 @@ C_FUNC(\Name):
         .error "target cannot be a0"
     .endif
 
-    addi sp, sp, -72
+    addi sp, sp, -80
     sd ra,  64(sp)
     sd t1,  56(sp)
     sd a1,  48(sp)
@@ -302,7 +302,7 @@ C_FUNC(\Name):
     ld a5,  16(sp)
     ld a6,   8(sp)
     ld a7,   0(sp)
-    addi sp, sp, 72
+    addi sp, sp, 80
 
     add \target, a0, \ofs
 

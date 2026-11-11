@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 /*****************************************************************************/
 
@@ -1595,7 +1596,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MEMZERO:
             case CORINFO_HELP_MEMSET:
             case CORINFO_HELP_NATIVE_MEMSET:
-                isNoEscape = true;
+                isNoEscape  = true;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
@@ -1750,8 +1752,6 @@ void HelperCallProperties::init()
                 FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
             case CORINFO_HELP_POLL_GC:
-            case CORINFO_HELP_MON_ENTER:
-            case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
@@ -1762,6 +1762,13 @@ void HelperCallProperties::init()
             case CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
                 isNoGC     = true;
                 exceptions = ExceptionSetFlags::None;
+                break;
+
+            // Monitor enter/exit are full memory barriers and write *lockTaken.
+            case CORINFO_HELP_MON_ENTER:
+            case CORINFO_HELP_MON_EXIT:
+                exceptions  = ExceptionSetFlags::None;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
@@ -3928,13 +3935,10 @@ private:
 public:
     Utf16String(const char* str)
     {
-        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-        if (strBufferSize == 0)
-        {
-            return;
-        }
+        size_t strLength     = strlen(str) + 1;
+        size_t strBufferSize = minipal_get_length_utf8_to_utf16(str, strLength, 0);
 
-        if (static_cast<size_t>(strBufferSize) > bufferSize)
+        if (strBufferSize > bufferSize)
         {
             m_pBuffer = new WCHAR[strBufferSize];
         }
@@ -3943,15 +3947,7 @@ public:
             m_pBuffer = m_bufferUnsafe;
         }
 
-        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
-        {
-            if (m_pBuffer != m_bufferUnsafe)
-            {
-                delete[] m_pBuffer;
-            }
-
-            m_pBuffer = nullptr;
-        }
+        minipal_convert_utf8_to_utf16(str, strLength, (CHAR16_T*)m_pBuffer, strBufferSize, 0);
     }
 
     ~Utf16String()

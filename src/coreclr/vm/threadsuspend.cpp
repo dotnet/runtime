@@ -18,6 +18,7 @@
 #include <minipal/time.h>
 
 #include "exinfo.h"
+#include "gccover.h"
 
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
@@ -833,6 +834,7 @@ BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 
     EECodeInfo codeInfo(GetIP(pContextToCheck));
     _ASSERTE(codeInfo.IsValid());
+    _ASSERTE(codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()));
 
     // Check if the method uses a frame register. If it does not, then RSP will be used by the OS as the frame register
     // and returned as the EstablisherFrame. This is fine at any instruction in the method (including epilog) since there is always a
@@ -1115,7 +1117,8 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS; // For GetXxxException
+        // Self-abort and reentrant waits can collect; a native debugger helper does neither.
+        if (GetThreadNULLOk() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2207,6 +2210,12 @@ void Thread::HandleThreadAbort ()
         }
 
         PreparingAbortHolder paHolder;
+
+#if defined(TARGET_UNIX) && defined(FEATURE_THREAD_ACTIVATION)
+        // Abort dispatch may bypass native destructors and the activation signal handler's return through sigreturn.
+        m_hasPendingActivation = false;
+        PAL_UnmaskActivationSignal();
+#endif // TARGET_UNIX && FEATURE_THREAD_ACTIVATION
 
         OBJECTREF exceptObj;
 
@@ -3455,7 +3464,7 @@ void Thread::CommitGCStressInstructionUpdate()
         assert(pbDestCode != NULL);
         assert(pbSrcCode != NULL);
 
-        ExecutableWriterHolder<BYTE> destCodeWriterHolder(pbDestCode, sizeof(DWORD));
+        GCStressCodeWriter destCodeWriterHolder(pbDestCode, sizeof(DWORD));
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
@@ -3698,7 +3707,18 @@ ThrowControlForThread(
 
     OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    TADDR resumeSSP = ssp;
+#else
+    TADDR resumeSSP = 0;
+#endif
+
+    // The abort can be caught by an interpreted frame further up the stack. Resuming there unwinds the native frames
+    // with a ResumeAfterCatchException, which must not run into the managed frames this thread was redirected from.
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pfef->GetExceptionContext(), resumeSSP);
     DispatchManagedException(throwable, pfef->GetExceptionContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -3734,11 +3754,19 @@ BOOL Thread::HandleJITCaseForAbort()
 
     if (success)
     {
-        PCODE curIP = GetIP(&ctx);
-
-        // check if this is code managed by the code manager (ie. in the code heap)
-        if (ExecutionManager::IsManagedCode(curIP))
+        EECodeInfo codeInfo(GetIP(&ctx));
+        if (codeInfo.IsValid())
         {
+            // Legacy x86 supports aborted, partially interruptible frames without
+            // enumerating their ordinary GC slots. Its IsGcSafe predicate rejects
+            // such methods, so requiring it here could prevent abort indefinitely.
+#ifdef USE_GC_INFO_DECODER
+            if (!codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()))
+            {
+                return FALSE;
+            }
+#endif // USE_GC_INFO_DECODER
+
             return ResumeUnderControl(&ctx);
         }
     }
@@ -4516,6 +4544,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif
 
 #ifndef TARGET_X86
+#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     // Except for x86, no registers are scanned as part of the HijackFrame on top of the stack.
     // This still allows scanning of the return value because the registers in question are
     // scanned as part of the calling method's roots. The problem arises if we are returning to
@@ -4528,11 +4557,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     hijackedReturnAddress = (PCODE)PacStripPtr((void*)hijackedReturnAddress);
 #endif // TARGET_ARM64
 
-    if (IsCallDescrWorkerInternalReturnAddress(hijackedReturnAddress))
-    {
-        return;
-    }
-#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     EECodeInfo codeInfo(hijackedReturnAddress);
     if (!codeInfo.IsValid())
     {
@@ -4547,10 +4571,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif // !TARGET_X86
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    //_ASSERTE(isLegalManagedCodeCaller((TADDR)m_pvHJRetAddr));
     STRESS_LOG2(LF_SYNC, LL_INFO100, "Hijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
 
     // Remember the method we're executing
@@ -4692,9 +4712,8 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                 }
                 else
                 {
-                        // We already have the caller context available at this point
-                    _ASSERTE(pRDT->IsCallerContextValid);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    T_KNONVOLATILE_CONTEXT_POINTERS * pCallerContextPointers = pCF->GetCallerContextPointers();
 
                     // Why do we use CallerContextPointers below?
                     //
@@ -4714,9 +4733,9 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
+                    if (pCallerContextPointers->Ra == &pRDT->pContext->Ra)
 #else
-                    if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
+                    if(pCallerContextPointers->Lr == &pRDT->pContext->Lr)
 #endif
                     {
                         // This is the case when we are either:
@@ -4753,11 +4772,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // pushed on the stack. We get it to determine the return address
                         // in the caller of the current non-interruptible frame.
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
+                        pES->m_ppvRetAddrPtr = (void **) pCallerContextPointers->Ra;
 #else
-                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+                        pES->m_ppvRetAddrPtr = (void **) pCallerContextPointers->Lr;
 #if defined(TARGET_ARM64)
-                        pES->m_pSpForPacSign = (void *)pRDT->CallerContextSpForPacSign;
+                        pES->m_pSpForPacSign = (void *)pCF->GetCallerContextSpForPacSign();
 #endif // TARGET_ARM64
 #endif
                     }
@@ -4766,7 +4785,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     pES->m_FirstPass = FALSE;
                     action = SWA_CONTINUE;
 #elif defined(TARGET_AMD64)
-                    pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
+                    pES->m_ppvRetAddrPtr = (void **) (pCF->GetCallerSp() - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                     PORTABILITY_ASSERT("Platform NYI");
 #endif // _TARGET_???_
@@ -4978,9 +4997,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind 
 
 #ifdef TARGET_X86
 
-#ifndef TARGET_UNIX
 #define WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
-#endif // !TARGET_UNIX
 
 #ifdef WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
 BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)
@@ -5664,8 +5681,8 @@ retry_for_debugger:
 
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 
-        // If someone's trying to suspend *this* thread, this is a good opportunity.
-        if (pCurThread && pCurThread->CatchAtSafePoint())
+        // Only cooperative threads need to rendezvous; preemptive threads are already safe for suspension.
+        if (pCurThread && pCurThread->PreemptiveGCDisabled() && pCurThread->CatchAtSafePoint())
         {
             pCurThread->PulseGCMode();  // Go suspend myself.
         }

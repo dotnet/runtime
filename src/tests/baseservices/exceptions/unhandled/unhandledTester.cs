@@ -168,6 +168,54 @@ namespace TestUnhandledExceptionTester
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
         [ActiveIssue("System.Diagnostics.Process is not supported", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("Test expects being run with corerun", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [SkipOnMono("Tests CoreCLR-specific fatal-error reporting.")]
+        [Theory]
+        [InlineData("A", 1100, false, "utf-8")]
+        [InlineData("\u00E9", 1100, false, "utf-8")]
+        [InlineData("\u20AC", 4, false, "utf-8")]
+        [InlineData("\u20AC", 167, false, "utf-8")]
+        [InlineData("\u20AC", 168, false, "utf-8")]
+        [InlineData("\u20AC", 1100, false, "utf-8")]
+        [InlineData("\uD83D\uDE00", 1100, false, "utf-8")]
+        [InlineData("\u20AC", 4, true, "utf-8")]
+        [InlineData("\u20AC", 1100, true, "utf-8")]
+        [InlineData("A", 1100, false, "us-ascii")]
+        public static void FailFast_UnicodeReport_IsWritten(string text, int repetitions, bool exceptionMessage, string encodingName)
+        {
+            Encoding encoding = Encoding.GetEncoding(encodingName);
+            string message = new StringBuilder().Insert(0, text, repetitions)
+                .Append(encoding.CodePage == Encoding.UTF8.CodePage ? "\uD83D\uDE00TAIL" : "TAIL").ToString();
+            ProcessStartInfo startInfo = new ProcessStartInfo(
+                Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun"),
+                [Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll"),
+                 "failfastreport", message, exceptionMessage.ToString(), encodingName])
+            {
+                InheritedHandles = [],
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardErrorEncoding = encoding
+            };
+            startInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
+            startInfo.Environment.Remove("DOTNET_EnableCrashReport");
+
+            // Windows console code pages are shared with child processes.
+            Encoding outputEncoding = Console.OutputEncoding;
+            try
+            {
+                Console.WriteLine($"FailFast report: text={text}, repetitions={repetitions}, exceptionMessage={exceptionMessage}, encoding={encodingName}");
+                ProcessTextOutput result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMinutes(1));
+                Assert.NotEqual(0, result.ExitStatus.ExitCode);
+                Assert.Contains(message, result.StandardError);
+            }
+            finally
+            {
+                Console.OutputEncoding = outputEncoding;
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
+        [ActiveIssue("System.Diagnostics.Process is not supported", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("Test expects being run with corerun", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [Fact]
         public static void TestEntryPoint()

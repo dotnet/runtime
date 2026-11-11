@@ -148,12 +148,6 @@ public:
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
 
-    MethodDesc *LoadMethodDef(Module* pModule,
-                              mdMethodDef methodDef,
-                              DWORD numGenericArgs = 0,
-                              TypeHandle *pGenericArgs = NULL,
-                              TypeHandle *pOwnerTypeRes = NULL);
-
     TypeHandle FindLoadedClass(Module *pModule,
                              mdTypeDef classToken);
 

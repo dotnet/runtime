@@ -505,8 +505,6 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
 {
 #if defined(TARGET_APPLE)
     return pImageTemplate;
-#elif defined(TARGET_X86)
-    return NULL; // X86 doesn't support high performance relative addressing, which makes the template system not work
 #else
     if (pImageTemplate == NULL)
         return NULL;
@@ -574,11 +572,13 @@ void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templa
         dataPageGenerator(((uint8_t*) addr) + templateSize, templateSize);
     }
 
+    // Shared executable aliases can hang Rosetta's AOT translation cache.
+    boolean_t copy = minipal_detect_rosetta() ? TRUE : FALSE;
     do
     {
         ret = vm_remap(
             mach_task_self(), &addr, templateSize, 0, VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE,
-            mach_task_self(), (vm_address_t)pTemplate, FALSE, &prot, &max_prot, VM_INHERIT_SHARE);
+            mach_task_self(), (vm_address_t)pTemplate, copy, &prot, &max_prot, VM_INHERIT_SHARE);
     } while (ret == KERN_ABORTED);
 
     if (ret != KERN_SUCCESS)

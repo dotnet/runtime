@@ -22,12 +22,16 @@
 
   <Target Name="PreserveEnCAssembliesFromLinking"
           Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'"
-          BeforeTargets="ConfigureTrimming">
+          AfterTargets="ConfigureTrimming">
     <ItemGroup>
-      <!-- Don't modify EnC test assemblies -->
-      <TrimmerRootAssembly
+      <!-- EnC deltas require the original assembly metadata and debug attributes. -->
+      <_EnCAssemblies
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('ApplyUpdateReferencedAssembly.dll'))"
-          Include="%(ResolvedFileToPublish.FullPath)" />
+          Include="@(ResolvedFileToPublish)" />
+      <ResolvedFileToPublish
+          Condition="$([System.String]::Copy('%(FileName)%(Extension)').EndsWith('ApplyUpdateReferencedAssembly.dll'))"
+          TrimMode="copy" />
+      <TrimmerRootAssembly Include="@(_EnCAssemblies->'%(FileName)')" />
     </ItemGroup>
   </Target>
 

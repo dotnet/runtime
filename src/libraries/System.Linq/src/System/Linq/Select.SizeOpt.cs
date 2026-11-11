@@ -96,8 +96,9 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                List<TResult> list = new List<TResult>(_source.Count);
-                for (int i = 0; i < list.Count; i++)
+                int count = _source.Count;
+                List<TResult> list = new List<TResult>(count);
+                for (int i = 0; i < count; i++)
                 {
                     list.Add(_selector(_source[i]));
                 }
