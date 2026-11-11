@@ -8,11 +8,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-// The compiler aligns every method body to a page (--function-alignment) so the 21952
+// The compiler aligns every method body to a page (--function-alignment) so the 19683
 // instantiations of Worker<,,> span more than the 128 MB reach of an arm64 direct branch, and the
-// linker places range extension thunks between the code sections the compiler split. Run calls
-// the rotated instantiation directly and the unboxing stub of Work branches to the method, so the
-// direct calls and the stubs whose target is out of range go through thunks.
+// linker places range extension thunks between the code sections the compiler split. Run and Work
+// call the rotated instantiation directly and the unboxing stub of Work branches to the method, so
+// the direct calls and the stubs whose target is out of range go through thunks, and a stub can
+// share the thunk of a direct call to Work.
 public interface IWork
 {
     int Work(int depth);
@@ -23,7 +24,8 @@ public struct Worker<T1, T2, T3> : IWork
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Run(int depth) => depth == 0 ? 1 : Worker<T2, T3, T1>.Run(depth - 1) + 1;
 
-    public int Work(int depth) => Run(depth);
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public int Work(int depth) => depth == 0 ? 1 : default(Worker<T2, T3, T1>).Work(depth - 1) + 1;
 }
 
 public struct X00 { }
@@ -53,11 +55,10 @@ public struct X23 { }
 public struct X24 { }
 public struct X25 { }
 public struct X26 { }
-public struct X27 { }
 
 public static unsafe class Program
 {
-    private const int Types = 28;
+    private const int Types = 27;
     private const int Count = Types * Types * Types;
     private const long BranchReach = 128 * 1024 * 1024;
 
@@ -151,7 +152,6 @@ public static unsafe class Program
         Each<X24>();
         Each<X25>();
         Each<X26>();
-        Each<X27>();
     }
 
     private static void Each<T1>()
@@ -183,7 +183,6 @@ public static unsafe class Program
         Each<T1, X24>();
         Each<T1, X25>();
         Each<T1, X26>();
-        Each<T1, X27>();
     }
 
     private static void Each<T1, T2>()
@@ -215,7 +214,6 @@ public static unsafe class Program
         Add(&Worker<T1, T2, X24>.Run, new Worker<T1, T2, X24>());
         Add(&Worker<T1, T2, X25>.Run, new Worker<T1, T2, X25>());
         Add(&Worker<T1, T2, X26>.Run, new Worker<T1, T2, X26>());
-        Add(&Worker<T1, T2, X27>.Run, new Worker<T1, T2, X27>());
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_methodPtr")]

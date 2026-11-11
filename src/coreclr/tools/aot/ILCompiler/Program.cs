@@ -123,14 +123,11 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
             int functionAlignment = Get(_command.FunctionAlignment);
-            if (functionAlignment != 0)
-            {
-                if (!BitOperations.IsPow2(functionAlignment))
-                    throw new CommandLineException("Function alignment must be a power of two");
-                targetDetails.OptimumFunctionAlignment = functionAlignment;
-            }
+            if (functionAlignment != 0 && !BitOperations.IsPow2(functionAlignment))
+                throw new CommandLineException("Function alignment must be a power of two");
+
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength, functionAlignment);
             CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),

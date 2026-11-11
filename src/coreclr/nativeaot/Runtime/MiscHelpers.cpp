@@ -320,6 +320,17 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
             // add: imm = ZeroExtend(imm12, 64);
             return GetArm64AdrpPage(pTarget) + ((pTarget[1] >> 10) & 0xfff);
         }
+        // lld, when the image is not position independent: ldr xip0,#8; br xip0; .xword target
+        else if (pTarget[0] == 0x58000050 && pTarget[1] == 0xd61f0200)
+        {
+            return *(uint8_t **)(pTarget + 2);
+        }
+        // lld, when the thunk itself is in branch range of the target: b target
+        // A method can start with a branch as well; a thunk is not part of any method.
+        else if ((pTarget[0] >> 26) == 0x5 && GetRuntimeInstance()->FindMethodStartAddress(pTarget) == NULL)
+        {
+            return (uint8_t *)pTarget + (((int64_t)pTarget[0] << 38) >> 36);
+        }
 
         return (uint8_t *)pTarget;
     }

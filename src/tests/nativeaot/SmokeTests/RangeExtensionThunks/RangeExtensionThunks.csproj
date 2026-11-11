@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- 43904 method bodies aligned to 4 KB, the most link.exe accepts without /ALIGN, span more than the 128 MB reach of a direct branch -->
+    <!-- 39366 method bodies aligned to 4 KB, the most link.exe accepts without /ALIGN, span more than the 128 MB reach of a direct branch -->
     <IlcArg Include="--function-alignment:4096" />
   </ItemGroup>
 
