@@ -467,11 +467,11 @@ methods without IL bodies are not entry-counter targets. Counts represent **logi
 invocations**, including inlinees. Regular inlining retains in-body logical entry probes;
 intrinsic expansions of eligible IL methods use call-site probes after argument evaluation and,
 for `callvirt`, the receiver null check. Shared generic instantiations may aggregate into the same
-count. Counters are 32-bit and wrap on overflow; keep training runs
-bounded. Offline merged totals remain intact in MIBC; totals above `uint.MaxValue` saturate rather
-than wrap when passed to the JIT. This is entry-only data: it does not measure branch frequencies, block counts, CPU samples,
-or `ExclusiveWeight`. The profile uses `PgoInstrumentationKind.MethodEntryIntCount`, not
-`BasicBlockIntCount`, to preserve its provenance. The consumer automatically recognizes this schema
+count. Counters use 64-bit storage for startup-cumulative training; counts above `uint.MaxValue`
+remain intact through export, merging, and JIT consumption. This is entry-only data: it does not
+measure branch frequencies, block counts, CPU samples, or `ExclusiveWeight`.
+The profile uses `PgoInstrumentationKind.MethodEntryLongCount`, not `BasicBlockLongCount`, to
+preserve its provenance. The consumer automatically recognizes this schema
 and conservatively synthesizes profile data; no separate consumption mode or option is needed.
 
 Load the published application, exercise a representative scenario, and export the trace:
@@ -514,7 +514,7 @@ Interpreter collection no longer records loop-head block counts.
 
 Convert the downloaded `xxx.nettrace` into an `.mibc` with a matching `dotnet-pgo` build. Prefer the
 in-tree tool from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`, or a tool version
-explicitly supporting `MethodEntryIntCount`. An older globally installed `dotnet-pgo` does not
+explicitly supporting `MethodEntryLongCount`. An older globally installed `dotnet-pgo` does not
 provide full support for the new tag, including named dump and merge diagnostics.
 
 ```console

@@ -496,7 +496,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             Assert.False(method.TryGetProperty("ExclusiveWeight", out _), $"Method entries must not become CPU sample weights: {method}");
             JsonElement schema = Assert.Single(method.GetProperty("InstrumentationData").EnumerateArray()
                 .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")));
-            Assert.Equal("MethodEntryIntCount", schema.GetProperty("InstrumentationKind").GetString());
+            Assert.Equal("MethodEntryLongCount", schema.GetProperty("InstrumentationKind").GetString());
             Assert.Equal(0, schema.GetProperty("ILOffset").GetInt32());
             Assert.Equal(0, schema.GetProperty("Other").GetInt32());
             Assert.Equal(expected, schema.GetProperty("Data").GetInt64());
@@ -853,7 +853,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray(),
             method => method.GetProperty("Method").GetString()!.Contains("." + expectedMethod + "(", StringComparison.Ordinal));
         JsonElement entry = Assert.Single(method.GetProperty("InstrumentationData").EnumerateArray());
-        Assert.Equal("MethodEntryIntCount", entry.GetProperty("InstrumentationKind").GetString());
+        Assert.Equal("MethodEntryLongCount", entry.GetProperty("InstrumentationKind").GetString());
         Assert.Equal(0, entry.GetProperty("ILOffset").GetInt32());
         Assert.Equal(5, entry.GetProperty("Data").GetInt64());
         Assert.DoesNotContain("BasicBlockIntCount", dumpText);

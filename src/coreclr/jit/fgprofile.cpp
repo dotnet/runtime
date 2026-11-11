@@ -781,15 +781,15 @@ static GenTree* MethodEntryCounterIncrement(Compiler* comp, uint8_t* cell)
     auto address = [comp, cell]() {
         return comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(cell), GTF_ICON_BBC_PTR);
     };
-    GenTree* value = comp->gtNewIndir(TYP_INT, address(), GTF_IND_NONFAULTING);
-    GenTree* sum   = comp->gtNewOperNode(GT_ADD, TYP_INT, value, comp->gtNewIconNode(1));
-    return comp->gtNewStoreIndNode(TYP_INT, address(), sum, GTF_IND_NONFAULTING);
+    GenTree* value = comp->gtNewIndir(TYP_LONG, address(), GTF_IND_NONFAULTING);
+    GenTree* sum   = comp->gtNewOperNode(GT_ADD, TYP_LONG, value, comp->gtNewLconNode(1));
+    return comp->gtNewStoreIndNode(TYP_LONG, address(), sum, GTF_IND_NONFAULTING);
 }
 
 GenTree* Compiler::fgMethodEntryCount(CORINFO_METHOD_HANDLE method)
 {
     ICorJitInfo::PgoInstrumentationSchema schema = {};
-    schema.InstrumentationKind                   = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+    schema.InstrumentationKind                   = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
     schema.Count                                 = 1;
     uint8_t* cell                                = nullptr;
     HRESULT  result = info.compCompHnd->allocPgoInstrumentationBySchema(method, &schema, 1, &cell);
@@ -815,7 +815,7 @@ public:
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override
     {
         ICorJitInfo::PgoInstrumentationSchema entry = {};
-        entry.InstrumentationKind                   = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+        entry.InstrumentationKind                   = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
         entry.ILOffset                              = 0;
         entry.Count                                 = 1;
         schema.push_back(entry);
@@ -3061,7 +3061,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         switch (fgPgoSchema[iSchema].InstrumentationKind)
         {
-            case ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount:
                 methodEntrySchema = iSchema;
                 break;
 
@@ -3130,7 +3130,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     bool haveMethodEntries = methodEntrySchema != UINT_MAX && fgPgoBlockCounts == 0 && fgPgoEdgeCounts == 0;
     if (haveMethodEntries && fgPgoSchema[methodEntrySchema].ILOffset == 0 && fgPgoSchema[methodEntrySchema].Count == 1)
     {
-        const uint32_t entries = *reinterpret_cast<uint32_t*>(fgPgoData + fgPgoSchema[methodEntrySchema].Offset);
+        const uint64_t entries = *reinterpret_cast<uint64_t*>(fgPgoData + fgPgoSchema[methodEntrySchema].Offset);
         if (entries == 0)
         {
             JITDUMP("Method-entry PGO: zero or wrapped count; retaining unknown hotness\n");
@@ -3141,7 +3141,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
         fgCanonicalizeFirstBB();
         fgFirstBB->setBBProfileWeight(static_cast<weight_t>(entries));
-        JITDUMP("Method-entry PGO: %u logical entries; synthesizing, not measuring, internal flow\n", entries);
+        JITDUMP("Method-entry PGO: %llu logical entries; synthesizing, not measuring, internal flow\n",
+                static_cast<unsigned long long>(entries));
         ProfileSynthesis::Run(this, ProfileSynthesisOption::ResetAndSynthesize);
         fgApplyProfileScale();
         return PhaseStatus::MODIFIED_EVERYTHING;

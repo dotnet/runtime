@@ -19,7 +19,7 @@ public:
     static void Initialize();
     static void LogInstrumentationData();
     static void Shutdown();
-    static uint32_t* GetMethodEntryCounter(MethodDesc* method);
+    static uint64_t* GetMethodEntryCounter(MethodDesc* method);
 
 #endif // FEATURE_PGO
 

@@ -12612,7 +12612,7 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
 
 #ifdef FEATURE_PGO
 
-    if (countSchemaItems == 1 && pSchema[0].InstrumentationKind == PgoInstrumentationKind::MethodEntryIntCount)
+    if (countSchemaItems == 1 && pSchema[0].InstrumentationKind == PgoInstrumentationKind::MethodEntryLongCount)
     {
         MethodDesc* method = reinterpret_cast<MethodDesc*>(ftnHnd);
         if (method->IsDynamicMethod() || method->IsILStub() || !method->IsIL() || method->GetILHeader() == nullptr)

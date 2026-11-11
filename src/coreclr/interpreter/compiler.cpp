@@ -3643,7 +3643,7 @@ void InterpCompiler::EmitPushSyncObject()
 static uint8_t* AllocMethodEntryCounter(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE method)
 {
     ICorJitInfo::PgoInstrumentationSchema schema = {};
-    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
     schema.Count = 1;
     uint8_t* data = nullptr;
     HRESULT hr = compHnd->allocPgoInstrumentationBySchema(method, &schema, 1, &data);

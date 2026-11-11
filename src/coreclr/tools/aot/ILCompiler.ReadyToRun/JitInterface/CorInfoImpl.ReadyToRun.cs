@@ -3556,7 +3556,7 @@ namespace Internal.JitInterface
 
             MethodDesc entryMethod = HandleToObject(ftnHnd);
             if (_compilation.NodeFactory.Target.IsWasm && countSchemaItems == 1 &&
-                pSchema[0].InstrumentationKind == PgoInstrumentationKind.MethodEntryIntCount)
+                pSchema[0].InstrumentationKind == PgoInstrumentationKind.MethodEntryLongCount)
             {
                 entryMethod = entryMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (entryMethod.GetTypicalMethodDefinition() is not EcmaMethod ecmaEntry ||

@@ -61,27 +61,28 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(0L, 0L, 0u)]
-    [InlineData(2147483655L, 0L, 2147483655u)]
-    [InlineData(4294967295L, 0L, uint.MaxValue)]
-    [InlineData(2147483655L, 2147483655L, uint.MaxValue)]
-    [InlineData(4294967295L, 1L, uint.MaxValue)]
-    public void MethodEntryProfileMarshallingPreservesMergedHotness(long firstCount, long secondCount, uint expected)
+    [InlineData(0L, 0L, 0L)]
+    [InlineData(2147483655L, 0L, 2147483655L)]
+    [InlineData(4294967295L, 0L, 4294967295L)]
+    [InlineData(2147483655L, 2147483655L, 4294967310L)]
+    [InlineData(4294967295L, 1L, 4294967296L)]
+    [InlineData(1099511627776L, 7L, 1099511627783L)]
+    public void MethodEntryProfileMarshallingPreservesMergedHotness(long firstCount, long secondCount, long expected)
     {
         CompilerPgo.PgoSchemaElem[] merged = CompilerPgo.PgoProcessor.Merge<object, object>(
         [
-            [new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount, Count = 1, DataLong = firstCount }],
-            [new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount, Count = 1, DataLong = secondCount }],
+            [new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount, Count = 1, DataLong = firstCount }],
+            [new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount, Count = 1, DataLong = secondCount }],
         ]);
         Assert.Equal(firstCount + secondCount, Assert.Single(merged,
-            schema => schema.InstrumentationKind == CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount).DataLong);
+            schema => schema.InstrumentationKind == CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount).DataLong);
 
         using var data = new MemoryStream();
         CorInfoImpl.ComputeJitPgoInstrumentationSchema(_ => throw new InvalidOperationException(),
             merged, out PgoInstrumentationSchema[] nativeSchemas, data);
         PgoInstrumentationSchema entry = Assert.Single(nativeSchemas,
-            schema => schema.InstrumentationKind == CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount);
-        Assert.Equal(expected, BinaryPrimitives.ReadUInt32LittleEndian(data.GetBuffer().AsSpan((int)entry.Offset, sizeof(uint))));
+            schema => schema.InstrumentationKind == CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount);
+        Assert.Equal((ulong)expected, BinaryPrimitives.ReadUInt64LittleEndian(data.GetBuffer().AsSpan((int)entry.Offset, sizeof(ulong))));
     }
 
     [Theory]
@@ -116,7 +117,7 @@ public class WasmArgumentLayoutTests
             Assert.True(result.Success, result.StandardOutput + result.StandardError);
             string listing = File.ReadAllText(listingPath);
             Assert.Equal(1, Regex.Matches(listing, @"\bi8x16\.popcnt\b").Count);
-            Assert.Equal(instrument ? 1 : 0, Regex.Matches(listing, @"\bi32\.add\b").Count);
+            Assert.Equal(instrument ? 1 : 0, Regex.Matches(listing, @"\bi64\.add\b").Count);
         }
         finally
         {

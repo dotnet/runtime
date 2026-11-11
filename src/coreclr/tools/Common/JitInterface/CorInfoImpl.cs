@@ -5075,13 +5075,7 @@ namespace Internal.JitInterface
 
                 if (pgoResultsSchemas[i].DataObject == null)
                 {
-                    long value = pgoResultsSchemas[i].DataLong;
-                    if (pgoResultsSchemas[i].InstrumentationKind == PgoInstrumentationKind.MethodEntryIntCount)
-                    {
-                        // Merged totals can exceed the JIT's uint32 entry counter without any producer wrapping.
-                        value = Math.Min(value, uint.MaxValue);
-                    }
-                    bwInstrumentationData.Write(value);
+                    bwInstrumentationData.Write(pgoResultsSchemas[i].DataLong);
                 }
                 else
                 {
@@ -5148,8 +5142,8 @@ namespace Internal.JitInterface
                         bool entryOnly = true;
                         foreach (PgoSchemaElem element in sharedSchema)
                         {
-                            hasEntries |= element.InstrumentationKind == PgoInstrumentationKind.MethodEntryIntCount;
-                            entryOnly &= element.InstrumentationKind is PgoInstrumentationKind.MethodEntryIntCount
+                            hasEntries |= element.InstrumentationKind == PgoInstrumentationKind.MethodEntryLongCount;
+                            entryOnly &= element.InstrumentationKind is PgoInstrumentationKind.MethodEntryLongCount
                                 or PgoInstrumentationKind.NumRuns or PgoInstrumentationKind.Version;
                         }
                         if (hasEntries && entryOnly)

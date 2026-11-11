@@ -121,10 +121,10 @@ public:
 
     bool operator()(const ICorJitInfo::PgoInstrumentationSchema &schema)
     {
-        if (schema.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount)
+        if (schema.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount)
         {
             hasMethodEntries = true;
-            hasNonzeroEntries |= *reinterpret_cast<const uint32_t*>(pgoData->header.GetData() + schema.Offset) != 0;
+            hasNonzeroEntries |= *reinterpret_cast<const uint64_t*>(pgoData->header.GetData() + schema.Offset) != 0;
         }
         else if (schema.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::NumRuns &&
                  schema.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::Version)
@@ -673,7 +673,7 @@ void PgoManager::Header::Init(MethodDesc *pMD, unsigned methodhash, unsigned cod
     this->countsOffset = countsOffset;
 }
 
-uint32_t* PgoManager::GetMethodEntryCounter(MethodDesc* method)
+uint64_t* PgoManager::GetMethodEntryCounter(MethodDesc* method)
 {
     STANDARD_VM_CONTRACT;
 
@@ -684,11 +684,11 @@ uint32_t* PgoManager::GetMethodEntryCounter(MethodDesc* method)
 
     COR_ILMETHOD_DECODER header(il);
     ICorJitInfo::PgoInstrumentationSchema schema = {};
-    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
     schema.Count = 1;
     BYTE* data;
     IfFailThrow(allocPgoInstrumentationBySchema(method, &header, &schema, 1, &data));
-    return reinterpret_cast<uint32_t*>(data + schema.Offset);
+    return reinterpret_cast<uint64_t*>(data + schema.Offset);
 }
 
 HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)

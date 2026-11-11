@@ -28,18 +28,19 @@ namespace DotNetPgo.Tests
         [Theory]
         [InlineData(0L, 0L)]
         [InlineData(2147483647L, 2147483647L)]
-        [InlineData(-2147483648L, 2147483648L)]
-        [InlineData(-2147483641L, 2147483655L)]
-        [InlineData(-1L, 4294967295L)]
+        [InlineData(2147483648L, 2147483648L)]
+        [InlineData(2147483655L, 2147483655L)]
         [InlineData(4294967295L, 4294967295L)]
         [InlineData(4294967303L, 4294967303L)]
-        public void ReadsUnsignedMethodEntries(long encodedValue, long expectedValue)
+        [InlineData(1099511627783L, 1099511627783L)]
+        [InlineData(long.MaxValue, long.MaxValue)]
+        public void ReadsLongMethodEntries(long encodedValue, long expectedValue)
         {
             PgoSchemaElem[] schemas =
             [
-                new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryIntCount, Count = 1, DataLong = encodedValue },
+                new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryLongCount, Count = 1, DataLong = encodedValue },
                 new() { InstrumentationKind = PgoInstrumentationKind.BasicBlockIntCount, ILOffset = 1, Count = 1, DataLong = -1 },
-                new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryIntCount, ILOffset = 2, Count = 1, DataLong = 9 },
+                new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryLongCount, ILOffset = 2, Count = 1, DataLong = 9 },
             ];
             foreach (bool compressed in new[] { false, true })
             {
