@@ -11435,8 +11435,14 @@ bool Compiler::impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET aw
     }
 
     const BYTE* awaitTokenAddr = info.compCode + awaitOffset + 1;
-    // A Task<T>-returning function can be followed by Await(Task), requiring us to discard the result after folding.
-    // We can cheaply detect the common case by looking for a MethodSpec token.
+    // In normal cases a Task<T>-returning function is followed by 'T AsyncHelpers.Await(Task<T>)'.
+    // However, it is also legal IL to follow it up with 'void AsyncHelpers.Await(Task)'. Such IL may occur
+    // in C# code like `await (Task)Foo()`.
+    // In the latter case, the IL does not expect a pushed IL entry, but we are going to push one as part
+    // of handling the call.
+    // To differentiate the cases we can look for a MethodSpec token since that unequivocally means
+    // 'T AsyncHelpers.Await(Task<T>)'; if not seen then this is the void overload and we know to discard
+    // the additional IL entry.
     return TypeFromToken(getU4LittleEndian(awaitTokenAddr)) != mdtMethodSpec;
 }
 
