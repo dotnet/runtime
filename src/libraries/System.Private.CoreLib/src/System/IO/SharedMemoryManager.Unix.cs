@@ -401,6 +401,13 @@ namespace System.IO
                 return ApplicationContainerPath ?? "/tmp/";
             }
 
+            // On Android, /tmp is missing or only writable by the shell user, so apps
+            // fall back to the temp directory (TMPDIR).
+            if (Interop.Sys.Access("/tmp/", Interop.Sys.AccessMode.W_OK | Interop.Sys.AccessMode.X_OK) != 0)
+            {
+                return Path.GetTempPath();
+            }
+
             return "/tmp/";
         }
 

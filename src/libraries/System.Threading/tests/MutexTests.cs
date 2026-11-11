@@ -1120,7 +1120,9 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAny(new WaitHandle[] { m, mre }, 0));
         }
 
-        private const string GlobalSharedMemoryDirectory = $"/tmp/.dotnet/shm/global";
+        // Matches SharedMemoryManager: /tmp/ when it is writable, otherwise the temp directory (Android).
+        private static string GlobalSharedMemoryDirectory =>
+            Path.Combine(access("/tmp/", 3 /* W_OK | X_OK */) == 0 ? "/tmp/" : Path.GetTempPath(), ".dotnet/shm/global");
         private const UnixFileMode AllUsersRwx =
             UnixFileMode.UserRead
             | UnixFileMode.UserWrite
@@ -1425,6 +1427,9 @@ namespace System.Threading.Tests
                 yield return new object[] { options.CurrentUserOnly, options.CurrentSessionOnly };
             }
         }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int access(string path, int mode);
 
         [DllImport("kernel32.dll")]
         private static extern IntPtr GetCurrentThread();
