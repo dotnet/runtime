@@ -9922,10 +9922,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[ORDER_DOMINATED]");
         }
-        if (tree->gtFlags & GTF_ORDER_DOMINATED_OWN)
-        {
-            chars += printf("[ORDER_DOMINATED_OWN]");
-        }
         if (tree->gtFlags & GTF_REVERSE_OPS)
         {
             if (op != GT_LCL_VAR)

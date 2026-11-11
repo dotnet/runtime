@@ -3927,7 +3927,8 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
         DISPTREE(operand);
-        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsCFGCallArgInvariantInRange(operand, call))
+        if (((operand->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED)) == 0) &&
+            IsCFGCallArgInvariantInRange(operand, call))
         {
             JITDUMP("...yes, moving to after validator call\n");
             BlockRange().Remove(operand);
@@ -11714,7 +11715,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         // Helper lambda to check if a single node interferes with 'indir'.
         auto interferes = [=](GenTree* node) {
             if ((((node->gtFlags & GTF_ORDER_SIDEEFF) != 0) && node->OperSupportsOrderingSideEffect()) ||
-                node->HasOwnDominatedOrdering())
+                node->HasDominatedOrdering())
             {
                 // Cannot normally reorder GTF_ORDER_SIDEEFF and GTF_GLOB_REF,
                 // except for some of the known cases described above.

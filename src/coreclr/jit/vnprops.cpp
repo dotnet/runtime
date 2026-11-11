@@ -648,7 +648,7 @@ bool Compiler::gtNodeOrderingAllowsHoist(GenTree*                       node,
     {
         return false;
     }
-    if (!node->HasOwnDominatedOrdering())
+    if (!node->HasDominatedOrdering())
     {
         return true;
     }
@@ -656,50 +656,23 @@ bool Compiler::gtNodeOrderingAllowsHoist(GenTree*                       node,
     return fgVNGetExceptionDependency(node, &anchor, dependencies) && m_domTree->Dominates(anchor, preheader);
 }
 
-//------------------------------------------------------------------------
-// OrderingAllowsEarlierEvaluation: Check a tree's ordering constraints when it
-//   moves earlier without anchor records. Only inherited constraints can pass;
-//   each operand must allow the motion. Other interference is checked by callers.
-//
-static NOINLINE bool OrderingAllowsEarlierEvaluation(GenTree* tree)
+// A contextual dependency is stored only on its operation. Use the existing
+// tree walker when a transformation needs a summary for an entire expression.
+NOINLINE bool Compiler::gtTreeHasDominatedOrderingWorker(GenTree* tree)
 {
-    if ((tree->gtFlags & GTF_ORDER_EFFECT) == 0)
-    {
-        return true;
-    }
-    if ((((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && tree->OperSupportsOrderingSideEffect()) ||
-        tree->HasOwnDominatedOrdering())
-    {
-        return false;
-    }
-    for (GenTree* operand : tree->Operands())
-    {
-        if (((operand->gtFlags & GTF_ORDER_EFFECT) != 0) && !OrderingAllowsEarlierEvaluation(operand))
-        {
-            return false;
-        }
-    }
-    return true;
+    return gtFindNodeInTree<GTF_EMPTY>(tree, [](GenTree* node) {
+        return node->HasDominatedOrdering();
+    }) != nullptr;
 }
 
-//------------------------------------------------------------------------
-// gtOrderingAllowsSwap: Whether dominated orderings allow evaluating 'second' ahead of 'first',
-//   two trees evaluated in the same block, the block unknown.
-//
-// Notes:
-//    Only GTF_ORDER_DOMINATED is considered; callers keep their own rules for other effects.
-//    'first' moves later, which its dominated orderings allow. 'second' moves earlier, which
-//    needs its recorded dependencies; without the block, only inherited ones qualify.
-//
+// Moving the second operand earlier requires a proof unless the first operand
+// cannot establish any dependency. Moving the first operand later is permitted.
 bool Compiler::gtOrderingAllowsSwap(GenTree* first, GenTree* second)
 {
-    // Leaves and effect-free expressions cannot contain a check that second relies on.
-    // Do not test GTF_EXCEPT alone: contextual non-faulting operations retain ordering effects.
-    if (((second->gtFlags & GTF_ORDER_DOMINATED) == 0) || first->OperIsLeaf() ||
-        ((first->gtFlags & GTF_ALL_EFFECT) == 0))
+    if (((fgVNPassesCompleted == 0) && (vnState == nullptr)) || first->OperIsLeaf() ||
+        !gtTreeHasDominatedOrdering(second))
     {
         return true;
     }
-
-    return OrderingAllowsEarlierEvaluation(second);
+    return ((first->gtFlags & GTF_ALL_EFFECT) == 0) && !gtTreeHasDominatedOrdering(first);
 }

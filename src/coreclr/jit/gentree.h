@@ -368,14 +368,10 @@ enum GenTreeFlags : unsigned
     GTF_GLOB_REF      = 0x00000008, // sub-expression uses global variable(s)
     GTF_ORDER_SIDEEFF = 0x00000010, // sub-expression has a re-ordering side effect
 
-    // Sub-expression contains an operation that cannot throw only because an earlier check
-    // succeeded (a contextual proof from value numbering). The operation must not move ahead
-    // of that check; where the check is can be queried (see Compiler::fgVNGetExceptionDependency).
+    // This operation depends on a preceding check. This is node-local state:
+    // subtree queries must inspect operands, rather than propagating the bit.
     GTF_ORDER_DOMINATED = 0x00000020,
-    // This operation itself has dominated ordering. Unlike the aggregate flag above,
-    // this bit is not in GTF_ALL_EFFECT and is never propagated from an operand.
-    GTF_ORDER_DOMINATED_OWN = 0x00000040,
-    GTF_ORDER_EFFECT    = GTF_ORDER_SIDEEFF | GTF_ORDER_DOMINATED,
+    GTF_ORDER_EFFECT = GTF_ORDER_SIDEEFF | GTF_ORDER_DOMINATED,
 
 // If you set these flags, make sure that code:gtExtractSideEffList knows how to find the tree,
 // otherwise the C# (run csc /o-) code:
@@ -384,11 +380,10 @@ enum GenTreeFlags : unsigned
 
     GTF_PERSISTENT_SIDE_EFFECTS = GTF_ASG | GTF_CALL,
     GTF_SIDE_EFFECT             = GTF_PERSISTENT_SIDE_EFFECTS | GTF_EXCEPT,
-    GTF_OBS_EFFECT              = GTF_SIDE_EFFECT | GTF_ORDER_EFFECT,
+    GTF_OBS_EFFECT              = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF,
     GTF_GLOB_EFFECT             = GTF_SIDE_EFFECT | GTF_GLOB_REF,
-    // Keep aggregate effects contiguous, and ordering bits adjacent, so hot flag masks
-    // are directly encodable (in particular as arm64 logical immediates).
-    GTF_ALL_EFFECT              = GTF_GLOB_EFFECT | GTF_ORDER_EFFECT,
+    // Only effects that propagate from operands belong in this aggregate mask.
+    GTF_ALL_EFFECT              = GTF_GLOB_EFFECT | GTF_ORDER_SIDEEFF,
 
     GTF_REVERSE_OPS = 0x00004000, // operand op2 should be evaluated before op1 (normally, op1 is evaluated first and op2 is evaluated second)
     GTF_CONTAINED   = 0x00010000, // This node is contained (executed as part of its parent)
@@ -504,7 +499,7 @@ enum GenTreeFlags : unsigned
     GTF_IND_MUST_PRESERVE_FLAGS = GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_INITCLASS,
 
     // Represents flags that an indirection based on another indirection can and must preserve
-    GTF_IND_COPYABLE_FLAGS = GTF_IND_MUST_PRESERVE_FLAGS | GTF_IND_NONFAULTING | GTF_ORDER_DOMINATED_OWN,
+    GTF_IND_COPYABLE_FLAGS = GTF_IND_MUST_PRESERVE_FLAGS | GTF_IND_NONFAULTING | GTF_ORDER_DOMINATED,
 
     GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT | GTF_IND_ALLOW_NON_ATOMIC,
 
@@ -2354,12 +2349,12 @@ public:
     void SetHasDominatedOrdering()
     {
         assert(OperSupportsDominatedOrdering());
-        gtFlags |= GTF_ORDER_DOMINATED | GTF_ORDER_DOMINATED_OWN;
+        gtFlags |= GTF_ORDER_DOMINATED;
     }
 
-    bool HasOwnDominatedOrdering() const
+    bool HasDominatedOrdering() const
     {
-        return ((gtFlags & GTF_ORDER_DOMINATED_OWN) != 0) && OperSupportsDominatedOrdering();
+        return ((gtFlags & GTF_ORDER_DOMINATED) != 0) && OperSupportsDominatedOrdering();
     }
 
     inline bool IsCnsIntOrI() const;

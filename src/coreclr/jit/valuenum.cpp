@@ -16313,7 +16313,7 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(GenTree*      operation,
             if (needDivideByZeroExcCon)
             {
                 assert(divZeroAnchor != nullptr);
-                *nonThrowingFlags |= GTF_ORDER_DOMINATED | GTF_ORDER_DOMINATED_OWN;
+                *nonThrowingFlags |= GTF_ORDER_DOMINATED;
                 if (orderDependency != nullptr)
                 {
                     *orderDependency = divZeroAnchor;
@@ -16330,7 +16330,7 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(GenTree*      operation,
             if (needArithmeticExcCon)
             {
                 assert(arithAnchor != nullptr);
-                *nonThrowingFlags |= GTF_ORDER_DOMINATED | GTF_ORDER_DOMINATED_OWN;
+                *nonThrowingFlags |= GTF_ORDER_DOMINATED;
                 // Both checks dominate this operation. The later block bounds
                 // motion past either check.
                 if (orderDependency != nullptr)

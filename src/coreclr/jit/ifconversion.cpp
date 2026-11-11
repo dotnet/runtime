@@ -213,7 +213,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
             GenTree* op1 = tree->gtGetOp1();
 
             // Ensure it won't cause any additional side effects.
-            if ((op1->gtFlags & GTF_OBS_EFFECT) != 0)
+            if (((op1->gtFlags & GTF_OBS_EFFECT) != 0) || m_compiler->gtTreeHasDominatedOrdering(op1))
             {
                 return false;
             }
@@ -222,7 +222,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
             // with the condition (for example, the condition could be an explicit bounds
             // check and the operand could read an array element). Disallow this except
             // for some common cases that we know are always side effect free.
-            if (((m_cond->gtFlags & GTF_ORDER_EFFECT) != 0) && !op1->IsInvariant() && !op1->OperIsLocal())
+            if (m_compiler->gtTreeHasOrderingEffect(m_cond) && !op1->IsInvariant() && !op1->OperIsLocal())
             {
                 return false;
             }

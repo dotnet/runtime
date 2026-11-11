@@ -1567,7 +1567,8 @@ void ReplaceVisitor::EliminateCommasInBlockOp(GenTree* store, DecompositionState
         {
             GenTree* addr = store->gtGetOp1();
             // Note that GTF_GLOB_REF is not up to date here, hence we need a tree walk to find address exposed locals.
-            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((src->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()) ||
+            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtTreeHasDominatedOrdering(addr) ||
+                (((src->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()) ||
                 m_compiler->gtHasAddressExposedLocals(addr))
             {
                 unsigned dstAddrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Block morph store addr"));

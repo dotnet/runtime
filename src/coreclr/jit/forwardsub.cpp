@@ -126,7 +126,7 @@ static bool fgIsCheapReorderableAddressTree(Compiler* compiler, GenTree* tree)
     }
 
     // Only allow GTF_EXCEPT side effects (from FIELD_ADDR null checks).
-    if ((tree->gtFlags & GTF_ALL_EFFECT & ~GTF_EXCEPT) != 0)
+    if (((tree->gtFlags & GTF_ALL_EFFECT & ~GTF_EXCEPT) != 0) || compiler->gtTreeHasDominatedOrdering(tree))
     {
         return false;
     }
@@ -555,7 +555,7 @@ public:
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        m_flags |= node->gtFlags & GTF_ALL_EFFECT;
+        m_flags |= node->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED);
 
         if (node->OperIsLocal())
         {
@@ -828,7 +828,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         JITDUMP(" cannot reorder with potential interfering store\n");
         return false;
     }
-    if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((fsv.GetFlags() & GTF_ALL_EFFECT) != 0))
+    if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((fsv.GetFlags() & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED)) != 0))
     {
         JITDUMP(" cannot reorder call with any side effect\n");
         return false;
@@ -838,7 +838,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         JITDUMP(" cannot reorder global reference with persistent side effects\n");
         return false;
     }
-    if (((fwdSubNode->gtFlags & GTF_ORDER_EFFECT) != 0) && ((fsv.GetFlags() & (GTF_GLOB_REF | GTF_ORDER_EFFECT)) != 0))
+    if (gtTreeHasOrderingEffect(fwdSubNode) && ((fsv.GetFlags() & (GTF_GLOB_REF | GTF_ORDER_EFFECT)) != 0))
     {
         JITDUMP(" cannot reorder ordering side effect with global reference/ordering side effect\n");
         return false;

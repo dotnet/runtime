@@ -804,7 +804,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     continue;
                 }
 
-                if (((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                if ((((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                     comp->gtTreeHasDominatedOrdering(prevArg.GetEarlyNode())) ||
                     comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
                 {
                     SetNeedsTemp(&prevArg);
@@ -887,7 +888,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
                 // For all previous arguments, if they have any GTF_ALL_EFFECT
                 //  we require that they be evaluated into a temp
-                if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0))
+                if ((prevArg.GetEarlyNode() != nullptr) && (((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                                                            comp->gtTreeHasDominatedOrdering(prevArg.GetEarlyNode())))
                 {
                     SetNeedsTemp(&prevArg);
                 }
@@ -1052,7 +1054,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
         for (CallArg& arg : EarlyArgs())
         {
-            if ((arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0)
+            if (((arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                comp->gtTreeHasDominatedOrdering(arg.GetEarlyNode()))
             {
                 SetNeedsTemp(&arg);
             }
@@ -6547,7 +6550,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             }
 
             // Evaluate the value before the new array checks, but after the array and index.
-            if ((value->gtFlags & GTF_OBS_EFFECT) != 0)
+            if (((value->gtFlags & GTF_OBS_EFFECT) != 0) || gtTreeHasDominatedOrdering(value))
             {
                 GenTree** operands[] = {&arr, &index, &value};
                 for (GenTree** operand : operands)
@@ -12292,7 +12295,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     // M & (N - 1) == N - 1
     // op is | for variable counts, and either | or ^ for constant counts
 
-    if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || ((tree->gtFlags & GTF_ORDER_EFFECT) != 0))
+    if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || gtTreeHasOrderingEffect(tree))
     {
         // We can't do anything if the tree has stores, calls, or volatile reads. Note that we allow
         // GTF_EXCEPT side effect since any exceptions thrown by the original tree will be thrown by
@@ -15868,7 +15871,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
                 GenTree* idx = arrElem->gtArrInds[i];
-                if ((idx->gtFlags & GTF_ALL_EFFECT) == 0)
+                if (((idx->gtFlags & GTF_ALL_EFFECT) == 0) && !m_compiler->gtTreeHasDominatedOrdering(idx))
                 {
                     // No side-effect; just use it.
                     idxToUse[i]  = idx;

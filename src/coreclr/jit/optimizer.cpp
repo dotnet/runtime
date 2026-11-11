@@ -4357,11 +4357,6 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
         //
         bool IsOrderingSatisfiedAtPreheader(GenTree* node, bool childrenOrderingSatisfied)
         {
-            if ((node->gtFlags & GTF_ORDER_EFFECT) == 0)
-            {
-                return true;
-            }
-
             if (!childrenOrderingSatisfied)
             {
                 return false;
@@ -4387,9 +4382,9 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 // discharged check has nothing to hoist; faulting checks must
                 // still respect any contextual dependencies in their operands.
                 return ((node->gtFlags & GTF_IND_NONFAULTING) == 0) &&
-                       (((node->gtFlags & GTF_ORDER_DOMINATED) == 0) || orderingSatisfied);
+                       (!m_compiler->gtTreeHasDominatedOrdering(node) || orderingSatisfied);
             }
-            else if (((node->gtFlags & GTF_ORDER_EFFECT) != 0) && !orderingSatisfied)
+            else if (!orderingSatisfied)
             {
                 // If a node has an order side effect, we can't hoist it at all unless every one of them is a
                 // non-throwing proof that holds in the preheader (see IsOrderingSatisfiedAtPreheader). Otherwise we

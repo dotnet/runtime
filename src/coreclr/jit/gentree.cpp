@@ -2774,7 +2774,7 @@ AGAIN:
 
     // Indirection flags are semantic and some of them (e.g. GTF_IND_NONFAULTING) are only valid
     // in the context of the original node, so they must be equal for all indirection-like nodes.
-    const GenTreeFlags indirValueFlags = GTF_IND_FLAGS & ~GTF_ORDER_DOMINATED_OWN;
+    const GenTreeFlags indirValueFlags = GTF_IND_FLAGS & ~GTF_ORDER_DOMINATED;
     if (op1->OperIsIndirOrArrMetaData() && ((op1->gtFlags & indirValueFlags) != (op2->gtFlags & indirValueFlags)))
     {
         return false;
@@ -5557,7 +5557,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 
     // Swapping evaluates secondNode ahead of firstNode. A dominated ordering in firstNode only moves
     // later; one in secondNode must not move ahead of its check, which firstNode might perform.
-    if (canSwap && ((secondNode->gtFlags & GTF_ORDER_DOMINATED) != 0) && !gtOrderingAllowsSwap(firstNode, secondNode))
+    if (canSwap && ((fgVNPassesCompleted != 0) || (vnState != nullptr)) && !gtOrderingAllowsSwap(firstNode, secondNode))
     {
         canSwap = false;
     }
@@ -6038,7 +6038,7 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
         return;
     }
 
-    if ((addr->gtFlags & GTF_ALL_EFFECT) != 0)
+    if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || comp->gtTreeHasDominatedOrdering(addr))
     {
         return;
     }
@@ -9183,7 +9183,7 @@ bool GenTree::OperSupportsDominatedOrdering() const
 //
 GenTreeFlags GenTree::OperEffects(Compiler* comp, ExceptionSetFlags* preciseExceptions)
 {
-    GenTreeFlags flags = gtFlags & GTF_ALL_EFFECT;
+    GenTreeFlags flags = gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED);
 
     if (((flags & GTF_ASG) != 0) && !OperRequiresAsgFlag())
     {
@@ -9220,7 +9220,7 @@ GenTreeFlags GenTree::OperEffects(Compiler* comp, ExceptionSetFlags* preciseExce
             flags &= ~GTF_ORDER_SIDEEFF;
         }
 
-        if (((flags & GTF_ORDER_DOMINATED) != 0) && !HasOwnDominatedOrdering())
+        if (((flags & GTF_ORDER_DOMINATED) != 0) && !HasDominatedOrdering())
         {
             flags &= ~GTF_ORDER_DOMINATED;
         }
@@ -10659,7 +10659,7 @@ FORCEINLINE void Compiler::gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFla
     assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
 
     indir->gtFlags |= indirFlags;
-    if ((indirFlags & GTF_ORDER_DOMINATED_OWN) != 0)
+    if ((indirFlags & GTF_ORDER_DOMINATED) != 0)
     {
         indir->SetHasDominatedOrdering();
     }
@@ -12119,23 +12119,13 @@ void Compiler::gtUpdateTreeAncestorsSideEffects(GenTree* tree)
 // inherited flags from the operands. Keep the common no-ordering path inline.
 static FORCEINLINE void UpdateOrderingSideEffects(GenTree* tree)
 {
-    if ((tree->gtFlags & (GTF_ORDER_EFFECT | GTF_ORDER_DOMINATED_OWN)) != 0)
+    if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
     {
-        if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
-        {
-            tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
-        }
-        if ((tree->gtFlags & (GTF_ORDER_DOMINATED | GTF_ORDER_DOMINATED_OWN)) != 0)
-        {
-            if (tree->HasOwnDominatedOrdering())
-            {
-                tree->gtFlags |= GTF_ORDER_DOMINATED;
-            }
-            else
-            {
-                tree->gtFlags &= ~(GTF_ORDER_DOMINATED | GTF_ORDER_DOMINATED_OWN);
-            }
-        }
+        tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
+    }
+    if (((tree->gtFlags & GTF_ORDER_DOMINATED) != 0) && !tree->OperSupportsDominatedOrdering())
+    {
+        tree->gtFlags &= ~GTF_ORDER_DOMINATED;
     }
 }
 
@@ -16100,8 +16090,8 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     {
         // If op1 is "volatle" and op2 is not, we can still fold.
         //
-        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_EFFECT) != 0;
-        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_EFFECT) != 0;
+        const bool op1MayBeVolatile = gtTreeHasOrderingEffect(op1);
+        const bool op2MayBeVolatile = gtTreeHasOrderingEffect(op2);
 
         if (!op1MayBeVolatile || op2MayBeVolatile)
         {
@@ -16232,11 +16222,11 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
 
     // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
     // Or it may indicate a non-null assertion prop into an indir subtree.
-    if ((tree->gtFlags & GTF_ORDER_EFFECT) != 0)
+    if (gtTreeHasOrderingEffect(tree))
     {
         // If op1 is "volatile" and op2 is not, we can still fold.
-        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_EFFECT) != 0;
-        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_EFFECT) != 0;
+        const bool op1MayBeVolatile = gtTreeHasOrderingEffect(op1);
+        const bool op2MayBeVolatile = gtTreeHasOrderingEffect(op2);
 
         if (!op1MayBeVolatile || op2MayBeVolatile)
         {
@@ -19531,12 +19521,15 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
     // Does this tree have any Side-effect flags set that we care about?
     if (sideEffectFlags == 0)
     {
-        // no it doesn't..
-        return false;
+        return ((flags & GTF_ORDER_EFFECT) != 0) && gtTreeHasDominatedOrdering(tree);
     }
 
     if ((sideEffectFlags == GTF_CALL) && tree->IsHelperCall())
     {
+        if (((flags & GTF_ORDER_EFFECT) != 0) && gtTreeHasDominatedOrdering(tree))
+        {
+            return true;
+        }
         // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
         // However, for some pure helper calls we lie about this.
         if (gtNodeHasSideEffects(tree, flags, ignoreCctors))

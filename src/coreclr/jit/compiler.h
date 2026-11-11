@@ -6795,6 +6795,9 @@ public:
     bool gtNodeOrderingAllowsHoist(GenTree* node, BasicBlock* preheader,
                                    const VNExceptionDependencies& dependencies);
     bool gtOrderingAllowsSwap(GenTree* first, GenTree* second);
+    bool gtTreeHasDominatedOrdering(GenTree* tree);
+    bool gtTreeHasDominatedOrderingWorker(GenTree* tree);
+    bool gtTreeHasOrderingEffect(GenTree* tree);
     void fgVNRecordNullBranchFacts(BasicBlock* block);
     void fgVNDropSurvivedCastException(GenTreeCall* call);
 

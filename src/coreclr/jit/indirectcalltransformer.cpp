@@ -221,7 +221,7 @@ private:
                 for (GenTree** use : m_origCall->UseEdges())
                 {
                     GenTree* node = *use;
-                    if (((node->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                    if (((node->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtTreeHasDominatedOrdering(node) ||
                         (!m_compiler->impIsInvariant(node) && m_compiler->gtHasLocalsWithAddrOp(node)))
                     {
                         SpillUseToTemp(block, use);

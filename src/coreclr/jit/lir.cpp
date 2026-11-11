@@ -1261,7 +1261,7 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
 
         if (lastNode != nullptr)
         {
-            sideEffectsInRange |= (firstNode->gtFlags & GTF_ALL_EFFECT);
+            sideEffectsInRange |= firstNode->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED);
         }
 
         if (markCount == 0)

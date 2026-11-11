@@ -633,7 +633,8 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_EFFECT)) != 0)
+    if (((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0) ||
+        comp->gtTreeHasDominatedOrdering(upperBound))
     {
         // The fold makes NN evaluate unconditionally, so it must be safe to speculate.
         // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
@@ -1001,7 +1002,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     }
 
     // Ensure there are no additional side effects.
-    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & GTF_OBS_EFFECT) != 0)
+    if (((cond1->gtFlags | cond2->gtFlags) & GTF_OBS_EFFECT) != 0 || m_compiler->gtTreeHasDominatedOrdering(cond1) ||
+        m_compiler->gtTreeHasDominatedOrdering(cond2))
     {
         return false;
     }
@@ -1372,7 +1374,8 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     GenTree* relop  = test.compTree;
     bool     isBool = test.isBool;
 
-    if (comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_EFFECT))
+    if (((comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) ||
+        m_compiler->gtTreeHasDominatedOrdering(comparand))
     {
         return;
     }

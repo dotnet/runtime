@@ -5935,7 +5935,15 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
     GenTree* tree2 = firstStmt->GetRootNode();
 
     GenTreeFlags tree1Flags = tree1->gtFlags;
+    if (gtTreeHasDominatedOrdering(tree1))
+    {
+        tree1Flags |= GTF_ORDER_DOMINATED;
+    }
     GenTreeFlags tree2Flags = tree2->gtFlags;
+    if (gtTreeHasDominatedOrdering(tree2))
+    {
+        tree2Flags |= GTF_ORDER_DOMINATED;
+    }
 
     if (early)
     {
@@ -5966,7 +5974,7 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
         }
 
         LclVarDsc* dsc = lvaGetDesc(tree2->AsLclVarCommon());
-        if ((tree1Flags & GTF_ALL_EFFECT) != 0)
+        if ((tree1Flags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED)) != 0)
         {
             if (early ? dsc->lvHasLdAddrOp : dsc->IsAddressExposed())
             {
@@ -6010,7 +6018,7 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
         tree2Flags &= ~GTF_ASG;
     }
 
-    if (((tree1Flags & GTF_CALL) != 0) && ((tree2Flags & GTF_ALL_EFFECT) != 0))
+    if (((tree1Flags & GTF_CALL) != 0) && ((tree2Flags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED)) != 0))
     {
         JITDUMP("  cannot reorder call with any side effect\n");
         return false;
