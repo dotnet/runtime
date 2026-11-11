@@ -24,6 +24,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Turn off symbol publishing by default -->
     <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
 
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
+
     <!-- Trimmer defaults -->
     <TrimMode Condition="'$(TrimMode)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">partial</TrimMode>
     <TrimMode Condition="'$(TrimMode)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">full</TrimMode>

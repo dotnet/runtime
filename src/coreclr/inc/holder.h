@@ -90,12 +90,9 @@ struct AutoExpVisibleValue
 // base class.)
 //
 // There are several ways to use this class:
-//  1. Derive from HolderBase, and instantiate a Holder or Wrapper around your base.  This is necessary
-//      if you need to add more state to your holder.
+//  1. Derive from HolderBase if you need to add more state to your holder.
 //  2. Instantiate the Holder template with your type and functions.
-//  3. Instantiate the Wrapper template with your type and functions.  The Wrapper adds some additional
-//      operator overloads to provide "smart pointer" like behavior
-//  4. Use a prebaked Holder.  This is ALWAYS the preferable strategy.  It is expected that
+//  3. Use a prebaked Holder.  This is ALWAYS the preferable strategy.  It is expected that
 //      the general design patter is that Holders will be provided as part of a typical data abstraction.
 //      (See Crst for an example of this.)
 //-----------------------------------------------------------------------------
@@ -366,74 +363,6 @@ class StateHolder
     HIDE_GENERATED_METHODS(StateHolder)
 };  // class StateHolder<>
 
-// Holder for the case where the acquire function can fail.
-template <typename VALUE, BOOL (*ACQUIRE)(VALUE value), void (*RELEASEF)(VALUE value)>
-class ConditionalStateHolder
-{
-  private:
-    VALUE   m_value;
-    BOOL    m_acquired;      // Have we acquired the state?
-
-  public:
-    FORCEINLINE ConditionalStateHolder(VALUE value, BOOL take = TRUE)
-      : m_value(value), m_acquired(FALSE)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        if (take)
-            Acquire();
-    }
-    FORCEINLINE ~ConditionalStateHolder()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        Release();
-    }
-    FORCEINLINE BOOL Acquire()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        // Insert any global or thread bookkeeping here
-
-        _ASSERTE(!m_acquired);
-
-        m_acquired = ACQUIRE(m_value);
-
-        return m_acquired;
-    }
-    FORCEINLINE void Release()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        // Insert any global or thread bookkeeping here
-
-        if (m_acquired)
-        {
-            RELEASEF(m_value);
-            m_acquired = FALSE;
-        }
-    }
-    FORCEINLINE void Clear()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        if (m_acquired)
-        {
-            RELEASEF(m_value);
-        }
-
-        m_acquired = FALSE;
-    }
-    FORCEINLINE void SuppressRelease()
-    {
-        STATIC_CONTRACT_LEAF;
-        m_acquired = FALSE;
-    }
-    FORCEINLINE BOOL Acquired()
-    {
-        STATIC_CONTRACT_LEAF;
-
-        return m_acquired;
-    }
-
-    HIDE_GENERATED_METHODS(ConditionalStateHolder)
-};  // class ConditionalStateHolder<>
-
 //-----------------------------------------------------------------------------
 // BaseWrapper is just Base like a Holder, but it "transparently" proxies the type it contains,
 // using operator overloads.  Use this when you want a holder to expose the functionality of
@@ -620,8 +549,7 @@ FORCEINLINE void DoNothing()
 }
 
 //-----------------------------------------------------------------------------
-// Holder/Wrapper are the simplest way to define holders - they synthesize a base class from
-// function pointers
+// Holder synthesizes an acquire/release base class from function pointers.
 //-----------------------------------------------------------------------------
 
 template <typename TYPE, void (*ACQUIREF)(TYPE), void (*RELEASEF)(TYPE)>
@@ -691,224 +619,6 @@ class Holder : public BaseHolder<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
     }
 
     HIDE_GENERATED_METHODS(Holder)
-};
-
-//---------------------------------------------------------------------------------------
-//
-template
-    <
-        typename TYPE,
-        void (*ACQUIREF)(TYPE),
-        void (*RELEASEF)(TYPE),
-        UINT_PTR DEFAULTVALUE = 0,
-        BOOL IS_NULL(TYPE, TYPE) = CompareDefault<TYPE>,
-        // For legacy compat (see EEJitManager::WriterLockHolder), where default ctor
-        // causes ACQUIREF(DEFAULTVALUE), but ACQUIREF ignores the argument and
-        // operates on static or global value instead.
-        bool DEFAULT_CTOR_ACQUIRE = true
-    >
-class Wrapper : public BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
-                                   DEFAULTVALUE, IS_NULL>
-{
-    typedef BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
-                                   DEFAULTVALUE, IS_NULL> BaseT;
-
-  public:
-    FORCEINLINE Wrapper()
-        : BaseT(TYPE(DEFAULTVALUE), DEFAULT_CTOR_ACQUIRE)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    FORCEINLINE Wrapper(TYPE value)
-        : BaseT(value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    FORCEINLINE Wrapper(TYPE value, BOOL takeOwnership)
-        : BaseT(value, takeOwnership)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    FORCEINLINE Wrapper& operator=(TYPE const & value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        BaseT::operator=(value);
-        return *this;
-    }
-
-    HIDE_GENERATED_METHODS(Wrapper)
-};  // Wrapper<>
-
-//---------------------------------------------------------------------------------------
-// - Cannot use the standard INDEBUG macro: holder.h is used in places where INDEBUG is defined in the nonstandard way
-#if defined(_DEBUG)
-#define INDEBUG_AND_WINDOWS_FOR_HOLDERS(x) x
-#else
-#define INDEBUG_AND_WINDOWS_FOR_HOLDERS(x)
-#endif
-
-template <typename _TYPE, void (*_RELEASEF)(_TYPE*)>
-class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>
-{
-    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>;
-public:
-    FORCEINLINE SpecializedWrapper() : BaseT(NULL, FALSE)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-    }
-    FORCEINLINE SpecializedWrapper(_TYPE* value) : BaseT(value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-    }
-    FORCEINLINE SpecializedWrapper(_TYPE* value, BOOL takeOwnership) : BaseT(value, takeOwnership)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-    }
-    FORCEINLINE ~SpecializedWrapper()
-    {
-    }
-
-    SpecializedWrapper(SpecializedWrapper const &) = delete;
-    SpecializedWrapper & operator=(SpecializedWrapper const &) = delete;
-
-    FORCEINLINE SpecializedWrapper& operator=(_TYPE * value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        BaseT::operator=(value);
-        return *this;
-    }
-
-    FORCEINLINE SpecializedWrapper(SpecializedWrapper && other)
-    : BaseT(NULL, FALSE)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-        *this = std::move(other);
-    }
-
-    FORCEINLINE SpecializedWrapper& operator=(SpecializedWrapper && other)
-    {
-        BaseT::m_value = std::move(other.BaseT::m_value);
-        BaseT::m_acquired = std::move(other.BaseT::m_acquired);
-        other.BaseT::m_value = nullptr;
-        other.BaseT::m_acquired = FALSE;
-        return *this;
-    }
-
-    /* Since operator& is overloaded we need a way to get a type safe this pointer. */
-    FORCEINLINE SpecializedWrapper* GetAddr()
-    {
-        STATIC_CONTRACT_LEAF;
-        return this;
-    }
-    private:
-    /* m_ppValue: Do not use from source code: Only for convenient use from debugger */
-    /*     watch windows - saves five mouseclicks when inspecting holders. */
-    INDEBUG_AND_WINDOWS_FOR_HOLDERS(_TYPE ** m_pvalue;)
-};
-
-//-----------------------------------------------------------------------------
-// NewHolder : New'ed memory holder
-//
-//  {
-//      NewHolder<Foo> foo = new Foo ();
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void Delete(TYPE *value)
-{
-    STATIC_CONTRACT_LEAF;
-
-    static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, WCHAR>::value,
-                  "Must use NewArrayHolder (not NewHolder) for strings.");
-    static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, CHAR>::value,
-                  "Must use NewArrayHolder (not NewHolder) for strings.");
-
-    delete value;
-}
-
-template<typename _TYPE>
-using NewHolder = SpecializedWrapper<_TYPE, Delete<_TYPE>>;
-
-//-----------------------------------------------------------------------------
-// NewArrayHolder : New []'ed pointer holder
-//  {
-//      NewArrayHolder<Foo> foo = new Foo [30];
-//  } // delete [] foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DeleteArray(TYPE *value)
-{
-    STATIC_CONTRACT_WRAPPER;
-    delete [] value;
-}
-
-template<typename _TYPE>
-using NewArrayHolder = SpecializedWrapper<_TYPE, DeleteArray<_TYPE>>;
-typedef NewArrayHolder<CHAR>  AStringHolder;
-typedef NewArrayHolder<WCHAR> WStringHolder;
-
-//-----------------------------------------------------------------------------
-// A special array holder that expects its contents are interface pointers,
-// and will call Release() on them.
-//
-// NOTE: You may ONLY use this if you've determined that it is SAFE to call
-// Release() on the contained interface pointers (e.g., as opposed to SafeRelease)
-//
-template <typename INTERFACE>
-class NewInterfaceArrayHolder : public NewArrayHolder<INTERFACE *>
-{
-public:
-    NewInterfaceArrayHolder() :
-        NewArrayHolder<INTERFACE *>(),
-        m_cElements(0)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    NewInterfaceArrayHolder(INTERFACE ** value, ULONG32 cElements) :
-        NewArrayHolder<INTERFACE *>(value),
-        m_cElements(cElements)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    NewInterfaceArrayHolder& operator=(INTERFACE ** value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        NewArrayHolder<INTERFACE *>::operator=(value);
-        return *this;
-    }
-
-    void SetElementCount(ULONG32 cElements)
-    {
-        STATIC_CONTRACT_LEAF;
-        m_cElements = cElements;
-    }
-
-    ~NewInterfaceArrayHolder()
-    {
-        STATIC_CONTRACT_LEAF;
-        if (this->m_acquired)
-        {
-            for (ULONG32 i=0; i < m_cElements; i++)
-            {
-                if (this->m_value[i] != NULL)
-                    this->m_value[i]->Release();
-            }
-        }
-    }
-
-protected:
-    ULONG32 m_cElements;
 };
 
 //-----------------------------------------------------------------------------
@@ -992,6 +702,103 @@ public:
 };
 
 template <typename TYPE>
+struct NewHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, WCHAR>::value,
+                    "Use WStringHolder (not NewHolder) for strings.");
+        static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, CHAR>::value,
+                    "Use AStringHolder (not NewHolder) for strings.");
+
+        delete value;
+    }
+};
+
+template <typename TYPE>
+using NewHolder = LifetimeHolder<NewHolderTraits<TYPE>>;
+
+template <typename TYPE>
+struct NewArrayHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        delete[] value;
+    }
+};
+
+template <typename TYPE>
+using NewArrayHolder = LifetimeHolder<NewArrayHolderTraits<TYPE>>;
+
+using AStringHolder = NewArrayHolder<CHAR>;
+using WStringHolder = NewArrayHolder<WCHAR>;
+
+//-----------------------------------------------------------------------------
+// A special array holder that expects its contents are interface pointers,
+// and will call Release() on them.
+//
+// NOTE: You may ONLY use this if you've determined that it is SAFE to call
+// Release() on the contained interface pointers (e.g., as opposed to SafeRelease)
+//
+template <typename INTERFACE>
+class NewInterfaceArrayHolder final
+{
+    struct Traits
+    {
+        struct Type
+        {
+            INTERFACE ** values;
+            ULONG32 count;
+        };
+
+        static Type Default() { return {}; }
+
+        static void Free(Type array) noexcept
+        {
+            STATIC_CONTRACT_LEAF;
+            if (array.values != NULL)
+            {
+                for (ULONG32 i = 0; i < array.count; i++)
+                {
+                    if (array.values[i] != NULL)
+                        array.values[i]->Release();
+                }
+                delete[] array.values;
+            }
+        }
+    };
+
+    LifetimeHolder<Traits> m_array;
+
+public:
+    NewInterfaceArrayHolder() = default;
+
+    NewInterfaceArrayHolder(INTERFACE ** value, ULONG32 cElements) :
+        m_array(typename Traits::Type{ value, cElements })
+    {
+        STATIC_CONTRACT_WRAPPER;
+    }
+
+    operator INTERFACE **() const
+    {
+        STATIC_CONTRACT_LEAF;
+        return static_cast<typename Traits::Type>(m_array).values;
+    }
+
+    INTERFACE ** Detach()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        return m_array.Detach().values;
+    }
+};
+
+template <typename TYPE>
 struct ReleaseHolderTraits final
 {
     using Type = TYPE*;
@@ -1030,6 +837,7 @@ struct HandleTraits final
 };
 using HandleHolder = LifetimeHolder<HandleTraits>;
 
+#ifdef HOST_WINDOWS
 struct MapViewTraits final
 {
     using Type = void*;
@@ -1043,25 +851,7 @@ struct MapViewTraits final
 };
 
 using MapViewHolder = LifetimeHolder<MapViewTraits>;
-
-template<typename T>
-struct LocalAllocTraits final
-{
-    using Type = T;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type h) noexcept
-    {
-        STATIC_CONTRACT_WRAPPER;
-#ifdef HOST_WINDOWS
-        ::LocalFree((void*)h);
-#else
-        ::free((void*)h);
-#endif
-    }
-};
-
-template<typename T>
-using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
+#endif // HOST_WINDOWS
 
 // A holder for HMODULE.
 struct HModuleTraits final
@@ -1132,15 +922,41 @@ struct CoTaskMemTraits final
 template<typename T>
 using CoTaskMemHolder = LifetimeHolder<CoTaskMemTraits<T>>;
 
-//
-// We need the following methods to have volatile arguments, so that they can accept
-// raw pointers in addition to the results of the & operator on Volatile<T>.
-//
+class CounterHolder final
+{
+    // Accept both raw counter pointers and the result of Volatile<T>::operator&.
+    struct Traits final
+    {
+        using Type = RAW_KEYWORD(volatile) LONG*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (value != NULL)
+                InterlockedDecrement(value);
+        }
+    };
 
-FORCEINLINE void CounterIncrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedIncrement(p);};
-FORCEINLINE void CounterDecrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedDecrement(p);};
+    LifetimeHolder<Traits> m_counter;
 
-typedef Wrapper<RAW_KEYWORD(volatile) LONG*, CounterIncrease, CounterDecrease, (UINT_PTR)0, CompareDefault<RAW_KEYWORD(volatile) LONG*>> CounterHolder;
+public:
+    explicit CounterHolder(RAW_KEYWORD(volatile) LONG* counter)
+        : m_counter(counter)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        _ASSERTE(counter != NULL);
+        InterlockedIncrement(counter);
+    }
+
+    CounterHolder(const CounterHolder&) = delete;
+    CounterHolder& operator=(const CounterHolder&) = delete;
+
+    void Release()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        m_counter.Free();
+    }
+};
 
 class ErrorModeHolder final
 {
@@ -1202,155 +1018,5 @@ struct BSTRTraits final
 
 using BSTRHolder = LifetimeHolder<BSTRTraits>;
 #endif // FEATURE_COMINTEROP
-
-//----------------------------------------------------------------------------
-//
-// External data access does not want certain holder implementations
-// to be active as locks should not be taken and so on.  Provide
-// a no-op in that case.
-//
-//----------------------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-
-#define DacHolder Holder
-
-#else
-
-template <typename TYPE, void (*ACQUIRE)(TYPE), void (*RELEASEF)(TYPE), UINT_PTR DEFAULTVALUE = 0, BOOL IS_NULL(TYPE, TYPE) = CompareDefault<TYPE>, BOOL VALIDATE_BACKOUT_STACK = TRUE>
-class DacHolder
-{
-  protected:
-    TYPE    m_value;
-
-  private:
-    BOOL    m_acquired;      // Have we acquired the resource?
-
-  public:
-    FORCEINLINE DacHolder()
-      : m_value(TYPE(DEFAULTVALUE)),
-        m_acquired(FALSE)
-    {
-        STATIC_CONTRACT_SUPPORTS_DAC;
-    }
-
-    // construct a new instance of DacHolder
-    // Arguments:
-    //     input:  value - the resource held
-    //             take  - indicates whether the lock should be taken--the default is true. See Notes:
-    // Note: In DAC builds, the Acquire function does not actually take the lock, instead
-    //       it determines whether the lock is held (by the LS). If it is, the locked data
-    //       is assumed to be inconsistent and the Acquire function will throw.
-    FORCEINLINE DacHolder(TYPE value, BOOL take = TRUE)
-      : m_value(value),
-        m_acquired(FALSE)
-    {
-        STATIC_CONTRACT_SUPPORTS_DAC;
-        if (take)
-            Acquire();
-
-    }
-    FORCEINLINE ~DacHolder()
-    {
-        STATIC_CONTRACT_SUPPORTS_DAC;
-    }
-    // Sets the value to 'value'. Doesn't call Acquire/Release if fTake is FALSE.
-    FORCEINLINE void Assign(TYPE value, BOOL fTake = TRUE)
-    {
-        m_value = value;
-    }
-    FORCEINLINE void Acquire()
-    {
-        STATIC_CONTRACT_SUPPORTS_DAC;
-
-        if (!IsNull())
-        {
-            m_acquired = TRUE;
-            // because ACQUIRE is a template argument, if the line m_acquired = TRUE is placed after the call
-            // where it logically belongs, the compiler flags it as "unreachable code."
-            ACQUIRE(this->m_value);
-        }
-    }
-    FORCEINLINE void Release()
-    {
-        // Insert any global or thread bookkeeping here
-
-        if (m_acquired)
-        {
-            m_acquired = FALSE;
-        }
-    }
-    FORCEINLINE void Clear()
-    {
-        m_value = TYPE(DEFAULTVALUE);
-        m_acquired = FALSE;
-    }
-    FORCEINLINE void SuppressRelease()
-    {
-        m_acquired = FALSE;
-    }
-    FORCEINLINE TYPE GetValue()
-    {
-        return m_value;
-    }
-    FORCEINLINE BOOL IsNull() const
-    {
-        return IS_NULL(m_value, TYPE(DEFAULTVALUE));
-    }
-
-  private:
-    FORCEINLINE DacHolder& operator=(const Holder<TYPE, ACQUIRE, RELEASEF> &holder)
-    {
-    }
-
-    FORCEINLINE DacHolder(const Holder<TYPE, ACQUIRE, RELEASEF> &holder)
-    {
-    }
-};
-
-#endif // #ifndef DACCESS_COMPILE
-
-// Holder-specific clr::SafeAddRef and clr::SafeRelease helper functions.
-namespace clr
-{
-    // Copied from utilcode.h. We can't include the header directly because there
-    // is circular reference.
-    // Forward declare the overload which is used by 'SafeAddRef' below.
-    template <typename ItfT>
-    static inline
-    typename std::enable_if< std::is_pointer<ItfT>::value, ItfT >::type
-    SafeAddRef(ItfT pItf);
-
-    template < typename ItfT > __checkReturn
-    ItfT *
-    SafeAddRef(ReleaseHolder<ItfT> & pItf)
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        //@TODO: Would be good to add runtime validation that the return value is used.
-        return SafeAddRef(static_cast<ItfT*>(pItf));
-    }
-
-    namespace detail
-    {
-        template <typename T>
-        char IsHolderHelper(HolderBase<T>*);
-        int  IsHolderHelper(...);
-
-        template <typename T>
-        struct IsHolder : public std::conditional<
-            sizeof(IsHolderHelper(reinterpret_cast<T*>(NULL))) == sizeof(char),
-            std::true_type,
-            std::false_type>::type
-        {};
-    }
-
-    template < typename T >
-    typename std::enable_if<detail::IsHolder<T>::value, ULONG>::type
-    SafeRelease(T& arg)
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        return arg.Release();
-    }
-}
 
 #endif  // __HOLDER_H_

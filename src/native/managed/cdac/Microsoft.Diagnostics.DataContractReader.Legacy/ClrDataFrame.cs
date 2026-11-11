@@ -55,7 +55,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         try
         {
             IStackWalk stackWalk = _target.Contracts.StackWalk;
-            byte[] context = stackWalk.GetRawContext(_dataFrame);
+            ReadOnlySpan<byte> context = stackWalk.GetRawContext(_dataFrame);
 
             // TODO(https://github.com/dotnet/runtime/issues/125791):
             // Use contextFlags to compute the required size via ContextSizeForFlags
@@ -70,7 +70,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 throw new ArgumentException();
 
             if (contextBufSize > 0 && context.Length > 0)
-                Array.Copy(context, 0, contextBuf, 0, context.Length);
+                context.CopyTo(contextBuf);
         }
         catch (System.Exception ex)
         {
@@ -490,7 +490,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         IDebugInfo debugInfo = _target.Contracts.DebugInfo;
 
         TargetCodePointer codePointer = stackWalk.GetInstructionPointer(_dataFrame);
-        byte[] context = stackWalk.GetRawContext(_dataFrame);
+        byte[] context = stackWalk.GetRawContext(_dataFrame).ToArray();
         IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out uint codeOffset);
         NativeVarLocation[] locations = FindAndResolveVarLocation(varInfos, codeOffset, varInfoSlot, context, _target);
 
@@ -943,12 +943,15 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     /// Resolves a DebugVarInfo entry to physical NativeVarLocation(s)
     /// using the given CPU context. Mirrors the native NativeVarLocations() from util.cpp.
     /// </summary>
-    private static NativeVarLocation[] ResolveVarLocation(
+    internal static NativeVarLocation[] ResolveVarLocation(
         DebugVarInfo varInfo,
         IPlatformAgnosticContext context,
         Target target)
     {
         int pointerSize = target.PointerSize;
+
+        if (target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
+            return ResolveWasmVarLocation(varInfo, context, target, pointerSize);
 
         return (varInfo.Kind, varInfo.IsByRef) switch
         {
@@ -987,6 +990,59 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
             _ => [],
         };
+    }
+
+    /// <summary>
+    /// Resolves a variable location on WASM. A WASM debug-info register names a WASM local, which
+    /// is engine-private and not readable through the data target, so it has no location. Stack
+    /// slots are in linear memory and resolve against the frame pointer in the context: the logical
+    /// frame pointer for ReadyToRun code, and <c>InterpMethodContextFrame.pStack</c> for
+    /// interpreted code.
+    /// </summary>
+    private static NativeVarLocation[] ResolveWasmVarLocation(
+        DebugVarInfo varInfo,
+        IPlatformAgnosticContext context,
+        Target target,
+        int pointerSize)
+    {
+        // ICorDebugInfo::REGNUM_FP, which is 0 on WASM. The interpreter bases every stack slot on it.
+        const uint InterpreterFrameBaseRegister = 0;
+        // ReadyToRun code; see "WebAssembly Stack Base Encoding" in DebugInfo.md.
+        const uint WasmFrameBaseRegister = 2;
+        switch (varInfo.Kind)
+        {
+            case DebugVarLocKind.Stack:
+            case DebugVarLocKind.DoubleStack:
+                break;
+            default:
+                // Every other kind keeps at least part of the variable in a WASM local.
+                return [];
+        }
+
+        bool isFrameBase = varInfo.BaseRegister is WasmFrameBaseRegister or InterpreterFrameBaseRegister;
+        Debug.Assert(isFrameBase, $"Unexpected WASM stack base register {varInfo.BaseRegister}");
+        if (!isFrameBase)
+            return [];
+
+        TargetPointer framePointer = context.FramePointer;
+        if (framePointer == TargetPointer.Null)
+            return [];
+
+        ulong address = (ulong)((long)framePointer.Value + varInfo.StackOffset);
+        ulong size = varInfo.Kind == DebugVarLocKind.DoubleStack ? 2 * (ulong)pointerSize : (ulong)pointerSize;
+
+        if (varInfo.IsByRef)
+        {
+            // Native DereferenceByRefVar turns a failed or null indirection into address 0, which is
+            // unmapped natively. WASM linear address 0 is readable, so fail here instead.
+            TargetPointer byRefAddress = target.ReadPointer(address);
+            if (byRefAddress == TargetPointer.Null)
+                throw new VirtualReadException($"The byref variable at 0x{address:X} is null.");
+
+            address = byRefAddress.Value;
+        }
+
+        return [new NativeVarLocation { AddressOrValue = address, Size = size, IsRegisterValue = false }];
     }
 
     private static NativeVarLocation[] ResolveRegByRef(IPlatformAgnosticContext context, Target target, uint register, int pointerSize)

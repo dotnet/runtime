@@ -929,6 +929,7 @@ DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 #ifdef FEATURE_MULTITHREADING
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                        SM_PtrThread_RetVoid)
+DEFINE_METHOD(THREAD,               REGISTER_MEMORY_PRESSURE,                RegisterMemoryPressure,               SM_PtrException_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
 #ifdef FEATURE_PERFTRACING
 DEFINE_METHOD(THREAD,               POLLGC_WORKER,                           PollGCWorker,                         SM_RetVoid)

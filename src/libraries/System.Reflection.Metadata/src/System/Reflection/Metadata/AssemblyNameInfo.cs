@@ -196,10 +196,10 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Parses a span of characters into a assembly name.
+        /// Parses a span of characters into an assembly name.
         /// </summary>
         /// <param name="assemblyName">A span containing the characters representing the assembly name to parse.</param>
-        /// <returns>Parsed type name.</returns>
+        /// <returns>The parsed assembly name.</returns>
         /// <exception cref="ArgumentException">Provided assembly name was invalid.</exception>
         public static AssemblyNameInfo Parse(ReadOnlySpan<char> assemblyName)
             => TryParse(assemblyName, out AssemblyNameInfo? result)

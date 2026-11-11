@@ -276,6 +276,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 // Thread affinity / priority
 // ============================================================================
 
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return false;
+}
+
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
     (void)procNo;

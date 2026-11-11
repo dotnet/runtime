@@ -373,7 +373,7 @@ public:
     virtual BOOL ReadFuncEvalPrimitiveRegister(
         DebuggerEval* pDE, UINT32 index, UINT64* pValue) = 0;
     virtual void WriteFuncEvalRegister(
-        DebuggerEval* pDE, UINT32 index, UINT64 value) = 0;
+        DebuggerEval* pDE, UINT32 index, const void* pValue, UINT32 size) = 0;
     virtual void SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType) = 0;
 
 #endif //DACCESS_COMPILE

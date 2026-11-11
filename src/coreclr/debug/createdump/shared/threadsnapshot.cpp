@@ -56,13 +56,7 @@ bool ThreadSnapshot::GetRegistersWithPTrace()
     }
     assert(sizeof(m_fpRegisters) == fpRegsVec.iov_len);
 
-#if defined(__i386__)
-    if (ptrace((__ptrace_request)PTRACE_GETFPXREGS, m_tid, nullptr, &m_fpxRegisters) == -1)
-    {
-        printf_error("ptrace(GETFPXREGS, %d) FAILED %s (%d)\n", m_tid, strerror(errno), errno);
-        return false;
-    }
-#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
 
 #if defined(ARM_VFPREGS_SIZE)
     assert(sizeof(m_vfpRegisters) == ARM_VFPREGS_SIZE);

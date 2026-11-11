@@ -73,7 +73,7 @@
 //    |   |
 //    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
 //    |
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
@@ -2148,13 +2148,9 @@ public:
     VOID Init();
 };
 
-// TODO [DAVBR]: For the full fix for VsWhidbey 450273, this
-// may be uncommented once isLegalManagedCodeCaller works properly
-// with non-return address inputs, and with non-DEBUG builds
-//bool isLegalManagedCodeCaller(TADDR retAddr);
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 //------------------------------------------------------------------------
 // This frame is used as padding for virtual stub dispatch tailcalls.
 // When A calls B via virtual stub dispatch, the stub dispatch stub resolves
@@ -2222,7 +2218,7 @@ struct cdac_data<TailCallFrame>
     static constexpr size_t ReturnAddress = offsetof(TailCallFrame, m_ReturnAddress);
 };
 
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
 //------------------------------------------------------------------------
 // ExceptionFilterFrame is a small frame whose only purpose in

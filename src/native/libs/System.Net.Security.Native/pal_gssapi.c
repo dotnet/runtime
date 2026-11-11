@@ -828,12 +828,22 @@ static uint32_t AcquireCredWithPassword(uint32_t* minorStatus,
 }
 
 uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus,
+                                               int32_t packageType,
                                                GssCredId** outputCredHandle)
 {
+    assert(packageType == PAL_GSS_NEGOTIATE || packageType == PAL_GSS_NTLM || packageType == PAL_GSS_KERBEROS);
+
+#if HAVE_GSS_SPNEGO_MECHANISM
+    gss_OID desiredMech = packageType == PAL_GSS_NTLM ? GSS_NTLM_MECHANISM : GSS_KRB5_MECHANISM;
+#else
+    gss_OID desiredMech = packageType == PAL_GSS_NTLM ? &gss_mech_ntlm_OID_desc : (gss_OID)(unsigned long)gss_mech_krb5;
+#endif
+    gss_OID_set_desc desiredMechSet = {.count = 1, .elements = desiredMech};
+
     return gss_acquire_cred(minorStatus,
                             GSS_C_NO_NAME,
                             GSS_C_INDEFINITE,
-                            GSS_C_NO_OID_SET,
+                            packageType == PAL_GSS_NEGOTIATE ? GSS_C_NO_OID_SET : &desiredMechSet,
                             GSS_C_ACCEPT,
                             outputCredHandle,
                             NULL,

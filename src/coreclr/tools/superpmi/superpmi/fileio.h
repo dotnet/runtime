@@ -56,28 +56,12 @@ private:
 
 struct FileHandleSpec
 {
-    using Type = HANDLE;
-    static HANDLE Invalid() { return INVALID_HANDLE_VALUE; }
-    static void Close(HANDLE h) { CloseHandle(h); }
-};
-
-struct FileMappingHandleSpec
-{
-    using Type = HANDLE;
-    static HANDLE Invalid() { return nullptr; }
-    static void Close(HANDLE h) { CloseHandle(h); }
-};
-
-struct FileViewHandleSpec
-{
-    using Type = LPVOID;
-    static LPVOID Invalid() { return nullptr; }
-    static void Close(LPVOID p) { UnmapViewOfFile(p); }
+    using Type = FILE*;
+    static FILE* Invalid() { return nullptr; }
+    static void Close(FILE* f) { fclose(f); }
 };
 
 typedef HandleWrapper<FileHandleSpec> FileHandle;
-typedef HandleWrapper<FileMappingHandleSpec> FileMappingHandle;
-typedef HandleWrapper<FileViewHandleSpec> FileViewHandle;
 
 class FileWriter
 {
@@ -132,20 +116,16 @@ public:
 
 class FileLineReader
 {
-    FileHandle m_file;
-    FileMappingHandle m_fileMapping;
-    FileViewHandle m_view;
+    std::vector<char> m_data;
 
     char* m_cur;
     char* m_end;
     std::vector<char> m_currentLine;
 
-    FileLineReader(FileHandle file, FileMappingHandle fileMapping, FileViewHandle view, size_t size)
-        : m_file(std::move(file))
-        , m_fileMapping(std::move(fileMapping))
-        , m_view(std::move(view))
-        , m_cur(static_cast<char*>(m_view.Get()))
-        , m_end(static_cast<char*>(m_view.Get()) + size)
+    explicit FileLineReader(std::vector<char> data)
+        : m_data(std::move(data))
+        , m_cur(m_data.data())
+        , m_end(m_data.data() + m_data.size())
     {
     }
 
