@@ -20,5 +20,28 @@ namespace System.Net.Test.Common
                 // all supported distributions. The second part of the check should be removed when it does.
                 Interop.NetSecurityNative.IsNtlmInstalled() && (!PlatformDetection.IsOpenSslSupported || PlatformDetection.OpenSslVersion.Major < 3);
         }
+
+        // Initial server challenges do not require the NTLM response generation affected by OpenSSL 3.
+        public static bool IsNtlmServerAvailable() =>
+            !OperatingSystem.IsBrowser() &&
+            !OperatingSystem.IsWasi() &&
+            // macOS advertises NTLM but does not support default NTLM acceptor credentials.
+            !OperatingSystem.IsMacOS() &&
+            CheckHasSystemNetSecurityNative() &&
+            Interop.NetSecurityNative.IsNtlmInstalled();
+
+        private static bool CheckHasSystemNetSecurityNative()
+        {
+            try
+            {
+                _ = Interop.NetSecurityNative.IsNtlmInstalled();
+                return true;
+            }
+            catch (Exception e) when (e is EntryPointNotFoundException || e is DllNotFoundException || e is TypeInitializationException)
+            {
+                // libSystem.Net.Security.Native is not available
+                return false;
+            }
+        }
     }
 }
