@@ -63,6 +63,44 @@ namespace ILLink.RoslynAnalyzer.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public Task NamedArgumentsAreEvaluatedInSourceOrder(bool assignUnknown)
+        {
+            string initialValue = assignUnknown ? "typeof(C)" : "unknown";
+            string assignedValue = assignUnknown ? "unknown" : "typeof(C)";
+            string source = $$"""
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M(Type unknown)
+                    {
+                        Type value = {{initialValue}};
+                        Target(second: value = {{assignedValue}}, first: value);
+                    }
+
+                    static void Target(
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type first,
+                        Type second) { }
+                }
+                """;
+            DiagnosticResult[] expected = assignUnknown
+                ? new[]
+                {
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
+                        .WithSpan(9, 9, 9, 54)
+                        .WithSpan(6, 19, 6, 31)
+                        .WithArguments("first", "C.Target(Type, Type)", "unknown", "C.M(Type)",
+                            "'DynamicallyAccessedMemberTypes.PublicMethods'")
+                }
+                : System.Array.Empty<DiagnosticResult>();
+
+            return VerifyDynamicallyAccessedMembersAnalyzer(source, consoleApplication: false, expected);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public Task NewNestedMethodsStillPropagateHoistedLocalChanges(bool nested)
         {
             string declaration = nested

@@ -291,14 +291,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
         {
-            if (target.Equals(TopValue))
+            if (_trimAnalyzer is null || target.Equals(TopValue))
                 return;
 
-            // TODO: consider not tracking patterns unless the target is something
-            // annotated with DAMT.
-            TrimAnalysisPatterns.Add(
-                // This will copy the values if necessary
-                new TrimAnalysisAssignmentPattern(source, target, operation, OwningSymbol, featureContext));
+            TrimAnalysisPatterns.AddAssignment(source, target, operation, OwningSymbol, featureContext);
         }
 
         public override MultiValue HandleArrayElementRead(MultiValue arrayValue, MultiValue indexValue, IOperation operation)
@@ -368,14 +364,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
             HandleCall(_trimAnalyzer, FeatureContext.None, _typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, _compilationState.FlowAnnotations, out MultiValue methodReturnValue);
 
-            // This will copy the values if necessary
-            TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
+            TrimAnalysisPatterns.AddMethodCall(
                 calledMethod,
                 instance,
                 arguments,
                 operation,
                 OwningSymbol,
-                featureContext));
+                featureContext);
 
             ProcessGenericArgumentDataFlow(calledMethod, operation, featureContext);
 
@@ -422,6 +417,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override void HandleReturnValue(MultiValue returnValue, IOperation operation, in FeatureContext featureContext)
         {
+            if (_trimAnalyzer is null)
+                return;
+
             // Return statements should only happen inside of method bodies.
             Debug.Assert(OwningSymbol is IMethodSymbol);
             if (OwningSymbol is not IMethodSymbol method)
@@ -431,8 +429,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             {
                 var returnParameter = _compilationState.FlowAnnotations.GetMethodReturnValue(new(method), isNewObj: false);
 
-                TrimAnalysisPatterns.Add(
-                    new TrimAnalysisAssignmentPattern(returnValue, returnParameter, operation, OwningSymbol, featureContext));
+                TrimAnalysisPatterns.AddAssignment(returnValue, returnParameter, operation, OwningSymbol, featureContext);
             }
         }
 
