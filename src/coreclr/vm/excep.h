@@ -165,6 +165,12 @@ void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 
+#ifndef DACCESS_COMPILE
+// Helper to make GCC compile. GCC can't handle putting a virtual call in a filter.
+struct NotifyOfCHFFilterWrapperParam { void *pFrame; };
+LONG NotifyOfCHFFilterWrapper(EXCEPTION_POINTERS *pExceptionInfo, PVOID pNotifyOfCHFFilterWrapperParam);
+#endif // !DACCESS_COMPILE
+
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
                                            BOOL useLastThrownObject = FALSE,

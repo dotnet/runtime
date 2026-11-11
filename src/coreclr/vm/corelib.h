@@ -1026,16 +1026,46 @@ DEFINE_FIELD_U(Flags,           DebuggerFuncEvalArgument, flags)
 DEFINE_FIELD_U(TypeNodeCount,   DebuggerFuncEvalArgument, typeNodeCount)
 
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeArgument, DebuggerIPCE_TypeArgData)
-DEFINE_FIELD_U(ElementType,     DebuggerIPCE_TypeArgData, data.elementType)
-DEFINE_FIELD_U(MetadataToken,   DebuggerIPCE_TypeArgData, data.ClassTypeData.metadataToken)
-DEFINE_FIELD_U(Assembly,        DebuggerIPCE_TypeArgData, data.ClassTypeData.vmAssembly)
-DEFINE_FIELD_U(ArrayRank,       DebuggerIPCE_TypeArgData, data.ArrayTypeData.arrayRank)
+DEFINE_FIELD_U(Data,            DebuggerIPCE_TypeArgData, data)
 DEFINE_FIELD_U(ChildCount,      DebuggerIPCE_TypeArgData, numTypeArgs)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeExpandedTypeData, DebuggerIPCE_ExpandedTypeData)
+DEFINE_FIELD_U(ElementType,     DebuggerIPCE_ExpandedTypeData, elementType)
+// The native union is anonymous; ArrayTypeData is its largest member.
+DEFINE_FIELD_U(TypeData,        DebuggerIPCE_ExpandedTypeData, ArrayTypeData)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeBasicTypeData, DebuggerIPCE_BasicTypeData)
+DEFINE_FIELD_U(ElementType,     DebuggerIPCE_BasicTypeData, elementType)
+DEFINE_FIELD_U(MetadataToken,   DebuggerIPCE_BasicTypeData, metadataToken)
+DEFINE_FIELD_U(Assembly,        DebuggerIPCE_BasicTypeData, vmAssembly)
+DEFINE_FIELD_U(TypeHandle,      DebuggerIPCE_BasicTypeData, vmTypeHandle)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeClassTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData))
+DEFINE_FIELD_U(MetadataToken,   decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData), metadataToken)
+DEFINE_FIELD_U(Assembly,        decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData), vmAssembly)
+DEFINE_FIELD_U(TypeHandle,      decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData), typeHandle)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeUnaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::UnaryTypeData))
+DEFINE_FIELD_U(UnaryTypeArgument, decltype(DebuggerIPCE_ExpandedTypeData::UnaryTypeData), unaryTypeArg)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArrayTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData))
+DEFINE_FIELD_U(ArrayTypeArgument, decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData), arrayTypeArg)
+DEFINE_FIELD_U(ArrayRank,       decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData), arrayRank)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeNaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData))
+DEFINE_FIELD_U(TypeHandle,      decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData), typeHandle)
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef FOR_ILLINK
-// The layout-only mirror is not otherwise referenced by managed code.
+// Preserve all wire-layout fields, including ignored slots, for parsing and native binder checks.
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeArgument, DebuggerIPCE_TypeArgData)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeExpandedTypeData, DebuggerIPCE_ExpandedTypeData)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeDataUnion, NoClass)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeBasicTypeData, DebuggerIPCE_BasicTypeData)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeClassTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData))
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeUnaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::UnaryTypeData))
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArrayTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData))
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeNaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData))
 #endif // FOR_ILLINK
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)

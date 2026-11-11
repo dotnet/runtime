@@ -1051,6 +1051,8 @@ extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
                  (resultType.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE ||
                   ((pContext->flags & FuncEvalNewObject) != 0 && resultType.IsValueType())))
         {
+            // No-constructor value types are allocated as objects directly, preserving true Nullable<T> boxes.
+            // This scratch space is only needed for invocation results that are boxed afterward.
             MethodTable* pMT = resultType.GetMethodTable();
             pMT->EnsureInstanceActive();
             SIZE_T size = pMT->GetNumInstanceFieldBytes();

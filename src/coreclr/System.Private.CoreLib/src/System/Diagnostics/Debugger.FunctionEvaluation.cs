@@ -184,7 +184,7 @@ namespace System.Diagnostics
                 {
                     case EvaluationKind.NewObjectNoConstructor:
                         resultType = ReadInstantiation(GetModule((nint)context->Assembly),
-                            (int)context->MemberToken, typeArguments);
+                            (int)context->MemberToken, typeArguments, allowUninstantiated: true);
                         if (resultType.ContainsGenericParameters)
                         {
                             throw new ArgumentException(SR.Argument_InvalidGenericArg);

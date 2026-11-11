@@ -13,34 +13,75 @@ public static partial class Debugger
     internal sealed unsafe partial class FunctionEvaluation
     {
         // DebuggerIPCE_TypeArgData uses fixed-width, little-endian debugger cookies, not native pointers.
-        // corelib.h verifies this layout against the native record using the reader's size and offsets.
-        private const int TypeArgumentDataSize = 48;
-        private const int TypeArgumentElementTypeOffset = 0;
-        private const int TypeArgumentTokenOffset = 8;
-        private const int TypeArgumentAssemblyOffset = 16;
-        private const int TypeArgumentArrayRankOffset = 32;
-        private const int TypeArgumentChildCountOffset = 40;
-
-        // Preserve the unused slots in the flattened native union, including padding on 32-bit targets.
-        [StructLayout(LayoutKind.Sequential)]
+        // corelib.h verifies this layout against the native record.
+        [ExtendedLayout(ExtendedLayoutKind.CStruct)]
         internal struct NativeTypeArgument
         {
+            internal NativeExpandedTypeData Data;
+            internal uint ChildCount;
+        }
+
+        [ExtendedLayout(ExtendedLayoutKind.CStruct)]
+        internal struct NativeExpandedTypeData
+        {
             internal uint ElementType;
-            internal uint ElementTypePadding;
+            internal NativeTypeDataUnion TypeData;
+        }
+
+        [ExtendedLayout(ExtendedLayoutKind.CUnion)]
+        internal struct NativeTypeDataUnion
+        {
+            internal NativeClassTypeData ClassTypeData;
+            internal NativeUnaryTypeData UnaryTypeData;
+            internal NativeArrayTypeData ArrayTypeData;
+            internal NativeNaryTypeData NaryTypeData;
+        }
+
+        [ExtendedLayout(ExtendedLayoutKind.CStruct)]
+        internal struct NativeBasicTypeData
+        {
+            internal uint ElementType;
             internal uint MetadataToken;
-            internal uint MetadataTokenPadding;
             internal ulong Assembly;
             internal ulong TypeHandle;
+        }
+
+        [ExtendedLayout(ExtendedLayoutKind.CStruct)]
+        internal struct NativeClassTypeData
+        {
+            internal uint MetadataToken;
+            internal ulong Assembly;
+            internal ulong TypeHandle;
+        }
+
+        [ExtendedLayout(ExtendedLayoutKind.CStruct)]
+        internal struct NativeUnaryTypeData
+        {
+            internal NativeBasicTypeData UnaryTypeArgument;
+        }
+
+        [ExtendedLayout(ExtendedLayoutKind.CStruct)]
+        internal struct NativeArrayTypeData
+        {
+            internal NativeBasicTypeData ArrayTypeArgument;
             internal uint ArrayRank;
-            internal uint ArrayRankPadding;
-            internal uint ChildCount;
-            internal uint ChildCountPadding;
+        }
+
+        [ExtendedLayout(ExtendedLayoutKind.CStruct)]
+        internal struct NativeNaryTypeData
+        {
+            internal ulong TypeHandle;
         }
 
         [DebuggerHidden]
         internal static RuntimeType[] ReadTypeArguments(ReadOnlySpan<byte> typeData, int count)
         {
-            TypeDataWalk walk = new(typeData);
+            if (typeData.Length % sizeof(NativeTypeArgument) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidGenericArg);
+            }
+
+            TypeDataWalk walk = new(MemoryMarshal.Cast<byte, NativeTypeArgument>(typeData));
             RuntimeType[] types = walk.ReadTypeHandles(count);
             if (!walk.IsFinished)
             {
@@ -51,7 +92,7 @@ public static partial class Debugger
         }
 
         private static ReadOnlySpan<byte> GetTypeData(byte* data, uint nodeCount) =>
-            new(data, checked((int)nodeCount * TypeArgumentDataSize));
+            new(data, checked((int)nodeCount * sizeof(NativeTypeArgument)));
 
         private static RuntimeModule GetModule(nint nativeAssembly)
         {
@@ -65,16 +106,12 @@ public static partial class Debugger
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The debugger supplies tokens from the target's actual loaded metadata.")]
-        private static RuntimeType ReadInstantiation(RuntimeModule module, int token, RuntimeType[] arguments)
+        private static RuntimeType ReadInstantiation(
+            RuntimeModule module, int token, RuntimeType[] arguments, bool allowUninstantiated = false)
         {
             RuntimeType type = (RuntimeType)module.ResolveType(token);
-            if (arguments.Length != 0)
+            if (!allowUninstantiated || arguments.Length != 0)
             {
-                if (!type.IsGenericTypeDefinition || type.GetGenericArguments().Length != arguments.Length)
-                {
-                    throw new ArgumentException(SR.Argument_InvalidGenericArg);
-                }
-
                 type = type.TypeHandle.Instantiate(arguments);
             }
 
@@ -84,15 +121,10 @@ public static partial class Debugger
         [StackTraceHidden]
         private ref struct TypeDataWalk
         {
-            private ReadOnlySpan<byte> _remaining;
+            private ReadOnlySpan<NativeTypeArgument> _remaining;
 
-            internal TypeDataWalk(ReadOnlySpan<byte> data)
+            internal TypeDataWalk(ReadOnlySpan<NativeTypeArgument> data)
             {
-                if (data.Length % TypeArgumentDataSize != 0)
-                {
-                    throw new ArgumentException(SR.Argument_InvalidGenericArg);
-                }
-
                 _remaining = data;
             }
 
@@ -100,7 +132,7 @@ public static partial class Debugger
 
             internal RuntimeType[] ReadTypeHandles(int count)
             {
-                if ((uint)count > (uint)(_remaining.Length / TypeArgumentDataSize))
+                if ((uint)count > (uint)_remaining.Length)
                 {
                     throw new ArgumentException(SR.Argument_InvalidGenericArg);
                 }
@@ -121,18 +153,29 @@ public static partial class Debugger
                     throw new ArgumentException(SR.Argument_InvalidGenericArg);
                 }
 
-                ReadOnlySpan<byte> node = _remaining[..TypeArgumentDataSize];
-                _remaining = _remaining[TypeArgumentDataSize..];
-                uint elementValue = BinaryPrimitives.ReadUInt32LittleEndian(
-                    node[TypeArgumentElementTypeOffset..]);
+                NativeTypeArgument node = _remaining[0];
+                _remaining = _remaining[1..];
+                if (!BitConverter.IsLittleEndian)
+                {
+                    node.Data.ElementType = BinaryPrimitives.ReverseEndianness(node.Data.ElementType);
+                    node.Data.TypeData.ClassTypeData.MetadataToken =
+                        BinaryPrimitives.ReverseEndianness(node.Data.TypeData.ClassTypeData.MetadataToken);
+                    node.Data.TypeData.ClassTypeData.Assembly =
+                        BinaryPrimitives.ReverseEndianness(node.Data.TypeData.ClassTypeData.Assembly);
+                    node.Data.TypeData.ArrayTypeData.ArrayRank =
+                        BinaryPrimitives.ReverseEndianness(node.Data.TypeData.ArrayTypeData.ArrayRank);
+                    node.ChildCount = BinaryPrimitives.ReverseEndianness(node.ChildCount);
+                }
+
+                uint elementValue = node.Data.ElementType;
                 if (elementValue > byte.MaxValue)
                 {
                     throw new ArgumentException(SR.Argument_InvalidGenericArg);
                 }
 
                 CorElementType elementType = (CorElementType)elementValue;
-                uint childCount = BinaryPrimitives.ReadUInt32LittleEndian(node[TypeArgumentChildCountOffset..]);
-                if (childCount > (uint)(_remaining.Length / TypeArgumentDataSize))
+                uint childCount = node.ChildCount;
+                if (childCount > (uint)_remaining.Length)
                 {
                     throw new ArgumentException(SR.Argument_InvalidGenericArg);
                 }
@@ -151,8 +194,10 @@ public static partial class Debugger
                         RuntimeType element = ReadTypeHandle();
                         return elementType switch
                         {
-                            CorElementType.ELEMENT_TYPE_ARRAY => (RuntimeType)element.MakeArrayType(
-                                checked((int)BinaryPrimitives.ReadUInt32LittleEndian(node[TypeArgumentArrayRankOffset..]))),
+                            CorElementType.ELEMENT_TYPE_ARRAY when node.Data.TypeData.ArrayTypeData.ArrayRank == 0 =>
+                                throw new BadImageFormatException(SR.Arg_BadImageFormatException),
+                            CorElementType.ELEMENT_TYPE_ARRAY => element.TypeHandle.MakeArray(
+                                unchecked((int)node.Data.TypeData.ArrayTypeData.ArrayRank)),
                             CorElementType.ELEMENT_TYPE_SZARRAY => (RuntimeType)element.MakeArrayType(),
                             CorElementType.ELEMENT_TYPE_PTR => (RuntimeType)element.MakePointerType(),
                             _ => (RuntimeType)element.MakeByRefType(),
@@ -160,10 +205,9 @@ public static partial class Debugger
 
                     case CorElementType.ELEMENT_TYPE_CLASS:
                     case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                        nint assembly = (nint)checked((nuint)BinaryPrimitives.ReadUInt64LittleEndian(
-                            node[TypeArgumentAssemblyOffset..]));
+                        nint assembly = (nint)checked((nuint)node.Data.TypeData.ClassTypeData.Assembly);
                         RuntimeModule module = GetModule(assembly);
-                        int token = BinaryPrimitives.ReadInt32LittleEndian(node[TypeArgumentTokenOffset..]);
+                        int token = unchecked((int)node.Data.TypeData.ClassTypeData.MetadataToken);
                         return ReadInstantiation(module, token, ReadTypeHandles((int)childCount));
 
                     case CorElementType.ELEMENT_TYPE_FNPTR:

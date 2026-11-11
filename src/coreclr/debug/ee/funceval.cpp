@@ -1102,46 +1102,6 @@ void Debugger::WriteFuncEvalRegister(
 }
 
 /*
- * FuncEvalWrapper
- *
- * Helper function for func-eval. We have to split it out so that we can put a __try / __finally in to
- * notify on a Catch-Handler found.
- *
- * Parameters:
- *    pContext - native roots and debugger state used by managed evaluation.
- *    pCatcherStackAddr - stack address to report as the Catch Handler Found location.
- *
- * Returns:
- *    None.
- *
- */
-void FuncEvalWrapper(UnmanagedCallersOnlyCaller* pCaller, DebuggerFuncEvalContext* pContext,
-                     BYTE* pCatcherStackAddr)
-{
-    struct Param : NotifyOfCHFFilterWrapperParam
-    {
-        UnmanagedCallersOnlyCaller* pCaller;
-        DebuggerFuncEvalContext* pContext;
-    };
-
-    Param param;
-    param.pFrame = pCatcherStackAddr; // Inherited from NotifyOfCHFFilterWrapperParam
-    param.pCaller = pCaller;
-    param.pContext = pContext;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        pParam->pCaller->InvokeDirect(reinterpret_cast<INT_PTR>(pParam->pContext));
-    }
-    PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(false);
-    }
-    PAL_ENDTRY
-}
-
-/*
  * RecordFuncEvalException
  *
  * Helper function records the details of an exception that occurred during a FuncEval
@@ -1297,7 +1257,7 @@ static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
     }
 }
 
-static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr)
+static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext)
 {
     CONTRACTL
     {
@@ -1317,7 +1277,7 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
         VolatileStore(&g_pDebuggerInvokeFunctionMethodDesc, CoreLibBinder::GetMethod(METHOD__DEBUGGER__INVOKE_FUNCTION));
     }
     UnmanagedCallersOnlyCaller caller(METHOD__DEBUGGER__INVOKE_FUNCTION);
-    FuncEvalWrapper(&caller, pContext, pCatcherStackAddr);
+    caller.InvokeDirect(reinterpret_cast<INT_PTR>(pContext));
 
     {
         DebuggerEval* pDE = pContext->pEval;
@@ -1345,14 +1305,12 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.
- *    pCatcherStackAddr - stack address to report as the Catch Handler Found location.
  *
  * Returns:
  *    None. DebuggerEval owns any persistent raw-byref result root.
  *
  */
-static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
-                                                  BYTE *pCatcherStackAddr)
+static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE)
 {
     CONTRACTL
     {
@@ -1474,7 +1432,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
         }
         IfFailThrow(captureResult);
 
-        InvokeManagedFuncEval(&context, pCatcherStackAddr);
+        InvokeManagedFuncEval(&context);
     }
     EX_CATCH
     {
@@ -1596,7 +1554,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         pDE->m_thread->DisableSingleStep();
 #endif
 
-    GCProtectArgsAndInvokeManagedFuncEval(pDE, reinterpret_cast<BYTE*>(&FEFrame));
+    GCProtectArgsAndInvokeManagedFuncEval(pDE);
 
 #ifdef FEATURE_EMULATE_SINGLESTEP
     if (ssEnabled)
