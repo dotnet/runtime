@@ -364,6 +364,10 @@ namespace Wasm.Build.Tests
 
         // An unnormalized intermediate path (e.g. ArtifactsPath=$(MSBuildThisFileDirectory)../artifacts) leaves '..'
         // segments in OutputR2RImage. The stale-image prune must still recognize the freshly emitted images.
+        // The trimmed closure reaches publish both as ILLink's '$(IntermediateLinkDir)<name>' items and as a glob over
+        // that directory, and a glob respells '//' (and, on Windows, mixed separators). Spelling the link dir with '//'
+        // and no backslash (which MSBuild would rewrite on Unix) keeps the literal form, so the two spellings diverge
+        // on every OS and publish must not leave a loose copy of a linked assembly in the publish root.
         [Theory]
         [InlineData(Configuration.Release, /*composite*/ false)]
         [InlineData(Configuration.Release, /*composite*/ true)]
@@ -375,7 +379,8 @@ namespace Wasm.Build.Tests
                 : string.Empty;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, $"r2r_unnormalized{(composite ? "_composite" : "")}",
                 extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite><PublishTrimmed>true</PublishTrimmed>" +
-                    "<IntermediateOutputPath>$(MSBuildProjectDirectory)/obj/../obj/$(Configuration)/</IntermediateOutputPath>",
+                    "<IntermediateOutputPath>$(MSBuildProjectDirectory)/obj/..//obj/$(Configuration)/</IntermediateOutputPath>" +
+                    "<IntermediateLinkDir>$(IntermediateOutputPath)$(TargetFramework)/linked/</IntermediateLinkDir>",
                 extraItems: extraItems);
             BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite)));
 

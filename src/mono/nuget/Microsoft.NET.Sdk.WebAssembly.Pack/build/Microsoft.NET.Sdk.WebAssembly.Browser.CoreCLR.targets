@@ -259,8 +259,13 @@ Copyright (c) .NET Foundation. All rights reserved.
            on an incremental publish where ILLink is up-to-date and its prep target is skipped, that item
            is not populated, so the trimmed framework assemblies drop out of ResolvedFileToPublish and are
            omitted from the served bundle (empty coreAssembly, non-bootable). The linked dir holds exactly
-           the trimmed closure, so this is equivalent on a full build and correct on an incremental one. -->
-      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
+           the trimmed closure, so this is equivalent on a full build and correct on an incremental one.
+           Respell the glob results the way ILLink names its outputs: a glob rewrites an unnormalized directory
+           (collapsed '//', and '\' on Windows), and a spelling that differs from ILLink's item would survive
+           the publish Remove of the managed assemblies and leak loose into the publish root. -->
+      <_WasmLinkedClosureFile Include="$(IntermediateLinkDir)*.dll" />
+      <_WasmReadyToRunCompileInput Include="@(_WasmLinkedClosureFile->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+      <_WasmLinkedClosureFile Remove="@(_WasmLinkedClosureFile)" />
       <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(FileName)%(Extension)"
