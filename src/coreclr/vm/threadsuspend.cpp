@@ -4875,7 +4875,17 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     g_SuspendStatistics.cntHijackTrap++;
 #endif // TIME_SUSPEND
 
+    // CommonTripThread can raise a thread abort, which must be dispatched to the managed code that we return to, as
+    // in HandleSuspensionForInterruptedThread.
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
     CommonTripThread();
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
