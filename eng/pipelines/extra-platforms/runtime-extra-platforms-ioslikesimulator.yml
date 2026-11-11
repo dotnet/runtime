@@ -57,7 +57,6 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
-      - iossimulator_x64
       - iossimulator_arm64
     variables:
       # map dependencies variables to local variables
@@ -92,7 +91,6 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
-      - iossimulator_x64
       - iossimulator_arm64
     variables:
       # map dependencies variables to local variables

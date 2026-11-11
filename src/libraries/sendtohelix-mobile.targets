@@ -33,16 +33,6 @@
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(TargetArchitecture)' == 'x64'">
-    <XHarnessXcodeVersion Condition="'$(XHarnessXcodeVersion)' == ''">26.3.0</XHarnessXcodeVersion>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(TargetArchitecture)' == 'x64'">
-    <!-- The Helix app link must use the same Xcode as XHarness, not the worker's default. -->
-    <HelixPreCommand Include="export DEVELOPER_DIR=&quot;/Applications/Xcode_$(XHarnessXcodeVersion).app/Contents/Developer&quot;" />
-    <HelixPreCommand Include="xcodebuild -version || exit 1" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
     <!-- ASP.NET Core development certificate generation can block Apple Helix work items before XHarness starts. -->
     <HelixPreCommand Include="export DOTNET_GENERATE_ASPNET_CERTIFICATE=false" />
