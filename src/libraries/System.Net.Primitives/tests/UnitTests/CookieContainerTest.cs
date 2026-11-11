@@ -601,21 +601,23 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(4, cc.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public async Task Add_ReachedMaxCountWithExpiredCookies_Added()
+        [Fact]
+        public void Add_ReachedMaxCountWithExpiredCookies_Added()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".domain1.com");
             Cookie c2 = new Cookie("name2", "value", "", ".domain2.com");
             Cookie c3 = new Cookie("name3", "value", "", ".domain3.com");
-            c1.Expires = DateTime.Now.AddSeconds(1); // The cookie will expire in 1 second
 
             CookieContainer cc = new CookieContainer(2);
             cc.Add(c1);
             cc.Add(c2);
+            Assert.Equal(2, cc.Count);
 
-            await Task.Delay(2000); // Sleep for 2 seconds to wait for the cookie to expire
+            cc.GetCookies(new Uri("http://domain1.com"))[0].Expired = true;
             cc.Add(c3);
+            Assert.Equal(2, cc.Count);
             Assert.Equal(0, cc.GetCookies(new Uri("http://domain1.com")).Count);
+            Assert.Equal(c2, cc.GetCookies(new Uri("http://domain2.com"))[0]);
             Assert.Equal(c3, cc.GetCookies(new Uri("http://domain3.com"))[0]);
         }
 
@@ -761,19 +763,21 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(c1, cc3[1]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public async Task GetCookies_RemovesExpired_Cookies()
+        [Fact]
+        public void GetCookies_RemovesExpired_Cookies()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".url1.com");
             Cookie c2 = new Cookie("name2", "value", "", ".url2.com");
-            c1.Expires = DateTime.Now.AddSeconds(1); // The cookie will expire in 1 second
 
             CookieContainer cc = new CookieContainer();
             cc.Add(c1);
             cc.Add(c2);
+            Assert.Equal(2, cc.Count);
 
-            await Task.Delay(2000); // Sleep for 2 seconds to wait for the cookie to expire
+            cc.GetCookies(new Uri("http://url1.com"))[0].Expired = true;
             Assert.Equal(0, cc.GetCookies(new Uri("http://url1.com")).Count); // There should no longer be such a cookie
+            Assert.Equal(1, cc.Count);
+            Assert.Equal(c2, cc.GetCookies(new Uri("http://url2.com"))[0]);
         }
 
         public static IEnumerable<object[]> InvalidCookies()

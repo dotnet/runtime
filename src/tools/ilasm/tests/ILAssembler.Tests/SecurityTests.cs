@@ -10,7 +10,7 @@ using System.Reflection.PortableExecutable;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class SecurityTests
     {

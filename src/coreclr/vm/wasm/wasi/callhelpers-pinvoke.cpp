@@ -669,10 +669,16 @@ extern "C" {
     int32_t QCall_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
     void QCall_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
     void QCall_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
+    void QCall_DebugDebugger_GetFuncEvalArgumentType (void *, uint32_t, void *, void *) __asm__("DebugDebugger_GetFuncEvalArgumentType");
+    void QCall_DebugDebugger_GetFuncEvalMethod (void *, void *, void *, void *) __asm__("DebugDebugger_GetFuncEvalMethod");
     int32_t QCall_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
     int32_t QCall_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
     int32_t QCall_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
     void QCall_DebugDebugger_Log (int32_t, void *, void *) __asm__("DebugDebugger_Log");
+    void QCall_DebugDebugger_PrepareFuncEvalResult (void *, void *, void *) __asm__("DebugDebugger_PrepareFuncEvalResult");
+    int32_t QCall_DebugDebugger_ReadFuncEvalPrimitiveRegister (void *, uint32_t, void *) __asm__("DebugDebugger_ReadFuncEvalPrimitiveRegister");
+    void QCall_DebugDebugger_WriteFuncEvalObjectRegister (void *, uint32_t, void *, void *) __asm__("DebugDebugger_WriteFuncEvalObjectRegister");
+    void QCall_DebugDebugger_WriteFuncEvalRegister (void *, uint32_t, void *, uint32_t, void *) __asm__("DebugDebugger_WriteFuncEvalRegister");
     void * QCall_Delegate_AdjustTarget (void *, void *, void *) __asm__("Delegate_AdjustTarget");
     int32_t QCall_Delegate_BindToMethodInfo (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodInfo");
     int32_t QCall_Delegate_BindToMethodName (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodName");
@@ -712,7 +718,6 @@ extern "C" {
     int32_t QCall_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
     void * QCall_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
     void QCall_GCHandle_InternalFreeWithGCTransition (void *, void *) __asm__("GCHandle_InternalFreeWithGCTransition");
-    void QCall_GCInterface_AddMemoryPressure (uint64_t, void *) __asm__("GCInterface_AddMemoryPressure");
     void QCall_GCInterface_AllocateNewArray (void *, int32_t, int32_t, void *, void *) __asm__("GCInterface_AllocateNewArray");
     void QCall_GCInterface_Collect (int32_t, int32_t, uint32_t, void *) __asm__("GCInterface_Collect");
     int32_t QCall_GCInterface_EnableNoGCRegionCallback (void *, int64_t, void *) __asm__("GCInterface_EnableNoGCRegionCallback");
@@ -725,7 +730,6 @@ extern "C" {
     void QCall_GCInterface_ReRegisterForFinalize (void *, void *) __asm__("GCInterface_ReRegisterForFinalize");
     int32_t QCall_GCInterface_RefreshMemoryLimit (void *, void *) __asm__("GCInterface_RefreshMemoryLimit");
     void * QCall_GCInterface_RegisterFrozenSegment (void *, void *, void *) __asm__("GCInterface_RegisterFrozenSegment");
-    void QCall_GCInterface_RemoveMemoryPressure (uint64_t, void *) __asm__("GCInterface_RemoveMemoryPressure");
     int32_t QCall_GCInterface_StartNoGCRegion (int64_t, int32_t, int64_t, int32_t, void *) __asm__("GCInterface_StartNoGCRegion");
     void QCall_GCInterface_UnregisterFrozenSegment (void *, void *) __asm__("GCInterface_UnregisterFrozenSegment");
     int32_t QCall_GCInterface_WaitForFullGCApproach (int32_t, void *) __asm__("GCInterface_WaitForFullGCApproach");
@@ -762,7 +766,7 @@ extern "C" {
     int32_t QCall_ModuleBuilder_GetTokenFromTypeSpec (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTokenFromTypeSpec");
     int32_t QCall_ModuleBuilder_GetTypeRef (void *, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTypeRef");
     void QCall_ModuleBuilder_SetFieldRVAContent (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_SetFieldRVAContent");
-    void QCall_ModuleHandle_GetDynamicMethod (void *, void *, void *, int32_t, void *, void *, void *) __asm__("ModuleHandle_GetDynamicMethod");
+    void QCall_ModuleHandle_GetDynamicMethod (void *, void *, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_GetDynamicMethod");
     int32_t QCall_ModuleHandle_GetMDStreamVersion (void *) __asm__("ModuleHandle_GetMDStreamVersion");
     void QCall_ModuleHandle_GetModuleType (void *, void *, void *) __asm__("ModuleHandle_GetModuleType");
     void QCall_ModuleHandle_GetPEKind (void *, void *, void *, void *) __asm__("ModuleHandle_GetPEKind");
@@ -774,6 +778,8 @@ extern "C" {
     void QCall_NativeRuntimeEventSource_LogContentionLockCreated (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogContentionLockCreated");
     void QCall_NativeRuntimeEventSource_LogContentionStart (uint32_t, uint32_t, void *, void *, uint64_t, void *) __asm__("NativeRuntimeEventSource_LogContentionStart");
     void QCall_NativeRuntimeEventSource_LogContentionStop (uint32_t, uint32_t, double, void *) __asm__("NativeRuntimeEventSource_LogContentionStop");
+    void QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogDecreaseMemoryPressure");
+    void QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogIncreaseMemoryPressure");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIODequeue");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (void *, void *, int32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOEnqueue");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIOPack (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOPack");
@@ -965,10 +971,16 @@ static const Entry s_QCall[] = {
     { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&QCall_CustomAttribute_ParseAttributeUsageAttribute },
     { "DebugDebugger_Break", (void*)&QCall_DebugDebugger_Break },
     { "DebugDebugger_CustomNotification", (void*)&QCall_DebugDebugger_CustomNotification },
+    { "DebugDebugger_GetFuncEvalArgumentType", (void*)&QCall_DebugDebugger_GetFuncEvalArgumentType },
+    { "DebugDebugger_GetFuncEvalMethod", (void*)&QCall_DebugDebugger_GetFuncEvalMethod },
     { "DebugDebugger_IsLoggingHelper", (void*)&QCall_DebugDebugger_IsLoggingHelper },
     { "DebugDebugger_IsManagedDebuggerAttached", (void*)&QCall_DebugDebugger_IsManagedDebuggerAttached },
     { "DebugDebugger_Launch", (void*)&QCall_DebugDebugger_Launch },
     { "DebugDebugger_Log", (void*)&QCall_DebugDebugger_Log },
+    { "DebugDebugger_PrepareFuncEvalResult", (void*)&QCall_DebugDebugger_PrepareFuncEvalResult },
+    { "DebugDebugger_ReadFuncEvalPrimitiveRegister", (void*)&QCall_DebugDebugger_ReadFuncEvalPrimitiveRegister },
+    { "DebugDebugger_WriteFuncEvalObjectRegister", (void*)&QCall_DebugDebugger_WriteFuncEvalObjectRegister },
+    { "DebugDebugger_WriteFuncEvalRegister", (void*)&QCall_DebugDebugger_WriteFuncEvalRegister },
     { "Delegate_AdjustTarget", (void*)&QCall_Delegate_AdjustTarget },
     { "Delegate_BindToMethodInfo", (void*)&QCall_Delegate_BindToMethodInfo },
     { "Delegate_BindToMethodName", (void*)&QCall_Delegate_BindToMethodName },
@@ -1008,7 +1020,6 @@ static const Entry s_QCall[] = {
     { "FreeEnvironmentStringsW", (void*)&QCall_FreeEnvironmentStringsW },
     { "GCHandle_InternalAllocWithGCTransition", (void*)&QCall_GCHandle_InternalAllocWithGCTransition },
     { "GCHandle_InternalFreeWithGCTransition", (void*)&QCall_GCHandle_InternalFreeWithGCTransition },
-    { "GCInterface_AddMemoryPressure", (void*)&QCall_GCInterface_AddMemoryPressure },
     { "GCInterface_AllocateNewArray", (void*)&QCall_GCInterface_AllocateNewArray },
     { "GCInterface_Collect", (void*)&QCall_GCInterface_Collect },
     { "GCInterface_EnableNoGCRegionCallback", (void*)&QCall_GCInterface_EnableNoGCRegionCallback },
@@ -1021,7 +1032,6 @@ static const Entry s_QCall[] = {
     { "GCInterface_ReRegisterForFinalize", (void*)&QCall_GCInterface_ReRegisterForFinalize },
     { "GCInterface_RefreshMemoryLimit", (void*)&QCall_GCInterface_RefreshMemoryLimit },
     { "GCInterface_RegisterFrozenSegment", (void*)&QCall_GCInterface_RegisterFrozenSegment },
-    { "GCInterface_RemoveMemoryPressure", (void*)&QCall_GCInterface_RemoveMemoryPressure },
     { "GCInterface_StartNoGCRegion", (void*)&QCall_GCInterface_StartNoGCRegion },
     { "GCInterface_UnregisterFrozenSegment", (void*)&QCall_GCInterface_UnregisterFrozenSegment },
     { "GCInterface_WaitForFullGCApproach", (void*)&QCall_GCInterface_WaitForFullGCApproach },
@@ -1070,6 +1080,8 @@ static const Entry s_QCall[] = {
     { "NativeRuntimeEventSource_LogContentionLockCreated", (void*)&QCall_NativeRuntimeEventSource_LogContentionLockCreated },
     { "NativeRuntimeEventSource_LogContentionStart", (void*)&QCall_NativeRuntimeEventSource_LogContentionStart },
     { "NativeRuntimeEventSource_LogContentionStop", (void*)&QCall_NativeRuntimeEventSource_LogContentionStop },
+    { "NativeRuntimeEventSource_LogDecreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure },
+    { "NativeRuntimeEventSource_LogIncreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure },
     { "NativeRuntimeEventSource_LogThreadPoolIODequeue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue },
     { "NativeRuntimeEventSource_LogThreadPoolIOEnqueue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue },
     { "NativeRuntimeEventSource_LogThreadPoolIOPack", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOPack },

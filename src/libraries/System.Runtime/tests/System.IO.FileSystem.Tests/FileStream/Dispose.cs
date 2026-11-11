@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.IO.Tests
@@ -486,7 +487,9 @@ namespace System.IO.Tests
             GC.Collect();
             Assert.False(weakReference.IsAlive);
 
-            // separate method to avoid JIT lifetime-extension issues
+            // Must not be inlined: the JIT can keep the FileStream and its strategy reachable (for example in GC spill
+            // temps, which are reported as live for the whole method) until the frame that inlined this method returns.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static async Task<WeakReference> EnsureFileStreamIsNotRooted(Func<FileStream> factory, bool useAsync)
             {
                 FileStream fs = factory();

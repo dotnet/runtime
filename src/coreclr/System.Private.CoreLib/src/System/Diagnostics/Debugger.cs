@@ -4,6 +4,7 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -60,7 +61,7 @@ namespace System.Diagnostics
         private static partial bool LaunchInternal();
 
         // Returns whether or not a managed debugger is attached to the process.
-        public static bool IsAttached => IsManagedDebuggerAttached() != 0;
+        public static bool IsAttached => IsSupported && IsManagedDebuggerAttached() != 0;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsManagedDebuggerAttached")]
         [SuppressGCTransition]
@@ -93,5 +94,18 @@ namespace System.Diagnostics
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal static void UserBreakpoint() => Break();
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [DebuggerHidden]
+        internal static unsafe void InvokeFunction(IntPtr context)
+        {
+            // Exceptions must reach the native catcher without a managed catch site.
+            if (!IsSupported)
+            {
+                throw new NotSupportedException();
+            }
+            FunctionEvaluation.Run((FunctionEvaluation.Context*)context);
+        }
     }
 }

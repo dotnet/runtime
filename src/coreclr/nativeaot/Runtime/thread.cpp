@@ -905,6 +905,23 @@ void Thread::PushExInfo(ExInfo * pExInfo)
     m_pExInfoStackHead = pExInfo;
 }
 
+void Thread::PopExInfo(ExInfo* pExInfo, uintptr_t resumeSP)
+{
+    ValidateExInfoPop(pExInfo, reinterpret_cast<void*>(resumeSP));
+    do
+    {
+        pExInfo = pExInfo->m_pPrevExInfo;
+    }
+    while (pExInfo != nullptr && reinterpret_cast<uintptr_t>(pExInfo) < resumeSP);
+    m_pExInfoStackHead = pExInfo;
+}
+
+FCIMPL2(void, RhpPopExInfo, ExInfo* pExInfo, uintptr_t resumeSP)
+{
+    ThreadStore::GetCurrentThread()->PopExInfo(pExInfo, resumeSP);
+}
+FCIMPLEND
+
 void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 {
 #ifdef _DEBUG

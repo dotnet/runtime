@@ -206,9 +206,7 @@ namespace System.Formats.Cbor
 
         public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)
         {
-            HashCode hash = default;
-            hash.AddBytes(encoding);
-            return hash.ToHashCode();
+            return Marvin.ComputeHash32(encoding, Marvin.DefaultSeed);
         }
 
         public static bool AreEqualKeyEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)

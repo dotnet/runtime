@@ -804,6 +804,9 @@
   <data name="Arg_TargetInvocationException" xml:space="preserve">
     <value>Exception has been thrown by the target of an invocation.</value>
   </data>
+  <data name="Arg_TargetMethodNotConstructor" xml:space="preserve">
+    <value>Target method is not a constructor.</value>
+  </data>
   <data name="Arg_TargetParameterCountException" xml:space="preserve">
     <value>Number of parameters specified does not match the expected number.</value>
   </data>

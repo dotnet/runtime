@@ -98,7 +98,7 @@ EXTERN_C FCDECL0(void, RhpGcPoll);
 
 #ifdef TARGET_WASM
 // WASM EventPipe CPU-sampling samplepoint helper (defined in vm/wasm/helpers.cpp).
-EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, PCODE portableEntryPointContext);
+EXTERN_C FCDECL0(void, JIT_WasmProfSamplepoint);
 #endif // TARGET_WASM
 
 #ifdef FEATURE_IJW
@@ -297,9 +297,9 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
     void STDCALL JIT_TailCall();                    // JIThelp.asm
-#endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#endif // TARGET_X86
 
 #ifdef PROFILING_SUPPORTED
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);

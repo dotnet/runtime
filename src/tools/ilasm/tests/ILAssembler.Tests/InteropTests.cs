@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class InteropTests
     {

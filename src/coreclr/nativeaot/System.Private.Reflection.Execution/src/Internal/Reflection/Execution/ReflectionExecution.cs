@@ -51,7 +51,7 @@ namespace Internal.Reflection.Execution
             ExecutionEnvironment = executionEnvironment;
         }
 
-        public static bool TryGetMethodMetadataFromStartAddress(IntPtr methodStartAddress, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
+        public static bool TryGetMethodMetadataFromAddress(IntPtr address, bool isFunctionPointer, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
         {
             reader = null;
             typeHandle = default(TypeDefinitionHandle);
@@ -62,7 +62,7 @@ namespace Internal.Reflection.Execution
                 return false;
 
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
-            if (!ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+            if (!ExecutionEnvironment.TryGetMethodForAddress(address, isFunctionPointer,
                 ref declaringTypeHandle, out QMethodDefinition qMethodDefinition))
                 return false;
 
@@ -84,7 +84,7 @@ namespace Internal.Reflection.Execution
         public static MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
-            if (!ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+            if (!ExecutionEnvironment.TryGetMethodForAddress(methodStartAddress, isFunctionPointer: false,
                 ref declaringTypeHandle, out QMethodDefinition qMethodDefinition))
             {
                 return null;

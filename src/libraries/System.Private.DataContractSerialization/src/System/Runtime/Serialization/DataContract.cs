@@ -1365,7 +1365,7 @@ namespace System.Runtime.Serialization.DataContracts
         {
             dataContractAttribute = null;
 
-            object[] dataContractAttributes = type.GetCustomAttributes(typeof(DataContractAttribute), false).ToArray();
+            object[] dataContractAttributes = type.GetCustomAttributes(typeof(DataContractAttribute), false);
             if (dataContractAttributes != null && dataContractAttributes.Length > 0)
             {
 #if DEBUG
@@ -1390,7 +1390,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal static XmlQualifiedName GetCollectionXmlName(Type type, Type itemType, HashSet<Type> previousCollectionTypes, out CollectionDataContractAttribute? collectionContractAttribute)
         {
             string? name, ns;
-            object[] collectionContractAttributes = type.GetCustomAttributes(typeof(CollectionDataContractAttribute), false).ToArray();
+            object[] collectionContractAttributes = type.GetCustomAttributes(typeof(CollectionDataContractAttribute), false);
             if (collectionContractAttributes != null && collectionContractAttributes.Length > 0)
             {
 #if DEBUG
@@ -1973,7 +1973,7 @@ namespace System.Runtime.Serialization.DataContracts
                     return;
 
                 typesChecked.Add(type, type);
-                object[] knownTypeAttributes = type.GetCustomAttributes(typeof(KnownTypeAttribute), false).ToArray();
+                object[] knownTypeAttributes = type.GetCustomAttributes(typeof(KnownTypeAttribute), false);
                 if (knownTypeAttributes != null)
                 {
                     KnownTypeAttribute kt;
