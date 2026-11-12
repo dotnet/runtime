@@ -3662,6 +3662,12 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
             flagsToCheck &= ~GTF_ORDER_SIDEEFF;
         }
 
+        // Likewise for a contextual exception proof published on the node itself.
+        if (tree->OperSupportsDominatedOrdering())
+        {
+            flagsToCheck &= ~GTF_ORDER_DOMINATED;
+        }
+
         if (tree->isIndir() && tree->AsIndir()->Addr()->IsIconHandle(GTF_ICON_FTN_ADDR))
         {
             // IND(ICON_FTN_ADDR) may or may not have GTF_IND_INVARIANT flag.

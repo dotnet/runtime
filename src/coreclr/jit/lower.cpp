@@ -3938,7 +3938,8 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
         DISPTREE(operand);
-        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsCFGCallArgInvariantInRange(operand, call))
+        if (((operand->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED)) == 0) &&
+            IsCFGCallArgInvariantInRange(operand, call))
         {
             JITDUMP("...yes, moving to after validator call\n");
             BlockRange().Remove(operand);
@@ -11354,7 +11355,7 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     // is materialized, so any ordering hint placed on the ADD (e.g. by morph
     // for an explicit FIELD_ADDR null check) does not block containment.
     //
-    const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
+    const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_EFFECT);
 #else
     const bool isContainable = true;
 #endif
@@ -11427,7 +11428,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 
             // Now it might be eligible for some addressing modes with LDAPUR.
             // See LowerStoreIndirCommon for why GTF_ORDER_SIDEEFF on the addr is ignored.
-            const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_EFFECT);
             TryCreateAddrMode(ind->Addr(), isContainable, ind);
 
             // Wrap the resulting IND into BITCAST:
@@ -11446,7 +11447,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
         // Verify containment safety before creating an LEA that must be contained.
         // See LowerStoreIndirCommon for why GTF_ORDER_SIDEEFF on the addr is ignored.
         //
-        const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
+        const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_EFFECT);
 #else
         const bool isContainable = true;
 #endif
@@ -11724,7 +11725,8 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
         // Helper lambda to check if a single node interferes with 'indir'.
         auto interferes = [=](GenTree* node) {
-            if (((node->gtFlags & GTF_ORDER_SIDEEFF) != 0) && node->OperSupportsOrderingSideEffect())
+            if ((((node->gtFlags & GTF_ORDER_SIDEEFF) != 0) && node->OperSupportsOrderingSideEffect()) ||
+                node->HasDominatedOrdering())
             {
                 // Cannot normally reorder GTF_ORDER_SIDEEFF and GTF_GLOB_REF,
                 // except for some of the known cases described above.

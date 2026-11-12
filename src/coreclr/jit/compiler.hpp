@@ -2046,6 +2046,11 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(!OperIsConst(oper)); // use BashToConst() instead
 
     GenTreeFlags mask = GTF_COMMON_MASK;
+    // Test the requested opcode so constant-opcode callers can fold this mask.
+    if (!OperIsIndirOrArrMetaData(oper) && oper != GT_DIV && oper != GT_UDIV && oper != GT_MOD && oper != GT_UMOD)
+    {
+        mask &= ~GTF_ORDER_DOMINATED;
+    }
     if (this->OperIsIndirOrArrMetaData() && OperIsIndirOrArrMetaData(oper))
     {
         mask |= GTF_IND_NONFAULTING;
@@ -6032,3 +6037,14 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
 /*****************************************************************************/
+
+// Contextual dependencies do not exist before the first VN walk, including MinOpts.
+inline bool Compiler::gtTreeHasDominatedOrdering(GenTree* tree)
+{
+    return ((fgVNPassesCompleted != 0) || (vnState != nullptr)) && gtTreeHasDominatedOrderingWorker(tree);
+}
+
+inline bool Compiler::gtTreeHasOrderingEffect(GenTree* tree)
+{
+    return ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) || gtTreeHasDominatedOrdering(tree);
+}

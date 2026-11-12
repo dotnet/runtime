@@ -179,10 +179,16 @@ class SideEffectSet final
     AliasSet          m_aliasSet;          // An AliasSet that represents read and write side effects.
 
     template <typename TOtherAliasInfo>
-    bool InterferesWith(unsigned               otherSideEffectFlags,
+    bool InterferesWith(unsigned               sideEffectFlags,
+                        unsigned               otherSideEffectFlags,
                         ExceptionSetFlags      otherPreciseExceptions,
                         const TOtherAliasInfo& otherAliasInfo,
                         bool                   strict) const;
+
+    bool CanMovePast(
+        Compiler* comp, GenTree* crossed, GenTree* rangeStart, GenTree* rangeEnd, unsigned* establishedProofs) const;
+    bool CanMovePastWithDominatedOrdering(
+        Compiler* comp, GenTree* crossed, GenTree* rangeStart, GenTree* rangeEnd, unsigned* establishedProofs) const;
 
 public:
     SideEffectSet();

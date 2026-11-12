@@ -76,9 +76,10 @@ bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockHasEHSuccs)
     ExceptionSetFlags  exSet;
     GenTreeFlags const effects = node->OperEffects(comp, &exSet);
 
-    // Calls are barriers, as are nodes whose evaluation order is explicitly
-    // constrained (GTF_ORDER_SIDEEFF): coalescing must not move a strengthened
-    // check across an operation the IR says cannot be reordered.
+    // Calls and ordinary ordering side effects remain barriers. A dominated ordering alone
+    // is not: its operation stays in place, after the check that made it safe. Strengthening
+    // an earlier bounds check may skip that operation, but does not move it before its proof.
+    // Other exceptions, stores and EH-visible effects are checked below.
     //
     if ((effects & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
     {

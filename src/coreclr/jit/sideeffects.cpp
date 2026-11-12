@@ -542,32 +542,35 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 //        - One set's reads and writes interfere with the other set's reads and writes
 //
 // Arguments:
+//    sideEffectFlags        - The side effect flags for this side effect set.
 //    otherSideEffectFlags   - The side effect flags for the other side effect set.
 //    otherPreciseExceptions - The precise exceptions for the other side effect set.
 //    otherAliasInfo - The alias information for the other side effect set.
 //    strict - True if the analysis should be strict as described above.
 //
 template <typename TOtherAliasInfo>
-bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
+bool SideEffectSet::InterferesWith(unsigned               sideEffectFlags,
+                                   unsigned               otherSideEffectFlags,
                                    ExceptionSetFlags      otherPreciseExceptions,
                                    const TOtherAliasInfo& otherAliasInfo,
                                    bool                   strict) const
 {
-    const bool thisProducesException  = (m_sideEffectFlags & GTF_EXCEPT) != 0;
+    const bool thisProducesException  = (sideEffectFlags & GTF_EXCEPT) != 0;
     const bool otherProducesException = (otherSideEffectFlags & GTF_EXCEPT) != 0;
 
     if (strict)
     {
         // If either set contains a compiler barrier, and the other set contains a global reference,
-        // the sets interfere.
-        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
-            ((otherSideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+        // the sets interfere. A dominated ordering is treated the same way: this analysis is not
+        // directional, while such an ordering only constrains moving its node ahead of the check.
+        if (((sideEffectFlags & GTF_ORDER_EFFECT) != 0) &&
+            ((otherSideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_EFFECT)) != 0))
         {
             return true;
         }
 
-        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
-            ((m_sideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+        if (((otherSideEffectFlags & GTF_ORDER_EFFECT) != 0) &&
+            ((sideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_EFFECT)) != 0))
         {
             return true;
         }
@@ -617,7 +620,8 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
 //
 bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) const
 {
-    return InterferesWith(other.m_sideEffectFlags, other.m_preciseExceptions, other.m_aliasSet, strict);
+    return InterferesWith(m_sideEffectFlags, other.m_sideEffectFlags, other.m_preciseExceptions, other.m_aliasSet,
+                          strict);
 }
 
 //------------------------------------------------------------------------
@@ -637,7 +641,80 @@ bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool stric
 {
     ExceptionSetFlags preciseExceptions;
     GenTreeFlags      operEffects = node->OperEffects(compiler, &preciseExceptions);
-    return InterferesWith(operEffects, preciseExceptions, AliasSet::NodeInfo(compiler, node), strict);
+    return InterferesWith(m_sideEffectFlags, operEffects, preciseExceptions, AliasSet::NodeInfo(compiler, node),
+                          strict);
+}
+
+//------------------------------------------------------------------------
+// SideEffectSet::CanMovePast: Check whether the range summarized by this set can
+//   be delayed past an operation that follows it in the same LIR block.
+//
+// Arguments:
+//   comp              - Compiler context
+//   crossed           - Operation the range would move past
+//   rangeStart        - First operation in the moving range
+//   rangeEnd          - Last operation in the moving range
+//   establishedProofs - Cached kinds of facts the range may establish, or UINT_MAX
+//                       if no crossed operation has needed this information yet
+//
+// Notes:
+//   Delaying the range preserves its own dominated dependencies. However, an
+//   operation crossed by the range must not lose a check established in the range.
+//   Use operation kinds: a non-faulting load still establishes a null-check fact.
+//   All other ordering, exception and memory interference checks are unchanged.
+//
+inline bool SideEffectSet::CanMovePast(
+    Compiler* comp, GenTree* crossed, GenTree* rangeStart, GenTree* rangeEnd, unsigned* establishedProofs) const
+{
+    if (((m_sideEffectFlags | crossed->gtFlags) & GTF_ORDER_DOMINATED) == 0)
+    {
+        return !InterferesWith(comp, crossed, /* strict */ true);
+    }
+    return CanMovePastWithDominatedOrdering(comp, crossed, rangeStart, rangeEnd, establishedProofs);
+}
+
+// Keep dependency handling out of the ordinary interference path.
+NOINLINE bool SideEffectSet::CanMovePastWithDominatedOrdering(
+    Compiler* comp, GenTree* crossed, GenTree* rangeStart, GenTree* rangeEnd, unsigned* establishedProofs) const
+{
+    ExceptionSetFlags exceptions;
+    GenTreeFlags      effects = crossed->OperEffects(comp, &exceptions);
+    if ((effects & GTF_ORDER_DOMINATED) != 0)
+    {
+        if (*establishedProofs == UINT_MAX)
+        {
+            *establishedProofs = Compiler::PROOF_NONE;
+            for (GenTree* cur = rangeStart;; cur = cur->gtNext)
+            {
+                assert(cur != nullptr);
+                *establishedProofs |= Compiler::gtNodeMayEstablishProof(cur);
+                if ((cur == rangeEnd) || (*establishedProofs == Compiler::PROOF_ANY))
+                {
+                    break;
+                }
+            }
+        }
+
+        unsigned required = Compiler::gtNodeMayEstablishProof(crossed);
+        assert(required != Compiler::PROOF_NONE);
+        if ((required == Compiler::PROOF_NONE) || ((*establishedProofs & required) != 0))
+        {
+            return false;
+        }
+        // Do not weaken an ordinary barrier on the moving range.
+        if ((m_sideEffectFlags & GTF_ORDER_SIDEEFF) == 0)
+        {
+            effects &= ~GTF_ORDER_DOMINATED;
+        }
+    }
+
+    unsigned movingEffects = m_sideEffectFlags;
+    // An ordinary barrier on the crossed operation keeps its original interference rules.
+    if ((effects & GTF_ORDER_SIDEEFF) == 0)
+    {
+        movingEffects &= ~GTF_ORDER_DOMINATED;
+    }
+    return !InterferesWith(movingEffects, effects, exceptions, AliasSet::NodeInfo(comp, crossed), /* strict */ true);
 }
 
 //------------------------------------------------------------------------
@@ -689,12 +766,12 @@ bool SideEffectSet::IsLirInvariantInRange(Compiler*    comp,
     Clear();
     AddNode(comp, node);
     m_sideEffectFlags &= ~ignoreFlagsOnNode;
+    unsigned establishedProofs = UINT_MAX;
 
     for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
         assert((cur != nullptr) && "Expected first node to precede end node");
-        const bool strict = true;
-        if (InterferesWith(comp, cur, strict))
+        if (!CanMovePast(comp, cur, node, node, &establishedProofs))
         {
             return false;
         }
@@ -746,6 +823,7 @@ bool SideEffectSet::IsLirInvariantInRange(
     Clear();
     AddNode(comp, node);
     m_sideEffectFlags &= ~ignoreFlagsOnNode;
+    unsigned establishedProofs = UINT_MAX;
 
     for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
@@ -755,8 +833,7 @@ bool SideEffectSet::IsLirInvariantInRange(
             continue;
         }
 
-        const bool strict = true;
-        if (InterferesWith(comp, cur, strict))
+        if (!CanMovePast(comp, cur, node, node, &establishedProofs))
         {
             return false;
         }
@@ -819,6 +896,8 @@ bool SideEffectSet::IsLirRangeInvariantInRange(
         assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
     }
 
+    unsigned establishedProofs = UINT_MAX;
+
     for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
         assert((cur != nullptr) && "Expected first node to precede end node");
@@ -827,8 +906,7 @@ bool SideEffectSet::IsLirRangeInvariantInRange(
             continue;
         }
 
-        const bool strict = true;
-        if (InterferesWith(comp, cur, strict))
+        if (!CanMovePast(comp, cur, rangeStart, rangeEnd, &establishedProofs))
         {
             return false;
         }

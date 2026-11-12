@@ -197,6 +197,7 @@ set( JIT_SOURCES
   treelifeupdater.cpp
   utils.cpp
   valuenum.cpp
+  vnprops.cpp
 )
 
 set ( JIT_NATIVE_TARGET_SOURCES

@@ -1014,7 +1014,7 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     GenTree* addrHigh =
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTree* storeIndHigh = new (m_compiler, GT_STOREIND) GenTreeStoreInd(TYP_INT, addrHigh, dataHigh);
-    storeIndHigh->gtFlags = (storeIndLow->gtFlags & (GTF_ALL_EFFECT | GTF_LIVENESS_MASK));
+    storeIndHigh->gtFlags = (storeIndLow->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED | GTF_LIVENESS_MASK));
 
     Range().InsertAfter(storeIndLow, dataHigh, addrBaseHigh, addrHigh, storeIndHigh);
 
@@ -1340,7 +1340,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //
                     // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
                     // feeds the hi operand while there are no side effects)
-                    if ((hiOp1->gtFlags & GTF_ALL_EFFECT) == 0)
+                    if ((hiOp1->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED)) == 0)
                     {
                         Range().Remove(hiOp1, true);
                     }
@@ -1417,7 +1417,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //
                     // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
                     // feeds the lo operand while there are no side effects)
-                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED | GTF_SET_FLAGS)) == 0)
                     {
                         Range().Remove(loOp1, true);
                     }
@@ -1486,7 +1486,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //
                     // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
                     // feeds the lo operand while there are no side effects)
-                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED | GTF_SET_FLAGS)) == 0)
                     {
                         Range().Remove(loOp1, true);
                     }
@@ -2238,7 +2238,7 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTr
 
     // TODO-CQ: we could go perform this removal transitively.
     // See also identical code in shift decomposition.
-    if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+    if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_ORDER_DOMINATED | GTF_SET_FLAGS)) == 0)
     {
         JITDUMP("Removing the HI part of [%06u] and marking its operands unused:\n", src->gtTreeID);
         DISPNODE(hiSrc);

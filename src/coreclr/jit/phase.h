@@ -51,7 +51,7 @@ protected:
     Phases      m_phase;
 };
 
-// A phase that accepts a lambda for the actions done by the phase.
+// A phase that accepts a lambda for its actions, optionally returning PhaseStatus.
 //
 template <typename A>
 class ActionPhase final : public Phase
@@ -66,8 +66,15 @@ public:
 protected:
     virtual PhaseStatus DoPhase() override
     {
-        action();
-        return PhaseStatus::MODIFIED_EVERYTHING;
+        if constexpr (std::is_same_v<decltype(action()), PhaseStatus>)
+        {
+            return action();
+        }
+        else
+        {
+            action();
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
     }
 
 private:

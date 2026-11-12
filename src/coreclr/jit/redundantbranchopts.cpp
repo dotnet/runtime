@@ -2981,6 +2981,9 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
         // We'll handle exceptional side effects with VNs below.
         //
+        // A dominated ordering is no barrier: the candidate is evaluated again later in the block,
+        // which its own dominated orderings allow, while prevTree and its checks stay in place.
+        //
         if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeValue->gtFlags & GTF_ASG) != 0))
         {
             if (prevStmt->GetNextStmt() != stmt)
@@ -3156,7 +3159,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     }
     else
     {
-        // We going to forward-sub a copy of candidateTree
+        // We are going to forward-sub a copy of candidateTree, evaluated later in the same block.
         //
         assert(!sideEffect);
         substituteTree = gtCloneExpr(candidateTree);

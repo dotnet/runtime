@@ -4743,18 +4743,22 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_EARLY_PROP, &Compiler::optEarlyProp);
             }
 
-            if (doValueNum)
             {
-                // Value number the trees
-                //
-                DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
-            }
+                // Only VN and hoisting maintain these records. Keep their handoff scoped
+                // here so later phases cannot obtain them through Compiler.
+                if (doValueNum)
+                {
+                    DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
+                }
 
-            if (doLoopHoisting)
-            {
-                // Hoist invariant code out of loops
-                //
-                DoPhase(this, PHASE_HOIST_LOOP_CODE, &Compiler::optHoistLoopCode);
+                VNExceptionDependencies dependencies{vnExceptionDependencies, m_domTree};
+                vnExceptionDependencies = nullptr;
+                if (doLoopHoisting)
+                {
+                    DoPhase(this, PHASE_HOIST_LOOP_CODE, [&]() {
+                        return optHoistLoopCode(dependencies);
+                    });
+                }
             }
 
             if (doCopyProp)
@@ -9913,6 +9917,10 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_ORDER_SIDEEFF)
         {
             chars += printf("[ORDER_SIDEEFF]");
+        }
+        if (tree->gtFlags & GTF_ORDER_DOMINATED)
+        {
+            chars += printf("[ORDER_DOMINATED]");
         }
         if (tree->gtFlags & GTF_REVERSE_OPS)
         {

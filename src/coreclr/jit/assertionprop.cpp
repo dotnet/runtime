@@ -4246,10 +4246,9 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 {
     assert(store->OperIs(GT_STORE_BLK));
 
-    bool didZeroObjProp      = optZeroObjAssertionProp(store->Data(), assertions);
-    bool didNonNullProp      = optNonNullAssertionProp_Ind(assertions, store);
-    bool didWriteBarrierProp = optWriteBarrierAssertionProp_StoreBlk(assertions, store);
-    if (didZeroObjProp || didNonNullProp || didWriteBarrierProp)
+    bool didZeroObjProp = optZeroObjAssertionProp(store->Data(), assertions);
+    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, store);
+    if (didZeroObjProp || didNonNullProp)
     {
         return optAssertionProp_Update(store, store, stmt);
     }
@@ -4428,6 +4427,12 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
                                            Statement*       stmt,
                                            BasicBlock*      block)
 {
+    // Unsigned operations have no signed-to-unsigned rewrite or overflow proof left to do.
+    if (tree->OperIs(GT_UDIV, GT_UMOD) && ((tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) != 0))
+    {
+        return nullptr;
+    }
+
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
@@ -5157,10 +5162,6 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
     assert(tree->OperIsIndirOrArrMetaData());
 
     bool updated = optNonNullAssertionProp_Ind(assertions, tree);
-    if (tree->OperIs(GT_STOREIND))
-    {
-        updated |= optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
-    }
 
     if (updated)
     {
@@ -5361,7 +5362,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 {
     assert(indir->OperIsIndirOrArrMetaData());
 
-    if ((indir->gtFlags & GTF_EXCEPT) == 0)
+    if ((indir->gtFlags & (GTF_EXCEPT | GTF_IND_NONFAULTING)) != GTF_EXCEPT)
     {
         return false;
     }
@@ -5379,181 +5380,6 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
         return true;
     }
 
-    return false;
-}
-
-//------------------------------------------------------------------------
-// GetWriteBarrierForm: Determinate the exact type of write barrier required for the
-//    given address.
-//
-// Arguments:
-//    vnStore - ValueNumStore object
-//    vn      - VN of the address
-//
-// Return Value:
-//    Exact type of write barrier required for the given address.
-//
-static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
-{
-    ValueNumStore*  vnStore = comp->vnStore;
-    const var_types type    = vnStore->TypeOfVN(vn);
-    if (type == TYP_REF)
-    {
-        return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
-    }
-    if (type != TYP_BYREF)
-    {
-        return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
-    }
-
-    VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
-    {
-        if (funcApp.FuncIs(VNF_PtrToArrElem))
-        {
-            // Check whether the array is on the heap
-            ValueNum arrayVN = funcApp.GetArg(1);
-            return GetWriteBarrierForm(comp, arrayVN);
-        }
-        if (funcApp.FuncIs(VNF_PtrToLoc))
-        {
-            // Pointer to a local
-            return GCInfo::WriteBarrierForm::WBF_NoBarrier;
-        }
-        if ((funcApp.FuncIs(VNF_PtrToStatic)) && vnStore->IsVNHandle(funcApp.GetArg(0), GTF_ICON_STATIC_BOX_PTR))
-        {
-            // Boxed static - always on the heap
-            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
-        }
-        if (funcApp.FuncIs(VNF_ADD))
-        {
-            // Check arguments of the GT_ADD
-            // To make it conservative, we require one of the arguments to be a constant, e.g.:
-            //
-            //   addressOfLocal + cns    -> NoBarrier
-            //   cns + addressWithinHeap -> BarrierUnchecked
-            //
-            // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
-            // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
-            //
-            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(0)))
-            {
-                return GetWriteBarrierForm(comp, funcApp.GetArg(1));
-            }
-            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(1)))
-            {
-                return GetWriteBarrierForm(comp, funcApp.GetArg(0));
-            }
-        }
-    }
-    return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
-}
-
-//------------------------------------------------------------------------
-// optWriteBarrierAssertionProp_StoreInd: This function assists gcIsWriteBarrierCandidate with help of
-//    assertions and VNs since CSE may "hide" addresses/values under locals, making it impossible for
-//    gcIsWriteBarrierCandidate to determine the exact type of write barrier required
-//    (it's too late for it to rely on VNs).
-//
-//    There are three cases we handle here:
-//     * Target is not on the heap - no write barrier is required
-//     * Target could be on the heap, but the value being stored doesn't require any write barrier
-//     * Target is definitely on the heap - checked (slower) write barrier is not required
-//
-// Arguments:
-//    assertions - Active assertions
-//    indir      - The STOREIND node
-//
-// Return Value:
-//    Whether the exact type of write barrier was determined and marked on the STOREIND node.
-//
-bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir)
-{
-    const GenTree* value = indir->AsIndir()->Data();
-    const GenTree* addr  = indir->AsIndir()->Addr();
-
-    if (optLocalAssertionProp || !indir->TypeIs(TYP_REF) || !value->TypeIs(TYP_REF) ||
-        ((indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0))
-    {
-        return false;
-    }
-
-    GCInfo::WriteBarrierForm barrierType = GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
-
-    // First, analyze the value being stored
-    auto vnVisitor = [this](ValueNum vn) -> ValueNumStore::VNVisit {
-        if ((vn == ValueNumStore::VNForNull()) || vnStore->IsVNObjHandle(vn))
-        {
-            // No write barrier is required for null or nongc object handles as values
-            return ValueNumStore::VNVisit::Continue;
-        }
-        return ValueNumStore::VNVisit::Abort;
-    };
-
-    if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(value), vnVisitor) == ValueNumStore::VNVisit::Continue)
-    {
-        barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
-    }
-    // Next, analyze the address if we haven't already determined the barrier type from the value
-    else if ((indir->gtFlags & GTF_IND_TGT_HEAP) == 0)
-    {
-        // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
-        // that they actually need no barrier? But that comes with a TP regression.
-        barrierType = GetWriteBarrierForm(this, optConservativeNormalVN(addr));
-    }
-
-    JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));
-    if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
-    {
-        JITDUMP("is not needed at all.\n");
-        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
-        return true;
-    }
-    if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
-    {
-        JITDUMP("unchecked is fine.\n");
-        indir->gtFlags |= GTF_IND_TGT_HEAP;
-        return true;
-    }
-
-    JITDUMP("unknown (checked).\n");
-    return false;
-}
-
-//------------------------------------------------------------------------
-// optWriteBarrierAssertionProp_StoreBlk: The STORE_BLK counterpart of
-//    optWriteBarrierAssertionProp_StoreInd. For block stores that contain GC
-//    pointers, attempt to prove via VN/assertion analysis that the destination
-//    address is not on the GC heap (or always on the heap).
-//
-// Arguments:
-//    assertions - Active assertions
-//    store      - The STORE_BLK node
-//
-// Return Value:
-//    Whether the exact type of write barrier was determined and marked on the STOREBLK node.
-//
-bool Compiler::optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions, GenTreeBlk* store)
-{
-    if (optLocalAssertionProp || !store->GetLayout()->HasGCPtr() ||
-        ((store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP)) != 0))
-    {
-        return false;
-    }
-
-    GCInfo::WriteBarrierForm barrierType = GetWriteBarrierForm(this, optConservativeNormalVN(store->Addr()));
-    if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
-    {
-        JITDUMP("Add GTF_IND_TGT_NOT_HEAP to STORE_BLK [%06d]: ", dspTreeID(store));
-        store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
-        return true;
-    }
-    if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
-    {
-        JITDUMP("Add GTF_IND_TGT_HEAP to STORE_BLK [%06d]: ", dspTreeID(store));
-        store->gtFlags |= GTF_IND_TGT_HEAP;
-        return true;
-    }
     return false;
 }
 
@@ -6465,8 +6291,6 @@ public:
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        m_compiler->optVnNonNullPropCurStmt(m_block, m_stmt, *use);
-
         return m_compiler->optVNBasedFoldCurStmt(m_block, m_stmt, user, *use);
     }
 };
@@ -6649,45 +6473,6 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
     DBEXEC(VERBOSE, gtDispStmt(stmt));
 
     return WALK_CONTINUE;
-}
-
-//------------------------------------------------------------------------------
-// optVnNonNullPropCurStmt
-//    Performs VN based non-null propagation on the tree node.
-//
-// Assumption:
-//    This function is called as part of a pre-order tree walk.
-//
-// Arguments:
-//    block - The block that contains the statement that contains the tree.
-//    stmt  - The statement node in which the "tree" is present.
-//    tree  - The currently visited tree node.
-//
-// Return Value:
-//    None.
-//
-// Description:
-//    Performs value number based non-null propagation on GT_CALL and
-//    indirections. This is different from flow based assertions and helps
-//    unify VN based constant prop and non-null prop in a single pre-order walk.
-//
-void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
-{
-    ASSERT_TP empty   = BitVecOps::UninitVal();
-    GenTree*  newTree = nullptr;
-    if (tree->OperIs(GT_CALL))
-    {
-        newTree = optNonNullAssertionProp_Call(empty, tree->AsCall());
-    }
-    else if (tree->OperIsIndir())
-    {
-        newTree = optAssertionProp_Ind(empty, tree, stmt);
-    }
-    if (newTree)
-    {
-        assert(newTree == tree);
-        optAssertionProp_Update(newTree, tree, stmt);
-    }
 }
 
 /*****************************************************************************
