@@ -22,8 +22,6 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
-        private static readonly ObjectNodeSection ProducersSection = new("producers", SectionType.Debug);
-
         private readonly Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
@@ -124,28 +122,43 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        private protected override void EmitSectionsAndLayout()
-        {
-            base.EmitSectionsAndLayout();
-
-            SectionWriter writer = GetOrCreateSection(ProducersSection);
-            writer.WriteULEB128(2);
-            WriteProducerField(writer, "processed-by", WasmProducerName);
-            WriteProducerField(writer, "sdk", ".NET");
-        }
-
         private protected void EmitProducersSection(Stream outputFileStream)
         {
-            int sectionIndex = _sections.GetSectionIndex(ProducersSection.Name);
-            _sections[sectionIndex].EmitToStream(outputFileStream);
+            using MemoryStream payload = CreateProducersSectionPayload();
+            var section = new WasmCustomSection(payload, new Utf8String("producers"), sectionIndex: -1);
+            section.EmitToStream(outputFileStream);
         }
 
-        private static void WriteProducerField(SectionWriter writer, string field, string name)
+        private protected MemoryStream CreateProducersSectionPayload()
         {
-            writer.WriteUtf8WithLength(field);
-            writer.WriteULEB128(1);
-            writer.WriteUtf8WithLength(name);
-            writer.WriteULEB128(0);
+            MemoryStream payload = new();
+            WriteULEB128(payload, 2);
+            WriteProducerField(payload, "processed-by", WasmProducerName);
+            WriteProducerField(payload, "sdk", ".NET");
+            payload.Position = 0;
+            return payload;
+        }
+
+        private static void WriteProducerField(Stream output, string field, string name)
+        {
+            WriteName(output, field);
+            WriteULEB128(output, 1);
+            WriteName(output, name);
+            WriteULEB128(output, 0);
+        }
+
+        private static void WriteName(Stream output, string value)
+        {
+            Utf8String utf8 = new(value);
+            WriteULEB128(output, (ulong)utf8.Length);
+            output.Write(utf8.AsSpan());
+        }
+
+        private static void WriteULEB128(Stream output, ulong value)
+        {
+            Span<byte> buffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128(value)];
+            int written = DwarfHelper.WriteULEB128(buffer, value);
+            output.Write(buffer.Slice(0, written));
         }
 
         public override void EmitObject(
