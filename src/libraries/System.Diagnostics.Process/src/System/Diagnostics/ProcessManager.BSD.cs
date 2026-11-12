@@ -12,7 +12,7 @@ namespace System.Diagnostics
         /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
+        private static void GetProcessInfosBsd(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
             // Iterate through all process IDs to load information about each process
             int[] pids = GetProcessIds();
@@ -33,7 +33,7 @@ namespace System.Diagnostics
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
-        internal static ProcessModuleCollection GetModules(int processId)
+        private static ProcessModuleCollection GetModulesBsd(int processId)
         {
             // We don't have a good way of getting all of the modules of the particular process,
             // but we can at least get the path to the executable file for the process, and
