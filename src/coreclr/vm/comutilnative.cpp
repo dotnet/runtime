@@ -148,7 +148,7 @@ static BSTR GetExceptionSource(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
-    
+
     BSTR bstrSource;
 
     GCPROTECT_BEGIN(objException)
@@ -460,6 +460,13 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
     ThrowTypeAccessException(&accessContext, TypeHandle::FromPtr(callee).GetMethodTable());
 
     END_QCALL;
+}
+
+extern "C" CLR_BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* handler)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
 }
 
 FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
@@ -1243,66 +1250,69 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
     FindFailFastCallerStruct findCallerData;
-    findCallerData.pStackMark = mark;
-    findCallerData.retAddress = 0;
-    GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | QUICKUNWIND);
-
-    if (message == NULL || message[0] == W('\0'))
-    {
-        OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
-    }
-    else
-    {
-        OutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
-        OutputDebugString(message);
-        OutputDebugString(W("\r\n"));
-    }
-
     LPCWSTR argExceptionString = NULL;
     StackSString msg;
-    // Because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while formatting the exception message or the stack trace.
-    // Only collect exception string if this is the first attempt to fail fast on this thread.
-    alreadyFailing++;
-    if (alreadyFailing != 1)
-    {
-        argExceptionString = W("Environment.FailFast called recursively.");
-    }
-    else if (exception.Get() != NULL)
-    {
-        GetExceptionMessage(exception.Get(), msg);
-        argExceptionString = msg.GetUnicode();
-    }
 
-    Thread *pThread = GetThread();
+    {
+        GCX_COOP();
+
+        findCallerData.pStackMark = mark;
+        findCallerData.retAddress = 0;
+        GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | QUICKUNWIND);
+
+        if (message == NULL || message[0] == W('\0'))
+        {
+            OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
+        }
+        else
+        {
+            OutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
+            OutputDebugString(message);
+            OutputDebugString(W("\r\n"));
+        }
+
+        // Because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while formatting the exception message or the stack trace.
+        // Only collect exception string if this is the first attempt to fail fast on this thread.
+        alreadyFailing++;
+        if (alreadyFailing != 1)
+        {
+            argExceptionString = W("Environment.FailFast called recursively.");
+        }
+        else if (exception.Get() != NULL)
+        {
+            GetExceptionMessage(exception.Get(), msg);
+            argExceptionString = msg.GetUnicode();
+        }
+
+        Thread *pThread = GetThread();
 
 #ifndef TARGET_UNIX
-    // If we have the exception object, then try to setup
-    // the watson bucket if it has any details.
-    // On CoreCLR, Watson may not be enabled. Thus, we should
-    // skip this, if required.
-    if (IsWatsonEnabled())
-    {
-        if ((exception.Get() == NULL) || !SetupWatsonBucketsForFailFast((EXCEPTIONREF)exception.Get()))
+        // If we have the exception object, then try to setup
+        // the watson bucket if it has any details.
+        // On CoreCLR, Watson may not be enabled. Thus, we should
+        // skip this, if required.
+        if (IsWatsonEnabled())
         {
-            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
-            _ASSERTE(pUEWatsonBucketTracker != NULL);
-            pUEWatsonBucketTracker->SaveIpForWatsonBucket(findCallerData.retAddress);
-            pUEWatsonBucketTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::FatalError, pThread, NULL);
-            if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
+            if ((exception.Get() == NULL) || !SetupWatsonBucketsForFailFast((EXCEPTIONREF)exception.Get()))
             {
-                pUEWatsonBucketTracker->ClearWatsonBucketDetails();
+                PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
+                _ASSERTE(pUEWatsonBucketTracker != NULL);
+                pUEWatsonBucketTracker->SaveIpForWatsonBucket(findCallerData.retAddress);
+                pUEWatsonBucketTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::FatalError, pThread, NULL);
+                if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
+                {
+                    pUEWatsonBucketTracker->ClearWatsonBucketDetails();
+                }
             }
         }
-    }
 #endif // !TARGET_UNIX
 
-    // stash the user-provided exception object. this will be used as
-    // the inner exception object to the FatalExecutionEngineException.
-    if (exception.Get() != NULL)
-        pThread->SetLastThrownObject(exception.Get());
+        // stash the user-provided exception object. this will be used as
+        // the inner exception object to the FatalExecutionEngineException.
+        if (exception.Get() != NULL)
+            pThread->SetLastThrownObject(exception.Get());
+    }
 
     EEPolicy::HandleFatalError(COR_E_FAILFAST, findCallerData.retAddress, message, NULL, errorSource, argExceptionString);
 

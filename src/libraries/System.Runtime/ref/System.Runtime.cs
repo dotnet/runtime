@@ -15506,6 +15506,8 @@ namespace System.Runtime.ExceptionServices
     {
         public static System.Exception? GetCurrentException() { throw null; }
         public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> handler) { }
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs

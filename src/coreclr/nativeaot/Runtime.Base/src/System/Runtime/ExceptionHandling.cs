@@ -307,7 +307,7 @@ namespace System.Runtime
             Exception? e = null;
             try
             {
-                e = ((delegate*<ExceptionIDs, Exception>)pGetRuntimeExceptionFunction)(id);
+                e = ((delegate*<ExceptionIDs, IntPtr, Exception>)pGetRuntimeExceptionFunction)(id, address);
             }
             catch when (true)
             {
@@ -362,7 +362,8 @@ namespace System.Runtime
             Exception? e = null;
             try
             {
-                e = ((delegate*<ExceptionIDs, Exception>)pGetRuntimeExceptionFunction)(id);
+                // The MethodTable-based lookup path has no faulting instruction pointer to surface.
+                e = ((delegate*<ExceptionIDs, IntPtr, Exception>)pGetRuntimeExceptionFunction)(id, IntPtr.Zero);
             }
             catch when (true)
             {
@@ -424,8 +425,9 @@ namespace System.Runtime
         // There are only a few cases where this happens now (the fast allocation helpers), so we limit the
         // exception types that MRT will return.
         [RuntimeExport("GetRuntimeException")]
-        public static Exception GetRuntimeException(ExceptionIDs id)
+        public static Exception GetRuntimeException(ExceptionIDs id, IntPtr faultingIP)
         {
+            _ = faultingIP;
             switch (id)
             {
                 case ExceptionIDs.OutOfMemory:

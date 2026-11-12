@@ -30,6 +30,7 @@
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/host_error_codes.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/fatal_error_handling.h" />
   </ItemGroup>
   <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />

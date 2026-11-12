@@ -122,6 +122,7 @@ void PrintToStdErrA(const char *pszString)
         GC_NOTRIGGER;
     }
     CONTRACTL_END
+    _ASSERTE(pszString != NULL);
 
     minipal_log_write_error(pszString);
 }
@@ -134,6 +135,7 @@ void PrintToStdErrW(const WCHAR *pwzString)
         GC_NOTRIGGER;
     }
     CONTRACTL_END
+    _ASSERTE(pwzString != NULL);
 
 #ifdef TARGET_WINDOWS
     UINT codePage = GetConsoleOutputCP();
