@@ -84,12 +84,6 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     public List<Crossgen2Option> Options { get; init; } = new();
 
     /// <summary>
-    /// Optional target overrides for cross-target compilations. Defaults to the test runtime target.
-    /// </summary>
-    public string? TargetOS { get; init; }
-    public string? TargetArchitecture { get; init; }
-
-    /// <summary>
     /// Additional raw command-line arguments to pass to crossgen2 (e.g. "--determinism-stress=2").
     /// Use this for options that take a value or are not modeled by <see cref="Crossgen2Option"/>.
     /// </summary>
@@ -316,8 +310,7 @@ internal sealed class R2RTestRunner
         foreach (var option in compilation.Options)
             args.Add(option.ToArg());
 
-        args.AddRange(["--targetos", compilation.TargetOS ?? TestPaths.TargetOS,
-            "--targetarch", compilation.TargetArchitecture ?? TestPaths.TargetArchitecture]);
+        args.AddRange(["--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture]);
 
         // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
         args.AddRange(compilation.AdditionalArgs);
