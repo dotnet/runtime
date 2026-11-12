@@ -233,7 +233,8 @@ internal sealed partial class GrammarActions
     {
         suffix.WriteCompressedInteger(bounds.Length);
 
-        // ECMA-335 II.23.2.13 stores prefixes, so match native ILAsm by zero-filling gaps.
+        // ECMA-335 II.23.2.13: Array shapes encode sizes and lower bounds as prefixes.
+        // Include all dimensions through the last explicitly specified bound, filling gaps with zeros.
         int sizeCount = 0;
         int lowerBoundCount = 0;
         for (int i = 0; i < bounds.Length; i++)
