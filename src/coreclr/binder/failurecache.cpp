@@ -52,7 +52,7 @@ namespace BINDER_SPACE
         }
 
         Hash::Add(pFailureCacheEntry);
-        pFailureCacheEntry.SuppressRelease();
+        pFailureCacheEntry.Detach();
 
     Exit:
         return hr;

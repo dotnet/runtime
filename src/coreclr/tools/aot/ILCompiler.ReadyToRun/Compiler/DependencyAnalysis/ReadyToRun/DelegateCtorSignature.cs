@@ -9,7 +9,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class DelegateCtorSignature : Signature
+    public class DelegateCtorSignature : GCRefMapSignature
     {
         private readonly TypeDesc _delegateType;
 
@@ -34,9 +34,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 99885741;
 
+        // The delegate target is always called with its own signature, regardless of the delegate shape.
+        protected override void BuildGCRefMap(GCRefMapBuilder builder)
+        {
+            builder.GetCallRefMap(_methodToken.Method, isUnboxingStub: false);
+        }
+
+        // Only exact, non-shared targets have a call frame that can be described at compile time.
+        public static bool CanEmitGCRefMap(MethodWithToken method)
+        {
+            MethodDesc target = method.Method;
+            return !method.Unboxing
+                && !target.HasInstantiation
+                && !target.OwningType.HasInstantiation
+                && method.ConstrainedType is null
+                && !target.IsVirtual
+                && (target.Signature.IsStatic || !target.OwningType.IsValueType);
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder(factory, relocsOnly);
+
+            if (!relocsOnly && EmitGCRefMap)
+            {
+                foreach (byte value in GetGCRefMap(factory))
+                {
+                    builder.EmitByte(value);
+                }
+            }
+
             builder.AddSymbol(this);
 
             if (!relocsOnly)

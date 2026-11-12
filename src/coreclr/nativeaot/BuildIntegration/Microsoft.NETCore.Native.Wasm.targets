@@ -12,7 +12,6 @@
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">$(WASI_SDK_PATH)/bin/clang$(_WasiToolExeSuffix)</CppCompilerAndLinker>
       <CppLinker>$(CppCompilerAndLinker)</CppLinker>
       <CppLibCreator>$(WASI_SDK_PATH)/bin/llvm-ar$(_WasiToolExeSuffix)</CppLibCreator>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == ''">8388608</IlcDefaultStackSize>
       <EventPipeName>libeventpipe-disabled</EventPipeName>
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
@@ -36,7 +35,7 @@
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'$(IlcFrameworkNativePath)lib%(Identity).a')" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapper.o" Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapperdll.o" Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" />
-      <NativeLibrary Include="$(IlcSdkPath)libPortableRuntime.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libRuntime.WorkstationGC.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)libstandalonegc-disabled.a" />
       <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />

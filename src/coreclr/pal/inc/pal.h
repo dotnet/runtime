@@ -421,39 +421,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define INVALID_SET_FILE_POINTER   ((DWORD)-1)
 
 
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileW(
-        IN LPCWSTR lpFileName,
-        IN DWORD dwDesiredAccess,
-        IN DWORD dwShareMode,
-        IN LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-        IN DWORD dwCreationDisposition,
-        IN DWORD dwFlagsAndAttributes,
-        IN HANDLE hTemplateFile);
-
-#ifdef UNICODE
-#define CreateFile CreateFileW
-#else
-#define CreateFile CreateFileA
-#endif
-
-
-PALIMPORT
-DWORD
-PALAPI
-SearchPathW(
-    IN LPCWSTR lpPath,
-    IN LPCWSTR lpFileName,
-    IN LPCWSTR lpExtension,
-    IN DWORD nBufferLength,
-    OUT LPWSTR lpBuffer,
-    OUT LPWSTR *lpFilePart
-    );
-
-#define SearchPath  SearchPathW
-
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
     ULONG_PTR InternalHigh;
@@ -462,99 +429,9 @@ typedef struct _OVERLAPPED {
     HANDLE  hEvent;
 } OVERLAPPED, *LPOVERLAPPED;
 
-PALIMPORT
-BOOL
-PALAPI
-WriteFile(
-      IN HANDLE hFile,
-      IN LPCVOID lpBuffer,
-      IN DWORD nNumberOfBytesToWrite,
-      OUT LPDWORD lpNumberOfBytesWritten,
-      IN LPOVERLAPPED lpOverlapped);
-
-PALIMPORT
-BOOL
-PALAPI
-ReadFile(
-     IN HANDLE hFile,
-     OUT LPVOID lpBuffer,
-     IN DWORD nNumberOfBytesToRead,
-     OUT LPDWORD lpNumberOfBytesRead,
-     IN LPOVERLAPPED lpOverlapped);
-
 #define STD_INPUT_HANDLE         ((DWORD)-10)
 #define STD_OUTPUT_HANDLE        ((DWORD)-11)
 #define STD_ERROR_HANDLE         ((DWORD)-12)
-
-PALIMPORT
-HANDLE
-PALAPI
-GetStdHandle(
-         IN DWORD nStdHandle);
-
-PALIMPORT
-DWORD
-PALAPI
-SetFilePointer(
-           IN HANDLE hFile,
-           IN LONG lDistanceToMove,
-           IN PLONG lpDistanceToMoveHigh,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFilePointerEx(
-           IN HANDLE hFile,
-           IN LARGE_INTEGER liDistanceToMove,
-           OUT PLARGE_INTEGER lpNewFilePointer,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-DWORD
-PALAPI
-GetFileSize(
-        IN HANDLE hFile,
-        OUT LPDWORD lpFileSizeHigh);
-
-PALIMPORT
-BOOL
-PALAPI GetFileSizeEx(
-        IN   HANDLE hFile,
-        OUT  PLARGE_INTEGER lpFileSize);
-
-PALIMPORT
-BOOL
-PALAPI
-FlushFileBuffers(
-         IN HANDLE hFile);
-
-PALIMPORT
-UINT
-PALAPI
-GetConsoleOutputCP();
-
-PALIMPORT
-DWORD
-PALAPI
-GetFullPathNameW(
-         IN LPCWSTR lpFileName,
-         IN DWORD nBufferLength,
-         OUT LPWSTR lpBuffer,
-         OUT LPWSTR *lpFilePart);
-
-#ifdef UNICODE
-#define GetFullPathName GetFullPathNameW
-#else
-#define GetFullPathName GetFullPathNameA
-#endif
-
-PALIMPORT
-DWORD
-PALAPI
-GetTempPathA(
-         IN DWORD nBufferLength,
-         OUT LPSTR lpBuffer);
 
 PALIMPORT
 DWORD
@@ -1984,13 +1861,7 @@ BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val);
 
-typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
-
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
-
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
-
-PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02
@@ -2006,19 +1877,6 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define MEM_RELEASE                     0x8000
 #define MEM_FREE                        0x10000
 
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileMappingW(
-           IN HANDLE hFile,
-           IN LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
-           IN DWORD flProtect,
-           IN DWORD dwMaxmimumSizeHigh,
-           IN DWORD dwMaximumSizeLow,
-           IN LPCWSTR lpName);
-
-#define CreateFileMapping CreateFileMappingW
-
 #define SECTION_QUERY       0x0001
 #define SECTION_MAP_WRITE   0x0002
 #define SECTION_MAP_READ    0x0004
@@ -2030,33 +1888,6 @@ CreateFileMappingW(
 #define FILE_MAP_COPY       SECTION_QUERY
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFile(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap);
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFileEx(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap,
-          IN LPVOID lpBaseAddress);
-
-PALIMPORT
-BOOL
-PALAPI
-UnmapViewOfFile(
-        IN LPCVOID lpBaseAddress) noexcept;
 
 PALIMPORT
 HMODULE
@@ -2151,44 +1982,6 @@ FlushInstructionCache(
               IN HANDLE hProcess,
               IN LPCVOID lpBaseAddress,
               IN SIZE_T dwSize);
-
-#define MAX_LEADBYTES         12
-#define MAX_DEFAULTCHAR       2
-
-typedef struct _cpinfo {
-    UINT MaxCharSize;
-    BYTE DefaultChar[MAX_DEFAULTCHAR];
-    BYTE LeadByte[MAX_LEADBYTES];
-} CPINFO, *LPCPINFO;
-
-#define MB_PRECOMPOSED            0x00000001
-#define MB_ERR_INVALID_CHARS      0x00000008
-
-PALIMPORT
-int
-PALAPI
-MultiByteToWideChar(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCSTR lpMultiByteStr,
-            IN int cbMultiByte,
-            OUT LPWSTR lpWideCharStr,
-            IN int cchWideChar);
-
-#define WC_NO_BEST_FIT_CHARS      0x00000400
-
-PALIMPORT
-int
-PALAPI
-WideCharToMultiByte(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCWSTR lpWideCharStr,
-            IN int cchWideChar,
-            OUT LPSTR lpMultiByteStr,
-            IN int cbMultyByte,
-            IN LPCSTR lpDefaultChar,
-            OUT LPBOOL lpUsedDefaultChar);
 
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
@@ -2937,29 +2730,13 @@ typedef int errno_t;
 
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
-PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
 PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 
-PALIMPORT DLLEXPORT size_t __cdecl PAL_wcslen(const WCHAR *);
-PALIMPORT DLLEXPORT int __cdecl PAL_wcscmp(const WCHAR*, const WCHAR*);
-PALIMPORT DLLEXPORT int __cdecl PAL_wcsncmp(const WCHAR *, const WCHAR *, size_t);
-PALIMPORT DLLEXPORT WCHAR * __cdecl PAL_wcscat(WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcscpy(WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcsncpy(WCHAR *, const WCHAR *, size_t);
-PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
-PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
-PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
-PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
-PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
-
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
-PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
 inline int _stricmp(const char* a, const char* b)
 {
@@ -2979,17 +2756,6 @@ inline char* _strdup(const char* a)
 // Define the MSVC implementation of the alloca concept.
 // As this allocates on the current stack frame, use a macro instead of an inline function.
 #define _alloca(x) alloca(x)
-
-#ifdef __cplusplus
-extern "C++" {
-inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
-        {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
-        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
-        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
-}
-#endif
 
 #if !__has_builtin(_rotl) && !defined(_rotl)
 /*++

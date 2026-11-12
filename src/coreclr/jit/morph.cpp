@@ -907,11 +907,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #endif
             }
         }
-        else if ((argx->gtFlags & GTF_EXCEPT) != 0)
+        else if ((argx->gtFlags & (GTF_EXCEPT | GTF_ORDER_SIDEEFF)) != 0)
         {
-            // If a previous arg may throw a different exception than this arg
-            // then we evaluate all previous arguments with GTF_EXCEPT to temps
-            // to avoid reordering them in our sort later.
+            // An ordered argument may depend on null checks in previous arguments,
+            // even if it cannot throw itself. Otherwise, only preserve exception
+            // order when the arguments may throw different exceptions.
             if (prevExceptionTree != nullptr)
             {
                 if (prevExceptionFlags == ExceptionSetFlags::None)
@@ -927,10 +927,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 bool exactlyOneKnown =
                     isPow2(static_cast<unsigned>(exceptionFlags)) &&
                     ((exceptionFlags & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None);
-                bool throwsSameAsPrev = exactlyOneKnown && (exceptionFlags == prevExceptionFlags);
-                if (!throwsSameAsPrev)
+                bool canReorder = ((argx->gtFlags & GTF_ORDER_SIDEEFF) == 0) && exactlyOneKnown &&
+                                  (exceptionFlags == prevExceptionFlags);
+                if (!canReorder)
                 {
-                    JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "
+                    JITDUMP("Effects for arg [%06u] interfere with previous tree [%06u]; must evaluate previous "
                             "trees with exceptions to temps\n",
                             Compiler::dspTreeID(argx), Compiler::dspTreeID(prevExceptionTree));
 
@@ -964,8 +965,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
-            prevExceptionTree  = argx;
-            prevExceptionFlags = exceptionFlags;
+            if ((argx->gtFlags & GTF_EXCEPT) != 0)
+            {
+                prevExceptionTree  = argx;
+                prevExceptionFlags = exceptionFlags;
+            }
         }
     }
 
@@ -2905,7 +2909,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     const int MAX_INDEX_COMPLEXITY = 4;
 
     var_types            elemTyp        = indexAddr->gtElemType;
-    unsigned             elemSize       = indexAddr->gtElemSize;
+    ValueSize            elemSize       = indexAddr->gtElemSize;
     uint8_t              elemOffs       = static_cast<uint8_t>(indexAddr->gtElemOffset);
     CORINFO_CLASS_HANDLE elemStructType = indexAddr->gtStructElemClass;
 
@@ -3053,10 +3057,10 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 #endif // TARGET_64BIT
 
-    /* Scale the index value if necessary */
-    if (elemSize > 1)
+    // Scale the index value if necessary.
+    if (!elemSize.IsExact() || (elemSize.GetExact() > 1))
     {
-        GenTree* size = gtNewIconNode(elemSize, TYP_I_IMPL);
+        GenTree* multiplier = gtNewValueSize(elemSize, TYP_I_IMPL);
 
         // Fix 392756 WP7 Crossgen
         //
@@ -3064,10 +3068,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // is a constant and is not capable of handling CSE'ing the elemSize constant into a lclvar.
         // Hence to prevent the constant from becoming a CSE we mark it as NO_CSE.
         //
-        size->gtFlags |= GTF_DONT_CSE;
-
+        multiplier->gtFlags |= GTF_DONT_CSE;
         /* Multiply by the array element size */
-        addr = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, size);
+        addr = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, multiplier);
     }
     else
     {
@@ -8228,7 +8231,7 @@ DONE_MORPHING_CHILDREN:
             GenTree* op1SideEffects = nullptr;
             // The addition of "GTF_MAKE_CSE" below prevents us from throwing away (for example)
             // hoisted expressions in loops.
-            gtExtractSideEffList(op1, &op1SideEffects, (GTF_SIDE_EFFECT | GTF_MAKE_CSE));
+            gtExtractSideEffList(op1, &op1SideEffects, (GTF_OBS_EFFECT | GTF_MAKE_CSE));
             if (op1SideEffects)
             {
                 // Replace the left hand side with the side effect list.

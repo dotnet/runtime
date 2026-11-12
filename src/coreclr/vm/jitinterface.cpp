@@ -9090,7 +9090,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
@@ -12690,14 +12698,13 @@ HRESULT CEECodeGenInfo::getPgoInstrumentationResults(
     if (pDataCur == nullptr)
     {
         // If not found in previous list, gather it here, and add to linked list
-        NewHolder<ComputedPgoData> newPgoData = new ComputedPgoData(pMD);
+        NewHolder<ComputedPgoData> newPgoData(new ComputedPgoData(pMD));
         newPgoData->m_next = m_foundPgoData;
-        m_foundPgoData = newPgoData;
-        newPgoData.SuppressRelease();
+        pDataCur = newPgoData.Detach();
+        m_foundPgoData = pDataCur;
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &newPgoData->m_allocatedData, &newPgoData->m_schema,
-            &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
-        pDataCur = m_foundPgoData;
+        pDataCur->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &pDataCur->m_allocatedData, &pDataCur->m_schema,
+            &pDataCur->m_cSchemaElems, &pDataCur->m_pInstrumentationData, &pDataCur->m_pgoSource);
     }
 
     *pSchema = pDataCur->m_schema;
@@ -15520,6 +15527,7 @@ EECodeInfo::EECodeInfo()
 
     m_pFunctionEntry = NULL;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15545,6 +15553,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
 
     m_codeAddress = codeAddress;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15565,6 +15574,7 @@ Invalid:
     m_pMD = NULL;
     m_relOffset = 0;
     m_pFunctionEntry = NULL;
+    m_gcInfoToken = { NULL, 0 };
 }
 
 TADDR EECodeInfo::GetSavedMethodCode()
@@ -15621,6 +15631,15 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
     {
         return NativeCodeVersion();
     }
+
+#if defined(HAVE_GCCOVER) && defined(FEATURE_READYTORUN)
+    // R2R code is the default version, even when its entry point was registered
+    // by a different instantiation or by diagnostic enumeration before publication.
+    if (m_pJM == ExecutionManager::GetReadyToRunJitManager())
+    {
+        return NativeCodeVersion(pMD);
+    }
+#endif // HAVE_GCCOVER && FEATURE_READYTORUN
 
 #ifdef FEATURE_CODE_VERSIONING
     if (pMD->IsVersionable())

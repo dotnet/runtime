@@ -516,7 +516,7 @@ ULONG EEClassLayoutInfo::InitializeSequentialFieldLayout(
         parentAlignmentRequirement = 0;
     }
 
-    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray{ new LayoutRawFieldInfo[cFields + 1] };
     UINT32 numInstanceFields;
     BYTE fieldsAlignmentRequirement;
     InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, packingSize, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
@@ -570,7 +570,7 @@ ULONG EEClassLayoutInfo::InitializeExplicitFieldLayout(
         parentAlignmentRequirement = 0;
     }
 
-    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray{ new LayoutRawFieldInfo[cFields + 1] };
     UINT32 numInstanceFields;
     BYTE fieldsAlignmentRequirement;
     InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, packingSize, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
@@ -612,7 +612,7 @@ ULONG EEClassLayoutInfo::InitializeCStructFieldLayout(
 
     SetLayoutType(LayoutType::CStruct);
 
-    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray{ new LayoutRawFieldInfo[cFields + 1] };
     UINT32 numInstanceFields;
     BYTE fieldsAlignmentRequirement;
     InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, DEFAULT_PACKING_SIZE, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
@@ -641,7 +641,7 @@ ULONG EEClassLayoutInfo::InitializeCUnionFieldLayout(
 
     SetLayoutType(LayoutType::CUnion);
 
-    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray{ new LayoutRawFieldInfo[cFields + 1] };
     UINT32 numInstanceFields;
     BYTE fieldsAlignmentRequirement;
     InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, DEFAULT_PACKING_SIZE, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
@@ -855,11 +855,12 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
     if (pClass->GetNativeLayoutInfo() == nullptr)
     {
         GCX_PREEMP();
-        ListLockHolder nativeTypeLoadLock(AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock());
+        ListLockHolder nativeTypeLoadLock = AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock()->TakeLock();
         ListLockEntryHolder entry(ListLockEntry::Find(nativeTypeLoadLock, pMT->GetClass()));
-        ListLockEntryLockHolder pEntryLock(entry, FALSE);
-        nativeTypeLoadLock.Release();
-        if (!pEntryLock.DeadlockAwareAcquire())
+        nativeTypeLoadLock.Free();
+
+        ListLockEntryLockHolder pEntryLock;
+        if (!pEntryLock.DeadlockAwareAcquire(entry))
         {
             DefineFullyQualifiedNameForClassW()
             COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, GetFullyQualifiedNameForClassW(pMT));
@@ -930,7 +931,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
     ULONG cInstanceFields = fieldDescs.Count();
 
-    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cInstanceFields + 1];
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray{ new LayoutRawFieldInfo[cInstanceFields + 1] };
 
     SigTypeContext context(pMT);
 

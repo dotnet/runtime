@@ -151,9 +151,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>13b701d371826c168b26d581351422c031089faa</Sha>
     </Dependency>
-    <Dependency Name="System.Private.Runtime.UnicodeData" Version="11.0.0-beta.26426.1">
+    <Dependency Name="System.Private.Runtime.UnicodeData" Version="12.0.0-beta.26531.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>13b701d371826c168b26d581351422c031089faa</Sha>
+      <Sha>dddd5b6e50f1343bb1a6aea749fbf0bdd3c44d02</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.TimeZoneData" Version="11.0.0-beta.26426.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -336,6 +336,14 @@
       <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="5.14.0-1.26528.120">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.14.0-1.26528.120">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.14.0-1.26528.120">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>
     </Dependency>
