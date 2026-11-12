@@ -14,29 +14,77 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class NativeExportTests
     {
-        [Fact]
-        public void ExportDirective_WithoutVTableFixup_DoesNotEmitNativeExportArtifacts()
+        [Theory]
+        [InlineData(Machine.I386, 8)]
+        [InlineData(Machine.Amd64, 8)]
+        [InlineData(Machine.Arm64, 8)]
+        [InlineData(Machine.I386, 10)]
+        [InlineData(Machine.Amd64, 10)]
+        public void ExportDirective_WithoutVTableFixup_SynthesizesNativeExports(Machine machine, int tripleOrdinal)
         {
-            string source = """
+            string source = $$"""
                 .assembly test { }
-                .assembly extern mscorlib { }
-                .class public auto ansi Test extends [mscorlib]System.Object
+                .data Existing = int8(42)
+                .field public static uint8 ExistingField at Existing
+                .method public static int32 Triple(int32 input) cil managed
                 {
-                    .method public static void ExportedMethod() cil managed
-                    {
-                        .export [1] as MyExport
-                        ret
-                    }
+                    .export [{{tripleOrdinal}}]
+                    ldarg.0
+                    ldc.i4.3
+                    mul
+                    ret
+                }
+                .method public static int32 Double(int32 input) cil managed
+                {
+                    .export [7] as Twice
+                    ldarg.0
+                    ldc.i4.2
+                    mul
+                    ret
                 }
                 """;
 
-            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Machine = machine });
+            Assert.False(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            Assert.Equal(machine == Machine.I386, pe.PEHeaders.CorHeader.Flags.HasFlag(CorFlags.Requires32Bit));
+            DirectoryEntry fixups = pe.PEHeaders.CorHeader.VtableFixupsDirectory;
+            Assert.Equal(8, fixups.Size);
+            int slotsRva = ReadInt32(pe, fixups.RelativeVirtualAddress);
+            int slotSize = machine == Machine.I386 ? sizeof(int) : sizeof(long);
+            Assert.Equal(0, slotsRva % slotSize);
+            Assert.Equal(2, ReadUInt16(pe, fixups.RelativeVirtualAddress + 4));
+            Assert.Equal(machine == Machine.I386 ? 5 : 6, ReadUInt16(pe, fixups.RelativeVirtualAddress + 6));
+            Assert.Equal(0x06000002, ReadInt32(pe, slotsRva));
+            Assert.Equal(0x06000001, ReadInt32(pe, slotsRva + slotSize));
+            if (slotSize == sizeof(long))
+            {
+                Assert.Equal(0, ReadInt32(pe, slotsRva + sizeof(int)));
+                Assert.Equal(0, ReadInt32(pe, slotsRva + slotSize + sizeof(int)));
+            }
 
-            Assert.False(pe.PEHeaders.SectionHeaders.Any(section => section.Name == ".sdata"));
+            MetadataReader reader = pe.GetMetadataReader();
+            int fieldRva = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions)).GetRelativeVirtualAddress();
+            Assert.Equal(42, pe.GetSectionData(fieldRva).GetContent(0, 1)[0]);
+            Assert.True(slotsRva > fieldRva);
 
-            DirectoryEntry exportTableDirectory = pe.PEHeaders.PEHeader!.ExportTableDirectory;
-            Assert.Equal(0, exportTableDirectory.RelativeVirtualAddress);
-            Assert.Equal(0, exportTableDirectory.Size);
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            Assert.NotEqual(0, exports.RelativeVirtualAddress);
+            Assert.Equal(7, ReadInt32(pe, exports.RelativeVirtualAddress + 16));
+            Assert.Equal(tripleOrdinal - 7 + 1, ReadInt32(pe, exports.RelativeVirtualAddress + 20));
+            Assert.Equal(2, ReadInt32(pe, exports.RelativeVirtualAddress + 24));
+            int addressTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 28);
+            int nameTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 32);
+            int ordinalTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 36);
+            Assert.Equal("Triple", ReadAsciiString(pe, ReadInt32(pe, nameTableRva)));
+            Assert.Equal("Twice", ReadAsciiString(pe, ReadInt32(pe, nameTableRva + 4)));
+            Assert.Equal(tripleOrdinal - 7, ReadUInt16(pe, ordinalTableRva));
+            Assert.Equal(0, ReadUInt16(pe, ordinalTableRva + 2));
+            Assert.Equal(".text", GetContainingSection(pe, ReadInt32(pe, addressTableRva)).Name);
+            Assert.Equal(".text", GetContainingSection(pe, ReadInt32(pe, addressTableRva + (tripleOrdinal - 7) * 4)).Name);
+            for (int ordinal = 8; ordinal < tripleOrdinal; ordinal++)
+            {
+                Assert.Equal(0, ReadInt32(pe, addressTableRva + (ordinal - 7) * 4));
+            }
         }
 
         [Fact]
@@ -175,7 +223,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 .method public static void Exported() cil managed
                 {
                     {{vtableEntry}}
-                    .export [1] as Exported
+                    {{(vtable ? ".export [1] as Exported" : string.Empty)}}
                     ret
                 }
                 """;
@@ -481,25 +529,27 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             }
         }
 
-        [Fact]
-        public void Export_DuplicateOrdinalForDifferentTargets_ReportsDiagnosticAndOmitsDuplicate()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Export_DuplicateOrdinalForDifferentTargets_ReportsDiagnosticAndOmitsDuplicate(bool explicitFixup)
         {
-            string source = """
+            string source = $$"""
                 .assembly test { }
                 .assembly extern mscorlib { }
                 .data VT = int32(0) int32(0)
-                .vtfixup [2] int32 fromunmanaged at VT
+                {{(explicitFixup ? ".vtfixup [2] int32 fromunmanaged at VT" : string.Empty)}}
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .method public static void First() cil managed
                     {
-                        .vtentry 1 : 1
+                        {{(explicitFixup ? ".vtentry 1 : 1" : string.Empty)}}
                         .export [1] as First
                         ret
                     }
                     .method public static void Second() cil managed
                     {
-                        .vtentry 1 : 2
+                        {{(explicitFixup ? ".vtentry 1 : 2" : string.Empty)}}
                         .export [1] as Second
                         ret
                     }
@@ -597,25 +647,27 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             }
         }
 
-        [Fact]
-        public void ExportOrdinal_ExtremeSparseRange_ReportsDiagnosticAndOmitsInvalidExport()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExportOrdinal_ExtremeSparseRange_ReportsDiagnosticAndOmitsInvalidExport(bool explicitFixup)
         {
             string source = $$"""
                 .assembly test { }
                 .assembly extern mscorlib { }
                 .data VT = int32(0) int32(0)
-                .vtfixup [2] int32 fromunmanaged at VT
+                {{(explicitFixup ? ".vtfixup [2] int32 fromunmanaged at VT" : string.Empty)}}
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .method public static void Low() cil managed
                     {
-                        .vtentry 1 : 1
+                        {{(explicitFixup ? ".vtentry 1 : 1" : string.Empty)}}
                         .export [1] as Low
                         ret
                     }
                     .method public static void High() cil managed
                     {
-                        .vtentry 1 : 2
+                        {{(explicitFixup ? ".vtentry 1 : 2" : string.Empty)}}
                         .export [{{int.MaxValue}}] as InvalidHigh
                         ret
                     }

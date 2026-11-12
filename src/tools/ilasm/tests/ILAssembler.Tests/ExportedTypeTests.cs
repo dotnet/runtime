@@ -65,8 +65,6 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         [Fact]
         public void ExportDirective_WithoutVtfixup_CompilesSuccessfully()
         {
-            // .export directive without .vtfixup records export info but doesn't create vtable
-            // This is valid IL - the export ordinal/name is stored for potential use by tools
             string source = """
                 .assembly test { }
                 .assembly extern mscorlib { }
@@ -82,11 +80,10 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
 
-            // Without vtfixup, ILOnly flag should remain set (no vtable slot data needed)
             var corHeader = pe.PEHeaders.CorHeader;
             Assert.NotNull(corHeader);
-            Assert.True(corHeader!.Flags.HasFlag(CorFlags.ILOnly),
-                "Without vtfixup, assembly should remain IL-only");
+            Assert.False(corHeader!.Flags.HasFlag(CorFlags.ILOnly),
+                "Native exports require a mixed-mode assembly");
 
             // Verify the method exists in metadata
             var reader = pe.GetMetadataReader();

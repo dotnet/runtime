@@ -5,6 +5,7 @@ using System;
 using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,6 +13,61 @@ namespace Microsoft.DotNet.ILAssembler.Tests;
 
 public class CommandLineTests
 {
+    [Theory]
+    [InlineData(true, Machine.I386)]
+    [InlineData(false, Machine.I386)]
+    [InlineData(true, Machine.Amd64)]
+    [InlineData(false, Machine.Amd64)]
+    public void AutoExports_LegacyAndModernFlags_EmitNativeExports(bool legacy, Machine machine)
+    {
+        string directory = Directory.CreateTempSubdirectory("ilasm-autoexports-").FullName;
+        try
+        {
+            string input = Path.Combine(directory, "AutoExports.il");
+            string output = Path.Combine(directory, "AutoExports.dll");
+            File.WriteAllText(input, """
+                .assembly AutoExports {}
+                .method public static int32 Triple(int32 input) cil managed
+                {
+                    .export [8]
+                    ldarg.0
+                    ldc.i4.3
+                    mul
+                    ret
+                }
+                .method public static int32 Double(int32 input) cil managed
+                {
+                    .export [7] as Twice
+                    ldarg.0
+                    ldc.i4.2
+                    mul
+                    ret
+                }
+                """);
+            string[] args = legacy
+                ? machine == Machine.Amd64
+                    ? [input, "-DLL", "-PE64", "-X64", $"-OUTPUT={output}"]
+                    : [input, "-DLL", $"-OUTPUT={output}"]
+                : machine == Machine.Amd64
+                    ? [input, "--dll", "--x64", "--output", output]
+                    : [input, "--dll", "--output", output];
+            var command = new IlasmRootCommand();
+            var result = command.Parse(NativeCommandLine.Normalize(args, command));
+            Assert.Empty(result.Errors);
+            Assert.Equal(0, new Program(command, result).Run());
+
+            using var pe = new PEReader(File.OpenRead(output));
+            Assert.Equal(machine, pe.PEHeaders.CoffHeader.Machine);
+            Assert.False(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            Assert.Equal(8, pe.PEHeaders.CorHeader.VtableFixupsDirectory.Size);
+            Assert.NotEqual(0, pe.PEHeaders.PEHeader!.ExportTableDirectory.RelativeVirtualAddress);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("", 0, "input.il(1,1)")]
     [InlineData("abc", 0, "input.il(1,1)")]
