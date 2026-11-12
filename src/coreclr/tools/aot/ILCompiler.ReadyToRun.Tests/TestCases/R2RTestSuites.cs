@@ -1749,7 +1749,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsHost), nameof(TestPaths.IsWindowsX64Target))]
     public void LinuxArm64AtomicsAreGuardedPerMethod()
     {
         CompiledAssembly input = new()
