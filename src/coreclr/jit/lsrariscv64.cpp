@@ -502,7 +502,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* cas      = tree->AsCmpXchg();
-            bool           useZacas = m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zacas);
+            bool            useZacas = m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zacas);
             assert(dstCount == 1);
 
             srcCount = 1;

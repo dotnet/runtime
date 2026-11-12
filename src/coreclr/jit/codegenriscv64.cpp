@@ -2154,8 +2154,8 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         e->emitIns_Mov(INS_mov, is4 ? EA_8BYTE : size, target, comparand, /* canSkip */ true);
         gcInfo.gcMarkRegPtrVal(target, comparandOp->TypeGet());
 
-        // A failed AMOCAS does not have release semantics, even with rl set. 
-        // Order preceding accesses before its read. 
+        // A failed AMOCAS does not have release semantics, even with rl set.
+        // Order preceding accesses before its read.
         // aq orders subsequent accesses on both success and failure.
         instGen_MemoryBarrier();
         e->emitIns_R_R_R(is4 ? INS_amocas_w : INS_amocas_d, size, target, loc, val);
