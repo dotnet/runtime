@@ -6,3 +6,20 @@
 
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
+
+.macro TAILCALL_GC_POLL_RARE
+        PREPARE_EXTERNAL_VAR g_pPollGC, $t0
+        ld.d    $t0, $t0, 0
+        EPILOG_BRANCH_REG $t0
+.endm
+
+// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+// reg is the register number; the CONTEXT holds the integer registers in order.
+.macro LOAD_FUNCLET_REGISTER base, reg, scratch
+        ld.d    $r\reg, \base, (OFFSETOF__CONTEXT__Fp + (\reg - 22) * 8)
+.endm
+
+// The layout of the floating point registers in the CONTEXT depends on whether LSX or LASX state was captured,
+// so they are not loaded. Funclets do not depend on the values of the floating point callee-saved registers.
+.macro LOAD_FUNCLET_FP_REGISTER base, index
+.endm

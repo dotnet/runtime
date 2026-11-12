@@ -431,6 +431,30 @@ public unsafe partial class TargetTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetContractVersion_DoesNotInstantiateOrValidateContract(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(new Dictionary<string, string>
+        {
+            ["GCInfo"] = "c1",
+            ["StackWalk"] = "c99",
+        });
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Assert.True(target.Contracts.TryGetContractVersion<Contracts.IGCInfo>(out string? version));
+        Assert.Equal("c1", version);
+        Assert.True(target.Contracts.TryGetContractVersion<Contracts.IStackWalk>(out version));
+        Assert.Equal("c99", version);
+        Assert.False(target.Contracts.TryGetContractVersion<Contracts.IRuntimeInfo>(out version));
+        Assert.Null(version);
+        Assert.Throws<ContractMissingException>(() => target.Contracts.GCInfo);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void TryValidate_RegisteredVersion_ReturnsTrue(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);

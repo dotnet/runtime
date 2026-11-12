@@ -496,10 +496,13 @@ namespace Internal.JitInterface
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
+        private readonly HashSet<Import> _precodeFixupScratch = new();
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
+        private WasmTypeNode _deferredWasmCallSignature;
+        private Dictionary<MethodWithGCInfo, DelayLoadMethodImport> _deferredWasmActivationImports;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -514,10 +517,16 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
-        private void AddAdditionalDependency(ISymbolNode node, string reason)
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget)
         {
-            _additionalDependencies.Add(node, reason);
+            if (relocTarget is Import { Table.IsEager: false, EmitPrecode: true } import)
+            {
+                AddPrecodeFixup(import);
+            }
         }
+
+        private void AddAdditionalDependency(ISymbolNode node, string reason) =>
+            _additionalDependencies.Add(node, reason);
 
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
@@ -1075,6 +1084,27 @@ namespace Internal.JitInterface
                 genericContextObject: typeOrMethodContext,
                 forceOwningTypeFromMethodDesc: strippedInstantiation);
 
+            if (DelegateCtorSignature.CanEmitGCRefMap(targetMethod))
+            {
+                // A delegate-ctor import can cache a GCRefMap on the target method when resolved. Check the
+                // signature layouts at this caller's entrypoint so a versioning mismatch rejects the R2R caller
+                // before it can use a map computed from stale layouts.
+                MethodSignature signature = targetMethodDesc.Signature;
+                if (NeedsTypeLayoutCheck(signature.ReturnType))
+                {
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(signature.ReturnType));
+                }
+
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    TypeDesc parameterType = signature[i];
+                    if (NeedsTypeLayoutCheck(parameterType))
+                    {
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(parameterType));
+                    }
+                }
+            }
+
             // runtime lookup is not needed, callerHandle is unused
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -1391,6 +1421,10 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
                     id = ReadyToRunHelper.GCPoll;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                    id = ReadyToRunHelper.WasmProfSamplepoint;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -1722,6 +1756,7 @@ namespace Internal.JitInterface
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
             Debug.Assert(_debugVarInfos == null);
+            Debug.Assert(!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo);
 
             if (cVars == 0)
                 return;
@@ -1742,6 +1777,7 @@ namespace Internal.JitInterface
         private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
             Debug.Assert(_debugLocInfos == null);
+            Debug.Assert(!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo);
 
             _debugLocInfos = new OffsetMapping[cMap];
             for (int i = 0; i < cMap; i++)
@@ -2558,12 +2594,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc type = HandleToObject(cls);
-            classMustBeLoadedBeforeCodeIsRun(type);
-        }
-
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
             if (!type.IsPrimitive)
@@ -2747,6 +2777,7 @@ namespace Internal.JitInterface
                         {
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
+                        bool isRawPInvoke = nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod;
                         if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         {
                             nonUnboxingMethod = rawPinvoke.Target;
@@ -2771,6 +2802,33 @@ namespace Internal.JitInterface
                             MethodDesc compilableTarget = nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
+                        }
+                        else if (_compilation.DeferredWasmCalls is not null &&
+                            !_isCompilationProbe &&
+                            !isUnboxingStub &&
+                            !isRawPInvoke &&
+                            !useInstantiatingStub &&
+                            (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+                        {
+                            // Represent eligible calls with a compiled target and the ordinary import
+                            // as a fallback. The JIT emits a rewritable call bundle; finalization
+                            // chooses direct calls once the call graph and callee activation guarantees
+                            // are known, expanding rejected calls into indirect calls.
+                            // Preserve each target's first import-time activation token separately:
+                            // surviving call sites may carry different tokens after JIT transformations.
+                            // See #DeferredWasmCallFinalization and #DeferredWasmCallRewriting.
+                            MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
+                                nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: false);
+                            ISymbolNode fallback = _compilation.NodeFactory.MethodEntrypoint(
+                                targetMethodWithToken, isInstantiatingStub: false,
+                                isPrecodeImportRequired: false, isJumpableImportRequired: false);
+                            ISymbolNode deferredTarget = _compilation.DeferredWasmCalls.GetCall(targetMethodWithToken, fallback);
+                            if (deferredTarget is DeferredWasmCallNode deferredCall)
+                            {
+                                _deferredWasmActivationImports ??= new Dictionary<MethodWithGCInfo, DelayLoadMethodImport>();
+                                _deferredWasmActivationImports.TryAdd(deferredCall.Target, deferredCall.Fallback);
+                            }
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(deferredTarget);
                         }
                         else
                         {
@@ -3149,6 +3207,10 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            if (!CanEncodeTypeInSignature(type))
+            {
+                throw new RequiresRuntimeJitException(type.ToString());
+            }
             // Continuations require special handling to encode the layout of the type.
             // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
             // PrecodeHelper(
@@ -3160,8 +3222,6 @@ namespace Internal.JitInterface
                 ppIndirection = (void*)ObjectToHandle(import);
                 return null;
             }
-            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
-                throw new RequiresRuntimeJitException(type.ToString());
 
             Import typeHandleImport = GetTypeHandleImport(type);
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
@@ -3488,8 +3548,10 @@ namespace Internal.JitInterface
             if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
             {
                 Debug.Assert(locationBlock == BlockType.Code);
-                MethodDesc targetMethod = HandleToObject((CORINFO_METHOD_STRUCT_*)target);
-                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(targetMethod);
+                object targetObject = HandleToObject(target);
+                MethodWithGCInfo method = targetObject is DeferredWasmCallNode call
+                    ? call.Target
+                    : _compilation.NodeFactory.CompiledMethodNode((MethodDesc)targetObject);
                 relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
                 relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
                 handled = true;
@@ -3528,6 +3590,8 @@ namespace Internal.JitInterface
         partial void ClearWasmMethodVirtualIPFixups()
         {
             _wasmMethodVirtualIPFixups = null;
+            _deferredWasmCallSignature = null;
+            _deferredWasmActivationImports = null;
         }
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
@@ -3753,8 +3817,11 @@ namespace Internal.JitInterface
         {
             _stashedPrecodeFixups.Push(_precodeFixups);
             _precodeFixups = null;
-            _stashedInlinedMethods.Push(_inlinedMethods);
-            _inlinedMethods = null;
+            if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+            {
+                _stashedInlinedMethods.Push(_inlinedMethods);
+                _inlinedMethods = null;
+            }
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
@@ -3789,20 +3856,21 @@ namespace Internal.JitInterface
                     classMustBeLoadedBeforeCodeIsRun(inlineeModule.GetGlobalModuleType());
                 }
 
-                // If during inlining we found new inlinees, then if the inline was successful, add them to the set of fixups
-                // for the entire method.
-                HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();
-                if (_inlinedMethods != null)
+                if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
                 {
-                    previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
-                    foreach (var inlineeInHashSet in _inlinedMethods)
-                        previouslyStashedInlinees.Add(inlineeInHashSet);
-                }
-                _inlinedMethods = previouslyStashedInlinees;
+                    // Propagate nested inlinees only when the enclosing inline succeeds.
+                    HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();
+                    if (_inlinedMethods != null)
+                    {
+                        previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
+                        foreach (var inlineeInHashSet in _inlinedMethods)
+                            previouslyStashedInlinees.Add(inlineeInHashSet);
+                    }
+                    _inlinedMethods = previouslyStashedInlinees;
 
-                // Then add the fact we inlined this method.
-                _inlinedMethods = _inlinedMethods ?? new HashSet<MethodDesc>();
-                _inlinedMethods.Add(inlinee);
+                    _inlinedMethods = _inlinedMethods ?? new HashSet<MethodDesc>();
+                    _inlinedMethods.Add(inlinee);
+                }
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
 
@@ -3854,7 +3922,10 @@ namespace Internal.JitInterface
             {
                 // If we didn't succeed on the inline, just pop back to the state before inlining
                 _precodeFixups = _stashedPrecodeFixups.Pop();
-                _inlinedMethods = _stashedInlinedMethods.Pop();
+                if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+                {
+                    _inlinedMethods = _stashedInlinedMethods.Pop();
+                }
             }
         }
 
@@ -3972,8 +4043,8 @@ namespace Internal.JitInterface
             if (fromType.HasTypeEquivalence || toType.HasTypeEquivalence)
                 return false;
 
-            // A value type can gain interfaces (or become an enum), but its other cast targets are fixed.
-            if (fromType.IsValueType && !toType.IsInterface && !toType.IsWellKnownType(WellKnownType.Enum))
+            // A value type can gain interfaces, but its other cast targets are fixed.
+            if (fromType.IsValueType && !toType.IsInterface)
                 return true;
 
             // Otherwise every type that decides the cast must version with this code. Array and variant casts
@@ -4088,6 +4159,16 @@ namespace Internal.JitInterface
                         AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }
                 }
+            }
+        }
+
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+        {
+            // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the VirtualEntry dynamic helper cell,
+            // so add the dependencies of the cell's signature for each lookup that survives to lowering.
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, HandleToObject(method));
             }
         }
 

@@ -14,6 +14,8 @@
     <DacRegKey>HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings</DacRegKey>
     <DacRegAdd>reg add &quot;$(DacRegKey)&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f</DacRegAdd>
     <DacRegAdd32>$(DacRegAdd) /reg:32</DacRegAdd32>
+    <DacRegDelete>reg delete &quot;$(DacRegKey)&quot; /v DisableAuxProviderSignatureCheck /f</DacRegDelete>
+    <DacRegDelete32>$(DacRegDelete) /reg:32</DacRegDelete32>
   </PropertyGroup>
 
 </Project>

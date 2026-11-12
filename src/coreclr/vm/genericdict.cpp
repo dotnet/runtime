@@ -1210,17 +1210,26 @@ Dictionary::PopulateEntry(
                 }
 #endif
 
+                if (isReadyToRunModule)
+                    pResolvedMD->PrepareForUseAsACallTargetOfANativeImage();
+
                 result = (CORINFO_GENERIC_HANDLE)pResolvedMD->GetMultiCallableAddrOfCode();
             }
             else
             if (kind == MethodEntrySlot)
             {
+                if (isReadyToRunModule)
+                    pMethod->PrepareForUseAsACallTargetOfANativeImage();
+
                 result = (CORINFO_GENERIC_HANDLE)pMethod->GetMultiCallableAddrOfCode();
             }
             else
             if (kind == DispatchStubAddrSlot)
             {
                 _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+                if (isReadyToRunModule)
+                    pMethod->PrepareForUseAsACallTargetOfANativeImage();
+
                 PCODE *ppCode = (PCODE*)(void*)pMethod->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE)));
                 *ppCode = pMethod->GetMultiCallableAddrOfCode();
                 result = (CORINFO_GENERIC_HANDLE)ppCode;

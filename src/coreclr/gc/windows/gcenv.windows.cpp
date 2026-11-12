@@ -659,6 +659,12 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
     return true;
 }
 
+// Check if the OS supports setting thread affinity
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return true;
+}
+
 // Break into a debugger
 void GCToOSInterface::DebugBreak()
 {

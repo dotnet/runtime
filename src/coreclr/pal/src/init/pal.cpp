@@ -14,16 +14,14 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
-#include "pal/file.hpp"
-#include "pal/map.hpp"
 #include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
-#include "pal/virtual.h"
 #include "pal/environ.h"
+#include <minipal/utf8.h>
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/init.h"
@@ -457,23 +455,6 @@ Initialize(
 
         palError = ERROR_GEN_FAILURE;
 
-        /* Initialize the File mapping critical section. */
-        if (FALSE == MAPInitialize())
-        {
-            ERROR("Unable to initialize file mapping support\n");
-            palError = ERROR_PALINIT_MAP;
-            goto CLEANUP6;
-        }
-
-        /* Initialize the Virtual* functions. */
-        bool initializeExecutableMemoryAllocator = (flags & PAL_INITIALIZE_EXEC_ALLOCATOR) != 0;
-        if (FALSE == VIRTUALInitialize(initializeExecutableMemoryAllocator))
-        {
-            ERROR("Unable to initialize virtual memory support\n");
-            palError = ERROR_PALINIT_VIRTUAL;
-            goto CLEANUP10;
-        }
-
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
@@ -490,18 +471,7 @@ Initialize(
         {
             ERROR("Unable to initialize SEH support\n");
             palError = ERROR_PALINIT_SEH;
-            goto CLEANUP13;
-        }
-
-        if (flags & PAL_INITIALIZE_STD_HANDLES)
-        {
-            /* create file objects for standard handles */
-            if (!FILEInitStdHandles())
-            {
-                ERROR("Unable to initialize standard file handles\n");
-                palError = ERROR_PALINIT_STD_HANDLES;
-                goto CLEANUP14;
-            }
+            goto CLEANUP10;
         }
 
         TRACE("First-time PAL initialization complete.\n");
@@ -525,13 +495,7 @@ Initialize(
     }
     goto done;
 
-CLEANUP14:
-    SEHCleanup();
-CLEANUP13:
-    VIRTUALCleanup();
 CLEANUP10:
-    MAPCleanup();
-CLEANUP6:
     // Cleanup initial process data
 CLEANUP2:
     free(exe_path);
@@ -728,7 +692,7 @@ Return:
 static LPWSTR INIT_GetCurrentEXEPath()
 {
     LPWSTR return_value;
-    INT return_size;
+    size_t return_size;
 
     char* path = minipal_getexepath();
     if (!path)
@@ -741,10 +705,10 @@ static LPWSTR INIT_GetCurrentEXEPath()
     real_path.Set(path, strlen(path));
     free(path);
 
-    return_size = MultiByteToWideChar(CP_ACP, 0, real_path, -1, nullptr, 0);
+    return_size = minipal_get_length_utf8_to_utf16(real_path, strlen(real_path) + 1, 0);
     if (0 == return_size)
     {
-        ASSERT("MultiByteToWideChar failure\n");
+        ASSERT("UTF-8 to UTF-16 conversion failure\n");
         return nullptr;
     }
 
@@ -756,10 +720,9 @@ static LPWSTR INIT_GetCurrentEXEPath()
     }
     else
     {
-        if (!MultiByteToWideChar(CP_ACP, 0, real_path, -1,
-                                return_value, return_size))
+        if (!minipal_convert_utf8_to_utf16(real_path, strlen(real_path) + 1, (CHAR16_T*)return_value, return_size, 0))
         {
-            ASSERT("MultiByteToWideChar failure\n");
+            ASSERT("UTF-8 to UTF-16 conversion failure\n");
             free(return_value);
             return_value = nullptr;
         }

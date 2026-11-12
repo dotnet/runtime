@@ -1421,6 +1421,9 @@ static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpB
 // Returns the interpreter code pointer, or NULL if the method cannot be interpreted.
 static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
 {
+    // Preserve last error, same way as normal JIT entry does in PreStubWorker
+    PreserveLastErrorHolder preserveLastError;
+
     _ASSERTE(targetMethod != NULL);
 
     // This is an optimization to ensure that the stack walk will not have to search

@@ -11,7 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 9
+#define GC_INTERFACE_MINOR_VERSION 10
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -767,7 +767,7 @@ public:
                                uint64_t* pauseInfoRaw,
                                int kind) PURE_VIRTUAL;
 
-    // Get the last memory load in percentage observed by the last GC.
+    // Get the last memory load in percentage observed by the last GC. Currently unused.
     virtual uint32_t GetMemoryLoad() PURE_VIRTUAL
 
     // Gets the current GC latency mode.
@@ -906,13 +906,13 @@ public:
 
     // Get the timestamp corresponding to the last GC that occurred for the
     // given generation.
-    virtual size_t GetLastGCStartTime(int generation) PURE_VIRTUAL
+    virtual int64_t GetLastGCStartTime(int generation) PURE_VIRTUAL
 
     // Gets the duration of the last GC that occurred for the given generation.
-    virtual size_t GetLastGCDuration(int generation) PURE_VIRTUAL
+    virtual int64_t GetLastGCDuration(int generation) PURE_VIRTUAL
 
     // Gets a timestamp for the current moment in time.
-    virtual size_t GetNow() PURE_VIRTUAL
+    virtual int64_t GetNow() PURE_VIRTUAL
 
     /*
     ===========================================================================

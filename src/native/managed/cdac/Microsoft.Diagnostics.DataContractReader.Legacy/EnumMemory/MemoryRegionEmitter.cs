@@ -17,7 +17,8 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize
     // ICLRDataEnumMemoryRegionsCallback::EnumMemoryRegion follows the three IUnknown vtable slots.
     private readonly delegate* unmanaged[MemberFunction]<nint, ulong, uint, int> _enumMemoryRegion =
         (delegate* unmanaged[MemberFunction]<nint, ulong, uint, int>)(*(nint**)callback)[3];
-    private readonly List<TargetSpan> _metadataRanges = [];
+    // Both Start and End are inclusive.
+    private readonly List<(ulong Start, ulong End)> _metadataRanges = [];
 
     public int Result { get; private set; }
 
@@ -50,23 +51,71 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize
 
     public void RegisterMetadataRange(TargetSpan range)
     {
-        if (range.Address != TargetPointer.Null && range.Size != 0)
-            _metadataRanges.Add(range);
+        ulong start = range.Address.Value;
+        if (start == 0 || range.Size == 0)
+            return;
+
+        ulong end = checked(start + (range.Size - 1));
+        int index = FindMetadataRangeIndex(start);
+        // Subtract from nonzero starts to merge adjacent ranges without overflowing an end.
+        if (index >= 0 && _metadataRanges[index].End >= start - 1)
+        {
+            if (_metadataRanges[index].End >= end)
+                // The current range already covers the new range.
+                return;
+
+            // Merge with the current range by extending its end to cover the new range.
+            start = _metadataRanges[index].Start;
+        }
+        else
+        {
+            index++;
+        }
+
+        int next = index;
+        while (next < _metadataRanges.Count && _metadataRanges[next].Start - 1 <= end)
+        {
+            end = Math.Max(end, _metadataRanges[next].End);
+            next++;
+        }
+
+        if (next == index)
+            _metadataRanges.Insert(index, (start, end));
+        else
+        {
+            _metadataRanges[index] = (start, end);
+            _metadataRanges.RemoveRange(index + 1, next - index - 1);
+        }
     }
 
     public bool ShouldEmitTargetRead(ulong address, ulong size)
     {
-        foreach (TargetSpan range in _metadataRanges)
-        {
-            if (address < range.Address.Value)
-                continue;
+        int index = FindMetadataRangeIndex(address);
+        if (index < 0)
+            return true;
 
-            ulong offset = address - range.Address.Value;
-            if (offset <= range.Size && size <= range.Size - offset)
-                return false;
+        ulong end = _metadataRanges[index].End;
+        if (size == 0)
+            return address > end && address - end > 1;
+
+        return address > end || size - 1 > end - address;
+    }
+
+    // Returns the last range whose start is <= address, or -1 if none. The caller must still check its end.
+    private int FindMetadataRangeIndex(ulong address)
+    {
+        int low = 0;
+        int high = _metadataRanges.Count;
+        while (low < high)
+        {
+            int middle = low + (high - low) / 2;
+            if (_metadataRanges[middle].Start <= address)
+                low = middle + 1;
+            else
+                high = middle;
         }
 
-        return true;
+        return low - 1;
     }
 
     public bool Update(ulong address, ReadOnlySpan<byte> buffer)

@@ -162,7 +162,17 @@ namespace ILCompiler.DependencyAnalysis
                     flags |= InvokeTableFlags.HasVirtualInvoke;
 
                 if (!method.IsAbstract)
+                {
                     flags |= InvokeTableFlags.HasEntrypoint;
+                    // The WASM object writer assigns virtual IPs only to nodes with nonempty frame information.
+                    // RuntimeImport methods, for example, have callable entrypoints but no virtual IPs.
+                    if (factory.Target.IsWasm &&
+                        factory.MethodEntrypoint(method) is INodeWithCodeInfo { FrameInfos: { Length: > 0 } } &&
+                        (factory.MetadataManager.StackTracePolicy.GetMethodVisibility(method) & MethodStackTraceVisibilityFlags.HasMetadata) != 0)
+                    {
+                        flags |= InvokeTableFlags.HasVirtualIP;
+                    }
+                }
 
                 if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                     flags |= InvokeTableFlags.NeedsParameterInterpretation;
@@ -172,7 +182,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Grammar of an entry in the hash table:
-                // Flags + DeclaringType + MetadataHandle/NameAndSig + Entrypoint + DynamicInvokeMethod + [NumGenericArgs + GenericArgs]
+                // Flags + MetadataHandle/NameAndSig + DeclaringType + Entrypoint + VirtualIP + DynamicInvokeMethod + [NumGenericArgs + GenericArgs]
 
                 Vertex vertex = writer.GetUnsignedConstant((uint)flags);
 
@@ -191,6 +201,13 @@ namespace ILCompiler.DependencyAnalysis
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
                             factory.AddressTakenMethodEntrypoint(method,
                             unboxingStub: method.OwningType.IsValueType && !method.Signature.IsStatic))));
+                }
+
+                if ((flags & InvokeTableFlags.HasVirtualIP) != 0)
+                {
+                    vertex = writer.GetTuple(vertex,
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(method),
+                            relocType: RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)));
                 }
 
                 if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)

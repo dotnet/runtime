@@ -3,7 +3,7 @@
 
 using System.Reflection.PortableExecutable;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     /// <summary>
     /// Debug mode for the assembler, controlling JIT optimization and sequence points.
@@ -166,7 +166,7 @@ namespace ILAssembler
         /// </summary>
         /// <remarks>
         /// It does not change which files are read or written, and it does not change the paths in diagnostics.
-        /// The default is <see cref="ILAssembler.PathMap.Empty"/>, which records every path as it is.
+        /// The default is <see cref="Microsoft.DotNet.ILAssembler.PathMap.Empty"/>, which records every path as it is.
         /// </remarks>
         public PathMap PathMap { get; set; } = PathMap.Empty;
 
@@ -179,6 +179,12 @@ namespace ILAssembler
         /// Path to key file for strong name signing.
         /// </summary>
         public string? KeyFile { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the Win32 <c>.res</c> or COFF <c>.obj</c> resource file to embed.
+        /// </summary>
+        /// <remarks>The compiler loads this file through its resource locator, independently of managed manifest resources.</remarks>
+        public string? Win32ResourceFile { get; set; }
 
         /// <summary>
         /// Gets or sets a value that indicates whether instruction encodings are optimized.

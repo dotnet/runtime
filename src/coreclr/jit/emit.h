@@ -38,7 +38,7 @@
 #define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_WASM)
 #define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
 #else
 #define EMIT_BACKWARDS_NAVIGATION 0
@@ -778,7 +778,7 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
-        // wasm:        16 bits (TODO-WASM-TP: shrink the format field)
+        // wasm:        17 bits (TODO-WASM-TP: shrink the format field)
 
     private:
 #if defined(TARGET_XARCH)
@@ -827,7 +827,7 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
-        // wasm:        20 bits (TODO-WASM-TP: remove the reg fields)
+        // wasm:        23 bits (TODO-WASM-TP: remove the reg fields)
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -920,7 +920,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
-        // wasm:        28 bits
+        // wasm:        31 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -938,7 +938,7 @@ protected:
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
 #elif defined(TARGET_WASM)
-#define ID_EXTRA_BITFIELD_BITS (-4)
+#define ID_EXTRA_BITFIELD_BITS (-1)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -978,7 +978,7 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
-        // wasm:        35/30 bits
+        // wasm:        38/33 bits (64-bit host)
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
@@ -998,7 +998,7 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
-        // wasm:        32 bits
+        // wasm:        26/31 bits (64-bit host)
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -1053,6 +1053,9 @@ protected:
             BasicBlock* iiaBBlabel;
             insGroup*   iiaIGlabel;
             BYTE*       iiaAddr;
+#ifdef TARGET_WASM
+            CORINFO_WASM_TYPE_SYMBOL_HANDLE iiaWasmSignature;
+#endif // TARGET_WASM
 #ifdef TARGET_XARCH
             emitAddrMode iiaAddrMode;
 #endif // TARGET_XARCH
@@ -2289,9 +2292,9 @@ protected:
         // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
         unsigned idjIsRemovableJmpCandidate : 1;
-        // Indicates the jump follows a call instruction and precedes an OS epilog.
-        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
-        unsigned idjIsAfterCallBeforeEpilog : 1;
+        // Indicates the jump follows a call instruction.
+        // If removed, replace it with a nop to preserve EH boundaries and call-return GC state.
+        unsigned idjIsAfterCall : 1;
 #elif defined(TARGET_X86)
             29;
         unsigned idjIsRemovableJmpCandidate : 1;

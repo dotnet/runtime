@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Ports;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -24,7 +25,7 @@ namespace System.IO.Ports
 
 #pragma warning disable CS0067 // Events shared by Windows and Linux, on Linux we currently never call them
         // called when any runtime error occurs on the port (frame, overrun, parity, etc.)
-        internal event SerialErrorReceivedEventHandler ErrorReceived;
+        internal event SerialErrorReceivedEventHandler? ErrorReceived;
 #pragma warning restore CS0067
 
         // ----SECTION: inherited properties from Stream class ------------*
@@ -100,12 +101,14 @@ namespace System.IO.Ports
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
         }
 
+        [MemberNotNull(nameof(_handle))]
         private void CheckHandle()
         {
             if (_handle == null)
                 InternalResources.FileNotOpen();
         }
 
+        [MemberNotNull(nameof(_handle))]
         private void CheckReadWriteArguments(byte[] array, int offset, int count)
         {
             CheckArrayArguments(array, offset, count);
@@ -113,6 +116,7 @@ namespace System.IO.Ports
             CheckHandle();
         }
 
+        [MemberNotNull(nameof(_handle))]
         private void CheckWriteArguments()
         {
             if (_inBreak)
@@ -121,6 +125,7 @@ namespace System.IO.Ports
             CheckHandle();
         }
 
+        [MemberNotNull(nameof(_handle))]
         private void CheckWriteArguments(byte[] array, int offset, int count)
         {
             if (_inBreak)

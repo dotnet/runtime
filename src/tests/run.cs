@@ -1135,7 +1135,7 @@ internal static class TestRunner
     {
         ProcessStartInfo startInfo = new(fileName)
         {
-            UseShellExecute = false,
+            InheritedHandles = [],
         };
 
         if (OperatingSystem.IsWindows() && fileName.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
@@ -1152,9 +1152,7 @@ internal static class TestRunner
             startInfo.ArgumentList.Add(argument);
         }
 
-        using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Failed to start {fileName}.");
-        process.WaitForExit();
-        return process.ExitCode;
+        return Process.Run(startInfo).ExitCode;
     }
 
     private static ProcessResult RunProcessForOutput(string fileName, IEnumerable<string> arguments, int timeoutMilliseconds = Timeout.Infinite)
@@ -1163,7 +1161,7 @@ internal static class TestRunner
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            UseShellExecute = false,
+            InheritedHandles = [],
         };
 
         foreach (string argument in arguments)
@@ -1171,20 +1169,37 @@ internal static class TestRunner
             startInfo.ArgumentList.Add(argument);
         }
 
-        using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Failed to start {fileName}.");
-        Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
-        Task<string> standardError = process.StandardError.ReadToEndAsync();
-        if (!process.WaitForExit(timeoutMilliseconds))
+        // TODO: Use Process.RunAndCaptureText once it kills the entire process tree on timeout.
+        // https://github.com/dotnet/runtime/issues/136466
+        using Process process = Process.Start(startInfo)!;
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        TimeSpan timeout = TimeSpan.FromMilliseconds(timeoutMilliseconds);
+        (string StandardOutput, string StandardError) output;
+        try
+        {
+            output = process.ReadAllText(timeoutMilliseconds == Timeout.Infinite ? null : timeout);
+        }
+        catch (TimeoutException)
         {
             process.Kill(entireProcessTree: true);
-            process.WaitForExit();
+            process.WaitForExitStatus();
+            throw new TimeoutException($"{fileName} timed out.");
+        }
+
+        TimeSpan remaining = timeoutMilliseconds == Timeout.Infinite
+            ? Timeout.InfiniteTimeSpan
+            : TimeSpan.FromMilliseconds(Math.Max(0, (timeout - stopwatch.Elapsed).TotalMilliseconds));
+        if (!process.TryWaitForExitStatus(remaining, out ProcessExitStatus? status))
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExitStatus();
             throw new TimeoutException($"{fileName} timed out.");
         }
 
         return new ProcessResult(
-            process.ExitCode,
-            standardOutput.GetAwaiter().GetResult(),
-            standardError.GetAwaiter().GetResult());
+            status.ExitCode,
+            output.StandardOutput,
+            output.StandardError);
     }
 
     private static string? FindExecutable(string name)

@@ -28,4 +28,40 @@
   <Import Project="$(RepositoryEngineeringDir)common\native\LocateNativeCompiler.targets"
       Condition="'$(UseCommonLocateNativeCompilerTarget)' == 'true'" />
 
+  <ItemGroup Condition="'$(PublishAot)' == 'true' and '$(PortableOS)' == 'osx' and '$(OutputType)' == 'Exe' and '$(NativeLib)' == '' and '$(HostBundleIdentifier)' != ''">
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <Target Name="GenerateHostInfoPlist"
+          BeforeTargets="LinkNative"
+          Condition="'$(PublishAot)' == 'true' and '$(PortableOS)' == 'osx' and '$(OutputType)' == 'Exe' and '$(NativeLib)' == '' and '$(HostBundleIdentifier)' != ''">
+    <Error Condition="'$(HostBundleName)' == ''" Text="HostBundleName must be set when HostBundleIdentifier is set." />
+
+    <PropertyGroup>
+      <_HostInfoPlist>$(NativeIntermediateOutputPath)$(TargetName).Info.plist</_HostInfoPlist>
+      <_HostBundleIdentifierXml>$(HostBundleIdentifier.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace("'", '&amp;apos;'))</_HostBundleIdentifierXml>
+      <_HostBundleNameXml>$(HostBundleName.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace("'", '&amp;apos;'))</_HostBundleNameXml>
+    </PropertyGroup>
+
+    <GenerateFileFromTemplate TemplateFile="$(MSBuildThisFileDirectory)native/Info.plist.in"
+                              OutputPath="$(_HostInfoPlist)"
+                              Properties="MACOS_BUNDLE_IDENTIFIER=$([MSBuild]::Escape('$(_HostBundleIdentifierXml)'));targetName=$([MSBuild]::Escape('$(_HostBundleNameXml)'))"
+                              SkipUnchanged="true" />
+
+    <ItemGroup>
+      <LinkerArg Include="-Wl,-sectcreate,__TEXT,__info_plist -Xlinker &quot;$(_HostInfoPlist)&quot;" />
+      <!-- Native libraries have already been expanded into linker arguments by SetupOSSpecificProps.
+           Track the plist as a linking input without passing it as a library. -->
+      <NativeLibrary Include="$(_HostInfoPlist)" />
+      <FileWrites Include="$(_HostInfoPlist)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AdHocSignHost"
+          AfterTargets="LinkNative"
+          Condition="'$(PublishAot)' == 'true' and '$(PortableOS)' == 'osx' and '$(OutputType)' == 'Exe' and '$(NativeLib)' == '' and '$(HostBundleIdentifier)' != ''">
+    <!-- Sign after LinkNative finishes modifying the binary, including symbol stripping, and before publish copies it. -->
+    <Exec Command="codesign --sign - --force --preserve-metadata=entitlements,requirements,flags,runtime,launch-constraints,library-constraints --identifier &quot;$(HostBundleIdentifier)&quot; &quot;$(NativeBinary)&quot;" />
+  </Target>
+
 </Project>

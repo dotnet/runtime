@@ -1022,7 +1022,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 #ifndef TARGET_UNIX
     MEMORY_BASIC_INFORMATION mbi;
 
-    if (sizeof(mbi) == ClrVirtualQuery(address, &mbi, sizeof(mbi)))
+    if (sizeof(mbi) == VirtualQuery(address, &mbi, sizeof(mbi)))
     {
         if (!(mbi.State & MEM_COMMIT))
         {

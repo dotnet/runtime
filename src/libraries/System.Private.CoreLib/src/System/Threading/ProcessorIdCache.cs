@@ -30,7 +30,7 @@ namespace System.Threading
         {
             int currentProcessorId = Thread.GetCurrentProcessorNumber();
 
-            // On Unix, GetCurrentProcessorNumber() is implemented in terms of sched_getcpu, which
+            // On Unix, GetCurrentProcessorNumber() is implemented in terms of sched_getcpu or pthread_cpu_number_np, which
             // doesn't exist on all platforms.  On those it doesn't exist on, GetCurrentProcessorNumber()
             // returns -1.  As a fallback in that case and to spread the threads across the buckets
             // by default, we use the current managed thread ID as a proxy.

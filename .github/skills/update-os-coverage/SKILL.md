@@ -26,7 +26,9 @@ Update OS version references in Helix queue definition files. These files contro
 - Helix coverage does not match the supported-os matrix (for example, the relevant `release-notes/<dotnet-version>/supported-os.json` file in [dotnet/core](https://github.com/dotnet/core/tree/main/release-notes)).
 - Upgrading "oldest" or "latest" version slots for a distro
 
-For servicing / `release/*` branches, be more conservative: only update to GA and already-supported distro versions unless the user explicitly asks for a forward-looking change.
+For servicing / `release/*` branches, be more conservative: only update to GA and already-supported distro versions unless the user explicitly asks for a forward-looking change (for example, a newly GA version that is not yet in `supported-os.json`).
+
+> **Pre-release images are `main`-only by default.** Pre-release distro images (for example `alpine-edge-*`, development snapshots, and versions not yet GA) must not be present in `release/*` branches unless the user explicitly approves a specific exception. Drop unapproved pre-release entries when backporting or updating release-branch coverage. Azure Linux 4 on `release/10.0` is an explicitly approved exception.
 
 ## When NOT to use
 
@@ -205,7 +207,7 @@ Not all Helix queues run in the default PR pipeline (`runtime`). Some distros ar
 | Debian* | linux_x64, linux_arm | `libraries/helix-queues-setup.yml` |
 | Fedora | linux_x64 | `libraries/helix-queues-setup.yml` |
 | openSUSE | linux_x64 | `libraries/helix-queues-setup.yml` |
-| Alpine edge | linux_musl_x64 | `libraries/helix-queues-setup.yml` |
+| Alpine edge (`main` only) | linux_musl_x64 | `libraries/helix-queues-setup.yml` |
 | Ubuntu | linux_arm64 | `libraries/helix-queues-setup.yml` |
 | Alpine (versioned) | linux_musl_arm64 | `libraries/helix-queues-setup.yml` |
 
@@ -251,7 +253,7 @@ Release branches should be updated when:
 - The old version is EOL or approaching EOL
 - The release branch will be serviced for longer than the old version's remaining support
 
-On servicing branches, prefer GA and already-supported distro versions. Do not pre-stage not-yet-GA or merely upcoming versions there unless the user explicitly requests it.
+On servicing branches, prefer GA and already-supported distro versions. Do not use not-yet-GA versions or pre-release images such as Alpine edge without an explicitly approved exception; see [When to use](#when-to-use).
 
 Note: Release branch updates should be done in separate PRs.
 
