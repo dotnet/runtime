@@ -93,6 +93,8 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [InlineData(true, "", "production")]
     [InlineData(false, "<EnableDiagnostics>false</EnableDiagnostics>", "production")]
     [InlineData(true, "<EnableDiagnostics>true</EnableDiagnostics>", "diagnostics")]
+    [InlineData(false, "<EventSourceSupport>false</EventSourceSupport>", "production")]
+    [InlineData(true, "<EventSourceSupport>true</EventSourceSupport>", "diagnostics")]
     [TestCategory("no-workload")]
     public async Task CoreClrPrelinkedNativeFlavorIsSelectedWithoutWorkload(bool publish, string extraProperties, string expectedFlavor)
     {
@@ -102,7 +104,21 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
             aot: false,
             TestAsset.BlazorBasicTestApp,
             $"coreclr_native_flavor_{(publish ? "publish" : "build")}_{expectedFlavor}",
-            extraProperties: extraProperties);
+            extraProperties: extraProperties,
+            insertAtEnd: """
+                <Target Name="ReportCoreClrManagedFlavorSelection"
+                        AfterTargets="_WasmCoreClrSelectManagedFlavor">
+                    <ItemGroup>
+                        <_SelectedCoreLib Include="@(ReferenceCopyLocalPaths)"
+                                          Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
+                    </ItemGroup>
+                    <Message Importance="High" Text="** Selected managed CoreLib: %(_SelectedCoreLib.FullPath)" />
+                </Target>
+                <Target Name="ReportCoreClrR2RFlavorSelection"
+                        AfterTargets="_WasmCoreClrSelectR2RDirectories">
+                    <Message Importance="High" Text="** Selected pack R2R: '$(_WasmBuildPrebuiltR2RDirectory)'" />
+                </Target>
+                """);
 
         (string _, string output) = publish
             ? PublishProject(info, config, new PublishOptions(UseCache: false))
@@ -125,6 +141,24 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         Assert.Equal(
             SHA256.HashData(File.ReadAllBytes(expectedNativeWasm)),
             SHA256.HashData(File.ReadAllBytes(actualNativeWasm)));
+
+        if (!publish)
+        {
+            string normalizedOutput = output.Replace('\\', '/');
+            string expectedManagedCoreLib = Path.Combine(
+                runtimePackDir,
+                "data",
+                "native-flavors",
+                expectedFlavor,
+                "managed",
+                "System.Private.CoreLib.dll").Replace('\\', '/');
+            Assert.Contains($"** Selected managed CoreLib: {expectedManagedCoreLib}", normalizedOutput, StringComparison.OrdinalIgnoreCase);
+
+            if (expectedFlavor == "diagnostics")
+                Assert.Matches(@"\*\* Selected pack R2R: '.+[/\\]r2r[/\\]?'", output);
+            else
+                Assert.Contains("** Selected pack R2R: ''", output);
+        }
 
         BlazorRunOptions runOptions = new(config);
         _ = publish

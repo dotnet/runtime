@@ -40,6 +40,9 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>false</InvariantGlobalization>", false },
             { "<InvariantTimezone>false</InvariantTimezone>", false },
             { "<EnableDiagnostics>false</EnableDiagnostics>", false },
+            { "<EnableDiagnostics>true</EnableDiagnostics>", false },
+            { "<EventSourceSupport>false</EventSourceSupport>", false },
+            { "<EventSourceSupport>true</EventSourceSupport>", false },
             { "<WasmEnableRelaxedSimd>false</WasmEnableRelaxedSimd>", false },
             // property left unset -> no relink
             { "", false },
@@ -48,7 +51,6 @@ namespace Wasm.Build.Tests
             // property differing from the runtime pack -> relink
             { "<InvariantGlobalization>true</InvariantGlobalization>", true },
             { "<InvariantTimezone>true</InvariantTimezone>", true },
-            { "<EnableDiagnostics>true</EnableDiagnostics>", true },
             { "<WasmEnableRelaxedSimd>true</WasmEnableRelaxedSimd>", true },
             { "<WasmInitialHeapSize>67108864</WasmInitialHeapSize>", true },
             // EmccInitialHeapSize is the documented browser property and EmccTotalMemory its legacy
@@ -74,6 +76,37 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains($"** WasmBuildNative: '{(expectWasmBuildNative ? "true" : "")}'", line);
+        }
+
+        [Theory]
+        [InlineData("<EnableDiagnostics>false</EnableDiagnostics>", "production")]
+        [InlineData("<EnableDiagnostics>true</EnableDiagnostics>", "diagnostics")]
+        [InlineData("<EventSourceSupport>false</EventSourceSupport>", "production")]
+        [InlineData("<EventSourceSupport>true</EventSourceSupport>", "diagnostics")]
+        public void TracingPropertySelectsNativeFlavor(string extraProperties, string expectedFlavor)
+        {
+            Configuration config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_native_flavor",
+                extraProperties: extraProperties,
+                insertAtEnd: """
+                    <Target Name="PrintCoreClrNativeFlavor"
+                            AfterTargets="_WasmCoreClrResolveNativeFlavor">
+                        <Message Text="** CoreCLR native flavor: '$(_WasmCoreClrNativeFlavor)'" Importance="High" />
+                        <Error Text="Stopping the build" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(ExpectSuccess: false));
+
+            Assert.Contains($"** CoreCLR native flavor: '{expectedFlavor}'", output);
+            Assert.Contains("Stopping the build", output);
         }
 
         [Theory]
