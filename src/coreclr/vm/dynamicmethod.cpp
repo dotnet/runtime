@@ -36,14 +36,18 @@ DynamicMethodTable* Module::GetDynamicMethodTable()
     return m_pDynamicMethodTable;
 }
 
-void ReleaseDynamicMethodTable(DynamicMethodTable *pDynMT)
+struct DynamicMethodTableHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-    if (pDynMT)
+    using Type = DynamicMethodTable*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type pDynMT) noexcept
     {
-        pDynMT->Destroy();
+        WRAPPER_NO_CONTRACT;
+        if (pDynMT != NULL)
+            pDynMT->Destroy();
     }
-}
+};
 
 void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocation, Module *pModule, AppDomain *pDomain)
 {
@@ -74,7 +78,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
 
     LOG((LF_BCL, LL_INFO100, "Level2 - Creating DynamicMethodTable {0x%p}...\n", pDynMT));
 
-    Holder<DynamicMethodTable*, DoNothing, ReleaseDynamicMethodTable> dynMTHolder(pDynMT);
+    LifetimeHolder<DynamicMethodTableHolderTraits> dynMTHolder(pDynMT);
     pDynMT->m_Crst.Init(CrstDynamicMT);
     pDynMT->m_Module = pModule;
     pDynMT->m_pDomain = pDomain;
@@ -88,7 +92,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
         return;
     }
 
-    dynMTHolder.SuppressRelease();
+    dynMTHolder.Detach();
 
     amt.SuppressRelease();
     LOG((LF_BCL, LL_INFO10, "Level1 - DynamicMethodTable created {0x%p}...\n", pDynMT));

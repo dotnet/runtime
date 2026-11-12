@@ -109,7 +109,7 @@ UMEntryThunkCache::~UMEntryThunkCache()
     for (SHash<ThunkSHashTraits>::Iterator i = m_hash.Begin(); i != m_hash.End(); i++)
     {
         // UMEntryThunks in this cache own UMThunkMarshInfo in 1-1 fashion
-        DestroyMarshInfo((*i)->GetUMThunkMarshInfo());
+        MarshInfoHolderTraits::Free((*i)->GetUMThunkMarshInfo());
         UMEntryThunkData::FreeUMEntryThunk(*i);
     }
 }
@@ -130,12 +130,10 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     {
         // cache miss -> create a new thunk
         pThunk = UMEntryThunkData::CreateUMEntryThunk();
-        Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
-        umHolder.Assign(pThunk);
+        UMEntryThunkDataHolder umHolder(pThunk);
 
         UMThunkMarshInfo *pMarshInfo = (UMThunkMarshInfo *)(void *)(m_pDomain->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DelegateUMThunkMarshInfo))));
-        Holder<UMThunkMarshInfo *, DoNothing, UMEntryThunkCache::DestroyMarshInfo> miHolder;
-        miHolder.Assign(pMarshInfo);
+        LifetimeHolder<MarshInfoHolderTraits> miHolder(pMarshInfo);
 
         new (pMarshInfo) DelegateUMThunkMarshInfo(pMD);
 
@@ -144,8 +142,8 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         // add it to the cache
         m_hash.Add(pThunk);
 
-        miHolder.SuppressRelease();
-        umHolder.SuppressRelease();
+        miHolder.Detach();
+        umHolder.Detach();
     }
 
     return pThunk;

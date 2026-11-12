@@ -161,12 +161,20 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-void CallFClose(FILE* file)
+struct FILEHolderTraits final
 {
-    fclose(file);
-}
+    using Type = FILE*;
+    static constexpr Type Default() { return NULL; }
 
-typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
+    static void Free(Type file) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (file != NULL)
+            fclose(file);
+    }
+};
+
+using FILEHolder = LifetimeHolder<FILEHolderTraits>;
 
 void PgoManager::LogInstrumentationData()
 {
@@ -377,7 +385,7 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
-    
+
     FILE* pgoDataFile = NULL;
 
     if (fopen_lp(&pgoDataFile, fileName,  W("wb")) != 0)
