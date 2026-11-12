@@ -2560,9 +2560,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         retNode->AsHWIntrinsic()->SetSimdBaseType(sigReader.GetOp2TypeAsPrecise());
                         break;
 
+                    case NI_AdvSimd_AddWideningLower:
                     case NI_AdvSimd_AddWideningUpper:
+                    case NI_AdvSimd_SubtractWideningLower:
                     case NI_AdvSimd_SubtractWideningUpper:
                         assert(varTypeIsSIMD(op1->TypeGet()));
+                        // Preserve the overload distinction when lowering removes size-changing operand conversions.
                         retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op1ClsHnd));
                         break;
 
