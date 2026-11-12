@@ -60,67 +60,28 @@ CrstStatic g_CreateWrapperTemplateCrst;
 // This is the prestub that is used for Com calls entering CLR
 extern "C" VOID ComCallPreStub();
 
-class NewCCWHolderBase : public HolderBase<ComCallWrapper *>
+// Frees a newly created CCW and its linked wrappers, but not its SimpleComCallWrapper
+// or object handle.
+struct NewCCWHolderTraits final
 {
-
-protected:
-    NewCCWHolderBase(ComCallWrapper *pValue)
-        : HolderBase<ComCallWrapper *>(pValue)
+    struct Type final
     {
-    }
+        ComCallWrapper* Wrapper;
+        ComCallWrapperCache* Cache;
+    };
 
-    // BaseHolder only initialize BASE with one parameter, so I had to
-    // use a separate function to set the cache which will be used in the release
-    void SetCache(ComCallWrapperCache *pCache)
+    static constexpr Type Default() { return {nullptr, nullptr}; }
+
+    static void Free(Type value) noexcept
     {
-        m_pCache = pCache;
+        WRAPPER_NO_CONTRACT;
+
+        if (value.Wrapper != nullptr)
+            value.Wrapper->FreeWrapper(value.Cache);
     }
-
-    void DoAcquire()
-    {
-        // Do nothing
-    }
-
-    void DoRelease()
-    {
-        this->m_value->FreeWrapper(m_pCache);
-    }
-
-
-private :
-    ComCallWrapperCache *m_pCache;
 };
 
-typedef ComCallWrapper *ComCallWrapperPtr;
-
-// This is used to hold a newly created CCW. It will release the CCW (and linked wrappers)
-// upon exit, if SuppressRelease() is not called. It doesn't try to release the SimpleComCallWrapper
-// or destroy the handle
-//
-class NewCCWHolder : public BaseHolder<ComCallWrapperPtr, NewCCWHolderBase>
-{
-public :
-    NewCCWHolder(ComCallWrapperCache *pCache)
-    {
-        SetCache(pCache);
-    }
-
-    ComCallWrapperPtr& operator=(ComCallWrapperPtr p)
-    {
-        Assign(p);
-        return m_value;
-    }
-
-    FORCEINLINE const ComCallWrapperPtr &operator->()
-    {
-        return this->m_value;
-    }
-
-    operator ComCallWrapperPtr()
-    {
-        return m_value;
-    }
-};
+using NewCCWHolder = LifetimeHolder<NewCCWHolderTraits>;
 
 // Forward declarations
 static bool GetComIPFromCCW_HandleCustomQI(ComCallWrapper *pWrap, REFIID riid, MethodTable * pIntfMT, IUnknown **ppUnkOut);
@@ -1532,8 +1493,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
 
     // we have a template, create a wrapper and initialize from the template
     // alloc wrapper, aligned to cache line
-    NewCCWHolder pStartWrapper(pWrapperCache);
-    pStartWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
+    ComCallWrapper* pStartWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
 #ifdef HOST_64BIT
                                     GetCacheLine64();
     _ASSERTE(sizeof(ComCallWrapper) <= 64);
@@ -1542,10 +1502,12 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
     _ASSERTE(sizeof(ComCallWrapper) <= 32);
 #endif
 
+    NewCCWHolder startWrapperHolder({pStartWrapper, pWrapperCache});
+
     if (pStartWrapper == NULL)
         COMPlusThrowOM();
 
-    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapper::CopyFromTemplate on Object %8.8x, Wrapper %8.8x\n", oh, static_cast<ComCallWrapperPtr>(pStartWrapper)));
+    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapper::CopyFromTemplate on Object %p, Wrapper %p\n", oh, pStartWrapper));
 
     // addref commgr
     pWrapperCache->AddRef();
@@ -1607,7 +1569,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
     if (pWrapper != pStartWrapper)
         SetNext(pWrapper, LinkedWrapperTerminator);
 
-    pStartWrapper.SuppressRelease();
+    startWrapperHolder.Detach();
 
     return pStartWrapper;
 }
@@ -1889,7 +1851,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
             // Make sure the CCW will be destroyed when exception happens
             // Also keep pWrapperCache alive within this scope
             // It needs to be destroyed after ComCallWrapperCache::LockHolder otherwise there would be a lock violation
-            NewCCWHolder pNewCCW(pWrapperCache);
+            NewCCWHolder newCCW;
 
             // Now we'll take the lock in a place where we won't be calling managed code and check again.
             {
@@ -1919,7 +1881,8 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                     }
 
                     // copy from template
-                    pNewCCW = CopyFromTemplate(pTemplate, pWrapperCache, oh);
+                    ComCallWrapper* pNewCCW = CopyFromTemplate(pTemplate, pWrapperCache, oh);
+                    newCCW = {pNewCCW, pWrapperCache};
 
                     NewHolder<SimpleComCallWrapper> pSimpleWrap{ new SimpleComCallWrapper() };
 
@@ -1947,7 +1910,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                     }
 
                     ownedHandle.Detach();
-                    pNewCCW.SuppressRelease();
+                    newCCW.Detach();
                     pSimpleWrap.Detach();
 
                     pStartWrapper = pNewCCW;
