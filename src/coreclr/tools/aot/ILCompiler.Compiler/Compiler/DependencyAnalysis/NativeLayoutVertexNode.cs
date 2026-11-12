@@ -1462,7 +1462,16 @@ namespace ILCompiler.DependencyAnalysis
             if (_constrainedMethod.IsVirtual && _constrainedMethod.HasInstantiation)
             {
                 MethodDesc canonMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                sink.Add(factory.GVMDependencies(canonMethod), "Generic virtual method call");
+
+                // A static virtual cannot be overridden further, so where the constraint type is known up to its
+                // canonical form, the call can only reach that type's own implementation. Resolving it against
+                // every implementer of the method instead instantiates each with types the call can never supply.
+                TypeDesc canonConstraintType = _constraintType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                GVMDependenciesNode gvmDependencies =
+                    _constrainedMethod.Signature.IsStatic && canonConstraintType.IsDefType && !canonConstraintType.IsInterface && !canonConstraintType.IsCanonicalDefinitionType(CanonicalFormKind.Any)
+                        ? factory.GVMDependencies(canonMethod, canonConstraintType)
+                        : factory.GVMDependencies(canonMethod);
+                sink.Add(gvmDependencies, "Generic virtual method call");
             }
         }
 
