@@ -1529,6 +1529,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
             {
                 GenTree* value = m_compiler->gtNewLclvNode(rem.Local, genActualType(rem.Type));
                 result.AddStatement(m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), rem.Type, rem.Offset, value));
+                m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             }
             *use          = result.ToCommaTree(m_compiler);
             m_madeChanges = true;
