@@ -43,5 +43,3 @@ jobs:
         ## Risk
 
         [High/Medium/Low. Justify the indication by mentioning how risks were measured and addressed.]
-
-        **IMPORTANT**: If this backport is for a servicing release, please verify that the PR target branch is `release/X.0`.
