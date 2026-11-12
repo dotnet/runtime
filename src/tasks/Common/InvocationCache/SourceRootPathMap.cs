@@ -14,6 +14,8 @@ namespace Microsoft.NET.Build.Tasks;
 internal sealed class SourceRootPathMap
 {
     private readonly List<(string Physical, string Logical)> _roots = new();
+    private readonly string? _mappingError;
+    internal string WorkingDirectory { get; } = Environment.CurrentDirectory;
     internal string? ExecutionRoot { get; }
     private static StringComparison PathComparison => Path.DirectorySeparatorChar == '\\'
         ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
@@ -39,9 +41,25 @@ internal sealed class SourceRootPathMap
         if (_roots.All(root => root.Physical.Equals(outerRoot, PathComparison) ||
             root.Physical.StartsWith(outerRoot + Path.DirectorySeparatorChar, PathComparison)))
             ExecutionRoot = outerRoot;
+
+        try
+        {
+            CheckMappings();
+        }
+        catch (NotSupportedException ex)
+        {
+            // Relative execution remains usable without deterministic logical mappings.
+            _mappingError = ex.Message;
+        }
     }
 
     internal void ValidateMappings()
+    {
+        if (_mappingError is not null)
+            throw new NotSupportedException(_mappingError);
+    }
+
+    private void CheckMappings()
     {
         for (int i = 0; i < _roots.Count; i++)
         {
@@ -66,62 +84,65 @@ internal sealed class SourceRootPathMap
         }
     }
 
-    internal string Map(string path)
+    internal string Map(string path) => MapFullPath(GetValidatedFullPath(path));
+
+    private string MapFullPath(string path)
     {
-        path = GetValidatedFullPath(path);
-        foreach (var root in _roots)
+        if (_mappingError is null)
         {
-            if (path.TrimEnd(Path.DirectorySeparatorChar).Equals(root.Physical, PathComparison))
-                return "mapped:" + root.Logical;
-            if (path.StartsWith(root.Physical + Path.DirectorySeparatorChar, PathComparison))
-                return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
+            foreach (var root in _roots)
+            {
+                if (path.Equals(root.Physical, PathComparison))
+                    return "mapped:" + root.Logical;
+                if (path.StartsWith(root.Physical + Path.DirectorySeparatorChar, PathComparison))
+                    return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
+            }
         }
         return "absolute:" + path;
     }
 
     internal string Resolve(string identity)
     {
+        string path = GetPhysicalPath(identity);
+        if (Path.IsPathRooted(path) && GetValidatedFullPath(path) == path &&
+            (identity.StartsWith("absolute:", StringComparison.Ordinal) || MapFullPath(path) == identity))
+            return path;
+        throw new ArgumentException($"Unknown or noncanonical invocation path identity '{identity}'.", nameof(identity));
+    }
+
+    private string GetPhysicalPath(string identity)
+    {
         const string AbsolutePrefix = "absolute:";
         const string MappedPrefix = "mapped:";
         if (identity.StartsWith(AbsolutePrefix, StringComparison.Ordinal))
-        {
-            string path = identity.Substring(AbsolutePrefix.Length);
-            if (Path.IsPathRooted(path) && GetValidatedFullPath(path) == path)
-                return path;
-        }
-        else if (identity.StartsWith(MappedPrefix, StringComparison.Ordinal))
+            return identity.Substring(AbsolutePrefix.Length);
+        if (identity.StartsWith(MappedPrefix, StringComparison.Ordinal) && _mappingError is null)
         {
             foreach (var root in _roots)
             {
                 string prefix = MappedPrefix + root.Logical;
-                if (!identity.StartsWith(prefix, StringComparison.Ordinal))
-                    continue;
-                string path = Path.GetFullPath(Path.Combine(root.Physical,
-                    identity.Substring(prefix.Length).Replace('/', Path.DirectorySeparatorChar)));
-                if (Map(path) == identity)
-                    return path;
-                break;
+                if (identity.StartsWith(prefix, StringComparison.Ordinal))
+                    return Path.Combine(root.Physical, identity.Substring(prefix.Length).Replace('/', Path.DirectorySeparatorChar));
             }
         }
-        throw new ArgumentException($"Unknown or noncanonical invocation path identity '{identity}'.", nameof(identity));
+        throw new ArgumentException($"Unknown invocation path identity '{identity}'.", nameof(identity));
     }
 
-    internal string MapForExecution(string path)
+    internal string MapForExecution(string identity)
     {
-        // Resolve against the caller's cwd before changing the child process's cwd.
-        path = GetValidatedFullPath(path);
+        string path = GetPhysicalPath(identity);
         if (ExecutionRoot is null)
             return path;
-        if (path.TrimEnd(Path.DirectorySeparatorChar).Equals(ExecutionRoot, PathComparison))
+        if (path.Equals(ExecutionRoot, PathComparison))
             return ".";
         if (path.StartsWith(ExecutionRoot + Path.DirectorySeparatorChar, PathComparison))
             return path.Substring(ExecutionRoot.Length + 1);
         return path;
     }
 
-    private static string GetValidatedFullPath(string path)
+    private string GetValidatedFullPath(string path)
     {
-        path = Path.GetFullPath(path);
+        path = Path.GetFullPath(string.IsNullOrEmpty(path) ? path : Path.Combine(WorkingDirectory, path));
         if (path.Length > Path.GetPathRoot(path)!.Length)
             path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||

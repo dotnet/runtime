@@ -15,7 +15,7 @@ internal sealed class InvocationOutputs
     internal string? DirectoryPath { get; }
     internal string[] Files { get; }
 
-    private InvocationOutputs(string? directoryPath, string[] files, SourceRootPathMap? pathMap = null)
+    internal InvocationOutputs(string? directoryPath, string[] files, SourceRootPathMap? pathMap = null)
     {
         DirectoryPath = directoryPath;
         Files = files;
@@ -27,10 +27,6 @@ internal sealed class InvocationOutputs
 
     internal static InvocationOutputs FromFiles(params string[] files) =>
         new InvocationOutputs(null, Array.ConvertAll(files, Path.GetFullPath));
-
-    internal InvocationOutputs Map(SourceRootPathMap pathMap) =>
-        new InvocationOutputs(DirectoryPath is null ? null : pathMap.Map(DirectoryPath),
-            Array.ConvertAll(Files, pathMap.Map), pathMap);
 
     internal string ResolvePath(string identity) => _pathMap is null ? identity : _pathMap.Resolve(identity);
 }

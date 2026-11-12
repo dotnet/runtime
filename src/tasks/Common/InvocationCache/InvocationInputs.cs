@@ -12,14 +12,11 @@ internal sealed class InvocationInputs
 {
     internal string[] Files { get; }
 
-    private InvocationInputs(string[] files)
+    internal InvocationInputs(string[] files)
     {
         Files = files;
     }
 
     internal static InvocationInputs FromFiles(params string[] files) =>
         new InvocationInputs(Array.ConvertAll(files, Path.GetFullPath));
-
-    internal InvocationInputs Map(SourceRootPathMap pathMap) =>
-        new InvocationInputs(Array.ConvertAll(Files, pathMap.Map));
 }

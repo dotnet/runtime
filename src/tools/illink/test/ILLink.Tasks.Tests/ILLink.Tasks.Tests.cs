@@ -2040,7 +2040,13 @@ namespace ILLink.Tasks.Tests
                 otherRoot, Path.Combine(otherRoot, "output", "a file.dll"),
                 Path.Combine(first.Root + "-outside", "external.dll")
             })
-                Assert.Equal(path, paths.Resolve(paths.Map(path)));
+            {
+                string normalized = paths.Map(path);
+                Assert.Equal(path, paths.Resolve(normalized));
+                string executionPath = nested && (path == first.Root || path.StartsWith(first.Root + Path.DirectorySeparatorChar))
+                    ? Path.GetRelativePath(first.Root, path) : path;
+                Assert.Equal(executionPath, paths.MapForExecution(normalized));
+            }
 
             Assert.Throws<ArgumentException>(() => paths.Resolve("mapped:/_/../outside.dll"));
             Assert.Throws<ArgumentException>(() => paths.Resolve("mapped:/_99/unknown.dll"));
@@ -2147,24 +2153,42 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public void TaskUsesRelativePathsWithoutDeterministicSourceMappings(bool cacheEnabled, bool missingMapping)
+        [InlineData(false, "physical")]
+        [InlineData(false, "missing")]
+        [InlineData(false, "duplicate")]
+        [InlineData(false, "nested")]
+        [InlineData(true, "physical")]
+        [InlineData(true, "missing")]
+        [InlineData(true, "duplicate")]
+        [InlineData(true, "nested")]
+        public void TaskUsesRelativePathsWithoutDeterministicSourceMappings(bool cacheEnabled, string mapping)
         {
-            RemoteExecutor.Invoke(static (enabled, missing) =>
+            RemoteExecutor.Invoke(static (enabled, mapping) =>
             {
                 using var test = new OutputDirectoryTest();
-                string input = Path.Combine(test.Root, "Input.dll");
+                string inputDirectory = Path.Combine(test.Root, "inputs");
+                Directory.CreateDirectory(inputDirectory);
+                string input = Path.Combine(inputDirectory, "Input.dll");
                 WriteTestAssembly(input);
                 test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
                 test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
                 test.Task.ExtraArgs = null;
-                if (bool.Parse(missing))
-                    test.Task.SourceRoots[0].RemoveMetadata("MappedPath");
-                else
-                    test.Task.SourceRoots[0].SetMetadata("MappedPath", test.Root + Path.DirectorySeparatorChar);
+                switch (mapping)
+                {
+                    case "missing":
+                        test.Task.SourceRoots[0].RemoveMetadata("MappedPath");
+                        break;
+                    case "physical":
+                        test.Task.SourceRoots[0].SetMetadata("MappedPath", test.Root + Path.DirectorySeparatorChar);
+                        break;
+                    default:
+                        test.Task.SourceRoots = test.Task.SourceRoots.Append(
+                            new TaskItem(inputDirectory, new Dictionary<string, string>
+                            {
+                                { "MappedPath", mapping == "duplicate" ? "/_/" : "/_1/" }
+                            })).ToArray();
+                        break;
+                }
                 string cacheDirectory = Path.Combine(test.Root, "cache");
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", enabled);
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
@@ -2172,10 +2196,10 @@ namespace ILLink.Tasks.Tests
                 Assert.True(test.Task.Execute());
                 Assert.Equal(test.Root, test.Task.WorkingDirectories.Last());
                 Assert.DoesNotContain(test.Root, Assert.Single(test.Task.ResponseFiles));
-                Assert.Contains("\"Input.dll\"", test.Task.ResponseFiles[0]);
+                Assert.Contains($"\"{Path.Combine("inputs", "Input.dll")}\"", test.Task.ResponseFiles[0]);
                 Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
                 Assert.False(Directory.Exists(cacheDirectory));
-            }, cacheEnabled.ToString(), missingMapping.ToString()).Dispose();
+            }, cacheEnabled.ToString(), mapping).Dispose();
         }
 
         [Theory]
@@ -2398,13 +2422,14 @@ namespace ILLink.Tasks.Tests
             string output = invalidOutputPath ?? Path.Combine(test.Root, "output");
             string extraArgs = $"  --ignore-link-attributes true   --substitutions \"{xml}\"  ";
             var builder = new InvocationBuilder(tool, paths, new() { ("--substitutions", xml) });
+            builder.Append("-x ").AppendFile(xml).AppendLine();
             builder.Append("-reference ").AppendAssembly(input).AppendLine();
             builder.AppendExtraArgs(extraArgs);
             builder.Append("-out ").AppendOutputDirectory(output).AppendLine();
 
             if (invalidOutputPath is not null)
             {
-                string original = $"-reference \"{input}\"{Environment.NewLine}{extraArgs}{Environment.NewLine}-out \"{output}\"{Environment.NewLine}";
+                string original = $"-x \"{xml}\"{Environment.NewLine}-reference \"{input}\"{Environment.NewLine}{extraArgs}{Environment.NewLine}-out \"{output}\"{Environment.NewLine}";
                 Assert.Null(builder.Paths);
                 Assert.Equal($"\"{tool}\"", builder.CommandLine);
                 Assert.Equal(builder.CommandLine, builder.CommandIdentity);
@@ -2414,13 +2439,20 @@ namespace ILLink.Tasks.Tests
             else
             {
                 Assert.Same(paths, builder.Paths);
+                Assert.Equal("mapped:/_/illink.dll", builder.ToolPath);
+                Assert.Equal("mapped:/_/roots.xml", Assert.Single(builder.Files));
+                Assert.Equal(("mapped:/_/Input.dll", true), Assert.Single(builder.Assemblies));
+                Assert.Equal(("--substitutions", "mapped:/_/roots.xml"), Assert.Single(builder.ExtraPaths));
+                Assert.Equal("mapped:/_/output", builder.OutputDirectory);
                 Assert.Equal("\"illink.dll\"", builder.CommandLine);
                 Assert.Equal("\"mapped:/_/illink.dll\"", builder.CommandIdentity);
-                Assert.Equal("-reference \"Input.dll\"" + Environment.NewLine +
+                Assert.Equal("-x \"roots.xml\"" + Environment.NewLine +
+                    "-reference \"Input.dll\"" + Environment.NewLine +
                     "--ignore-link-attributes true" + Environment.NewLine +
                     "--substitutions \"roots.xml\"" + Environment.NewLine +
                     "-out \"output\"" + Environment.NewLine, builder.ToString());
-                Assert.Equal("-reference \"mapped:/_/Input.dll\"" + Environment.NewLine +
+                Assert.Equal("-x \"mapped:/_/roots.xml\"" + Environment.NewLine +
+                    "-reference \"mapped:/_/Input.dll\"" + Environment.NewLine +
                     "--ignore-link-attributes true" + Environment.NewLine +
                     "--substitutions \"mapped:/_/roots.xml\"" + Environment.NewLine +
                     "-out \"mapped:/_/output\"" + Environment.NewLine, builder.ResponseIdentity);

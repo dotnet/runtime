@@ -47,8 +47,12 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
-An `InvocationDescription` can specify an effective working directory and a shared `SourceRootPathMap`
-constructed from MSBuild `SourceRoot` items with `MappedPath` metadata.
+Prepare paths once through a shared `SourceRootPathMap` constructed from MSBuild `SourceRoot` items
+with `MappedPath` metadata. It captures the caller's working directory for interpreting relative
+inputs. Supply already-normalized paths to the `InvocationInputs`, `InvocationOutputs`, and
+`InvocationDescription` constructors, including the effective working directory; these containers
+do not map paths again. The `FromFiles` and `FromDirectory` factories remain available for unmapped
+physical declarations.
 The description stores only logical identities for input files, output locations, and that working
 directory. Hashing serializes those identities directly; file access, output validation, and
 restoration resolve them to physical absolute paths through the same mapping. Without a mapping,
@@ -56,7 +60,9 @@ identities are absolute paths.
 Consumers must preserve complete relative layouts and distinguish external paths rather than
 mapping unrelated files to the same identity. Mappings must remain stable and reversible throughout
 discovery, hashing, execution, and restoration. The same concrete mapping renders root-relative
-execution paths; tool-specific eligibility checks remain with the consumer.
+execution paths from prepared identities without normalizing the original inputs again;
+tool-specific eligibility checks remain with the consumer. Invalid logical mappings still permit
+relative execution using absolute identities internally, but must be rejected for caching.
 
 Prepare any execution-path normalization independently of the cache callbacks so disabling or
 bypassing caching does not change the invocation.

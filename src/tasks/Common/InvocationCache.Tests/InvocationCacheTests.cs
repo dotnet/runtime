@@ -1107,14 +1107,20 @@ public class InvocationCacheTests
             pathMap: CreatePathMap(second.Root, "/_1/"))));
 
         InvocationDescription Describe(CacheTestDirectory test, string? workingDirectory = null,
-            string? outputDirectory = null, SourceRootPathMap? pathMap = null) =>
-            new(InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
-                new[] { "arguments" }, Outputs(outputDirectory ?? test.Output),
-                workingDirectory ?? test.Root, pathMap ?? CreatePathMap(test.Root));
-
-        InvocationOutputs Outputs(string directory) => ownedDirectory
-            ? InvocationOutputs.FromDirectory(directory)
-            : InvocationOutputs.FromFiles(Path.Combine(directory, "image.dll"), Path.Combine(directory, "image.pdb"));
+            string? outputDirectory = null, SourceRootPathMap? pathMap = null)
+        {
+            pathMap ??= CreatePathMap(test.Root);
+            string directory = outputDirectory ?? test.Output;
+            InvocationOutputs outputs = ownedDirectory
+                ? new InvocationOutputs(pathMap.Map(directory), Array.Empty<string>(), pathMap)
+                : new InvocationOutputs(null, new[]
+                {
+                    pathMap.Map(Path.Combine(directory, "image.dll")),
+                    pathMap.Map(Path.Combine(directory, "image.pdb"))
+                }, pathMap);
+            return new InvocationDescription(new InvocationInputs(new[] { pathMap.Map(Path.Combine(test.Source, "image.dll")) }),
+                new[] { "arguments" }, outputs, pathMap.Map(workingDirectory ?? test.Root), pathMap);
+        }
     }
 
     [Fact]
@@ -1126,8 +1132,9 @@ public class InvocationCacheTests
         root.SetMetadata("MappedPath", "/_1/");
         var pathMap = new SourceRootPathMap(new[] { root });
         var invocation = new InvocationDescription(
-            InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
-            Array.Empty<string>(), test.OutputOutputs, workingDirectory: test.Root,
+            new InvocationInputs(new[] { pathMap.Map(Path.Combine(test.Source, "image.dll")) }),
+            Array.Empty<string>(), new InvocationOutputs(pathMap.Map(test.Output), Array.Empty<string>(), pathMap),
+            workingDirectory: pathMap.Map(test.Root),
             pathMap: pathMap);
         Assert.Equal(new[] { "mapped:/_1/source/image.dll" }, invocation.Inputs.Files);
         root.ItemSpec = Path.Combine(test.Root, "other");
@@ -1135,10 +1142,11 @@ public class InvocationCacheTests
         string original = InvocationCache.ComputeKey(invocation);
 
         Assert.Equal(original, InvocationCache.ComputeKey(invocation));
+        var changedMap = CreatePathMap(test.Root, "/_2/");
         var changed = new InvocationDescription(
-            InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
-            invocation.Context, test.OutputOutputs, workingDirectory: test.Root,
-            pathMap: CreatePathMap(test.Root, "/_2/"));
+            new InvocationInputs(new[] { changedMap.Map(Path.Combine(test.Source, "image.dll")) }),
+            invocation.Context, new InvocationOutputs(changedMap.Map(test.Output), Array.Empty<string>(), changedMap),
+            workingDirectory: changedMap.Map(test.Root), pathMap: changedMap);
         Assert.NotEqual(original, InvocationCache.ComputeKey(changed));
 
         test.WriteSource("image.dll", "changed");

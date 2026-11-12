@@ -4,7 +4,6 @@
 #nullable enable
 
 using System;
-using System.IO;
 
 namespace Microsoft.NET.Build.Tasks;
 
@@ -21,12 +20,10 @@ internal sealed class InvocationDescription
         string? workingDirectory = null, SourceRootPathMap? pathMap = null)
     {
         _pathMap = pathMap;
-        Inputs = pathMap is null ? inputs : inputs.Map(pathMap);
+        Inputs = inputs;
         Context = context;
-        Outputs = pathMap is null ? outputs : outputs.Map(pathMap);
-        WorkingDirectory = Path.GetFullPath(workingDirectory ?? Environment.CurrentDirectory);
-        if (pathMap is not null)
-            WorkingDirectory = pathMap.Map(WorkingDirectory);
+        Outputs = outputs;
+        WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory;
     }
 
     internal string ResolvePath(string identity) => _pathMap is null ? identity : _pathMap.Resolve(identity);

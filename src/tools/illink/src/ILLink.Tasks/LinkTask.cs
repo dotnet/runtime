@@ -286,7 +286,9 @@ namespace ILLink.Tasks
         {
             try
             {
-                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
+                string outputDirectory = _invocation?.Paths is { } paths
+                    ? paths.Resolve(_invocation.OutputDirectory)
+                    : Path.GetFullPath(OutputDirectory.ItemSpec);
                 if (Directory.Exists(outputDirectory))
                     Directory.Delete(outputDirectory, recursive: true);
 
@@ -361,27 +363,26 @@ namespace ILLink.Tasks
                     if (!AddAssembly(assembly.Path, assembly.CheckOutputSymbols))
                         return null;
                 }
-                foreach (string file in invocation.Files)
-                    AddFile(file);
+                files.UnionWith(invocation.Files);
                 foreach (var argument in invocation.ExtraPaths)
                 {
                     if (argument.Option == "-d")
-                        directories.Add(Path.GetFullPath(argument.Path));
+                        directories.Add(argument.Path);
                     else
-                        AddFile(argument.Path);
+                        files.Add(argument.Path);
                 }
 
                 // Keep search-directory ordering in the arguments; hash even shadowed candidates.
                 foreach (string directory in directories)
                 {
-                    foreach (string file in Directory.EnumerateFiles(directory))
+                    foreach (string file in Directory.EnumerateFiles(paths.Resolve(directory)))
                     {
                         string extension = Path.GetExtension(file);
                         if (extension.Equals(".dll", StringComparison.OrdinalIgnoreCase) ||
                             extension.Equals(".exe", StringComparison.OrdinalIgnoreCase) ||
                             extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (!AddAssembly(file))
+                            if (!AddAssembly(paths.Map(file)))
                                 return null;
                         }
                     }
@@ -390,39 +391,35 @@ namespace ILLink.Tasks
 #pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
                 string taskAssemblyPath = typeof(ILLink).Assembly.Location;
 #pragma warning restore IL3000
-                AddFile(taskAssemblyPath);
-                AddFile(pathToTool);
-                AddFile(invocation.ToolPath);
-                var logicalFiles = new SortedDictionary<string, string>(StringComparer.Ordinal);
+                files.Add(paths.Map(taskAssemblyPath));
+                files.Add(paths.Map(pathToTool));
+                files.Add(invocation.ToolPath);
                 foreach (string file in files)
                 {
                     // Required inputs must be readable, not represented as absent by shared hashing.
-                    using var input = File.OpenRead(file);
-                    logicalFiles.Add(paths.Map(file), file);
+                    using var input = File.OpenRead(paths.Resolve(file));
                 }
 
-                return new InvocationDescription(InvocationInputs.FromFiles(logicalFiles.Values.ToArray()),
+                return new InvocationDescription(new InvocationInputs(files.ToArray()),
                     new[] { "ILLink", paths.ExecutionRoot is not null ? "relative" : "original",
                         AdjustCommandsForOperatingSystem(" " + invocation.CommandIdentity),
                         AdjustCommandsForOperatingSystem(invocation.ResponseIdentity) },
-                    InvocationOutputs.FromDirectory(invocation.OutputDirectory),
-                    workingDirectory: paths.ExecutionRoot ?? Environment.CurrentDirectory, pathMap: paths);
-
-                void AddFile(string path) => files.Add(Path.GetFullPath(path));
+                    new InvocationOutputs(invocation.OutputDirectory, Array.Empty<string>(), paths),
+                    workingDirectory: invocation.WorkingDirectory, pathMap: paths);
 
                 void AddOptionalFile(string path)
                 {
                     if (File.Exists(path))
-                        AddFile(path);
+                        files.Add(paths.Map(path));
                 }
 
-                bool AddAssembly(string path, bool checkOutputSymbols = true)
+                bool AddAssembly(string input, bool checkOutputSymbols = true)
                 {
-                    path = Path.GetFullPath(path);
-                    if (!assemblies.Add(path))
+                    if (!assemblies.Add(input))
                         return true;
 
-                    AddFile(path);
+                    files.Add(input);
+                    string path = paths.Resolve(input);
                     AddOptionalFile(path + ".config");
                     AddOptionalFile(path + ".mdb");
                     AddOptionalFile(Path.ChangeExtension(path, ".pdb"));
@@ -431,12 +428,12 @@ namespace ILLink.Tasks
                     foreach (string satelliteDirectory in Directory.EnumerateDirectories(directory))
                     {
                         string satellite = Path.Combine(satelliteDirectory, satelliteName);
-                        if (File.Exists(satellite) && !AddAssembly(satellite, checkOutputSymbols))
+                        if (File.Exists(satellite) && !AddAssembly(paths.Map(satellite), checkOutputSymbols))
                             return false;
                     }
 
-                    using var input = File.OpenRead(path);
-                    using var pe = new PEReader(input);
+                    using var stream = File.OpenRead(path);
+                    using var pe = new PEReader(stream);
                     if (!pe.HasMetadata)
                         throw new BadImageFormatException("Input PE image has no managed metadata.", path);
                     MetadataReader metadata = pe.GetMetadataReader();

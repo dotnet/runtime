@@ -22,13 +22,17 @@ maintenance commands.
 `ILLink` derives from the shared `CachedToolTask`, supplying `CacheConfiguration`, `DescribeInvocation`,
 and `ExecuteToolCore`. The base class checks whether caching is enabled before describing the invocation.
 Argument construction records input roles and one structured argument list in a single walk over
-the task inputs. Execution arguments and logical cache context are rendered from that list;
-unsupported normalization renders the original spelling instead of maintaining a fallback buffer.
+the task inputs. Registering a path normalizes it once against the captured caller's working
+directory. Argument records and input/output inventories share that normalized value, which is
+used directly for logical cache context and translated for execution. Original spelling is retained
+in the argument records for fallback and disjoint-root execution, without a separate fallback buffer.
 The command-line and response-file hooks reuse that construction;
 execution does not reconstruct or compare arguments.
-The description callback expands the recorded inputs through `DescribeInvocation`, supplies
-the effective working directory, and declares one `InvocationOutputs.FromDirectory`; it runs only
-when caching is enabled. The description stores logical path identities without parallel physical
+The description callback expands the recorded inputs through `DescribeInvocation`, normalizes
+newly discovered dependencies at registration, supplies the effective working directory, and declares
+one owned output directory; it runs only when caching is enabled.
+Description construction consumes prepared paths without remapping them.
+The description stores logical path identities without parallel physical
 path inventories; its reversible source-root map resolves identities for file reads, output
 validation, and restoration. Normal execution uses
 the already-generated arguments regardless of cache eligibility. ILLink owns metadata inspection
