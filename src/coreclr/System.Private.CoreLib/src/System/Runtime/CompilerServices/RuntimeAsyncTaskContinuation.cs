@@ -28,6 +28,11 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(RuntimeAsyncTask != null);
 
+            if (!canInline && (Flags & ContinuationFlags.AllContinuationFlags) == 0)
+            {
+                TakeAwaiterContinuationContext();
+            }
+
             if (((Flags & ContinuationFlags.AllContinuationFlags) == 0) || !QueueIfNecessary(canInline))
             {
                 if (canInline)
@@ -39,6 +44,34 @@ namespace System.Runtime.CompilerServices
                     ThreadPool.UnsafeQueueUserWorkItemInternal(RuntimeAsyncTask, preferLocal: true);
                 }
             }
+        }
+
+        private void TakeAwaiterContinuationContext()
+        {
+            const ContinuationFlags CapturedContextFlags =
+                ContinuationFlags.ContinueOnCapturedSynchronizationContext |
+                ContinuationFlags.ContinueOnCapturedTaskScheduler;
+
+            // Transparent frames have no continuation flags and run no user code after the await.
+            Continuation? awaiter = Next;
+            while (awaiter is not null && (awaiter.Flags & ContinuationFlags.AllContinuationFlags) == 0)
+            {
+                awaiter = awaiter.Next;
+            }
+
+            // Post and QueueTask can run arbitrary user code, so retain the thread pool fallback
+            // when there is not enough stack to call them safely.
+            if (awaiter is null || (awaiter.Flags & CapturedContextFlags) == 0 ||
+                !RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            {
+                return;
+            }
+
+            ContinuationContext = awaiter.GetContinuationContext();
+            Flags |= awaiter.Flags & CapturedContextFlags;
+
+            // Apply the captured context once, when dispatching this continuation.
+            awaiter.Flags &= ~CapturedContextFlags;
         }
 
         private bool QueueIfNecessary(bool canInline)
