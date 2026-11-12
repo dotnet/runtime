@@ -100,7 +100,11 @@ struct InterpByteCodeStart
     }
 };
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+typedef class CInterpreterJitInfo* COMP_HANDLE;
+#else
 typedef class ICorJitInfo* COMP_HANDLE;
+#endif
 
 class MethodSet
 {

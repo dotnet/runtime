@@ -58,6 +58,18 @@
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+using RuntimeCodeGenInfo = CInterpreterJitInfo;
+static_assert(!std::is_polymorphic<ICorStaticInfo>::value);
+static_assert(!std::is_polymorphic<ICorDynamicInfo>::value);
+static_assert(!std::is_polymorphic<ICorJitInfo>::value);
+static_assert(!std::is_polymorphic<CInterpreterJitInfo>::value);
+#else
+using RuntimeCodeGenInfo = CEECodeGenInfo;
+static_assert(std::is_polymorphic<ICorJitInfo>::value);
+static_assert(std::is_polymorphic<CEECodeGenInfo>::value);
+#endif
+
 #if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 #endif
@@ -11644,7 +11656,11 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
             &m_dbgAsyncInfo, m_dbgAsyncSuspensionPoints, m_dbgAsyncContinuationVars, m_numAsyncContinuationVars,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+        static_cast<CInterpreterJitInfo*>(this)->SetDebugInfo(pDebugInfo);
+#else
         SetDebugInfo(pDebugInfo);
+#endif
     }
     EX_CATCH
     {
@@ -12995,7 +13011,7 @@ void CEECodeGenInfo::getEHinfo(
 }
 
 static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
-                                       CEECodeGenInfo *comp,
+                                       RuntimeCodeGenInfo *comp,
                                        BYTE **nativeEntry,
                                        uint32_t *nativeSizeOfCode,
                                        NativeCodeVersion nativeCodeVersion)
@@ -13203,7 +13219,7 @@ void ThrowExceptionForJit(HRESULT res)
 
 static TADDR UnsafeJitFunctionWorker(
     EECodeGenManager *pJitMgr,
-    CEECodeGenInfo *pJitInfo,
+    RuntimeCodeGenInfo *pJitInfo,
     NativeCodeVersion nativeCodeVersion,
     _Out_ ULONG* pSizeOfCode)
 {

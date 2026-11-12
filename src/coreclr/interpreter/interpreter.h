@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #define INTERPRETER_COMPILER_INTERNAL
+#ifdef FEATURE_INTERPRETER_DIRECT_CALLS
+#include "../vm/common.h"
+#endif
+
 #include <stdint.h>
 #include <wchar.h>
 #include <stdio.h>
