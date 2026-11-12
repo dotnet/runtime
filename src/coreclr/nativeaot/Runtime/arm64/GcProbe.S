@@ -47,10 +47,7 @@
     stp         x6, x7,   [sp, #0xA8]
 
     // Save the FP argument registers
-    stp         q0, q1,   [sp, #0xC0]
-    stp         q2, q3,   [sp, #0xE0]
-    stp         q4, q5,   [sp, #0x100]
-    stp         q6, q7,   [sp, #0x120]
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0xC0
 
     // Perform the rest of the PInvokeTransitionFrame initialization.
     //   str         \threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       // Thread * (unused by stackwalker)
@@ -79,10 +76,7 @@
     ldp         x6, x7,   [sp, #0xA8]
 
     // Restore the FP argument registers
-    ldp         q0, q1,   [sp, #0xC0]
-    ldp         q2, q3,   [sp, #0xE0]
-    ldp         q4, q5,   [sp, #0x100]
-    ldp         q6, q7,   [sp, #0x120]
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0xC0
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR x19, x20, 0x20
@@ -116,18 +110,12 @@
     stp         x2, x3, [sp, #0x20]
     stp         x4, x5, [sp, #0x30]
     stp         x6, x7, [sp, #0x40]
-    stp         q0, q1, [sp, #0x50]
-    stp         q2, q3, [sp, #0x70]
-    stp         q4, q5, [sp, #0x90]
-    stp         q6, q7, [sp, #0xB0]
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0x50
 
     bl C_FUNC(RhpGetThread)
     mov x9, x0
 
-    ldp         q6, q7, [sp, #0xB0]
-    ldp         q4, q5, [sp, #0x90]
-    ldp         q2, q3, [sp, #0x70]
-    ldp         q0, q1, [sp, #0x50]
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0x50
     ldp         x0, x1, [sp, #0x10]
     ldp         x2, x3, [sp, #0x20]
     ldp         x4, x5, [sp, #0x30]
@@ -137,18 +125,14 @@
     // INLINE_GETTHREAD makes blr calls that trash volatile FP registers.
     // Save and restore q0-q7 around the call.
     sub         sp, sp, #0x80
-    stp         q0, q1, [sp, #0x00]
-    stp         q2, q3, [sp, #0x20]
-    stp         q4, q5, [sp, #0x40]
-    stp         q6, q7, [sp, #0x60]
+    .cfi_adjust_cfa_offset 0x80
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0
 
     INLINE_GETTHREAD x9
 
-    ldp         q6, q7, [sp, #0x60]
-    ldp         q4, q5, [sp, #0x40]
-    ldp         q2, q3, [sp, #0x20]
-    ldp         q0, q1, [sp, #0x00]
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0
     add         sp, sp, #0x80
+    .cfi_adjust_cfa_offset -0x80
 #endif
 
     //
@@ -198,30 +182,9 @@ NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 0
-    cbnz    w0, LOCAL_LABEL(RhpGcPoll_Rare) // TrapThreadsFlags_None = 0
-    ret
-LOCAL_LABEL(RhpGcPoll_Rare):
-    b C_FUNC(RhpGcPollRare)
-LEAF_END RhpGcPoll
-
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME x0
     bl C_FUNC(RhpGcPoll2)
     POP_COOP_PINVOKE_FRAME
     ret
 NESTED_END RhpGcPollRare
-
-
-#ifdef FEATURE_GC_STRESS
-
-//
-// GC Stress Hijack targets
-//
-LEAF_ENTRY RhpGcStressHijack, _TEXT
-    // NYI
-    EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
-
-#endif  // FEATURE_GC_STRESS

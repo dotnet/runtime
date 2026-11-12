@@ -15,9 +15,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class FieldTests
     {
@@ -33,6 +32,205 @@ namespace ILAssembler.Tests
                 }
             }
             """;
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("&")]
+        public void FixedBufferAttribute_PreservesElementTypeIdentityAndFieldSignature(string byRef)
+        {
+            string source = $$"""
+                .assembly test { }
+                .assembly extern mscorlib
+                {
+                    .publickeytoken = (B7 7A 5C 56 19 34 E0 89)
+                    .ver 4:0:0:0
+                }
+                .class public sealed S extends [mscorlib]System.ValueType
+                {
+                    .custom instance void [mscorlib]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (01 00 00 00)
+                    .class sequential nested public sealed FixedBuffer extends [mscorlib]System.ValueType
+                    {
+                        .pack 0
+                        .size 12
+                        .field public int32 FixedElementField
+                    }
+                    .field public valuetype S/FixedBuffer{{byRef}} F
+                    .custom instance void [mscorlib]System.Runtime.CompilerServices.FixedBufferAttribute::.ctor(class [mscorlib]System.Type, int32) = { type([mscorlib]System.Int32) int32(3) }
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition field = reader.FieldDefinitions.Select(reader.GetFieldDefinition)
+                .Single(field => reader.GetString(field.Name) == "F");
+            string signature = field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal("S/FixedBuffer" + byRef, signature);
+
+            CustomAttribute attribute = reader.GetCustomAttribute(Assert.Single(field.GetCustomAttributes()));
+            CustomAttributeValue<string> value = attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder);
+            Assert.Equal(2, value.FixedArguments.Length);
+            Assert.Equal("System.Type", value.FixedArguments[0].Type);
+            Assert.Equal("System.Int32, mscorlib, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089", value.FixedArguments[0].Value);
+            Assert.Equal("int32", value.FixedArguments[1].Type);
+            Assert.Equal(3, value.FixedArguments[1].Value);
+            Assert.Empty(value.NamedArguments);
+        }
+
+        [Theory]
+        [InlineData("", "", "")]
+        [InlineData(".class public Test {", "", "}")]
+        [InlineData(".class public Outer { .class nested public Inner {", "", "} }")]
+        [InlineData(".class public Test`1<T> {", "", "}")]
+        [InlineData(".class public Test {", "} .class public Test {", "}")]
+        public void DuplicateFields_RequireErrorTolerantMode(string prefix, string between, string suffix)
+        {
+            string source = $$"""
+                .assembly test { }
+                {{prefix}}
+                .field public static int32 Value = int32(1)
+                {{between}}
+                .field private static int32 Value = int32(2)
+                {{suffix}}
+                """;
+
+            foreach (bool errorTolerant in new[] { false, true })
+            {
+                var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                    source, new Options { ErrorTolerant = errorTolerant });
+                Diagnostic diagnostic = Assert.Single(diagnostics);
+                Assert.Equal("ILA0034", diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                Assert.Equal("Duplicate field definition 'Value'", diagnostic.Message);
+                Assert.Equal("test.il", diagnostic.Location.Source.Path);
+                Assert.Equal(source.LastIndexOf(".field", StringComparison.Ordinal), diagnostic.Location.Span.Start);
+
+                if (!errorTolerant)
+                {
+                    Assert.Null(result);
+                    continue;
+                }
+
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                FieldDefinition[] fields = reader.FieldDefinitions.Select(reader.GetFieldDefinition).ToArray();
+                Assert.Equal(2, fields.Length);
+                Assert.All(fields, field => Assert.Equal("Value", reader.GetString(field.Name)));
+                Assert.Equal(reader.GetBlobBytes(fields[0].Signature), reader.GetBlobBytes(fields[1].Signature));
+                Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasDefault, fields[0].Attributes);
+                Assert.Equal(FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.HasDefault, fields[1].Attributes);
+                Assert.Equal(1, reader.GetBlobReader(reader.GetConstant(fields[0].GetDefaultValue()).Value).ReadInt32());
+                Assert.Equal(2, reader.GetBlobReader(reader.GetConstant(fields[1].GetDefaultValue()).Value).ReadInt32());
+            }
+        }
+
+        [Theory]
+        [InlineData(".field public int32 Value", ".field public int64 Value")]
+        [InlineData(".field public int32 Value", ".field public int32 'value'")]
+        [InlineData(".field privatescope int32 Value", ".field privatescope int32 Value")]
+        [InlineData(".field privatescope int32 Value", ".field public int32 Value")]
+        [InlineData(".field public int32 Value", ".field privatescope int32 Value")]
+        [InlineData(".field public int32 Value", ".field public int32 modopt([mscorlib]System.ObsoleteAttribute) Value")]
+        [InlineData(".field public !0 Value", ".field public !1 Value")]
+        public void DistinctFields_ArePreserved(string first, string second)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public Test`2<T, U>
+                {
+                    {{first}}
+                    {{second}}
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            Assert.Equal(2, pe.GetMetadataReader().FieldDefinitions.Count);
+        }
+
+        [Fact]
+        public void SameFieldInDifferentOwners_IsPreserved()
+        {
+            string source = """
+                .assembly test { }
+                .field public static int32 Value
+                .class public A
+                {
+                    .field public static int32 Value
+                    .class nested public B { .field public static int32 Value }
+                }
+                .class public B { .field public static int32 Value }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(4, reader.FieldDefinitions.Count);
+            Assert.All(reader.TypeDefinitions, handle => Assert.Single(reader.GetTypeDefinition(handle).GetFields()));
+        }
+
+        [Theory]
+        [InlineData("int32", "int32")]
+        [InlineData("!T", "!0")]
+        [InlineData("int32 modreq([mscorlib]System.ObsoleteAttribute)", "int32 modreq([mscorlib]System.ObsoleteAttribute)")]
+        public void DuplicateFields_CompareEncodedSignatures(string firstType, string secondType)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public Test`1<T>
+                {
+                    .field public {{firstType}} Value
+                    .field public static {{secondType}} Value
+                    .field private {{firstType}} Value
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = true });
+            Assert.Equal(2, diagnostics.Length);
+            Assert.All(diagnostics, diagnostic =>
+            {
+                Assert.Equal(DiagnosticIds.DuplicateField, diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            });
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(3, reader.FieldDefinitions.Count);
+            byte[][] signatures = reader.FieldDefinitions.Select(handle =>
+                reader.GetBlobBytes(reader.GetFieldDefinition(handle).Signature)).ToArray();
+            Assert.Equal(signatures[0], signatures[1]);
+            Assert.Equal(signatures[0], signatures[2]);
+        }
+
+        [Fact]
+        public void DuplicateField_ErrorTolerantPreservesLayoutAndCustomAttributeOwner()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit Test
+                {
+                    .field [0] public int32 Value
+                    .field [4] public int32 Value
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    .field [8] public int32 Following
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = true });
+            Assert.Equal(DiagnosticIds.DuplicateField, Assert.Single(diagnostics).Id);
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition[] fields = reader.FieldDefinitions.Select(reader.GetFieldDefinition).ToArray();
+            Assert.Equal(3, fields.Length);
+            Assert.Equal(new[] { 0, 4, 8 }, fields.Select(field => field.GetOffset()));
+            Assert.Empty(fields[0].GetCustomAttributes());
+            Assert.Single(fields[1].GetCustomAttributes());
+            Assert.Empty(fields[2].GetCustomAttributes());
+        }
 
         [Fact]
         public void TrailingCustomAttribute_AttachesToField()

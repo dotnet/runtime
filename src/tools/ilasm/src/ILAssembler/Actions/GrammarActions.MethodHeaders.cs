@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {

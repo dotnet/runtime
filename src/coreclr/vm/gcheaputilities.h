@@ -71,20 +71,6 @@ struct ee_alloc_context
         m_GCAllocContext.alloc_ptr = ptr;
     }
 
-    uint8_t* getAllocLimit()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_GCAllocContext.alloc_limit;
-    }
-
-    // Regenerate the randomized sampling limit and update the m_CombinedLimit field.
-    inline void UpdateCombinedLimit()
-    {
-        // The randomized sampling feature is being submitted in stages. At this point the sampling is never
-        // activated so m_CombinedLimit is always equal to alloc_limit.
-        m_CombinedLimit = m_GCAllocContext.alloc_limit;
-    }
-
     static inline bool IsRandomizedSamplingEnabled()
     {
 #ifdef FEATURE_EVENT_TRACE
@@ -350,4 +336,3 @@ private:
 };
 
 #endif // _GCHEAPUTILITIES_H_
-

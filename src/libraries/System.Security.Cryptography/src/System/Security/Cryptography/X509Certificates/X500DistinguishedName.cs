@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <see langword="false" /> to enumerate in the declared order.
         /// </param>
         /// <returns>
-        ///   An enumerator that iterates over the relative distinguished names in the X.500 Dinstinguished Name.
+        ///   An enumerator that iterates over the relative distinguished names in the X.500 Distinguished Name.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   The X.500 Name is not a proper DER-encoded X.500 Name value.

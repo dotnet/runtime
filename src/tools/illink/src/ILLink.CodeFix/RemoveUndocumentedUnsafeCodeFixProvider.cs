@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Collections.Immutable;
 using System.Composition;
 using System.Threading.Tasks;
@@ -17,7 +17,8 @@ namespace ILLink.CodeFix
 {
     /// <summary>
     /// Fixes <c>IL5005</c> by removing undocumented legacy unsafe scopes that became caller contracts under unsafe-v2.
-    /// Pointer signatures and field-like <c>CS9392</c> declarations retain <c>unsafe</c> for compatibility and safety.
+    /// Pointer signatures and declarations that need an explicit marker (<c>extern</c>, <c>LibraryImport</c>,
+    /// <c>CS9392</c> fields) retain <c>unsafe</c> for compatibility and safety.
     /// </summary>
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RemoveUndocumentedUnsafeCodeFixProvider)), Shared]
     public sealed class RemoveUndocumentedUnsafeCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
@@ -31,15 +32,17 @@ namespace ILLink.CodeFix
         public override ImmutableArray<string> FixableDiagnosticIds =>
             [DiagnosticId.UnsafeMemberMissingSafetyDocumentation.AsString()];
 
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        public override FixAllProvider GetFixAllProvider() => UnsafeMigrationFixAllProvider.Instance;
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Diagnostic diagnostic = context.Diagnostics[0];
-            // Pointer signatures were already caller-unsafe under legacy rules. Field-like explicit and extended
-            // layout declarations must also keep a marker for CS9392, and default to unsafe until manually audited.
+            // Pointer signatures were already caller-unsafe under legacy rules. Extern and LibraryImport methods and
+            // CS9392 fields must keep a marker, and default to unsafe until manually audited.
+            // Pointer operations in inactive #if code may still need the modifier's lexical unsafe context elsewhere.
             if (diagnostic.Properties.ContainsKey(UnsafeMemberMissingSafetyDocumentationAnalyzer.PointerSignatureProperty)
-                || diagnostic.Properties.ContainsKey(UnsafeMemberMissingSafetyDocumentationAnalyzer.RequiresExplicitSafetyModifierProperty))
+                || diagnostic.Properties.ContainsKey(UnsafeMemberMissingSafetyDocumentationAnalyzer.RequiresExplicitSafetyModifierProperty)
+                || diagnostic.Properties.ContainsKey(UnsafeMemberMissingSafetyDocumentationAnalyzer.ContainsInactiveUnsafeCodeProperty))
             {
                 return;
             }

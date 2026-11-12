@@ -1036,7 +1036,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(NormalizePathSeparators(linkName), new FileInfo(Path.Combine(destDir, "a", "link")).LinkTarget);
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks), nameof(MountHelper.CanCreateHardLinks))]
         public void ExtractToDirectory_HardlinkToSymlink_DoesNotEscape()
         {
             // entries:
@@ -1064,7 +1064,8 @@ namespace System.Formats.Tar.Tests
             stream.Seek(0, SeekOrigin.Begin);
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(stream, destDir, overwriteFiles: true));
-            Assert.False(File.Exists(Path.Combine(destDir, "d")), "File should not have been created outside destination.");
+            Assert.False(File.Exists(Path.Combine(root.Path, "d")), "File should not have been created outside destination.");
+            Assert.False(File.Exists(Path.Combine(destDir, "d")), "File should not have been created through the hardlink.");
         }
     }
 }

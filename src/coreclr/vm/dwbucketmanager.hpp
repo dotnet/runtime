@@ -545,12 +545,13 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
         // Get the assembly name, and determine its length, including terminating NULL.
         Assembly* pAssembly = pModule->GetAssembly();
         LPCUTF8 utf8AssemblyName = pAssembly->GetSimpleName();
-        const int assemblyNameLength = MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, NULL, 0);
+        const size_t utf8AssemblyNameLength = strlen(utf8AssemblyName) + 1;
+        const size_t assemblyNameLength = minipal_get_length_utf8_to_utf16(utf8AssemblyName, utf8AssemblyNameLength, 0);
 
         // Allocate a buffer and convert assembly name - multi-module assemblies are no longer supported.
-        int fullNameLength = assemblyNameLength;
+        size_t fullNameLength = assemblyNameLength;
         WCHAR *fullName = reinterpret_cast< WCHAR* >(_alloca(sizeof(WCHAR)*(fullNameLength)));
-        MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, fullNameLength);
+        minipal_convert_utf8_to_utf16(utf8AssemblyName, utf8AssemblyNameLength, (CHAR16_T*)fullName, fullNameLength, 0);
 
         if (!failed)
         {

@@ -22,90 +22,53 @@
     IMPORT g_write_watch_table
 #endif
 
+    IMPORT g_TrapReturningThreads
+#define G_TRAP_THREADS g_TrapReturningThreads
+
+    IMPORT g_pPollGC
+
     IMPORT RhpGcAlloc
     IMPORT RhExceptionHandling_FailedAllocation
 
-;;-----------------------------------------------------------------------------
-;; Macro for loading a 64-bit constant by a minimal number of instructions
-;; Since the asssembles doesn't support 64 bit arithmetics in expressions,
-;; the value is passed in as lo, hi pair.
     MACRO
-        MOVL64 $Reg, $ConstantLo, $ConstantHi
+        TAILCALL_GC_POLL_RARE
 
-        LCLS MovInstr
-MovInstr SETS "movz"
-
-         IF ((($ConstantHi):SHR:16):AND:0xffff) != 0
-         $MovInstr $Reg, #((($Constant):SHR:16):AND:0xffff), lsl #48
-MovInstr SETS "movk"
-         ENDIF
-
-         IF (($ConstantHi):AND:0xffff) != 0
-         $MovInstr $Reg, #(($ConstantHi):AND:0xffff), lsl #32
-MovInstr SETS "movk"
-         ENDIF
-
-        IF ((($ConstantLo):SHR:16):AND:0xffff) != 0
-        $MovInstr $Reg, #((($ConstantLo):SHR:16):AND:0xffff), lsl #16
-MovInstr SETS "movk"
-        ENDIF
-
-        $MovInstr $Reg, #(($ConstantLo):AND:0xffff)
+        ldr     x9, =g_pPollGC
+        ldr     x9, [x9]
+        br      x9
     MEND
 
-;;-----------------------------------------------------------------------------
-;; Macro for loading a 64bit value of a global variable into a register
+;; CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+;; $reg is the register number: 19-28 for x19-x28, which are followed by fp (29) in the CONTEXT.
     MACRO
-        PREPARE_EXTERNAL_VAR_INDIRECT $Name, $Reg
+        LOAD_FUNCLET_REGISTER $base, $reg, $scratch
 
-        adrp $Reg, $Name
-        ldr  $Reg, [$Reg, $Name]
+        ldr     x$reg, [$base, #(OFFSETOF__CONTEXT__X19 + ($reg - 19) * 8)]
     MEND
 
-;; ---------------------------------------------------------------------------- -
-;; Macro for loading a 32bit value of a global variable into a register
     MACRO
-        PREPARE_EXTERNAL_VAR_INDIRECT_W $Name, $RegNum
+        LOAD_FUNCLET_FP_REGISTER $base, $index
 
-        adrp x$RegNum, $Name
-        ldr  w$RegNum, [x$RegNum, $Name]
-    MEND
-
-;; ---------------------------------------------------------------------------- -
-;;
-;; Macro to add a memory barrier. Equal to __sync_synchronize().
-;;
-
-    MACRO
-        InterlockedOperationBarrier
-
-        dmb         ish
+        ldr     d$index, [$base, #(OFFSETOF__CONTEXT__V + $index * 16)]
     MEND
 
 #else
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
 
-.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
-#if defined(__APPLE__)
-        adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
-        ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
-        ldr  \HelperReg, [\HelperReg]
-#else
-        adrp \HelperReg, C_FUNC(\Name)
-        ldr  \HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
-#endif
+.macro TAILCALL_GC_POLL_RARE
+        PREPARE_EXTERNAL_VAR_INDIRECT g_pPollGC, x9
+        br      x9
 .endm
 
-.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
-#if defined(__APPLE__)
-        adrp x\HelperReg, C_FUNC(\Name)@GOTPAGE
-        ldr  x\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
-        ldr  w\HelperReg, [x\HelperReg]
-#else
-        adrp x\HelperReg, C_FUNC(\Name)
-        ldr  w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
-#endif
+// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+// reg is the register number: 19-28 for x19-x28, which are followed by fp (29) in the CONTEXT.
+.macro LOAD_FUNCLET_REGISTER base, reg, scratch
+        ldr     x\reg, [\base, #(OFFSETOF__CONTEXT__X19 + (\reg - 19) * 8)]
+.endm
+
+.macro LOAD_FUNCLET_FP_REGISTER base, index
+        ldr     d\index, [\base, #(OFFSETOF__CONTEXT__V + \index * 16)]
 .endm
 
 #endif

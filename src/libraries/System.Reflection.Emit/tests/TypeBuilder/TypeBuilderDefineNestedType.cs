@@ -254,5 +254,24 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             Assert.Throws<NotSupportedException>(() => type.AsType().GetNestedTypes(Helpers.AllFlags));
         }
+
+        [Fact]
+        public void NestedTypeNotCreated_UsedByCreatedType_ThrowsWithHelpfulMessage()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            TypeBuilder nestedType = type.DefineNestedType("NestedType", TypeAttributes.NestedPublic);
+            ConstructorBuilder constructor = nestedType.DefineDefaultConstructor(MethodAttributes.Public);
+
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(object), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Newobj, constructor);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => createdType.GetMethod("Method").Invoke(null, null));
+            TypeLoadException typeLoadException = Assert.IsType<TypeLoadException>(ex.InnerException);
+            Assert.Contains("CreateType", typeLoadException.Message);
+        }
     }
 }

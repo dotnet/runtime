@@ -7,9 +7,16 @@
 #include "stresslog.h"
 #include "clrhost.h"
 #include "ex.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 #include "minipal/time.h"
+
+#if defined(MEMORY_MAPPED_STRESSLOG) && !defined(HOST_WINDOWS)
+#include <dn-stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -185,6 +192,9 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     WCHAR logFilenameReplaced[MAX_PATH];
     ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
+    size_t fileSize = maxBytesTotal;
+
+#ifdef HOST_WINDOWS
     HandleHolder hFile{ WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
@@ -198,7 +208,6 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
         return nullptr;
     }
 
-    size_t fileSize = maxBytesTotal;
     HandleHolder hMap{ CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL) };
     if (hMap == NULL)
     {
@@ -206,6 +215,26 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     }
 
     return MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
+#else // HOST_WINDOWS
+    FILE* stream;
+    if (u16_fopen_s(&stream, logFilenameReplaced, W("w+b")) != 0)
+    {
+        return nullptr;
+    }
+
+    void* address = nullptr;
+    if (ftruncate(fileno(stream), (off_t)fileSize) == 0)
+    {
+        address = mmap(nullptr, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(stream), 0);
+        if (address == MAP_FAILED)
+        {
+            address = nullptr;
+        }
+    }
+
+    fclose(stream);
+    return address;
+#endif // HOST_WINDOWS
 }
 #endif //MEMORY_MAPPED_STRESSLOG
 

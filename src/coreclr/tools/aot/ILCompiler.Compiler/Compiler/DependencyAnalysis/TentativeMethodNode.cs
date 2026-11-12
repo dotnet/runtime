@@ -49,8 +49,8 @@ namespace ILCompiler.DependencyAnalysis
             return _methodNode.Marked;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;

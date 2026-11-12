@@ -10,6 +10,32 @@ namespace System.Threading
     /// </summary>
     internal static class TimeoutHelper
     {
+#if !FEATURE_MULTITHREADING
+        internal static void WaitForTimeout(long millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            Debug.Assert(millisecondsTimeout >= Timeout.Infinite);
+
+            if (millisecondsTimeout == Timeout.Infinite)
+            {
+                throw new PlatformNotSupportedException();
+            }
+            if (millisecondsTimeout == 0)
+            {
+                return;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            do
+            {
+                int sleepMilliseconds = (int)Math.Min(millisecondsTimeout, int.MaxValue);
+                Thread.Sleep(sleepMilliseconds);
+                cancellationToken.ThrowIfCancellationRequested();
+                millisecondsTimeout -= sleepMilliseconds;
+            }
+            while (millisecondsTimeout != 0);
+        }
+#endif
+
         /// <summary>
         /// Helper function to measure and update the elapsed time
         /// </summary>

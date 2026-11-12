@@ -910,6 +910,34 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task DefaultProxy_DoesNotKeepExecutionContextAlive()
+        {
+            await RemoteExecutor.Invoke(() =>
+            {
+                Environment.SetEnvironmentVariable("HTTP_PROXY", null);
+                Environment.SetEnvironmentVariable("HTTPS_PROXY", null);
+                Environment.SetEnvironmentVariable("ALL_PROXY", null);
+
+                WeakReference contextValue = InitializeDefaultProxy();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                Assert.False(contextValue.IsAlive);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static WeakReference InitializeDefaultProxy()
+                {
+                    var local = new AsyncLocal<object> { Value = new object() };
+                    var contextValue = new WeakReference(local.Value);
+                    Assert.NotNull(HttpClient.DefaultProxy);
+                    local.Value = null;
+                    return contextValue;
+                }
+            }).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task DefaultProxy_SetGet_Roundtrips()
         {
             await RemoteExecutor.Invoke(() =>

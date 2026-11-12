@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using Antlr4.Runtime;
-using LabelHandle = ILAssembler.MethodBodyWriter.Label;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {
@@ -201,7 +203,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        string value = MemoryMarshal.Cast<byte, char>(bytes.AsSpan()).ToString();
+        string value = ReadUtf16String(bytes.AsSpan());
         instruction.Method.Definition.MethodBody.LoadString(_metadataBuilder.GetOrAddUserString(value));
     }
 
@@ -225,7 +227,26 @@ internal sealed partial class GrammarActions
 
         Span<byte> utf8Bytes = new byte[byteCount];
         Encoding.UTF8.GetBytes(value, utf8Bytes);
-        EmitStringInstruction(opcodeToken, new string(MemoryMarshal.Cast<byte, char>(utf8Bytes)));
+        string text = ReadUtf16String(utf8Bytes);
+        EmitStringInstruction(opcodeToken, text);
+    }
+
+    private static string ReadUtf16String(ReadOnlySpan<byte> bytes)
+    {
+        ReadOnlySpan<char> chars = MemoryMarshal.Cast<byte, char>(bytes);
+        if (!BitConverter.IsLittleEndian)
+        {
+            // IL string bytes are little-endian, regardless of the assembler's host.
+            char[] swapped = chars.ToArray();
+            for (int i = 0; i < swapped.Length; i++)
+            {
+                swapped[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)swapped[i]);
+            }
+
+            chars = swapped;
+        }
+
+        return chars.ToString();
     }
 
     internal void EmitRawTokenInstruction(IToken opcodeToken, IToken valueToken)
@@ -252,12 +273,31 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void SetEntryPoint()
+    internal void SetEntryPoint(IToken directiveToken)
     {
-        if (_currentMethod is not null)
+        if (_currentMethod is null)
         {
-            _entityRegistry.EntryPoint = _currentMethod.Definition;
+            return;
         }
+
+        if (_entityRegistry.EntryPoint is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateEntryPoint,
+                DiagnosticMessageTemplates.DuplicateEntryPoint,
+                directiveToken);
+            return;
+        }
+
+        if (!_currentMethod.Definition.MethodAttributes.HasFlag(MethodAttributes.Static))
+        {
+            ReportError(
+                DiagnosticIds.InstanceEntryPoint,
+                DiagnosticMessageTemplates.InstanceEntryPoint,
+                directiveToken);
+        }
+
+        _entityRegistry.EntryPoint = _currentMethod.Definition;
     }
 
     internal void SetZeroInit()

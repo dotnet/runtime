@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
@@ -108,6 +108,20 @@ internal sealed partial class GrammarActions
                     header.Name),
                 location);
             return;
+        }
+
+        // ECMA-335 II.22.14 forbids duplicate top-level ExportedType full names.
+        if (implementation is not EntityRegistry.ExportedTypeEntity &&
+            _entityRegistry.FindExportedType(null, typeNamespace, name) is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateExportedType,
+                string.Format(DiagnosticMessageTemplates.DuplicateExportedType, header.Name),
+                location);
+            if (!_options.ErrorTolerant)
+            {
+                return;
+            }
         }
 
         EntityRegistry.ExportedTypeEntity exportedType =
