@@ -178,9 +178,12 @@ namespace ILCompiler.DependencyAnalysis
                     isPrecodeImportRequired: false,
                     isJumpableImportRequired: false);
 
+                // The runtime reads a GCRefMap before the fixup to avoid loading the target's signature layouts.
+                bool emitGCRefMap = !_codegenNodeFactory.Target.IsWasm && DelegateCtorSignature.CanEmitGCRefMap(ctorKey.Method);
+
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
-                    _codegenNodeFactory.HelperImports,
+                    emitGCRefMap ? _codegenNodeFactory.DelegateCtorImports : _codegenNodeFactory.HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper_ObjObj,
                     new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method));
             });

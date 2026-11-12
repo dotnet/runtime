@@ -463,8 +463,11 @@ public class R2RTestSuites
             int multiByteMapCount = 0;
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
-                bool hasMaps = section.Type == ReadyToRunImportSectionType.StubDispatch;
-                Assert.Equal(hasMaps, (section.Flags & ReadyToRunImportSectionFlags.GCRefMap) != 0);
+                bool hasMaps = (section.Flags & ReadyToRunImportSectionFlags.GCRefMap) != 0;
+                if (section.Type == ReadyToRunImportSectionType.StubDispatch)
+                    Assert.True(hasMaps);
+                else if ((section.Flags & ReadyToRunImportSectionFlags.PCode) == 0)
+                    Assert.False(hasMaps);
                 Assert.Equal(0, section.AuxiliaryDataRVA);
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
                 {
@@ -492,6 +495,72 @@ public class R2RTestSuites
             }
             Assert.True(mapCount > 0);
             Assert.True(multiByteMapCount > 0);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void DelegateCtorMapsCheckSignatureLayouts()
+    {
+        CompiledAssembly dependency = new()
+        {
+            AssemblyName = "DelegateLayoutDependency",
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(DelegateCtorMapsCheckSignatureLayouts),
+            SourceResourceNames = ["DelegateCtor/LayoutChecks.cs"],
+            References = [dependency],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(DelegateCtorMapsCheckSignatureLayouts),
+            [
+                new(nameof(DelegateCtorMapsCheckSignatureLayouts),
+                    [new CrossgenAssembly(input), new CrossgenAssembly(dependency) { Kind = Crossgen2InputKind.Reference }])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            SignatureFormattingOptions formatting = new();
+            foreach ((string name, bool needsCheck) in new[]
+            {
+                ("CreateParameter", true),
+                ("CreateReturn", true),
+                ("CreateByRef", false),
+            })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                IEnumerable<FixupCell> checks = (method.Fixups ?? Array.Empty<FixupCell>())
+                    .Where(fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout &&
+                        fixup.Signature.ToString(formatting).Contains("Webcil.WasmDelegateResult", StringComparison.Ordinal));
+                if (needsCheck)
+                    Assert.Single(checks);
+                else
+                    Assert.Empty(checks);
+            }
+
+            List<ReadyToRunImportSection.ImportSectionEntry> entries = reader.ImportSections
+                .SelectMany(section => section.Entries)
+                .ToList();
+            foreach (string target in new[] { "ParameterTarget", "ReturnTarget", "ByRefTarget" })
+            {
+                ReadyToRunImportSection.ImportSectionEntry entry = Assert.Single(entries, entry =>
+                    entry.Signature.FixupKind == ReadyToRunFixupKind.DelegateCtor &&
+                    entry.Signature.ToString(formatting).Contains(target, StringComparison.Ordinal));
+                Assert.True(entry.GCRefMapSize > 0);
+            }
+
+            ReadyToRunImportSection.ImportSectionEntry genericTarget = Assert.Single(entries, entry =>
+                entry.Signature.FixupKind == ReadyToRunFixupKind.DelegateCtor &&
+                entry.Signature.ToString(formatting).Contains("GenericTarget", StringComparison.Ordinal));
+            Assert.Equal(0, genericTarget.GCRefMapSize);
+            Assert.Null(genericTarget.GCRefMap);
         }
     }
 
