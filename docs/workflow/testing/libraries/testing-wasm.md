@@ -113,7 +113,7 @@ dotnet.withApplicationEnvironment("Development");
 await import("./test-main.mjs");
 ```
 
-Use a dynamic import for the shared runner so the custom configuration executes first. Functional tests (`IsFunctionalTest=true`) continue to provide their own HTML entry point.
+Use a dynamic import for the shared runner so the custom configuration executes first. On case-insensitive file systems, the custom filename must differ from `test-main.mjs` by more than case. Functional tests (`IsFunctionalTest=true`) continue to provide their own HTML entry point.
 
 ### Passing arguments to xharness
 

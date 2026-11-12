@@ -4,6 +4,10 @@
 [[SetCommands]]
 [[SetCommandsEcho]]
 
+if [[ -n "$WASM_MAIN_JS" ]]; then
+	printf -v MAIN_JS -- '--js-file=%b' "${WASM_MAIN_JS//%/\\x}"
+fi
+
 export PATH="$HOME/.jsvu/bin:$PATH"
 
 EXECUTION_DIR=$(dirname $0)
@@ -64,8 +68,14 @@ else
 	fi
 fi
 
+XHARNESS_MAIN_JS_ARG=
 if [[ -z "$XHARNESS_ARGS" ]]; then
-	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $BROWSER_PATH $MAIN_JS"
+	if [[ -n "$WASM_MAIN_JS" ]]; then
+		XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $BROWSER_PATH"
+		XHARNESS_MAIN_JS_ARG="$MAIN_JS"
+	else
+		XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $BROWSER_PATH $MAIN_JS"
+	fi
 fi
 
 if [[ -n "$PREPEND_PATH" ]]; then

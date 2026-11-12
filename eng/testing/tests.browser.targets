@@ -117,10 +117,13 @@
 
   <Target Name="_GenerateWasmTestIndexHtml"
           BeforeTargets="AssignTargetPaths"
-          Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainJSPath)' != '' and $([System.IO.Path]::GetFileName('$(WasmMainJSPath)')) != 'test-main.mjs'">
+          Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainJSPath)' != '' and $([System.String]::CompareOrdinal($([System.IO.Path]::GetFileName('$(WasmMainJSPath)')), 'test-main.mjs')) != 0">
     <PropertyGroup>
       <_WasmTestIndexHtml>$(IntermediateOutputPath)wasm-test-index.html</_WasmTestIndexHtml>
       <_WasmTestMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmTestMainJSFileName>
+      <_WasmTestMainJSFullPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(WasmMainJSPath)'))</_WasmTestMainJSFullPath>
+      <_WasmTestMainJSDestination>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', 'wwwroot\$(_WasmTestMainJSFileName)'))</_WasmTestMainJSDestination>
+      <_WasmTestMainJSIntermediate>$(IntermediateOutputPath)wasm-test-entry\$(_WasmTestMainJSFileName)</_WasmTestMainJSIntermediate>
       <_WasmTestMainJSUrl>$([MSBuild]::Escape($([System.Uri]::EscapeDataString('$(_WasmTestMainJSFileName)'))))</_WasmTestMainJSUrl>
     </PropertyGroup>
     <ReadLinesFromFile File="$(MonoProjectRoot)browser\test-index.html">
@@ -130,11 +133,31 @@
                       Lines="@(_WasmTestIndexHtmlTemplate->Replace('test-main.mjs', '$(_WasmTestMainJSUrl)'))"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
+    <Error Condition="'$(_WasmTestMainJSFileName)' == 'test-main.mjs' and Exists('$(IntermediateOutputPath)WASM-TEST-INDEX.HTML')"
+           Text="WasmMainJSPath must not differ from test-main.mjs only by case on a case-insensitive file system." />
     <ItemGroup>
       <FileWrites Include="$(_WasmTestIndexHtml)" />
       <Content Remove="$(MonoProjectRoot)browser\test-index.html" />
       <Content Include="$(_WasmTestIndexHtml)" Link="wwwroot\index.html" CopyToOutputDirectory="Always" />
-      <Content Include="$(WasmMainJSPath)" Exclude="@(Content)" Link="wwwroot\$(_WasmTestMainJSFileName)" CopyToOutputDirectory="PreserveNewest" />
+      <Content Update="@(Content)"
+               Condition="'%(Content.FullPath)' == '$(_WasmTestMainJSFullPath)' and
+                          ('%(Content.Link)' == '' or '$([MSBuild]::NormalizePath(`$(MSBuildProjectDirectory)`, `%(Content.Link)`))' == '$(_WasmTestMainJSDestination)') and
+                          ('%(Content.TargetPath)' == '' or '$([MSBuild]::NormalizePath(`$(MSBuildProjectDirectory)`, `%(Content.TargetPath)`))' == '$(_WasmTestMainJSDestination)')"
+               Link="wwwroot\$(_WasmTestMainJSFileName)">
+        <CopyToOutputDirectory Condition="'%(Content.CopyToOutputDirectory)' == '' or '%(Content.CopyToOutputDirectory)' == 'Never'">PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <_WasmTestMainJSContent Include="@(Content)"
+                              Condition="'%(Content.FullPath)' == '$(_WasmTestMainJSFullPath)' and '%(Content.Link)' == 'wwwroot\$(_WasmTestMainJSFileName)' and
+                                         ('%(Content.TargetPath)' == '' or '$([MSBuild]::NormalizePath(`$(MSBuildProjectDirectory)`, `%(Content.TargetPath)`))' == '$(_WasmTestMainJSDestination)')" />
+      <_WasmTestMainJSExistingContent Include="@(Content)" Condition="'%(Content.FullPath)' == '$(_WasmTestMainJSFullPath)'" />
+      <_WasmTestMainJS Include="$(WasmMainJSPath)" Condition="'@(_WasmTestMainJSContent)' == '' and '@(_WasmTestMainJSExistingContent)' == ''" />
+      <_WasmTestMainJSCopy Include="$(WasmMainJSPath)" Condition="'@(_WasmTestMainJSContent)' == '' and '@(_WasmTestMainJSExistingContent)' != ''" />
+      <Content Include="@(_WasmTestMainJS)" Link="wwwroot\$(_WasmTestMainJSFileName)" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_WasmTestMainJSCopy)" DestinationFiles="$(_WasmTestMainJSIntermediate)" SkipUnchangedFiles="true" Condition="'@(_WasmTestMainJSCopy)' != ''" />
+    <ItemGroup Condition="'@(_WasmTestMainJSCopy)' != ''">
+      <FileWrites Include="$(_WasmTestMainJSIntermediate)" />
+      <Content Include="$(_WasmTestMainJSIntermediate)" Link="wwwroot\$(_WasmTestMainJSFileName)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
   </Target>
 
@@ -172,11 +195,17 @@
     Any settings in the project file could be replaced on Helix.
     See also eng\testing\WasmRunnerTemplate.sh
     -->
+  <PropertyGroup>
+    <_WasmScriptEquals Condition="'$(OS)' == 'Windows_NT'">^=</_WasmScriptEquals>
+    <_WasmScriptEquals Condition="'$(OS)' != 'Windows_NT'">=</_WasmScriptEquals>
+    <_WasmMainJSForScript Condition="'$(OS)' == 'Windows_NT'">$(_WasmMainJSFileName.Replace('%', '%%'))</_WasmMainJSForScript>
+    <_WasmMainJSForScript Condition="'$(OS)' != 'Windows_NT'">$([System.Uri]::EscapeDataString('$(_WasmMainJSFileName)'))</_WasmMainJSForScript>
+  </PropertyGroup>
   <ItemGroup>
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="$(EnvVarCommand) &quot;SCENARIO=$(Scenario)&quot;" />
-    <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="$(EnvVarCommand) &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
+    <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="$(EnvVarCommand) &quot;JS_ENGINE=--engine$(_WasmScriptEquals)$(JSEngine)&quot;" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="$(EnvVarCommand) &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
-    <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="$(EnvVarCommand) &quot;MAIN_JS=--js-file^=$(_WasmMainJSFileName)&quot;" />
+    <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="$(EnvVarCommand) &quot;WASM_MAIN_JS=$(_WasmMainJSForScript)&quot;" />
     <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
     <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="$(EnvVarCommand) DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
   </ItemGroup>
@@ -222,8 +251,8 @@
     -->
     <_AppArgs Condition="'$(WasmXHarnessMaxParallelThreads)' != ''">$(_AppArgs) -parallelThreads $(WasmXHarnessMaxParallelThreads)</_AppArgs>
     <!-- There are two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
-    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
-    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
+    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24{XHARNESS_MAIN_JS_ARG:+&quot;%24XHARNESS_MAIN_JS_ARG&quot;} %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
+    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %XHARNESS_MAIN_JS_ARG% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
@@ -421,16 +450,21 @@
 
     <PropertyGroup>
       <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2 -Wl,-O0 -Wl,--lto-O0</EmccLinkOptimizationFlag>
+      <_WasmMainJSFileNameForHelix>$([System.Uri]::EscapeDataString('$(WasmMainJSFileName)'))</_WasmMainJSFileNameForHelix>
     </PropertyGroup>
 
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)" TargetDir="publish" />
+      <_WasmExtraFilesToCopy Include="$(MonoProjectRoot)browser\test-main.mjs" TargetPath="test-main.mjs"
+                             Condition="'$(IsFunctionalTest)' != 'true' and $([System.String]::CompareOrdinal('$(WasmMainJSFileName)', 'test-main.mjs')) != 0" />
+      <_WasmExtraFilesToCopy Include="$(_WasmTestIndexHtml)" TargetPath="index.html" Condition="'$(_WasmTestIndexHtml)' != ''" />
 
       <_WasmPropertyNames Include="DisableParallelEmccCompile" />
       <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
       <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
       <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
       <_WasmPropertyNames Include="WasmIcuDataFileName" />
+      <_WasmPropertyNames Include="_WasmMainJSFileNameForHelix" />
     </ItemGroup>
   </Target>
 
