@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
@@ -1279,6 +1280,63 @@ public class R2RTestSuites
             Assert.Contains($"OPTIONS: compDbgInfo = {(stripDebugInfo ? "false" : "true")}", result.StandardOutput);
             Assert.Contains($"OPTIONS: compDbgCode = {(optimize ? "false" : "true")}", result.StandardOutput);
             Assert.Equal(!stripDebugInfo, result.StandardOutput.Contains("In genIPmappingGen()", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmRuntimeFunctionPaddingPreservesTableSlots(bool composite)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            StringBuilder source = new("public static class PaddingMethods { public static int Step(int value) => (value * 3) ^ (value >> 1);");
+            for (int method = 0; method < 4; method++)
+            {
+                source.Append($"public static int M{method}(int value) {{");
+                // Disjoint EH regions force a virtual-IP span that requires interior padding.
+                for (int statement = 0; statement < 64; statement++)
+                {
+                    source.Append("try { value = Step(value); } finally { value = Step(value); }");
+                }
+                source.Append("return value; }");
+            }
+            source.Append('}');
+
+            string input = Path.Combine(directory, "PaddingMethods.dll");
+            string output = Path.Combine(directory, "composite-r2r.wasm");
+            R2RTestCaseCompiler compiler = new([TestPaths.SystemPrivateCoreLibPath]);
+            compiler.CompileAssembly("PaddingMethods", [source.ToString()], input);
+            List<string> args =
+            [
+                input, "-r", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture,
+                "--out", output, "--optimize-disabled",
+            ];
+            if (composite)
+            {
+                args.Add("--composite");
+            }
+
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardError + result.StandardOutput);
+            ReadyToRunReader reader = new(new SimpleAssemblyResolver([TestPaths.SystemPrivateCoreLibPath, input]), output);
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader)
+                .Where(method => method.Name.StartsWith("M", StringComparison.Ordinal))
+                .ToList();
+            Assert.Equal(4, methods.Count);
+            int[] ordinals = methods.SelectMany(method => method.RuntimeFunctions)
+                .Select(function => function.Id)
+                .Order()
+                .ToArray();
+            Assert.Contains(Enumerable.Range(1, ordinals.Length - 1), index => ordinals[index] > ordinals[index - 1] + 1);
+            WasmR2RAssert.AssertRuntimeFunctionGroups(reader);
         }
         finally
         {
