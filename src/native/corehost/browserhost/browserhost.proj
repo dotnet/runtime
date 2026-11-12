@@ -31,6 +31,13 @@
     <EmccStackSize>$(BrowserHostStackSize)</EmccStackSize>
   </PropertyGroup>
 
+  <ItemGroup>
+    <NativeFileReference Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_gen_production_static.a"
+                         Condition="'$(BrowserHostNativeFlavor)' == 'production'" />
+    <NativeFileReference Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_gen_diagnostics_static.a"
+                         Condition="'$(BrowserHostNativeFlavor)' == 'diagnostics'" />
+  </ItemGroup>
+
   <Target Name="BuildBrowserHostManagedFlavor">
     <MSBuild Projects="$(LibrariesProjectRoot)sfx-finish.proj"
              Targets="TrimSharedFrameworkAssemblies"
@@ -50,7 +57,6 @@
       <_BrowserHostNativeFile Include="@(RuntimeFiles->WithMetadataValue('IsNative', 'true'));@(LibrariesRuntimeFiles->WithMetadataValue('IsNative', 'true'))"
                               Exclude="$(LibrariesSharedFrameworkDir)dotnet.native.js;$(LibrariesSharedFrameworkDir)native-flavors\**\*"
                               Condition="'%(Extension)' == '.a' or '%(Extension)' == '.js'" />
-      <WasmAssembliesToBundle Include="$(BrowserHostManagedFlavorDir)*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(_BrowserHostNativeFile->Distinct())"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)"
@@ -66,9 +72,6 @@
                             AcquireEmscriptenSdk;
                             _CoreCLRSetupEmscripten;
                             _CoreCLRPrepareForNativeBuild;
-                            _CoreCLRGenerateManagedToNative;
-                            _CoreCLRWriteCompileRsp;
-                            _CoreCLRCompileNativeSources;
                             _CoreCLRWriteLinkRsp;
                             _CoreCLRLinkNative;
                             _CoreCLRCompleteNativeBuild" />

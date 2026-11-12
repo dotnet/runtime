@@ -199,6 +199,18 @@ if (TARGET cee_wks_gen)
         $<TARGET_OBJECTS:cee_wks_gen>
     )
 endif()
+if (TARGET cee_wks_gen_production)
+    add_library_clr(coreclr_gen_production_static
+        STATIC
+        $<TARGET_OBJECTS:cee_wks_gen_production>
+    )
+endif()
+if (TARGET cee_wks_gen_diagnostics)
+    add_library_clr(coreclr_gen_diagnostics_static
+        STATIC
+        $<TARGET_OBJECTS:cee_wks_gen_diagnostics>
+    )
+endif()
 
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
@@ -281,12 +293,24 @@ else()
     if (TARGET coreclr_gen_static)
         install_clr(TARGETS coreclr_gen_static DESTINATIONS . sharedFramework COMPONENT runtime)
     endif()
+    if (TARGET coreclr_gen_production_static)
+        install_clr(TARGETS coreclr_gen_production_static DESTINATIONS . sharedFramework COMPONENT runtime)
+    endif()
+    if (TARGET coreclr_gen_diagnostics_static)
+        install_clr(TARGETS coreclr_gen_diagnostics_static DESTINATIONS . sharedFramework COMPONENT runtime)
+    endif()
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr_static DESTINATIONS . COMPONENT runtime)
     if (TARGET coreclr_gen_static)
         install_clr(TARGETS coreclr_gen_static DESTINATIONS . COMPONENT runtime)
+    endif()
+    if (TARGET coreclr_gen_production_static)
+        install_clr(TARGETS coreclr_gen_production_static DESTINATIONS . COMPONENT runtime)
+    endif()
+    if (TARGET coreclr_gen_diagnostics_static)
+        install_clr(TARGETS coreclr_gen_diagnostics_static DESTINATIONS . COMPONENT runtime)
     endif()
 endif(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
 
