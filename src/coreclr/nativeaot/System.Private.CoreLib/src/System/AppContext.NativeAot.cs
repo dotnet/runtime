@@ -31,11 +31,21 @@ namespace System
             return dataStore;
         }
 
-        internal static unsafe void SetFirstChanceExceptionHandler() =>
-            ExceptionCallbacks.s_firstChanceException = &OnFirstChanceExceptionCore;
+        static partial void SetFirstChanceExceptionHandler()
+        {
+            unsafe
+            {
+                ExceptionCallbacks.s_firstChanceException = &OnFirstChanceExceptionCore;
+            }
+        }
 
-        internal static unsafe void SetUnhandledExceptionHandler() =>
-            ExceptionCallbacks.s_unhandledException = &OnUnhandledExceptionCore;
+        static partial void SetUnhandledExceptionHandler()
+        {
+            unsafe
+            {
+                ExceptionCallbacks.s_unhandledException = &OnUnhandledExceptionCore;
+            }
+        }
 
         [RuntimeExport("OnFirstChanceException")]
         internal static unsafe void OnFirstChanceException(object e)

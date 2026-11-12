@@ -52,12 +52,8 @@ namespace System
 
         public event UnhandledExceptionEventHandler? UnhandledException
         {
-            add
-            {
-                AppContext.UnhandledException += value;
-                SetUnhandledExceptionHandler();
-            }
-            remove { AppContext.UnhandledException -= value; }
+            add => AppContext.UnhandledException += value;
+            remove => AppContext.UnhandledException -= value;
         }
 
         public string? DynamicDirectory => null;
@@ -84,19 +80,9 @@ namespace System
 
         public event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException
         {
-            add
-            {
-                AppContext.FirstChanceException += value;
-                // Once a handler is added, the runtime will attempt
-                // to deliver first chance notifications for all exceptions.
-                // We don't care if handlers are removed.
-                SetFirstChanceExceptionHandler();
-            }
-            remove { AppContext.FirstChanceException -= value; }
+            add => AppContext.FirstChanceException += value;
+            remove => AppContext.FirstChanceException -= value;
         }
-
-        static partial void SetFirstChanceExceptionHandler();
-        static partial void SetUnhandledExceptionHandler();
 
         public event EventHandler? ProcessExit;
 

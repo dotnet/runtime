@@ -66,7 +66,7 @@ namespace System
             }
         }
 
-        internal static void SetFirstChanceExceptionHandler()
+        static partial void SetFirstChanceExceptionHandler()
             => SetFirstChanceExceptionHandlerInternal();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_SetFirstChanceExceptionHandler")]
