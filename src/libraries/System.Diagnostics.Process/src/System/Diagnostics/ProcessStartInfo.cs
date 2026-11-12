@@ -105,6 +105,11 @@ namespace System.Diagnostics
         /// so variables stored in the user's profile (for example, user-specific variables from the <c>HKEY_CURRENT_USER\Environment</c>
         /// registry key) might be missing, even when <see cref="LoadUserProfile"/> is <see langword="true"/>.
         /// </para>
+        /// <para>
+        /// On Windows, changing <see cref="UserName"/>, <see cref="Domain"/>, or <see cref="UseCredentialsForNetworkingOnly"/>
+        /// after accessing this property throws an <see cref="InvalidOperationException"/> if the change would cause the process
+        /// to use a different user's environment variables.
+        /// </para>
         /// </remarks>
         public IDictionary<string, string?> Environment
         {
@@ -391,10 +396,14 @@ namespace System.Diagnostics
             get => _userName ?? string.Empty;
             set
             {
-                _userName = value;
 #if TARGET_WINDOWS
+                ThrowIfEnvironmentWasAccessed(
+                    nameof(UserName),
+                    !UseCredentialsForNetworkingOnly &&
+                    !string.Equals(value ?? string.Empty, _userName ?? string.Empty, StringComparison.Ordinal));
                 s_getUserEnvironmentVariables ??= static startInfo => startInfo.GetUserEnvironmentVariables();
 #endif
+                _userName = value;
             }
         }
 

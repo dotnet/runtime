@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Security;
@@ -87,6 +88,14 @@ namespace System.Diagnostics.Tests
             };
 
             Assert.Equal(domainAndUserName[1], startInfo.Environment["USERNAME"]);
+
+            startInfo.UserName = domainAndUserName[1];
+            startInfo.Domain = domainAndUserName[0];
+            startInfo.UseCredentialsForNetworkingOnly = false;
+
+            Assert.Throws<InvalidOperationException>(() => startInfo.UserName = "another-user");
+            Assert.Throws<InvalidOperationException>(() => startInfo.Domain = "another-domain");
+            Assert.Throws<InvalidOperationException>(() => startInfo.UseCredentialsForNetworkingOnly = true);
         }
 
         [Fact]
@@ -100,6 +109,48 @@ namespace System.Diagnostics.Tests
             };
 
             Assert.Throws<Win32Exception>(() => startInfo.Environment);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Environment_Accessed_UserNameChanged_ThrowsInvalidOperationException(bool modifyEnvironment)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            IDictionary<string, string?> environment = startInfo.Environment;
+            if (modifyEnvironment)
+            {
+                environment["TestVariable"] = "value";
+            }
+
+            startInfo.Domain = string.Empty;
+
+            Assert.Throws<InvalidOperationException>(() => startInfo.UserName = "user");
+            Assert.Equal(string.Empty, startInfo.UserName);
+            Assert.Equal(string.Empty, startInfo.Domain);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Environment_Accessed_WithNetworkOnlyCredentials_UserNameAndDomainCanChange(bool modifyEnvironment)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            IDictionary<string, string?> environment = startInfo.Environment;
+            if (modifyEnvironment)
+            {
+                environment["TestVariable"] = "value";
+            }
+
+            startInfo.UseCredentialsForNetworkingOnly = true;
+            startInfo.UserName = "user";
+            startInfo.Domain = "domain";
+
+            Assert.True(startInfo.UseCredentialsForNetworkingOnly);
+            Assert.Equal("user", startInfo.UserName);
+            Assert.Equal("domain", startInfo.Domain);
         }
 
         [ConditionalTheory(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]

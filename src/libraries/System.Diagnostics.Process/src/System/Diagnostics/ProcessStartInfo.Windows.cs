@@ -26,7 +26,15 @@ namespace System.Diagnostics
         public string Domain
         {
             get => _domain ?? string.Empty;
-            set => _domain = value;
+            set
+            {
+                ThrowIfEnvironmentWasAccessed(
+                    nameof(Domain),
+                    !string.IsNullOrEmpty(UserName) &&
+                    !UseCredentialsForNetworkingOnly &&
+                    !string.Equals(value ?? string.Empty, _domain ?? string.Empty, StringComparison.Ordinal));
+                _domain = value;
+            }
         }
 
         [SupportedOSPlatform("windows")]
@@ -48,7 +56,17 @@ namespace System.Diagnostics
         /// the process can start, but it may not have access to network resources.</para>
         /// </remarks>
         [SupportedOSPlatform("windows")]
-        public bool UseCredentialsForNetworkingOnly { get; set; }
+        public bool UseCredentialsForNetworkingOnly
+        {
+            get;
+            set
+            {
+                ThrowIfEnvironmentWasAccessed(
+                    nameof(UseCredentialsForNetworkingOnly),
+                    !string.IsNullOrEmpty(UserName) && field != value);
+                field = value;
+            }
+        }
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
@@ -57,6 +75,14 @@ namespace System.Diagnostics
         // Assigned only by the UserName setter, so that apps which never set UserName
         // can trim the logon and environment block code (and its native dependencies).
         private static Func<ProcessStartInfo, IDictionary>? s_getUserEnvironmentVariables;
+
+        private void ThrowIfEnvironmentWasAccessed(string propertyName, bool changesEnvironment)
+        {
+            if (_environmentVariables is not null && changesEnvironment)
+            {
+                throw new InvalidOperationException(SR.Format(SR.EnvironmentAccessedCannotSet, propertyName));
+            }
+        }
 
         /// <summary>
         /// Returns the environment variables the started process gets by default.
