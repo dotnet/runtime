@@ -130,7 +130,7 @@ namespace System
         static partial void SetUnhandledExceptionHandler();
 
 #if NATIVEAOT
-        internal static void OnUnhandledExceptionCore(object e)
+        private static void OnUnhandledExceptionCore(object e)
 #else
         internal static void OnUnhandledException(object e)
 #endif

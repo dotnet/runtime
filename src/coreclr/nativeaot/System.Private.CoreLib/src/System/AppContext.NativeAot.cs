@@ -35,8 +35,10 @@ namespace System
         {
             unsafe
             {
-                ExceptionCallbacks.s_firstChanceException = &OnFirstChanceExceptionCore;
+                ExceptionCallbacks.s_firstChanceException = &Callback;
             }
+
+            static void Callback(object e) => OnFirstChanceException((Exception)e);
         }
 
         static partial void SetUnhandledExceptionHandler()
@@ -54,9 +56,6 @@ namespace System
             if (callback != null)
                 callback(e);
         }
-
-        private static void OnFirstChanceExceptionCore(object e)
-            => OnFirstChanceException((Exception)e);
 
         [RuntimeExport("OnUnhandledException")]
         internal static unsafe void OnUnhandledException(object e)
