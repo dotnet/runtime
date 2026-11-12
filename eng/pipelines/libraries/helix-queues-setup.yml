@@ -64,14 +64,14 @@ jobs:
         # CoreCLR path
           - ${{ if and(eq(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.testScope, 'outerloop'))}}:
             # extra-platforms CoreCLR (inner loop only)
-            - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:3bfd1af9f2c2fb0d5da149edb0ede44805eb8348bd6124d44a40335d6f191f76
+            - (AzureLinux.3.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:6e5fcb6c65ea19cb69384f9f9d13d83fb9866f52e676d7ac663b6ec40da8d7b3
             - (Debian.13.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64@sha256:25d4b08c547392bc78890e84773b6aff0fc20256b6928bab53a4a8ec4b461639
             - (Fedora.45.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-45-helix-amd64@sha256:c1ce0ffa6b8a437118bff749e8b3156e71b75711375456fc370d4d48244fecb0
             - (openSUSE.16.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64@sha256:01f08e9f7a556f5a486f94fa4f6390e90ec5700d2b44410b374f07d931f50f37
 
           - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               # outerloop only CoreCLR
-              - AzureLinux.3.Amd64.Open
+              - AzureLinux.4.Amd64.Open
 
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))}}:
               # inner and outer loop CoreCLR (general set)
@@ -79,7 +79,7 @@ jobs:
               - Ubuntu.2604.Amd64.Open
               # Additional distros on non-PR builds for broader coverage
               - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-                - (AzureLinux.3.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:6e5fcb6c65ea19cb69384f9f9d13d83fb9866f52e676d7ac663b6ec40da8d7b3
+                - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:3bfd1af9f2c2fb0d5da149edb0ede44805eb8348bd6124d44a40335d6f191f76
                 - (Centos.10.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64@sha256:18520a4b1439c3fa5f4d99cdd0979e5ab07c7c84692fc96eb3cb3dbff72d3cd6
 
     # OSX arm64
