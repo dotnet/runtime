@@ -3045,7 +3045,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     pThread->DecPreventAbort();
 
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
-    DWORD_PTR dwResumePC = 0;
+    UINT_PTR dwResumePC = 0;
     UINT_PTR callerTargetSp = 0;
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
@@ -3333,7 +3333,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 {
     QCALL_CONTRACT;
 
-    DWORD_PTR dwResult = 0;
+    UINT_PTR dwResult = 0;
 
     BEGIN_QCALL;
 

@@ -308,3 +308,113 @@ C_FUNC(\Name\()_End):
     ld.d  $ra, $sp, 8
     addi.d $sp, $sp, 16
 .endm
+
+//-----------------------------------------------------------------------------
+// Define the prolog for a TransitionBlock-based method. This macro should be called first in the method and
+// comprises the entire prolog.The locals must be 8 byte aligned
+//
+// Save_argument_registers:
+//            GPR_a7
+//            GPR_a6
+//            GPR_a5
+//            GPR_a4
+//            GPR_a3
+//            GPR_a2
+//            GPR_a1
+//            GPR_a0
+//
+// General Registers:
+//            GPR_s8
+//            GPR_s7
+//            GPR_s6
+//            GPR_s5
+//            GPR_s4
+//            GPR_s3
+//            GPR_s2
+//            GPR_s1
+//            GPR_s0
+//            GPR_ra
+//            GPR_fp
+//
+// Float Point:
+//            FPR_f31 / fs7
+//            FPR_f30 / fs6
+//            FPR_f29 / fs5
+//            FPR_f28 / fs4
+//            FPR_f27 / fs3
+//            FPR_f26 / fs2
+//            FPR_f25 / fs1
+//            FPR_f24 / fs0
+// Extra:
+//
+.macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1
+
+        __PWTB_SaveFPArgs = \SaveFPRegs
+
+        __PWTB_FloatArgumentRegisters = \extraLocals
+
+        .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
+            __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+        .endif
+
+        __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
+
+        .if (__PWTB_SaveFPArgs == 1)
+            __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
+        .endif
+
+
+        __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
+        __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 96
+
+        // Including fp, ra, s0-s8, padding, and (a0-a7)arguments. (1+1+9+1)*8 + 8*8.
+        __PWTB_StackAlloc = __PWTB_TransitionBlock + 96 + 64
+        PROLOG_STACK_ALLOC __PWTB_StackAlloc
+        //                   $fp,$ra
+        PROLOG_SAVE_REG_PAIR  22, 1, __PWTB_CalleeSavedRegisters, 1
+
+        // First, Spill argument registers.
+        SAVE_ARGUMENT_REGISTERS        $sp, __PWTB_ArgumentRegisters
+
+        // Then, Spill callee saved registers.  $sp=$r3.
+        SAVE_CALLEESAVED_REGISTERS     3, __PWTB_CalleeSavedRegisters
+
+        // saving is f12-19.
+        .if (__PWTB_SaveFPArgs == 1)
+            SAVE_FLOAT_ARGUMENT_REGISTERS $sp, __PWTB_FloatArgumentRegisters
+        .endif
+
+.endm
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        RESTORE_CALLEESAVED_REGISTERS 3, __PWTB_CalleeSavedRegisters
+
+        EPILOG_RESTORE_REG_PAIR 22, 1, __PWTB_CalleeSavedRegisters
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        jirl  $r0, $ra, 0
+
+.endm
+
+
+//-----------------------------------------------------------------------------
+// Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
+// Since this is a tail call argument registers are restored.
+//
+.macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        .if (__PWTB_SaveFPArgs == 1)
+            RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, __PWTB_FloatArgumentRegisters
+        .endif
+
+        RESTORE_CALLEESAVED_REGISTERS     3, __PWTB_CalleeSavedRegisters
+
+        RESTORE_ARGUMENT_REGISTERS        $sp, __PWTB_ArgumentRegisters
+
+        EPILOG_RESTORE_REG_PAIR 22, 1, __PWTB_CalleeSavedRegisters
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+.endm

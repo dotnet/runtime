@@ -114,14 +114,8 @@ LOCAL_LABEL(CacheMiss):
         EPILOG_POP  "{r3,r4,r5,r6,r8}"
         EPILOG_POP  "{r1,r2}"
 
-        // Push args for RhpUniversalTransitionTailCall:
-        // [sp+0] = extra arg (indirection cell), [sp+4] = target fn (RhpCidResolve)
-        PROLOG_STACK_ALLOC 8
-        str         r12, [sp, #0]
-        PREPARE_EXTERNAL_VAR RhpCidResolve, r12
-        str         r12, [sp, #4]
-
-        b           C_FUNC(RhpUniversalTransitionTailCall)
+        // r12 contains the indirection cell address
+        b           C_FUNC(RhpInterfaceDispatchSlow)
 
 NESTED_END RhpInterfaceDispatch, _TEXT
 

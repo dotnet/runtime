@@ -14,7 +14,7 @@
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
 
 //
-// Define tables of predictable distinguished values that RhpUniversalTransition can use to
+// Define tables of predictable distinguished values that RhpInterfaceDispatchSlow can use to
 // trash argument registers after they have been saved into the transition frame.
 //
 // Trashing these registers is a testability aid that makes it easier to detect bugs where

@@ -8,9 +8,8 @@
 
 include AsmMacros.inc
 
-EXTERN RhpCidResolve : PROC
 EXTERN RhpCidResolve_Worker : PROC
-EXTERN _RhpUniversalTransitionTailCall@0 : PROC
+EXTERN _RhpInterfaceDispatchSlow@0 : PROC
 
 EXTERN _g_pDispatchCache : DWORD
 
@@ -130,14 +129,12 @@ ALTERNATE_ENTRY _RhpInterfaceDispatch
         pop     esi
         pop     ebx
 
-        ;; Setup call to Universal Transition thunk
+        ;; Setup call to RhpInterfaceDispatchSlow
         push    ebp
         mov     ebp, esp
-        push    eax
-        lea     eax, [RhpCidResolve]
-        push    eax
+        push    eax                     ;; interface dispatch cell
 
-        jmp     _RhpUniversalTransitionTailCall@0
+        jmp     _RhpInterfaceDispatchSlow@0
 
 FASTCALL_ENDFUNC
 

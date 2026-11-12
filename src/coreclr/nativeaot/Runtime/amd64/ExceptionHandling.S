@@ -44,29 +44,15 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
 
         END_PROLOGUE
 
-        mov     rbx, rdi
-        INLINE_GETTHREAD
-        mov     rdi, rbx
+        mov     ebx, edi                                             // ebx <- exception code
 
+        mov     rdi, rsp                                             // rdi <- ExInfo*
+        lea     rsi, [rsp + rsp_offsetof_Context]                    // rsi <- PAL_LIMITED_CONTEXT*
+        mov     edx, 2                                               // edx <- ExKind.HardwareFault
+        call    C_FUNC(RhpPushExInfo)
+
+        mov     edi, ebx                                             // edi <- exception code
         mov     rsi, rsp                                             // rsi <- ExInfo*
-
-        xor     rdx, rdx
-        mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx           // init the exception object to null
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1   // init to the first pass
-        mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], 2         // ExKind.HardwareFault
-
-        // link the ExInfo into the thread's ExInfo chain
-        mov     rdx, [rax + OFFSETOF__Thread__m_pExInfoStackHead]
-        mov     [rsi + OFFSETOF__ExInfo__m_pPrevExInfo], rdx         // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [rax + OFFSETOF__Thread__m_pExInfoStackHead], rsi    // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        lea     rdx, [rsp + rsp_offsetof_Context]                    // rdx <- PAL_LIMITED_CONTEXT*
-        mov     [rsi + OFFSETOF__ExInfo__m_pExContext], rdx          // init ExInfo.m_pExContext
-
-        // rdi still contains the exception code
-        // rsi contains the address of the ExInfo
         call    EXTERNAL_C_FUNC(RhThrowHwEx)
 
 ALTERNATE_ENTRY RhpThrowHwEx2
@@ -141,39 +127,15 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         END_PROLOGUE
 
-        mov     rbx, rdi
-        mov     r12, r8                                             // Save ExKind
-        INLINE_GETTHREAD
-        mov     rdi, rbx
+        mov     rbx, rdi                                            // rbx <- exception object
 
-        lea                     rbx, [rsp + rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8]    // rbx <- addr of return address
+        mov     rdi, rsp                                            // rdi <- ExInfo*
+        lea     rsi, [rsp + rsp_offsetof_Context]                   // rsi <- PAL_LIMITED_CONTEXT*
+        mov     edx, r8d                                            // edx <- ExKind
+        call    C_FUNC(RhpPushExInfo)
 
-        // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
-        // address could have been hijacked when we were in that C# code and we must remove the hijack and
-        // reflect the correct return address in our exception context record.  The other throw helpers don't
-        // need this because they cannot be tail-called from C#.
-        INLINE_THREAD_UNHIJACK  rax, rcx, rsi        // trashes RCX, RSI
-        mov                     rsi, [rbx]           // rdx <- return address
-        mov                     [rsp + rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP], rsi   // set 'faulting' IP after unhijack
-
+        mov     rdi, rbx                                            // rdi <- exception object
         mov     rsi, rsp                                            // rsi <- ExInfo*
-
-        mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx          // init the exception object to null
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1  // init to the first pass
-        mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], r12b     // ExKind
-
-        // link the ExInfo into the thread's ExInfo chain
-        mov     rdx, [rax + OFFSETOF__Thread__m_pExInfoStackHead]
-        mov     [rsi + OFFSETOF__ExInfo__m_pPrevExInfo], rdx        // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [rax + OFFSETOF__Thread__m_pExInfoStackHead], rsi   // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        lea     rdx, [rsp + rsp_offsetof_Context]                   // rdx <- PAL_LIMITED_CONTEXT*
-        mov     [rsi + OFFSETOF__ExInfo__m_pExContext], rdx         // init ExInfo.m_pExContext
-
-        // rdi still contains the exception object
-        // rsi contains the address of the ExInfo
         call    EXTERNAL_C_FUNC(RhThrowEx)
 
 ALTERNATE_ENTRY RhpThrowImpl2
@@ -224,27 +186,13 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
 
         END_PROLOGUE
 
-        INLINE_GETTHREAD
+        mov     rdi, rsp                                            // rdi <- ExInfo*
+        lea     rsi, [rsp + rsp_offsetof_Context]                   // rsi <- PAL_LIMITED_CONTEXT*
+        xor     edx, edx                                            // edx <- ExKind.None
+        call    C_FUNC(RhpPushExInfo)
 
+        mov     rdi, rax                                            // rdi <- currently active ExInfo
         mov     rsi, rsp                                            // rsi <- ExInfo*
-
-        mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx          // init the exception object to null
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1  // init to the first pass
-        mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], 0        // init to a deterministic value (ExKind.None)
-
-
-        // link the ExInfo into the thread's ExInfo chain
-        mov     rdi, [rax + OFFSETOF__Thread__m_pExInfoStackHead]   // rdi <- currently active ExInfo
-        mov     [rsi + OFFSETOF__ExInfo__m_pPrevExInfo], rdi        // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [rax + OFFSETOF__Thread__m_pExInfoStackHead], rsi   // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        lea     rdx, [rsp + rsp_offsetof_Context]                   // rdx <- PAL_LIMITED_CONTEXT*
-        mov     [rsi + OFFSETOF__ExInfo__m_pExContext], rdx         // init ExInfo.m_pExContext
-
-        // rdi contains the currently active ExInfo
-        // rsi contains the address of the new ExInfo
         call    EXTERNAL_C_FUNC(RhRethrow)
 
 ALTERNATE_ENTRY RhpRethrow2

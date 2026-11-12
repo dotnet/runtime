@@ -95,7 +95,7 @@ private:
     // If our control PC indicates that we're in the universal transition thunk that we use to generically
     // dispatch arbitrary managed calls, then handle the stack walk specially.
     // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
-    void UnwindUniversalTransitionThunk();
+    void UnwindInterfaceDispatchSlowThunk();
 
     void EnterInitialInvalidState(Thread * pThreadToWalk);
 
@@ -130,7 +130,7 @@ private:
         InThrowSiteThunk,
         InFuncletInvokeThunk,
         InFilterFuncletInvokeThunk,
-        InUniversalTransitionThunk,
+        InInterfaceDispatchSlowThunk,
     };
 
     static ReturnAddressCategory CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress);

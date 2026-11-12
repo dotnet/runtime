@@ -290,3 +290,115 @@ C_FUNC(\Name\()_End):
         .byte 0xFF
         .byte 0xE0
 .endm
+
+// Stack layout:
+//
+// (stack parameters)
+// ...
+// return address
+// CalleeSavedRegisters::rbp
+// CalleeSavedRegisters::rbx
+// CalleeSavedRegisters::r15
+// CalleeSavedRegisters::r14
+// CalleeSavedRegisters::r13
+// CalleeSavedRegisters::r12
+// ArgumentRegisters::r9
+// ArgumentRegisters::r8
+// ArgumentRegisters::rcx
+// ArgumentRegisters::rdx
+// ArgumentRegisters::rsi
+// ArgumentRegisters::rdi    <- __PWTB_StackAlloc, __PWTB_TransitionBlock
+// padding to align xmm save area
+// xmm7
+// xmm6
+// xmm5
+// xmm4
+// xmm3
+// xmm2
+// xmm1
+// xmm0                      <- __PWTB_FloatArgumentRegisters
+// extra locals + padding to qword align
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, stackAllocOnEntry = 0, stackAllocSpill1, stackAllocSpill2, stackAllocSpill3
+
+        set_cfa_register rsp, 8
+
+        __PWTB_FloatArgumentRegisters = \extraLocals
+
+        .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
+        __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+        .endif
+
+        __PWTB_StackAlloc = __PWTB_FloatArgumentRegisters + 8 * 16 + 8 // 8 floating point registers
+        __PWTB_TransitionBlock = __PWTB_StackAlloc
+        __PWTB_ArgumentRegisters = __PWTB_TransitionBlock
+
+        .if \stackAllocOnEntry >= 4*8
+        .error "Max supported stackAllocOnEntry is 3*8"
+        .endif
+
+        .if \stackAllocOnEntry > 0
+        .cfi_adjust_cfa_offset \stackAllocOnEntry
+        .endif
+
+        // PUSH_CALLEE_SAVED_REGISTERS expanded here
+
+        .if \stackAllocOnEntry < 8
+        push_nonvol_reg rbp
+        mov rbp, rsp
+        .endif
+
+        .if \stackAllocOnEntry < 2*8
+        push_nonvol_reg rbx
+        .endif
+
+        .if \stackAllocOnEntry < 3*8
+        push_nonvol_reg r15
+        .endif
+
+        push_nonvol_reg r14
+        push_nonvol_reg r13
+        push_nonvol_reg r12
+
+        // ArgumentRegisters
+        PUSH_ARGUMENT_REGISTERS
+
+        .if \stackAllocOnEntry >= 3*8
+        mov \stackAllocSpill3, [rsp + 0x48]
+        save_reg_postrsp    r15, 0x48
+        .endif
+
+        .if \stackAllocOnEntry >= 2*8
+        mov \stackAllocSpill2, [rsp + 0x50]
+        save_reg_postrsp    rbx, 0x50
+        .endif
+
+        .if \stackAllocOnEntry >= 8
+        mov \stackAllocSpill1, [rsp + 0x58]
+        save_reg_postrsp    rbp, 0x58
+        lea rbp, [rsp + 0x58]
+        .endif
+
+        alloc_stack     __PWTB_StackAlloc
+        SAVE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+
+        END_PROLOGUE
+
+.endm
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        free_stack      __PWTB_StackAlloc
+        SKIP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
+        ret
+
+.endm
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        free_stack      __PWTB_StackAlloc
+        POP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
+
+.endm
