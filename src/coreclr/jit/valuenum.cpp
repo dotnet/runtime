@@ -8056,23 +8056,73 @@ ValueNum ValueNumStore::VNCanonical(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// RecordVNEquivalence: Record that two value numbers denote the same value.
+// RecordCseUseRewrite: Record normal-value equality established by a completed CSE rewrite.
+//
+// Arguments:
+//    oldVNPair - the normal value number pair the use carried before the rewrite
+//    use       - the rewritten use, already inserted into SSA
+//
+// Notes:
+//    Conservative VNs identify values, not use sites. CSE's completed replacement
+//    establishes their equality; the caller must ensure the use is CFG-reachable.
+//
+void ValueNumStore::RecordCseUseRewrite(ValueNumPair oldVNPair, GenTreeLclVarCommon* use)
+{
+    assert(use->OperIs(GT_LCL_VAR) && use->HasSsaName());
+    LclVarDsc* lclDsc = m_compiler->lvaGetDesc(use);
+    assert(lclDsc->lvIsCSE && lclDsc->lvInSsa);
+    LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(use->GetSsaNum());
+
+    ValueNum oldVN = oldVNPair.GetConservative();
+    ValueNum newVN = ssaDsc->m_vnPair.GetConservative();
+    if (oldVN == newVN)
+    {
+        return;
+    }
+
+    // Either VN can retain a small load type while the other has the temp's widened
+    // register type. They correspond through a widening, not direct substitution.
+    if (TypeOfVN(oldVN) != TypeOfVN(newVN))
+    {
+        assert(genActualType(TypeOfVN(oldVN)) == genActualType(TypeOfVN(newVN)));
+        return;
+    }
+
+#ifdef DEBUG
+    assert(VNNormalValue(oldVN) == oldVN);
+    assert(VNNormalValue(newVN) == newVN);
+
+    GenTreeLclVarCommon* defNode  = ssaDsc->GetDefNode();
+    bool                 isPhiDef = (defNode != nullptr) && defNode->Data()->OperIs(GT_PHI);
+    // The fresh CSE temp is defined only by this candidate's stores. Incremental SSA
+    // builds phis from those definitions, possibly assigning fresh liberal VNs.
+    // We equate the use with the phi result, not its inputs with each other.
+    if (!isPhiDef)
+    {
+        assert(ssaDsc->m_vnPair.GetLiberal() == oldVNPair.GetLiberal());
+        assert(newVN == VNNormalValue(defNode->Data()->gtVNPair.GetConservative()));
+    }
+#endif // DEBUG
+
+    RecordVNEquivalence(oldVN, newVN);
+}
+
+//------------------------------------------------------------------------
+// RecordVNEquivalence: Union the equivalence classes of two value numbers.
 //
 // Arguments:
 //    fromVN - the value number a use carried before CSE rewrote it
 //    toVN   - the value number of the reaching definition it now uses
 //
 // Notes:
-//    The representative, available through VNCanonical, is the number that says the most
-//    about the value: a constant, else a phi definition or a function, else whichever
-//    number was recorded last. A constant never keys the map.
+//    Prefer constants, then phis or non-opaque functions; otherwise prefer toVN's root.
+//    Constants never key the map.
 //
 void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
 {
-    if ((fromVN == NoVN) || (toVN == NoVN) || (TypeOfVN(fromVN) != TypeOfVN(toVN)))
-    {
-        return;
-    }
+    assert(!m_vnEquivalencesFrozen);
+    assert((fromVN != NoVN) && (toVN != NoVN));
+    assert(TypeOfVN(fromVN) == TypeOfVN(toVN));
 
     ValueNum fromRoot = VNCanonical(fromVN);
     ValueNum toRoot   = VNCanonical(toVN);
@@ -8081,10 +8131,7 @@ void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
         return;
     }
 
-    // Prefer the representative that says the most about the value: a constant needs no
-    // reasoning; a phi definition can be walked to its reaching values; a function can be
-    // decomposed. An opaque value number offers none of these, and the reaching
-    // definition's number can be one.
+    // Prefer a representative consumers can inspect over an opaque value.
     auto rank = [this](ValueNum vn) -> int {
         if (IsVNConstant(vn))
         {
@@ -8099,7 +8146,8 @@ void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
     }
     if (IsVNConstant(fromRoot))
     {
-        // Two different constants: the path cannot be taken, and a constant never keys the map.
+        // Distinct constants contradict the producer's equality claim.
+        assert(!"CSE recorded a VN equivalence between distinct constants");
         return;
     }
 

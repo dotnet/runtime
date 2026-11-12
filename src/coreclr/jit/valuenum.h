@@ -1170,14 +1170,17 @@ public:
     // to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn, bool isIndex = false);
 
-    // Record that two conservative value numbers denote the same value. CSE establishes
-    // this when it rewrites a use to its reaching definition, whose conservative value
-    // number can differ from the one the use carried before.
-    void RecordVNEquivalence(ValueNum fromVN, ValueNum toVN);
+    // Record normal conservative VN equality after a completed CSE rewrite.
+    // The caller must ensure the use is CFG-reachable; arbitrary SSA assignments prove nothing.
+    void RecordCseUseRewrite(ValueNumPair oldVNPair, GenTreeLclVarCommon* use);
 
-    // Return the representative of the value's equivalence class: the number known to say
-    // the most about the value, a constant if one is known. Facts recorded after the
-    // equivalence are keyed by this representative, so producers and consumers agree.
+    // Freeze after CSE so later fact keys stay stable. OptRepeat rebuilds the store.
+    void FreezeVNEquivalences()
+    {
+        INDEBUG(m_vnEquivalencesFrozen = true;)
+    }
+
+    // Return the canonical representative, preferring constants and structured VNs.
     ValueNum VNCanonical(ValueNum vn);
 
     ValueNum VNCanonicalConservativeNormalValue(const ValueNumPair& vnp)
@@ -1768,9 +1771,7 @@ private:
     CheckedBoundVNSet m_checkedBoundVNs;
     CheckedBoundVNSet m_checkedBoundIndexVNs;
 
-    // Union-find over conservative value numbers that CSE has proven equal. Allocated on the
-    // first rewrite: about one method in nine records one, and few record more than eight.
-    // A number paired with another, such as a rewritten number and its representative.
+    // A parent link in the equivalence union-find.
     struct VNPair
     {
         ValueNum from;
@@ -1779,6 +1780,9 @@ private:
     typedef ArrayStack<VNPair> VNPairList;
 
     static int FindVNPair(VNPairList& list, ValueNum from);
+
+    // Private union operation; RecordCseUseRewrite supplies the equality guarantee.
+    void RecordVNEquivalence(ValueNum fromVN, ValueNum toVN);
 
     // Allocated on the first rewrite CSE records, so methods without one carry a pointer.
     struct VNEquivalences
@@ -1796,6 +1800,11 @@ private:
         }
     };
     VNEquivalences* m_vnEquivalences = nullptr;
+
+#ifdef DEBUG
+    // Freezing prevents unions, but permits path compression, which preserves roots.
+    bool m_vnEquivalencesFrozen = false;
+#endif
 
     // This is a map from "chunk number" to the attributes of the chunk.
     JitExpandArrayStack<Chunk*> m_chunks;

@@ -5293,15 +5293,24 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
     // Fix up the conservative VN using information about the reaching def.
     LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(lcl->GetSsaNum());
 
-    ValueNum oldConservativeVN = lcl->gtVNPair.GetConservative();
-    lcl->gtVNPair              = ssaDsc->m_vnPair;
+    ValueNumPair oldVNPair = lcl->gtVNPair;
+    lcl->gtVNPair          = ssaDsc->m_vnPair;
 
-    // The use now carries the reaching definition's value number. Other nodes still
-    // carry the old one, so record that both denote the same value.
+    ValueNum oldConservativeVN = oldVNPair.GetConservative();
     ValueNum newConservativeVN = ssaDsc->m_vnPair.GetConservative();
+
+    // Preserve the equality for nodes still carrying the old VN. Unreachable uses may
+    // receive arbitrary SSA definitions, which establish no equality.
     if (oldConservativeVN != newConservativeVN)
     {
-        m_compiler->vnStore->RecordVNEquivalence(oldConservativeVN, newConservativeVN);
+        if (m_compiler->m_dfsTree == nullptr)
+        {
+            m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
+        }
+        if (m_compiler->m_dfsTree->Contains(useDefLoc.Block))
+        {
+            m_compiler->vnStore->RecordCseUseRewrite(oldVNPair, lcl);
+        }
     }
 
     // If the old VN was flagged as a checked bound then propagate that to the
@@ -5692,6 +5701,9 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
         optValnumCSE_Availability();
         optValnumCSE_Heuristic(heuristic);
     }
+
+    // Keep representatives stable for later phases that key facts by them.
+    vnStore->FreezeVNEquivalences();
 
     optValnumCSE_phase = false;
 
