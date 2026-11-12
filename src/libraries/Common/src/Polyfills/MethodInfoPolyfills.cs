@@ -4,7 +4,7 @@
 namespace System.Reflection;
 
 /// <summary>Provides downlevel polyfills for instance methods on <see cref="MethodInfo"/>.</summary>
-internal static class ReflectionPolyfills
+internal static class MethodInfoPolyfills
 {
     extension(MethodInfo method)
     {

@@ -101,6 +101,10 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.AlignWebcilPayload"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
@@ -1047,6 +1051,67 @@
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" />
       <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />
     </ItemGroup>
+  </Target>
+
+  <!-- ======================== ReadyToRun wasm-opt ======================== -->
+
+  <!-- The SDK pack warns that WasmRunWasmOpt is ignored for ReadyToRun images unless these targets are present. -->
+  <PropertyGroup>
+    <_WasmCoreClrR2RWasmOptSupported>true</_WasmCoreClrR2RWasmOptSupported>
+  </PropertyGroup>
+
+  <!-- Opt-in wasm-opt over the per-app ReadyToRun images crossgen2 wrote to obj/R2R: every per-assembly image,
+       or the composite image. It rewrites them in place before ConvertDllsToWebcil stages them, so the served,
+       fingerprinted assets are the optimized images. The settings join the SDK's ReadyToRun state stamp, so
+       turning the option on or off, or changing its arguments, recompiles every image. -->
+  <Target Name="_WasmCoreClrConfigureR2RWasmOpt"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmRunWasmOpt)' == 'true'"
+          DependsOnTargets="_CoreCLRResolveWasmOpt"
+          BeforeTargets="_WasmCoreClrConservativeR2RInputs">
+    <ItemGroup>
+      <_WasmR2RWasmOptUserOptimizationFlag Include="@(WasmOptConfigurationFlags)" Condition="$([System.String]::Copy('%(WasmOptConfigurationFlags.Identity)').StartsWith('-O'))" />
+
+      <!-- crossgen2's images carry no target_features section, so pass the same features as the relink. -->
+      <_WasmR2RWasmOptArgs Include="@(_WasmOptFeatureFlag)" />
+      <!-- Keep the data segments intact. Passive segment 0 holds payloadSize/tableSize, which
+           AttachWebcilSizes reads for the boot config; memory-packing may trim or split it. -->
+      <_WasmR2RWasmOptArgs Include="--skip-pass=memory-packing" />
+      <!-- Keep whatever names crossgen2 emitted: its wasm debug-info settings decide whether there are any,
+           and wasm-opt would otherwise drop them. -->
+      <_WasmR2RWasmOptArgs Include="-g" />
+      <!-- Unlike dotnet.native.wasm (-Oz), default to -O2: on R2R images it compresses smaller than -Oz and -O3
+           and keeps speed optimizations. An -O level in WasmOptConfigurationFlags, shared with the relink, wins. -->
+      <_WasmR2RWasmOptArgs Include="-O2" Condition="@(_WasmR2RWasmOptUserOptimizationFlag->Count()) == 0" />
+      <_WasmR2RWasmOptArgs Include="@(WasmOptConfigurationFlags)" />
+
+      <_WasmR2RImageToOptimize Include="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+      <_WasmR2RImageToOptimize Remove="@(_WasmR2RImageToOptimize)" Condition="'%(Extension)' != '.wasm'" />
+      <!-- Recorded even when the images are up to date, so incremental clean keeps the stamps. -->
+      <FileWrites Include="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_WasmReadyToRunPostProcessState>$(_WasmReadyToRunPostProcessState)WasmOpt=$(_WasmOptPath) @(_WasmR2RWasmOptArgs, ' ');</_WasmReadyToRunPostProcessState>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Each image gets a stamp touched after it is optimized: a recompiled image is newer than its stamp and is
+       optimized again, while an up-to-date image is not optimized twice. wasm-opt writes to a temporary file,
+       so a failed run leaves the crossgen2 output in place and the next build retries it. -->
+  <Target Name="_WasmCoreClrOptimizeR2RImages"
+          Condition="'$(_WasmOptPath)' != '' and '@(_WasmR2RImageToOptimize)' != ''"
+          AfterTargets="_CreateR2RImages"
+          Inputs="@(_WasmR2RImageToOptimize)"
+          Outputs="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')">
+    <Message Importance="High" Text="Running wasm-opt on @(_WasmR2RImageToOptimize->Count()) ReadyToRun image(s) with @(_WasmR2RWasmOptArgs, ' ')" />
+    <Exec Command="&quot;$(_WasmOptPath)&quot; @(_WasmR2RWasmOptArgs, ' ') &quot;%(_WasmR2RImageToOptimize.FullPath)&quot; -o &quot;%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp&quot;"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+    <!-- wasm-opt re-encodes the module and moves the payload; tools such as R2RDump read it at its file offset. -->
+    <AlignWebcilPayload Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.tmp')" />
+    <Move SourceFiles="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.tmp')"
+          DestinationFiles="@(_WasmR2RImageToOptimize->'%(FullPath)')" />
+    <Touch Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')" AlwaysCreate="true" />
   </Target>
 
 </Project>

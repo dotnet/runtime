@@ -10,17 +10,28 @@
 @end
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
+@end
+
+@interface SceneDelegate : UIResponder <UIWindowSceneDelegate>
 @property (strong, nonatomic) UIWindow *window;
 @property (strong, nonatomic) ViewController *controller;
 @end
 
 @implementation AppDelegate
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+- (UISceneConfiguration *)application:(UIApplication *)application configurationForConnectingSceneSession:(UISceneSession *)connectingSceneSession options:(UISceneConnectionOptions *)options {
+    UISceneConfiguration *configuration = [UISceneConfiguration configurationWithName:nil sessionRole:connectingSceneSession.role];
+    configuration.sceneClass = [UIWindowScene class];
+    configuration.delegateClass = [SceneDelegate class];
+    return configuration;
+}
+@end
+
+@implementation SceneDelegate
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
+    self.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
     self.controller = [[ViewController alloc] initWithNibName:nil bundle:nil];
     self.window.rootViewController = self.controller;
     [self.window makeKeyAndVisible];
-    return YES;
 }
 @end
 
@@ -33,7 +44,8 @@ void (*clickHandlerApplyUpdatePtr)(void);
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    label = [[UILabel alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    label = [[UILabel alloc] initWithFrame:self.view.bounds];
+    label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     label.textColor = [UIColor greenColor];
     label.font = [UIFont boldSystemFontOfSize: 30];
     label.numberOfLines = 2;
@@ -55,8 +67,12 @@ void (*clickHandlerApplyUpdatePtr)(void);
     [apply_button setExclusiveTouch:YES];
     [self.view addSubview:apply_button];
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        mono_ios_runtime_init ();
+    // A scene can reconnect without restarting the process.
+    static dispatch_once_t runtimeInitOnce;
+    dispatch_once(&runtimeInitOnce, ^{
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            mono_ios_runtime_init ();
+        });
     });
 }
 -(void) buttonClicked:(UIButton*)sender

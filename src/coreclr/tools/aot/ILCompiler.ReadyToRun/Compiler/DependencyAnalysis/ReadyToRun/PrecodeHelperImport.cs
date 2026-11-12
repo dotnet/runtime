@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return "PrecodeHelperImport->" + ImportSignature.GetMangledName(factory.NameMangler);
         }
 
-        public override int ClassCode => 667823013;
+        public override int ClassCode => 667823012;
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {

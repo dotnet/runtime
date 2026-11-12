@@ -34,8 +34,12 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="Common\System\StringPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\StringPolyfills.cs" Link="Common\Polyfills\StringPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
