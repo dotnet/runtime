@@ -10,6 +10,7 @@ using Xunit;
 public class MixedModeTests
 {
     public static bool IsX86OrX64 => RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64;
+    public static bool IsArm64 => RuntimeInformation.ProcessArchitecture is Architecture.Arm64;
 
     // ILASM has no ARM64 native export stub.
     [ConditionalFact(nameof(IsX86OrX64))]
@@ -53,6 +54,7 @@ public class MixedModeTests
     [Theory]
     [InlineData("DataPointers")]
     [InlineData("ExecutableData")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/137449", typeof(MixedModeTests), nameof(IsArm64))]
     public static void Data(string name)
     {
         Type type = LoadAssembly(name).GetType(name, throwOnError: true)!;
