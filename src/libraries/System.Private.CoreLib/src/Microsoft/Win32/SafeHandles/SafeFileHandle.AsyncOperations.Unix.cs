@@ -23,6 +23,7 @@ namespace Microsoft.Win32.SafeHandles
             private IReadOnlyList<Memory<byte>>? _buffers;
             private long _offset;
             private bool _runOnThreadPool;
+            private bool _completed;
             private ExecutionContext? _executionContext;
             private CancellationToken _cancellationToken;
             private OSFileStreamStrategy? _strategy;
@@ -42,6 +43,7 @@ namespace Microsoft.Win32.SafeHandles
                 _buffer = buffer;
                 _cancellationToken = cancellationToken;
                 _strategy = strategy;
+                _executionContext = ExecutionContext.Capture();
             }
 
             internal void Init(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
@@ -49,12 +51,12 @@ namespace Microsoft.Win32.SafeHandles
                 _offset = offset;
                 _buffers = buffers;
                 _cancellationToken = cancellationToken;
+                _executionContext = ExecutionContext.Capture();
             }
 
             internal void QueueToThreadPool()
             {
                 _runOnThreadPool = true;
-                _executionContext = ExecutionContext.Capture();
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
             }
 
@@ -103,6 +105,7 @@ namespace Microsoft.Win32.SafeHandles
                 _buffers = null;
                 _offset = 0;
                 _runOnThreadPool = false;
+                _completed = false;
                 _executionContext = null;
                 _cancellationToken = default;
                 _strategy = null;
@@ -114,7 +117,17 @@ namespace Microsoft.Win32.SafeHandles
             {
                 try
                 {
-                    return TryCompleteOperationCore();
+                    if (_runOnThreadPool)
+                    {
+                        return TryCompleteOperationCore();
+                    }
+
+                    ExecutionContext.RunInternal(_executionContext, static state =>
+                    {
+                        ReadOperation op = (ReadOperation)state!;
+                        op._completed = op.TryCompleteOperationCore();
+                    }, this);
+                    return _completed;
                 }
                 catch (Exception e) when (e is not ObjectDisposedException)
                 {
@@ -226,6 +239,7 @@ namespace Microsoft.Win32.SafeHandles
             private int _bufferIndex;
             private int _bufferOffset;
             private bool _runOnThreadPool;
+            private bool _completed;
             private ExecutionContext? _executionContext;
             private CancellationToken _cancellationToken;
             private OSFileStreamStrategy? _strategy;
@@ -244,6 +258,7 @@ namespace Microsoft.Win32.SafeHandles
                 _buffer = buffer;
                 _cancellationToken = cancellationToken;
                 _strategy = strategy;
+                _executionContext = ExecutionContext.Capture();
             }
 
             internal void Init(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, int bufferIndex, int bufferOffset, CancellationToken cancellationToken)
@@ -253,12 +268,12 @@ namespace Microsoft.Win32.SafeHandles
                 _bufferIndex = bufferIndex;
                 _bufferOffset = bufferOffset;
                 _cancellationToken = cancellationToken;
+                _executionContext = ExecutionContext.Capture();
             }
 
             internal void QueueToThreadPool()
             {
                 _runOnThreadPool = true;
-                _executionContext = ExecutionContext.Capture();
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
             }
 
@@ -309,6 +324,7 @@ namespace Microsoft.Win32.SafeHandles
                 _bufferIndex = 0;
                 _bufferOffset = 0;
                 _runOnThreadPool = false;
+                _completed = false;
                 _executionContext = null;
                 _cancellationToken = default;
                 _strategy = null;
@@ -320,7 +336,17 @@ namespace Microsoft.Win32.SafeHandles
             {
                 try
                 {
-                    return TryCompleteOperationCore();
+                    if (_runOnThreadPool)
+                    {
+                        return TryCompleteOperationCore();
+                    }
+
+                    ExecutionContext.RunInternal(_executionContext, static state =>
+                    {
+                        WriteOperation op = (WriteOperation)state!;
+                        op._completed = op.TryCompleteOperationCore();
+                    }, this);
+                    return _completed;
                 }
                 catch (Exception e) when (e is not ObjectDisposedException)
                 {

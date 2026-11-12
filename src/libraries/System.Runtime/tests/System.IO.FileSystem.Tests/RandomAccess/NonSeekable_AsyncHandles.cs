@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,100 @@ namespace System.IO.Tests
     public class RandomAccess_NonSeekable_AsyncHandles : RandomAccess_NonSeekable
     {
         protected override bool AsyncHandles => true;
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(FileAccess.Read, false, false)]
+        [InlineData(FileAccess.Read, true, false)]
+        [InlineData(FileAccess.Write, false, false)]
+        [InlineData(FileAccess.Write, true, false)]
+        [InlineData(FileAccess.Read, false, true)]
+        [InlineData(FileAccess.Read, true, true)]
+        [InlineData(FileAccess.Write, false, true)]
+        [InlineData(FileAccess.Write, true, true)]
+        public async Task QueuedOperationsFlowExecutionContext(FileAccess access, bool multipleBuffers, bool suppressFlow)
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle,
+                asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                byte[] buffer = new byte[access == FileAccess.Read ? 1 : 1024 * 1024];
+                Task first = access == FileAccess.Read
+                    ? RandomAccess.ReadAsync(readHandle, buffer, 0).AsTask()
+                    : RandomAccess.WriteAsync(writeHandle, buffer, 0).AsTask();
+                Assert.False(first.IsCompleted);
+
+                AsyncLocal<int> context = new();
+                using ContextMemoryManager firstManager = new(context, suppressFlow ? 0 : 1);
+                using ContextMemoryManager secondManager = new(context, suppressFlow ? 0 : 2);
+                Task[] queued = new Task[2];
+                for (int i = 0; i < queued.Length; i++)
+                {
+                    context.Value = i + 1;
+                    Memory<byte> memory = i == 0 ? firstManager.Buffer : secondManager.Buffer;
+                    AsyncFlowControl flow = suppressFlow ? ExecutionContext.SuppressFlow() : default;
+                    try
+                    {
+                        queued[i] = access == FileAccess.Read
+                            ? multipleBuffers
+                                ? RandomAccess.ReadAsync(readHandle, new Memory<byte>[] { memory }, 0).AsTask()
+                                : RandomAccess.ReadAsync(readHandle, memory, 0).AsTask()
+                            : multipleBuffers
+                                ? RandomAccess.WriteAsync(writeHandle, new ReadOnlyMemory<byte>[] { memory }, 0).AsTask()
+                                : RandomAccess.WriteAsync(writeHandle, memory, 0).AsTask();
+                    }
+                    finally
+                    {
+                        if (suppressFlow)
+                        {
+                            flow.Undo();
+                        }
+                    }
+                    Assert.False(queued[i].IsCompleted);
+                }
+
+                context.Value = 3;
+                if (access == FileAccess.Read)
+                {
+                    await RandomAccess.WriteAsync(writeHandle, new byte[3], 0);
+                }
+                else
+                {
+                    int remaining = buffer.Length;
+                    while (remaining > 0)
+                    {
+                        int count = await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(0, remaining), 0).AsTask().WaitAsync(TimeSpan.FromSeconds(3));
+                        Assert.True(count > 0);
+                        remaining -= count;
+                    }
+                }
+
+                await first.WaitAsync(TimeSpan.FromSeconds(3));
+                await Task.WhenAll(queued).WaitAsync(TimeSpan.FromSeconds(3));
+                Assert.Equal(3, context.Value);
+            }
+        }
+
+        private sealed class ContextMemoryManager(AsyncLocal<int> context, int expected) : MemoryManager<byte>
+        {
+            private readonly byte[] _buffer = new byte[1];
+
+            public Memory<byte> Buffer => CreateMemory(1);
+            public override Span<byte> GetSpan()
+            {
+                Assert.Equal(expected, context.Value);
+                return _buffer;
+            }
+            public override MemoryHandle Pin(int elementIndex = 0)
+            {
+                Assert.Equal(expected, context.Value);
+                return _buffer.AsMemory(elementIndex).Pin();
+            }
+            public override void Unpin() { }
+            protected override void Dispose(bool disposing) { }
+        }
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
