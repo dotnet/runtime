@@ -1503,6 +1503,13 @@ class StubDispatchFrame : public FramedMethodFrame
 public:
     StubDispatchFrame(TransitionBlock * pTransitionBlock);
 
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+    ~StubDispatchFrame() noexcept
+    {
+        PopIfChained();
+    }
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
+
     MethodDesc* GetFunction_Impl();
 
     // Returns this frame GC ref map if it has one
