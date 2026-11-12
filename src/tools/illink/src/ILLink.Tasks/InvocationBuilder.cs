@@ -5,18 +5,21 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks;
 
 internal sealed class InvocationBuilder
 {
-    // Keep an untouched fallback alongside execution arguments and logical cache identities.
-    private readonly StringBuilder _original = new();
-    private readonly StringBuilder _execution = new();
-    private readonly StringBuilder _identity = new();
-    private readonly string _originalCommand;
-    private string _executionCommand;
-    private string _commandIdentity;
+    private enum ArgumentKind
+    {
+        Text,
+        Path,
+        ExtraArgs
+    }
+
+    private readonly List<(string Value, ArgumentKind Kind)> _arguments = new();
+    private readonly string _workingDirectory = Environment.CurrentDirectory;
 
     internal SourceRootPathMap Paths { get; private set; }
     internal string BypassReason { get; private set; }
@@ -25,9 +28,9 @@ internal sealed class InvocationBuilder
     internal List<string> Files { get; } = new();
     internal List<(string Path, bool CheckOutputSymbols)> Assemblies { get; } = new();
     internal List<(string Option, string Path)> ExtraPaths { get; }
-    internal string CommandLine => Paths?.ExecutionRoot is not null ? _executionCommand : _originalCommand;
-    internal string CommandIdentity => Paths is not null ? _commandIdentity : _originalCommand;
-    internal string ResponseIdentity => Paths is not null ? _identity.ToString() : _original.ToString();
+    internal string CommandLine => Quote(Paths?.ExecutionRoot is not null ? Paths.MapForExecution(GetFullPath(ToolPath)) : ToolPath);
+    internal string CommandIdentity => Quote(Paths is not null ? Paths.Map(GetFullPath(ToolPath)) : ToolPath);
+    internal string ResponseIdentity => Render(Paths is not null ? Paths.Map : null);
 
     internal InvocationBuilder(string toolPath, SourceRootPathMap paths,
         List<(string Option, string Path)> extraPaths, string bypassReason = null)
@@ -36,44 +39,18 @@ internal sealed class InvocationBuilder
         Paths = paths;
         ExtraPaths = extraPaths;
         BypassReason = bypassReason;
-        _originalCommand = Quote(toolPath);
-        if (Paths is not null)
-        {
-            try
-            {
-                _executionCommand = Quote(Paths.MapForExecution(toolPath));
-                _commandIdentity = Quote(Paths.Map(toolPath));
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-            {
-                DisableNormalization(ex.Message);
-            }
-        }
+        ValidatePath(toolPath);
     }
 
     internal InvocationBuilder Append(string value)
     {
-        _original.Append(value);
-        _execution.Append(value);
-        _identity.Append(value);
+        _arguments.Add((value, ArgumentKind.Text));
         return this;
     }
 
-    internal InvocationBuilder Append(char value)
-    {
-        _original.Append(value);
-        _execution.Append(value);
-        _identity.Append(value);
-        return this;
-    }
+    internal InvocationBuilder Append(char value) => Append(value.ToString());
 
-    internal InvocationBuilder AppendLine(string value = null)
-    {
-        _original.AppendLine(value);
-        _execution.AppendLine(value);
-        _identity.AppendLine(value);
-        return this;
-    }
+    internal InvocationBuilder AppendLine(string value = null) => Append(value + Environment.NewLine);
 
     internal InvocationBuilder AppendFile(string path)
     {
@@ -95,19 +72,8 @@ internal sealed class InvocationBuilder
 
     internal InvocationBuilder AppendPath(string path)
     {
-        _original.Append(Quote(path));
-        if (Paths is not null)
-        {
-            try
-            {
-                _execution.Append(Quote(Paths.MapForExecution(path)));
-                _identity.Append(Quote(Paths.Map(path)));
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-            {
-                DisableNormalization(ex.Message);
-            }
-        }
+        _arguments.Add((path, ArgumentKind.Path));
+        ValidatePath(path);
         return this;
     }
 
@@ -115,32 +81,60 @@ internal sealed class InvocationBuilder
     {
         if (extraArgs is null)
             return;
-        _original.AppendLine(extraArgs);
+        _arguments.Add((extraArgs, ArgumentKind.ExtraArgs));
         if (Paths is null || string.IsNullOrWhiteSpace(extraArgs))
             return;
-        _execution.AppendLine("--ignore-link-attributes true");
-        _identity.AppendLine("--ignore-link-attributes true");
+        foreach (var argument in ExtraPaths)
+            ValidatePath(argument.Path);
+    }
+
+    private void ValidatePath(string path)
+    {
         try
         {
-            foreach (var argument in ExtraPaths)
-            {
-                _execution.Append(argument.Option).Append(' ').AppendLine(Quote(Paths.MapForExecution(argument.Path)));
-                _identity.Append(argument.Option).Append(' ').AppendLine(Quote(Paths.Map(argument.Path)));
-            }
+            Paths?.Map(GetFullPath(path));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            DisableNormalization(ex.Message);
+            Paths = null;
+            BypassReason = ex.Message;
         }
     }
 
-    private void DisableNormalization(string reason)
+    private string Render(Func<string, string> map)
     {
-        Paths = null;
-        BypassReason = reason;
+        var args = new StringBuilder();
+        foreach (var argument in _arguments)
+        {
+            switch (argument.Kind)
+            {
+                case ArgumentKind.Text:
+                    args.Append(argument.Value);
+                    break;
+                case ArgumentKind.Path:
+                    args.Append(Quote(map is null ? argument.Value : map(GetFullPath(argument.Value))));
+                    break;
+                case ArgumentKind.ExtraArgs:
+                    if (map is null)
+                    {
+                        args.AppendLine(argument.Value);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(argument.Value))
+                    {
+                        args.AppendLine("--ignore-link-attributes true");
+                        foreach (var extra in ExtraPaths)
+                            args.Append(extra.Option).Append(' ').AppendLine(Quote(map(GetFullPath(extra.Path))));
+                    }
+                    break;
+            }
+        }
+        return args.ToString();
     }
 
-    public override string ToString() => Paths?.ExecutionRoot is not null ? _execution.ToString() : _original.ToString();
+    public override string ToString() => Render(Paths?.ExecutionRoot is not null ? Paths.MapForExecution : null);
+
+    private string GetFullPath(string path) =>
+        Path.GetFullPath(string.IsNullOrEmpty(path) ? path : Path.Combine(_workingDirectory, path));
 
     internal static string Quote(string path)
     {

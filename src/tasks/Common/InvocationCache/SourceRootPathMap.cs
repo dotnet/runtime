@@ -1,23 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
-using Microsoft.NET.Build.Tasks;
 
-namespace ILLink.Tasks;
+namespace Microsoft.NET.Build.Tasks;
 
-internal sealed class SourceRootPathMap : InvocationPathMap
+internal sealed class SourceRootPathMap
 {
     private readonly List<(string Physical, string Logical)> _roots = new();
-    internal string ExecutionRoot { get; }
+    internal string? ExecutionRoot { get; }
     private static StringComparison PathComparison => Path.DirectorySeparatorChar == '\\'
         ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
-    internal SourceRootPathMap(ITaskItem[] sourceRoots)
+    internal SourceRootPathMap(ITaskItem[]? sourceRoots)
     {
         if (sourceRoots is null || sourceRoots.Length == 0)
             throw new NotSupportedException("SourceRoots are required for relative execution.");
@@ -65,7 +66,7 @@ internal sealed class SourceRootPathMap : InvocationPathMap
         }
     }
 
-    internal override string Map(string path)
+    internal string Map(string path)
     {
         path = GetValidatedFullPath(path);
         foreach (var root in _roots)
@@ -78,7 +79,7 @@ internal sealed class SourceRootPathMap : InvocationPathMap
         return "absolute:" + path;
     }
 
-    internal override string Resolve(string identity)
+    internal string Resolve(string identity)
     {
         const string AbsolutePrefix = "absolute:";
         const string MappedPrefix = "mapped:";
@@ -121,7 +122,7 @@ internal sealed class SourceRootPathMap : InvocationPathMap
     private static string GetValidatedFullPath(string path)
     {
         path = Path.GetFullPath(path);
-        if (path.Length > Path.GetPathRoot(path).Length)
+        if (path.Length > Path.GetPathRoot(path)!.Length)
             path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
             (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
@@ -129,16 +130,7 @@ internal sealed class SourceRootPathMap : InvocationPathMap
         return path;
     }
 
-    internal static void CheckSymbolPath(string path)
-    {
-        if (IsLogicalPath(path))
-            return;
-        if ((path.Length > 0 && path[0] is '/' or '\\') ||
-            (path.Length > 1 && path[1] == ':') || path.Split('/', '\\').Any(part => part == ".."))
-            throw new NotSupportedException($"Physical or escaping symbol path '{path}' is not supported by the shared cache.");
-    }
-
-    private static bool IsLogicalPath(string path)
+    internal static bool IsLogicalPath(string path)
     {
         if (!path.StartsWith("/_", StringComparison.Ordinal))
             return false;

@@ -550,7 +550,7 @@ namespace ILLink.Tasks
                     case DebugDirectoryEntryType.CodeView:
                         if (!entry.IsPortableCodeView)
                             throw new NotSupportedException("Native PDB symbols are not supported by the shared cache.");
-                        SourceRootPathMap.CheckSymbolPath(pe.ReadCodeViewDebugDirectoryData(entry).Path);
+                        CheckSymbolPath(pe.ReadCodeViewDebugDirectoryData(entry).Path);
                         break;
                     case DebugDirectoryEntryType.EmbeddedPortablePdb:
                         using (MetadataReaderProvider provider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(entry))
@@ -577,8 +577,17 @@ namespace ILLink.Tasks
             static void CheckDocuments(MetadataReader metadata)
             {
                 foreach (DocumentHandle handle in metadata.Documents)
-                    SourceRootPathMap.CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
+                    CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
             }
+        }
+
+        private static void CheckSymbolPath(string path)
+        {
+            if (SourceRootPathMap.IsLogicalPath(path))
+                return;
+            if ((path.Length > 0 && path[0] is '/' or '\\') ||
+                (path.Length > 1 && path[1] == ':') || path.Split('/', '\\').Any(part => part == ".."))
+                throw new NotSupportedException($"Physical or escaping symbol path '{path}' is not supported by the shared cache.");
         }
 
         private string _illinkPath = "";

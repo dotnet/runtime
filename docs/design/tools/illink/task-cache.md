@@ -21,8 +21,10 @@ maintenance commands.
 
 `ILLink` derives from the shared `CachedToolTask`, supplying `CacheConfiguration`, `DescribeInvocation`,
 and `ExecuteToolCore`. The base class checks whether caching is enabled before describing the invocation.
-Argument construction records input roles and renders execution paths and logical identities in
-one walk over the task inputs. The command-line and response-file hooks reuse that construction;
+Argument construction records input roles and one structured argument list in a single walk over
+the task inputs. Execution arguments and logical cache context are rendered from that list;
+unsupported normalization renders the original spelling instead of maintaining a fallback buffer.
+The command-line and response-file hooks reuse that construction;
 execution does not reconstruct or compare arguments.
 The description callback expands the recorded inputs through `DescribeInvocation`, supplies
 the effective working directory, and declares one `InvocationOutputs.FromDirectory`; it runs only

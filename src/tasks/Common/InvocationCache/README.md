@@ -47,14 +47,16 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
-An `InvocationDescription` can specify an effective working directory and a reversible path mapping.
+An `InvocationDescription` can specify an effective working directory and a shared `SourceRootPathMap`
+constructed from MSBuild `SourceRoot` items with `MappedPath` metadata.
 The description stores only logical identities for input files, output locations, and that working
 directory. Hashing serializes those identities directly; file access, output validation, and
 restoration resolve them to physical absolute paths through the same mapping. Without a mapping,
 identities are absolute paths.
 Consumers must preserve complete relative layouts and distinguish external paths rather than
 mapping unrelated files to the same identity. Mappings must remain stable and reversible throughout
-discovery, hashing, execution, and restoration. ILLink supplies its root-aware mapping this way.
+discovery, hashing, execution, and restoration. The same concrete mapping renders root-relative
+execution paths; tool-specific eligibility checks remain with the consumer.
 
 Prepare any execution-path normalization independently of the cache callbacks so disabling or
 bypassing caching does not change the invocation.

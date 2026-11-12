@@ -10,7 +10,7 @@ namespace Microsoft.NET.Build.Tasks;
 
 internal sealed class InvocationDescription
 {
-    private readonly InvocationPathMap? _pathMap;
+    private readonly SourceRootPathMap? _pathMap;
 
     internal InvocationInputs Inputs { get; }
     internal string[] Context { get; }
@@ -18,7 +18,7 @@ internal sealed class InvocationDescription
     internal string WorkingDirectory { get; }
 
     internal InvocationDescription(InvocationInputs inputs, string[] context, InvocationOutputs outputs,
-        string? workingDirectory = null, InvocationPathMap? pathMap = null)
+        string? workingDirectory = null, SourceRootPathMap? pathMap = null)
     {
         _pathMap = pathMap;
         Inputs = pathMap is null ? inputs : inputs.Map(pathMap);

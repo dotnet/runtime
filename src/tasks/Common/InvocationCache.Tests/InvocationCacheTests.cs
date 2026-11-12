@@ -1074,12 +1074,12 @@ public class InvocationCacheTests
         second.WriteSource("image.dll", "image");
         InvocationDescription firstInvocation = Describe(first);
         InvocationDescription secondInvocation = Describe(second);
-        Assert.Equal(new[] { "source/image.dll" }, firstInvocation.Inputs.Files);
-        Assert.Equal(".", firstInvocation.WorkingDirectory);
+        Assert.Equal(new[] { "mapped:/_/source/image.dll" }, firstInvocation.Inputs.Files);
+        Assert.Equal("mapped:/_/", firstInvocation.WorkingDirectory);
         if (ownedDirectory)
-            Assert.Equal("output", firstInvocation.Outputs.DirectoryPath);
+            Assert.Equal("mapped:/_/output", firstInvocation.Outputs.DirectoryPath);
         else
-            Assert.Equal(new[] { "output/image.dll", "output/image.pdb" }, firstInvocation.Outputs.Files);
+            Assert.Equal(new[] { "mapped:/_/output/image.dll", "mapped:/_/output/image.pdb" }, firstInvocation.Outputs.Files);
         string key = InvocationCache.ComputeKey(firstInvocation);
         Assert.Equal(key, InvocationCache.ComputeKey(secondInvocation));
 
@@ -1104,13 +1104,13 @@ public class InvocationCacheTests
         Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(second, workingDirectory: second.Source)));
         Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(second, outputDirectory: Path.Combine(second.Root, "other"))));
         Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(second,
-            pathMap: new TestPathMap(second.Root, "renamed/"))));
+            pathMap: CreatePathMap(second.Root, "/_1/"))));
 
         InvocationDescription Describe(CacheTestDirectory test, string? workingDirectory = null,
-            string? outputDirectory = null, InvocationPathMap? pathMap = null) =>
+            string? outputDirectory = null, SourceRootPathMap? pathMap = null) =>
             new(InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
                 new[] { "arguments" }, Outputs(outputDirectory ?? test.Output),
-                workingDirectory ?? test.Root, pathMap ?? new TestPathMap(test.Root));
+                workingDirectory ?? test.Root, pathMap ?? CreatePathMap(test.Root));
 
         InvocationOutputs Outputs(string directory) => ownedDirectory
             ? InvocationOutputs.FromDirectory(directory)
@@ -1122,19 +1122,23 @@ public class InvocationCacheTests
     {
         using var test = new CacheTestDirectory();
         test.WriteSource("image.dll", "image");
-        var pathMap = new TestPathMap(test.Root, "first/");
+        var root = new TaskItem(test.Root);
+        root.SetMetadata("MappedPath", "/_1/");
+        var pathMap = new SourceRootPathMap(new[] { root });
         var invocation = new InvocationDescription(
             InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
             Array.Empty<string>(), test.OutputOutputs, workingDirectory: test.Root,
             pathMap: pathMap);
-        pathMap.AllowMapping = false;
+        Assert.Equal(new[] { "mapped:/_1/source/image.dll" }, invocation.Inputs.Files);
+        root.ItemSpec = Path.Combine(test.Root, "other");
+        root.SetMetadata("MappedPath", "/_2/");
         string original = InvocationCache.ComputeKey(invocation);
 
         Assert.Equal(original, InvocationCache.ComputeKey(invocation));
         var changed = new InvocationDescription(
             InvocationInputs.FromFiles(Path.Combine(test.Source, "image.dll")),
             invocation.Context, test.OutputOutputs, workingDirectory: test.Root,
-            pathMap: new TestPathMap(test.Root, "second/"));
+            pathMap: CreatePathMap(test.Root, "/_2/"));
         Assert.NotEqual(original, InvocationCache.ComputeKey(changed));
 
         test.WriteSource("image.dll", "changed");
@@ -1562,29 +1566,11 @@ public class InvocationCacheTests
         exception?.Throw();
     }
 
-    private sealed class TestPathMap(string root, string prefix = "") : InvocationPathMap
+    private static SourceRootPathMap CreatePathMap(string root, string prefix = "/_/")
     {
-        internal bool AllowMapping { get; set; } = true;
-
-        internal override string Map(string physicalPath)
-        {
-            if (!AllowMapping)
-                throw new InvalidOperationException("Paths must be mapped before hashing.");
-            string relative = Path.GetRelativePath(root, physicalPath);
-            return Path.IsPathRooted(relative) || relative == ".." ||
-                relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-                ? physicalPath : prefix + relative.Replace('\\', '/');
-        }
-
-        internal override string Resolve(string identity)
-        {
-            if (Path.IsPathRooted(identity))
-                return identity;
-            if (!identity.StartsWith(prefix, StringComparison.Ordinal))
-                throw new ArgumentException("Unknown test path identity.", nameof(identity));
-            return Path.GetFullPath(Path.Combine(root,
-                identity.Substring(prefix.Length).Replace('/', Path.DirectorySeparatorChar)));
-        }
+        var item = new TaskItem(root);
+        item.SetMetadata("MappedPath", prefix);
+        return new SourceRootPathMap(new[] { item });
     }
 
     private sealed class CacheTestDirectory : IDisposable

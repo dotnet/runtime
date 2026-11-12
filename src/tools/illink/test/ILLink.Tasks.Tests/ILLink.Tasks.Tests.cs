@@ -2384,6 +2384,49 @@ namespace ILLink.Tasks.Tests
             Assert.Equal(1, input.TrimModeReads);
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("bad\"path")]
+        public void InvocationBuilderRendersAllPathsConsistently(string invalidOutputPath)
+        {
+            using var test = new OutputDirectoryTest();
+            var paths = new SourceRootPathMap(test.Task.SourceRoots);
+            string tool = Path.Combine(test.Root, "illink.dll");
+            string input = Path.Combine(test.Root, "Input.dll");
+            string xml = Path.Combine(test.Root, "roots.xml");
+            string output = invalidOutputPath ?? Path.Combine(test.Root, "output");
+            string extraArgs = $"  --ignore-link-attributes true   --substitutions \"{xml}\"  ";
+            var builder = new InvocationBuilder(tool, paths, new() { ("--substitutions", xml) });
+            builder.Append("-reference ").AppendAssembly(input).AppendLine();
+            builder.AppendExtraArgs(extraArgs);
+            builder.Append("-out ").AppendOutputDirectory(output).AppendLine();
+
+            if (invalidOutputPath is not null)
+            {
+                string original = $"-reference \"{input}\"{Environment.NewLine}{extraArgs}{Environment.NewLine}-out \"{output}\"{Environment.NewLine}";
+                Assert.Null(builder.Paths);
+                Assert.Equal($"\"{tool}\"", builder.CommandLine);
+                Assert.Equal(builder.CommandLine, builder.CommandIdentity);
+                Assert.Equal(original, builder.ToString());
+                Assert.Equal(original, builder.ResponseIdentity);
+            }
+            else
+            {
+                Assert.Same(paths, builder.Paths);
+                Assert.Equal("\"illink.dll\"", builder.CommandLine);
+                Assert.Equal("\"mapped:/_/illink.dll\"", builder.CommandIdentity);
+                Assert.Equal("-reference \"Input.dll\"" + Environment.NewLine +
+                    "--ignore-link-attributes true" + Environment.NewLine +
+                    "--substitutions \"roots.xml\"" + Environment.NewLine +
+                    "-out \"output\"" + Environment.NewLine, builder.ToString());
+                Assert.Equal("-reference \"mapped:/_/Input.dll\"" + Environment.NewLine +
+                    "--ignore-link-attributes true" + Environment.NewLine +
+                    "--substitutions \"mapped:/_/roots.xml\"" + Environment.NewLine +
+                    "-out \"mapped:/_/output\"" + Environment.NewLine, builder.ResponseIdentity);
+            }
+        }
+
         private sealed class CountingTaskItem(ITaskItem item) : ITaskItem
         {
             public int TrimModeReads { get; private set; }
