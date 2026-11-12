@@ -124,12 +124,6 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else
                 {
-                    if (_buffer.Length == 0 && _owner.SupportsNonBlocking)
-                    {
-                        ReadResult = 0;
-                        return true;
-                    }
-
                     if (!RandomAccess.TryCompleteReadAt(_owner, _offset, _buffer.Span, out int intReadResult, out errorInfo, _strategy))
                     {
                         return false;

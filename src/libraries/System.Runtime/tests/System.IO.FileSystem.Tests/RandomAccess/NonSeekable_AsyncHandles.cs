@@ -13,6 +13,33 @@ namespace System.IO.Tests
     {
         protected override bool AsyncHandles => true;
 
+        [Fact]
+        public async Task QueuedEmptyReadWaitsForData()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle,
+                asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                byte[] buffer = new byte[1];
+                Task<int> read = RandomAccess.ReadAsync(readHandle, buffer, 0).AsTask();
+                Task<int> emptyRead = RandomAccess.ReadAsync(readHandle, Memory<byte>.Empty, 0).AsTask();
+
+                await RandomAccess.WriteAsync(writeHandle, new byte[] { 42 }, 0);
+                Assert.Equal(1, await read.WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.Equal(42, buffer[0]);
+
+                await Task.Delay(250);
+                Assert.False(emptyRead.IsCompleted);
+
+                await RandomAccess.WriteAsync(writeHandle, new byte[] { 43 }, 0);
+                Assert.Equal(0, await emptyRead.WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.Equal(1, await RandomAccess.ReadAsync(readHandle, buffer, 0).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.Equal(43, buffer[0]);
+            }
+        }
+
         [Theory]
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
