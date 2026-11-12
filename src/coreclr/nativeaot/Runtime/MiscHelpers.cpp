@@ -312,24 +312,30 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         uint32_t * pTarget = (uint32_t *)((uint8_t *)pCode + distToTarget);
 
         // is the jump to a range extension thunk the linker placed for a target out of branch range?
+        uint8_t * pThunkTarget = NULL;
         // adrp xip0,#imm21; add xip0,xip0,#imm12; br xip0
         if ((pTarget[0] & 0x9f00001f) == 0x90000010 &&
             (pTarget[1] & 0xffc003ff) == 0x91000210 &&
             pTarget[2] == 0xd61f0200)
         {
             // add: imm = ZeroExtend(imm12, 64);
-            return GetArm64AdrpPage(pTarget) + ((pTarget[1] >> 10) & 0xfff);
+            pThunkTarget = GetArm64AdrpPage(pTarget) + ((pTarget[1] >> 10) & 0xfff);
         }
         // lld, when the image is not position independent: ldr xip0,#8; br xip0; .xword target
         else if (pTarget[0] == 0x58000050 && pTarget[1] == 0xd61f0200)
         {
-            return *(uint8_t **)(pTarget + 2);
+            pThunkTarget = *(uint8_t **)(pTarget + 2);
         }
         // lld, when the thunk itself is in branch range of the target: b target
-        // A method can start with a branch as well; a thunk is not part of any method.
-        else if ((pTarget[0] >> 26) == 0x5 && GetRuntimeInstance()->FindMethodStartAddress(pTarget) == NULL)
+        else if ((pTarget[0] >> 26) == 0x5)
         {
-            return (uint8_t *)pTarget + (((int64_t)pTarget[0] << 38) >> 36);
+            pThunkTarget = (uint8_t *)pTarget + (((int64_t)pTarget[0] << 38) >> 36);
+        }
+
+        // A method can start with the same instructions; a thunk is not part of any method.
+        if (pThunkTarget != NULL && GetRuntimeInstance()->FindMethodStartAddress(pTarget) == NULL)
+        {
+            return pThunkTarget;
         }
 
         return (uint8_t *)pTarget;

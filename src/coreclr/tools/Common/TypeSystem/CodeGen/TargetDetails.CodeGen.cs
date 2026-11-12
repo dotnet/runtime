@@ -6,12 +6,12 @@ namespace Internal.TypeSystem
     // Extension to TargetDetails related to code generation
     public partial class TargetDetails
     {
-        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, SimdVectorLength simdVectorLength, int optimumFunctionAlignment = 0)
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, SimdVectorLength simdVectorLength, int? optimumFunctionAlignment = null)
             : this(architecture, targetOS, abi)
         {
             MaximumSimdVectorLength = simdVectorLength;
-            if (optimumFunctionAlignment != 0)
-                OptimumFunctionAlignment = optimumFunctionAlignment;
+            if (optimumFunctionAlignment.HasValue)
+                OptimumFunctionAlignment = optimumFunctionAlignment.Value;
         }
 
         /// <summary>
