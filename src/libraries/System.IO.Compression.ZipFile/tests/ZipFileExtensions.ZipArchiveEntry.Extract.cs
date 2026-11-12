@@ -53,7 +53,8 @@ namespace System.IO.Compression.Tests
         public async Task ExtractToFile_OverwritePreservesOriginalFileOnExtractionFailure(bool async)
         {
             // Create a destination file with known content
-            string destinationFile = GetTestFilePath();
+            using var destinationDirectory = new TempDirectory(GetTestFilePath());
+            string destinationFile = Path.Combine(destinationDirectory.Path, "file.txt");
             byte[] originalContent = "Original file content that should be preserved"u8.ToArray();
             File.WriteAllBytes(destinationFile, originalContent);
 
@@ -106,6 +107,7 @@ namespace System.IO.Compression.Tests
             Assert.True(File.Exists(destinationFile));
             byte[] actualContent = File.ReadAllBytes(destinationFile);
             Assert.Equal(originalContent, actualContent);
+            Assert.Equal(destinationFile, Assert.Single(Directory.GetFiles(destinationDirectory.Path)));
         }
     }
 }
