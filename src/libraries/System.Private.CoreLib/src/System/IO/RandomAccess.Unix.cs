@@ -59,23 +59,6 @@ namespace System.IO
 
         private static unsafe bool TryCompleteReadAt(SafeFileHandle handle, bool useOffset, long offset, Span<byte> buffer, out int readResult, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
         {
-            if (buffer.Length == 0 && handle.SupportsNonBlocking)
-            {
-                Interop.Error err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLIN, handle.IsBlocking ? -1 : 0, out Interop.PollEvents events);
-
-                if (err != Interop.Error.SUCCESS)
-                {
-                    readResult = -1;
-                    errorInfo = new Interop.ErrorInfo(err);
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
-                    return true;
-                }
-
-                readResult = 0;
-                errorInfo = default;
-                return events != Interop.PollEvents.POLLNONE;
-            }
-
             fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
                 readResult = useOffset
@@ -93,6 +76,22 @@ namespace System.IO
                 }
                 strategy?.OnIncompleteOperation(buffer.Length, 0);
                 return true;
+            }
+
+            if (buffer.Length == 0 && handle.SupportsNonBlocking)
+            {
+                Interop.Error err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLIN, handle.IsBlocking ? -1 : 0, out Interop.PollEvents events);
+
+                if (err != Interop.Error.SUCCESS)
+                {
+                    readResult = -1;
+                    errorInfo = new Interop.ErrorInfo(err);
+                    strategy?.OnIncompleteOperation(buffer.Length, 0);
+                    return true;
+                }
+
+                errorInfo = default;
+                return events != Interop.PollEvents.POLLNONE;
             }
 
             errorInfo = default;

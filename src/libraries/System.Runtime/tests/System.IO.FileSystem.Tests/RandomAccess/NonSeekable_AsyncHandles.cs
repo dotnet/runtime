@@ -97,6 +97,26 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task EmptyReadOnWriteOnlyPipeThrows()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle,
+                asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
+                    await RandomAccess.ReadAsync(writeHandle, Memory<byte>.Empty, 0).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+
+                readHandle.Dispose();
+                Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Read(writeHandle, Span<byte>.Empty, 0));
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
+                    await RandomAccess.ReadAsync(writeHandle, Memory<byte>.Empty, 0));
+            }
+        }
+
         [Theory]
         [InlineData(FileAccess.Read, false)]
         [InlineData(FileAccess.Read, true)]
