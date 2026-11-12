@@ -285,7 +285,8 @@ static RESULT test_u16_strtoul(void)
         if (end != c->str + c->stop)
             return FAILED("u16_strtoul case %zu stopped at %td instead of %zu", i, end - c->str, c->stop);
 
-        if (error != c->error)
+        // POSIX permits EINVAL when no conversion is performed.
+        if (error != c->error && !(c->stop == 0 && c->error == 0 && error == EINVAL))
             return FAILED("u16_strtoul case %zu set errno to %d instead of %d", i, error, c->error);
     }
 
@@ -308,6 +309,7 @@ static const StrToUI64Case strtoui64_cases[] =
 {
     { W("12345"), 10, 12345, 5, 0 },
     { W("Z"), 10, 0, 0, 0 },
+    { W(""), 10, 0, 0, 0 },
     { W("4294967296"), 10, 4294967296ull, 10, 0 },
     { W("18446744073709551615"), 10, UINT64_MAX, 20, 0 },
     { W("18446744073709551616"), 10, UINT64_MAX, 20, ERANGE },
@@ -332,7 +334,8 @@ static RESULT test_u16_strtoui64(void)
         if (end != c->str + c->stop)
             return FAILED("u16_strtoui64 case %zu stopped at %td instead of %zu", i, end - c->str, c->stop);
 
-        if (error != c->error)
+        // POSIX permits EINVAL when no conversion is performed.
+        if (error != c->error && !(c->stop == 0 && c->error == 0 && error == EINVAL))
             return FAILED("u16_strtoui64 case %zu set errno to %d instead of %d", i, error, c->error);
     }
 

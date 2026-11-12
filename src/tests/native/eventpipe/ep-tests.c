@@ -1771,7 +1771,6 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-#if TEST_PERF
 RESULT
 test_write_event_perf (void)
 {
@@ -1844,7 +1843,6 @@ ep_on_error:
 		result = FAILED ("Failed at test location=%i", test_location);
 	ep_exit_error_handler ();
 }
-#endif
 
 // TODO: Add multithreaded test writing into private/shared sessions.
 
