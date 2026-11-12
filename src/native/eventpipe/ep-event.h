@@ -20,7 +20,7 @@
 struct _EventPipeEventDefinition {
 	uint64_t keywords;
 	uint32_t event_id;
-	uint32_t event_version;
+	uint8_t event_version;
 	uint8_t level;
 	bool need_stack;
 };

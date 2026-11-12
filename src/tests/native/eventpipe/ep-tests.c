@@ -104,7 +104,7 @@ test_static_event_table (void)
 	uint32_t test_location = 0;
 	static EventPipeEvent events [3];
 	static const EventPipeEventDefinition definitions [] = {
-		{UINT64_C (0x100000000001), 101, 2, EP_EVENT_LEVEL_INFORMATIONAL, false},
+		{UINT64_C (0x100000000001), 101, UINT8_MAX, EP_EVENT_LEVEL_INFORMATIONAL, false},
 		{2, 102, 0, EP_EVENT_LEVEL_VERBOSE, true},
 		{UINT64_MAX, 103, 1, EP_EVENT_LEVEL_WARNING, true}
 	};
@@ -153,8 +153,9 @@ test_static_event_table (void)
 		ep_raise_error_if_nok (ep_event_is_enabled (&events [0]));
 		ep_raise_error_if_nok (!ep_event_is_enabled (&events [1]));
 		ep_raise_error_if_nok (ep_event_is_enabled (&events [2]));
-		EventPipeEvent *dynamic_event = ep_provider_add_event (provider, 104, 1, 0, EP_EVENT_LEVEL_INFORMATIONAL, false, NULL, 0);
+		EventPipeEvent *dynamic_event = ep_provider_add_event (provider, 104, 1, UINT32_MAX, EP_EVENT_LEVEL_INFORMATIONAL, false, NULL, 0);
 		ep_raise_error_if_nok (dynamic_event != NULL && ep_event_is_enabled (dynamic_event));
+		ep_raise_error_if_nok (ep_event_get_event_version (dynamic_event) == UINT32_MAX);
 
 		test_location = 4;
 		EventData data;
