@@ -1753,15 +1753,14 @@ HRESULT CordbType::ReturnedByValue()
     if (unboxedSize > (registerSize == 8 ? 2 * registerSize : registerSize))
         return S_FALSE;
 
-    // Whether the value occupies two registers (size in (8, 16] bytes on a
-    // 64-bit target). Single-register (<= pointer-sized) returns only support
-    // integer/pointer-sized non-FP fields.
-    // Floating-point and generic (unbound type-parameter) fields are only
-    // encodable for the two-register case (where VLT_REG_REG with unified
-    // RegNum handles all int/FP combinations). Enabling them for single-register
-    // value classes would reach unimplemented paths in the value-home code, so
-    // they remain unsupported there.
-    const bool twoRegister = (unboxedSize > registerSize);
+    // Floating-point and unbound generic fields require the FP register-pair
+    // decoder in CordbJITILFrame::GetNativeVariable. Other builds must reject
+    // them even when the target has 64-bit registers.
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    const bool allowFloatFields = (unboxedSize > registerSize);
+#else
+    const bool allowFloatFields = false;
+#endif
 
     // 64-bit targets support multi-field value classes (e.g. ValueTuple<T1, T2>)
     // returned across two registers.
@@ -1818,7 +1817,7 @@ HRESULT CordbType::ReturnedByValue()
                         // A single FP register holding a value class is not
                         // encodable here (only primitive VLT_REG_FP is), so
                         // restrict to the two-register multi-reg forms.
-                        if (!twoRegister)
+                        if (!allowFloatFields)
                             unsupported = true;
                         break;
 
@@ -1840,7 +1839,7 @@ HRESULT CordbType::ReturnedByValue()
                         // required to support mixed int/fp returns such as
                         // ValueTuple<double, int>, while avoiding the
                         // unimplemented single-FP-register value-class path.
-                        if (!twoRegister)
+                        if (!allowFloatFields)
                             unsupported = true;
                         break;
 

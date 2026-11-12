@@ -37,16 +37,18 @@ if (methods.Count == 0 || methods.Count != Regex.Count(source, "STDMETHODCALLTYP
 }
 
 // 32-bit targets return one non-floating-point field in one register. 64-bit targets use up to two
-// registers, and allow floating-point fields only when two registers are used.
-(int Size, SignatureTypeCode[] Fields, bool Supported32, bool Supported64)[] returnTypes =
+// registers, and allow floating-point fields only when the host has the FP pair decoder.
+(int Size, SignatureTypeCode[] Fields, bool Supported32, bool Supported64, bool Supported64On32BitHost)[] returnTypes =
 [
-    (4, [SignatureTypeCode.Int32], true, true),
-    (4, [SignatureTypeCode.Int16, SignatureTypeCode.Int16], false, true),
-    (8, [SignatureTypeCode.Int64], false, true),
-    (8, [SignatureTypeCode.Double], false, false),
-    (12, [SignatureTypeCode.Int64, SignatureTypeCode.Int32], false, true),
-    (16, [SignatureTypeCode.Double, SignatureTypeCode.Int64], false, true),
-    (17, [SignatureTypeCode.Int64, SignatureTypeCode.Int64], false, false),
+    (4, [SignatureTypeCode.Int32], true, true, true),
+    (4, [SignatureTypeCode.Int16, SignatureTypeCode.Int16], false, true, true),
+    (8, [SignatureTypeCode.Int64], false, true, true),
+    (8, [SignatureTypeCode.Double], false, false, false),
+    (12, [SignatureTypeCode.Int64, SignatureTypeCode.Int32], false, true, true),
+    (16, [SignatureTypeCode.Double, SignatureTypeCode.Int64], false, true, false),
+    (17, [SignatureTypeCode.Int64, SignatureTypeCode.Int64], false, false, false),
+    (16, [SignatureTypeCode.Int64, SignatureTypeCode.Double], false, true, false),
+    (16, [SignatureTypeCode.Double, SignatureTypeCode.Double], false, true, false),
 ];
 byte[] metadata = CreateReturnTypeMetadata();
 
@@ -101,13 +103,13 @@ for (int offset = 0; offset < metadata.Length; offset += 16)
 }
 output.WriteLine("""
     };
-    struct ReturnTypeCase { ULONG32 size; bool supported32; bool supported64; };
+    struct ReturnTypeCase { ULONG32 size; bool supported32; bool supported64; bool supported64On32BitHost; };
     static const ReturnTypeCase s_returnTypes[] = {
     """);
-foreach ((int size, SignatureTypeCode[] _, bool supported32, bool supported64) in returnTypes)
+foreach ((int size, SignatureTypeCode[] _, bool supported32, bool supported64, bool supported64On32BitHost) in returnTypes)
 {
     output.WriteLine(FormattableString.Invariant(
-        $"    {{{size}, {(supported32 ? "true" : "false")}, {(supported64 ? "true" : "false")}}},"));
+        $"    {{{size}, {(supported32 ? "true" : "false")}, {(supported64 ? "true" : "false")}, {(supported64On32BitHost ? "true" : "false")}}},"));
 }
 output.WriteLine("};");
 

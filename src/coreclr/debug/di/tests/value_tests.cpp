@@ -1041,7 +1041,8 @@ static void ReturnValueTypes(Fixture & fixture)
             TEST_CHECK(module->LookupOrCreateClass(TokenFromRid(i + 2, mdtTypeDef), &klass) == S_OK);
             CordbType * type = nullptr;
             TEST_CHECK(CordbType::MkUnparameterizedType(fixture.AppDomain(), ELEMENT_TYPE_VALUETYPE, klass, &type) == S_OK);
-            bool supported = fixture.target.pointerSize == 8 ? s_returnTypes[i].supported64 : s_returnTypes[i].supported32;
+            bool supported = fixture.target.pointerSize == 4 ? s_returnTypes[i].supported32 :
+                sizeof(void *) == 4 ? s_returnTypes[i].supported64On32BitHost : s_returnTypes[i].supported64;
             TEST_CHECK(type->ReturnedByValue() == (supported ? S_OK : S_FALSE));
         }
         fixture.target.metadata = nullptr;
