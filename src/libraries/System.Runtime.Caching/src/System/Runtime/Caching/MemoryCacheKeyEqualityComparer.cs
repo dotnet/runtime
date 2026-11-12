@@ -8,16 +8,15 @@ namespace System.Runtime.Caching
 {
     internal sealed class MemoryCacheEqualityComparer : IEqualityComparer
     {
-        bool IEqualityComparer.Equals(object x, object y)
+        bool IEqualityComparer.Equals(object? x, object? y)
         {
-            Debug.Assert(x != null && x is MemoryCacheKey);
-            Debug.Assert(y != null && y is MemoryCacheKey);
+            if (x is MemoryCacheKey a && y is MemoryCacheKey b)
+            {
+                return string.Equals(a.Key, b.Key, StringComparison.Ordinal);
+            }
 
-            MemoryCacheKey a, b;
-            a = (MemoryCacheKey)x;
-            b = (MemoryCacheKey)y;
-
-            return string.Equals(a.Key, b.Key, StringComparison.Ordinal);
+            Debug.Fail("Unexpected types passed to MemoryCacheEqualityComparer");
+            return false;
         }
 
         int IEqualityComparer.GetHashCode(object obj)

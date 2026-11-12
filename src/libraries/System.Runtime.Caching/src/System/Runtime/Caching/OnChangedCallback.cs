@@ -5,5 +5,5 @@ using System;
 
 namespace System.Runtime.Caching
 {
-    public delegate void OnChangedCallback(object state);
+    public delegate void OnChangedCallback(object? state);
 }

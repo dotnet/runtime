@@ -636,7 +636,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
-        JitListLock::LockHolder pJitLock(AppDomain::GetCurrentDomain()->GetJitLock());
+        JitListLock::LockHolder pJitLock = AppDomain::GetCurrentDomain()->GetJitLock()->TakeLock();
 
         // It is possible that another thread stepped in before we entered the global lock for the first time.
         if ((pCode = pConfig->IsJitCancellationRequested()))
@@ -652,13 +652,13 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             pJitLock, version, description));
 
         // We have an entry now, we can release the global lock
-        pJitLock.Release();
+        pJitLock.Free();
 
         // Take the entry lock
         {
-            JitListLockEntry::LockHolder pEntryLock(pEntry, FALSE);
+            JitListLockEntry::LockHolder pEntryLock;
 
-            if (pEntryLock.DeadlockAwareAcquire())
+            if (pEntryLock.DeadlockAwareAcquire(pEntry))
             {
                 if (pEntry->m_hrResultCode == S_FALSE)
                 {
@@ -733,7 +733,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 }
             }
 
-            return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock);
+            return JitCompileCodeLockedEventWrapper(pConfig, pEntry);
         }
     }
 }

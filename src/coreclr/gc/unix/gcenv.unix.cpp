@@ -324,6 +324,12 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
     int processorNumber = sched_getcpu();
     assert(processorNumber != -1);
     return processorNumber;
+#elif HAVE_PTHREAD_CPU_NUMBER_NP
+    size_t processorNumber;
+    int error = pthread_cpu_number_np(&processorNumber);
+    assert(error == 0);
+    (void)error;
+    return (uint32_t)processorNumber;
 #else
     assert(false); // This method is expected to be called only if CanGetCurrentProcessorNumber is true
     return 0;
@@ -333,7 +339,7 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 // Check if the OS supports getting current processor number
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
-    return HAVE_SCHED_GETCPU;
+    return HAVE_SCHED_GETCPU || HAVE_PTHREAD_CPU_NUMBER_NP;
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -895,6 +901,12 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
+}
+
+// Check if the OS supports setting thread affinity
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP;
 }
 
 // Sets the calling thread's affinity to only run on the processor specified

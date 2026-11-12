@@ -15,12 +15,12 @@
 
 .macro FUNCLET_SAVE_FP_REG reg, ofs
         fst.d   $f\reg, $sp, \ofs
-        .cfi_rel_offset $f\reg, \ofs
+        .cfi_rel_offset \reg+32, \ofs
 .endm
 
 .macro FUNCLET_RESTORE_FP_REG reg, ofs
         fld.d   $f\reg, $sp, \ofs
-        .cfi_restore $f\reg
+        .cfi_restore \reg+32
 .endm
 
 .macro FUNCLET_CALL_PROLOGUE
