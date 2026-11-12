@@ -23,6 +23,14 @@ DN_CALLBACK_CALLTYPE
 event_free_func (void *ep_event);
 
 static
+uint64_t
+provider_normalize_event_keywords (uint64_t keywords);
+
+static
+void
+provider_free_event_table (EventPipeProvider *provider);
+
+static
 const EventPipeProviderCallbackData *
 provider_prepare_callback_data (
 	EventPipeProvider *provider,
@@ -66,6 +74,24 @@ DN_CALLBACK_CALLTYPE
 event_free_func (void *ep_event)
 {
 	ep_event_free ((EventPipeEvent *)ep_event);
+}
+
+static
+uint64_t
+provider_normalize_event_keywords (uint64_t keywords)
+{
+	// EventSources reserve bits 44-47; -1 still means all keywords.
+	return keywords == UINT64_MAX ? keywords : keywords & ~UINT64_C (0xF00000000000);
+}
+
+static
+void
+provider_free_event_table (EventPipeProvider *provider)
+{
+	if (provider->event_table != NULL) {
+		for (uint32_t i = 0; i < provider->event_table->events_len; ++i)
+			ep_event_fini (&provider->event_table->events [i]);
+	}
 }
 
 static
@@ -113,6 +139,30 @@ provider_refresh_all_events (
 	DN_LIST_FOREACH_BEGIN (EventPipeEvent *, current_event, provider->event_list) {
 		provider_refresh_event_state (current_event, session_mask);
 	} DN_LIST_FOREACH_END;
+
+	if (provider->event_table != NULL) {
+		const EventPipeEventTable *table = provider->event_table;
+		for (uint32_t i = 0; i < table->events_len; ++i) {
+			EventPipeEvent *ep_event = &table->events [i];
+			if (ep_event_get_provider (ep_event) == NULL) {
+				if (!ep_provider_get_enabled (provider))
+					continue;
+				const EventPipeEventDefinition *definition = &table->definitions [i];
+				if (!ep_event_init (
+					ep_event,
+					provider,
+					provider_normalize_event_keywords (definition->keywords),
+					definition->event_id,
+					definition->event_version,
+					(EventPipeEventLevel)definition->level,
+					definition->need_stack,
+					NULL,
+					0))
+					continue;
+			}
+			provider_refresh_event_state (ep_event, session_mask);
+		}
+	}
 
 	ep_requires_lock_held ();
 	return;
@@ -193,6 +243,7 @@ ep_provider_alloc (
 	EventPipeProvider *instance = ep_rt_object_alloc (EventPipeProvider);
 	ep_raise_error_if_nok (instance != NULL);
 
+	instance->event_table = NULL;
 	instance->provider_name = ep_rt_utf8_string_dup (provider_name);
 	ep_raise_error_if_nok (instance->provider_name != NULL);
 
@@ -234,6 +285,7 @@ ep_provider_free (EventPipeProvider * provider)
 		EP_LOCK_ENTER (section1)
 			dn_list_custom_free (provider->event_list, event_free_func);
 			provider->event_list = NULL;
+			provider_free_event_table (provider);
 		EP_LOCK_EXIT (section1)
 	}
 
@@ -265,15 +317,7 @@ ep_provider_add_event (
 
 	ep_requires_lock_not_held ();
 
-	// Keyword bits 44-47 are reserved for use by EventSources, and every EventSource sets them all.
-	// We filter out those bits here so later comparisons don't have to take them in to account. Without
-	// filtering, EventSources wouldn't show up with Keywords=0.
-	uint64_t session_mask = ~0xF00000000000;
-	// -1 is special, it means all keywords. Don't change it.
-	uint64_t all_keywords = (uint64_t)(-1);
-	if (keywords != all_keywords) {
-		keywords &= session_mask;
-	}
+	keywords = provider_normalize_event_keywords (keywords);
 
 	EventPipeEvent *instance = ep_event_alloc (
 		provider,
@@ -499,7 +543,7 @@ provider_create_register (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_requires_lock_held ();
-	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
+	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue, NULL);
 }
 
 void
@@ -519,6 +563,7 @@ provider_free (EventPipeProvider * provider)
 	ep_requires_lock_held ();
 
 	dn_list_custom_free (provider->event_list, event_free_func);
+	provider_free_event_table (provider);
 
 	ep_rt_wait_event_free (&provider->callbacks_complete_event);
 	ep_rt_utf16_string_free (provider->provider_name_utf16);

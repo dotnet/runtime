@@ -98,6 +98,121 @@ ep_on_error:
 }
 
 static RESULT
+test_static_event_table (void)
+{
+	RESULT result = NULL;
+	uint32_t test_location = 0;
+	static EventPipeEvent events [3];
+	static const EventPipeEventDefinition definitions [] = {
+		{UINT64_C (0x100000000001), 101, 2, EP_EVENT_LEVEL_INFORMATIONAL, false},
+		{2, 102, 0, EP_EVENT_LEVEL_VERBOSE, true},
+		{UINT64_MAX, 103, 1, EP_EVENT_LEVEL_WARNING, true}
+	};
+	static const EventPipeEventTable table = {definitions, events, ARRAY_SIZE (events)};
+	EventPipeProvider *provider = NULL;
+	EventPipeSessionID sessions [2] = {0, 0};
+	EventPipeProviderConfiguration configs [2];
+	ep_provider_config_init (&configs [0], TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_INFORMATIONAL, NULL);
+	ep_provider_config_init (&configs [1], TEST_PROVIDER_NAME, 2, EP_EVENT_LEVEL_VERBOSE, NULL);
+
+	for (uint32_t create_while_enabled = 0; create_while_enabled < 2; ++create_while_enabled) {
+		test_location = 1;
+		if (!create_while_enabled) {
+			provider = ep_create_provider_with_events (TEST_PROVIDER_NAME, NULL, NULL, &table);
+			ep_raise_error_if_nok (provider != NULL);
+			for (uint32_t i = 0; i < ARRAY_SIZE (events); ++i) {
+				ep_raise_error_if_nok (ep_event_get_provider (&events [i]) == NULL);
+				ep_raise_error_if_nok (ep_event_get_metadata (&events [i]) == NULL);
+				ep_raise_error_if_nok (!ep_event_is_enabled_by_mask (&events [i], UINT64_MAX));
+			}
+		}
+
+		test_location = 2;
+		sessions [0] = ep_init_session (
+			NULL, 1, &configs [0], 1, EP_SESSION_TYPE_LISTENER,
+			EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+		ep_raise_error_if_nok (sessions [0] != 0);
+		ep_start_session (sessions [0]);
+		if (create_while_enabled) {
+			provider = ep_create_provider_with_events (TEST_PROVIDER_NAME, NULL, NULL, &table);
+			ep_raise_error_if_nok (provider != NULL);
+		}
+
+		test_location = 3;
+		for (uint32_t i = 0; i < ARRAY_SIZE (events); ++i) {
+			ep_raise_error_if_nok (ep_event_get_provider (&events [i]) == provider);
+			ep_raise_error_if_nok (ep_event_get_event_id (&events [i]) == definitions [i].event_id);
+			ep_raise_error_if_nok (ep_event_get_event_version (&events [i]) == definitions [i].event_version);
+			ep_raise_error_if_nok (ep_event_get_level (&events [i]) == definitions [i].level);
+			ep_raise_error_if_nok (ep_event_get_need_stack (&events [i]) == definitions [i].need_stack);
+			ep_raise_error_if_nok (ep_event_get_metadata (&events [i]) != NULL);
+			ep_raise_error_if_nok (ep_event_get_metadata_len (&events [i]) > 0);
+		}
+		ep_raise_error_if_nok (ep_event_get_keywords (&events [0]) == 1);
+		ep_raise_error_if_nok (ep_event_get_keywords (&events [2]) == UINT64_MAX);
+		ep_raise_error_if_nok (ep_event_is_enabled (&events [0]));
+		ep_raise_error_if_nok (!ep_event_is_enabled (&events [1]));
+		ep_raise_error_if_nok (ep_event_is_enabled (&events [2]));
+		EventPipeEvent *dynamic_event = ep_provider_add_event (provider, 104, 1, 0, EP_EVENT_LEVEL_INFORMATIONAL, false, NULL, 0);
+		ep_raise_error_if_nok (dynamic_event != NULL && ep_event_is_enabled (dynamic_event));
+
+		test_location = 4;
+		EventData data;
+		ep_event_data_init (&data, 0, 0, 0);
+		ep_write_event_2 (&events [0], &data, 1, NULL, NULL);
+		ep_event_data_fini (&data);
+		EventPipeEventInstance *instance = ep_get_next_event (sessions [0]);
+		ep_raise_error_if_nok (instance != NULL && ep_event_instance_get_ep_event (instance) == &events [0]);
+
+		test_location = 5;
+		sessions [1] = ep_init_session (
+			NULL, 1, &configs [1], 1, EP_SESSION_TYPE_LISTENER,
+			EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+		ep_raise_error_if_nok (sessions [1] != 0);
+		ep_start_session (sessions [1]);
+		uint64_t mask0 = ep_session_get_mask ((EventPipeSession *)(uintptr_t)sessions [0]);
+		uint64_t mask1 = ep_session_get_mask ((EventPipeSession *)(uintptr_t)sessions [1]);
+		test_location = 6;
+		ep_raise_error_if_nok (ep_event_is_enabled_by_mask (&events [0], mask0));
+		ep_raise_error_if_nok (!ep_event_is_enabled_by_mask (&events [0], mask1));
+		ep_raise_error_if_nok (!ep_event_is_enabled_by_mask (&events [1], mask0));
+		ep_raise_error_if_nok (ep_event_is_enabled_by_mask (&events [1], mask1));
+		test_location = 7;
+		ep_event_update_metadata_written_mask (&events [0], mask0, true);
+		ep_disable (sessions [0]);
+		sessions [0] = 0;
+		ep_raise_error_if_nok (!ep_event_is_enabled_by_mask (&events [0], mask0));
+		ep_raise_error_if_nok (ep_event_is_enabled (&events [0]) == ep_event_is_enabled (dynamic_event));
+		ep_raise_error_if_nok (ep_event_is_enabled (&events [1]));
+		test_location = 8;
+		ep_raise_error_if_nok ((ep_rt_volatile_load_int64_t (ep_event_get_metadata_written_mask_cref (&events [0])) & mask0) == 0);
+
+		test_location = 9;
+		ep_disable (sessions [1]);
+		sessions [1] = 0;
+		ep_delete_provider (provider);
+		provider = NULL;
+		for (uint32_t i = 0; i < ARRAY_SIZE (events); ++i) {
+			ep_raise_error_if_nok (ep_event_get_provider (&events [i]) == NULL);
+			ep_raise_error_if_nok (ep_event_get_metadata (&events [i]) == NULL);
+			ep_raise_error_if_nok (!ep_event_is_enabled (&events [i]));
+		}
+	}
+
+ep_on_exit:
+	for (uint32_t i = 0; i < ARRAY_SIZE (sessions); ++i)
+		ep_disable (sessions [i]);
+	ep_delete_provider (provider);
+	for (uint32_t i = 0; i < ARRAY_SIZE (configs); ++i)
+		ep_provider_config_fini (&configs [i]);
+	return result;
+
+ep_on_error:
+	result = FAILED ("Static event table failed at location=%u", test_location);
+	ep_exit_error_handler ();
+}
+
+static RESULT
 test_stress_create_delete_provider (void)
 {
 	RESULT result = NULL;
@@ -1772,6 +1887,126 @@ ep_on_error:
 }
 
 RESULT
+test_event_table_perf (void)
+{
+	RESULT result = NULL;
+	static EventPipeEvent events [450];
+	static EventPipeEventDefinition definitions [ARRAY_SIZE (events)];
+	static const EventPipeEventTable table = {definitions, events, ARRAY_SIZE (events)};
+	EventPipeEvent *first_event = NULL;
+	EventPipeProvider *provider = NULL;
+	EventPipeSessionID session_id = 0;
+	EventPipeProviderConfiguration config;
+	ep_provider_config_init (&config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_INFORMATIONAL, NULL);
+	double microseconds_per_tick = 1000000.0 / ep_perf_frequency_query ();
+
+	for (uint32_t i = 0; i < ARRAY_SIZE (definitions); ++i) {
+		definitions [i].keywords = 1;
+		definitions [i].event_id = i + 1;
+		definitions [i].level = EP_EVENT_LEVEL_INFORMATIONAL;
+	}
+
+	printf ("\n\t450-event provider: registration, first enable, re-enable (microseconds), writes and disabled checks (nanoseconds)\n");
+	for (uint32_t sample = 0; sample < 9; ++sample) {
+		for (uint32_t mode = 0; mode < 2; ++mode) {
+			bool use_table = (sample + mode) % 2 != 0;
+			int64_t registration_ticks = 0;
+			int64_t first_enable_ticks = 0;
+			int64_t reenable_ticks = 0;
+			const uint32_t iterations = 64;
+
+			for (uint32_t iteration = 0; iteration < iterations; ++iteration) {
+				int64_t start = ep_perf_timestamp_get ();
+				provider = use_table
+					? ep_create_provider_with_events (TEST_PROVIDER_NAME, NULL, NULL, &table)
+					: ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL);
+				ep_raise_error_if_nok (provider != NULL);
+				first_event = use_table ? &events [0] : NULL;
+				if (!use_table) {
+					for (uint32_t i = 0; i < ARRAY_SIZE (definitions); ++i) {
+						EventPipeEvent *event = ep_provider_add_event (
+							provider, i + 1, 1, 0, EP_EVENT_LEVEL_INFORMATIONAL, false, NULL, 0);
+						ep_raise_error_if_nok (event != NULL);
+						if (i == 0)
+							first_event = event;
+					}
+				}
+				registration_ticks += ep_perf_timestamp_get () - start;
+
+				start = ep_perf_timestamp_get ();
+				session_id = ep_init_session (
+					NULL, 1, &config, 1, EP_SESSION_TYPE_LISTENER,
+					EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+				ep_raise_error_if_nok (session_id != 0);
+				ep_start_session (session_id);
+				first_enable_ticks += ep_perf_timestamp_get () - start;
+				ep_raise_error_if_nok (ep_event_is_enabled (first_event));
+				ep_disable (session_id);
+
+				start = ep_perf_timestamp_get ();
+				session_id = ep_init_session (
+					NULL, 1, &config, 1, EP_SESSION_TYPE_LISTENER,
+					EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+				ep_raise_error_if_nok (session_id != 0);
+				ep_start_session (session_id);
+				reenable_ticks += ep_perf_timestamp_get () - start;
+				if (iteration + 1 != iterations) {
+					ep_disable (session_id);
+					session_id = 0;
+					ep_delete_provider (provider);
+					provider = NULL;
+				}
+			}
+
+			int64_t write_ticks = 0;
+			EventData data;
+			ep_event_data_init (&data, 0, 0, 0);
+			const uint32_t writes = 100000;
+			for (uint32_t written = 0; written < writes; written += 1000) {
+				int64_t start = ep_perf_timestamp_get ();
+				for (uint32_t i = 0; i < 1000; ++i)
+					ep_write_event_2 (first_event, &data, 1, NULL, NULL);
+				write_ticks += ep_perf_timestamp_get () - start;
+				while (ep_get_next_event (session_id));
+			}
+			ep_event_data_fini (&data);
+			ep_disable (session_id);
+			session_id = 0;
+
+			uint32_t enabled = 0;
+			const uint32_t checks = 1000000;
+			int64_t start = ep_perf_timestamp_get ();
+			for (uint32_t i = 0; i < checks; ++i)
+				enabled += ep_event_is_enabled (first_event);
+			int64_t check_ticks = ep_perf_timestamp_get () - start;
+			ep_raise_error_if_nok (enabled == 0);
+			ep_delete_provider (provider);
+			provider = NULL;
+
+			if (sample != 0) {
+				printf ("\tTABLE_PERF,%s,%u,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+					use_table ? "static" : "dynamic", sample,
+					registration_ticks * microseconds_per_tick / iterations,
+					first_enable_ticks * microseconds_per_tick / iterations,
+					reenable_ticks * microseconds_per_tick / iterations,
+					write_ticks * microseconds_per_tick * 1000 / writes,
+					check_ticks * microseconds_per_tick * 1000 / checks);
+			}
+		}
+	}
+
+ep_on_exit:
+	ep_disable (session_id);
+	ep_delete_provider (provider);
+	ep_provider_config_fini (&config);
+	return result;
+
+ep_on_error:
+	result = FAILED ("Event table performance test failed");
+	ep_exit_error_handler ();
+}
+
+RESULT
 test_write_event_perf (void)
 {
 	RESULT result = NULL;
@@ -1904,6 +2139,7 @@ ep_on_error:
 static Test ep_tests [] = {
 	{"test_eventpipe_setup", test_eventpipe_setup},
 	{"test_create_delete_provider", test_create_delete_provider},
+	{"test_static_event_table", test_static_event_table},
 	{"test_stress_create_delete_provider", test_stress_create_delete_provider},
 	{"test_get_provider", test_get_provider},
 	{"test_create_same_provider_twice", test_create_same_provider_twice},

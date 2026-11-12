@@ -85,17 +85,19 @@ def generateClrEventPipeWriteEventsImpl(
     providerPrettyName = providerPrettyName.replace('-', '_')
     WriteEventImpl = []
 
-    # EventPipeEvent declaration
-    for eventNode in eventNodes:
-        eventName = eventNode.getAttribute('symbol')
+    includedEvents = [eventNode for eventNode in eventNodes
+                      if includeEvent(inclusionList, providerName, eventNode.getAttribute('symbol'))]
+    if includedEvents:
+        WriteEventImpl.append("static EventPipeEvent EventPipeEvents%s[%s];\n" % (providerPrettyName, len(includedEvents)))
 
-        if not includeEvent(inclusionList, providerName, eventName):
-            continue
+    # EventPipeEvent declaration
+    for eventIndex, eventNode in enumerate(includedEvents):
+        eventName = eventNode.getAttribute('symbol')
 
         WriteEventImpl.append(
             "EventPipeEvent *EventPipeEvent" +
             eventName +
-            (" = nullptr;\n" if target_cpp else " = NULL;\n"))
+            " = &EventPipeEvents%s[%s];\n" % (providerPrettyName, eventIndex))
 
     WriteEventImpl.append("\n")
 
@@ -189,12 +191,7 @@ def generateClrEventPipeWriteEventsImpl(
             "#endif\n    ")
     else:
         callbackExpr = eventPipeCallbackCastExpr + "(" + callbackName + ")"
-    WriteEventImpl.append(
-        "    EventPipeProvider" +
-        providerPrettyName +
-        " = " + createProviderFunc + "(" +
-        providerPrettyName +
-        "Name, " + callbackExpr + ");\n")
+    eventDefinitions = []
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -215,18 +212,29 @@ def generateClrEventPipeWriteEventsImpl(
             if tokens[2] == eventName:
                 needStack = "false"
 
-        addEventFunc = ""
-        if runtimeFlavor.coreclr:
-            addEventFunc = "EventPipeAdapter::AddEvent"
-        elif runtimeFlavor.mono:
-            addEventFunc = "provider_add_event"
-        elif runtimeFlavor.nativeaot:
-            addEventFunc = "ep_provider_add_event"
+        eventDefinitions.append(
+            "        { %s, %s, %s, %s, %s },\n" %
+            (eventKeywordsMask, eventValue, eventVersion, eventLevel, needStack))
 
-        initEvent = """    EventPipeEvent%s = %s(EventPipeProvider%s,%s,%s,%s,%s,%s%s);
-""" % (eventName, addEventFunc, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel, needStack, (",NULL,0" if runtimeFlavor.nativeaot else ""))
-
-        WriteEventImpl.append(initEvent)
+    if eventDefinitions:
+        WriteEventImpl.append("""
+    static const EventPipeEventDefinition definitions[] =
+    {
+""")
+        WriteEventImpl.extend(eventDefinitions)
+        WriteEventImpl.append("""    };
+    static const EventPipeEventTable eventTable =
+    {
+        definitions, EventPipeEvents%s, %s
+    };
+""" % (providerPrettyName, len(eventDefinitions)))
+        tableExpr = "&eventTable"
+    else:
+        tableExpr = "nullptr" if target_cpp else "NULL"
+    WriteEventImpl.append(
+        "    EventPipeProvider%s = %s(%sName, %s%s, %s);\n" %
+        (providerPrettyName, createProviderFunc, providerPrettyName, callbackExpr,
+         ", nullptr" if target_cpp else "", tableExpr))
     WriteEventImpl.append("}")
 
     return ''.join(WriteEventImpl)
@@ -815,10 +823,10 @@ bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size,
     return true;
 }
 
-EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
+EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr)
 {
     ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-    EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
+    EventPipeProvider * provider = ep_create_provider_with_events (providerNameUTF8, callback, pCallbackContext, eventTable);
     ep_rt_utf8_string_free (providerNameUTF8);
     return provider;
 }
@@ -1097,24 +1105,11 @@ write_buffer_uintptr_t (
 
 static
 inline
-EventPipeEvent *
-provider_add_event (
-    EventPipeProvider *provider,
-    uint32_t event_id,
-    uint64_t keywords,
-    uint32_t event_version,
-    EventPipeEventLevel level,
-    bool need_stack)
-{
-    return ep_provider_add_event (provider, event_id, keywords, event_version, level, need_stack, NULL, 0);
-}
-
-static
-inline
 EventPipeProvider *
 create_provider (
     const wchar_t *provider_name,
-    EventPipeCallback callback_func)
+    EventPipeCallback callback_func,
+    const EventPipeEventTable *event_table)
 {
     ep_char8_t *provider_name_utf8 = NULL;
 
@@ -1128,7 +1123,7 @@ create_provider (
 
     ep_return_null_if_nok (provider_name_utf8 != NULL);
 
-    EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL);
+    EventPipeProvider *provider = ep_create_provider_with_events (provider_name_utf8, callback_func, NULL, event_table);
 
     g_free (provider_name_utf8);
     return provider;
@@ -1163,7 +1158,7 @@ bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, b
 bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 
-EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr);
+EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr);
 
 template <typename T>
 bool WriteToBuffer(const T &value, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
