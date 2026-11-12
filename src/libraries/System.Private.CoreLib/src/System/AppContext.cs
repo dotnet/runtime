@@ -154,7 +154,7 @@ namespace System
         [ThreadStatic]
         private static bool t_deliveringFirstChanceNotification;
 
-        private static void OnFirstChanceException(Exception e, object? sender)
+        private static void OnFirstChanceException(Exception e)
         {
             if (s_firstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
@@ -178,7 +178,7 @@ namespace System
                     {
                         try
                         {
-                            handler(sender, args);
+                            handler(AppDomain.CurrentDomain, args);
                         }
                         catch
                         {

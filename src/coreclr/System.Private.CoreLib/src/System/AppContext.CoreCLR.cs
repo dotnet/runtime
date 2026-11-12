@@ -58,7 +58,7 @@ namespace System
         {
             try
             {
-                OnFirstChanceException(*pException, AppDomain.CurrentDomain);
+                OnFirstChanceException(*pException);
             }
             catch
             {

@@ -56,7 +56,7 @@ namespace System
         }
 
         private static void OnFirstChanceExceptionCore(object e)
-            => OnFirstChanceException((Exception)e, sender: null);
+            => OnFirstChanceException((Exception)e);
 
         [RuntimeExport("OnUnhandledException")]
         internal static unsafe void OnUnhandledException(object e)
