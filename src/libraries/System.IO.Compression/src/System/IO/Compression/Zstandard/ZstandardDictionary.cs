@@ -47,6 +47,7 @@ namespace System.IO.Compression
             byte[] data = buffer.ToArray();
 
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* dictPtr = data)
@@ -115,7 +116,7 @@ namespace System.IO.Compression
             byte[]? dictionaryBuffer = null;
             try
             {
-                Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * sizeof(nuint)));
+                Span<nuint> lengthsAsNuint = /* SAFETY: To be audited */ unsafe(MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * sizeof(nuint))));
                 Debug.Assert(lengthsAsNuint.Length == sampleLengths.Length);
 
                 const double TrainingSplitPoint = 0.75;
@@ -155,6 +156,7 @@ namespace System.IO.Compression
                 dictionaryBuffer = ArrayPool<byte>.Shared.Rent(maxDictionarySize);
                 nuint dictSize;
 
+                // SAFETY: To be audited
                 unsafe
                 {
                     fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))

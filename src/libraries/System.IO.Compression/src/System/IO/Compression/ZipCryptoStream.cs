@@ -174,14 +174,19 @@ namespace System.IO.Compression
             }
         }
 
-        private unsafe void EnsureHeader()
+        private void EnsureHeader()
         {
             if (!_encrypting || _headerWritten)
             {
                 return;
             }
 
-            Span<byte> header = stackalloc byte[12];
+            scoped Span<byte> header;
+            // SAFETY: To be audited
+            unsafe
+            {
+                header = stackalloc byte[12];
+            }
             CalculateHeader(header);
             _base.Write(header);
             _headerWritten = true;
