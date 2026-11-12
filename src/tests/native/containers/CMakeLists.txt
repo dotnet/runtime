@@ -15,13 +15,15 @@ add_executable(NativeContainerTestsDriver
     ../common/driver.c
     ../common/test.c
     native-container-tests-driver.c
+    dn-container-perf-tests.c
     dn-fwd-list-tests.c
     dn-list-tests.c
     dn-queue-tests.c
+    dn-simdhash-tests.c
     dn-umap-tests.c
     dn-vector-ptr-tests.c
     dn-vector-tests.c)
 
 target_include_directories(NativeContainerTestsDriver PRIVATE ../common)
-target_link_libraries(NativeContainerTestsDriver PRIVATE dn-containers)
+target_link_libraries(NativeContainerTestsDriver PRIVATE dn-containers minipal)
 install(TARGETS NativeContainerTestsDriver DESTINATION bin)

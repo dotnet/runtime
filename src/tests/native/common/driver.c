@@ -31,13 +31,16 @@
 
 int run_tests_main(const Group *groups, int argc, char **argv)
 {
-    if (argc == 2 && (strcmp(argv[1], "--list") == 0 || strcmp(argv[1], "--help") == 0))
+    if (argc == 2 && (strcmp(argv[1], "--list") == 0 || strcmp(argv[1], "--list-all") == 0 || strcmp(argv[1], "--help") == 0))
     {
         if (strcmp(argv[1], "--help") == 0)
-            printf("Usage: %s [--list | GROUP ...]\n", argv[0]);
+            printf("Usage: %s [--list | --list-all | GROUP ...]\n", argv[0]);
 
         for (const Group *group = groups; group->name != NULL; group++)
-            puts(group->name);
+        {
+            if (group->run_by_default || strcmp(argv[1], "--list-all") == 0)
+                puts(group->name);
+        }
 
         return EXIT_SUCCESS;
     }
@@ -56,7 +59,7 @@ int run_tests_main(const Group *groups, int argc, char **argv)
 
         if (!found)
         {
-            fprintf(stderr, "Unknown test group '%s'. Use --list to list groups.\n", argv[i]);
+            fprintf(stderr, "Unknown test group '%s'. Use --list-all to list groups.\n", argv[i]);
             return EXIT_FAILURE;
         }
     }
@@ -66,7 +69,7 @@ int run_tests_main(const Group *groups, int argc, char **argv)
     bool success = true;
     for (const Group *group = groups; group->name != NULL; group++)
     {
-        bool selected = argc == 1;
+        bool selected = argc == 1 && group->run_by_default;
         for (int i = 1; i < argc && !selected; i++)
             selected = strcmp(argv[i], group->name) == 0;
 
