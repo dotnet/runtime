@@ -3,18 +3,18 @@
   <Import Project="Version.Details.props" />
 
   <PropertyGroup>
-    <!-- The .NET product branding version -->
-    <ProductVersion>11.0.0</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>11</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <PatchVersion>1</PatchVersion>
+    <!-- The .NET product branding version -->
+    <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductVersion>
     <PackageVersionNet10>10.0.0</PackageVersionNet10>
     <PackageVersionNet9>9.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet10)').Build),12))</PackageVersionNet9>
     <PackageVersionNet8>8.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet9)').Build),11))</PackageVersionNet8>
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.36</PackageVersionNet6>
-    <PreReleaseVersionLabel>rtm</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
     <PreReleaseVersionIteration></PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
