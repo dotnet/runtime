@@ -13,6 +13,7 @@ public class MixedModeTests
 
     // ILASM has no ARM64 native export stub.
     [ConditionalFact(nameof(IsX86OrX64))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/137448")]
     public static void AutoExports() => FixupTables(autoExports: true);
 
     [ConditionalFact(nameof(IsX86OrX64))]
