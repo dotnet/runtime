@@ -770,6 +770,16 @@ public:
         return m_addrExposed;
     }
 
+    bool RequiresGlobRefFlag() const
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        // Copy-omission candidates must be ordered before their addresses escape.
+        return IsAddressExposed() || lvIsLastUseCopyOmissionCandidate;
+#else
+        return IsAddressExposed();
+#endif // FEATURE_IMPLICIT_BYREFS
+    }
+
 #ifdef DEBUG
     void SetDefinedViaAddress(char value)
     {
@@ -3348,6 +3358,12 @@ public:
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
 
+    GenTree* gtNewValueSize(ValueSize size, var_types type);
+
+#ifdef FEATURE_SIMD
+    GenTree* gtNewVectorTSizeNode(var_types type);
+#endif
+
     GenTreeILOffset* gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset));
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
@@ -3391,6 +3407,8 @@ public:
     GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
 #if defined(TARGET_ARM64)
     GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(float value);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(double value);
 
     inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
     {
@@ -7361,7 +7379,6 @@ private:
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
     bool fgAddrCouldBeHeap(GenTree* addr);
-    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphFieldAddr(GenTree* tree);
@@ -8046,6 +8063,9 @@ protected:
     void     optValnumCSE_Init();
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
+#ifdef TARGET_XARCH
+    void optValnumCSE_ScreenMemoryUpdates();
+#endif
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
@@ -10975,7 +10995,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {

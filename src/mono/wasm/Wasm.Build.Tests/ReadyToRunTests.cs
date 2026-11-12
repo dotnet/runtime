@@ -120,7 +120,6 @@ namespace Wasm.Build.Tests
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
             if (stripDebugInfo is not null)
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
-            extraBuildArgs.Add("-v:diag");
 
             (_, string binlogPath) = BuildProjectWithoutAssert(config, info.ProjectName,
                 new PublishOptions(ExtraMSBuildArgs: string.Join(" ", extraBuildArgs)));
@@ -134,6 +133,32 @@ namespace Wasm.Build.Tests
             Assert.Contains("--opt-cross-module:*", crossgen2Args);
             if (extraCrossgen2Args.Length > 0)
                 Assert.Contains(extraCrossgen2Args, crossgen2Args);
+        }
+
+        // Composite ReadyToRun in workload mode. The wasm-opt lane runs it with WasmRunWasmOpt=true, which rewrites
+        // the composite in place with wasm-opt before it is staged; it must keep the self-installing Webcil host ABI
+        // and still run. Per-assembly wasm-opt coverage comes from NativeLibraryTests.ProjectWithNativeReference_ReadyToRun.
+        [Theory]
+        [InlineData(Configuration.Release)]
+        [TestCategory("wasm-opt")]
+        public async Task PublishRunAllPagesCompositeWithWorkload(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_pub_composite_workload",
+                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite>",
+                extraItems: """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />""");
+            LogR2RSuffixLibraryMarker();
+
+            (string _, string publishOutput) = BlazorPublish(info, config,
+                new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
+            AssertReadyToRunWasmOpt(GetObjSubDir(config, "R2R"), publishOutput, composite: true);
+            AssertCompositeReadyToRun(GetBlazorBinFrameworkDir(config, forPublish: true));
+
+            bool suffixLibraryLoaded = false;
+            await RunForPublishWithWebServer(new BlazorRunOptions(config,
+                CheckCounter: false,
+                OnConsoleMessage: (_, msg) => suffixLibraryLoaded |= msg.Contains(SuffixLibraryLoadedMessage),
+                ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
+            Assert.True(suffixLibraryLoaded, $"'{SuffixLibraryLoadedMessage}' was not logged; R2rSuffixLibrary.r2r did not load as a component assembly.");
         }
 
         private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
@@ -335,6 +360,33 @@ namespace Wasm.Build.Tests
             (string _, string output) = BlazorPublish(info, config,
                 new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
             Assert.Contains("PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies", output);
+        }
+
+        // An unnormalized intermediate path (e.g. ArtifactsPath=$(MSBuildThisFileDirectory)../artifacts) leaves '..'
+        // segments in OutputR2RImage. The stale-image prune must still recognize the freshly emitted images.
+        // A '//' link dir (no backslash, so MSBuild keeps it on Unix) makes globbed linked items differ in spelling.
+        [Theory]
+        [InlineData(Configuration.Release, /*composite*/ false)]
+        [InlineData(Configuration.Release, /*composite*/ true)]
+        [TestCategory("no-workload")]
+        public void PublishWithUnnormalizedIntermediatePathKeepsReadyToRunImages(Configuration config, bool composite)
+        {
+            string extraItems = composite
+                ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />"""
+                : string.Empty;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, $"r2r_unnormalized{(composite ? "_composite" : "")}",
+                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite><PublishTrimmed>true</PublishTrimmed>" +
+                    "<IntermediateOutputPath>$(MSBuildProjectDirectory)/obj/..//obj/$(Configuration)/</IntermediateOutputPath>" +
+                    "<IntermediateLinkDir>$(IntermediateOutputPath)$(TargetFramework)/linked/</IntermediateLinkDir>",
+                extraItems: extraItems);
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite)));
+
+            string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+            if (composite)
+                AssertCompositeReadyToRun(frameworkDir);
+            else
+                AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            AssertPerAppCrossgenRan(config, expected: true);
         }
 
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content

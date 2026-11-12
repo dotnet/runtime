@@ -1166,11 +1166,10 @@ extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
             pMT->EnsureInstanceActive();
             SIZE_T size = pMT->GetNumInstanceFieldBytes();
             NewArrayHolder<BYTE> memory(new BYTE[size]);
-            memset(memory.GetValue(), 0, size);
-            ExternalMemoryHandle* handle = ExternalMemoryHandle::Add(resultType, memory.GetValue());
-            pContext->pResultData = memory.GetValue();
+            memset(memory, 0, size);
+            ExternalMemoryHandle* handle = ExternalMemoryHandle::Add(resultType, memory);
+            pContext->pResultData = memory.Detach();
             pContext->pTemporaryResult = handle;
-            memory.SuppressRelease();
             pContext->flags |= FuncEvalValueTypeResult;
         }
         if (resultType.IsByRef())

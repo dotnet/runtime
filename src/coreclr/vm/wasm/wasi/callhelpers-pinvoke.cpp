@@ -96,7 +96,6 @@ extern "C" {
     int32_t SystemNative_FcntlGetFD (void *);
     int32_t SystemNative_FcntlGetIsNonBlocking (void *, void *);
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
-    int32_t SystemNative_FcntlSetIsNonBlocking (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
     void SystemNative_FreeHostEntry (void *);
@@ -111,7 +110,6 @@ extern "C" {
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
     int32_t SystemNative_GetHostEntryForName (void *, int32_t, void *);
-    int32_t SystemNative_GetHostName (void *, int32_t);
     int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
     int32_t SystemNative_GetIPv4MulticastOption (void *, int32_t, void *);
     int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
@@ -120,7 +118,6 @@ extern "C" {
     void * SystemNative_GetLoadLibraryError ();
     int64_t SystemNative_GetLowResolutionTimestamp ();
     int32_t SystemNative_GetMaximumAddressSize ();
-    int32_t SystemNative_GetNameInfo (void *, uint32_t, uint32_t, void *, uint32_t, void *, uint32_t, int32_t);
     void SystemNative_GetNonCryptographicallySecureRandomBytes (void *, int32_t);
     int32_t SystemNative_GetPeerName (void *, void *, void *);
     int32_t SystemNative_GetPort (void *, int32_t, void *);
@@ -175,7 +172,6 @@ extern "C" {
     int32_t SystemNative_ReceiveMessage (void *, void *, int32_t, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
-    int32_t SystemNative_Select (void *, int32_t, void *, int32_t, void *, int32_t, int32_t, int32_t, void *);
     int32_t SystemNative_Send (void *, void *, int32_t, int32_t, void *);
     int32_t SystemNative_SendFile (void *, void *, int64_t, int64_t, void *);
     int32_t SystemNative_SendMessage (void *, void *, int32_t, void *);
@@ -395,7 +391,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_CloseDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_Connect) // System.Net.Sockets
     DllImportEntry(SystemNative_Connectx) // System.Net.Sockets
-    DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_ConvertErrorPlatformToPal) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_CopyFile) // System.Private.CoreLib
     DllImportEntry(SystemNative_Disconnect) // System.Net.Sockets
@@ -403,14 +399,13 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FChMod) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_FLock) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Private.CoreLib
     DllImportEntry(SystemNative_FSync) // System.Private.CoreLib
     DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlGetFD) // System.Net.Sockets
-    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_FcntlSetIsNonBlocking) // System.Net.Sockets
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeHostEntry) // System.Net.NameResolution
@@ -425,7 +420,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
-    DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets
     DllImportEntry(SystemNative_GetIPv4MulticastOption) // System.Net.Sockets
     DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives, System.Net.Sockets
@@ -434,7 +428,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetLowResolutionTimestamp) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetMaximumAddressSize) // System.Net.Sockets
-    DllImportEntry(SystemNative_GetNameInfo) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetPeerName) // System.Net.Sockets
     DllImportEntry(SystemNative_GetPort) // System.Net.Primitives, System.Net.Sockets
@@ -489,7 +482,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ReceiveMessage) // System.Net.Sockets
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Select) // System.Net.Sockets
     DllImportEntry(SystemNative_Send) // System.Net.Sockets
     DllImportEntry(SystemNative_SendFile) // System.Net.Sockets
     DllImportEntry(SystemNative_SendMessage) // System.Net.Sockets
@@ -510,7 +502,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Shutdown) // System.Net.Sockets
     DllImportEntry(SystemNative_Socket) // System.Net.NameResolution, System.Net.Sockets
     DllImportEntry(SystemNative_Stat) // System.IO.Compression.ZipFile, System.Private.CoreLib
-    DllImportEntry(SystemNative_StrErrorR) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_StrErrorR) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_SymLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_SysConf) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_SysLog) // System.Private.CoreLib
@@ -593,7 +585,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
-    {"libSystem.Native", s_libSystem_Native, 141},
+    {"libSystem.Native", s_libSystem_Native, 137},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
@@ -718,7 +710,6 @@ extern "C" {
     int32_t QCall_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
     void * QCall_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
     void QCall_GCHandle_InternalFreeWithGCTransition (void *, void *) __asm__("GCHandle_InternalFreeWithGCTransition");
-    void QCall_GCInterface_AddMemoryPressure (uint64_t, void *) __asm__("GCInterface_AddMemoryPressure");
     void QCall_GCInterface_AllocateNewArray (void *, int32_t, int32_t, void *, void *) __asm__("GCInterface_AllocateNewArray");
     void QCall_GCInterface_Collect (int32_t, int32_t, uint32_t, void *) __asm__("GCInterface_Collect");
     int32_t QCall_GCInterface_EnableNoGCRegionCallback (void *, int64_t, void *) __asm__("GCInterface_EnableNoGCRegionCallback");
@@ -731,7 +722,6 @@ extern "C" {
     void QCall_GCInterface_ReRegisterForFinalize (void *, void *) __asm__("GCInterface_ReRegisterForFinalize");
     int32_t QCall_GCInterface_RefreshMemoryLimit (void *, void *) __asm__("GCInterface_RefreshMemoryLimit");
     void * QCall_GCInterface_RegisterFrozenSegment (void *, void *, void *) __asm__("GCInterface_RegisterFrozenSegment");
-    void QCall_GCInterface_RemoveMemoryPressure (uint64_t, void *) __asm__("GCInterface_RemoveMemoryPressure");
     int32_t QCall_GCInterface_StartNoGCRegion (int64_t, int32_t, int64_t, int32_t, void *) __asm__("GCInterface_StartNoGCRegion");
     void QCall_GCInterface_UnregisterFrozenSegment (void *, void *) __asm__("GCInterface_UnregisterFrozenSegment");
     int32_t QCall_GCInterface_WaitForFullGCApproach (int32_t, void *) __asm__("GCInterface_WaitForFullGCApproach");
@@ -780,6 +770,8 @@ extern "C" {
     void QCall_NativeRuntimeEventSource_LogContentionLockCreated (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogContentionLockCreated");
     void QCall_NativeRuntimeEventSource_LogContentionStart (uint32_t, uint32_t, void *, void *, uint64_t, void *) __asm__("NativeRuntimeEventSource_LogContentionStart");
     void QCall_NativeRuntimeEventSource_LogContentionStop (uint32_t, uint32_t, double, void *) __asm__("NativeRuntimeEventSource_LogContentionStop");
+    void QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogDecreaseMemoryPressure");
+    void QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure (uint64_t, void *) __asm__("NativeRuntimeEventSource_LogIncreaseMemoryPressure");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIODequeue");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (void *, void *, int32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOEnqueue");
     void QCall_NativeRuntimeEventSource_LogThreadPoolIOPack (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOPack");
@@ -1020,7 +1012,6 @@ static const Entry s_QCall[] = {
     { "FreeEnvironmentStringsW", (void*)&QCall_FreeEnvironmentStringsW },
     { "GCHandle_InternalAllocWithGCTransition", (void*)&QCall_GCHandle_InternalAllocWithGCTransition },
     { "GCHandle_InternalFreeWithGCTransition", (void*)&QCall_GCHandle_InternalFreeWithGCTransition },
-    { "GCInterface_AddMemoryPressure", (void*)&QCall_GCInterface_AddMemoryPressure },
     { "GCInterface_AllocateNewArray", (void*)&QCall_GCInterface_AllocateNewArray },
     { "GCInterface_Collect", (void*)&QCall_GCInterface_Collect },
     { "GCInterface_EnableNoGCRegionCallback", (void*)&QCall_GCInterface_EnableNoGCRegionCallback },
@@ -1033,7 +1024,6 @@ static const Entry s_QCall[] = {
     { "GCInterface_ReRegisterForFinalize", (void*)&QCall_GCInterface_ReRegisterForFinalize },
     { "GCInterface_RefreshMemoryLimit", (void*)&QCall_GCInterface_RefreshMemoryLimit },
     { "GCInterface_RegisterFrozenSegment", (void*)&QCall_GCInterface_RegisterFrozenSegment },
-    { "GCInterface_RemoveMemoryPressure", (void*)&QCall_GCInterface_RemoveMemoryPressure },
     { "GCInterface_StartNoGCRegion", (void*)&QCall_GCInterface_StartNoGCRegion },
     { "GCInterface_UnregisterFrozenSegment", (void*)&QCall_GCInterface_UnregisterFrozenSegment },
     { "GCInterface_WaitForFullGCApproach", (void*)&QCall_GCInterface_WaitForFullGCApproach },
@@ -1082,6 +1072,8 @@ static const Entry s_QCall[] = {
     { "NativeRuntimeEventSource_LogContentionLockCreated", (void*)&QCall_NativeRuntimeEventSource_LogContentionLockCreated },
     { "NativeRuntimeEventSource_LogContentionStart", (void*)&QCall_NativeRuntimeEventSource_LogContentionStart },
     { "NativeRuntimeEventSource_LogContentionStop", (void*)&QCall_NativeRuntimeEventSource_LogContentionStop },
+    { "NativeRuntimeEventSource_LogDecreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogDecreaseMemoryPressure },
+    { "NativeRuntimeEventSource_LogIncreaseMemoryPressure", (void*)&QCall_NativeRuntimeEventSource_LogIncreaseMemoryPressure },
     { "NativeRuntimeEventSource_LogThreadPoolIODequeue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue },
     { "NativeRuntimeEventSource_LogThreadPoolIOEnqueue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue },
     { "NativeRuntimeEventSource_LogThreadPoolIOPack", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOPack },

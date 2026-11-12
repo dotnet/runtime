@@ -32,7 +32,6 @@ The main Docker images are the most commonly used ones, and the ones you will pr
 | Azure Linux (x64) | Ubuntu 22.04 | Arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-arm`          | `/crossrootfs/arm`   |
 | Azure Linux (x64) | Alpine 3.17  | Arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-arm64-musl` | `/crossrootfs/arm64` |
 | Azure Linux (x64) | Ubuntu 18.04 | Arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-arm64`        | `/crossrootfs/arm64` |
-| Azure Linux (x64) | Ubuntu 18.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-x86`          | `/crossrootfs/x86`   |
 
 **Extended Docker Images**
 

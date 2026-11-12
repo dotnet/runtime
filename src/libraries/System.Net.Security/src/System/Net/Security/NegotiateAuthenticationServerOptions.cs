@@ -28,6 +28,7 @@ namespace System.Net.Security
         /// Common values are Negotiate, NTLM or Kerberos. Default value is Negotiate.
         /// </summary>
         /// <remarks>
+        /// Specifying Kerberos or NTLM restricts authentication to that protocol.
         /// NTLM is a legacy authentication protocol and should be used only when required for
         /// compatibility with existing systems. Negotiate prefers Kerberos when available but
         /// can fall back to NTLM. To prevent NTLM, request Kerberos explicitly when supported
@@ -55,6 +56,15 @@ namespace System.Net.Security
         /// <summary>
         /// Indicates extended security and validation policies.
         /// </summary>
+        /// <remarks>
+        /// On Linux, setting <see cref="ExtendedProtectionPolicy.PolicyEnforcement" /> to
+        /// <see cref="PolicyEnforcement.Always" /> with a non-null <see cref="Binding" /> requires
+        /// the GSSAPI provider to report <c>GSS_C_CHANNEL_BOUND_FLAG</c> after authentication.
+        /// MIT Kerberos supports this flag starting with version 1.19; other providers must also
+        /// support reporting it. Authentication fails with <see cref="NegotiateAuthenticationStatusCode.BadBinding" />
+        /// when matching channel bindings cannot be confirmed, including when an older provider
+        /// does not report the flag even for matching bindings.
+        /// </remarks>
         public ExtendedProtectionPolicy? Policy { get; set; }
 
         /// <summary>

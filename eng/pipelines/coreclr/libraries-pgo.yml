@@ -73,6 +73,7 @@ extends:
                   scenarios:
                     - defaultpgo
                     - fullpgo
+                    - fullpgo_multiguess_gdv
                     - fullpgo_methodprofiling
                     - fullpgo_random_gdv
                     - fullpgo_random_gdv_methodprofiling_only

@@ -1758,6 +1758,14 @@ void WrapICorJitInfo::recordWasmManagedCallSig(
     API_LEAVE(recordWasmManagedCallSig);
 }
 
+void WrapICorJitInfo::recordWasmVirtualFunctionPointerLookup(
+          CORINFO_METHOD_HANDLE method)
+{
+    API_ENTER(recordWasmVirtualFunctionPointerLookup);
+    wrapHnd->recordWasmVirtualFunctionPointerLookup(method);
+    API_LEAVE(recordWasmVirtualFunctionPointerLookup);
+}
+
 void WrapICorJitInfo::recordRelocation(
           void* location,
           void* locationRW,

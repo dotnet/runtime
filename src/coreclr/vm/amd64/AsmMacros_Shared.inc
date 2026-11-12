@@ -25,6 +25,15 @@ G_TRAP_THREADS TEXTEQU <g_TrapReturningThreads>
 
 EXTERN g_pPollGC : QWORD
 
+;; CallEHFunclet loads the preserved registers of the parent frame from the CONTEXT
+LOAD_FUNCLET_REGISTER macro base, reg, scratch
+        mov     reg, [base + OFFSETOF__CONTEXT__&reg]
+        endm
+
+LOAD_FUNCLET_XMM_REGISTER macro base, index
+        movdqa  xmm&index, [base + OFFSETOF__CONTEXT__Xmm&index]
+        endm
+
 TAILCALL_GC_POLL_RARE macro
         mov     rax, g_pPollGC
         TAILJMP_RAX

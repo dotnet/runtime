@@ -297,9 +297,9 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
     void STDCALL JIT_TailCall();                    // JIThelp.asm
-#endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#endif // TARGET_X86
 
 #ifdef PROFILING_SUPPORTED
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
@@ -527,14 +527,7 @@ public:
             MODE_ANY;
         } CONTRACTL_END;
 
-        if (m_CodeHeaderRW != m_CodeHeader)
-            freeArrayInternal(m_CodeHeaderRW);
-
-        if (m_pOffsetMapping != NULL)
-            freeArrayInternal(m_pOffsetMapping);
-
-        if (m_pNativeVarInfo != NULL)
-            freeArrayInternal(m_pNativeVarInfo);
+        CEECodeGenInfo::ResetForJitRetry();
 
 #ifdef FEATURE_PGO
         if (m_foundPgoData != NULL)
