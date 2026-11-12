@@ -143,6 +143,27 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# OpenHarmony arm64
+
+- ${{ if or(containsValue(parameters.platforms, 'openharmony_arm64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: openharmony
+      archType: arm64
+      targetRid: openharmony-arm64
+      platform: openharmony_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        hostedOs: linux
+        crossBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux Bionic arm
 
 - ${{ if containsValue(parameters.platforms, 'linux_bionic_arm') }}:
