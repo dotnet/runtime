@@ -262,6 +262,31 @@ public class WasmGCLiveness
         Assert.Equal(801, AcrossThrowingCheck(kind, null, new int[1], a, b, expected));
     }
 
+    [Theory]
+    [InlineData(ThrowingCheck.Null, 0, 0, typeof(NullReferenceException))]
+    [InlineData(ThrowingCheck.Bounds, 1, 0, typeof(IndexOutOfRangeException))]
+    [InlineData(ThrowingCheck.Overflow, int.MaxValue, 1, typeof(OverflowException))]
+    [InlineData(ThrowingCheck.Division, 1, 0, typeof(DivideByZeroException))]
+    [InlineData(ThrowingCheck.Division, int.MinValue, -1, typeof(OverflowException))]
+    public static void CheckThrowingMethodWithoutEH(ThrowingCheck kind, int a, int b, Type expected)
+    {
+        Exception exception = Assert.Throws(expected, () => ThrowWithoutEH(kind, null, new int[1], a, b));
+        Assert.Contains(nameof(ThrowWithoutEH), exception.StackTrace);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ThrowWithoutEH(ThrowingCheck kind, Box obj, int[] array, int a, int b)
+    {
+        return kind switch
+        {
+            ThrowingCheck.Null => obj.Value,
+            ThrowingCheck.Bounds => array[a],
+            ThrowingCheck.Overflow => checked(a + b),
+            ThrowingCheck.Division => a / b,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool CollectInFilter(Exception exception, Type expected)
     {

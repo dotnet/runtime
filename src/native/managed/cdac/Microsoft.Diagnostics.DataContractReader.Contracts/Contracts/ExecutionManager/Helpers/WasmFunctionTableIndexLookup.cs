@@ -66,8 +66,12 @@ internal sealed class WasmFunctionTableIndexLookup
 
     // Mirrors ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex.
     public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
+        => TryGetVirtualIPBase(functionTableIndex, out baseVirtualIP, out _);
+
+    public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
     {
         baseVirtualIP = 0;
+        unwindDataAddress = TargetPointer.Null;
         Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
         if (section is null)
             return false;
@@ -91,6 +95,7 @@ internal sealed class WasmFunctionTableIndexLookup
             }
 
             baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
+            unwindDataAddress = r2rInfo.LoadedImageBase + runtimeFunction.UnwindData;
             return true;
         }
     }
@@ -122,9 +127,10 @@ internal sealed class WasmFunctionTableIndexLookup
         return true;
     }
 
-    public bool TryGetCoreLibVirtualIPBase(uint runtimeFunctionIndex, out ulong baseVirtualIP)
+    public bool TryGetCoreLibVirtualIPBase(uint runtimeFunctionIndex, out ulong baseVirtualIP, out TargetPointer unwindDataAddress)
     {
         baseVirtualIP = 0;
+        unwindDataAddress = TargetPointer.Null;
         if (!_target.TryReadGlobalPointer(Constants.Globals.FunctionTableIndexRangeList, out TargetPointer? listHeadSlot))
             return false;
 
@@ -147,6 +153,7 @@ internal sealed class WasmFunctionTableIndexLookup
                     return false;
 
                 baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
+                unwindDataAddress = r2rInfo.LoadedImageBase + runtimeFunction.UnwindData;
                 return true;
             }
 
