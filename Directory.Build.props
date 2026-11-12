@@ -246,8 +246,6 @@
     <_WasmBuildTestsJobsListFlavor Condition="'$(RuntimeFlavor)' == 'CoreCLR'">coreclr</_WasmBuildTestsJobsListFlavor>
     <_WasmBuildTestsJobsListFlavor Condition="'$(_WasmBuildTestsJobsListFlavor)' == ''">mono</_WasmBuildTestsJobsListFlavor>
     <WasmBuildTestsJobsListFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', 'Wasm.Build.Tests', 'BuildWasmAppsJobsList.$(_WasmBuildTestsJobsListFlavor).txt'))</WasmBuildTestsJobsListFile>
-    <!-- Same, for the lane that runs without the workload (only generated for CoreCLR, the only flavor that fans that lane out). -->
-    <WasmBuildTestsNoWorkloadJobsListFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', 'Wasm.Build.Tests', 'BuildWasmAppsNoWorkloadJobsList.$(_WasmBuildTestsJobsListFlavor).txt'))</WasmBuildTestsNoWorkloadJobsListFile>
 
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
     <CoreLibRefDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'ref'))</CoreLibRefDir>

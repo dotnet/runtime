@@ -265,7 +265,7 @@
              TaskFactory="TaskHostFactory" />
 
   <!--
-    Generates the per-class Helix work item lists consumed by src/libraries/sendtohelix-browser.targets,
+    Generates the per-class Helix work item list consumed by src/libraries/sendtohelix-browser.targets,
     so that adding a test class is enough to get it running on Helix.
 
     This has to run before ZipTestArchive, because $(BundleDir) is $(OutDir) for this project and
@@ -287,20 +287,5 @@
     <GenerateXunitTestClassList Assembly="$(TargetPath)"
                                 OutputPath="$(WasmBuildTestsJobsListFile)"
                                 ExcludedTestCategories="@(_HelixJobsListExcludedCategory)" />
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-      <!--
-        The no-workload lane fans out per class for CoreCLR only (see $(_FanOutPerTestClass) in
-        sendtohelix-wasm.targets). It selects `-trait category=no-workload`, so only classes with a
-        runnable test in that category belong in its list.
-      -->
-      <_HelixNoWorkloadJobsListExcludedCategory Include="IgnoreForCI;failing;mono" />
-    </ItemGroup>
-
-    <GenerateXunitTestClassList Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
-                                Assembly="$(TargetPath)"
-                                OutputPath="$(WasmBuildTestsNoWorkloadJobsListFile)"
-                                IncludedTestCategories="no-workload"
-                                ExcludedTestCategories="@(_HelixNoWorkloadJobsListExcludedCategory)" />
   </Target>
 </Project>
