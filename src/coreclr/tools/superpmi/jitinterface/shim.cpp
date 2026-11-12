@@ -12,6 +12,8 @@
 // it: the call that the JIT made succeeded, so the exception doesn't propagate.
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <new>
 
@@ -19,6 +21,7 @@
 #include <excpt.h>
 #endif
 
+#include "jitfaultguard.h"
 #include "jitinterface_generated.h"
 #include "../../../inc/corjithost.h"
 
@@ -507,9 +510,25 @@ public:
 
         // Ends the recording when the JIT returns, or when an exception escapes it (as the destructors run while
         // the exception unwinds, also for the structured exceptions with /EHa).
+#ifdef JIT_FAULT_GUARD
+        // Elsewhere than on Windows, a fault of the JIT (such as a segmentation fault) doesn't unwind: the recording
+        // ends when the JIT is abandoned, and then the process ends, as it would without the collector.
+        int signal;
+        {
+            EndCompile end = {this, jitInfoHandle, nativeEntry, nativeSizeOfCode, CORJIT_INTERNALERROR};
+            auto call = [&]() { end.result = _jit->compileMethod(&jitInfo, info, flags, nativeEntry, nativeSizeOfCode); };
+            int code = 0;
+            signal = JitFaultGuard::CallCatchingJitFaults(_jit, call, &code);
+            if (signal == 0)
+                return end.result;
+        }
+        fprintf(stderr, "SuperPMI collector: the JIT failed with signal %d (%s); the method context was saved.\n", signal, strsignal(signal));
+        abort();
+#else
         EndCompile end = {this, jitInfoHandle, nativeEntry, nativeSizeOfCode, CORJIT_INTERNALERROR};
         end.result = _jit->compileMethod(&jitInfo, info, flags, nativeEntry, nativeSizeOfCode);
         return end.result;
+#endif
     }
 
     void ProcessShutdownWork(ICorStaticInfo* info) override

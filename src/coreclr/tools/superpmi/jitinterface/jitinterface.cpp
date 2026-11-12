@@ -19,6 +19,7 @@
 #endif
 
 #include "dllexport.h"
+#include "jitfaultguard.h"
 #include "jitinterface_generated.h"
 #include "../../../inc/coredistools.h"
 
@@ -154,6 +155,19 @@ DLL_EXPORT int JitCompileMethod(CorInfoExceptionClass** ppException, uint32_t* p
     {
         return CORJIT_INTERNALERROR;
     }
+#elif defined(JIT_FAULT_GUARD)
+    // Recover from JIT crashes, such as segmentation faults, which are reported with the codes of the corresponding
+    // Windows exceptions.
+    int result = CORJIT_INTERNALERROR;
+    auto call = [&]() { result = JitCompileMethodCpp(ppException, pExceptionCode, pJit, thisHandle, callbacks, methodInfo, flags, entryAddress, nativeSizeOfCode); };
+    int code = 0;
+    int signal = JitFaultGuard::CallCatchingJitFaults(pJit, call, &code);
+    if (signal != 0)
+    {
+        *pExceptionCode = JitFaultGuard::ExceptionCode(signal, code);
+        return CORJIT_INTERNALERROR;
+    }
+    return result;
 #else
     return JitCompileMethodCpp(ppException, pExceptionCode, pJit, thisHandle, callbacks, methodInfo, flags, entryAddress, nativeSizeOfCode);
 #endif
