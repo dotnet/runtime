@@ -14,8 +14,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <GenerateInstallers>true</GenerateInstallers>
-    <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildDebPackage>
-    <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildRpmPackage>
+    <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">true</BuildDebPackage>
+    <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">true</BuildRpmPackage>
     <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
   </PropertyGroup>
 </Project>
