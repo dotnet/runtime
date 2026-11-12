@@ -296,9 +296,8 @@
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
           Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'" />
 
-  <!-- WASI ReadyToRun tests run with an interpreted CoreLib (https://github.com/dotnet/runtime/issues/134949), so they can
-       only use the runtime's baseline instruction sets. Runs with WholeProgramCompositeBuildMode compile CoreLib into the
-       composite and can set PublishReadyToRunInstructionSet=relaxed-simd. -->
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134949 WASI ReadyToRun tests run
+       with an interpreted CoreLib currently so they can only use the runtime's baseline instruction sets. -->
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
     <PublishReadyToRunInstructionSet Condition="'$(PublishReadyToRunInstructionSet)' == ''">-relaxed-simd</PublishReadyToRunInstructionSet>
   </PropertyGroup>
