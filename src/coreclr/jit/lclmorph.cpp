@@ -118,7 +118,7 @@ public:
             return GenTree::VisitResult::Continue;
         };
 
-        call->VisitPhysicalLocalDefNodes(m_compiler, moveToEnd);
+        call->VisitCallLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------
@@ -1509,7 +1509,8 @@ private:
                 CallArg* asyncResumedDef = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
                 if ((asyncResumedDef != nullptr) && (val.Node() == asyncResumedDef->GetNode()))
                 {
-                    defSize = TARGET_POINTER_SIZE;
+                    callUser->GetAsyncInfo().DefinesResumedIndicator = true;
+                    defSize                                          = TARGET_POINTER_SIZE;
                 }
             }
 
@@ -2058,9 +2059,9 @@ private:
     bool MorphStructField(GenTreeIndir* node, GenTree* user)
     {
         GenTree* addr = node->Addr();
-        if (node->IsVolatile() && (!addr->OperIs(GT_FIELD_ADDR) || ((addr->gtFlags & GTF_FLD_DEREFERENCED) == 0)))
+        if (node->IsVolatile())
         {
-            // TODO-Bug: transforming volatile indirections like this is not legal. The above condition is a quirk.
+            // A volatile indirection must stay an indirection, so the address escapes and the struct gets exposed.
             return false;
         }
 

@@ -41,11 +41,11 @@
         - src/tasks/MobileBuildTasks/Android/AndroidProject.cs
         - src/tasks/AndroidAppBuilder/ApkBuilder.cs
         - src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets
-        - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
+        - https://github.com/dotnet/sdk repo > src/Layout/redist/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>24</AndroidApiLevelMin>
-    <iOSVersionMin>13.0</iOSVersionMin>
-    <tvOSVersionMin>13.0</tvOSVersionMin>
+    <iOSVersionMin>15.0</iOSVersionMin>
+    <tvOSVersionMin>15.0</tvOSVersionMin>
     <macOSVersionMin>14.0</macOSVersionMin>
     <MacCatalystVersionMin>17.0</MacCatalystVersionMin>
   </PropertyGroup>
@@ -105,7 +105,7 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <ApiCompatNetCoreAppBaselineVersion>11.0.0-rc.1.26425.128</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineVersion>11.0.0-rc.3.26522.148</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net11.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 

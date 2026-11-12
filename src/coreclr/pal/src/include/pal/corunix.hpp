@@ -84,7 +84,7 @@ namespace CorUnix
             const WCHAR *pwsz
             )
         {
-            SetStringWithLength(pwsz, PAL_wcslen(pwsz));
+            SetStringWithLength(pwsz, minipal_u16_strlen((const CHAR16_T*)pwsz));
         };
 
         void
@@ -157,11 +157,7 @@ namespace CorUnix
 
     enum PalObjectTypeId
     {
-        otiFile = 0,
-        otiFileMapping,
-        otiSocket,
-        otiThread,
-        otiIOCompletionPort,
+        otiThread = 0,
         ObjectTypeIdCount    // This entry must come last in the enumeration
     };
 

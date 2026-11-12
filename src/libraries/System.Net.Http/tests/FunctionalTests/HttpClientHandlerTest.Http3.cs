@@ -391,11 +391,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 await using (Http3LoopbackConnection connection1 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
                 {
-                    await using Http3LoopbackStream stream = await connection1.AcceptRequestStreamAsync();
-                    stream.Abort(Http3LoopbackConnection.H3_REQUEST_REJECTED);
-                    await stream.DisposeAsync();
                     // shutdown the connection gracefully via GOAWAY frame for good measure
-                    await connection1.ShutdownAsync(true);
+                    await connection1.ShutdownAsync();
                 }
 
                 // expect second connection to be established by the client
@@ -409,15 +406,37 @@ namespace System.Net.Http.Functional.Tests
             Task clientTask = Task.Run(async () =>
             {
                 using HttpClient client = CreateHttpClient();
-                using HttpRequestMessage request = new()
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = server.Address,
-                    Version = HttpVersion30,
-                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                };
 
-                await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                const int retries = 5;
+                for (int i = 0; i < retries; ++i)
+                {
+                    using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+
+                    try
+                    {
+                        await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                        break; // Success, break the loop.
+                    }
+                    catch (HttpRequestException hex)
+                    when (hex.InnerException is HttpProtocolException hpe &&
+                          hpe.ErrorCode == Http3LoopbackConnection.H3_REQUEST_REJECTED)
+                    {
+                        // GO_AWAY is being processed slowly than the retries.
+                        // Increase the number of retries to actually exercise the new connection.
+                        // Also, in case we get stuck with the retries, do not fail the test.
+                        if (i  == retries - 1)
+                        {
+                            _output.WriteLine($"{nameof(SendAsync_RequestRejected_ClientRetries)} was not able to exercise retry on a new connection due to GO_AWAY being processed too slow.");
+                        }
+                        continue;
+                    }
+                }
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);

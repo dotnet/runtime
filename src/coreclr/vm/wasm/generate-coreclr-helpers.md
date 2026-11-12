@@ -135,7 +135,8 @@ The Release `browser_wasm` CoreCLR build leg and the `wasi_wasm` CoreCLR build-o
 [`wasm-coreclr-callhelpers-check.yml`](../../../../eng/pipelines/common/templates/wasm-coreclr-callhelpers-check.yml)
 after building. It regenerates the leg's own flavor with `--target-os` and fails if
 `src/coreclr/vm/wasm/<os>/` differs from what is committed, printing the diff and the commands to
-fix it. A stale table still builds, but the corerun that links it crashes at run time; a missing
+fix it. A stale QCall table can fail native linking if it still references a removed entrypoint.
+Other stale entries can crash corerun at run time; a missing
 `[UnmanagedCallersOnly]` thunk, for example, fails startup with
 `GetUnmanagedCallersOnlyThunk: unknown thunk`. Library tests do not catch this because the app
 relink generates its own tables.

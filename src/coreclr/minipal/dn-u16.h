@@ -11,6 +11,8 @@
 size_t u16_strlen(const WCHAR* str);
 int u16_strcmp(const WCHAR* str1, const WCHAR* str2);
 int u16_strncmp(const WCHAR* str1, const WCHAR* str2, size_t count);
+int u16_stricmp(const WCHAR* str1, const WCHAR* str2);
+int u16_strnicmp(const WCHAR* str1, const WCHAR* str2, size_t count);
 WCHAR* u16_strcat_s(WCHAR* dst, size_t dstLen, const WCHAR* src);
 WCHAR* u16_strcpy_s(WCHAR* dst, size_t dstLen, const WCHAR* src);
 WCHAR* u16_strncpy_s(WCHAR* dst, size_t dstLen, const WCHAR* src, size_t count);
