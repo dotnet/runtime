@@ -260,7 +260,10 @@ Copyright (c) .NET Foundation. All rights reserved.
            is not populated, so the trimmed framework assemblies drop out of ResolvedFileToPublish and are
            omitted from the served bundle (empty coreAssembly, non-bootable). The linked dir holds exactly
            the trimmed closure, so this is equivalent on a full build and correct on an incremental one. -->
-      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
+      <_WasmLinkedClosureFile Include="$(IntermediateLinkDir)*.dll" />
+      <!-- Respell like ILLink's items; a glob rewrites unnormalized paths, which would escape publish Removes. -->
+      <_WasmReadyToRunCompileInput Include="@(_WasmLinkedClosureFile->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+      <_WasmLinkedClosureFile Remove="@(_WasmLinkedClosureFile)" />
       <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(FileName)%(Extension)"
@@ -292,6 +295,9 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <!-- The workload targets record settings for steps that rewrite the images in place after crossgen2
+           (wasm-opt), so changing them recompiles every image. -->
+      <_WasmReadyToRunState Condition="'$(_WasmReadyToRunPostProcessState)' != ''">$(_WasmReadyToRunState)|PostProcess=$(_WasmReadyToRunPostProcessState)</_WasmReadyToRunState>
       <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
       <_WasmReadyToRunStateFile>$(_WasmPublishR2RDir)browser-r2r-state.stamp</_WasmReadyToRunStateFile>
     </PropertyGroup>
@@ -317,6 +323,16 @@ Copyright (c) .NET Foundation. All rights reserved.
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
       <FileWrites Include="$(_WasmReadyToRunStateFile)" />
     </ItemGroup>
+  </Target>
+
+  <!-- wasm-opt comes from the Emscripten SDK, so the workload's BrowserWasmApp.CoreCLR.targets owns the
+       ReadyToRun wasm-opt pass and sets _WasmCoreClrR2RWasmOptSupported. The workload manifest already requires
+       the workload when WasmRunWasmOpt=true; this covers builds that still lack its targets, for example with
+       UsingBrowserRuntimeWorkload=false. -->
+  <Target Name="_WasmCoreClrWarnR2RWasmOptUnavailable"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmRunWasmOpt)' == 'true' and '$(_WasmCoreClrR2RWasmOptSupported)' != 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <Warning Text="WasmRunWasmOpt=true is ignored for ReadyToRun images because the wasm-tools workload is not in use. Install the wasm-tools workload to optimize ReadyToRun images with wasm-opt." />
   </Target>
 
   <!-- Delete per-app images and composite component stubs left in obj/R2R by a previous build or

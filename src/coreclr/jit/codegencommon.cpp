@@ -439,7 +439,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
-    genForceFuncletFrameType5              = false;
     genReverseAndPairCalleeSavedRegisters  = false;
 #endif // TARGET_ARM64
 }

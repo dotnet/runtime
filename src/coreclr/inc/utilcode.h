@@ -3016,24 +3016,6 @@ namespace clr
     }
 }
 
-// clr::SafeDelete
-namespace clr
-{
-    //=================================================================================================================
-    template <typename PtrT>
-    static inline
-    typename std::enable_if< std::is_pointer<PtrT>::value, PtrT >::type
-    SafeDelete(PtrT & ptr)
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        if (ptr != nullptr)
-        {
-            delete ptr;
-            ptr = nullptr;
-        }
-    }
-}
-
 // ======================================================================================
 // Spinning support (used by VM and by MetaData via file:..\Utilcode\UTSem.cpp)
 

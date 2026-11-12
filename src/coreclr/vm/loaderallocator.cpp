@@ -71,7 +71,6 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     m_asyncContinuationsManager = NULL;
 
-    m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
     m_fMarked = false;
@@ -1045,9 +1044,6 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
 {
     STANDARD_VM_CONTRACT;
 
-    GCInterface::AddMemoryPressure(30000);
-    m_fGCPressure = true;
-
     GCX_COOP();
 
     //
@@ -1350,7 +1346,6 @@ BYTE *LoaderAllocator::GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE *
     return buffer;
 }
 
-// in retail should be called from AppDomain::Terminate
 void LoaderAllocator::Terminate()
 {
     CONTRACTL {
@@ -1368,12 +1363,8 @@ void LoaderAllocator::Terminate()
 
     DeleteMarshalingData();
 
-    if (m_fGCPressure)
-    {
-        GCX_PREEMP();
-        GCInterface::RemoveMemoryPressure(30000);
-        m_fGCPressure = false;
-    }
+    // Must run before the heaps are destroyed.
+    m_ILStubCache.FreeCollectibleStubsCompileTimeState();
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pUMEntryThunkCache;
@@ -2087,7 +2078,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     {
         FailedTypeInitCleanupListItem * pItem = m_failedTypeInitCleanupList.RemoveHead();
 
-        ListLockHolder pInitLock(pLock);
+        ListLockHolder pInitLock = pLock->TakeLock();
         pLock->Unlink(pItem->m_pListLockEntry);
     }
 }

@@ -144,7 +144,6 @@ namespace System.Runtime
         // Miscellaneous helpers.
         //
 
-#if TARGET_AMD64
         [RuntimeImport(RuntimeLibrary, "CallEHFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe byte* CallEHFunclet(
@@ -162,32 +161,12 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe int CallEHFilterFunclet(
             object exceptionObj, void* pvRegDisplay, byte* pFilterIP, UIntPtr* pFuncletCallerSP);
-#else
-        [RuntimeImport(RuntimeLibrary, "RhpCallCatchFunclet")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpCallCatchFunclet(
-            object exceptionObj, byte* pHandlerIP, void* pvRegDisplay, ref EH.ExInfo exInfo);
-
-        [RuntimeImport(RuntimeLibrary, "RhpCallFinallyFunclet")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpCallFinallyFunclet(byte* pHandlerIP, void* pvRegDisplay);
-
-        [RuntimeImport(RuntimeLibrary, "RhpCallFilterFunclet")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool RhpCallFilterFunclet(
-            object exceptionObj, byte* pFilterIP, void* pvRegDisplay);
-#endif
 
 #if FEATURE_OBJCMARSHAL
         [RuntimeImport(RuntimeLibrary, "RhpCallPropagateExceptionCallback")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if TARGET_AMD64
         internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
             IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, IntPtr pPreviousTransitionFrame);
-#else
-        internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
-            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo, IntPtr pPreviousTransitionFrame);
-#endif
 #endif // FEATURE_OBJCMARSHAL
 
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]
