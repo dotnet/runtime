@@ -74,12 +74,6 @@ extends:
           parameters:
             runtimeRepoAlias: self
             performanceRepoAlias: performance
-            monoMicro:
-              enabled: false
-            monoInterpreter:
-              enabled: false
-            monoAot:
-              enabled: false
             jobParameters:
               ${{ if parameters.onlySanityCheck }}:
                 onlySanityCheck: true
