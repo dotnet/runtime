@@ -39,16 +39,11 @@ namespace System.Formats.Tar.Tests
 
 
         [Theory]
-        [InlineData("\n", "value")]
         [InlineData("=", "value")]
-        [InlineData("\nkey", "value")]
-        [InlineData("k\ney", "value")]
-        [InlineData("key\n", "value")]
         [InlineData("=key", "value")]
         [InlineData("ke=y", "value")]
         [InlineData("key=", "value")]
         [InlineData("key=", "value\n")]
-        [InlineData("key\n", "value\n")]
         public void Disallowed_ExtendedAttributes_SeparatorCharacters(string key, string value)
         {
             Dictionary<string, string> extendedAttribute = new Dictionary<string, string>() { { key, value } };

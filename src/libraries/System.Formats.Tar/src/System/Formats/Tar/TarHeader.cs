@@ -151,12 +151,13 @@ namespace System.Formats.Tar
             }
         }
 
+        // POSIX permits any UTF-8 character except '=' in an extended-header keyword.
+        // https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pax.html#tag_20_94_13_03
         private static void ValidateExtendedAttribute(KeyValuePair<string, string> extendedAttribute)
         {
-            int index = extendedAttribute.Key.AsSpan().IndexOfAny('=', '\n');
-            if (index >= 0)
+            if (extendedAttribute.Key.AsSpan().Contains('='))
             {
-                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, extendedAttribute.Key, extendedAttribute.Key[index] == '\n' ? "\\n" : extendedAttribute.Key[index]));
+                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, extendedAttribute.Key, '='));
             }
         }
 

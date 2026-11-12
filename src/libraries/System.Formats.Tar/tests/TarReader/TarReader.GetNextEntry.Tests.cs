@@ -90,6 +90,7 @@ namespace System.Formats.Tar.Tests
                 ["path"] = "file.txt",
                 ["mtime"] = "0",
                 ["SCHILY.xattr.user.test"] = "a\nb",
+                ["SCHILY.xattr.user\nkey"] = "value",
                 ["leading"] = "\nvalue",
                 ["trailing"] = "value\n",
                 ["binary"] = "\0\n\n\0",

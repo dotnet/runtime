@@ -140,6 +140,11 @@ namespace System.Formats.Tar.Tests
             yield return new object[] { "key", "value\n" };
             yield return new object[] { "key", "\0\n\n\0" };
             yield return new object[] { "key", "\u00e9\n\u6f22" };
+            yield return new object[] { "\n", "value" };
+            yield return new object[] { "\nkey", "value" };
+            yield return new object[] { "k\ney", "value" };
+            yield return new object[] { "key\n", "value" };
+            yield return new object[] { "key\n", "value\n" };
             // real world scenario
             yield return new object[] { "MSWINDOWS.rawsd", "AQAAgBQAAAAkAAAAAAAAAAAAAAABAgAAAAAABSAAAAAhAgAAAQIAAAAAAAUgAAAAIQIAAA==" };
         }
