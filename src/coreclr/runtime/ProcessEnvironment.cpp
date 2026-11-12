@@ -416,6 +416,10 @@ char* ProcessEnvironment_GetStringsUtf8()
         for (char** entry = env; entry != nullptr && *entry != nullptr; entry++)
         {
             size_t length = strlen(*entry) + 1;
+            if (length == 1)
+            {
+                continue;
+            }
             memcpy(dest, *entry, length);
             dest += length;
         }
