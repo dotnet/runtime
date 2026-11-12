@@ -718,6 +718,8 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
         DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[currArgIndex];
         DebuggerFuncEvalArgument* pArgument = &pArguments[currArgIndex];
         pArgument->pLiteral = pFEAD->argLiteralData[0].GetNativeAddress();
+        pArgument->pTypeData = static_cast<BYTE*>(CORDB_ADDRESS_TO_PTR(pFEAD->fullArgType));
+        pArgument->typeNodeCount = pFEAD->fullArgTypeNodeCount;
         pArgument->elementType = pFEAD->argElementType;
         pArgument->flags = (pFEAD->argIsLiteral ? FuncEvalLiteral : 0) |
             (pFEAD->argIsHandleValue ? FuncEvalHandle : 0) |
@@ -1022,22 +1024,6 @@ static HRESULT ProtectFuncEvalArgumentStorage(
     return S_OK;
 }
 
-bool Debugger::ReadFuncEvalTypeHandles(DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(count == pDE->m_genericArgsCount);
-    TypeDataWalk walk(pDE->GetTypeArgData(), pDE->m_genericArgsNodeCount);
-    walk.ReadTypeHandles(count, pTypes);
-    return walk.Finished();
-}
-
 static BYTE* AllocateFuncEvalExternalResult(DebuggerEval* pDE)
 {
     CONTRACTL
@@ -1089,24 +1075,6 @@ void Debugger::ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultTy
     pDE->m_funcEvalResult = new (interopsafe) DebuggerFuncEvalResult(pDE, resultType);
 }
 
-TypeHandle Debugger::GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(index < pDE->m_argCount);
-    DebuggerIPCE_FuncEvalArgData* pArg = &pDE->GetArgData()[index];
-    Debugger::TypeDataWalk walk(
-        reinterpret_cast<DebuggerIPCE_TypeArgData*>(CORDB_ADDRESS_TO_PTR(pArg->fullArgType)),
-        pArg->fullArgTypeNodeCount);
-    return walk.ReadTypeHandle();
-}
-
 BOOL Debugger::ReadFuncEvalPrimitiveRegister(
     DebuggerEval* pDE, UINT32 index, UINT64* pValue)
 {
@@ -1144,46 +1112,6 @@ void Debugger::WriteFuncEvalRegister(
 
     _ASSERTE(index < pDE->m_argCount);
     SetFuncEvalRegisterValue(pDE, &pDE->GetArgData()[index], pValue, size);
-}
-
-/*
- * FuncEvalWrapper
- *
- * Helper function for func-eval. We have to split it out so that we can put a __try / __finally in to
- * notify on a Catch-Handler found.
- *
- * Parameters:
- *    pContext - native roots and debugger state used by managed evaluation.
- *    pCatcherStackAddr - stack address to report as the Catch Handler Found location.
- *
- * Returns:
- *    None.
- *
- */
-void FuncEvalWrapper(UnmanagedCallersOnlyCaller* pCaller, DebuggerFuncEvalContext* pContext,
-                     BYTE* pCatcherStackAddr)
-{
-    struct Param : NotifyOfCHFFilterWrapperParam
-    {
-        UnmanagedCallersOnlyCaller* pCaller;
-        DebuggerFuncEvalContext* pContext;
-    };
-
-    Param param;
-    param.pFrame = pCatcherStackAddr; // Inherited from NotifyOfCHFFilterWrapperParam
-    param.pCaller = pCaller;
-    param.pContext = pContext;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        pParam->pCaller->InvokeDirect(reinterpret_cast<INT_PTR>(pParam->pContext));
-    }
-    PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(false);
-    }
-    PAL_ENDTRY
 }
 
 /*
@@ -1340,7 +1268,7 @@ static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
     }
 }
 
-static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr)
+static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext)
 {
     CONTRACTL
     {
@@ -1350,14 +1278,17 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
     }
     CONTRACTL_END;
 
-    ValidateFuncEvalArgumentCount(pContext->pEval);
+    if (pContext->kind == DebuggerFuncEvalKind::Normal || pContext->kind == DebuggerFuncEvalKind::NewObject)
+    {
+        ValidateFuncEvalArgumentCount(pContext->pEval);
+    }
 
     if (VolatileLoad(&g_pDebuggerInvokeFunctionMethodDesc) == nullptr)
     {
         VolatileStore(&g_pDebuggerInvokeFunctionMethodDesc, CoreLibBinder::GetMethod(METHOD__DEBUGGER__INVOKE_FUNCTION));
     }
     UnmanagedCallersOnlyCaller caller(METHOD__DEBUGGER__INVOKE_FUNCTION);
-    FuncEvalWrapper(&caller, pContext, pCatcherStackAddr);
+    caller.InvokeDirect(reinterpret_cast<INT_PTR>(pContext));
 
     {
         DebuggerEval* pDE = pContext->pEval;
@@ -1368,8 +1299,7 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
             boxed ? Debugger::AllBoxed : Debugger::OnlyPrimitivesUnboxed;
         if (pContext->resultHandle != nullptr)
         {
-            // The strong handle was created in managed code (Debugger.FunctionEvaluation.Invoke),
-            // right after the call, while the result was still reachable as a tracked local/field.
+            // Managed evaluation created the strong handle while the result was still GC-tracked.
             OBJECTHANDLE handle = static_cast<OBJECTHANDLE>(pContext->resultHandle);
             pDE->m_result[0] = static_cast<ARG_SLOT>(reinterpret_cast<SIZE_T>(handle));
             pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(handle);
@@ -1386,14 +1316,12 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.
- *    pCatcherStackAddr - stack address to report as the Catch Handler Found location.
  *
  * Returns:
  *    None. DebuggerEval owns any persistent raw-byref result root.
  *
  */
-static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
-                                                  BYTE *pCatcherStackAddr)
+static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE)
 {
     CONTRACTL
     {
@@ -1468,11 +1396,18 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     context.pCapturedArguments = pBufferForArgsArray;
     context.pResultByRefs = reinterpret_cast<void**>(pDE->m_result);
     context.pResultData = pDE->m_result;
-    context.pModule = pDE->m_debuggerModule->GetRuntimeModule();
+    context.pAssembly = pDE->m_pAssembly;
+    context.pTypeArguments = reinterpret_cast<BYTE*>(pDE->GetTypeArgData());
+    context.pEvaluationData = pDE->m_argData == nullptr ? nullptr : pDE->GetArgData();
+    context.stringSize = pDE->m_stringSize;
+    context.arrayRank = pDE->m_arrayRank;
     context.argumentCount = pDE->m_argCount;
-    context.flags = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT ? FuncEvalNewObject : 0;
-    context.methodToken = pDE->m_methodToken;
+    context.flags = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT || pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT_NC
+        ? FuncEvalNewObject : 0;
+    context.memberToken = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT_NC ? pDE->m_classToken : pDE->m_methodToken;
     context.genericArgsCount = pDE->m_genericArgsCount;
+    context.genericArgsNodeCount = pDE->m_genericArgsNodeCount;
+    context.kind = static_cast<DebuggerFuncEvalKind>(pDE->m_evalType);
     Holder<ExternalMemoryHandle**, DoNothing<ExternalMemoryHandle**>, ReleaseFuncEvalArgumentHandles>
         argumentHandles(pArgumentHandles);
     Holder<DebuggerFuncEvalContext*, DoNothing<DebuggerFuncEvalContext*>, FreeFuncEvalTemporaryResult>
@@ -1509,7 +1444,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
         }
         IfFailThrow(captureResult);
 
-        InvokeManagedFuncEval(&context, pCatcherStackAddr);
+        InvokeManagedFuncEval(&context);
     }
     EX_CATCH
     {
@@ -1543,198 +1478,10 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
 }
 
 
-void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame* pFEFrame)
-{
-    BYTE * pCatcherStackAddr = (BYTE*) pFEFrame;
-
-    // Normal calls and constructors use the managed evaluator.
-    // TODO-ManagedFuncEval: Move the other func eval types to the managed evaluator.
-    if ((pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) || (pDE->m_evalType == DB_IPCE_FET_NORMAL))
-    {
-        GCProtectArgsAndInvokeManagedFuncEval(pDE, pCatcherStackAddr);
-        return;
-    }
-
-    OBJECTREF newObj = NULL;
-    GCPROTECT_BEGIN(newObj);
-
-    // Wrap everything in a EX_TRY so we catch any exceptions that could be thrown.
-    // Note that we don't let any thrown exceptions cross the AppDomain boundary because we don't
-    // want them to get marshalled.
-    EX_TRY
-    {
-        DebuggerIPCE_TypeArgData *firstdata = pDE->GetTypeArgData();
-        DWORD nGenericArgs = pDE->m_genericArgsCount;
-
-        SIZE_T cbAllocSize;
-        if ((!ClrSafeInt<SIZE_T>::multiply(nGenericArgs, sizeof(TypeHandle *), cbAllocSize)) ||
-            (cbAllocSize != (size_t)(cbAllocSize)))
-        {
-            ThrowHR(COR_E_OVERFLOW);
-        }
-        TypeHandle *pGenericArgs = (nGenericArgs == 0) ? NULL : (TypeHandle *) _alloca(cbAllocSize);
-        //
-        // Snag the type arguments from the input and get the
-        // method desc that corresponds to the instantiated desc.
-        //
-        Debugger::TypeDataWalk walk(firstdata, pDE->m_genericArgsNodeCount);
-        walk.ReadTypeHandles(nGenericArgs, pGenericArgs);
-
-        // <TODO>better error message</TODO>
-        if (!walk.Finished())
-            COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-
-        switch (pDE->m_evalType)
-        {
-        case DB_IPCE_FET_NEW_OBJECT_NC:
-            {
-
-                // Find the class.
-                TypeHandle thClass = g_pEEInterface->LoadClass(pDE->m_debuggerModule->GetRuntimeModule(),
-                                                         pDE->m_classToken);
-
-                if (thClass.IsNull())
-                    COMPlusThrow(kArgumentNullException, W("ArgumentNull_Type"));
-
-                // Apply any type arguments
-                TypeHandle th =
-                    (nGenericArgs == 0)
-                    ? thClass
-                    : g_pEEInterface->LoadInstantiation(pDE->m_debuggerModule->GetRuntimeModule(),
-                                                         pDE->m_classToken, nGenericArgs, pGenericArgs);
-
-                if (th.IsNull() || th.ContainsGenericVariables())
-                    COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-
-                ValidateFuncEvalConstructorType(th.GetMethodTable());
-
-                // Run the Class Init for this type, if necessary.
-                MethodTable * pOwningMT = th.GetMethodTable();
-                pOwningMT->EnsureInstanceActive();
-                pOwningMT->CheckRunClassInitThrowing();
-
-                // Create a new instance of the class
-
-                pDE->m_resultType = th;
-                if (th.IsByRefLike())
-                {
-                    AllocateFuncEvalExternalResult(pDE);
-                    pDE->m_retValueBoxing = Debugger::NoValueTypeBoxing;
-                }
-                else
-                {
-                    newObj = pOwningMT->IsAbstract() ? NULL : AllocateObject(pOwningMT);
-                    pDE->m_retValueBoxing = Debugger::AllBoxed;
-
-                    OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(newObj);
-                    pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
-                    pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
-                }
-
-                pDE->m_successful = true;
-
-                break;
-            }
-
-        case DB_IPCE_FET_NEW_STRING:
-            {
-                // Create the string. m_argData is not necessarily null terminated...
-                // The numeration parameter represents the string length, not the buffer size, but
-                // we have passed the buffer size across to copy our data properly, so must divide back out.
-                // NewString will return NULL if pass null, but want an empty string in that case, so
-                // just create an EmptyString explicitly.
-                if ((pDE->m_argData == NULL) || (pDE->m_stringSize == 0))
-                {
-                    newObj = StringObject::GetEmptyString();
-                }
-                else
-                {
-                    newObj = StringObject::NewString(pDE->GetNewStringArgData(), (int)(pDE->m_stringSize/sizeof(WCHAR)));
-                }
-
-                // No exception, so it worked.
-                pDE->m_successful = true;
-
-                // Result type is, of course, a string.
-                pDE->m_resultType = newObj->GetTypeHandle();
-
-                // Place the result in a strong handle to protect it from a collection.
-                OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(newObj);
-                pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
-                pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
-
-                break;
-            }
-
-        case DB_IPCE_FET_NEW_ARRAY:
-            {
-                // <TODO>@todo: We're only gonna handle SD arrays for right now.</TODO>
-                if (pDE->m_arrayRank > 1)
-                    COMPlusThrow(kRankException, W("Rank_MultiDimNotSupported"));
-
-                // Grab the elementType from the arg/data area.
-                _ASSERTE(nGenericArgs == 1);
-                TypeHandle th = pGenericArgs[0];
-
-                CorElementType et = th.GetSignatureCorElementType();
-                // Gotta be a primitive, class, or System.Object.
-                if (((et < ELEMENT_TYPE_BOOLEAN) || (et > ELEMENT_TYPE_R8)) &&
-                    !CorTypeInfo::IsObjRef_NoThrow(et))
-                {
-                    COMPlusThrow(kArgumentOutOfRangeException, W("ArgumentOutOfRange_Enum"));
-                }
-
-                // Grab the dims from the arg/data area.  These come after the type arguments.
-                SIZE_T *dims;
-                dims = (SIZE_T*) (firstdata + pDE->m_genericArgsNodeCount);
-
-                if (CorTypeInfo::IsObjRef_NoThrow(et))
-                {
-                    newObj = AllocateObjectArray((DWORD)dims[0], th);
-                }
-                else
-                {
-                    // Create a simple array. Note: we can only do this type of create here due to the checks above.
-                    newObj = AllocatePrimitiveArray(et, (DWORD)dims[0]);
-                }
-
-                // No exception, so it worked.
-                pDE->m_successful = true;
-
-                // Result type is, of course, the type of the array.
-                pDE->m_resultType = newObj->GetTypeHandle();
-
-                // Place the result in a strong handle to protect it from a collection.
-                OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(newObj);
-                pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
-                pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
-
-                break;
-            }
-
-        default:
-            _ASSERTE(!"Invalid eval type!");
-        }
-    }
-    EX_CATCH
-    {
-        // We got an exception. Make the exception into our result.
-        OBJECTREF ppException = GET_THROWABLE();
-        GCX_FORBID();
-        RecordFuncEvalException( pDE, ppException);
-    }
-    // Note: we need to catch all exceptioins here because they all get reported as the result of
-    // the funceval.
-    EX_END_CATCH
-
-    GCPROTECT_END();
-}
-
 //
-// FuncEvalHijackWorker is the function that managed threads start executing in order to perform a function
-// evaluation. Control is transferred here on the proper thread by hijacking that that's IP to this method in
-// Debugger::FuncEvalSetup. This function can also be called directly by a Runtime thread that is stopped sending a
-// first or second chance exception to the Right Side.
+// Managed threads enter through the architecture-specific FuncEvalHijack stub, which calls this worker to
+// perform the evaluation. Debugger::FuncEvalSetup redirects the thread's IP to the stub. Runtime threads stopped
+// while reporting a first- or second-chance exception can also call this worker directly.
 //
 // The DebuggerEval object may get deleted by the helper thread doing a CleanupFuncEval while this thread is blocked
 // sending the eval complete.
@@ -1819,7 +1566,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         pDE->m_thread->DisableSingleStep();
 #endif
 
-    FuncEvalHijackRealWorker(pDE, pThread, &FEFrame);
+    GCProtectArgsAndInvokeManagedFuncEval(pDE);
 
 #ifdef FEATURE_EMULATE_SINGLESTEP
     if (ssEnabled)

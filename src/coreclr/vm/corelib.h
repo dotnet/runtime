@@ -1006,18 +1006,68 @@ DEFINE_FIELD_U(TemporaryResultHandle, DebuggerFuncEvalContext, pTemporaryResult)
 DEFINE_FIELD_U(ResultByRefs,      DebuggerFuncEvalContext, pResultByRefs)
 DEFINE_FIELD_U(ResultData,        DebuggerFuncEvalContext, pResultData)
 DEFINE_FIELD_U(ResultHandle,      DebuggerFuncEvalContext, resultHandle)
-DEFINE_FIELD_U(Module,            DebuggerFuncEvalContext, pModule)
+DEFINE_FIELD_U(Assembly,          DebuggerFuncEvalContext, pAssembly)
+DEFINE_FIELD_U(TypeArguments,     DebuggerFuncEvalContext, pTypeArguments)
+DEFINE_FIELD_U(EvaluationData,    DebuggerFuncEvalContext, pEvaluationData)
+DEFINE_FIELD_U(StringSize,        DebuggerFuncEvalContext, stringSize)
+DEFINE_FIELD_U(ArrayRank,         DebuggerFuncEvalContext, arrayRank)
 DEFINE_FIELD_U(ArgumentCount,     DebuggerFuncEvalContext, argumentCount)
 DEFINE_FIELD_U(ParameterCount,    DebuggerFuncEvalContext, parameterCount)
 DEFINE_FIELD_U(Flags,             DebuggerFuncEvalContext, flags)
-DEFINE_FIELD_U(MethodToken,       DebuggerFuncEvalContext, methodToken)
+DEFINE_FIELD_U(MemberToken,       DebuggerFuncEvalContext, memberToken)
 DEFINE_FIELD_U(GenericArgsCount,  DebuggerFuncEvalContext, genericArgsCount)
+DEFINE_FIELD_U(GenericArgsNodeCount, DebuggerFuncEvalContext, genericArgsNodeCount)
+DEFINE_FIELD_U(Kind,              DebuggerFuncEvalContext, kind)
 
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArgument, DebuggerFuncEvalArgument)
 DEFINE_FIELD_U(Literal,         DebuggerFuncEvalArgument, pLiteral)
+DEFINE_FIELD_U(TypeData,        DebuggerFuncEvalArgument, pTypeData)
 DEFINE_FIELD_U(ElementType,     DebuggerFuncEvalArgument, elementType)
 DEFINE_FIELD_U(Flags,           DebuggerFuncEvalArgument, flags)
+DEFINE_FIELD_U(TypeNodeCount,   DebuggerFuncEvalArgument, typeNodeCount)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeArgument, DebuggerIPCE_TypeArgData)
+DEFINE_FIELD_U(Data,            DebuggerIPCE_TypeArgData, data)
+DEFINE_FIELD_U(ChildCount,      DebuggerIPCE_TypeArgData, numTypeArgs)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeExpandedTypeData, DebuggerIPCE_ExpandedTypeData)
+DEFINE_FIELD_U(ElementType,     DebuggerIPCE_ExpandedTypeData, elementType)
+// The native union is anonymous; ArrayTypeData is its largest member.
+DEFINE_FIELD_U(TypeData,        DebuggerIPCE_ExpandedTypeData, ArrayTypeData)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeBasicTypeData, DebuggerIPCE_BasicTypeData)
+DEFINE_FIELD_U(ElementType,     DebuggerIPCE_BasicTypeData, elementType)
+DEFINE_FIELD_U(MetadataToken,   DebuggerIPCE_BasicTypeData, metadataToken)
+DEFINE_FIELD_U(Assembly,        DebuggerIPCE_BasicTypeData, vmAssembly)
+DEFINE_FIELD_U(TypeHandle,      DebuggerIPCE_BasicTypeData, vmTypeHandle)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeClassTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData))
+DEFINE_FIELD_U(MetadataToken,   decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData), metadataToken)
+DEFINE_FIELD_U(Assembly,        decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData), vmAssembly)
+DEFINE_FIELD_U(TypeHandle,      decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData), typeHandle)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeUnaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::UnaryTypeData))
+DEFINE_FIELD_U(UnaryTypeArgument, decltype(DebuggerIPCE_ExpandedTypeData::UnaryTypeData), unaryTypeArg)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArrayTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData))
+DEFINE_FIELD_U(ArrayTypeArgument, decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData), arrayTypeArg)
+DEFINE_FIELD_U(ArrayRank,       decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData), arrayRank)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeNaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData))
+DEFINE_FIELD_U(TypeHandle,      decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData), typeHandle)
 #endif // DEBUGGING_SUPPORTED
+
+#ifdef FOR_ILLINK
+// Preserve all wire-layout fields, including ignored slots, for parsing and native binder checks.
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeArgument, DebuggerIPCE_TypeArgData)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeExpandedTypeData, DebuggerIPCE_ExpandedTypeData)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeDataUnion, NoClass)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeBasicTypeData, DebuggerIPCE_BasicTypeData)
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeClassTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ClassTypeData))
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeUnaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::UnaryTypeData))
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArrayTypeData, decltype(DebuggerIPCE_ExpandedTypeData::ArrayTypeData))
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeNaryTypeData, decltype(DebuggerIPCE_ExpandedTypeData::NaryTypeData))
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)

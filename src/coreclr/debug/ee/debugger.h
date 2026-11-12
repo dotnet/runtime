@@ -2136,30 +2136,6 @@ public:
                                       TypeHandle th,
                                       DebuggerIPCE_ExpandedTypeData *res);
 
-    class TypeDataWalk
-    {
-        DebuggerIPCE_TypeArgData *m_curdata;
-        unsigned int m_remaining;
-
-    public:
-        TypeDataWalk(DebuggerIPCE_TypeArgData *pData, unsigned int nData)
-        {
-            m_curdata = pData;
-            m_remaining = nData;
-        }
-
-
-        // These are for type arguments in the funceval case.
-        // They throw COMPLUS exceptions if they fail, so can only be used during funceval.
-        void ReadTypeHandles(unsigned int nTypeArgs, TypeHandle *pRes);
-        TypeHandle ReadInstantiation(Module *pModule, mdTypeDef tok, unsigned int nTypeArgs);
-        TypeHandle ReadTypeHandle();
-
-        BOOL Finished() { LIMITED_METHOD_CONTRACT; return m_remaining == 0; }
-        DebuggerIPCE_TypeArgData *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
-
-    };
-
     void GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress);
 
     void SendBreakpoint(Thread *thread, T_CONTEXT *context,
@@ -2541,11 +2517,8 @@ public:
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
 
 #ifndef DACCESS_COMPILE
-    virtual bool ReadFuncEvalTypeHandles(
-        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count);
     virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
     virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType);
-    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
     virtual BOOL ReadFuncEvalPrimitiveRegister(
         DebuggerEval* pDE, UINT32 index, UINT64* pValue);
     virtual void WriteFuncEvalRegister(
@@ -3403,13 +3376,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (DebuggerIPCE_FuncEvalArgData*) (m_argData + m_genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData));
-    }
-
-    WCHAR *GetNewStringArgData()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_evalType == DB_IPCE_FET_NEW_STRING);
-        return (WCHAR*)m_argData;
     }
 
     ~DebuggerEval()

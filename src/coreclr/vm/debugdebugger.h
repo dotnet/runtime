@@ -25,8 +25,18 @@ class DebuggerEval;
 class ExternalMemoryHandle;
 struct DebuggerFuncEvalArgument;
 
-void ValidateFuncEvalConstructorType(MethodTable* pMT);
 HRESULT ValidateObject(Object* objPtr);
+
+// Values must match DebuggerIPCE_FuncEvalType (DB_IPCE_FET_*) and
+// Debugger.FunctionEvaluation.EvaluationKind in CoreLib.
+enum class DebuggerFuncEvalKind : UINT32
+{
+    Normal,
+    NewObject,
+    NewObjectNoConstructor,
+    NewString,
+    NewArray,
+};
 
 struct DebuggerFuncEvalCapturedArgument
 {
@@ -61,12 +71,18 @@ struct DebuggerFuncEvalContext
     void** pResultByRefs;
     void* pResultData;
     void* resultHandle;
-    Module* pModule;
+    Assembly* pAssembly;
+    BYTE* pTypeArguments;
+    void* pEvaluationData;
+    SIZE_T stringSize;
+    SIZE_T arrayRank;
     UINT32 argumentCount;
     UINT32 parameterCount;
     UINT32 flags;
-    mdMethodDef methodToken;
+    mdToken memberToken;
     uint32_t genericArgsCount;
+    uint32_t genericArgsNodeCount;
+    DebuggerFuncEvalKind kind;
 };
 
 enum DebuggerFuncEvalFlags
@@ -79,8 +95,10 @@ enum DebuggerFuncEvalFlags
 struct DebuggerFuncEvalArgument
 {
     BYTE* pLiteral;
+    BYTE* pTypeData;
     UINT32 elementType;
     UINT32 flags;
+    UINT32 typeNodeCount;
 };
 
 enum DebuggerFuncEvalArgumentFlags
@@ -91,15 +109,9 @@ enum DebuggerFuncEvalArgumentFlags
     FuncEvalRegister = 8,
 };
 
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
-    DebuggerFuncEvalContext* pContext,
-    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
-    QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
     DebuggerFuncEvalContext* pContext, QCall::TypeHandle resultType,
     QCallExceptionStatus* qcallError);
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
-    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
 extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(

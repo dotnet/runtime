@@ -1011,119 +1011,7 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 }
 
 #ifdef DEBUGGING_SUPPORTED
-void ValidateFuncEvalConstructorType(MethodTable* pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // COMPAT: Abstract/static class construction forces class initialization and returns null.
-    if (pMT->IsInterface())
-    {
-        COMPlusThrow(kMemberAccessException, W("Acc_CreateInterface"));
-    }
-    if (pMT == g_pStringClass)
-    {
-        COMPlusThrow(kArgumentException, W("Argument_CannotCreateString"));
-    }
-}
-
-namespace
-{
-    MethodDesc* ResolveFuncEvalMethod(DebuggerFuncEvalContext* pContext, TypeHandle& declaringType)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
-
-        SIZE_T size;
-        if (!ClrSafeInt<SIZE_T>::multiply(pContext->genericArgsCount, sizeof(TypeHandle), size))
-        {
-            ThrowHR(COR_E_OVERFLOW);
-        }
-        TypeHandle* types = size == 0 ? nullptr : static_cast<TypeHandle*>(_alloca(size));
-        if (!g_pDebugInterface->ReadFuncEvalTypeHandles(pContext->pEval, types, pContext->genericArgsCount))
-        {
-            COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-        }
-        MethodDesc* pMD = MemberLoader::GetMethodDescFromMethodDef(
-            pContext->pModule, pContext->methodToken, FALSE);
-        MethodTable* pMT = pMD->GetMethodTable();
-
-        uint32_t classArgumentCount = pMT->GetInstantiation().GetNumArgs();
-        uint32_t methodArgumentCount = pMD->GetMethodInstantiation().GetNumArgs();
-        if (classArgumentCount + methodArgumentCount != pContext->genericArgsCount)
-        {
-            COMPlusThrowHR(COR_E_TARGETPARAMCOUNT);
-        }
-
-        if (classArgumentCount != 0)
-        {
-            pMT = ClassLoader::LoadGenericInstantiationThrowing(pContext->pModule, pMT->GetCl(), Instantiation(types, classArgumentCount)).AsMethodTable();
-        }
-
-        if (classArgumentCount != 0 || methodArgumentCount != 0)
-        {
-            pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, pMT,
-                                                                FALSE, /* forceBoxedEntryPoint */
-                                                                Instantiation(types + classArgumentCount, methodArgumentCount),
-                                                                FALSE /* allowInstParam */);
-        }
-        // Shared method descriptors can have canonical method tables.
-        declaringType = TypeHandle(pMT);
-
-        bool isNewObject = (pContext->flags & FuncEvalNewObject) != 0;
-        if (isNewObject)
-        {
-            ValidateFuncEvalConstructorType(pMD->GetMethodTable());
-            if (!pMD->IsCtor())
-            {
-                COMPlusThrow(kArgumentException, W("Arg_TargetMethodNotConstructor"));
-            }
-        }
-        pMD->EnsureActive();
-        pMT->EnsureInstanceActive();
-        pMT->CheckRunClassInitThrowing();
-        return pMD;
-    }
-}
-
 // Function evaluation entrypoints require an active debugger-owned evaluation.
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
-    DebuggerFuncEvalContext* pContext,
-    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
-    QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    _ASSERTE(g_pDebugInterface != nullptr);
-    TypeHandle ownerType;
-    MethodDesc* method = ResolveFuncEvalMethod(pContext, ownerType);
-    MetaSig sig(method);
-    if (!isCallConv(sig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT))
-    {
-        COMPlusThrow(kArgumentException, W("Argument_CORDBBadVarArgCallConv"));
-    }
-    pContext->parameterCount = sig.NumFixedArgs();
-    {
-        GCX_COOP();
-        OBJECTREF loaderAllocator = method->GetLoaderAllocator()->GetExposedObject();
-        GCPROTECT_BEGIN(loaderAllocator);
-        methodOwner.Set(method->AllocateStubMethodInfo());
-        declaringType.Set(ownerType.GetManagedClassObject());
-        GCPROTECT_END();
-    }
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
     DebuggerFuncEvalContext* pContext, QCall::TypeHandle type,
     QCallExceptionStatus* qcallError)
@@ -1145,9 +1033,12 @@ extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
                 pContext->flags |= FuncEvalExternalResult;
             }
         }
-        else if (resultType.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE ||
-                 ((pContext->flags & FuncEvalNewObject) != 0 && resultType.IsValueType()))
+        else if (pContext->kind != DebuggerFuncEvalKind::NewObjectNoConstructor &&
+                 (resultType.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE ||
+                  ((pContext->flags & FuncEvalNewObject) != 0 && resultType.IsValueType())))
         {
+            // No-constructor value types are allocated as objects directly, preserving true Nullable<T> boxes.
+            // This scratch space is only needed for invocation results that are boxed afterward.
             MethodTable* pMT = resultType.GetMethodTable();
             pMT->EnsureInstanceActive();
             SIZE_T size = pMT->GetNumInstanceFieldBytes();
@@ -1162,25 +1053,6 @@ extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
         {
             g_pDebugInterface->ProtectFuncEvalByRefResult(pContext->pEval, resultType);
         }
-    }
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
-    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type,
-    QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    _ASSERTE(g_pDebugInterface != nullptr);
-    TypeHandle th = g_pDebugInterface->GetFuncEvalArgumentType(pContext->pEval, index);
-    if (th.IsNull())
-    {
-        COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
-    }
-    {
-        GCX_COOP();
-        type.Set(th.GetManagedClassObject());
     }
     END_QCALL;
 }
