@@ -7,8 +7,8 @@ not overread or overwritten. These are unit tests, not live debugger integration
 tests.
 
 After building CoreCLR, run the following from a Visual Studio developer
-PowerShell with Python available. Use the x64 and x86 build directories to cover
-both host pointer sizes.
+PowerShell. Use both the x64 and x86 build directories to cover both host
+pointer sizes.
 
 ```powershell
 $nativeBuildDir = 'artifacts\obj\coreclr\windows.x64.Debug'

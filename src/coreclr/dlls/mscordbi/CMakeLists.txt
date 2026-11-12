@@ -135,7 +135,3 @@ esrp_sign(mscordbi)
 
 # add the install targets
 install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT debug)
-
-if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(../../debug/di/tests tests EXCLUDE_FROM_ALL)
-endif()
