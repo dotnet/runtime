@@ -152,16 +152,17 @@ namespace Microsoft.Win32.SafeHandles
                         _mrvtsc.SetResult(ReadResult);
                     }
                 }
-                else if (result == OnCompletedResult.Canceled)
-                {
-                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
-                    _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
-                }
                 else
                 {
-                    Debug.Assert(result == OnCompletedResult.Aborted);
+                    Debug.Assert(result is OnCompletedResult.Canceled or OnCompletedResult.Aborted);
                     _strategy?.OnIncompleteOperation(_buffer.Length, 0);
-                    _mrvtsc.SetException(new OperationCanceledException());
+                    _buffer = default;
+                    _buffers = null;
+                    _strategy = null;
+                    _executionContext = null;
+                    _mrvtsc.SetException(result == OnCompletedResult.Canceled
+                        ? new OperationCanceledException(_cancellationToken)
+                        : new OperationCanceledException());
                 }
             }
 
@@ -349,16 +350,17 @@ namespace Microsoft.Win32.SafeHandles
                         _mrvtsc.SetResult(default);
                     }
                 }
-                else if (result == OnCompletedResult.Canceled)
-                {
-                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
-                    _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
-                }
                 else
                 {
-                    Debug.Assert(result == OnCompletedResult.Aborted);
+                    Debug.Assert(result is OnCompletedResult.Canceled or OnCompletedResult.Aborted);
                     _strategy?.OnIncompleteOperation(_buffer.Length, 0);
-                    _mrvtsc.SetException(new OperationCanceledException());
+                    _buffer = default;
+                    _buffers = null;
+                    _strategy = null;
+                    _executionContext = null;
+                    _mrvtsc.SetException(result == OnCompletedResult.Canceled
+                        ? new OperationCanceledException(_cancellationToken)
+                        : new OperationCanceledException());
                 }
             }
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -37,6 +38,49 @@ namespace System.IO.Tests
                 Assert.Equal(0, await emptyRead.WaitAsync(TimeSpan.FromSeconds(3)));
                 Assert.Equal(1, await RandomAccess.ReadAsync(readHandle, buffer, 0).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
                 Assert.Equal(43, buffer[0]);
+            }
+        }
+
+        [Theory]
+        [InlineData(FileAccess.Read, false)]
+        [InlineData(FileAccess.Read, true)]
+        [InlineData(FileAccess.Write, false)]
+        [InlineData(FileAccess.Write, true)]
+        public void CanceledOperationDoesNotRetainBuffer(FileAccess access, bool multipleBuffers)
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle,
+                asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                WeakReference buffer = StartAndCancel(access == FileAccess.Read ? readHandle : writeHandle, access, multipleBuffers);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                Assert.False(buffer.IsAlive);
+                GC.KeepAlive(readHandle);
+                GC.KeepAlive(writeHandle);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static WeakReference StartAndCancel(SafeFileHandle handle, FileAccess access, bool multipleBuffers)
+            {
+                byte[] buffer = new byte[1024 * 1024]; // Large enough to keep writes pending on an empty pipe.
+                WeakReference reference = new(buffer);
+                using CancellationTokenSource cancellation = new();
+                Task task = access switch
+                {
+                    FileAccess.Read when multipleBuffers => RandomAccess.ReadAsync(handle, new Memory<byte>[] { buffer }, 0, cancellation.Token).AsTask(),
+                    FileAccess.Read => RandomAccess.ReadAsync(handle, buffer, 0, cancellation.Token).AsTask(),
+                    FileAccess.Write when multipleBuffers => RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { buffer }, 0, cancellation.Token).AsTask(),
+                    _ => RandomAccess.WriteAsync(handle, buffer, 0, cancellation.Token).AsTask()
+                };
+
+                Assert.False(task.IsCompleted);
+                cancellation.Cancel();
+                Assert.ThrowsAny<OperationCanceledException>(() => task.WaitAsync(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult());
+                return reference;
             }
         }
 
