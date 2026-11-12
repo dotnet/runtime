@@ -105,6 +105,8 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
+            public static bool PropagatesNaNs => false;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y) => T.MinMagnitudeNumber(x, y);
 
