@@ -64,7 +64,7 @@ public:
     // Iterates next MethodDesc. Updates the holder only if the assembly differs from the previous one.
     // Caller should not release (i.e. change) the holder explicitly between calls, otherwise collectible
     // assembly might be without a reference and get deallocated (even the native part).
-    BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+    BOOL Next(CollectibleAssemblyHolder* pAssemblyHolder);
     MethodDesc *Current();
     void Start(AppDomain * pAppDomain,
                Module *pModule,
