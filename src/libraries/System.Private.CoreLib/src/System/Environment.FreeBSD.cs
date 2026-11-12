@@ -11,7 +11,7 @@ namespace System
         {
             get
             {
-                Interop.Process.kinfo_proc* processInfo = Interop.Process.GetProcInfo(ProcessId, true, out _);
+                Interop.FreeBSDProcess.kinfo_proc* processInfo = Interop.FreeBSDProcess.GetProcInfo(ProcessId, true, out _);
                 try
                 {
                     return processInfo->ki_rssize;
