@@ -6278,6 +6278,10 @@ GenTree* Lowering::LowerStoreLclVars(GenTreeStoreLclVars* store)
     ClassLayout* layout =
         call != nullptr ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : source->GetLayout(m_compiler);
     m_compiler->lvaSetStruct(temp, layout, false);
+    if (source->IsMultiRegNode())
+    {
+        m_compiler->lvaGetDesc(temp)->SetIsMultiRegDest();
+    }
     m_compiler->lvaSetVarDoNotEnregister(temp DEBUGARG(DoNotEnregisterReason::LocalField));
 
     GenTree* spill = m_compiler->gtNewStoreLclVarNode(temp, source);
