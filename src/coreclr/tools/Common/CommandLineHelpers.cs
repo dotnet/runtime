@@ -132,6 +132,9 @@ namespace System.CommandLine
 
             TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
             TargetOS targetOS = GetTargetOS(targetOSToken);
+            if (targetArchitecture == TargetArchitecture.X86 && targetOS != TargetOS.Windows)
+                throw new CommandLineException("Target architecture 'x86' is only supported on Windows");
+
             TargetAbi targetAbi = (targetOSToken, targetArchitectureToken) switch
             {
                 (_, "armel") => TargetAbi.NativeAotArmel,

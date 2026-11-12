@@ -11,7 +11,6 @@ enum class CDacCodePointerFlags : uint8_t
 {
     None = 0,
     HasArm32ThumbBit = 0x1,
-    HasArm64PtrAuth = 0x2,
 };
 
 
@@ -19,6 +18,7 @@ struct CDacPlatformMetadata
 {
     PrecodeMachineDescriptor precode;
     CDacCodePointerFlags codePointerFlags;
+    uint64_t pointerAuthenticationMask;
     CDacPlatformMetadata() = default;
     CDacPlatformMetadata(const CDacPlatformMetadata&) = delete;
     CDacPlatformMetadata& operator=(const CDacPlatformMetadata&) = delete;

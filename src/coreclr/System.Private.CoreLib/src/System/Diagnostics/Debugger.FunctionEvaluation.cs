@@ -26,8 +26,8 @@ namespace System.Diagnostics
                 // SAFETY: Must be GC protected.
                 internal byte** Homes;
                 // Native array of captured argument values.
-                // Contains literal values and GC handles.
-                internal ulong* CapturedArguments;
+                // Contains register value-type snapshots and GC handles.
+                internal NativeCapturedArgument* CapturedArguments;
                 internal void* TemporaryResultHandle;
                 internal void** ResultByRefs;
                 // Unboxed result data.
@@ -71,6 +71,17 @@ namespace System.Diagnostics
                 internal readonly bool HasMemory => (Flags & ArgumentFlags.Memory) != 0;
                 internal readonly bool IsInRegister => !HasMemory && !IsLiteral;
                 internal readonly CorElementType Type => (CorElementType)ElementType;
+            }
+
+            internal struct NativeCapturedArgument
+            {
+#if BIGENDIAN
+                internal nuint High;
+                internal nuint Low;
+#else
+                internal nuint Low;
+                internal nuint High;
+#endif
             }
 
             private struct Argument
@@ -305,7 +316,7 @@ namespace System.Diagnostics
                             // where the same handle is passed as different arguments.
                             // COMPAT: This is only for reference-type object handles, not value type object handles.
                             // Value-type object handles mutate the underlying box directly.
-                            nuint handleValue = checked((nuint)_context->CapturedArguments[index]);
+                            nuint handleValue = _context->CapturedArguments[index].Low;
                             GCHandle handle = GCHandle.FromIntPtr((nint)handleValue);
                             if (!_handleAliasMap.TryGetValue(handle, out int aliasIndex))
                             {
@@ -347,7 +358,8 @@ namespace System.Diagnostics
                                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
                             }
 
-                            value = actualType.Box(ref *(byte*)(_context->CapturedArguments + index));
+                            value = actualType.Box(ref ReadCapturedArgument(index,
+                                actualType.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes()));
                         }
 
                         if (isThis && value is null)
@@ -373,7 +385,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        if (!type.IsValueType || type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(ulong))
+                        if (!type.IsValueType || type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(NativeCapturedArgument))
                         {
                             throw new ArgumentException(SR.Argument_BadObjRef);
                         }
@@ -385,7 +397,8 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            ref byte source = ref *(byte*)(_context->CapturedArguments + index);
+                            ref byte source = ref ReadCapturedArgument(index,
+                                type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes());
                             object temporary;
                             if (type.IsNullableOfT)
                             {
@@ -490,10 +503,10 @@ namespace System.Diagnostics
                 int index = slot + (_hasThis ? 0 : -1);
                 ref Argument argument = ref _arguments[index];
                 Debug.Assert(argument.IsTypedLocal);
-                Debug.Assert(argument.Input.HasMemory || sizeof(T) <= sizeof(ulong));
+                Debug.Assert(argument.Input.HasMemory || sizeof(T) <= sizeof(NativeCapturedArgument));
                 ref byte source = ref (argument.Input.HasMemory
                     ? ref ReadByteRef(index)
-                    : ref *(byte*)(_context->CapturedArguments + index));
+                    : ref ReadCapturedArgument(index, (uint)sizeof(T)));
                 storage = Unsafe.As<byte, T>(ref source);
                 SetStorage(slot, ref storage);
             }
@@ -592,6 +605,16 @@ namespace System.Diagnostics
                 return Unsafe.As<IntPtr, object>(ref _context->Interiors[index]);
             }
 
+            private ref byte ReadCapturedArgument(int index, uint size)
+            {
+                Debug.Assert(size <= sizeof(NativeCapturedArgument));
+                byte* address = (byte*)(_context->CapturedArguments + index);
+#if BIGENDIAN
+                address += sizeof(NativeCapturedArgument) - size;
+#endif
+                return ref *address;
+            }
+
             private void CapturePrimitiveArguments()
             {
                 for (int i = 0; i < _arguments.Length; i++)
@@ -615,7 +638,7 @@ namespace System.Diagnostics
 
                 if (input.IsHandle)
                 {
-                    return _context->CapturedArguments[index];
+                    return _context->CapturedArguments[index].Low;
                 }
 
                 if (input.IsInRegister)
@@ -689,7 +712,7 @@ namespace System.Diagnostics
 
             private void WriteArgument(int index, ref byte value, uint size)
             {
-                Debug.Assert(size <= sizeof(ulong));
+                Debug.Assert(size <= sizeof(NativeCapturedArgument));
                 ref Argument argument = ref _arguments[index];
                 NativeArgument input = argument.Input;
                 if (input.IsInRegister)

@@ -15,17 +15,17 @@ extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualified
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD);
 
-static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid(void * arg0)
+static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid(void * arg0)
 {
     // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid)
+    if (!MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid)
     {
-        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|72_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|66_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid);
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid = nullptr;
@@ -1238,7 +1238,7 @@ extern "C" void SystemJS_ExecuteTimerCallback()
 
 const ReverseThunkMapEntry g_ReverseThunks[] =
 {
-    { 3863938719, "<RegisterNoGCRegionCallback>g__Callback|72_0#1:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid } },
+    { 2020995354, "<RegisterNoGCRegionCallback>g__Callback|66_0#1:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_66_0_I32_RetVoid } },
     { 1336557534, "BackgroundJobHandler#0:System.Private.CoreLib:System.Threading:ThreadPool", { &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid } },
     { 2901966433, "BindAssemblyExports#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports", { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid } },
     { 1361004804, "CallClassConstructor#3:System.Private.CoreLib:System.Runtime.CompilerServices:InitHelpers", { &MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid } },

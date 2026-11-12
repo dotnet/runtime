@@ -106,7 +106,7 @@ namespace System.IO.Hashing
         }
 
         /// <summary>
-        ///   Asychronously reads the contents of <paramref name="stream"/>
+        ///   Asynchronously reads the contents of <paramref name="stream"/>
         ///   and appends them to the data already
         ///   processed for the current hash computation.
         /// </summary>

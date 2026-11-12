@@ -344,7 +344,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
 
         // Allocate the object handle and the connection cookie.
         OBJECTHANDLEHolder phndEventItfObj(GetAppDomain()->CreateHandle((OBJECTREF)pEventItfObj));
-        ConnectionCookieHolder pConCookie = ConnectionCookie::CreateConnectionCookie(std::move(phndEventItfObj));
+        ConnectionCookieHolder pConCookie(ConnectionCookie::CreateConnectionCookie(std::move(phndEventItfObj)));
 
         // Add the connection cookie to the list.
         InsertWithLock(pConCookie);
@@ -352,7 +352,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
         // Everything went ok so hand back the cookie id.
         *pdwCookie = pConCookie->m_id;
 
-        pConCookie.SuppressRelease();
+        pConCookie.Detach();
     }
     GCPROTECT_END();
     GCPROTECT_END();
@@ -375,7 +375,7 @@ void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
     GCPROTECT_BEGIN(pTCEProviderObj)
     {
         // The cookie is actually a connection cookie.
-        ConnectionCookieHolder pConCookie = FindWithLock(dwCookie);
+        ConnectionCookieHolder pConCookie(FindWithLock(dwCookie));
 
         // Retrieve the CLR object from the cookie which in fact is the object handle.
         pEventItfObj = (COMOBJECTREF) ObjectFromHandle(pConCookie->m_hndEventProvObj);
@@ -422,7 +422,7 @@ void ConnectionPoint::SetupEventMethods()
         return;
 
     // Allocate the event method tables.
-    NewArrayHolder<EventMethodInfo> EventMethodInfos = new EventMethodInfo[cMaxNumEventMethods];
+    NewArrayHolder<EventMethodInfo> EventMethodInfos(new EventMethodInfo[cMaxNumEventMethods]);
 
     // Find all the real event methods needed to be able to advise on the current connection point.
     int NumEventMethods = 0;
@@ -458,8 +458,7 @@ void ConnectionPoint::SetupEventMethods()
 
     // Now that the struct is totally setup, we'll set the members.
     m_NumEventMethods = NumEventMethods;
-    m_apEventMethods = EventMethodInfos;
-    EventMethodInfos.SuppressRelease();
+    m_apEventMethods = EventMethodInfos.Detach();
 }
 
 MethodDesc *ConnectionPoint::FindProviderMethodDesc( MethodDesc *pEventMethodDesc, EnumEventMethods Method )

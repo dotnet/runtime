@@ -57,9 +57,9 @@ namespace System.Net.NetworkInformation.Tests
                 Assert.NotNull(gp.GetTcpIPv6Statistics());
                 Assert.NotNull(gp.GetUdpIPv6Statistics());
 
-                if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsFreeBSD())
+                if (!OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD())
                 {
-                    // OSX and FreeBSD do not provide IPv6  stats.
+                    // OSX and FreeBSD do not provide IPv6 stats.
                     Assert.NotNull(gp.GetIPv6GlobalStatistics());
                 }
             }

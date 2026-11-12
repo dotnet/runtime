@@ -24,7 +24,7 @@ namespace System.IO
         {
             get
             {
-                return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS());
+                return !(OperatingSystem.IsWindows() || OperatingSystem.IsApplePlatform());
             }
         }
     }
