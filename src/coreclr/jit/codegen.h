@@ -517,7 +517,7 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#endif // !TARGET_X86
+#endif // !TARGET_X86, !TARGET_WASM
 
 #if defined(TARGET_XARCH)
 

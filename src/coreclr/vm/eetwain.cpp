@@ -1818,10 +1818,10 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
 /*****************************************************************************/
 
 // This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR F_CALL_CONV CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
+EXTERN_C UINT_PTR F_CALL_CONV CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
-EXTERN_C DWORD_PTR F_CALL_CONV CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
+EXTERN_C int F_CALL_CONV CallEHFilterFunclet(Object *pThrowable, CONTEXT *pContext, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 #ifndef TARGET_WASM
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
