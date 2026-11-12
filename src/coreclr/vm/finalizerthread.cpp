@@ -599,6 +599,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         g_TriggerHeapDump = FALSE;
     }
 #endif
+#ifdef FEATURE_GCGENANALYSIS
     if (gcGenAnalysisState == GcGenAnalysisState::Done)
     {
         gcGenAnalysisState = GcGenAnalysisState::Disabled;
@@ -621,6 +622,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
             fclose(fp);
         }
     }
+#endif // FEATURE_GCGENANALYSIS
 
     if (!s_PriorityBoosted)
     {
