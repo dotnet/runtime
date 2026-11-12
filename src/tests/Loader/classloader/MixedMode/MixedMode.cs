@@ -12,10 +12,14 @@ public class MixedModeTests
     public static bool IsX86OrX64 => RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64;
 
     // ILASM has no ARM64 native export stub.
-    [ConditionalTheory(nameof(IsX86OrX64))]
-    [InlineData(false)]
-    [InlineData(true)]
-    public static unsafe void FixupTables(bool autoExports)
+    [ConditionalFact(nameof(IsX86OrX64))]
+    public static void AutoExports() => FixupTables(autoExports: true);
+
+    [ConditionalFact(nameof(IsX86OrX64))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/137424")]
+    public static void VTableFixups() => FixupTables(autoExports: false);
+
+    private static unsafe void FixupTables(bool autoExports)
     {
         Assembly assembly = LoadAssembly(autoExports ? "AutoExports" : "VTableFixups");
         nint module = Marshal.GetHINSTANCE(assembly.ManifestModule);
