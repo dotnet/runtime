@@ -193,6 +193,27 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task EmptyReadCanBeCanceled()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle,
+                asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            using (CancellationTokenSource cancellation = new())
+            {
+                Task<int> read = RandomAccess.ReadAsync(readHandle, Memory<byte>.Empty, 0, cancellation.Token).AsTask();
+                Assert.False(read.IsCompleted);
+                cancellation.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => read.WaitAsync(TimeSpan.FromSeconds(3)));
+
+                Task<int> nextRead = RandomAccess.ReadAsync(readHandle, Memory<byte>.Empty, 0).AsTask();
+                await RandomAccess.WriteAsync(writeHandle, new byte[] { 42 }, 0);
+                Assert.Equal(0, await nextRead.WaitAsync(TimeSpan.FromSeconds(3)));
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task EmptyReadOnWriteOnlyPipeThrows()
         {

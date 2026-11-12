@@ -80,7 +80,7 @@ namespace System.IO
 
             if (buffer.Length == 0 && handle.SupportsNonBlocking)
             {
-                Interop.Error err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLIN, handle.IsBlocking ? -1 : 0, out Interop.PollEvents events);
+                Interop.Error err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLIN, timeout: 0, out Interop.PollEvents events);
 
                 if (err != Interop.Error.SUCCESS)
                 {
