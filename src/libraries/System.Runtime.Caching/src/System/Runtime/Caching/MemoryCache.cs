@@ -27,14 +27,14 @@ namespace System.Runtime.Caching
                                                               | DefaultCacheCapabilities.CacheEntryRemovedCallback;
         private static readonly TimeSpan s_oneYear = new TimeSpan(365, 0, 0, 0);
         private static readonly object s_initLock = new object();
-        private static MemoryCache s_defaultCache;
+        private static MemoryCache? s_defaultCache;
         private static readonly CacheEntryRemovedCallback s_sentinelRemovedCallback = new CacheEntryRemovedCallback(SentinelEntry.OnCacheEntryRemovedCallback);
         private GCHandleRef<MemoryCacheStore>[] _storeRefs;
         private int _storeCount;
         private int _disposed;
         private MemoryCacheStatistics _stats;
         private readonly string _name;
-        private Counters _perfCounters;
+        private Counters? _perfCounters;
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
         private bool _throwOnDisposed;
@@ -52,10 +52,10 @@ namespace System.Runtime.Caching
         private sealed class SentinelEntry
         {
             private readonly string _key;
-            private readonly ChangeMonitor _expensiveObjectDependency;
+            private readonly ChangeMonitor? _expensiveObjectDependency;
             private readonly CacheEntryUpdateCallback _updateCallback;
 
-            internal SentinelEntry(string key, ChangeMonitor expensiveObjectDependency, CacheEntryUpdateCallback callback)
+            internal SentinelEntry(string key, ChangeMonitor? expensiveObjectDependency, CacheEntryUpdateCallback callback)
             {
                 _key = key;
                 _expensiveObjectDependency = expensiveObjectDependency;
@@ -67,7 +67,7 @@ namespace System.Runtime.Caching
                 get { return _key; }
             }
 
-            internal ChangeMonitor ExpensiveObjectDependency
+            internal ChangeMonitor? ExpensiveObjectDependency
             {
                 get { return _expensiveObjectDependency; }
             }
@@ -77,7 +77,7 @@ namespace System.Runtime.Caching
                 get { return _updateCallback; }
             }
 
-            private static bool IsPolicyValid(CacheItemPolicy policy)
+            private static bool IsPolicyValid([NotNullWhen(true)] CacheItemPolicy? policy)
             {
                 if (policy == null)
                 {
@@ -104,7 +104,7 @@ namespace System.Runtime.Caching
                     return true;
                 }
                 // if the monitors have changed we need to dispose them
-                if (hasChanged)
+                if (hasChanged && changeMonitors != null)
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
@@ -116,53 +116,46 @@ namespace System.Runtime.Caching
 
             internal static void OnCacheEntryRemovedCallback(CacheEntryRemovedArguments arguments)
             {
-                MemoryCache cache = arguments.Source as MemoryCache;
-                SentinelEntry entry = arguments.CacheItem.Value as SentinelEntry;
-                CacheEntryRemovedReason reason = arguments.RemovedReason;
-                switch (reason)
+                if (arguments.Source is MemoryCache cache && arguments.CacheItem.Value is SentinelEntry entry)
                 {
-                    case CacheEntryRemovedReason.Expired:
-                        break;
-                    case CacheEntryRemovedReason.ChangeMonitorChanged:
-                        if (entry.ExpensiveObjectDependency.HasChanged)
-                        {
-                            // If the expensiveObject has been removed explicitly by Cache.Remove,
-                            // return from the SentinelEntry removed callback
-                            // thus effectively removing the SentinelEntry from the cache.
-                            return;
-                        }
-                        break;
-                    case CacheEntryRemovedReason.Evicted:
-                        Debug.Fail("Reason should never be CacheEntryRemovedReason.Evicted since the entry was inserted as NotRemovable.");
-                        return;
-                    default:
-                        // do nothing if reason is Removed or CacheSpecificEviction
-                        return;
-                }
-
-                // invoke update callback
-                try
-                {
-                    CacheEntryUpdateArguments args = new CacheEntryUpdateArguments(cache, reason, entry.Key, null);
-                    entry.CacheEntryUpdateCallback(args);
-                    object expensiveObject = args.UpdatedCacheItem?.Value;
-                    CacheItemPolicy policy = args.UpdatedCacheItemPolicy;
-                    // Only update the "expensive" object if the user returns a new object,
-                    // a policy with update callback, and the change monitors haven't changed.  (Inserting
-                    // with change monitors that have already changed will cause recursion.)
-                    if (expensiveObject != null && IsPolicyValid(policy))
+                    CacheEntryRemovedReason reason = arguments.RemovedReason;
+                    switch (reason)
                     {
-                        cache.Set(entry.Key, expensiveObject, policy);
+                        case CacheEntryRemovedReason.Expired:
+                            break;
+                        case CacheEntryRemovedReason.ChangeMonitorChanged:
+                            if (entry.ExpensiveObjectDependency?.HasChanged == true)
+                            {
+                                return;
+                            }
+                            break;
+                        case CacheEntryRemovedReason.Evicted:
+                            Debug.Fail("Reason should never be CacheEntryRemovedReason.Evicted since the entry was inserted as NotRemovable.");
+                            return;
+                        default:
+                            return;
                     }
-                    else
+
+                    // invoke update callback
+                    try
+                    {
+                        CacheEntryUpdateArguments args = new CacheEntryUpdateArguments(cache, reason, entry.Key, null);
+                        entry.CacheEntryUpdateCallback(args);
+                        object? expensiveObject = args.UpdatedCacheItem?.Value;
+                        CacheItemPolicy? policy = args.UpdatedCacheItemPolicy;
+                        if (expensiveObject != null && IsPolicyValid(policy))
+                        {
+                            cache.Set(entry.Key, expensiveObject, policy);
+                        }
+                        else
+                        {
+                            cache.Remove(entry.Key);
+                        }
+                    }
+                    catch
                     {
                         cache.Remove(entry.Key);
                     }
-                }
-                catch
-                {
-                    cache.Remove(entry.Key);
-                    // Review: What should we do with this exception?
                 }
             }
         }
@@ -193,7 +186,8 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void InitDisposableMembers(NameValueCollection config)
+        [MemberNotNull(nameof(_stats))]
+        private void InitDisposableMembers(NameValueCollection? config)
         {
             bool dispose = true;
             try
@@ -319,7 +313,7 @@ namespace System.Runtime.Caching
             Init(null);
         }
 
-        public MemoryCache(string name, NameValueCollection config = null)
+        public MemoryCache(string name, NameValueCollection? config = null)
         {
             ArgumentNullException.ThrowIfNull(name);
 
@@ -337,7 +331,7 @@ namespace System.Runtime.Caching
 
         // ignoreConfigSection is used when redirecting ASP.NET cache into the MemoryCache.  This avoids infinite recursion
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
-        public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
+        public MemoryCache(string name, NameValueCollection? config, bool ignoreConfigSection)
         {
             ArgumentNullException.ThrowIfNull(name);
 
@@ -354,7 +348,9 @@ namespace System.Runtime.Caching
             Init(config);
         }
 
-        private void Init(NameValueCollection config)
+        [MemberNotNull(nameof(_storeRefs))]
+        [MemberNotNull(nameof(_stats))]
+        private void Init(NameValueCollection? config)
         {
             _storeCount = Environment.ProcessorCount;
             _storeRefs = new GCHandleRef<MemoryCacheStore>[_storeCount];
@@ -366,15 +362,15 @@ namespace System.Runtime.Caching
             InitDisposableMembers(config);
         }
 
-        private object AddOrGetExistingInternal(string key, object value, CacheItemPolicy policy)
+        private object? AddOrGetExistingInternal(string key, object value, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(key);
 
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
-            Collection<ChangeMonitor> changeMonitors = null;
-            CacheEntryRemovedCallback removedCallback = null;
+            Collection<ChangeMonitor>? changeMonitors = null;
+            CacheEntryRemovedCallback? removedCallback = null;
             if (policy != null)
             {
                 ValidatePolicy(policy);
@@ -404,11 +400,11 @@ namespace System.Runtime.Caching
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
             MemoryCacheStore store = GetStore(cacheKey);
-            MemoryCacheEntry entry = store.AddOrGetExisting(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
+            MemoryCacheEntry? entry = store.AddOrGetExisting(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
             return entry?.Value;
         }
 
-        public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
+        public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -456,18 +452,18 @@ namespace System.Runtime.Caching
             }
         }
 
-        private object GetInternal(string key, string regionName)
+        private object? GetInternal(string key, string? regionName)
         {
             if (regionName != null)
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
             ArgumentNullException.ThrowIfNull(key);
-            MemoryCacheEntry entry = GetEntry(key);
+            MemoryCacheEntry? entry = GetEntry(key);
             return entry?.Value;
         }
 
-        internal MemoryCacheEntry GetEntry(string key)
+        internal MemoryCacheEntry? GetEntry(string key)
         {
             if (IsDisposedOrThrow())
             {
@@ -506,7 +502,7 @@ namespace System.Runtime.Caching
             return h.GetEnumerator();
         }
 
-        internal MemoryCacheEntry RemoveEntry(string key, MemoryCacheEntry entry, CacheEntryRemovedReason reason)
+        internal MemoryCacheEntry? RemoveEntry(string key, MemoryCacheEntry? entry, CacheEntryRemovedReason reason)
         {
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
             MemoryCacheStore store = GetStore(cacheKey);
@@ -532,7 +528,8 @@ namespace System.Runtime.Caching
         }
 
         //Default indexer property
-        public override object this[string key]
+        [DisallowNull]
+        public override object? this[string key]
         {
             get
             {
@@ -545,18 +542,18 @@ namespace System.Runtime.Caching
         }
 
         //Existence check for a single item
-        public override bool Contains(string key, string regionName = null)
+        public override bool Contains(string key, string? regionName = null)
         {
             return (GetInternal(key, regionName) != null);
         }
 
-        public override bool Add(CacheItem item, CacheItemPolicy policy)
+        public override bool Add(CacheItem item, CacheItemPolicy? policy)
         {
-            CacheItem existingEntry = AddOrGetExisting(item, policy);
+            CacheItem? existingEntry = AddOrGetExisting(item, policy);
             return (existingEntry == null || existingEntry.Value == null);
         }
 
-        public override object AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
+        public override object? AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -567,14 +564,14 @@ namespace System.Runtime.Caching
             return AddOrGetExistingInternal(key, value, policy);
         }
 
-        public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy policy)
+        public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
+            return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value!, policy));
         }
 
-        public override object AddOrGetExisting(string key, object value, CacheItemPolicy policy, string regionName = null)
+        public override object? AddOrGetExisting(string key, object value, CacheItemPolicy? policy, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -583,18 +580,18 @@ namespace System.Runtime.Caching
             return AddOrGetExistingInternal(key, value, policy);
         }
 
-        public override object Get(string key, string regionName = null)
+        public override object? Get(string key, string? regionName = null)
         {
             return GetInternal(key, regionName);
         }
 
-        public override CacheItem GetCacheItem(string key, string regionName = null)
+        public override CacheItem? GetCacheItem(string key, string? regionName = null)
         {
-            object value = GetInternal(key, regionName);
+            object? value = GetInternal(key, regionName);
             return (value != null) ? new CacheItem(key, value) : null;
         }
 
-        public override void Set(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
+        public override void Set(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -605,14 +602,14 @@ namespace System.Runtime.Caching
             Set(key, value, policy);
         }
 
-        public override void Set(CacheItem item, CacheItemPolicy policy)
+        public override void Set(CacheItem item, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            Set(item.Key, item.Value, policy);
+            Set(item.Key, item.Value!, policy);
         }
 
-        public override void Set(string key, object value, CacheItemPolicy policy, string regionName = null)
+        public override void Set(string key, object value, CacheItemPolicy? policy, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -622,8 +619,8 @@ namespace System.Runtime.Caching
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
-            Collection<ChangeMonitor> changeMonitors = null;
-            CacheEntryRemovedCallback removedCallback = null;
+            Collection<ChangeMonitor>? changeMonitors = null;
+            CacheEntryRemovedCallback? removedCallback = null;
             if (policy != null)
             {
                 ValidatePolicy(policy);
@@ -702,9 +699,12 @@ namespace System.Runtime.Caching
 
             // Ensure the sentinel depends on its updatable entry
             string[] cacheKeys = { key };
-            ChangeMonitor expensiveObjectDep = CreateCacheEntryChangeMonitor(cacheKeys);
-            changeMonitors ??= new Collection<ChangeMonitor>();
-            changeMonitors.Add(expensiveObjectDep);
+            ChangeMonitor? expensiveObjectDep = CreateCacheEntryChangeMonitor(cacheKeys);
+            if (expensiveObjectDep != null)
+            {
+                changeMonitors ??= new Collection<ChangeMonitor>();
+                changeMonitors.Add(expensiveObjectDep);
+            }
 
             // Insert sentinel entry for the updatable cache entry
             MemoryCacheKey sentinelCacheKey = new MemoryCacheKey("OnUpdateSentinel" + key);
@@ -721,12 +721,12 @@ namespace System.Runtime.Caching
             cacheEntry.ConfigureUpdateSentinel(sentinelStore, sentinelCacheEntry);
         }
 
-        public override object Remove(string key, string regionName = null)
+        public override object? Remove(string key, string? regionName = null)
         {
             return Remove(key, CacheEntryRemovedReason.Removed, regionName);
         }
 
-        public object Remove(string key, CacheEntryRemovedReason reason, string regionName = null)
+        public object? Remove(string key, CacheEntryRemovedReason reason, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -737,11 +737,11 @@ namespace System.Runtime.Caching
             {
                 return null;
             }
-            MemoryCacheEntry entry = RemoveEntry(key, null, reason);
+            MemoryCacheEntry? entry = RemoveEntry(key, null, reason);
             return entry?.Value;
         }
 
-        public override long GetCount(string regionName = null)
+        public override long GetCount(string? regionName = null)
         {
             if (regionName != null)
             {
@@ -760,7 +760,7 @@ namespace System.Runtime.Caching
             return count;
         }
 
-        public long GetLastSize(string regionName = null)
+        public long GetLastSize(string? regionName = null)
         {
             if (regionName != null)
             {
@@ -770,7 +770,7 @@ namespace System.Runtime.Caching
             return _stats.GetLastSize();
         }
 
-        public override IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null)
+        public override IDictionary<string, object>? GetValues(IEnumerable<string> keys, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -778,7 +778,7 @@ namespace System.Runtime.Caching
             }
             ArgumentNullException.ThrowIfNull(keys);
 
-            Dictionary<string, object> values = null;
+            Dictionary<string, object>? values = null;
 
             if (!IsDisposedOrThrow())
             {
@@ -788,7 +788,7 @@ namespace System.Runtime.Caching
                     {
                         throw new ArgumentException(RH.Format(SR.Collection_contains_null_element, nameof(keys)));
                     }
-                    object value = GetInternal(key, null);
+                    object? value = GetInternal(key, null);
                     if (value != null)
                     {
                         values ??= new Dictionary<string, object>();

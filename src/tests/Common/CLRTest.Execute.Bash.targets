@@ -260,7 +260,7 @@ fi
     </ItemGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
-      <!-- WASI corerun.wasm needs to be launched under wasmtime. The wasm
+      <!-- WASI executables need to be launched under wasmtime. The wasm
            exception handling proposal must be enabled, both the CORE_ROOT
            and the per-test bin directory must be preopened so corerun can
            probe for CoreLib (in CORE_ROOT, via $CORE_ROOT=/core) and load
@@ -275,7 +275,8 @@ fi
            configuration and the out-of-process test protocol variables
            from the host. wasmtime keeps the first value given for a variable,
            so it comes last and cannot override the guest settings. -->
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" "${__WasiUploadArgs[@]}" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true ${__WasiR2RArgs} ${__WasiEnvArgs} "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" "${__WasiUploadArgs[@]}" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true ${__WasiR2RArgs} ${__WasiEnvArgs}</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi' and '$(TestBuildMode)' != 'nativeaot'">$(CLRTestRunFile) "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
       <!-- WASI has no watchdog binary in Core_Root (skipped in
            src/coreclr/CMakeLists.txt for wasm targets); use coreutils
@@ -471,6 +472,10 @@ fi
       </CLRTestBashPreCommands>
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetOS)' == 'wasi'"><![CDATA[
 $(CLRTestBashPreCommands)
+__WasiCrossgen2OutputDirectory="IL-CG2"
+if [ ! -z ${WholeProgramCompositeBuildMode+x} ]; then
+  __WasiCrossgen2OutputDirectory="IL-CG2-WholeProgram"
+fi
 __WasiCorerun="$CORE_ROOT/corerun"
 # Tells PlatformDetection.PlatformDoesNotSupportNativeTestAssets whether this test's native
 # assets were linked into its own host (see CLRTest.WasmCorerun.targets).
@@ -504,15 +509,21 @@ if [ -n "${__TestOutOfProcessStatusFile:-}" ]; then
   export __TestOutOfProcessStatusFile="/%24(basename "$__TestOutOfProcessStatusFile")"
 fi
 if [ ! -z ${RunCrossGen2+x} ] && [ "$(CrossGenTest)" != "false" ]; then
-  __WasiCorerun="$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm"
+  __WasiCorerun="$PWD/$__WasiCrossgen2OutputDirectory/wasi-r2r/corerun-composite.wasm"
   if [ ! -f "$__WasiCorerun" ]; then
     echo "The WASI ReadyToRun host was not produced: $__WasiCorerun"
     exit 1
   fi
   # Keep the probe's stubs private to this host, so a subsequent interpreter run
   # cannot discover a composite that is not spliced into its own corerun.
-  __WasiR2RArgs="--env TEST_READY_TO_RUN_MODE=1 --env APP_ASSEMBLIES=EXTERNAL --env CORE_LIBRARIES=/IL-CG2/wasi-r2r"
+  __WasiR2RArgs="--env TEST_READY_TO_RUN_MODE=1 --env APP_ASSEMBLIES=EXTERNAL --env CORE_LIBRARIES=/$__WasiCrossgen2OutputDirectory/wasi-r2r"
 fi
+      ]]>
+      </CLRTestBashPreCommands>
+
+      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestIsHosted)' == 'true' and '$(TargetOS)' == 'wasi' and '$(TestBuildMode)' == 'nativeaot'"><![CDATA[
+$(CLRTestBashPreCommands)
+ExePath="$PWD/native/%24(basename "$ExePath" .dll).wasm"
       ]]>
       </CLRTestBashPreCommands>
 
@@ -655,6 +666,7 @@ run_browser_test() {
     # Defaults to the shared host from CORE_ROOT. A CoreCLR run script replaces this with the
     # test's own corerun when one was built next to the test assemblies.
     local corerun_js="${CORE_ROOT}/corerun.js"
+    local managed_core_root="${R2RTestCoreRoot:-${CORE_ROOT}}"
     # Set explicitly so an ambient value can never be inherited.
     export __TestNativeAssetsLinked=false
 $(BashSelectTestCorerun)
@@ -666,7 +678,7 @@ $(BashSelectTestCorerun)
     echo CLRTestExecutionArguments: ${CLRTestExecutionArguments[@]}
     echo node version: `node -v`
     echo Timeout in ms: $__TestTimeout
-    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${corerun_js}" -c "${CORE_ROOT}" $(CoreRunArgs) "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
+    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${corerun_js}" -c "${managed_core_root}" $(CoreRunArgs) "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
     echo Running: "${cmd[@]}"
     run_with_timeout $__TestTimeout "${cmd[@]}"
   fi

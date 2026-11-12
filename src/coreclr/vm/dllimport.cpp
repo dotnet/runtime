@@ -5491,7 +5491,8 @@ namespace
             ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
-            ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
+            ListLock* pILStubGenLock = AppDomain::GetCurrentDomain()->GetILStubGenLock();
+            ListLockHolder pILStubLock = pILStubGenLock->TakeLock();
 
             {
                 ilStubCreatorHelper.GetStubMethodDesc();
@@ -5507,15 +5508,14 @@ namespace
                     // take the MethodDesc level locker
                     ListLockEntryHolder pEntry(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
 
-                    ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
-
                     // We have the entry lock we need to use, so we can release the global lock.
-                    pILStubLock.Release();
+                    pILStubLock.Free();
 
+                    ListLockEntryLockHolder pEntryLock;
                     {
                         ilStubCreatorHelper.GetStubMethodDesc();
 
-                        if (!pEntryLock.DeadlockAwareAcquire())
+                        if (!pEntryLock.DeadlockAwareAcquire(pEntry))
                         {
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                         }
@@ -5524,7 +5524,7 @@ namespace
                         {
                             // We need to re-acquire the lock in case we need to get a new pStubMD
                             // in the case that the owner of the shared stub was destroyed.
-                            pILStubLock.Acquire();
+                            pILStubLock = pILStubGenLock->TakeLock();
 
                             // Assure that pStubMD we have now has not been destroyed by other threads
                             ilStubCreatorHelper.GetStubMethodDesc();
@@ -5534,17 +5534,17 @@ namespace
                                 pStubMD = ilStubCreatorHelper.GetStubMD();
 
                                 pEntry = ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock");
-                                pEntryLock.Assign(pEntry, FALSE);
+                                pEntryLock.Free();
 
                                 // We have the entry lock we need to use, so we can release the global lock.
-                                pILStubLock.Release();
+                                pILStubLock.Free();
 
-                                if (!pEntryLock.DeadlockAwareAcquire())
+                                if (!pEntryLock.DeadlockAwareAcquire(pEntry))
                                 {
                                     UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                                 }
 
-                                pILStubLock.Acquire();
+                                pILStubLock = pILStubGenLock->TakeLock();
 
                                 ilStubCreatorHelper.GetStubMethodDesc();
                             }
@@ -5553,9 +5553,9 @@ namespace
                         for (;;)
                         {
                             // We have the entry lock now, we can release the global lock
-                            pILStubLock.Release();
+                            pILStubLock.Free();
 
-                            _ASSERTE(pEntryLock.GetValue()->HasLock());
+                            _ASSERTE(pEntry->HasLock());
 
                             if (pEntry->m_hrResultCode != S_FALSE)
                             {
@@ -5931,6 +5931,20 @@ namespace
             pMD->SetPInvokeTarget(pvTarget);
             return;
         }
+
+#ifdef TARGET_WASM
+        // CoreLib eager fixups run before CoreLib is active. Resolving a statically
+        // linked target does not load a library or execute its initialization code.
+        if (!g_fEEStarted && pMD->GetModule()->IsSystem())
+        {
+            void* pvTarget = const_cast<void*>(PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName()));
+            if (pvTarget != nullptr)
+            {
+                pMD->SetPInvokeTarget(pvTarget);
+                return;
+            }
+        }
+#endif // TARGET_WASM
 
         // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
         pMD->EnsureActive();

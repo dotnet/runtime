@@ -176,14 +176,14 @@ namespace Microsoft.NET.HostModel.AppHost
 
         internal static void WriteToStream(MemoryMappedViewAccessor sourceViewAccessor, FileStream fileStream, long length)
         {
-            int pos = 0;
+            long pos = 0;
             int bufSize = 16384; //16K
 
             byte[] buf = new byte[bufSize];
             length = Math.Min(length, sourceViewAccessor.Capacity);
             do
             {
-                int bytesRequested = Math.Min((int)length - pos, bufSize);
+                int bytesRequested = (int)Math.Min(length - pos, bufSize);
                 if (bytesRequested <= 0)
                 {
                     break;

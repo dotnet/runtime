@@ -1346,7 +1346,6 @@ BYTE *LoaderAllocator::GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE *
     return buffer;
 }
 
-// in retail should be called from AppDomain::Terminate
 void LoaderAllocator::Terminate()
 {
     CONTRACTL {
@@ -1363,6 +1362,9 @@ void LoaderAllocator::Terminate()
     LOG((LF_CLASSLOADER, LL_INFO100, "Begin LoaderAllocator::Terminate for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(this))));
 
     DeleteMarshalingData();
+
+    // Must run before the heaps are destroyed.
+    m_ILStubCache.FreeCollectibleStubsCompileTimeState();
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pUMEntryThunkCache;
@@ -2076,7 +2078,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     {
         FailedTypeInitCleanupListItem * pItem = m_failedTypeInitCleanupList.RemoveHead();
 
-        ListLockHolder pInitLock(pLock);
+        ListLockHolder pInitLock = pLock->TakeLock();
         pLock->Unlink(pItem->m_pListLockEntry);
     }
 }
