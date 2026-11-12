@@ -1530,6 +1530,57 @@ void Compiler::optValnumCSE_DataFlow()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// optCSE_ExtraExceptionsAreOwnNullChecks: Whether the exception items a CSE use requires beyond
+//    what the defs promise are all null checks of the use's own indirection.
+//
+// Arguments:
+//    vnStore     - the value number store
+//    useExcSet   - the use's exception set
+//    defPromise  - the exception set the defs promise
+//    use         - the use
+//    firstOccurrence - the candidate's first occurrence, the shape its defs have
+//
+// Return Value:
+//    True if dropping the use's extra exception items is safe.
+//
+// Notes:
+//    The defs load the same address value on every path to the use, and one of them did so without
+//    the null check the use still carries, so the address is non-null at the use and its check cannot
+//    fire. Morph's local assertion propagation proves the early copy of a load non-faulting and leaves a
+//    later copy, with the same value number, carrying the check.
+//
+static bool optCSE_ExtraExceptionsAreOwnNullChecks(
+    ValueNumStore* vnStore, ValueNum useExcSet, ValueNum defPromise, GenTree* use, GenTree* firstOccurrence)
+{
+    if (!use->OperIsIndirOrArrMetaData() || !firstOccurrence->OperIs(use->OperGet()))
+    {
+        return false;
+    }
+
+    for (ValueNum set = useExcSet; set != vnStore->VNForEmptyExcSet();)
+    {
+        VNFuncApp  cons;
+        bool const isCons = vnStore->GetVNFunc(set, &cons);
+        assert(isCons && cons.FuncIs(VNF_ExcSetCons));
+        ValueNum const item = cons.GetArg(0);
+        set                 = cons.GetArg(1);
+
+        if (vnStore->VNExcIsSubset(defPromise, vnStore->VNExcSetSingleton(item)))
+        {
+            continue;
+        }
+
+        VNFuncApp itemApp;
+        if (!vnStore->GetVNFunc(item, &itemApp) || !itemApp.FuncIs(VNF_NullPtrExc))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 //---------------------------------------------------------------------------
 // optValnumCSE_Availability:
 //
@@ -1781,7 +1832,10 @@ void Compiler::optValnumCSE_Availability()
                             // At this point defExcSetPromise contains all of the exception items that we can promise
                             // here.
                             //
-                            if (!vnStore->VNExcIsSubset(desc->defExcSetPromise, theLiberalExcSet))
+                            if (!vnStore->VNExcIsSubset(desc->defExcSetPromise, theLiberalExcSet) &&
+                                !optCSE_ExtraExceptionsAreOwnNullChecks(vnStore, theLiberalExcSet,
+                                                                        desc->defExcSetPromise, tree,
+                                                                        desc->csdTreeList.tslTree))
                             {
                                 // We can't safely make this into a CSE use, because this
                                 // CSE use has an exception set item that is not promised
@@ -2055,7 +2109,15 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_LCL_VAR:
-            return false; // Can't CSE a volatile LCL_VAR
+            // Address-exposed locals are memory reads. Reuse them through a CSE temp so later
+            // optimizations can rely on one captured value. Facts recorded against the reload's
+            // own number, such as an object's exact type, reach the temp through the value
+            // number equivalences the rewrite records.
+            if (!m_compiler->lvaGetDesc(tree->AsLclVar())->IsAddressExposed())
+            {
+                return false;
+            }
+            break;
 
         case GT_NEG:
         case GT_NOT:
@@ -4990,20 +5052,77 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
 #endif // DEBUG
 
-    //  Allocate a CSE temp
+    //  A lone definition that is the value of a store to a local with no other definition can use that
+    //  local as the temp: the store already captures the value, and a second local would only add a copy
+    //  and a register for the same value.
     //
-    unsigned  cseLclVarNum = m_compiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
-    var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
+    GenTreeLclVar* reuseStore = nullptr;
+    BasicBlock*    reuseBlock = nullptr;
+    Statement*     reuseStmt  = nullptr;
 
-    LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(cseLclVarNum);
-    if (cseLclVarTyp == TYP_STRUCT)
+    if ((dsc->csdDefCount == 1) && !successfulCandidate->IsSharedConst())
     {
-        m_compiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_compiler), false);
+        for (treeStmtLst* defLst = &dsc->csdTreeList; defLst != nullptr; defLst = defLst->tslNext)
+        {
+            GenTree* const defExp = defLst->tslTree;
+            if (!IS_CSE_DEF(defExp->gtCSEnum))
+            {
+                continue;
+            }
+
+            GenTree* const parent = m_compiler->gtFindLink(defLst->tslStmt, defExp).parent;
+            if ((parent != nullptr) && parent->OperIs(GT_STORE_LCL_VAR) && (parent->AsLclVar()->Data() == defExp))
+            {
+                GenTreeLclVar* const store  = parent->AsLclVar();
+                LclVarDsc* const     varDsc = m_compiler->lvaGetDesc(store);
+
+                // The store must be the local's only definition node. The entry value of a parameter or a
+                // must-init local has none, and cannot reach a use the store dominates.
+                bool onlyDef = store->HasSsaName();
+                for (unsigned i = 0; onlyDef && (i < varDsc->lvPerSsaData.GetCount()); i++)
+                {
+                    GenTreeLclVarCommon* const defNode = varDsc->lvPerSsaData.GetSsaDefByIndex(i)->GetDefNode();
+                    onlyDef                            = (defNode == nullptr) || (defNode == store);
+                }
+
+                if (onlyDef && !varDsc->IsAddressExposed() && !varDsc->lvDoNotEnregister && !varDsc->lvIsCSE &&
+                    !varTypeIsStruct(varDsc) && (varDsc->TypeGet() == genActualType(defExp->TypeGet())))
+                {
+                    reuseStore = store;
+                    reuseBlock = defLst->tslBlock;
+                    reuseStmt  = defLst->tslStmt;
+                }
+            }
+            break;
+        }
     }
-    lclDsc->lvType  = cseLclVarTyp;
+
+    //  Allocate a CSE temp, unless the definition's store provides one
+    //
+    unsigned   cseLclVarNum;
+    var_types  cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
+    LclVarDsc* lclDsc;
+
+    if (reuseStore != nullptr)
+    {
+        cseLclVarNum = reuseStore->GetLclNum();
+        lclDsc       = m_compiler->lvaGetDesc(cseLclVarNum);
+        JITDUMP("Using V%02u, which the definition is stored to, as the temp for " FMT_CSE "\n", cseLclVarNum,
+                dsc->csdIndex);
+    }
+    else
+    {
+        cseLclVarNum = m_compiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
+        lclDsc       = m_compiler->lvaGetDesc(cseLclVarNum);
+        if (cseLclVarTyp == TYP_STRUCT)
+        {
+            m_compiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_compiler), false);
+        }
+        lclDsc->lvType = cseLclVarTyp;
+    }
     lclDsc->lvIsCSE = true;
 
-    // Record that we created a new LclVar for use as a CSE temp
+    // Record the CSE temp
     //
     m_addCSEcount++;
     m_compiler->optCSEcount++;
@@ -5163,6 +5282,14 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
 #endif // DEBUG
 
+        if (reuseStore != nullptr)
+        {
+            // The store that consumes the value is the definition.
+            reuseStore->gtCSEnum = exp->gtCSEnum;
+            exp->gtCSEnum        = NO_CSE;
+            continue;
+        }
+
         GenTree* val = exp;
         if (isSharedConst)
         {
@@ -5239,7 +5366,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         defUses.Emplace(blk, stmt, cseLclVar);
     }
 
-    bool insertIntoSsa = ssaBuilder.FinalizeDefs();
+    IncrementalLiveInBuilder liveInBuilder(m_compiler);
+    bool                     insertIntoSsa = (reuseStore == nullptr) && ssaBuilder.FinalizeDefs();
 
     // Start out by inserting all the uses we created as part of defs into SSA.
     if (insertIntoSsa)
@@ -5340,10 +5468,18 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
         ReplaceCSENode(stmt, exp, cse);
 
-        if (insertIntoSsa)
+        if (insertIntoSsa || (reuseStore != nullptr))
         {
             ValueNumPair oldLclVNP = cseLclVar->gtVNPair;
-            InsertUseIntoSsa(ssaBuilder, UseDefLocation(blk, stmt, cseLclVar));
+            if (reuseStore != nullptr)
+            {
+                InsertUseOfReusedDef(UseDefLocation(blk, stmt, cseLclVar),
+                                     UseDefLocation(reuseBlock, reuseStmt, reuseStore), liveInBuilder);
+            }
+            else
+            {
+                InsertUseIntoSsa(ssaBuilder, UseDefLocation(blk, stmt, cseLclVar));
+            }
 
             // Update conservative VN of comma node in case we changed
             // conservative VNs due to a new reaching def
@@ -5419,8 +5555,41 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
 void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, const UseDefLocation& useDefLoc)
 {
     ssaBuilder.InsertUse(useDefLoc);
+    AdoptReachingDefVN(useDefLoc.Tree);
+}
 
-    GenTreeLclVar* lcl = useDefLoc.Tree;
+//------------------------------------------------------------------------
+// InsertUseOfReusedDef:
+//   Insert a use of a local whose lone definition serves as the CSE definition into SSA.
+//
+// Parameters:
+//   useDefLoc     - Location of the new use
+//   defLoc        - Location of the definition
+//   liveInBuilder - Builder that marks the local live into the blocks between them
+//
+void CSE_HeuristicCommon::InsertUseOfReusedDef(const UseDefLocation&     useDefLoc,
+                                               const UseDefLocation&     defLoc,
+                                               IncrementalLiveInBuilder& liveInBuilder)
+{
+    GenTreeLclVar* const lcl    = useDefLoc.Tree;
+    unsigned const       ssaNum = defLoc.Tree->GetSsaNum();
+    JITDUMP("Inserting use [%06u] of V%02u d:%u into SSA\n", Compiler::dspTreeID(lcl), lcl->GetLclNum(), ssaNum);
+
+    lcl->SetSsaNum(ssaNum);
+    liveInBuilder.MarkLiveInBackwards(lcl->GetLclNum(), useDefLoc, defLoc);
+    m_compiler->lvaGetDesc(lcl)->GetPerSsaData(ssaNum)->AddUse(useDefLoc.Block);
+    AdoptReachingDefVN(lcl);
+}
+
+//------------------------------------------------------------------------
+// AdoptReachingDefVN:
+//   Give a CSE temp use the value number of its reaching definition.
+//
+// Parameters:
+//   lcl - The use, already in SSA
+//
+void CSE_HeuristicCommon::AdoptReachingDefVN(GenTreeLclVar* lcl)
+{
     assert(lcl->HasSsaName());
 
     LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
@@ -5430,13 +5599,13 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
     ValueNum oldConservativeVN = lcl->gtVNPair.GetConservative();
     lcl->gtVNPair              = ssaDsc->m_vnPair;
 
-    // If the old VN was flagged as a checked bound then propagate that to the
-    // new VN to make sure assertion prop will pay attention to this VN.
-    if ((oldConservativeVN != ssaDsc->m_vnPair.GetConservative()) &&
-        m_compiler->vnStore->IsVNCheckedBound(oldConservativeVN) &&
-        !m_compiler->vnStore->IsVNConstant(ssaDsc->m_vnPair.GetConservative()))
+    // The use now carries the reaching definition's value number. Other nodes still
+    // carry the old one, so record that both denote the same value: assertions and
+    // checked-bound facts recorded under either must be visible through the other.
+    ValueNum newConservativeVN = ssaDsc->m_vnPair.GetConservative();
+    if (oldConservativeVN != newConservativeVN)
     {
-        m_compiler->vnStore->SetVNIsCheckedBound(ssaDsc->m_vnPair.GetConservative());
+        m_compiler->vnStore->RecordVNEquivalence(oldConservativeVN, newConservativeVN);
     }
 }
 

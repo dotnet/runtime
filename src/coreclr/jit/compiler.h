@@ -9182,6 +9182,7 @@ public:
         static AssertionDsc CreateVNNonNullAssertion(Compiler* comp, ValueNum vn)
         {
             assert(!comp->optLocalAssertionProp);
+            vn = comp->vnStore->VNCanonical(vn);
             return CreateConstLclVarAssertion(comp, BAD_VAR_NUM, vn, 0, ValueNumStore::VNForNull(),
                                               /*equals*/ false);
         }
@@ -9247,7 +9248,7 @@ public:
 
             AssertionDsc dsc           = CreateEmptyAssertion(comp);
             dsc.m_op1.m_kind           = exact ? O1K_EXACT_TYPE : O1K_SUBTYPE;
-            dsc.m_op1.m_vn             = objVN;
+            dsc.m_op1.m_vn             = comp->vnStore->VNCanonical(objVN);
             dsc.m_op2.m_kind           = O2K_CONST_INT;
             dsc.m_op2.m_icon.m_iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(typeHndVN);
             dsc.m_op2.m_vn             = typeHndVN;
@@ -9268,9 +9269,9 @@ public:
             AssertionDsc dsc              = CreateEmptyAssertion(comp);
             dsc.m_assertionKind           = OAK_LT_UN;
             dsc.m_op1.m_kind              = O1K_VN;
-            dsc.m_op1.m_vn                = idxVN;
+            dsc.m_op1.m_vn                = comp->vnStore->VNCanonical(idxVN);
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn                = lenVN;
+            dsc.m_op2.m_vn                = comp->vnStore->VNCanonical(lenVN);
             dsc.m_op2.m_isVNNeverNegative = isLenNeverNegative;
             dsc.m_op2.m_icon.m_iconVal    = 0;
             return dsc;
@@ -9290,9 +9291,9 @@ public:
             AssertionDsc dsc              = CreateEmptyAssertion(comp);
             dsc.m_assertionKind           = FromVNFunc(relop);
             dsc.m_op1.m_kind              = O1K_VN;
-            dsc.m_op1.m_vn                = op1VN;
+            dsc.m_op1.m_vn                = comp->vnStore->VNCanonical(op1VN);
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn                = checkedBndVN;
+            dsc.m_op2.m_vn                = comp->vnStore->VNCanonical(checkedBndVN);
             dsc.m_op2.m_icon.m_iconVal    = cns;
             dsc.m_op2.m_isVNNeverNegative = isVNNeverNegative || comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
@@ -9310,7 +9311,7 @@ public:
             AssertionDsc dsc           = CreateEmptyAssertion(comp);
             dsc.m_assertionKind        = FromVNFunc(relop);
             dsc.m_op1.m_kind           = O1K_VN;
-            dsc.m_op1.m_vn             = op1VN;
+            dsc.m_op1.m_vn             = comp->vnStore->VNCanonical(op1VN);
             dsc.m_op2.m_kind           = O2K_CONST_INT;
             dsc.m_op2.m_vn             = cnsVN;
             dsc.m_op2.m_icon.m_iconVal = cns;
@@ -9325,6 +9326,15 @@ public:
             assert(op1VN != ValueNumStore::NoVN);
             assert(op2VN != ValueNumStore::NoVN);
             assert(op1VN != op2VN);
+
+            // Key by representatives when that keeps the operands distinct.
+            ValueNum op1Canonical = comp->vnStore->VNCanonical(op1VN);
+            ValueNum op2Canonical = comp->vnStore->VNCanonical(op2VN);
+            if (op1Canonical != op2Canonical)
+            {
+                op1VN = op1Canonical;
+                op2VN = op2Canonical;
+            }
 
             AssertionDsc dsc              = CreateEmptyAssertion(comp);
             dsc.m_assertionKind           = FromVNFunc(relop);

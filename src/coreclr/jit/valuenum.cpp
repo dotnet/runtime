@@ -7994,6 +7994,295 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
     (isIndex ? m_checkedBoundIndexVNs : m_checkedBoundVNs).AddOrUpdate(vn, true);
 }
 
+//------------------------------------------------------------------------
+// FindVNPair: Find the entry for a number in a pair list.
+//
+// Arguments:
+//    list - the list
+//    from - the number
+//
+// Return Value:
+//    The index of the entry, or -1 when there is none.
+//
+int ValueNumStore::FindVNPair(VNPairList& list, ValueNum from)
+{
+    for (int i = 0; i < list.Height(); i++)
+    {
+        if (list.BottomRef(i).from == from)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+//------------------------------------------------------------------------
+// VNCanonical: Return the representative of a value number's equivalence class.
+//
+// Arguments:
+//    vn - the value number
+//
+// Return Value:
+//    The value number itself when no equivalence was recorded for it.
+//
+ValueNum ValueNumStore::VNCanonical(ValueNum vn)
+{
+    if ((m_vnEquivalences == nullptr) || (vn == NoVN))
+    {
+        return vn;
+    }
+
+    return VNCanonicalThroughFunc(VNCanonicalRoot(vn));
+}
+
+//------------------------------------------------------------------------
+// VNCanonicalRoot: Follow recorded equivalences to the representative.
+//
+// Arguments:
+//    vn - the value number
+//
+// Return Value:
+//    The value number itself when no equivalence was recorded for it.
+//
+ValueNum ValueNumStore::VNCanonicalRoot(ValueNum vn)
+{
+    VNEquivalences& eq = *m_vnEquivalences;
+    if (!eq.members.Test(vn))
+    {
+        return vn;
+    }
+
+    ValueNum root = vn;
+    int      index;
+    while (eq.members.Test(root) && ((index = FindVNPair(eq.entries, root)) >= 0))
+    {
+        root = eq.entries.BottomRef(index).to;
+    }
+
+    // Compress the path so later lookups take one step.
+    while ((vn != root) && ((index = FindVNPair(eq.entries, vn)) >= 0))
+    {
+        VNPair& entry = eq.entries.BottomRef(index);
+        vn            = entry.to;
+        entry.to      = root;
+    }
+    return root;
+}
+
+//------------------------------------------------------------------------
+// VNFuncIsReformable: Can a function application be rebuilt over equal arguments?
+//
+// Arguments:
+//    vnf - the function
+//
+// Return Value:
+//    True for value functions whose arguments are values. Maps, phis, memory and
+//    exception sets are excluded.
+//
+bool ValueNumStore::VNFuncIsReformable(VNFunc vnf)
+{
+    if (vnf < VNF_Boundary)
+    {
+        return GenTreeOpIsLegalVNFunc(static_cast<genTreeOps>(vnf));
+    }
+    switch (vnf)
+    {
+        case VNF_LT_UN:
+        case VNF_LE_UN:
+        case VNF_GE_UN:
+        case VNF_GT_UN:
+        case VNF_Cast:
+        case VNF_CastOvf:
+        case VNF_MDArrLength:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// VNCanonicalThroughFunc: Canonicalize a function application through its arguments.
+//
+// Arguments:
+//    vn - a representative value number
+//
+// Return Value:
+//    The function rebuilt over canonical arguments when any argument has a
+//    representative other than itself, otherwise vn. CSE does not renumber the
+//    parents of a rewritten use, so "SUB(old, 1)" stays distinct from "SUB(new, 1)"
+//    until it is asked for. Results are memoized so that a function has one canonical
+//    form regardless of the order of lookups. NoVN is returned for a function that is
+//    being rebuilt further up the stack: CSE matches candidates by liberal value number,
+//    so a load and a function of it that folds away liberally can be recorded as equal,
+//    and the function is then reachable through its own argument.
+//
+ValueNum ValueNumStore::VNCanonicalThroughFunc(ValueNum vn)
+{
+    VNEquivalences& eq = *m_vnEquivalences;
+    if (eq.canonicalIdentity.Test(vn))
+    {
+        return vn;
+    }
+    int index = FindVNPair(eq.rebuilt, vn);
+    if (index >= 0)
+    {
+        return eq.rebuilt.BottomRef(index).to; // NoVN while in progress
+    }
+
+    VNFuncApp funcApp;
+    if (!GetVNFunc(vn, &funcApp) || !VNFuncIsReformable(funcApp.GetFunc()) || (funcApp.GetArity() == 0) ||
+        (funcApp.GetArity() > 4))
+    {
+        // Nothing to rebuild. Remember that so the next lookup is one bit test.
+        eq.canonicalIdentity.Set(vn);
+        return vn;
+    }
+
+    eq.rebuilt.Push({vn, NoVN});
+
+    ValueNum args[4];
+    bool     changed = false;
+    for (unsigned i = 0; i < funcApp.GetArity(); i++)
+    {
+        ValueNum arg   = funcApp.GetArg(i);
+        ValueNum canon = VNCanonicalThroughFunc(VNCanonicalRoot(arg));
+        if (canon == NoVN)
+        {
+            // The argument leads back to this function, so keep it as it is.
+            canon = arg;
+        }
+        args[i] = canon;
+        changed |= (canon != arg);
+    }
+
+    ValueNum reformed = vn;
+    if (changed)
+    {
+        var_types type = TypeOfVN(vn);
+        switch (funcApp.GetArity())
+        {
+            case 1:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0]);
+                break;
+            case 2:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0], args[1]);
+                break;
+            case 3:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0], args[1], args[2]);
+                break;
+            default:
+                reformed = VNForFunc(type, funcApp.GetFunc(), args[0], args[1], args[2], args[3]);
+                break;
+        }
+        reformed = VNCanonicalRoot(reformed);
+
+        // The rebuilt number is new, so carry over the memberships recorded under the original.
+        // A rebuilt number that folded to a constant needs none: assertion prop reads constants directly.
+        if (!IsVNConstant(reformed))
+        {
+            if (IsVNCheckedBound(vn))
+            {
+                SetVNIsCheckedBound(reformed);
+            }
+            if (IsVNCheckedBoundIndex(vn))
+            {
+                SetVNIsCheckedBound(reformed, /* isIndex */ true);
+            }
+        }
+    }
+    index = FindVNPair(eq.rebuilt, vn);
+    assert(index >= 0);
+    if (reformed == vn)
+    {
+        // Nested walks may have left entries above this one.
+        eq.rebuilt.BottomRef(index) = eq.rebuilt.TopRef();
+        eq.rebuilt.Pop();
+        eq.canonicalIdentity.Set(vn);
+    }
+    else
+    {
+        eq.rebuilt.BottomRef(index).to = reformed;
+    }
+    return reformed;
+}
+
+//------------------------------------------------------------------------
+// RecordVNEquivalence: Record that two value numbers denote the same value.
+//
+// Arguments:
+//    fromVN - the value number a use carried before CSE rewrote it
+//    toVN   - the value number of the reaching definition it now uses
+//
+// Notes:
+//    The representative, available through VNCanonical, is the number that says the most
+//    about the value: a constant, else a phi definition or a function, else whichever
+//    number was recorded last. A constant never keys the map. Facts recorded before CSE
+//    under either value number are transferred to the representative, and facts recorded
+//    afterwards are keyed by it.
+//
+void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
+{
+    if ((fromVN == NoVN) || (toVN == NoVN) || (TypeOfVN(fromVN) != TypeOfVN(toVN)))
+    {
+        return;
+    }
+
+    ValueNum fromRoot = VNCanonical(fromVN);
+    ValueNum toRoot   = VNCanonical(toVN);
+    if (fromRoot == toRoot)
+    {
+        return;
+    }
+
+    // Prefer the representative that says the most about the value: a constant needs no
+    // reasoning; a phi definition can be walked to its reaching values; a function can be
+    // decomposed. An opaque value number offers none of these, and the reaching
+    // definition's number can be one.
+    auto rank = [this](ValueNum vn) -> int {
+        if (IsVNConstant(vn))
+        {
+            return 2;
+        }
+        VNFuncApp funcApp;
+        return (IsPhiDef(vn) || (GetVNFunc(vn, &funcApp) && !funcApp.FuncIs(VNF_MemOpaque))) ? 1 : 0;
+    };
+    if (rank(fromRoot) > rank(toRoot))
+    {
+        std::swap(fromRoot, toRoot);
+    }
+    if (IsVNConstant(fromRoot))
+    {
+        // Two different constants: the path cannot be taken, and a constant never keys the map.
+        return;
+    }
+
+    if (m_vnEquivalences == nullptr)
+    {
+        m_vnEquivalences = new (m_alloc) VNEquivalences(m_alloc);
+    }
+    assert(FindVNPair(m_vnEquivalences->entries, fromRoot) < 0);
+    m_vnEquivalences->members.Set(fromRoot);
+    m_vnEquivalences->entries.Push({fromRoot, toRoot});
+    m_vnEquivalences->canonicalIdentity.Clear();
+    m_vnEquivalences->rebuilt.Reset();
+
+    // Checked-bound membership is recorded during value numbering, before CSE, so carry it
+    // to the representative rather than relying on later canonicalization. A constant needs
+    // none: assertion prop reads constants directly.
+    if (IsVNConstant(toRoot))
+    {
+        return;
+    }
+    if (IsVNCheckedBound(fromRoot))
+    {
+        SetVNIsCheckedBound(toRoot);
+    }
+    if (IsVNCheckedBoundIndex(fromRoot))
+    {
+        SetVNIsCheckedBound(toRoot, /* isIndex */ true);
+    }
+}
+
 #ifdef FEATURE_HW_INTRINSICS
 simd8_t GetConstantSimd8(ValueNumStore* vns, var_types baseType, ValueNum argVN)
 {

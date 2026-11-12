@@ -36,4 +36,56 @@ typedef BitSetShortLongRep BitVec;
 typedef BitVecOps::ValArgType BitVec_ValArg_T;
 typedef BitVecOps::RetValType BitVec_ValRet_T;
 
+// A set of small unsigned integers kept as one bit each. It is sized when first needed and grown
+// on demand, so an index past the end is simply not a member. Unlike BitVec it needs no traits and
+// no size up front, which suits a set whose index space is still being allocated while it fills.
+class GrowableBitSet
+{
+    // Machine words, so the 32-bit host does no 64-bit arithmetic.
+    typedef size_t        Word;
+    static const unsigned BitsPerWord = sizeof(Word) * 8;
+
+    CompAllocator m_alloc;
+    Word*         m_words = nullptr;
+    unsigned      m_count = 0;
+
+public:
+    GrowableBitSet(CompAllocator alloc)
+        : m_alloc(alloc)
+    {
+    }
+
+    bool Test(unsigned index) const
+    {
+        unsigned word = index / BitsPerWord;
+        return (word < m_count) && ((m_words[word] & ((Word)1 << (index % BitsPerWord))) != 0);
+    }
+
+    void Set(unsigned index)
+    {
+        unsigned word = index / BitsPerWord;
+        if (word >= m_count)
+        {
+            unsigned count = max(word + 1, m_count * 2);
+            Word*    words = m_alloc.allocate<Word>(count);
+            if (m_count != 0)
+            {
+                memcpy(words, m_words, m_count * sizeof(Word));
+            }
+            memset(words + m_count, 0, (count - m_count) * sizeof(Word));
+            m_words = words;
+            m_count = count;
+        }
+        m_words[word] |= (Word)1 << (index % BitsPerWord);
+    }
+
+    void Clear()
+    {
+        if (m_count != 0)
+        {
+            memset(m_words, 0, m_count * sizeof(Word));
+        }
+    }
+};
+
 #endif // _BITVEC_INCLUDED_
