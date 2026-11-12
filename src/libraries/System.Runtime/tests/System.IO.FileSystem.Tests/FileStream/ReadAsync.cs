@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Tests
@@ -191,6 +192,57 @@ namespace System.IO.Tests
     {
         protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, offset, count, cancellationToken);
+
+        [Theory]
+        [InlineData(FileAccess.Read, false)]
+        [InlineData(FileAccess.Read, true)]
+        [InlineData(FileAccess.Write, false)]
+        [InlineData(FileAccess.Write, true)]
+        public async Task MemoryExceptionDoesNotAdvancePosition(FileAccess access, bool characterDevice)
+        {
+            SafeFileHandle handle;
+            if (!characterDevice)
+            {
+                string path = GetTestFilePath();
+                File.WriteAllBytes(path, new byte[16]);
+                handle = File.OpenHandle(path, FileMode.Open, access, FileShare.ReadWrite, FileOptions.Asynchronous);
+            }
+            else
+            {
+                handle = File.OpenNullHandle();
+            }
+
+            using FileStream stream = new(handle, access, bufferSize: 0);
+            Assert.True(stream.CanSeek);
+            stream.Position = 1;
+            using ThrowingMemoryManager manager = new();
+            Memory<byte> memory = manager.Buffer;
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                if (access == FileAccess.Read)
+                {
+                    await stream.ReadAsync(memory);
+                }
+                else
+                {
+                    await stream.WriteAsync(memory);
+                }
+            });
+            Assert.Equal(1, stream.Position);
+        }
+
+        [ConditionalFact(nameof(IsFullDeviceAvailable))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task WriteErrorDoesNotAdvancePosition()
+        {
+            using FileStream stream = new("/dev/full", FileMode.Open, FileAccess.Write, FileShare.ReadWrite, bufferSize: 0, useAsync: true);
+            stream.Position = 1;
+            await Assert.ThrowsAsync<IOException>(async () => await stream.WriteAsync(new byte[4]));
+            Assert.Equal(1, stream.Position);
+        }
+
+        public static bool IsFullDeviceAvailable => File.Exists("/dev/full");
     }
 
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads

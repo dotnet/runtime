@@ -199,18 +199,40 @@ namespace System.IO
         private static ValueTask<int> ReadAtAsyncPollable(SafeFileHandle handle, long offset, Memory<byte> destination, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
             int sequenceNumber;
-            if (handle.AsyncContext.IsReadReady(out sequenceNumber))
+            bool completed = false;
+            int readResult = 0;
+            Interop.ErrorInfo errorInfo = default;
+            try
             {
-                if (TryCompleteReadAt(handle, offset, destination.Span, out int readResult, out Interop.ErrorInfo errorInfo, strategy))
+                if (handle.AsyncContext.IsReadReady(out sequenceNumber))
                 {
-                    return new ValueTask<int>(CheckFileCall(handle, readResult, errorInfo));
+                    completed = TryCompleteReadAt(handle, offset, destination.Span, out readResult, out errorInfo, strategy);
                 }
+            }
+            catch
+            {
+                strategy?.OnIncompleteOperation(destination.Length, 0);
+                throw;
+            }
+
+            if (completed)
+            {
+                return new ValueTask<int>(CheckFileCall(handle, readResult, errorInfo));
             }
 
             SafeFileHandle.ReadOperation op = handle.RentReadOperation();
             op.Init(offset, destination, cancellationToken, strategy);
 
-            AsyncResult result = handle.AsyncContext.StartAsyncRead(op, sequenceNumber, cancellationToken);
+            AsyncResult result;
+            try
+            {
+                result = handle.AsyncContext.StartAsyncRead(op, sequenceNumber, cancellationToken);
+            }
+            catch
+            {
+                strategy?.OnIncompleteOperation(destination.Length, 0);
+                throw;
+            }
 
             if (result == AsyncResult.Pending)
             {
@@ -230,6 +252,7 @@ namespace System.IO
                 return new ValueTask<int>(completedResult);
             }
 
+            strategy?.OnIncompleteOperation(destination.Length, 0);
             throw new OperationCanceledException(cancellationToken);
         }
 
@@ -311,12 +334,12 @@ namespace System.IO
         {
             if (handle.SupportsRandomAccess)
             {
-                if (TryCompleteWriteAt(handle, useOffset: true, offset, buffer, out bytesWritten, out errorInfo, strategy: null))
+                if (TryCompleteWriteAt(handle, useOffset: true, offset, buffer, out bytesWritten, out errorInfo, strategy))
                 {
                     if (bytesWritten == 0 && ShouldFallBackToNonOffsetSyscall(errorInfo))
                     {
                         handle.SupportsRandomAccess = false;
-                        return TryCompleteWriteAt(handle, useOffset: false, offset, buffer, out bytesWritten, out errorInfo, strategy);
+                        return TryCompleteWriteAt(handle, offset, buffer, out bytesWritten, out errorInfo, strategy);
                     }
 
                     strategy?.OnIncompleteOperation(buffer.Length, bytesWritten);
@@ -326,21 +349,36 @@ namespace System.IO
                 return false;
             }
 
-            return TryCompleteWriteAt(handle, useOffset: false, offset, buffer, out bytesWritten, out errorInfo, strategy);
+            if (TryCompleteWriteAt(handle, useOffset: false, offset, buffer, out bytesWritten, out errorInfo, strategy))
+            {
+                strategy?.OnIncompleteOperation(buffer.Length, bytesWritten);
+                return true;
+            }
+
+            return false;
         }
 
-        private static unsafe bool TryCompleteWriteAt(SafeFileHandle handle, bool useOffset, long offset, ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
+        private static unsafe bool TryCompleteWriteAt(SafeFileHandle handle, bool useOffset, long offset, ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy)
         {
             int totalBytesWritten = 0;
             while (true)
             {
                 int toWrite = GetNumberOfBytesToWrite(buffer.Length);
                 int written;
-                fixed (byte* p = &MemoryMarshal.GetReference(buffer))
+                try
                 {
-                    written = useOffset
-                        ? Interop.Sys.PWrite(handle, p, toWrite, offset)
-                        : Interop.Sys.Write(handle, p, toWrite);
+                    fixed (byte* p = &MemoryMarshal.GetReference(buffer))
+                    {
+                        written = useOffset
+                            ? Interop.Sys.PWrite(handle, p, toWrite, offset)
+                            : Interop.Sys.Write(handle, p, toWrite);
+                    }
+                }
+                catch
+                {
+                    // The caller rolls back the full buffer; preserve any bytes already written.
+                    strategy?.OnIncompleteOperation(0, totalBytesWritten);
+                    throw;
                 }
 
                 if (written < 0)
@@ -351,7 +389,6 @@ namespace System.IO
                     {
                         return false;
                     }
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
                     return true;
                 }
 
@@ -535,14 +572,28 @@ namespace System.IO
             }
 
             int sequenceNumber;
-            if (handle.AsyncContext.IsWriteReady(out sequenceNumber))
+            bool completed = false;
+            int bytesWritten = 0;
+            Interop.ErrorInfo writeResult = default;
+            try
             {
-                if (TryCompleteWriteAt(handle, offset, source.Span, out int bytesWritten, out Interop.ErrorInfo writeResult, strategy))
+                if (handle.AsyncContext.IsWriteReady(out sequenceNumber))
                 {
-                    CheckFileCall(handle, writeResult);
-                    return default;
+                    completed = TryCompleteWriteAt(handle, offset, source.Span, out bytesWritten, out writeResult, strategy);
                 }
-
+            }
+            catch
+            {
+                strategy?.OnIncompleteOperation(source.Length, 0);
+                throw;
+            }
+            if (completed)
+            {
+                CheckFileCall(handle, writeResult);
+                return default;
+            }
+            if (bytesWritten != 0)
+            {
                 source = source.Slice(bytesWritten);
                 offset += bytesWritten;
             }
@@ -550,7 +601,16 @@ namespace System.IO
             SafeFileHandle.WriteOperation op = handle.RentWriteOperation();
             op.Init(offset, source, cancellationToken, strategy);
 
-            AsyncResult result = handle.AsyncContext.StartAsyncWrite(op, sequenceNumber, cancellationToken);
+            AsyncResult result;
+            try
+            {
+                result = handle.AsyncContext.StartAsyncWrite(op, sequenceNumber, cancellationToken);
+            }
+            catch
+            {
+                strategy?.OnIncompleteOperation(source.Length, 0);
+                throw;
+            }
 
             if (result == AsyncResult.Pending)
             {
@@ -569,6 +629,7 @@ namespace System.IO
                 return default;
             }
 
+            strategy?.OnIncompleteOperation(source.Length, 0);
             throw new OperationCanceledException(cancellationToken);
         }
 

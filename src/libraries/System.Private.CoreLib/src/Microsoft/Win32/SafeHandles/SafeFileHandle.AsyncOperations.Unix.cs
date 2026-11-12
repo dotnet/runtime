@@ -118,6 +118,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 catch (Exception e) when (e is not ObjectDisposedException)
                 {
+                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
                     Exception = e;
                     return true;
                 }
@@ -141,6 +142,7 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         return false;
                     }
+                    _strategy = null;
                     readResult = intReadResult;
                 }
 
@@ -322,6 +324,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 catch (Exception e) when (e is not ObjectDisposedException)
                 {
+                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
                     Exception = e;
                     return true;
                 }
@@ -349,6 +352,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (RandomAccess.TryCompleteWriteAt(_owner, _offset, _buffer.Span, out int bytesWritten, out errorInfo, _strategy))
                 {
+                    _strategy = null;
                     if (errorInfo.Error != Interop.Error.SUCCESS)
                     {
                         Exception = Interop.GetExceptionForIoErrno(errorInfo, _owner.Path);
