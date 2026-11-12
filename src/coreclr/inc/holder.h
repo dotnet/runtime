@@ -153,52 +153,6 @@ BOOL NoNull(TYPE value, TYPE defaultValue)
     return FALSE;
 }
 
-// Used e.g. for retail version of code:SyncAccessHolder
-template <typename TYPE>
-class NoOpBaseHolder
-{
-  public:
-    FORCEINLINE NoOpBaseHolder()
-    {
-    }
-    FORCEINLINE NoOpBaseHolder(TYPE value, BOOL take = TRUE)
-    {
-    }
-    FORCEINLINE ~NoOpBaseHolder()
-    {
-    }
-    FORCEINLINE void Assign(TYPE value, BOOL fTake = TRUE)
-    {
-    }
-    FORCEINLINE void Acquire()
-    {
-    }
-    FORCEINLINE void Release()
-    {
-    }
-    FORCEINLINE void Clear()
-    {
-    }
-    FORCEINLINE void SuppressRelease()
-    {
-    }
-    FORCEINLINE TYPE Extract()
-    {
-    }
-    FORCEINLINE TYPE GetValue()
-    {
-    }
-    FORCEINLINE BOOL IsNull() const
-    {
-        return FALSE;
-    }
-
-  private:
-    NoOpBaseHolder& operator=(NoOpBaseHolder const &);
-    NoOpBaseHolder(NoOpBaseHolder const &);
-};  // NoOpBaseHolder<>
-
-
 template
     <
         typename TYPE,
