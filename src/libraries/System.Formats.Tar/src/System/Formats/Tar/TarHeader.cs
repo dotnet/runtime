@@ -158,10 +158,6 @@ namespace System.Formats.Tar
             {
                 throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, extendedAttribute.Key, extendedAttribute.Key[index] == '\n' ? "\\n" : extendedAttribute.Key[index]));
             }
-            if (extendedAttribute.Value.Contains('\n'))
-            {
-                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, extendedAttribute.Key, "\\n"));
-            }
         }
 
         private static string GetMagicForFormat(TarEntryFormat format) => format switch

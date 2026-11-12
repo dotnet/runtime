@@ -79,6 +79,94 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(TarEntryType.ExtendedAttributes, false)]
+        [InlineData(TarEntryType.ExtendedAttributes, true)]
+        [InlineData(TarEntryType.GlobalExtendedAttributes, false)]
+        [InlineData(TarEntryType.GlobalExtendedAttributes, true)]
+        public async Task Read_PaxExtendedAttributes_EmbeddedNewlines(TarEntryType entryType, bool async)
+        {
+            Dictionary<string, string> expectedAttributes = new()
+            {
+                ["path"] = "file.txt",
+                ["mtime"] = "0",
+                ["SCHILY.xattr.user.test"] = "a\nb",
+                ["leading"] = "\nvalue",
+                ["trailing"] = "value\n",
+                ["binary"] = "\0\n\n\0",
+                ["utf8"] = "\u00e9\n\u6f22",
+                ["empty"] = "",
+                ["next"] = "value"
+            };
+            StringBuilder records = new();
+            foreach (KeyValuePair<string, string> attribute in expectedAttributes)
+            {
+                AppendRawPaxExtendedAttributeRecord(records, attribute.Key, attribute.Value);
+            }
+
+            byte[] data = Encoding.UTF8.GetBytes(records.ToString());
+            using MemoryStream archive = new MemoryStream();
+            WriteRawTarHeader(archive, "PaxHeader", 0, 0, 0, data.Length, 0, (char)entryType, "");
+            archive.Write(data);
+            PadToTarBlockBoundary(archive);
+            WriteRawTarHeader(archive, "file.txt", 0, 0, 0, 0, 0, '0', "");
+            archive.Write(new byte[1024]);
+            archive.Position = 0;
+
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+            TarEntry entry = await GetNextEntry(reader, async: async);
+            IReadOnlyDictionary<string, string> actualAttributes = entryType is TarEntryType.GlobalExtendedAttributes
+                ? Assert.IsType<PaxGlobalExtendedAttributesTarEntry>(entry).GlobalExtendedAttributes
+                : Assert.IsType<PaxTarEntry>(entry).ExtendedAttributes;
+
+            Assert.Equal(expectedAttributes.Count, actualAttributes.Count);
+            foreach (KeyValuePair<string, string> attribute in expectedAttributes)
+            {
+                Assert.Equal(attribute.Value, actualAttributes[attribute.Key]);
+            }
+
+            if (entryType is TarEntryType.GlobalExtendedAttributes)
+            {
+                entry = await GetNextEntry(reader, async: async);
+            }
+
+            Assert.Equal("file.txt", entry.Name);
+            Assert.Null(await GetNextEntry(reader, async: async));
+        }
+
+        [Theory]
+        [InlineData("0 key=value\n", false)]
+        [InlineData("0 key=value\n", true)]
+        [InlineData("2 \n", false)]
+        [InlineData("2 \n", true)]
+        [InlineData("2147483648 key=value\n", false)]
+        [InlineData("2147483648 key=value\n", true)]
+        [InlineData("14 key=value\n", false)]
+        [InlineData("14 key=value\n", true)]
+        [InlineData("12 key=value\n", false)]
+        [InlineData("12 key=value\n", true)]
+        [InlineData("13 key=value", false)]
+        [InlineData("13 key=value", true)]
+        [InlineData("9 broken\n6 a=b\n", false)]
+        [InlineData("9 broken\n6 a=b\n", true)]
+        [InlineData("key=value\n", false)]
+        [InlineData("key=value\n", true)]
+        public async Task Read_PaxExtendedAttributes_InvalidRecord_Throws(string record, bool async)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(record);
+            using MemoryStream archive = new MemoryStream();
+            WriteRawTarHeader(archive, "PaxHeader", 0, 0, 0, data.Length, 0, 'x', "");
+            archive.Write(data);
+            PadToTarBlockBoundary(archive);
+            archive.Position = 0;
+
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
+
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async));
+        }
+
+        [Theory]
         [MemberData(nameof(GetBooleanData))]
         public async Task LongEndMarkers_DoNotAdvanceStream(bool async)
         {

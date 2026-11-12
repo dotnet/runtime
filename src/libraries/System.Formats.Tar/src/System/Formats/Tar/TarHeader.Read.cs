@@ -743,11 +743,11 @@ namespace System.Formats.Tar
             }
         }
 
-        // Tries to collect the next extended attribute from the string.
+        // Tries to collect the next extended attribute from the byte buffer.
         // Extended attributes are saved in the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
         // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
         // "LENGTH KEY=VALUE\n"
-        // Where LENGTH is the total number of bytes of that line, from LENGTH itself to the endline, inclusive.
+        // Where LENGTH is the total number of bytes of the record, including the final newline.
         // Throws if end of stream is reached or if an attribute is malformed.
         private static bool TryGetNextExtendedAttribute(
             ref ReadOnlySpan<byte> buffer,
@@ -757,47 +757,41 @@ namespace System.Formats.Tar
             key = null;
             value = null;
 
-            // Slice off the next line.
-            int newlinePos = buffer.IndexOf((byte)'\n');
-            if (newlinePos < 0)
-            {
-                return false;
-            }
-            ReadOnlySpan<byte> line = buffer.Slice(0, newlinePos);
-
             // Find the end of the length
-            int spacePos = line.IndexOf((byte)' ');
+            int spacePos = buffer.IndexOf((byte)' ');
             if (spacePos < 0)
             {
                 return false;
             }
 
-            // Check the length matches the line length
             ReadOnlySpan<byte> length = buffer.Slice(0, spacePos);
-            if (!int.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture, out int lengthValue) || lengthValue != (line.Length + 1))
+            if (!int.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture, out int lengthValue) ||
+                lengthValue <= spacePos + 1 ||
+                lengthValue > buffer.Length ||
+                buffer[lengthValue - 1] != (byte)'\n')
             {
                 return false;
             }
 
-            // Remove the length
-            line = line.Slice(spacePos + 1);
+            // Values can contain newlines, so only the declared length delimits the record.
+            ReadOnlySpan<byte> record = buffer.Slice(spacePos + 1, lengthValue - spacePos - 2);
 
             // Find the equal separator.
-            int equalPos = line.IndexOf((byte)'=');
+            int equalPos = record.IndexOf((byte)'=');
             if (equalPos < 0)
             {
                 return false;
             }
 
-            ReadOnlySpan<byte> keySlice = line.Slice(0, equalPos);
-            ReadOnlySpan<byte> valueSlice = line.Slice(equalPos + 1);
+            ReadOnlySpan<byte> keySlice = record.Slice(0, equalPos);
+            ReadOnlySpan<byte> valueSlice = record.Slice(equalPos + 1);
 
             // Return the parsed key and value.
             key = Encoding.UTF8.GetString(keySlice);
             value = Encoding.UTF8.GetString(valueSlice);
 
-            // Update buffer to point to the next line for the next call
-            buffer = buffer.Slice(newlinePos + 1);
+            // Update buffer to point to the next record for the next call
+            buffer = buffer.Slice(lengthValue);
             return true;
         }
 
