@@ -5,7 +5,6 @@ using System;
 using System.DirectoryServices.Protocols;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Loader;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -65,23 +64,26 @@ internal static partial class Interop
 {
     public const string LDAP_SASL_SIMPLE = null;
 
+    internal static partial class Libraries
+    {
+        internal const string OpenLdap = "libldap";
+    }
+
     internal static partial class Ldap
     {
         static Ldap()
         {
-            Assembly currentAssembly = typeof(Ldap).Assembly;
-
-            // Register callback that tries to load other libraries when the default library "libldap.so.2" is not found.
-            // It is a convention to create the symbolic link "libldap.so.2" to point to a versioned library but not all distros do that.
-            AssemblyLoadContext.GetLoadContext(currentAssembly).ResolvingUnmanagedDll += (assembly, ldapName) =>
+            // Default probing of "libldap" finds libldap.dylib on macOS. Elsewhere, "libldap.so.2" is the conventional
+            // symbolic link to the versioned library, but not all distros create it.
+            NativeLibrary.SetDllImportResolver(typeof(Ldap).Assembly, (libraryName, assembly, searchPath) =>
             {
-                if (assembly != currentAssembly || ldapName != Libraries.OpenLdap)
+                if (libraryName != Libraries.OpenLdap || OperatingSystem.IsMacOS())
                 {
                     return IntPtr.Zero;
                 }
 
-                // Try versioned libraries.
-                if (NativeLibrary.TryLoad("libldap-2.6.so.0", out IntPtr handle) ||
+                if (NativeLibrary.TryLoad("libldap.so.2", assembly, searchPath, out IntPtr handle) ||
+                    NativeLibrary.TryLoad("libldap-2.6.so.0", out handle) ||
                     NativeLibrary.TryLoad("libldap-2.5.so.0", out handle) ||
                     NativeLibrary.TryLoad("libldap-2.4.so.2", out handle))
                 {
@@ -89,7 +91,7 @@ internal static partial class Interop
                 }
 
                 return IntPtr.Zero;
-            };
+            });
 
             // OpenLdap must be initialized on a single thread, once this is done it allows concurrent calls
             // By doing so in the static constructor we guarantee this is run before any other methods are called.

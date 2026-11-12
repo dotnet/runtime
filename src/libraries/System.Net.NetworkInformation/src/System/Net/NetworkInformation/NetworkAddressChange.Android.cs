@@ -11,6 +11,8 @@ namespace System.Net.NetworkInformation
 {
     public partial class NetworkChange
     {
+        public static partial bool IsSupported => true;
+
         private static readonly TimeSpan s_timerInterval = TimeSpan.FromSeconds(2);
         private static readonly object s_lockObj = new();
 
