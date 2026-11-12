@@ -120,11 +120,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CLR_CMAKE_TARGET_LINUX)
-    list(APPEND CORECLR_LIBRARIES
-        tracepointprovider
-    )
-elseif(CLR_CMAKE_TARGET_SUNOS)
+if(CLR_CMAKE_TARGET_SUNOS)
     list(APPEND CORECLR_LIBRARIES
         socket
     )
@@ -132,7 +128,7 @@ elseif(CLR_CMAKE_TARGET_HAIKU)
     list(APPEND CORECLR_LIBRARIES
         network
     )
-endif(CLR_CMAKE_TARGET_LINUX)
+endif(CLR_CMAKE_TARGET_SUNOS)
 
 if(FEATURE_PERFTRACING)
     list(APPEND CORECLR_LIBRARIES
@@ -140,13 +136,12 @@ if(FEATURE_PERFTRACING)
     )
 endif(FEATURE_PERFTRACING)
 
-if(FEATURE_EVENT_TRACE)
-    if(CLR_CMAKE_HOST_UNIX)
-        list(APPEND CORECLR_LIBRARIES
-            eventprovider # On Windows this library contains only macros
-        )
-    endif(CLR_CMAKE_HOST_UNIX)
-endif(FEATURE_EVENT_TRACE)
+if(FEATURE_EVENTSOURCE_XPLAT)
+    list(APPEND CORECLR_LIBRARIES
+        eventprovider
+        tracepointprovider
+    )
+endif(FEATURE_EVENTSOURCE_XPLAT)
 
 if (FEATURE_STATICALLY_LINKED)
     if (FEATURE_DYNAMIC_CODE_COMPILED)
@@ -209,7 +204,6 @@ if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_C
         PRIVATE
         coreclrminipal_objects
         coreclrpal_objects
-        eventprovider_objects
         gcinfo
         libunwind
         log

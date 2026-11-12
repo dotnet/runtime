@@ -1,23 +1,5 @@
 #!/usr/bin/env bash
 
-# resolve python-version to use
-if [[ -z "$PYTHON" ]]; then
-    if ! PYTHON=$(command -v python3 || command -v python2 || command -v python || command -v py)
-    then
-       echo "Unable to locate build-dependency python!" 1>&2
-       exit 1
-    fi
-fi
-# validate python-dependency
-# useful in case of explicitly set option.
-if ! command -v "$PYTHON" > /dev/null
-then
-   echo "Unable to locate build-dependency python ($PYTHON)!" 1>&2
-   exit 1
-fi
-
-export PYTHON
-
 usage_list+=("-pgodatapath: path to profile guided optimization data.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
