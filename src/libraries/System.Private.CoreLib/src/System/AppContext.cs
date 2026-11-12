@@ -93,27 +93,49 @@ namespace System
             }
         }
 
-#pragma warning disable CS0067 // events raised by the VM
 #if MONO
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
 #endif
-        internal static event UnhandledExceptionEventHandler? UnhandledException;
+        private static event UnhandledExceptionEventHandler? s_unhandledException;
 
 #if MONO
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
 #endif
-        internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
-#pragma warning restore CS0067
+        private static event EventHandler<FirstChanceExceptionEventArgs>? s_firstChanceException;
+
+        internal static event UnhandledExceptionEventHandler? UnhandledException
+        {
+            add
+            {
+                s_unhandledException += value;
+                SetUnhandledExceptionHandler();
+            }
+            remove => s_unhandledException -= value;
+        }
+
+        internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException
+        {
+            add
+            {
+                s_firstChanceException += value;
+                // Once a handler is added, the runtime will attempt
+                // to deliver first chance notifications for all exceptions.
+                // We don't care if handlers are removed.
+                SetFirstChanceExceptionHandler();
+            }
+            remove => s_firstChanceException -= value;
+        }
+
+        static partial void SetFirstChanceExceptionHandler();
+        static partial void SetUnhandledExceptionHandler();
 
 #if NATIVEAOT
-        [System.Runtime.RuntimeExport("OnUnhandledException")]
-#endif
+        private static void OnUnhandledExceptionCore(object e)
+#else
         internal static void OnUnhandledException(object e)
-        {
-#if NATIVEAOT
-            RuntimeExceptionHelpers.SerializeCrashInfo(System.Runtime.RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
 #endif
-            if (UnhandledException is UnhandledExceptionEventHandler handlers)
+        {
+            if (s_unhandledException is UnhandledExceptionEventHandler handlers)
             {
                 UnhandledExceptionEventArgs args = new(e, isTerminating: true);
                 foreach (UnhandledExceptionEventHandler handler in Delegate.EnumerateInvocationList(handlers))
@@ -132,9 +154,9 @@ namespace System
         [ThreadStatic]
         private static bool t_deliveringFirstChanceNotification;
 
-        private static void OnFirstChanceException(Exception e, object? sender)
+        private static void OnFirstChanceException(Exception e)
         {
-            if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
+            if (s_firstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
                 // Guard against reentrancy. Allocating the event args below or running a
                 // handler may itself throw (e.g. OutOfMemoryException in a low-memory
@@ -156,7 +178,7 @@ namespace System
                     {
                         try
                         {
-                            handler(sender, args);
+                            handler(AppDomain.CurrentDomain, args);
                         }
                         catch
                         {
