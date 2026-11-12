@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -38,6 +39,9 @@ namespace System
         private bool _isCommaNeeded;
         private readonly int _maxBufferSize;
         private readonly byte* _bufferAddress;
+
+        [FeatureSwitchDefinition("System.Diagnostics.CrashInfo.IsSupported")]
+        internal static bool IsSupported => true;
 
         public CrashInfo()
         {

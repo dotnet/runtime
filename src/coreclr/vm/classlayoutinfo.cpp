@@ -855,11 +855,12 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
     if (pClass->GetNativeLayoutInfo() == nullptr)
     {
         GCX_PREEMP();
-        ListLockHolder nativeTypeLoadLock(AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock());
+        ListLockHolder nativeTypeLoadLock = AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock()->TakeLock();
         ListLockEntryHolder entry(ListLockEntry::Find(nativeTypeLoadLock, pMT->GetClass()));
-        ListLockEntryLockHolder pEntryLock(entry, FALSE);
-        nativeTypeLoadLock.Release();
-        if (!pEntryLock.DeadlockAwareAcquire())
+        nativeTypeLoadLock.Free();
+
+        ListLockEntryLockHolder pEntryLock;
+        if (!pEntryLock.DeadlockAwareAcquire(entry))
         {
             DefineFullyQualifiedNameForClassW()
             COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, GetFullyQualifiedNameForClassW(pMT));

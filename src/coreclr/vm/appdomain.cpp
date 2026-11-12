@@ -1897,7 +1897,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
         {
             {
                 GCX_COOP();
-                PEFileListLockHolder lock((PEFileListLock*)m_pList);
+                PEFileListLockHolder lock = static_cast<PEFileListLock*>(m_pList)->TakeLock();
 
 #if _DEBUG
                 BOOL fDbgOnly_SuccessfulUnlink =
@@ -2075,9 +2075,9 @@ BOOL AppDomain::IsLoading(Assembly *pAssembly, FileLoadLevel level)
     {
         FileLoadLock *pLock = NULL;
         {
-            LoadLockHolder lock(this);
+            LoadLockHolder lock = TakeLoadLock();
 
-            pLock = (FileLoadLock *) lock->FindFileLock(pAssembly->GetPEAssembly());
+            pLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pAssembly->GetPEAssembly());
 
             if (pLock == NULL)
             {
@@ -2112,9 +2112,9 @@ CHECK AppDomain::CheckLoading(Assembly *pAssembly, FileLoadLevel level)
     {
         FileLoadLock *pLock = NULL;
 
-        LoadLockHolder lock(this);
+        LoadLockHolder lock = TakeLoadLock();
 
-        pLock = (FileLoadLock *) lock->FindFileLock(pAssembly->GetPEAssembly());
+        pLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pAssembly->GetPEAssembly());
 
         if (pLock != NULL
             && pLock->CanAcquire(level))
@@ -2196,18 +2196,19 @@ void AppDomain::LoadAssembly(Assembly *pAssembly,
         GCX_PREEMP();
 
         // Load some more if appropriate
-        LoadLockHolder lock(this);
-
-        FileLoadLock* pLockEntry = (FileLoadLock *) lock->FindFileLock(pAssembly->GetPEAssembly());
-        if (pLockEntry == NULL)
+        FileLoadLock* pLockEntry;
         {
-            _ASSERTE (!pAssembly->IsLoading());
-            return;
+            LoadLockHolder lock = TakeLoadLock();
+
+            pLockEntry = (FileLoadLock *)m_FileLoadLock.FindFileLock(pAssembly->GetPEAssembly());
+            if (pLockEntry == NULL)
+            {
+                _ASSERTE (!pAssembly->IsLoading());
+                return;
+            }
+
+            pLockEntry->AddRef();
         }
-
-        pLockEntry->AddRef();
-
-        lock.Release();
 
         LoadAssembly(pLockEntry, targetLevel);
     }
@@ -2314,10 +2315,10 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
 
     if (result == NULL)
     {
-        LoadLockHolder lock(this);
+        LoadLockHolder lock = TakeLoadLock();
 
         // Find the list lock entry
-        FileLoadLock * fileLock = (FileLoadLock *)lock->FindFileLock(pPEAssembly);
+        FileLoadLock * fileLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pPEAssembly);
         bool registerNewAssembly = false;
         if (fileLock == NULL)
         {
@@ -2327,7 +2328,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             {
                 // We are the first one in - create the FileLoadLock. Creation of the Assembly will happen at FILE_LOAD_ALLOCATE stage
                 registerNewAssembly = true;
-                fileLock = FileLoadLock::Create(lock, pPEAssembly);
+                fileLock = FileLoadLock::Create(&m_FileLoadLock, pPEAssembly);
             }
         }
         else
@@ -2335,7 +2336,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             fileLock->AddRef();
         }
 
-        lock.Release();
+        lock.Free();
 
         if (result == NULL)
         {
@@ -2843,13 +2844,13 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
     }
     CONTRACTL_END;
 
-    LoadLockHolder lock(this);
-    FileLoadLock *fileLock = (FileLoadLock *)lock->FindFileLock(pPEAssembly);
+    LoadLockHolder lock = TakeLoadLock();
+    FileLoadLock *fileLock = (FileLoadLock *)m_FileLoadLock.FindFileLock(pPEAssembly);
 
     if (fileLock == NULL)
         return FALSE;
 
-    VERIFY(lock->Unlink(fileLock));
+    VERIFY(m_FileLoadLock.Unlink(fileLock));
 
     fileLock->Release();
 
