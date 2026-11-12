@@ -228,6 +228,30 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
+            // The two loops are separate methods so that each is optimized based on its own use,
+            // rather than one of them being treated as cold if the other is all that's been seen.
+            return source.TryGetSpan(out ReadOnlySpan<TSource> span) ?
+                Sum<TSource, TResult, TAccumulator>(span, selector) :
+                SumEnumerable<TSource, TResult, TAccumulator>(source, selector);
+        }
+
+        private static TResult Sum<TSource, TResult, TAccumulator>(ReadOnlySpan<TSource> span, Func<TSource, TResult> selector)
+            where TResult : struct, INumber<TResult>
+            where TAccumulator : struct, INumber<TAccumulator>
+        {
+            TAccumulator sum = TAccumulator.Zero;
+            foreach (TSource value in span)
+            {
+                checked { sum += TAccumulator.CreateChecked(selector(value)); }
+            }
+
+            return TResult.CreateTruncating(sum);
+        }
+
+        private static TResult SumEnumerable<TSource, TResult, TAccumulator>(IEnumerable<TSource> source, Func<TSource, TResult> selector)
+            where TResult : struct, INumber<TResult>
+            where TAccumulator : struct, INumber<TAccumulator>
+        {
             TAccumulator sum = TAccumulator.Zero;
             foreach (TSource value in source)
             {
@@ -262,6 +286,31 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
+            return source.TryGetSpan(out ReadOnlySpan<TSource> span) ?
+                Sum<TSource, TResult, TAccumulator>(span, selector) :
+                SumEnumerable<TSource, TResult, TAccumulator>(source, selector);
+        }
+
+        private static TResult? Sum<TSource, TResult, TAccumulator>(ReadOnlySpan<TSource> span, Func<TSource, TResult?> selector)
+            where TResult : struct, INumber<TResult>
+            where TAccumulator : struct, INumber<TAccumulator>
+        {
+            TAccumulator sum = TAccumulator.Zero;
+            foreach (TSource item in span)
+            {
+                if (selector(item) is TResult selectedValue)
+                {
+                    checked { sum += TAccumulator.CreateChecked(selectedValue); }
+                }
+            }
+
+            return TResult.CreateTruncating(sum);
+        }
+
+        private static TResult? SumEnumerable<TSource, TResult, TAccumulator>(IEnumerable<TSource> source, Func<TSource, TResult?> selector)
+            where TResult : struct, INumber<TResult>
+            where TAccumulator : struct, INumber<TAccumulator>
+        {
             TAccumulator sum = TAccumulator.Zero;
             foreach (TSource item in source)
             {
