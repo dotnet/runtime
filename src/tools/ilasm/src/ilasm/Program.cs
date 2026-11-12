@@ -151,7 +151,7 @@ internal sealed class Program
             }
 
             // Target machine
-            if (Get(_command.TargetX64) || Get(_command.Pe64))
+            if (Get(_command.TargetX64) || (Get(_command.Pe64) && !Get(_command.TargetArm64)))
             {
                 options.Machine = Machine.Amd64;
             }
