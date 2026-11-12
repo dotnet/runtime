@@ -114,31 +114,7 @@ namespace System.Diagnostics
 
                 try
                 {
-                    Hashtable results = new Hashtable();
-                    char* current = block;
-                    while (true)
-                    {
-                        ReadOnlySpan<char> variable = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(current);
-                        if (variable.IsEmpty)
-                        {
-                            break;
-                        }
-
-                        current += variable.Length + 1;
-
-                        // Skip entries without a name, like the "=C:=C:\" drive-specific entries.
-                        int i = variable.IndexOf('=');
-                        if (i > 0)
-                        {
-                            string key = new string(variable.Slice(0, i));
-                            if (!results.ContainsKey(key))
-                            {
-                                results.Add(key, new string(variable.Slice(i + 1)));
-                            }
-                        }
-                    }
-
-                    return results;
+                    return EnvironmentBlockParser.Parse(block);
                 }
                 finally
                 {
