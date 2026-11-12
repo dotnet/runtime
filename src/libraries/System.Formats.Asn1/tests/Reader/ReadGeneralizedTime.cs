@@ -266,6 +266,18 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "2017121900.999999999999Z", 35999999999L)]
         [InlineData(AsnEncodingRules.BER, "2017121900.000000000028Z", 1L)]
         [InlineData(AsnEncodingRules.BER, "2017121900.000000000001Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000278Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016667Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000277Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016666Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000277777777777777777777777777778Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000277777777777777777777777777777Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016666666666666666666666666666667Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016666666666666666666666666666666Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.9999999999999999999999999999999999999999Z", 35999999999L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.9999999999999999999999999999999999999999Z", 599999999L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900,0000000000278-0000", 1L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000,0000000016667+0000", 1L)]
         public void ParseTime_Precision(AsnEncodingRules ruleSet, string dateAscii, long expectedTicks)
         {
             DateTimeOffset expectedTime = new DateTimeOffset(2017, 12, 19, 0, 0, 0, TimeSpan.Zero);
@@ -395,14 +407,21 @@ namespace System.Formats.Asn1.Tests.Reader
                 static (ref reader) => reader.ReadGeneralizedTime());
         }
 
-        [Fact]
-        public void ExcessivelyPreciseNonFraction()
+        [Theory]
+        [InlineData(AsnEncodingRules.BER, "2017092118.012345678901234567890123Q56789Z")]
+        [InlineData(AsnEncodingRules.BER, "20170921180044.000000000000000000000000000000QZ")]
+        [InlineData(AsnEncodingRules.CER, "20170921180044.000000000000000000000000000000QZ")]
+        [InlineData(AsnEncodingRules.DER, "20170921180044.000000000000000000000000000000QZ")]
+        public void ExcessivelyPreciseNonFraction(AsnEncodingRules ruleSet, string dateAscii)
         {
-            byte[] inputData = "\u0018\u002A2017092118.012345678901234567890123Q56789Z"u8.ToArray();
-            AsnReaderWrapper berReader = CreateWrapper(inputData, AsnEncodingRules.BER);
+            byte[] inputData = new byte[dateAscii.Length + 2];
+            inputData[0] = 0x18;
+            inputData[1] = (byte)dateAscii.Length;
+            Text.Encoding.ASCII.GetBytes(dateAscii, 0, dateAscii.Length, inputData, 2);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                ref berReader,
+                ref reader,
                 static (ref reader) => reader.ReadGeneralizedTime());
         }
 

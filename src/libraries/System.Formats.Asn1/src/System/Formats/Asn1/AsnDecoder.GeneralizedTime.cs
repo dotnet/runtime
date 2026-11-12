@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
 using System.Diagnostics;
 using System.Security.Cryptography;
 
@@ -133,8 +132,7 @@ namespace System.Formats.Asn1
             int hour = ParseNonNegativeIntAndSlice(ref contents, 2);
             int? minute = null;
             int? second = null;
-            ulong fraction = 0;
-            ulong fractionScale = 1;
+            ReadOnlySpan<byte> fractionDigits = default;
             byte lastFracDigit = 0xFF;
             TimeSpan? timeOffset = null;
             bool isZulu = false;
@@ -219,33 +217,22 @@ namespace System.Formats.Asn1
                     throw new AsnContentException();
                 }
 
-                // With at most 12 fraction digits, the seconds-to-ticks product fits in ulong.
-                // Any remaining digits are still validated below.
+                int fracLength = 0;
 
-                if (!Utf8Parser.TryParse(SliceAtMost(contents, 12), out fraction, out int fracLength) ||
-                    fracLength == 0)
+                while (fracLength < contents.Length && (uint)(contents[fracLength] - (byte)'0') <= 9)
+                {
+                    fracLength++;
+                }
+
+                if (fracLength == 0)
                 {
                     throw new AsnContentException();
                 }
 
-                lastFracDigit = (byte)(fraction % 10);
-
-                for (int i = 0; i < fracLength; i++)
-                {
-                    fractionScale *= 10;
-                }
-
+                // Keep every digit: a fractional hour or minute can cross a tick boundary far into the fraction.
+                fractionDigits = contents.Slice(0, fracLength);
+                lastFracDigit = (byte)(fractionDigits[fracLength - 1] - (byte)'0');
                 contents = contents.Slice(fracLength);
-
-                // Drain off any remaining digits.
-                // The unsigned parsers will not accept + or - as a leading character, so
-                // they won't eat timezone suffix.
-                // But Utf8Parser.TryParse reports false on overflow, so limit it to 9 digits at a time.
-                while (Utf8Parser.TryParse(SliceAtMost(contents, 9), out uint nonSemantic, out fracLength))
-                {
-                    contents = contents.Slice(fracLength);
-                    lastFracDigit = (byte)(nonSemantic % 10);
-                }
 
                 if (contents.Length != 0)
                 {
@@ -343,35 +330,33 @@ namespace System.Formats.Asn1
                 }
             }
 
-            TimeSpan fractionSpan = TimeSpan.Zero;
+            long ticksPerUnit = TimeSpan.TicksPerSecond;
 
             if (!minute.HasValue)
             {
                 minute = 0;
                 second = 0;
-
-                if (fraction != 0)
-                {
-                    // No minutes means this is fractions of an hour
-                    fractionSpan = new TimeSpan((long)((decimal)fraction * TimeSpan.TicksPerHour / fractionScale));
-                }
+                ticksPerUnit = TimeSpan.TicksPerHour;
             }
             else if (!second.HasValue)
             {
                 second = 0;
-
-                if (fraction != 0)
-                {
-                    // No seconds means this is fractions of a minute
-                    fractionSpan = new TimeSpan((long)((decimal)fraction * TimeSpan.TicksPerMinute / fractionScale));
-                }
+                ticksPerUnit = TimeSpan.TicksPerMinute;
             }
-            else if (fraction != 0)
+
+            // Evaluate floor(ticksPerUnit * 0.digits) from right to left.
+            // Truncating each suffix is exact: for a nonnegative integer n and 0 <= r < 1,
+            // floor((n + r) / 10) == floor(n / 10).
+            // fractionTicks remains below ticksPerUnit, so the numerator is below
+            // 10 * TimeSpan.TicksPerHour and cannot overflow long.
+            long fractionTicks = 0;
+
+            for (int i = fractionDigits.Length - 1; i >= 0; i--)
             {
-                // Both minutes and seconds means fractions of a second.
-                fractionSpan = new TimeSpan((long)(fraction * (ulong)TimeSpan.TicksPerSecond / fractionScale));
+                fractionTicks = (fractionTicks + (fractionDigits[i] - (byte)'0') * ticksPerUnit) / 10;
             }
 
+            TimeSpan fractionSpan = new TimeSpan(fractionTicks);
             DateTimeOffset value;
 
             try
