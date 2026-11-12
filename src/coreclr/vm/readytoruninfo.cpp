@@ -1376,18 +1376,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (pMD->IsReturnDroppingThunk() || pMD->IsCovariantForwardingThunk())
         goto done;
 
-#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-    if (m_pAuxiliaryModuleMetadata != nullptr &&
-        VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 0)
-    {
-        if (pMD->GetModule() == m_pModule)
-        {
-            pConfig->SetAuxiliaryActivationFlag(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus);
-        }
-        goto done;
-    }
-#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
-
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
@@ -1396,33 +1384,47 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         || pMD->IsAsyncVariantMethod()
         || pMD->IsUnboxingStub())
     {
-        if (m_instMethodEntryPoints.IsNull())
-            goto done;
-
-        NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
-        NativeParser entryParser;
         offset = (uint)-1;
-        while (lookup.GetNext(entryParser))
+        if (!m_instMethodEntryPoints.IsNull())
         {
-            PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
-            SigPointer sig(pBlob);
-            if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+            NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
+            NativeParser entryParser;
+            while (lookup.GetNext(entryParser))
             {
-                // Get the updated SigPointer location, so we can calculate the size of the blob,
-                // in order to skip the blob and find the entry point data.
-                offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
-                break;
+                PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
+                SigPointer sig(pBlob);
+                if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+                {
+                    // Get the updated SigPointer location, so we can calculate the size of the blob,
+                    // in order to skip the blob and find the entry point data.
+                    offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
+                    break;
+                }
             }
         }
-
-        if (offset == (uint)-1)
-            goto done;
     }
     else
     {
         if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
-            goto done;
+            offset = (uint)-1;
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    if (offset == ((uint)-1) &&m_pAuxiliaryModuleMetadata != nullptr &&
+        VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 0)
+    {
+        if (pMD->GetModule() == m_pModule)
+        {
+            pConfig->SetAuxiliaryActivationFlag(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus);
+        }
+        goto done;
+    }
+    // TODO: Lookup in auxiliary EntryPoints module's MethodDefEntryPoints and InstanceMethodEntryPoints
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
+
+    if (offset == (uint)-1)
+        goto done;
 
 #ifdef PROFILING_SUPPORTED
         {
