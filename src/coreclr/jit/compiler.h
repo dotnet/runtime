@@ -770,6 +770,16 @@ public:
         return m_addrExposed;
     }
 
+    bool RequiresGlobRefFlag() const
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        // Copy-omission candidates must be ordered before their addresses escape.
+        return IsAddressExposed() || lvIsLastUseCopyOmissionCandidate;
+#else
+        return IsAddressExposed();
+#endif // FEATURE_IMPLICIT_BYREFS
+    }
+
 #ifdef DEBUG
     void SetDefinedViaAddress(char value)
     {
@@ -1813,6 +1823,21 @@ constexpr unsigned ROOT_FUNC_IDX = 0;
 
 class emitLocation;
 
+#if defined(TARGET_AMD64)
+// Unwind Information V3 for a function or funclet. Like the V1 codes in FuncInfoDsc, the prolog
+// WODs and their IP offsets are filled from the end of their arrays backwards, which leaves them
+// in the reverse execution order V3 requires. Maximum of 31 prolog WODs, each at most the size of
+// WOD_ALLOC_HUGE; the JIT emits at most 24 (see "Limits" in unwindamd64.cpp).
+struct UnwindInfoV3
+{
+    UNWIND_INFO_V3 header;
+    BYTE           wods[UNWIND_INFO_V3_MAX_OPS * sizeof(WOD_ALLOC_HUGE)];
+    unsigned       wodSlot;
+    BYTE           ipOffsets[UNWIND_INFO_V3_MAX_OPS];
+    unsigned       ipOffsetSlot;
+};
+#endif // TARGET_AMD64
+
 struct FuncInfoDsc
 {
     FuncKind       funKind;
@@ -1866,6 +1891,9 @@ struct FuncInfoDsc
     // number of codes, the VM or Zapper will 4-byte align the whole thing.
     BYTE     unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF * sizeof(UNWIND_CODE))];
     unsigned unwindCodeSlot;
+
+    // Unwind Information V3, allocated by unwindBegPrologV3; nullptr unless V3 is used.
+    UnwindInfoV3* unwindV3;
 
 #elif defined(TARGET_X86)
 
@@ -3330,6 +3358,12 @@ public:
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
 
+    GenTree* gtNewValueSize(ValueSize size, var_types type);
+
+#ifdef FEATURE_SIMD
+    GenTree* gtNewVectorTSizeNode(var_types type);
+#endif
+
     GenTreeILOffset* gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset));
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
@@ -3373,6 +3407,8 @@ public:
     GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
 #if defined(TARGET_ARM64)
     GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(float value);
+    GenTreeVecCon* gtNewScalableRepeatedConstant(double value);
 
     inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
     {
@@ -5632,15 +5668,13 @@ public:
     GenTree* impNormStructVal(GenTree* structVal, unsigned curLevel);
 
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                              bool*                   pRuntimeLookup    = nullptr,
-                              bool                    mustRestoreHandle = false,
-                              bool                    importParent      = false);
+                              bool*                   pRuntimeLookup = nullptr,
+                              bool                    importParent   = false);
 
     GenTree* impParentClassTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                         bool*                   pRuntimeLookup    = nullptr,
-                                         bool                    mustRestoreHandle = false)
+                                         bool*                   pRuntimeLookup = nullptr)
     {
-        return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
+        return impTokenToHandle(pResolvedToken, pRuntimeLookup, true);
     }
 
     GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
@@ -6677,7 +6711,10 @@ public:
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
     // Compute exceptions for a division operation
-    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor);
+    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper,
+                                                 GenTree*   dividend,
+                                                 GenTree*   divisor,
+                                                 var_types  simdBaseType = TYP_UNDEF);
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
@@ -7028,6 +7065,7 @@ public:
     PhaseStatus fgWasmVirtualIP();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
+    PhaseStatus fgWasmProfInstrument();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
@@ -7341,7 +7379,6 @@ private:
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
     bool fgAddrCouldBeHeap(GenTree* addr);
-    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphFieldAddr(GenTree* tree);
@@ -8026,6 +8063,9 @@ protected:
     void     optValnumCSE_Init();
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
+#ifdef TARGET_XARCH
+    void optValnumCSE_ScreenMemoryUpdates();
+#endif
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
@@ -9215,23 +9255,23 @@ public:
             return dsc;
         }
 
-        // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
-        // Effectively, this means "idxVN is in range [0, lenVN)".
-        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        // Create a no-throw bounds check assertion: idxVN u< lenVN
+        // When lenVN is never negative, this means "idxVN is in range [0, lenVN)".
+        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp,
+                                                ValueNum        idxVN,
+                                                ValueNum        lenVN,
+                                                bool            isLenNeverNegative)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc    = CreateEmptyAssertion(comp);
-            dsc.m_assertionKind = OAK_LT_UN;
-            dsc.m_op1.m_kind    = O1K_VN;
-            dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn      = lenVN;
-
-            // Normally, the VN of an O2K_VN_ADD_CNS assertion isn't proven non-negative, but
-            // in this particular case we know it is (it's a length).
-            dsc.m_op2.m_isVNNeverNegative = true;
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = OAK_LT_UN;
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = idxVN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = lenVN;
+            dsc.m_op2.m_isVNNeverNegative = isLenNeverNegative;
             dsc.m_op2.m_icon.m_iconVal    = 0;
             return dsc;
         }
@@ -9312,6 +9352,7 @@ protected:
     VNSet*         optAssertionVNsMap = nullptr;
     AssertionIndex optAssertionCount  = 0; // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    AssertionIndex optAssertionTabCapacity;
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
@@ -9590,7 +9631,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
-    bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsByRefLike(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
@@ -10194,6 +10235,14 @@ private:
     void unwindAllocStackWindows(unsigned size);
     void unwindSetFrameRegWindows(regNumber reg, unsigned offset);
     void unwindSaveRegWindows(regNumber reg, unsigned offset);
+
+    void  unwindBegPrologV3();
+    BYTE* unwindAllocWodV3(FuncInfoDsc* func, unsigned size);
+    void  unwindPushV3(regNumber reg);
+    void  unwindPush2V3(regNumber reg1, regNumber reg2);
+    void  unwindAllocStackV3(unsigned size);
+    void  unwindSetFrameRegV3(regNumber reg, unsigned offset);
+    void  unwindSaveRegV3(regNumber reg, unsigned offset);
 
 #ifdef UNIX_AMD64_ABI
     void unwindSaveRegCFI(regNumber reg, unsigned offset);
@@ -10946,7 +10995,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {

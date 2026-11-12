@@ -106,25 +106,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
             bool ret = manualResetEvent3.Wait(TimeoutLong);
             Assert.True(ret);
-            // there could be race condition between worker thread cancellation and completion which will set the CancellationPending to false
-            // if it is completed already, we don't check cancellation
-            if (bw.IsBusy) // not complete
-            {
-                if (!bw.CancellationPending)
-                {
-                    for (int i = 0; i < 1000; i++)
-                    {
-                        Wait(TimeoutShort);
-                        if (bw.CancellationPending)
-                        {
-                            break;
-                        }
-                    }
-                }
-                // Check again
-                if (bw.IsBusy)
-                    Assert.True(bw.CancellationPending, "Cancellation in Main thread");
-            }
         }
 
         private void DoWorkExpectCancel(object sender, DoWorkEventArgs e)

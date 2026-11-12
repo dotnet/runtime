@@ -4,7 +4,10 @@
 namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
     public class MethodBody1 {
+        public static int CallCount;
+
         public static string StaticMethod1 () {
+            CallCount++;
             return "OLD STRING";
         }
     }

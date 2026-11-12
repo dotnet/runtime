@@ -227,21 +227,30 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    DEBUG_NOINLINE static void HolderEnter(PEFileListLock *pThis)
+    struct HolderTraits final
+    {
+        using Type = PEFileListLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
+            if (value != NULL)
+                value->Leave();
+        }
+    };
+
+    using Holder = LifetimeHolder<HolderTraits>;
+
+    Holder TakeLock(BOOL take = TRUE)
     {
         WRAPPER_NO_CONTRACT;
 
-        pThis->Enter();
+        if (!take)
+            return Holder();
+
+        Enter();
+        return Holder(this);
     }
-
-    DEBUG_NOINLINE static void HolderLeave(PEFileListLock *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        pThis->Leave();
-    }
-
-    typedef Wrapper<PEFileListLock*, PEFileListLock::HolderEnter, PEFileListLock::HolderLeave> Holder;
 };
 
 typedef PEFileListLock::Holder PEFileListLockHolder;
@@ -874,22 +883,6 @@ protected:
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
             *pAssemblyHolder = dac_cast<PTR_Assembly>(m_array.Get(index));
         }
-        // Doesn't lock the assembly list (caller has to hold the lock already).
-        // Doesn't AddRef the returned assembly (if collectible).
-        Assembly * Get_UnlockedNoReference(DWORD index)
-        {
-            CONTRACTL {
-                NOTHROW;
-                GC_NOTRIGGER;
-                MODE_ANY;
-                SUPPORTS_DAC;
-            } CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-            _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
-#endif
-            return dac_cast<PTR_Assembly>(m_array.Get(index));
-        }
 
 #ifndef DACCESS_COMPILE
         void Set(AppDomain * pAppDomain, DWORD index, Assembly * pAssembly)
@@ -938,7 +931,7 @@ protected:
         }
 #endif // DACCESS_COMPILE
 
-        // Should be used only by code:AssemblyIterator::Create
+        // Callers other than AssemblyIterator::Create must hold the assembly-list lock.
         ArrayList::Iterator GetArrayListIterator()
         {
             return m_array.Iterate();
@@ -1428,23 +1421,14 @@ public:
         }
     };
 
-    class LoadLockHolder :  public PEFileListLockHolder
+    using LoadLockHolder = PEFileListLockHolder;
+
+    LoadLockHolder TakeLoadLock(BOOL take = TRUE)
     {
-    public:
-        LoadLockHolder(AppDomain *pD, BOOL Take = TRUE)
-          : PEFileListLockHolder(&pD->m_FileLoadLock, Take)
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_TRIGGERS;
-                MODE_ANY;
-                CAN_TAKE_LOCK;
-            }
-            CONTRACTL_END;
-        }
-    };
-    friend class LoadLockHolder;
+        WRAPPER_NO_CONTRACT;
+
+        return m_FileLoadLock.TakeLock(take);
+    }
 
     //---------------------------------------------------------
     // Stub caches for Method stubs

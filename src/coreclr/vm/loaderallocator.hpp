@@ -314,6 +314,7 @@ protected:
 
     DAC_ALIGNAS(UINT64) // Align the first member to alignof(m_nLoaderAllocator). Windows does this by default, force Linux to match.
     BYTE *              m_InitialReservedMemForLoaderHeaps;
+    size_t              m_InitialReservedMemForLoaderHeapsSize;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
 #ifdef HAS_FIXUP_PRECODE
@@ -357,7 +358,6 @@ protected:
 
     // Protect the handle table data structures, seperated from m_crstLoaderAllocator to allow thread cleanup to use the lock
     CrstExplicitInit    m_crstLoaderAllocatorHandleTable;
-    bool                m_fGCPressure;
     bool                m_fUnloaded;
     bool                m_fTerminated;
     bool                m_fMarked;
@@ -791,7 +791,6 @@ public:
     virtual ~LoaderAllocator();
     virtual BOOL CanUnload() = 0;
     void Init(BYTE *pExecutableHeapMemory);
-    void Terminate();
     virtual void ReleaseAssemblyLoadContext() {}
 
     SIZE_T EstimateSize();
@@ -866,6 +865,9 @@ public:
 private:
     // Deletes marshaling data at shutdown (which contains cached factories that needs to be released)
     void DeleteMarshalingData();
+
+    // Only called from the destructor.
+    void Terminate();
 
 public:
 

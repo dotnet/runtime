@@ -23,6 +23,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             public uint SignatureRVA { get; set; }
             public ReadyToRunSignature Signature { get; set; }
             public GCRefMap GCRefMap { get; set; }
+            public int GCRefMapSize { get; set; }
+
+            public int GetSignatureOffset(ReadyToRunReader reader)
+                => checked(reader.GetOffset((int)SignatureRVA) + GCRefMapSize);
 
             public ImportSectionEntry()
             {

@@ -27,13 +27,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public PropertyPseudoDesc Property => _property;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
-            var dependencies = new List<CombinedDependencyListEntry>();
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _property);
-            return dependencies;
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, _property);
         }
 
         protected override string GetName(NodeFactory factory)
@@ -45,6 +43,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

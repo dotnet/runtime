@@ -30,7 +30,7 @@ namespace System.ComponentModel.DataAnnotations
             set => _extensions = value;
         }
 
-        private string ExtensionsFormatted => ExtensionsParsed.Aggregate((left, right) => left + ", " + right);
+        private string ExtensionsFormatted => string.Join(", ", ExtensionsParsed);
 
         private string ExtensionsNormalized =>
             Extensions.Replace(" ", string.Empty).Replace(".", string.Empty).ToLowerInvariant();

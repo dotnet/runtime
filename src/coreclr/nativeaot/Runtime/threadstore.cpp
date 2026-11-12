@@ -347,6 +347,14 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
         minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
+    if (waitForGCEvent)
+    {
+        // Fire the "restart end" event right before the threads are released. Once they are released,
+        // this thread may be preempted for a long time under CPU load, which would be wrongly reported
+        // as a part of the EE suspension.
+        FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
+    }
+
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
     GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
 

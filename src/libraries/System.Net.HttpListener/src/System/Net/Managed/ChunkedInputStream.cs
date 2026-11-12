@@ -108,13 +108,54 @@ namespace System.Net
             ares._count = 8192;
             ReadBufferState rb = new ReadBufferState(buffer, offset, size, ares);
             rb.InitialCount += nread;
-            base.BeginReadCore(ares._buffer, ares._offset, ares._count, OnRead, rb);
+            ReadNextChunkFragment(rb);
             return ares;
+        }
+
+        private void ReadNextChunkFragment(ReadBufferState rb)
+        {
+            while (true)
+            {
+                IAsyncResult baseAres;
+                try
+                {
+                    baseAres = base.BeginReadCore(rb.Ares._buffer!, rb.Ares._offset, rb.Ares._count, OnRead, rb);
+                }
+                catch (Exception e)
+                {
+                    _context.Connection.SendError(e.Message, 400);
+                    rb.Ares.Complete(e);
+                    return;
+                }
+
+                if (!baseAres.CompletedSynchronously)
+                {
+                    return;
+                }
+
+                if (!ProcessChunkFragment(baseAres, rb))
+                {
+                    return;
+                }
+            }
         }
 
         private void OnRead(IAsyncResult base_ares)
         {
+            if (base_ares.CompletedSynchronously)
+            {
+                return;
+            }
+
             ReadBufferState rb = (ReadBufferState)base_ares.AsyncState!;
+            if (ProcessChunkFragment(base_ares, rb))
+            {
+                ReadNextChunkFragment(rb);
+            }
+        }
+
+        private bool ProcessChunkFragment(IAsyncResult base_ares, ReadBufferState rb)
+        {
             HttpStreamAsyncResult ares = rb.Ares;
             try
             {
@@ -124,7 +165,7 @@ namespace System.Net
                     _no_more_data = true;
                     ares._count = rb.InitialCount - rb.Count;
                     ares.Complete();
-                    return;
+                    return false;
                 }
 
                 _decoder.Write(ares._buffer!, ares._offset, nread);
@@ -136,16 +177,17 @@ namespace System.Net
                     _no_more_data = !_decoder.WantMore && nread == 0;
                     ares._count = rb.InitialCount - rb.Count;
                     ares.Complete();
-                    return;
+                    return false;
                 }
                 ares._offset = 0;
                 ares._count = Math.Min(8192, _decoder.ChunkLeft + 6);
-                base.BeginReadCore(ares._buffer!, ares._offset, ares._count, OnRead, rb);
+                return true;
             }
             catch (Exception e)
             {
                 _context.Connection.SendError(e.Message, 400);
                 ares.Complete(e);
+                return false;
             }
         }
 

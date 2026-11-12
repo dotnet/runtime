@@ -34,12 +34,38 @@ function libCoreRunFactory() {
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
 
                 if (ENVIRONMENT_IS_NODE) {
+                    // V8 formats every wasm frame as "<url>:wasm-function[<index>]:<offset>".
+                    const isWasmOnStack = () => {
+                        const savedStackTraceLimit = Error.stackTraceLimit;
+                        try {
+                            Error.stackTraceLimit = Infinity;
+                            return /wasm-function\[/.test(new Error().stack || "");
+                        } finally {
+                            Error.stackTraceLimit = savedStackTraceLimit;
+                        }
+                    };
+
+                    // An exit requested from inside wasm (for example Environment.Exit) must not unwind
+                    // the ExitStatus exception through live CLR frames, so end the process immediately.
+                    // Otherwise let Node.js exit on its own once the event loop drains: process.exit()
+                    // joins V8's worker threads without disposing the isolate, which can deadlock when
+                    // a background compile job is waiting for a main thread GC (nodejs/node#64274).
                     const original_proc_exit = _proc_exit;
                     _proc_exit = (code) => {
-                        if (!keepRuntimeAlive()) {
+                        if (!keepRuntimeAlive() && isWasmOnStack()) {
                             process.exit(code);
                         }
                         return original_proc_exit(code);
+                    };
+
+                    // SystemJS_ResolveMainPromise queues an exit that can run after the runtime already
+                    // exited, now that the process outlives that exit until the event loop drains.
+                    const original_exit = _exit;
+                    _exit = (status, implicit) => {
+                        if (runtimeExited) {
+                            throw new ExitStatus(EXITSTATUS);
+                        }
+                        return original_exit(status, implicit);
                     };
                 }
             },

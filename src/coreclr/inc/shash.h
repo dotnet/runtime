@@ -22,6 +22,7 @@
 //    (@todo: this can be remedied by delaying destruction of old tables during reallocation, e.g. during GC)
 // - Remove operations may be asynchronous with Lookup/Add, unless elements are also deallocated. (In which
 //    case full synchronization is required)
+// - Replacing elements must be synchronized with other accesses to those elements.
 
 // Common "gotchas":
 // - The Add method never replaces an element. The new element will be added even if an element with the same
@@ -78,8 +79,8 @@
 // static void OnDestructPerEntryCleanupAction(ELEMENT& e) Called on every element when in hashtable destructor.
 //                                              s_DestructPerEntryCleanupAction must be set to true if implemented.
 // static void OnRemovePerEntryCleanupAction(ELEMENT& e) Called when an element is removed from the hashtable, including when
-//                                              the hashtable is destructed. s_RemovePerEntryCleanupAction must be set to true
-//                                              if implemented.
+//                                              the hashtable is destructed. Set s_RemovePerEntryCleanupAction to true for
+//                                              automatic cleanup. Update does not invoke this action.
 //
 // s_growth_factor_numerator
 // s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).
@@ -194,13 +195,19 @@ class EMPTY_BASES SHash : public TRAITS
 
     element_t Lookup(key_t key) const;
 
-    // Pointer-based flavor of Lookup (allows efficient access to tables of structures)
-
+    // Read-only pointer-based lookup. Use Update to modify an existing element.
+    // The returned pointer refers to table storage and is invalidated by reallocation,
+    // removal of the element, or clearing the table.
     const element_t* LookupPtr(key_t key) const;
 
-    // Pointer-based flavor to replace an existing element (allows efficient access to tables of structures)
-
-    void ReplacePtr(const element_t *elementPtr, const element_t &newElement, bool invokeCleanupAction = true);
+    // Update the first matching element in place, returning false if no match exists.
+    // The callback must preserve the key and sentinel state, and must not structurally modify the table.
+    // It must not retain a mutable pointer or reference to the element.
+    // Callers must synchronize updates with other access to the affected element.
+    // No removal cleanup is performed; the callback manages ownership of any replaced value.
+    // Callback exceptions propagate; changes already made are not rolled back.
+    template <typename Functor>
+    bool Update(key_t key, Functor &&functor);
 
     // Add an element to the hash table.  This will never replace an element; multiple
     // elements may be stored with the same key.
@@ -231,14 +238,18 @@ class EMPTY_BASES SHash : public TRAITS
 
     void RemovePtr(element_t * element);
 
-    // Remove all elements in the hashtable
+    // Remove all elements, optionally retaining the backing array for reuse.
 
-    void RemoveAll();
+    void RemoveAll(bool retainCapacity = false);
 
     // Begin and End pointers for iteration over entire table.
 
     Iterator Begin() const;
     Iterator End() const;
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions();
+#endif
 
     // Begin and End pointers for iteration over all elements with a given key.
 
@@ -333,7 +344,7 @@ class EMPTY_BASES SHash : public TRAITS
     // Utility function to find the first element with the given key in
     // the hash table.
 
-    const element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key) const;
+    element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key) const;
 
     // Utility function to remove the first element with the given key
     // in the hash table.

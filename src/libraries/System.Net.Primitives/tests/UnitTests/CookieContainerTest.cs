@@ -364,6 +364,73 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Theory]
+        [InlineData("", "", 0)]
+        [InlineData("", "\"\"", 0)]
+        [InlineData("\"", "\"\"", -1)]
+        [InlineData("", "/", 1)]
+        [InlineData("/", "/a", 1)]
+        [InlineData("/a", "/a/b", 1)]
+        [InlineData("/a", "/b", -1)]
+        [InlineData("\"/a\"", "/b", -1)]
+        [InlineData("/a", "\"/b\"", -1)]
+        [InlineData("\"/a\"", "\"/b\"", -1)]
+        [InlineData("/a", "\"/a\"", 0)]
+        [InlineData("\"/a\"", "\"/a/b\"", 1)]
+        [InlineData("\"\"", "\"/a\"", 1)]
+        [InlineData("/A", "/a", -1)]
+        [InlineData("/a", "/B", 1)]
+        [InlineData("/a\0b", "/ab", -1)]
+        [InlineData("/a\"", "/a", -1)]
+        [InlineData("\"/a", "/a", -1)]
+        [InlineData("\"\"/a\"\"", "\"/a\"", -1)]
+        [InlineData("/\uD800\uDC00", "/\uE000", -1)]
+        [InlineData("/abcdefghijklmnopqrstuvwxyz/a", "/abcdefghijklmnopqrstuvwxyz/b", -1)]
+        [InlineData("\"/abcdefghijklmnopqrstuvwxyz\"", "/abcdefghijklmnopqrstuvwxyz/a", 1)]
+        public void PathList_Paths_OrdersOrdinallyWithLongerPrefixesFirst(string left, string right, int expectedSign)
+        {
+            VerifyOrder(left, right, expectedSign);
+            VerifyOrder(right, left, -expectedSign);
+
+            static void VerifyOrder(string left, string right, int expectedSign)
+            {
+                var paths = new PathList();
+                var leftCookies = new CookieCollection();
+                var rightCookies = new CookieCollection();
+                paths[left] = leftCookies;
+                paths[right] = rightCookies;
+
+                Assert.Same(rightCookies, paths[right]);
+                if (expectedSign == 0)
+                {
+                    Assert.Equal(1, paths.Count);
+                    Assert.Same(rightCookies, paths[left]);
+                }
+                else
+                {
+                    Assert.Equal(2, paths.Count);
+                    Assert.Same(leftCookies, paths[left]);
+                    Assert.Equal(expectedSign < 0 ? left : right, paths.List.GetKey(0));
+                    Assert.Equal(expectedSign < 0 ? right : left, paths.List.GetKey(1));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetCookieHeader_PathPrefixes_OrdersLongestFirst(bool quoted)
+        {
+            var container = new CookieContainer();
+            var uri = new Uri("http://contoso.com/a/b");
+            foreach (string path in new[] { "/", "/a", "/a/b" })
+            {
+                container.Add(uri, new Cookie("name", path, quoted ? $"\"{path}\"" : path, "contoso.com"));
+            }
+
+            Assert.Equal("name=/a/b; name=/a; name=/", container.GetCookieHeader(uri));
+        }
+
+        [Theory]
         [MemberData(nameof(SetCookiesData))]
         public void SetCookies_Success(Uri uri, string cookieHeader, Cookie[] expected)
         {
@@ -534,21 +601,23 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(4, cc.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public async Task Add_ReachedMaxCountWithExpiredCookies_Added()
+        [Fact]
+        public void Add_ReachedMaxCountWithExpiredCookies_Added()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".domain1.com");
             Cookie c2 = new Cookie("name2", "value", "", ".domain2.com");
             Cookie c3 = new Cookie("name3", "value", "", ".domain3.com");
-            c1.Expires = DateTime.Now.AddSeconds(1); // The cookie will expire in 1 second
 
             CookieContainer cc = new CookieContainer(2);
             cc.Add(c1);
             cc.Add(c2);
+            Assert.Equal(2, cc.Count);
 
-            await Task.Delay(2000); // Sleep for 2 seconds to wait for the cookie to expire
+            cc.GetCookies(new Uri("http://domain1.com"))[0].Expired = true;
             cc.Add(c3);
+            Assert.Equal(2, cc.Count);
             Assert.Equal(0, cc.GetCookies(new Uri("http://domain1.com")).Count);
+            Assert.Equal(c2, cc.GetCookies(new Uri("http://domain2.com"))[0]);
             Assert.Equal(c3, cc.GetCookies(new Uri("http://domain3.com"))[0]);
         }
 
@@ -694,19 +763,21 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Equal(c1, cc3[1]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public async Task GetCookies_RemovesExpired_Cookies()
+        [Fact]
+        public void GetCookies_RemovesExpired_Cookies()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".url1.com");
             Cookie c2 = new Cookie("name2", "value", "", ".url2.com");
-            c1.Expires = DateTime.Now.AddSeconds(1); // The cookie will expire in 1 second
 
             CookieContainer cc = new CookieContainer();
             cc.Add(c1);
             cc.Add(c2);
+            Assert.Equal(2, cc.Count);
 
-            await Task.Delay(2000); // Sleep for 2 seconds to wait for the cookie to expire
+            cc.GetCookies(new Uri("http://url1.com"))[0].Expired = true;
             Assert.Equal(0, cc.GetCookies(new Uri("http://url1.com")).Count); // There should no longer be such a cookie
+            Assert.Equal(1, cc.Count);
+            Assert.Equal(c2, cc.GetCookies(new Uri("http://url2.com"))[0]);
         }
 
         public static IEnumerable<object[]> InvalidCookies()
@@ -939,6 +1010,12 @@ namespace System.Net.Primitives.Unit.Tests
             {false, new [] {"//"}, "/", 0},
             {false, new [] {"//"}, "//", 1},
             {false, new [] {"", "/", "//", "///"}, "///", 4},
+            {false, new [] {"\"\""}, "/", 1},
+            {false, new [] {"\"/a\""}, "/a", 1},
+            {false, new [] {"\"/a\""}, "/a/b", 1},
+            {false, new [] {"\"/a/\""}, "/a/b", 1},
+            {false, new [] {"\"/a\""}, "/abc", 0},
+            {false, new [] {"\"/A\""}, "/a", 0},
 
             // Should not match the second half of the criteria:
             // "The cookie-path is a prefix of the request-path, and the first

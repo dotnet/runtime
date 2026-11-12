@@ -5071,7 +5071,7 @@ const emitJumpKind emitReverseJumpKinds[] = {
 // A jump marked for removal must have a code size of 0,
 // except for jumps that must be replaced by nops on AMD64 (these must have a size of 1)
 #ifdef TARGET_AMD64
-    const bool isNopReplacement = ((instrDescJmp*)id)->idjIsAfterCallBeforeEpilog && (id->idCodeSize() == 1);
+    const bool isNopReplacement = ((instrDescJmp*)id)->idjIsAfterCall && (id->idCodeSize() == 1);
     assert(!result || (id->idCodeSize() == 0) || isNopReplacement);
 #else  // !TARGET_AMD64
     assert(!result || (id->idCodeSize() == 0));
@@ -10789,10 +10789,8 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, bool keepShort, bool i
         emitContainsRemovableJmpCandidates = true;
         id->idjIsRemovableJmpCandidate     = 1;
 #ifdef TARGET_AMD64
-        // If this jump is after a call instruction, we might need to insert a nop after it's removed,
-        // but only if the jump is before an OS epilog.
-        // We'll check for the OS epilog in emitter::emitRemoveJumpToNextInst().
-        id->idjIsAfterCallBeforeEpilog = lastInsIsCall ? 1 : 0;
+        // Removing a jump after a call must preserve the call's return PC with a nop.
+        id->idjIsAfterCall = lastInsIsCall ? 1 : 0;
 #endif // TARGET_AMD64
     }
     else
@@ -11225,6 +11223,13 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             // SIB byte
             noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
             sz++;
+
+            if (ins == INS_tail_i_jmp)
+            {
+                // The unwinder only recognizes this "jmp [abs32]" form as part of the epilog if it is
+                // rex.w prefixed. The rip-relative form is recognized without it.
+                sz++;
+            }
         }
 #endif // TARGET_AMD64
     }
@@ -18403,9 +18408,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst = emitOutputLJ(ig, dst, id);
             }
 #ifdef TARGET_AMD64
-            else if (jmp->idjIsAfterCallBeforeEpilog)
+            else if (jmp->idjIsAfterCall)
             {
-                // Need to insert a nop if the removed jump was after a call and before an OS epilog
+                // Preserve the return PC when removing a jump after a call.
                 // (The code size should already be set to 1 for the nop)
                 assert(id->idCodeSize() == 1);
                 dst = emitOutputNOP(dst, 1);
@@ -18500,6 +18505,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     noway_assert(!m_compiler->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != CorInfoReloc::RELATIVE32);
                     noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (ssize_t)addr);
+
+                    if (ins == INS_tail_i_jmp)
+                    {
+                        // Needs rex.w prefix to be recognized as part of epilog by unwinder.
+                        code = AddRexWPrefix(id, code);
+                        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+                    }
 
                     // This requires, specifying a SIB byte after ModRM byte.
                     dst += emitOutputWord(dst, code | 0x0400);

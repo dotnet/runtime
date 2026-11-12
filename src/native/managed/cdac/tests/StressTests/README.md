@@ -83,6 +83,14 @@ recorded zero verifications".
 - **[FAIL]** — cDAC differs from the runtime on a Frame that *should* be implemented,
   or cDAC's `GetStackReferences` failed at the API boundary
 
+ARGITER can report `[ARG_SKIP] reason=runtime-type-not-loaded` when a value-type layout
+needed to reconstruct the argument map has not been loaded. These skips require
+frame-appropriate GC support: native GC info for a frameless method, an R2R-supplied
+argument map for `ExternalMethodFrame`, `StubDispatchFrame`, `PrestubMethodFrame`, or
+`CallCountingHelperFrame`, or frame-specific root protection for other explicit frames.
+The log records the verified `fallback`, and the method remains eligible for retry.
+A missing required fallback produces `[ARG_ERROR]`, not a tolerated skip.
+
 See [known-issues.md § Log Format](known-issues.md#log-format) for the per-frame log shape.
 
 ## Running Tests

@@ -21,7 +21,8 @@ public static class CoreCLRContracts
         registry.Register<IEcmaMetadata>("c1", static t => new EcmaMetadata_1(t));
         registry.Register<IDacStreams>("c1", static t => new DacStreams_1(t));
         registry.Register<ICodeVersions>("c1", static t => new CodeVersions_1(t));
-        registry.Register<IStackWalk>("c1", static t => new StackWalk_1(t));
+        registry.Register<IStackWalk>("c1", static t => new StackWalk_1(t, 1));
+        registry.Register<IStackWalk>("c2", static t => new StackWalk_1(t));
         registry.Register<IRuntimeInfo>("c1", static t => new RuntimeInfo_1(t));
         registry.Register<IComWrappers>("c1", static t => new ComWrappers_1(t));
         registry.Register<ISHash>("c1", static t => new SHash_1(t));
@@ -62,13 +63,13 @@ public static class CoreCLRContracts
             RuntimeInfoArchitecture arch = t.Contracts.RuntimeInfo.GetTargetArchitecture();
             return arch switch
             {
-                RuntimeInfoArchitecture.X64 => new GCInfo_1<AMD64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.X86 => new GCInfoX86_1(t),
-                RuntimeInfoArchitecture.Arm64 => new GCInfo_1<ARM64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.Arm => new GCInfo_1<ARMGCInfoTraits>(t),
-                RuntimeInfoArchitecture.LoongArch64 => new GCInfo_1<LoongArch64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.RiscV64 => new GCInfo_1<RISCV64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.Wasm => new GCInfo_1<WasmGCInfoTraits>(t),
+                RuntimeInfoArchitecture.X64 when TargetArchitectureSupport.IsX64Supported => new GCInfo_1<AMD64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.X86 when TargetArchitectureSupport.IsX86Supported => new GCInfoX86_1(t),
+                RuntimeInfoArchitecture.Arm64 when TargetArchitectureSupport.IsArm64Supported => new GCInfo_1<ARM64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.Arm when TargetArchitectureSupport.IsArmSupported => new GCInfo_1<ARMGCInfoTraits>(t),
+                RuntimeInfoArchitecture.LoongArch64 when TargetArchitectureSupport.IsLoongArch64Supported => new GCInfo_1<LoongArch64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.RiscV64 when TargetArchitectureSupport.IsRiscV64Supported => new GCInfo_1<RISCV64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.Wasm when TargetArchitectureSupport.IsWasmSupported => new GCInfo_1<WasmGCInfoTraits>(t),
                 _ => default(GCInfo),
             };
         });

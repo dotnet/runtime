@@ -13,18 +13,14 @@ using Xunit;
 // The description parameter is not read: it names the generated case in the test's display name.
 #pragma warning disable xUnit1026
 
-namespace ILAssembler.Tests.GeneratedCases
+namespace Microsoft.DotNet.ILAssembler.Tests.GeneratedCases
 {
     /// <summary>
     /// The PDB rules, checked over seeded generated programs and option combinations
-    /// (<see cref="PdbCaseGenerator"/>), and for the output file writer (<see cref="OutputFileWriter"/>) over every
-    /// combination of output name, pre-existing output, pre-existing PDB path and PDB presence that
-    /// <see cref="PdbCaseGenerator.OutputWriteStates"/> enumerates.
+    /// (<see cref="PdbCaseGenerator"/>).
     /// </summary>
     public class PdbGeneratedCaseTests
     {
-        private static readonly ImmutableArray<byte> s_newPdb = [0x42, 0x53, 0x4A, 0x42];
-
         private static (CompilationResult Result, ImmutableArray<byte> Image) Compile(GeneratedProgram program, GeneratedOptions options)
         {
             CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(program.ToSource(), options.ToOptions());
@@ -166,9 +162,10 @@ namespace ILAssembler.Tests.GeneratedCases
 
         private static PortablePdbTestReader CompileDocumentProgram(int index)
         {
+            GeneratedDocumentProgram program = PdbCaseGenerator.DocumentCases[index];
             var (diagnostics, result) = new DocumentCompiler().Compile(
-                PdbCaseGenerator.DocumentCases[index].ToSources(),
-                _ => throw new InvalidOperationException("Unexpected include"),
+                program.ToSources(),
+                path => program.IncludedSources[path],
                 _ => throw new InvalidOperationException("Unexpected resource"),
                 new Options { Debug = true });
             Assert.Empty(diagnostics);
@@ -191,6 +188,41 @@ namespace ILAssembler.Tests.GeneratedCases
                     expected.Select(point => (point.Offset, point.Hidden, point.Document)),
                     actual.Select(point => (point.Offset, point.IsHidden, pdb.GetDocumentName(point.Document))));
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(PdbCaseGenerator.DocumentCaseData), MemberType = typeof(PdbCaseGenerator))]
+        public void SequencePoints_AreAtTheExpectedInstructionsWithTheExpectedSpans(int index, string description)
+        {
+            GeneratedDocumentProgram program = PdbCaseGenerator.DocumentCases[index];
+            using PortablePdbTestReader pdb = CompileDocumentProgram(index);
+
+            for (int i = 0; i < program.Methods.Length; i++)
+            {
+                // A reader gives a hidden point's span as lines 0xFEEFEE and columns 0, which is what the model has.
+                Assert.Equal(
+                    program.ExpectedSequencePoints[i].Select(point => (point.Offset, point.StartLine, point.StartColumn, point.EndLine, point.EndColumn)),
+                    pdb.GetSequencePoints($"M{i}").Select(point => (point.Offset, point.StartLine, point.StartColumn, point.EndLine, point.EndColumn)));
+            }
+        }
+
+        [Fact]
+        public void DocumentCases_CoverEveryShape()
+        {
+            // Each shape the generator draws must occur often enough for the theories above to exercise it. The
+            // minimums are well below the counts the seed gives (printed by the assertion message on failure).
+            var totals = new System.Collections.Generic.SortedDictionary<string, int>();
+            foreach (GeneratedDocumentProgram program in PdbCaseGenerator.DocumentCases)
+            {
+                foreach ((string shape, int count) in program.Shapes)
+                {
+                    totals[shape] = totals.GetValueOrDefault(shape) + count;
+                }
+            }
+
+            string summary = string.Join(", ", totals.Select(pair => $"{pair.Key}={pair.Value}"));
+            Assert.All(totals, pair => Assert.True(pair.Value >= 20, $"{pair.Key}: {pair.Value} ({summary})"));
+            Assert.Equal(14, totals.Count);
         }
 
         [Theory]
@@ -264,128 +296,5 @@ namespace ILAssembler.Tests.GeneratedCases
             }
         }
 
-        [Theory]
-        [MemberData(nameof(PdbCaseGenerator.OutputWriteStates), MemberType = typeof(PdbCaseGenerator))]
-        public void OutputFileWriter_NeverLeavesATemporaryFile(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
-        {
-            foreach (bool imageWriteFails in new[] { false, true })
-            {
-                RunOutputWrite(outputFileName, existingOutput, existingPdb, withPdb, imageWriteFails, (directory, _, _) =>
-                    Assert.DoesNotContain(Directory.EnumerateFileSystemEntries(directory), path => path.EndsWith(".tmp", StringComparison.Ordinal)));
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(PdbCaseGenerator.OutputWriteStates), MemberType = typeof(PdbCaseGenerator))]
-        public void OutputFileWriter_WhenTheImageWriteFails_LeavesThePdbPathUnchanged(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
-        {
-            RunOutputWrite(outputFileName, existingOutput, existingPdb, withPdb, imageWriteFails: true, (_, pdbPath, exception) =>
-            {
-                Assert.NotNull(exception);
-                switch (existingPdb)
-                {
-                    case ExistingPdb.Absent:
-                        Assert.False(Path.Exists(pdbPath));
-                        break;
-                    case ExistingPdb.File:
-                        Assert.Equal(PdbCaseGenerator.ExistingPair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
-                        break;
-                    case ExistingPdb.Directory:
-                        Assert.True(Directory.Exists(pdbPath));
-                        break;
-                }
-            });
-        }
-
-        [Theory]
-        [MemberData(nameof(PdbCaseGenerator.OutputWriteStates), MemberType = typeof(PdbCaseGenerator))]
-        public void OutputFileWriter_AfterTheImageIsWritten_LeavesTheNewPdbOrDeletesOnlyTheReplacedImagesPdb(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
-        {
-            RunOutputWrite(outputFileName, existingOutput, existingPdb, withPdb, imageWriteFails: false, (_, pdbPath, exception) =>
-            {
-                if (existingPdb == ExistingPdb.Directory)
-                {
-                    // A directory is never deleted; with a PDB, renaming over it fails.
-                    Assert.Equal(withPdb, exception is not null);
-                    Assert.True(Directory.Exists(pdbPath));
-                }
-                else if (withPdb)
-                {
-                    Assert.Null(exception);
-                    Assert.Equal(s_newPdb.ToArray(), File.ReadAllBytes(pdbPath));
-                }
-                else if (existingPdb == ExistingPdb.File && existingOutput != ExistingOutput.ImageOfThePdb)
-                {
-                    // The PDB does not belong to the image that was replaced, so it stays.
-                    Assert.Null(exception);
-                    Assert.Equal(PdbCaseGenerator.ExistingPair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
-                }
-                else
-                {
-                    Assert.Null(exception);
-                    Assert.False(File.Exists(pdbPath));
-                }
-            });
-        }
-
-        private static void RunOutputWrite(
-            string outputFileName,
-            ExistingOutput existingOutput,
-            ExistingPdb existingPdb,
-            bool withPdb,
-            bool imageWriteFails,
-            Action<string, string, Exception?> check)
-        {
-            string directory = Directory.CreateTempSubdirectory("ilasm-output-").FullName;
-            try
-            {
-                string outputPath = Path.Combine(directory, outputFileName);
-                string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
-                switch (existingOutput)
-                {
-                    case ExistingOutput.ImageOfThePdb:
-                        File.WriteAllBytes(outputPath, PdbCaseGenerator.ExistingPair.Image.ToArray());
-                        break;
-                    case ExistingOutput.ImageOfAnotherPdb:
-                        File.WriteAllBytes(outputPath, PdbCaseGenerator.ImageOfAnotherPdb.ToArray());
-                        break;
-                    case ExistingOutput.NotAnImage:
-                        File.WriteAllBytes(outputPath, [0x01]);
-                        break;
-                    case ExistingOutput.CoffObject:
-                        File.WriteAllBytes(outputPath, new byte[20]);
-                        break;
-                }
-
-                switch (existingPdb)
-                {
-                    case ExistingPdb.File:
-                        File.WriteAllBytes(pdbPath, PdbCaseGenerator.ExistingPair.Pdb.ToArray());
-                        break;
-                    case ExistingPdb.Directory:
-                        Directory.CreateDirectory(pdbPath);
-                        break;
-                }
-
-                Exception? exception = Record.Exception(() => OutputFileWriter.Write(
-                    outputPath,
-                    pdbPath,
-                    stream =>
-                    {
-                        stream.WriteByte(0x4D);
-                        if (imageWriteFails)
-                        {
-                            throw new IOException("Injected image write failure");
-                        }
-                    },
-                    withPdb ? s_newPdb : null));
-
-                check(directory, pdbPath, exception);
-            }
-            finally
-            {
-                Directory.Delete(directory, recursive: true);
-            }
-        }
     }
 }

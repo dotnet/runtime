@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.IL;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
     internal sealed class ILCompilerTestPInvokePolicy : PInvokeILEmitterConfiguration
     {
-        public override bool GenerateDirectCall(MethodDesc method, out string? externName)
+        public override LinkageMetadata GetLinkageMetadata(MethodDesc method)
         {
-            externName = method.GetName();
-            return true;
+            return new LinkageMetadata(new Utf8String(method.Name.AsSpan()));
         }
     }
 }

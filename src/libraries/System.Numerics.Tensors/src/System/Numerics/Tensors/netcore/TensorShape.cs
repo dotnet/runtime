@@ -1257,6 +1257,11 @@ namespace System.Numerics.Tensors
                 return 0;
             }
 
+            if (dimension == 1 && (nuint)index < (nuint)lengths[0])
+            {
+                return index * strides[0];
+            }
+
             nint linearOffset = 0;
 
             for (int i = 0; i < dimension; i++)

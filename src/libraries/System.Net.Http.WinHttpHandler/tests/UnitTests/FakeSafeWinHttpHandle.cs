@@ -28,6 +28,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             }
         }
 
+        public APICallHistory.ProxyInfo ProxySettings { get; set; }
+
         public Interop.WinHttp.WINHTTP_STATUS_CALLBACK Callback
         {
             get

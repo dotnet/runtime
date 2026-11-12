@@ -22,7 +22,7 @@ jobs:
           COPILOT_PAT_7: ${{ github.aw.import-inputs.COPILOT_PAT_7 }}
           COPILOT_PAT_8: ${{ github.aw.import-inputs.COPILOT_PAT_8 }}
           COPILOT_PAT_9: ${{ github.aw.import-inputs.COPILOT_PAT_9 }}
-          RANDOM_SEED:   ${{ github.aw.import-inputs.random_seed   }}
+          RANDOM_SEED: ${{ github.aw.import-inputs.random_seed }}
         shell: bash
         run: |
           # Collect pool entries with non-empty secrets from COPILOT_PAT_0..COPILOT_PAT_9.
@@ -115,6 +115,7 @@ import-schema:
   random_seed:
     type: number
     required: false
+    default: ""
     description: >-
       A seed number to use for the random PAT number selection,
       for deterministic selection if needed.
