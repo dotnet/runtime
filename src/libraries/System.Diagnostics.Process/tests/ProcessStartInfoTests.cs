@@ -455,7 +455,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => p.Start());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void UseShellExecute_EnvironmentReadButNotModified_DoesNotThrowInvalidOperationException()
         {
