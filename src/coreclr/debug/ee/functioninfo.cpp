@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //*****************************************************************************
-// File: DebuggerModule.cpp
+// File: functioninfo.cpp
 //
-// Stuff for tracking DebuggerModules.
+// Stuff for tracking debugger method information.
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -1402,54 +1402,10 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    DebuggerModule * pModule = GetModule();
-
     m_fJMCStatus = false;
-
-    // If there's no module, then this isn't a JMC function.
-    // This can happen since DMIs are created for debuggable code, and
-    // Modules are only created if a debugger is actually attached.
-    if (pModule != NULL)
-    {
-        // Use the accessor so that we keep the module's count properly updated.
-        SetJMCStatus(pModule->GetRuntimeModule()->GetJMCStatus());
-    }
+    SetJMCStatus(module->GetJMCStatus(g_pDebugger->GetDebuggerSessionGeneration()));
  }
 
-
-/******************************************************************************
- * Get the debugger module for this DMI. This is 1:1 w/ an EE Module.
- ******************************************************************************/
-DebuggerModule* DebuggerMethodInfo::GetModule()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_pDebugger->HasDebuggerDataLock());
-
-    DebuggerModuleTable * pTable = g_pDebugger->GetModuleTable();
-
-    // If we're tracking debug info but no debugger's attached, then
-    // we won't have a table for the modules yet.
-    if (pTable == NULL)
-        return NULL;
-
-    DebuggerModule * pModule = pTable->GetModule(GetRuntimeModule());
-    if (pModule == NULL)
-    {
-        // We may be missing the module even if we have the table.
-        // 1.) If there's no debugger attached (so we're not getting ModuleLoad events).
-        // 2.) If we're asking for this while in DllMain of the module we're currently loading,
-        //     we won't have gotten the ModuleLoad event yet.
-        return NULL;
-    }
-
-    return pModule;
-}
 
 /******************************************************************************
  * Get the runtime module for this DMI
@@ -1829,8 +1785,7 @@ void DebuggerMethodInfo::DJIIterator::Next(BOOL fFirst /*=FALSE*/)
         if ((m_pMethodDescFilter != NULL) && (m_pMethodDescFilter != m_pCurrent->m_nativeCodeVersion.GetMethodDesc()))
             continue;
 
-        // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check
-        // because of it is deleted pretty early during unloading, and we do not want to recreate it.
+        // Skip modules that are unloaded but still hanging around.
         if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
             continue;
 
@@ -1896,8 +1851,6 @@ void DebuggerMethodInfo::SetJMCStatus(bool fStatus)
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
     // First check if this is a no-op.
-    // Do this first b/c there may be some cases where we don't have a DebuggerModule
-    // yet but are still calling SetJMCStatus(false), like if we detach before attach is complete.
     bool fOldStatus = IsJMCFunction();
 
     if (fOldStatus == fStatus)
@@ -1917,14 +1870,14 @@ void DebuggerMethodInfo::SetJMCStatus(bool fStatus)
     if (!fStatus)
     {
         LOG((LF_CORDB,LL_EVERYTHING, "DMI::SetJMCStatus: %p, changing to non-user code\n", this));
-        _ASSERTE(pRuntimeModule->HasAnyJMCFunctions());
+        _ASSERTE(pRuntimeModule->HasAnyJMCFunctions(g_pDebugger->GetDebuggerSessionGeneration()));
         pRuntimeModule->DecJMCFuncCount();
     }
     else
     {
         LOG((LF_CORDB,LL_EVERYTHING, "DMI::SetJMCStatus: %p, changing to user code\n", this));
         pRuntimeModule->IncJMCFuncCount();
-        _ASSERTE(pRuntimeModule->HasAnyJMCFunctions());
+        _ASSERTE(pRuntimeModule->HasAnyJMCFunctions(g_pDebugger->GetDebuggerSessionGeneration()));
     }
 
     m_fJMCStatus = fStatus;
@@ -2005,8 +1958,7 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
 
             Module * pLoaderModule = pDesc->GetLoaderModule();
 
-            // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check
-            // because of it is deleted pretty early during unloading, and we do not want to recreate it.
+            // Skip modules that are unloaded but still hanging around.
             if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
                 continue;
 

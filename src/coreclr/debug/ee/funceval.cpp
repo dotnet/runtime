@@ -1309,7 +1309,7 @@ static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
     }
     CONTRACTL_END;
 
-    IMDInternalImport* pImport = pDE->m_debuggerModule->GetRuntimeModule()->GetMDImport();
+    IMDInternalImport* pImport = pDE->m_pAssembly->GetModule()->GetMDImport();
     PCCOR_SIGNATURE signature;
     ULONG signatureSize;
     IfFailThrow(pImport->GetSigOfMethodDef(pDE->m_methodToken, &signatureSize, &signature));
@@ -1468,7 +1468,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     context.pCapturedArguments = pBufferForArgsArray;
     context.pResultByRefs = reinterpret_cast<void**>(pDE->m_result);
     context.pResultData = pDE->m_result;
-    context.pModule = pDE->m_debuggerModule->GetRuntimeModule();
+    context.pModule = pDE->m_pAssembly->GetModule();
     context.argumentCount = pDE->m_argCount;
     context.flags = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT ? FuncEvalNewObject : 0;
     context.methodToken = pDE->m_methodToken;
@@ -1590,7 +1590,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
             {
 
                 // Find the class.
-                TypeHandle thClass = g_pEEInterface->LoadClass(pDE->m_debuggerModule->GetRuntimeModule(),
+                TypeHandle thClass = g_pEEInterface->LoadClass(pDE->m_pAssembly->GetModule(),
                                                          pDE->m_classToken);
 
                 if (thClass.IsNull())
@@ -1600,7 +1600,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 TypeHandle th =
                     (nGenericArgs == 0)
                     ? thClass
-                    : g_pEEInterface->LoadInstantiation(pDE->m_debuggerModule->GetRuntimeModule(),
+                    : g_pEEInterface->LoadInstantiation(pDE->m_pAssembly->GetModule(),
                                                          pDE->m_classToken, nGenericArgs, pGenericArgs);
 
                 if (th.IsNull() || th.ContainsGenericVariables())
