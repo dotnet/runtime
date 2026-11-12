@@ -194,6 +194,7 @@ namespace System.IO.Tests
             stream.ReadAsync(buffer, offset, count, cancellationToken);
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(FileAccess.Read, false)]
         [InlineData(FileAccess.Read, true)]
         [InlineData(FileAccess.Write, false)]
