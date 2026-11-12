@@ -106,6 +106,7 @@ target_link_libraries(
     "-L/usr/lib/swift"
     "-lswiftCore"
     "-lswiftFoundation"
+    "-weak-lswiftXPC"
     %NativeLibrariesToLink%
     %APP_LINK_LIBRARIES%
 )
