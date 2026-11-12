@@ -162,7 +162,8 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_X_TLS_NEWCTX = 0x600F, // Not Supported in Windows
         LDAP_OPT_X_SASL_REALM = 0x6101,
         LDAP_OPT_X_SASL_AUTHCID = 0x6102,
-        LDAP_OPT_X_SASL_AUTHZID = 0x6103
+        LDAP_OPT_X_SASL_AUTHZID = 0x6103,
+        LDAP_OPT_X_SASL_NOCANON = 0x610b,
     }
 
     internal enum ResultAll
