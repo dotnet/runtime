@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -97,6 +98,25 @@ namespace System.Linq.Expressions.Tests
                 Assert.Equal(typeof(void), method.ReturnType);
                 Assert.Equal(typeArgs, method.GetParameters().Select(p => p.ParameterType));
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CustomDelegateTypesNotEmittedWhenSwitchDisabled()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Linq.Expressions.CanEmitCustomDelegateTypes", bool.FalseString);
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(typeof(int).MakeByRefType(), typeof(void)));
+                Assert.Throws<PlatformNotSupportedException>(() => Expression.Lambda(Expression.Empty(), Expression.Parameter(typeof(int).MakeByRefType())));
+                Assert.Equal(typeof(Func<int, int>), Expression.GetDelegateType(typeof(int), typeof(int)));
+
+                ParameterExpression param = Expression.Parameter(typeof(int));
+                LambdaExpression lambda = Expression.Lambda(Expression.Add(param, Expression.Constant(1)), param);
+                Assert.Equal(typeof(Func<int, int>), lambda.Type);
+                Assert.Equal(3, ((Func<int, int>)lambda.Compile())(2));
+            }, options).Dispose();
         }
 
         // Open generic type args aren't useful directly with Expressions, but creating them is allowed.

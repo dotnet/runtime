@@ -17,6 +17,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | _DesignerHostSupport | System.ComponentModel.Design.IDesignerHost.IsSupported | When set to true, supports creating design components at runtime. |
 | _EnableConsumingManagedCodeFromNativeHosting | System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
 | _UseManagedNtlm | System.Net.Security.UseManagedNtlm | When set to true, uses built-in managed implementation of NTLM and SPNEGO algorithm for HTTP, SMTP authentication, and NegotiateAuthentication API instead of system provided GSSAPI implementation. |
+| - | System.Linq.Expressions.CanEmitCustomDelegateTypes | When set to false, System.Linq.Expressions does not emit custom delegate types and supports only the delegate types available with Native AOT (Func, Action, and predefined call-site delegates); requests for other delegate types throw PlatformNotSupportedException. |
 | - | Microsoft.Extensions.Configuration.DisableConfigurationReferences | When set to true, Configuration hands values back exactly as their providers hold them, so `$ref(...)` values are not resolved and reference resolution can be trimmed away. |
 
 Any feature-switch which defines property can be set in csproj file or
