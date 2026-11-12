@@ -8070,6 +8070,7 @@ protected:
     void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
+    ValueNum optValnumCSE_ImpliedExcSet(GenTree* tree);
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
     GenTree* optExtractSideEffectsForCSE(GenTree* tree);
 
