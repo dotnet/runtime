@@ -957,17 +957,11 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-#if TARGET_64BIT
             UIntPtr funcletCallerSP;
             byte* pResumeIP = InternalCalls.CallEHFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, &funcletCallerSP);
             InternalCalls.RhpPopExInfo(ref exInfo, frameIter.SP);
             InternalCalls.RhpResumeAfterCatch(frameIter.RegisterSet, pResumeIP);
-#else
-            InternalCalls.RhpCallCatchFunclet(
-                exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
-            // currently, RhpCallCatchFunclet will resume after the catch
-#endif
             Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif // !NATIVEAOT
@@ -1101,14 +1095,9 @@ namespace System.Runtime
 #if NATIVEAOT
                     try
                     {
-#if TARGET_64BIT
                         UIntPtr funcletCallerSP;
                         shouldInvokeHandler =
                             InternalCalls.CallEHFilterFunclet(exception, frameIter.RegisterSet, pFilterFunclet, &funcletCallerSP) != 0;
-#else
-                        shouldInvokeHandler =
-                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
-#endif
                     }
                     catch when (true)
                     {
@@ -1254,12 +1243,8 @@ namespace System.Runtime
 
                 byte* pFinallyHandler = ehClause._handlerAddress;
                 exInfo._idxCurClause = curIdx;
-#if TARGET_64BIT
                 UIntPtr funcletCallerSP;
                 InternalCalls.CallEHFunclet(null, pFinallyHandler, exInfo._frameIter.RegisterSet, &funcletCallerSP);
-#else
-                InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
-#endif
                 exInfo._idxCurClause = MaxTryRegionIdx;
             }
         }

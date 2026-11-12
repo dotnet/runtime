@@ -198,6 +198,11 @@ namespace System
 
         internal static void SerializeCrashInfo(RhFailFastReason reason, string? message, Exception? exception)
         {
+            if (!CrashInfo.IsSupported)
+            {
+                return;
+            }
+
             int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, -1, 0);
             if (previousState == 0)
             {

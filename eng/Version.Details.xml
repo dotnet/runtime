@@ -339,6 +339,14 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.14.0-1.26528.120">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.14.0-1.26528.120">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="5.14.0-1.26528.120">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>bc397b207bfe2f5dd6d6643e46003e77cd32465c</Sha>

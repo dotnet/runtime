@@ -503,18 +503,9 @@ protected:
     bool genUsedPopToReturn; // True if we use the pop into PC to return,
                              // False if we didn't and must branch to LR to return.
 
-    // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
-    // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
-    // same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs; // Set of registers saved in the funclet prolog (includes LR)
-        unsigned  fiSpDelta;  // Stack pointer delta
-    };
+#endif // TARGET_ARM
 
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_64BIT)
+#if !defined(TARGET_X86) && !defined(TARGET_WASM)
 
     // A set of information that is used by funclet prolog and epilog generation. It is collected once, before
     // funclet prologs and epilogs are generated, and used by all funclet prologs and epilogs, which must all be the
@@ -526,7 +517,7 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#endif // TARGET_ARM, TARGET_64BIT
+#endif // !TARGET_X86, !TARGET_WASM
 
 #if defined(TARGET_XARCH)
 
