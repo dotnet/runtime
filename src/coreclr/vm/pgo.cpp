@@ -62,8 +62,10 @@ void PgoManager::Initialize()
 
     s_pgoMgrLock.Init(CrstLeafLock, CRST_DEFAULT);
 
-    // If we're reading in counts, do that now
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    // Text profiles are consumed by the JIT, not by the interpreter.
     ReadPgoData();
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 }
 
 void PgoManager::Shutdown()
@@ -73,7 +75,12 @@ void PgoManager::Shutdown()
     if (!written)
     {
         written = true;
+#ifndef PERFTRACING_DISABLE_THREADS
+        LogInstrumentationData();
+#endif
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
         WritePgoData();
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
     }
 }
 
@@ -186,10 +193,6 @@ void PgoManager::LogInstrumentationData()
 
 void PgoManager::WritePgoData()
 {
-#ifndef PERFTRACING_DISABLE_THREADS
-    LogInstrumentationData();
-#endif
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) == 0)
     {
         return;
