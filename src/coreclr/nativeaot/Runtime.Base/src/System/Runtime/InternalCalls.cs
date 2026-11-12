@@ -144,7 +144,6 @@ namespace System.Runtime
         // Miscellaneous helpers.
         //
 
-#if TARGET_64BIT
         [RuntimeImport(RuntimeLibrary, "CallEHFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe byte* CallEHFunclet(
@@ -162,21 +161,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe int CallEHFilterFunclet(
             object exceptionObj, void* pvRegDisplay, byte* pFilterIP, UIntPtr* pFuncletCallerSP);
-#else
-        [RuntimeImport(RuntimeLibrary, "RhpCallCatchFunclet")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpCallCatchFunclet(
-            object exceptionObj, byte* pHandlerIP, void* pvRegDisplay, ref EH.ExInfo exInfo);
-
-        [RuntimeImport(RuntimeLibrary, "RhpCallFinallyFunclet")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpCallFinallyFunclet(byte* pHandlerIP, void* pvRegDisplay);
-
-        [RuntimeImport(RuntimeLibrary, "RhpCallFilterFunclet")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool RhpCallFilterFunclet(
-            object exceptionObj, byte* pFilterIP, void* pvRegDisplay);
-#endif
 
 #if FEATURE_OBJCMARSHAL
         [RuntimeImport(RuntimeLibrary, "RhpCallPropagateExceptionCallback")]
