@@ -1,14 +1,22 @@
 <Project Sdk="Microsoft.Build.NoTargets"
-         TreatAsLocalProperty="BrowserHostNativeFlavor;IsBrowserWasmProject;RequiresCrossgen2Pack;InvariantGlobalization;InvariantTimezone;EnableDiagnostics;WasmInitialHeapSize;EmccMaximumHeapSize;EmccStackSize">
+         TreatAsLocalProperty="BrowserHostNativeFlavor;IsBrowserWasmProject;RequiresCrossgen2Pack;InvariantGlobalization;InvariantTimezone;EnableDiagnostics;EventSourceSupport;WasmInitialHeapSize;EmccMaximumHeapSize;EmccStackSize">
   <PropertyGroup>
     <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <RequiresCrossgen2Pack>false</RequiresCrossgen2Pack>
     <BrowserHostNativeFlavor Condition="'$(BrowserHostNativeFlavor)' == ''">production</BrowserHostNativeFlavor>
     <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'browserhost', '$(TargetOS).$(TargetArchitecture).$(Configuration)', '$(BrowserHostNativeFlavor)'))</IntermediateOutputPath>
     <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+    <BrowserHostManagedFlavorDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'sfx-finish', '$(LibrariesConfiguration)', '$(NetCoreAppCurrent)-browser', 'illink-wasm-$(BrowserHostNativeFlavor)'))</BrowserHostManagedFlavorDir>
     <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == '' and '$(Configuration)' == 'Debug'">true</WasmNativeDebugSymbols>
     <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Checked'">-O2</EmccLinkOptimizationFlag>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)sfx-finish.proj"
+                      BuildReference="false"
+                      ReferenceOutputAssembly="false"
+                      Condition="'$(MSBuildRestoreSessionId)' != ''" />
+  </ItemGroup>
 
   <Import Project="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" />
 
@@ -17,27 +25,32 @@
     <InvariantTimezone>$(BrowserHostInvariantTimezone)</InvariantTimezone>
     <EnableDiagnostics Condition="'$(BrowserHostNativeFlavor)' == 'production'">false</EnableDiagnostics>
     <EnableDiagnostics Condition="'$(BrowserHostNativeFlavor)' == 'diagnostics'">true</EnableDiagnostics>
+    <EventSourceSupport>$(EnableDiagnostics)</EventSourceSupport>
     <WasmInitialHeapSize>$(BrowserHostInitialHeapSize)</WasmInitialHeapSize>
     <EmccMaximumHeapSize>$(BrowserHostMaximumHeapSize)</EmccMaximumHeapSize>
     <EmccStackSize>$(BrowserHostStackSize)</EmccStackSize>
   </PropertyGroup>
 
-  <!-- The runtime already generated the framework interop helpers. App relinks regenerate
-       these helpers for the app's assembly closure; the prebuilt host uses the runtime archive. -->
-  <ItemGroup>
-    <NativeFileReference Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_gen_static.a" />
-  </ItemGroup>
+  <Target Name="BuildBrowserHostManagedFlavor">
+    <MSBuild Projects="$(LibrariesProjectRoot)sfx-finish.proj"
+             Targets="TrimSharedFrameworkAssemblies"
+             BuildInParallel="false"
+             Properties="Configuration=$(LibrariesConfiguration);TargetOS=browser;TargetArchitecture=wasm;RuntimeFlavor=CoreCLR;BuildProjectReferences=false;RunILLinkInBuild=true;SharedFrameworkTrimFlavor=$(BrowserHostNativeFlavor);SharedFrameworkTrimInputDir=$(LibrariesSharedFrameworkBinArtifactsPath);SharedFrameworkTrimCoreLibPath=$(CoreCLRArtifactsPath)System.Private.CoreLib.dll;EventSourceSupport=$(EventSourceSupport);EnableDiagnostics=$(EnableDiagnostics)" />
+  </Target>
 
   <Target Name="PrepareBrowserHost"
-          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild;ResolveLibrariesRuntimeFilesFromLocalBuild">
+          DependsOnTargets="BuildBrowserHostManagedFlavor;ResolveRuntimeFilesFromLocalBuild;ResolveLibrariesRuntimeFilesFromLocalBuild">
     <Error Condition="'$(TargetOS)' != 'browser' or '$(TargetArchitecture)' != 'wasm' or '$(RuntimeFlavor)' != 'CoreCLR'"
            Text="The prebuilt browserhost requires CoreCLR for browser-wasm." />
     <Error Condition="'$(BrowserHostNativeFlavor)' != 'production' and '$(BrowserHostNativeFlavor)' != 'diagnostics'"
            Text="Unsupported prebuilt browserhost native flavor '$(BrowserHostNativeFlavor)'." />
+    <Error Condition="!Exists('$(BrowserHostManagedFlavorDir)System.Private.CoreLib.dll')"
+           Text="The managed framework flavor '$(BrowserHostNativeFlavor)' was not found at '$(BrowserHostManagedFlavorDir)'." />
     <ItemGroup>
       <_BrowserHostNativeFile Include="@(RuntimeFiles->WithMetadataValue('IsNative', 'true'));@(LibrariesRuntimeFiles->WithMetadataValue('IsNative', 'true'))"
                               Exclude="$(LibrariesSharedFrameworkDir)dotnet.native.js;$(LibrariesSharedFrameworkDir)native-flavors\**\*"
                               Condition="'%(Extension)' == '.a' or '%(Extension)' == '.js'" />
+      <WasmAssembliesToBundle Include="$(BrowserHostManagedFlavorDir)*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(_BrowserHostNativeFile->Distinct())"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)"
@@ -53,6 +66,9 @@
                             AcquireEmscriptenSdk;
                             _CoreCLRSetupEmscripten;
                             _CoreCLRPrepareForNativeBuild;
+                            _CoreCLRGenerateManagedToNative;
+                            _CoreCLRWriteCompileRsp;
+                            _CoreCLRCompileNativeSources;
                             _CoreCLRWriteLinkRsp;
                             _CoreCLRLinkNative;
                             _CoreCLRCompleteNativeBuild" />
