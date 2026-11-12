@@ -3,9 +3,6 @@
     <WasmAppBuilderTasksAssemblyPath Condition="'$(WasmAppBuilderTasksAssemblyPath)' == ''">$(MSBuildThisFileDirectory)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <!-- This project is deployed to $(CORE_ROOT)/wasi-r2r, next to Core_Root's prebuilt R2R CoreLib. -->
     <CoreLibR2RImagePath Condition="'$(CoreLibR2RImagePath)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'System.Private.CoreLib.wasm'))</CoreLibR2RImagePath>
-    <!-- WholeProgramCompositeBuildMode compiles CoreLib into the test composite, which then emits a CoreLib
-         component stub beside the test. The prebuilt image would shadow it, so merge it only otherwise. -->
-    <_CompositeContainsCoreLib Condition="Exists('$(ComponentStubsDirectory)/System.Private.CoreLib.wasm')">true</_CompositeContainsCoreLib>
   </PropertyGroup>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComposeWasiReadyToRun"
@@ -17,11 +14,13 @@
     <_ComponentStub Include="$(ComponentStubsDirectory)/*.wasm"
                     Exclude="$(CompositePath);$(ComponentPath)" />
     <!-- R2R code outside CoreLib requires an R2R CoreLib, so merge Core_Root's prebuilt image alongside the test composite. -->
-    <_AdditionalR2RImage Include="$(CoreLibR2RImagePath)" Condition="'$(_CompositeContainsCoreLib)' != 'true'" />
+    <!-- Under WholeProgramCompositeBuildMode the test composite already contains CoreLib (set
+         CompositeIncludesCoreLib=true); the prebuilt image would shadow it there. -->
+    <_AdditionalR2RImage Include="$(CoreLibR2RImagePath)" Condition="'$(CompositeIncludesCoreLib)' != 'true'" />
   </ItemGroup>
 
   <Target Name="Compose">
-    <Error Condition="'$(_CompositeContainsCoreLib)' != 'true' and !Exists('$(CoreLibR2RImagePath)')"
+    <Error Condition="'$(CompositeIncludesCoreLib)' != 'true' and !Exists('$(CoreLibR2RImagePath)')"
            Text="The R2R System.Private.CoreLib image was not found at '$(CoreLibR2RImagePath)'. WASI R2R tests require an R2R CoreLib in Core_Root." />
     <ComposeWasiReadyToRun CompositePath="$(CompositePath)"
                            ComponentPath="$(ComponentPath)"
