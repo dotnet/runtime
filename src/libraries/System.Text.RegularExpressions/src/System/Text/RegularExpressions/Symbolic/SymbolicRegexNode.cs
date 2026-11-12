@@ -1753,64 +1753,72 @@ namespace System.Text.RegularExpressions.Symbolic
                 return;
             }
 
-            ref readonly SymbolicRegexBuilder<TSet>.NodeData data = ref Data;
-            switch (data.Kind)
+            SymbolicRegexNodeContext<TSet> node = this;
+            while (true)
             {
-                case SymbolicRegexNodeKind.Concat:
-                    {
-                        SymbolicRegexNodeContext<TSet> left = GetContext(data.LeftId);
-                        SymbolicRegexNodeContext<TSet> right = GetContext(data.RightId);
-                        Debug.Assert(!left.IsNull && !right.IsNull);
-                        Debug.Assert(left.IsNullableFor(context) && right.IsNullableFor(context));
-                        left.ApplyEffects(apply, context, arg);
-                        right.ApplyEffects(apply, context, arg);
-                        break;
-                    }
-
-                case SymbolicRegexNodeKind.Loop:
-                    {
-                        SymbolicRegexNodeContext<TSet> body = GetContext(data.LeftId);
-                        Debug.Assert(!body.IsNull);
-                        // Apply effect when backtracking engine would enter loop
-                        if (data.Lower != 0 || (data.Upper != 0 && !data.Info.IsLazyLoop && body.IsNullableFor(context)))
+                ref readonly SymbolicRegexBuilder<TSet>.NodeData data = ref node.Data;
+                switch (data.Kind)
+                {
+                    case SymbolicRegexNodeKind.Concat:
                         {
-                            Debug.Assert(body.IsNullableFor(context));
-                            body.ApplyEffects(apply, context, arg);
-                        }
-                        break;
-                    }
-
-                case SymbolicRegexNodeKind.Alternate:
-                    {
-                        SymbolicRegexNodeContext<TSet> left = GetContext(data.LeftId);
-                        SymbolicRegexNodeContext<TSet> right = GetContext(data.RightId);
-                        Debug.Assert(!left.IsNull && !right.IsNull);
-                        if (left.IsNullableFor(context))
-                        {
-                            // Prefer the left side
+                            SymbolicRegexNodeContext<TSet> left = node.GetContext(data.LeftId);
+                            SymbolicRegexNodeContext<TSet> right = node.GetContext(data.RightId);
+                            Debug.Assert(!left.IsNull && !right.IsNull);
+                            Debug.Assert(left.IsNullableFor(context) && right.IsNullableFor(context));
                             left.ApplyEffects(apply, context, arg);
+                            node = right;
+                            continue;
                         }
-                        else
+
+                    case SymbolicRegexNodeKind.Loop:
                         {
-                            // Otherwise right side must be nullable
-                            Debug.Assert(right.IsNullableFor(context));
-                            right.ApplyEffects(apply, context, arg);
+                            SymbolicRegexNodeContext<TSet> body = node.GetContext(data.LeftId);
+                            Debug.Assert(!body.IsNull);
+                            // Apply effect when backtracking engine would enter loop
+                            if (data.Lower != 0 || (data.Upper != 0 && !data.Info.IsLazyLoop && body.IsNullableFor(context)))
+                            {
+                                Debug.Assert(body.IsNullableFor(context));
+                                node = body;
+                                continue;
+                            }
+                            return;
                         }
-                        break;
-                    }
 
-                case SymbolicRegexNodeKind.CaptureStart:
-                    apply(new DerivativeEffect(DerivativeEffectKind.CaptureStart, data.Lower), arg);
-                    break;
+                    case SymbolicRegexNodeKind.Alternate:
+                        {
+                            SymbolicRegexNodeContext<TSet> left = node.GetContext(data.LeftId);
+                            SymbolicRegexNodeContext<TSet> right = node.GetContext(data.RightId);
+                            Debug.Assert(!left.IsNull && !right.IsNull);
+                            if (left.IsNullableFor(context))
+                            {
+                                // Prefer the left side
+                                node = left;
+                            }
+                            else
+                            {
+                                // Otherwise right side must be nullable
+                                Debug.Assert(right.IsNullableFor(context));
+                                node = right;
+                            }
+                            continue;
+                        }
 
-                case SymbolicRegexNodeKind.CaptureEnd:
-                    apply(new DerivativeEffect(DerivativeEffectKind.CaptureEnd, data.Lower), arg);
-                    break;
+                    case SymbolicRegexNodeKind.CaptureStart:
+                        apply(new DerivativeEffect(DerivativeEffectKind.CaptureStart, data.Lower), arg);
+                        return;
 
-                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
-                    Debug.Assert(data.LeftId != 0);
-                    GetContext(data.LeftId).ApplyEffects(apply, context, arg);
-                    break;
+                    case SymbolicRegexNodeKind.CaptureEnd:
+                        apply(new DerivativeEffect(DerivativeEffectKind.CaptureEnd, data.Lower), arg);
+                        return;
+
+                    case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                        Debug.Assert(data.LeftId != 0);
+                        node = node.GetContext(data.LeftId);
+                        continue;
+
+                    default:
+                        return;
+                }
             }
         }
 
