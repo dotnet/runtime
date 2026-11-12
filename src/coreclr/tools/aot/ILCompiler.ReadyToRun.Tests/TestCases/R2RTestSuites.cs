@@ -1749,7 +1749,7 @@ public class R2RTestSuites
         }
     }
 
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsHost), nameof(TestPaths.IsWindowsX64Target))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.HasArm64CrossgenJit))]
     public void LinuxArm64AtomicsAreGuardedPerMethod()
     {
         CompiledAssembly input = new()

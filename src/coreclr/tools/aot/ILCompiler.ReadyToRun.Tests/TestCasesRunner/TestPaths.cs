@@ -40,7 +40,19 @@ internal static class TestPaths
 
     public static bool IsWindowsTarget => TargetOS is "windows" or "win";
 
-    public static bool IsWindowsX64Target => IsWindowsTarget && TargetArchitecture == "x64";
+    public static bool HasArm64CrossgenJit
+    {
+        get
+        {
+            // Crossgen2 selects the ARM64 JIT by the current process architecture.
+            string hostArchitecture = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+            string jitName = $"clrjit_universal_arm64_{hostArchitecture}";
+            string jitFileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? $"{jitName}.dll"
+                : $"lib{jitName}{(RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? ".dylib" : ".so")}";
+            return File.Exists(Path.Combine(AppContext.BaseDirectory, "crossgen2", jitFileName));
+        }
+    }
 
     public static bool IsIosArm64Target => TargetOS is "ios" && TargetArchitecture is "arm64";
 
