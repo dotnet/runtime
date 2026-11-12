@@ -1410,7 +1410,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-    if (offset == ((uint)-1) &&m_pAuxiliaryModuleMetadata != nullptr &&
+    if (offset == (uint)-1 && m_pAuxiliaryModuleMetadata != nullptr &&
         VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 0)
     {
         if (pMD->GetModule() == m_pModule)
@@ -1421,7 +1421,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
     // TODO: Lookup in auxiliary EntryPoints module's MethodDefEntryPoints and InstanceMethodEntryPoints
 #endif // FEATURE_READYTORUN_AUXILIARY_MODULES
-
 
     if (offset == (uint)-1)
         goto done;

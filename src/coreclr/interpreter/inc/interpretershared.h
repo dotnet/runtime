@@ -112,10 +112,10 @@ struct InterpByteCodeStart
         int32_t index = Method->auxiliaryEntryOpcodeIndex;
         assert(index >= 0 && index < Method->codeSize - 1);
         int32_t* entry = const_cast<int32_t*>(GetByteCodes()) + index;
-        assert(entry[0] == INTOP_SAFEPOINT_TRY_ACTIVATE);
+        assert(entry[0] == INTOP_SAFEPOINT_AND_SKIP);
         entry[1] = static_cast<int32_t>(reinterpret_cast<uintptr_t>(activationFlag));
-        if (activationFlag == nullptr)
-            entry[0] = INTOP_SAFEPOINT_AND_SKIP;
+        if (activationFlag != nullptr)
+            entry[0] = INTOP_SAFEPOINT_TRY_ACTIVATE;
     }
 #endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 };

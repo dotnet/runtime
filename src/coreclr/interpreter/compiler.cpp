@@ -8933,8 +8933,8 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
 #ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
-    // For auxiliary modules, we use a variant that will attempt to activate the method as well as perform the safepoint
-    m_pEntrySafepointIns = AddIns(INTOP_SAFEPOINT_TRY_ACTIVATE);
+    // Reserve a second word so methods with an auxiliary activation flag can be patched before publication.
+    m_pEntrySafepointIns = AddIns(INTOP_SAFEPOINT_AND_SKIP);
     m_pEntrySafepointIns->data[0] = 0;
 #else
     AddIns(INTOP_SAFEPOINT);
