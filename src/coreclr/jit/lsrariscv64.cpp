@@ -527,16 +527,17 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 srcCount++;
                 RefPosition* use = BuildUse(comparand);
-                if (!useZacas)
+                if (useZacas)
                 {
-                    if (comparand->TypeIs(TYP_INT, TYP_UINT))
-                    {
-                        buildInternalIntRegisterDefForNode(tree); // temp reg for sign-extended comparand
-                    }
-                    else
-                    {
-                        setDelayFree(use);
-                    }
+                    tgtPrefUse = use;
+                }
+                else if (comparand->TypeIs(TYP_INT, TYP_UINT))
+                {
+                    buildInternalIntRegisterDefForNode(tree); // temp reg for sign-extended comparand
+                }
+                else
+                {
+                    setDelayFree(use);
                 }
             }
             else
