@@ -112,6 +112,19 @@ namespace Microsoft.Win32.SafeHandles
 
             protected internal override bool TryCompleteOperation(SafeHandle handle)
             {
+                try
+                {
+                    return TryCompleteOperationCore();
+                }
+                catch (Exception e) when (e is not ObjectDisposedException)
+                {
+                    Exception = e;
+                    return true;
+                }
+            }
+
+            private bool TryCompleteOperationCore()
+            {
                 long readResult;
                 Interop.ErrorInfo errorInfo;
 
@@ -302,6 +315,19 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             protected internal override bool TryCompleteOperation(SafeHandle handle)
+            {
+                try
+                {
+                    return TryCompleteOperationCore();
+                }
+                catch (Exception e) when (e is not ObjectDisposedException)
+                {
+                    Exception = e;
+                    return true;
+                }
+            }
+
+            private bool TryCompleteOperationCore()
             {
                 Interop.ErrorInfo errorInfo;
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,71 @@ namespace System.IO.Tests
     public class RandomAccess_NonSeekable_AsyncHandles : RandomAccess_NonSeekable
     {
         protected override bool AsyncHandles => true;
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(FileAccess.Read, false)]
+        [InlineData(FileAccess.Read, true)]
+        [InlineData(FileAccess.Write, false)]
+        [InlineData(FileAccess.Write, true)]
+        public async Task QueuedOperationReportsBufferException(FileAccess access, bool multipleBuffers)
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle,
+                asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                using ThrowingMemoryManager manager = new();
+                Memory<byte> memory = manager.Buffer;
+                byte[] buffer = new byte[access == FileAccess.Read ? 1 : 1024 * 1024];
+                Task first = access == FileAccess.Read
+                    ? RandomAccess.ReadAsync(readHandle, buffer, 0).AsTask()
+                    : RandomAccess.WriteAsync(writeHandle, buffer, 0).AsTask();
+                Assert.False(first.IsCompleted);
+
+                Task failing = access == FileAccess.Read
+                    ? multipleBuffers
+                        ? RandomAccess.ReadAsync(readHandle, new Memory<byte>[] { memory }, 0).AsTask()
+                        : RandomAccess.ReadAsync(readHandle, memory, 0).AsTask()
+                    : multipleBuffers
+                        ? RandomAccess.WriteAsync(writeHandle, new ReadOnlyMemory<byte>[] { memory }, 0).AsTask()
+                        : RandomAccess.WriteAsync(writeHandle, memory, 0).AsTask();
+                Assert.False(failing.IsCompleted);
+
+                if (access == FileAccess.Read)
+                {
+                    await RandomAccess.WriteAsync(writeHandle, new byte[] { 42 }, 0);
+                }
+                else
+                {
+                    int remaining = buffer.Length;
+                    while (remaining > 0)
+                    {
+                        int count = await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(0, remaining), 0).AsTask().WaitAsync(TimeSpan.FromSeconds(3));
+                        Assert.True(count > 0);
+                        remaining -= count;
+                    }
+                }
+
+                await first.WaitAsync(TimeSpan.FromSeconds(3));
+                await Assert.ThrowsAsync<InvalidOperationException>(() => failing.WaitAsync(TimeSpan.FromSeconds(3)));
+
+                Task<int> nextRead = RandomAccess.ReadAsync(readHandle, buffer.AsMemory(0, 1), 0).AsTask();
+                await RandomAccess.WriteAsync(writeHandle, new byte[] { 43 }, 0);
+                Assert.Equal(1, await nextRead.WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.Equal(43, buffer[0]);
+            }
+        }
+
+        private sealed class ThrowingMemoryManager : MemoryManager<byte>
+        {
+            public Memory<byte> Buffer => CreateMemory(1);
+            public override Span<byte> GetSpan() => throw new InvalidOperationException();
+            public override MemoryHandle Pin(int elementIndex = 0) => throw new InvalidOperationException();
+            public override void Unpin() { }
+            protected override void Dispose(bool disposing) { }
+        }
 
         [Fact]
         public async Task QueuedEmptyReadWaitsForData()
