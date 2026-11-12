@@ -97,7 +97,11 @@ namespace System.Diagnostics
             {
                 if (_environmentVariables == null)
                 {
+#if TARGET_WINDOWS
+                    IDictionary envVars = GetDefaultEnvironmentVariables();
+#else
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
+#endif
 
                     _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
                         envVars.Count,
@@ -370,7 +374,13 @@ namespace System.Diagnostics
         public string UserName
         {
             get => _userName ?? string.Empty;
-            set => _userName = value;
+            set
+            {
+                _userName = value;
+#if TARGET_WINDOWS
+                s_getUserEnvironmentVariables ??= static startInfo => startInfo.GetUserEnvironmentVariables();
+#endif
+            }
         }
 
         [DefaultValue("")]

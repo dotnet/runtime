@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
 using System.Security;
 using Microsoft.DotNet.RemoteExecutor;
@@ -68,6 +69,37 @@ namespace System.Diagnostics.Tests
                     SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
                 }
             }
+        }
+
+        [ConditionalFact(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("Requires admin privileges")]
+        public void Environment_UserNameSet_ReturnsEnvironmentOfThatUser()
+        {
+            using WindowsTestAccount account = new WindowsTestAccount("dEUNSREOTU");
+            string[] domainAndUserName = account.AccountName.Split('\\');
+
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                Domain = domainAndUserName[0],
+                UserName = domainAndUserName[1],
+                PasswordInClearText = account.Password
+            };
+
+            Assert.Equal(domainAndUserName[1], startInfo.Environment["USERNAME"]);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Environment_UserNameSet_InvalidCredentials_ThrowsWin32Exception()
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                UserName = "UserThatDoesNotExist",
+                PasswordInClearText = "password"
+            };
+
+            Assert.Throws<Win32Exception>(() => startInfo.Environment);
         }
 
         [ConditionalTheory(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
