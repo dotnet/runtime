@@ -37,6 +37,10 @@ To use the task in a project, reference the NuGet package, with the appropriate 
 </Target>
 ```
 
+## MonoRuntimeComponentManifestReadTask
+
+The SDK registers `MonoRuntimeComponentManifestReadTask` from `MonoTargetsTasks.dll`. The task reads `RuntimeComponentManifest.json` and supplies the item groups consumed by `RuntimeComponentManifest.targets`.
+
 ## ILStrip
 
 This is a task that removes the IL methods bodies from assemblies.  Useful in conjunction with AOT compilation.
