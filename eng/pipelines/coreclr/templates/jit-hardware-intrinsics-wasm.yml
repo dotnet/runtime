@@ -3,9 +3,9 @@ parameters:
     type: object
   - name: testBuildArgs
     type: string
-  - name: compositeBuildMode
-    type: boolean
-    default: false
+  - name: extraHelixArguments
+    type: string
+    default: ''
   - name: extraBuildArgs
     type: string
     default: ''
@@ -38,7 +38,7 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_R2R
             # The CoreCLR interpreter does not implement Wasm SIMD; ReadyToRun code does.
             readyToRun: true
-            compositeBuildMode: ${{ parameters.compositeBuildMode }}
+            extraHelixArguments: ${{ parameters.extraHelixArguments }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:

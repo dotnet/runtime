@@ -13,7 +13,7 @@ using Xunit;
 public sealed class PackedSimdTests
 {
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled), nameof(TestLibrary.PlatformDetection.IsNotWholeProgramComposite))]
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PackedSimd))]
     public static unsafe void PackedSimdIsSupported()
     {
@@ -1260,7 +1260,7 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled), nameof(TestLibrary.PlatformDetection.IsNotWholeProgramComposite))]
     public static unsafe void LoadStoreNullCheckTest()
     {
         if (!PackedSimd.IsSupported)

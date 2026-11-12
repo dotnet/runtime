@@ -37,5 +37,6 @@ extends:
         parameters:
           platforms:
             - wasi_wasm
-          compositeBuildMode: true
-          testBuildArgs: '-test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
+          # Compiles CoreLib into each test composite, so the tests can use relaxed SIMD.
+          extraHelixArguments: /p:WholeProgramCompositeBuildMode=true
+          testBuildArgs: '/p:PublishReadyToRunInstructionSet=relaxed-simd -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
