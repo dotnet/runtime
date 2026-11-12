@@ -16,9 +16,8 @@ Param(
   [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
-  [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
+  [ValidateSet("CoreCLR")][string][Alias('rf')]$runtimeFlavor,
   [ValidateSet("Debug","Release","Checked")][string][Alias('hc')]$hostConfiguration,
-  [switch]$usemonoruntime = $false,
   [switch]$ninja,
   [switch]$msbuild,
   [string]$cmakeargs,
@@ -53,12 +52,11 @@ function Get-Help() {
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   Write-Host "                                 compiled with optimizations enabled."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -runtimeFlavor (-rf)           Runtime flavor: CoreCLR or Mono."
+  Write-Host "  -runtimeFlavor (-rf)           Runtime flavor: CoreCLR."
   Write-Host "                                 [Default: CoreCLR]"
   Write-Host "  -subset (-s)                   Build a subset, print available subsets with -subset help."
   Write-Host "                                 '-subset' can be omitted if the subset is given as the first argument."
   Write-Host "                                 [Default: Builds the entire repo.]"
-  Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   Write-Host "  -clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
   Write-Host "  -dynamiccodecompiled           Enable or disable dynamic code compilation support. Accepts true or false."
   Write-Host "                                 Also enables the interpreter when dynamic code compilation is disabled."
@@ -97,7 +95,7 @@ function Get-Help() {
   Write-Host "Native build settings:"
   Write-Host "  -cmakeargs                User-settable additional arguments passed to CMake."
   Write-Host "  -ninja                    Use Ninja to drive the native build. (default)"
-  Write-Host "  -msbuild                  Use MSBuild to drive the native build. This is a no-op for Mono."
+  Write-Host "  -msbuild                  Use MSBuild to drive the native build."
   Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
   Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
   Write-Host "                            Sanitizers can be specified with a comma-separated list."
@@ -122,14 +120,8 @@ function Get-Help() {
   Write-Host "* Build Release libraries and their tests with a Checked runtime for Windows x64, and run the tests."
   Write-Host ".\build.cmd clr+libs+libs.tests -rc checked -lc release -test"
   Write-Host ""
-  Write-Host "* Build Mono runtime for Windows x64 on Release configuration."
-  Write-Host ".\build.cmd mono -c release"
-  Write-Host ""
   Write-Host "* Build Release coreclr corelib, crossgen corelib and update Debug libraries testhost to run test on an updated corelib."
   Write-Host ".\build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc release"
-  Write-Host ""
-  Write-Host "* Build Debug mono corelib and update Release libraries testhost to run test on an updated corelib."
-  Write-Host ".\build.cmd mono.corelib+libs.pretest -rc debug -c release"
   Write-Host ""
   Write-Host ""
   Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
@@ -253,17 +245,12 @@ if ($vs) {
   elseif (-Not (Test-Path $vs)) {
     $solution = $vs
 
-    if ($runtimeFlavor -eq "Mono") {
-      # Search for the solution in mono
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
-    } else {
-      # Search for the solution in coreclr
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
+    # Search for the solution in coreclr
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
 
-      # Also, search for the solution in coreclr\tools\aot
-      if (-Not (Test-Path $vs)) {
-        $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\tools\aot\$solution.slnx"
-      }
+    # Also, search for the solution in coreclr\tools\aot
+    if (-Not (Test-Path $vs)) {
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\tools\aot\$solution.slnx"
     }
 
     if (-Not (Test-Path $vs)) {
@@ -355,7 +342,6 @@ foreach ($argument in $PSBoundParameters.Keys)
   {
     "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
-    "usemonoruntime"         { $arguments += " /p:PrimaryRuntimeFlavor=Mono" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }

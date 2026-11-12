@@ -115,7 +115,6 @@ src/libraries/System.Text.Encodings.Web/src/System/Text/Unicode/UnicodeRanges.ge
 src/libraries/System.Text.Encodings.Web/tests/UnicodeRangesTests.generated.cs linguist-generated
 src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCaseEquivalences.Data.cs linguist-generated
 src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/Symbolic/UnicodeCategoryRanges.cs linguist-generated
-src/mono/mono/cil/opcode.def linguist-generated
 src/native/minipal/unicodedata.c linguist-generated
 src/tools/ilasm/src/ILAssembler/gen/CILLexer.cs linguist-generated
 src/tools/ilasm/src/ILAssembler/gen/CILParser.cs linguist-generated

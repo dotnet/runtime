@@ -1,3 +1,0 @@
-* This file is required so that the symbol is visibile and not GCed on AIX.
-dummy_test_export
-

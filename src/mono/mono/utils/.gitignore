@@ -1,9 +1,0 @@
-/.deps
-/.libs
-/*.la
-/*.lo
-/*.o
-/*.a
-/TAGS
-/mono-dtrace.h
-

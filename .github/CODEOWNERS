@@ -18,47 +18,9 @@
 /src/coreclr/tools/aot/ILCompiler.RyuJit @MichalStrehovsky
 /src/coreclr/tools/aot/ILCompiler.MetadataTransform @MichalStrehovsky
 
-# Mono Code Owners
+# Shared workload infrastructure owners
 
 /src/mono @steveisok @vitek-karas
-
-/src/mono/llvm @steveisok @vitek-karas
-
-/src/mono/mono/arch @steveisok @vitek-karas
-/src/mono/mono/eglib @steveisok @vitek-karas
-
-/src/mono/mono/metadata @thaystg @steveisok @vitek-karas
-/src/mono/mono/metadata/*-win* @lateralusX @steveisok
-/src/mono/mono/metadata/handle* @steveisok @vitek-karas
-/src/mono/mono/metadata/monitor* @brzvlad @steveisok @vitek-karas
-/src/mono/mono/metadata/sgen* @brzvlad @steveisok @vitek-karas
-/src/mono/mono/metadata/thread* @lateralusX @steveisok @vitek-karas
-/src/mono/mono/metadata/w32* @lateralusX @steveisok @vitek-karas
-
-/src/mono/mono/eventpipe @lateralusX @steveisok @vitek-karas
-
-/src/mono/mono/mini @steveisok @vitek-karas
-/src/mono/mono/mini/*cfgdump* @steveisok @vitek-karas
-/src/mono/mono/mini/*exceptions* @BrzVlad @steveisok @vitek-karas
-/src/mono/mono/mini/*llvm* @steveisok @vitek-karas
-/src/mono/mono/mini/*ppc* @steveisok @vitek-karas
-/src/mono/mono/mini/*profiler* @BrzVlad @steveisok @vitek-karas
-/src/mono/mono/mini/*riscv* @steveisok @vitek-karas
-/src/mono/mono/mini/*type-check* @steveisok @vitek-karas
-/src/mono/mono/mini/debugger-agent.c @thaystg @steveisok @vitek-karas
-/src/mono/mono/mini/interp/* @BrzVlad @kotlarmilos @steveisok @vitek-karas
-/src/mono/mono/mini/interp/*jiterp* @kg @steveisok @vitek-karas
-/src/mono/mono/mini/*simd* @steveisok @vitek-karas
-
-/src/mono/mono/profiler @BrzVlad @steveisok @vitek-karas
-/src/mono/mono/sgen @BrzVlad @steveisok @vitek-karas
-
-/src/mono/mono/utils @steveisok @vitek-karas
-/src/mono/mono/utils/*-win* @lateralusX @steveisok @vitek-karas
-/src/mono/mono/utils/atomic* @steveisok @vitek-karas
-/src/mono/mono/utils/mono-hwcap* @steveisok @vitek-karas
-/src/mono/mono/utils/mono-mem* @steveisok @vitek-karas
-/src/mono/mono/utils/mono-threads* @steveisok @vitek-karas
 
 /src/mono/dlls @thaystg @steveisok @vitek-karas
 

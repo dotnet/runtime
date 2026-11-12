@@ -1,4 +1,4 @@
-<Project InitialTargets="ValidateTargetOSLowercase">
+<Project InitialTargets="ValidateTargetOSLowercase;ValidateRuntimeFlavor">
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -94,6 +94,11 @@
   <Target Name="ValidateTargetOSLowercase"
           Condition="!$(TargetOS.Equals($(TargetOS.ToLower()), StringComparison.InvariantCulture))">
     <Error Text="The passed-in TargetOS property value '$(TargetOS)' must be lowercase." />
+  </Target>
+
+  <Target Name="ValidateRuntimeFlavor">
+    <Error Condition="'$(RuntimeFlavor)' != 'CoreCLR' or '$(PrimaryRuntimeFlavor)' != 'CoreCLR' or '$(UseMonoRuntime)' == 'true' or '$(DotNetBuildMonoCrossAOT)' == 'true' or '$(BuildMonoAOTCrossCompilerOnly)' == 'true'"
+           Text="Mono is not supported in .NET 12. Build with CoreCLR or NativeAOT instead." />
   </Target>
 
   <Target Name="ValidateReferenceAssemblyProjectTargetFramework"

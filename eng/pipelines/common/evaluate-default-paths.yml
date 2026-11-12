@@ -239,9 +239,6 @@ jobs:
       - src/libraries/System.Net.WebSockets.Client/*
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
-      - src/mono/mono/*
-      - src/mono/mono.proj
-      - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*

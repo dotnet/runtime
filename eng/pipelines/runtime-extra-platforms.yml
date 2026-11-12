@@ -101,12 +101,6 @@ extends:
           isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
-      # Add Linux Bionic jobs
-      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-linuxbionic.yml
-        parameters:
-          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-          isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}
-
       # Any jobs that are not specific to any platform
       - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
         - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-other.yml

@@ -9,10 +9,6 @@
          leg only, so we also take DotNetBuildSourceOnly into account. -->
     <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildSourceOnly)' != 'true'">true</BuildingAnOfficialBuildLeg>
     <RunILLinkInBuild Condition="'$(RunILLinkInBuild)' == '' and '$(BuildingAnOfficialBuildLeg)' == 'true'">true</RunILLinkInBuild>
-    <!-- When doing a source build, we want to build the various text-only manifests in
-         all cases, rather than ordinarily where we build them during mobile or wasm
-         build legs. This makes the manifests available on source-only builds. -->
-    <ForceBuildMobileManifests Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ForceBuildMobileManifests>
     <!-- Propagate the configuration and platform to project references. When building in VS, this defaults to true.
          Explicitly setting it to false ensures projects are built in the corresponding configuration both in VS and on the command line. -->
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
@@ -31,7 +27,6 @@
         - src/native/libs/build-native.sh
         - src/coreclr/tools/Common/Compiler/ObjectWriter/MachObjectWriter.cs
         - src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
-        - src/mono/mono/offsets/offsets-tool.py
         - src/mono/msbuild/apple/build/AppleBuild.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
@@ -110,14 +105,11 @@
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
-    <!-- The RuntimeConfiguration property allows to pass in/specify a configuration that applies to both CoreCLR and Mono. -->
+    <!-- The RuntimeConfiguration property specifies the CoreCLR configuration independently of the libraries. -->
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release')">$(Configuration)</RuntimeConfiguration>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Debug</RuntimeConfiguration>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
-    <!-- There's no checked configuration on Mono. -->
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
     <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
     <TasksConfiguration Condition="'$(TasksConfiguration)' == ''">$(Configuration)</TasksConfiguration>
@@ -179,12 +171,6 @@
     -->
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$(WasmtimeCacheDir)</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists('$(WasmtimeStampFile)')">true</InstallWasmtimeForTests>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
-    <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
-    <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
-    <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)RuntimeIdentifier.props" />
@@ -250,21 +236,10 @@
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
     <CoreLibRefDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'ref'))</CoreLibRefDir>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
-    <CoreLibProject Condition="'$(RuntimeFlavor)' == 'Mono'">$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <CoreLibProject Condition="'$(UseNativeAotCoreLib)' == 'true'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'nativeaot', 'System.Private.CoreLib', 'src', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <UriProject>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'System.Private.Uri', 'src', 'System.Private.Uri.csproj'))</UriProject>
 
-    <!-- this property is used by the SDK to pull in mono-based runtime packs -->
-    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">false</UseMonoRuntime>
-    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
-    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == 'true' and '$(TargetsMobile)' != 'true' and (
-        $(TargetFramework.EndsWith('-android')) or $(TargetFramework.EndsWith('-ios')) or
-        $(TargetFramework.EndsWith('-tvos')) or $(TargetFramework.EndsWith('-maccatalyst')))">false</UseMonoRuntime>
-
-    <!-- Multi-targeted libraries' mobile target frameworks (e.g. netXX.0-android/ios/tvos/maccatalyst) are restored with UseMonoRuntime=true in the browser/wasi legs or when CoreCLR is not supported.
-         As of .NET 11, the SDK raises NETSDK1242 when a mobile project targets the Mono runtime. These mobile target frameworks are only restored (never actually built)
-         in these legs, so disable the check to avoid the false-positive failure -->
-    <_DisableCheckForUnsupportedMonoMobileRuntime Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(CoreCLRSupported)' != 'true'">true</_DisableCheckForUnsupportedMonoMobileRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">false</UseMonoRuntime>
 
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
     <!-- TODO: Enable XUnitLogChecker for NativeAOT tests https://github.com/dotnet/runtime/issues/94722 -->
