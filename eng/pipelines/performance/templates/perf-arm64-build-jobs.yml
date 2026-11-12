@@ -2,7 +2,6 @@ parameters:
   coreclr: false
 
 jobs:
-
   - ${{ if eq(parameters.coreclr, true) }}:
     # build coreclr and libraries
     - template: /eng/pipelines/performance/templates/perf-coreclr-build-jobs.yml

@@ -73,6 +73,33 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
+          runtimeFlavor: coreclr
+          platforms:
+          - browser_wasm_win
+          jobParameters:
+            nameSuffix: Diagnostics_CoreCLR_Browser
+            buildArgs: -s clr+libs+packs.product -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnableThreads=false /p:DotNetBuildTests=false
+            timeoutInMinutes: 180
+            postBuildSteps:
+            - task: CopyFiles@2
+              displayName: Stage browser runtime packages
+              inputs:
+                SourceFolder: $(Build.SourcesDirectory)/artifacts
+                Contents: |
+                  packages/Release/Shipping/**
+                  packages/Release/NonShipping/**
+                TargetFolder: $(Build.ArtifactStagingDirectory)/DiagnosticsBrowser
+                CleanTargetFolder: true
+            - task: PublishPipelineArtifact@1
+              displayName: Publish browser runtime packages
+              inputs:
+                targetPath: $(Build.ArtifactStagingDirectory)/DiagnosticsBrowser
+                artifactName: BuildArtifacts_browser_wasm_windows_Release_SingleThreaded_BuildOnly
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
           platforms:
           - android_x64
           jobParameters:

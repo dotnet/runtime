@@ -100,9 +100,6 @@ extends:
       debian-13-gcc16-amd64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc16-amd64@sha256:5eaa8340536f459f23fafebe9ce872d06e4b164139ffc097567fc4ba9ed3a352
 
-      linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:32f317fa373693cec8e5cab62a0bc8d86766ecdf91d3a9320c24d58402e8430d
-
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-webassembly-amd64@sha256:3bf64909c31e1f05e00545239103185dfccc85e041313e5d422af06bb7d96635
         env:

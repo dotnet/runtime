@@ -444,11 +444,11 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT)
+inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodData *pSourceMTData, MethodTable *pSourceMT)
 {
     WRAPPER_NO_CONTRACT;
 
-    MethodDesc *pMD = hSourceMTData->GetImplMethodDesc(slotNumber);
+    MethodDesc *pMD = pSourceMTData->GetImplMethodDesc(slotNumber);
     _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot_NoThrow(slotNumber));
     SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot(NULL, NULL));
 }

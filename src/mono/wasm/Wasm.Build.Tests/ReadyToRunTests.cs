@@ -120,7 +120,6 @@ namespace Wasm.Build.Tests
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
             if (stripDebugInfo is not null)
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
-            extraBuildArgs.Add("-v:diag");
 
             (_, string binlogPath) = BuildProjectWithoutAssert(config, info.ProjectName,
                 new PublishOptions(ExtraMSBuildArgs: string.Join(" ", extraBuildArgs)));
@@ -365,6 +364,7 @@ namespace Wasm.Build.Tests
 
         // An unnormalized intermediate path (e.g. ArtifactsPath=$(MSBuildThisFileDirectory)../artifacts) leaves '..'
         // segments in OutputR2RImage. The stale-image prune must still recognize the freshly emitted images.
+        // A '//' link dir (no backslash, so MSBuild keeps it on Unix) makes globbed linked items differ in spelling.
         [Theory]
         [InlineData(Configuration.Release, /*composite*/ false)]
         [InlineData(Configuration.Release, /*composite*/ true)]
@@ -376,7 +376,8 @@ namespace Wasm.Build.Tests
                 : string.Empty;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, $"r2r_unnormalized{(composite ? "_composite" : "")}",
                 extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite><PublishTrimmed>true</PublishTrimmed>" +
-                    "<IntermediateOutputPath>$(MSBuildProjectDirectory)/obj/../obj/$(Configuration)/</IntermediateOutputPath>",
+                    "<IntermediateOutputPath>$(MSBuildProjectDirectory)/obj/..//obj/$(Configuration)/</IntermediateOutputPath>" +
+                    "<IntermediateLinkDir>$(IntermediateOutputPath)$(TargetFramework)/linked/</IntermediateLinkDir>",
                 extraItems: extraItems);
             BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite)));
 

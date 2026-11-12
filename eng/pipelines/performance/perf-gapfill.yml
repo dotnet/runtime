@@ -106,15 +106,6 @@ extends:
               viperMicroNoR2R:
                 enabled: false
                 configs: []
-            monoMicro:
-              enabled: false
-              configs: []
-            monoInterpreter:
-              enabled: false
-              configs: []
-            monoAot:
-              enabled: false
-              configs: []
             # Android toggles
             ${{ if eq(parameters.run_android_coreclr_jit, false) }}:
               androidCoreclrJit:

@@ -18,7 +18,7 @@
 #include "WasmCodeManager.h"
 #include "ExceptionHandling.h"
 
-// File-local WebAssembly exception tag used only by RhpCallCatchFunclet. Carries
+// File-local WebAssembly exception tag used only by RhpResumeAfterCatch. Carries
 // no payload; the resume IP is communicated via the JIT-managed resumeIP local.
 asm(".globl __nativeaot_wasm_restore_context_tag\n"
     ".tagtype __nativeaot_wasm_restore_context_tag\n"
@@ -221,42 +221,42 @@ FCIMPL0(void, RhpRethrow)
 }
 FCIMPLEND
 
-FCIMPL2(void, RhpCallFinallyFunclet, void* handlerIP, REGDISPLAY* pRegisterSet)
+FCIMPL4(void*, CallEHFunclet, Object* exception, void* handlerIP, REGDISPLAY* pRegisterSet, uintptr_t* pFuncletCallerSP)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
-    // We want to suppress GC between invocations of subsequent finallys. We do this because we
-    // cannot tolerate a GC after one finally has run (and possibly side-effected the GC state of the
-    // method) and then been popped off the stack, leaving behind no trace of its effect.
-    //
-    // So we clear the state before and set it after invocation of the handler.
+    // Clear the DoNotTriggerGc state before calling out to the managed funclet.
     pThread->ClearDoNotTriggerGc();
     uintptr_t handler = GetFuncletAddress(handlerIP);
-    // The parent FP gives the handler access to the parent method's locals.
-    CallFuncletWithoutThrowable(handler, pRegisterSet->GetFP(), callersStackPointer);
+    // The parent FP gives the handler access to the parent method's locals. The catch funclet's return value
+    // is ignored; the JIT-managed resumeIP local carries the continuation.
+    if (exception != nullptr)
+    {
+        CallFuncletWithThrowable(handler, pRegisterSet->GetFP(), exception, callersStackPointer, StackFrameIterator::FuncletInvokeThunkIP);
+    }
+    else
+    {
+        CallFuncletWithoutThrowable(handler, pRegisterSet->GetFP(), callersStackPointer);
+    }
+    // Suppress GC again until the dispatcher calls the next funclet or resumes after the catch.
     pThread->SetDoNotTriggerGc();
+    return nullptr;
 }
 FCIMPLEND
 
-FCIMPL3(FC_BOOL_RET, RhpCallFilterFunclet, Object* exception, void* filterIP, REGDISPLAY* pRegisterSet)
+FCIMPL4(int32_t, CallEHFilterFunclet, Object* exception, REGDISPLAY* pRegisterSet, void* filterIP, uintptr_t* pFuncletCallerSP)
 {
     uintptr_t filter = GetFuncletAddress(filterIP);
     // Pass the parent FP and exception object; return the result of the filter execution.
-    FC_RETURN_BOOL(CallFuncletWithThrowable(
-        filter, pRegisterSet->GetFP(), exception, callersStackPointer, StackFrameIterator::FilterFuncletInvokeThunkIP) != 0);
+    return (int32_t)CallFuncletWithThrowable(
+        filter, pRegisterSet->GetFP(), exception, callersStackPointer, StackFrameIterator::FilterFuncletInvokeThunkIP);
 }
 FCIMPLEND
 
-FCIMPL4(void*, RhpCallCatchFunclet, Object* exception, void* handlerIP, REGDISPLAY* pRegisterSet, ExInfo* pExInfo)
+FCIMPL2(void, RhpResumeAfterCatch, REGDISPLAY* pRegisterSet, void* pResumeIP)
 {
-    Thread* pThread = ThreadStore::GetCurrentThread();
-    // Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
-    pThread->ClearDoNotTriggerGc();
-    uintptr_t handler = GetFuncletAddress(handlerIP);
-    // Ignore the funclet's return value; the JIT-managed resumeIP local carries the continuation.
-    CallFuncletWithThrowable(handler, pRegisterSet->GetFP(), exception, callersStackPointer, StackFrameIterator::FuncletInvokeThunkIP);
-    // Pop the current ExInfo and any superseded records below the resume SP.
-    pThread->PopExInfo(pExInfo, pRegisterSet->GetSP());
+    // Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
+    ThreadStore::GetCurrentThread()->ClearDoNotTriggerGc();
     // Resuming managed code at a catch continuation is done by throwing a native exception tag.
     ThrowRestoreContextTag();
     __builtin_unreachable();
