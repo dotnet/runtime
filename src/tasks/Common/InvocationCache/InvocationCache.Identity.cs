@@ -46,20 +46,20 @@ internal sealed partial class InvocationCache
         foreach (string value in invocation.Context)
             writer.Write(value);
         writer.Write(invocation.Outputs.DirectoryPath is not null);
-        if (invocation.Outputs.DirectoryPath is { } outputDirectoryIdentity)
-            writer.Write(outputDirectoryIdentity);
+        if (invocation.Outputs.DirectoryPath is not null)
+            writer.Write(invocation.Outputs.DirectoryPath);
         writer.Write(invocation.Outputs.Files.Length);
-        foreach (string identity in invocation.Outputs.Files)
-            writer.Write(identity);
+        foreach (string output in invocation.Outputs.Files)
+            writer.Write(output);
         writer.Write(invocation.Inputs.Files.Length);
-        foreach (string identity in invocation.Inputs.Files)
+        foreach (string input in invocation.Inputs.Files)
         {
-            writer.Write(identity);
+            writer.Write(input);
             try
             {
-                using FileStream file = File.OpenRead(invocation.ResolvePath(identity));
+                using FileStream stream = File.OpenRead(invocation.ResolvePath(input));
                 writer.Write(true);
-                writer.Write(sha256.ComputeHash(file));
+                writer.Write(sha256.ComputeHash(stream));
             }
             catch (FileNotFoundException)
             {
