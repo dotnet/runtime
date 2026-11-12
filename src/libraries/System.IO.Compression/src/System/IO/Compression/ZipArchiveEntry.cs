@@ -25,9 +25,8 @@ namespace System.IO.Compression
         private BitFlagValues _generalPurposeBitFlag;
         private ZipCompressionMethod _storedCompressionMethod;
         private DateTimeOffset _lastModified;
-        // The LastWriteTime baked into this entry's on-disk ZipCrypto ciphertext, captured from the
-        // central directory. Used to validate/decrypt the existing ciphertext and to detect LastWriteTime
-        // changes made without re-encrypting.
+        // Original timestamp from the central directory, used to detect metadata changes
+        // and validate existing ZipCrypto ciphertext.
         private readonly DateTimeOffset _originalLastModified;
         private long _compressedSize;
         private long _uncompressedSize;
@@ -885,9 +884,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressionMethod..], compressionMethodToWrite);
 
             BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
-            // when using aes encryption, ae-2 standard dictates crc to be 0
-            uint crcToWrite = IsAesEncrypted ? 0 : _crc32;
-            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.Crc32..], crcToWrite);
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.Crc32..], Crc32ToWrite);
             BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
             BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.UncompressedSize..], uncompressedSizeTruncated);
             BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.FilenameLength..], (ushort)_storedEntryNameBytes.Length);
@@ -1084,6 +1081,9 @@ namespace System.IO.Compression
         }
 
         private bool IsAesEncrypted => EncryptionMethod is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256;
+
+        // AE-1 retains the CRC; AE-2 requires zero (WinZip AES specification, "CRC value").
+        private uint Crc32ToWrite => IsAesEncrypted && _aeVersion is not 1 ? 0 : _crc32;
 
         private static int GetAesKeySizeBits(ZipEncryptionMethod encryption)
         {
@@ -1419,9 +1419,13 @@ namespace System.IO.Compression
         /// </summary>
         private WinZipAesExtraField CreateAesExtraField()
         {
+            // Preserve the AES version when reusing ciphertext so local and central metadata stay consistent.
+            // AE-1 to AE-2 conversion needs no re-encryption, but requires updating both AES extra fields
+            // and zeroing CRCs in both headers and any data descriptor. Preserving AE-1 avoids those patches.
+            // See https://www.winzip.com/en/support/aes-encryption/#CRC.
             return new WinZipAesExtraField
             {
-                VendorVersion = 2,
+                VendorVersion = _aeVersion ?? 2,
                 AesStrength = Encryption switch
                 {
                     ZipEncryptionMethod.Aes128 => (byte)1,
@@ -1639,6 +1643,8 @@ namespace System.IO.Compression
                 }
                 else if (IsAesEncrypted)
                 {
+                    // Generating new ciphertext always uses AE-2; copying existing ciphertext bypasses this branch.
+                    _aeVersion = 2;
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
                     if (!_archive.ArchiveStream.CanSeek)
                     {
@@ -1660,7 +1666,8 @@ namespace System.IO.Compression
                 else
                 {
 
-                    if (ShouldUseZIP64
+                    // Copied descriptors use Zip64 only for large sizes; large offsets are recorded centrally.
+                    if ((preserveDataDescriptor ? AreSizesTooLarge : ShouldUseZIP64)
 #if DEBUG_FORCE_ZIP64
                 || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
 #endif
@@ -1707,13 +1714,7 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
-            crc32ToWrite = _crc32;
-
-            // For AE-2, CRC is always 0 in the local file header
-            if (IsAesEncrypted)
-            {
-                crc32ToWrite = 0;
-            }
+            crc32ToWrite = Crc32ToWrite;
 
             // If this is an existing, unchanged entry then silently skip forwards.
             // If it's new or changed, write the header.
@@ -1732,10 +1733,14 @@ namespace System.IO.Compression
             {
                 if (preserveDataDescriptor)
                 {
-                    compressedSizeTruncated = 0;
-                    uncompressedSizeTruncated = 0;
+                    if (zip64ExtraField is null)
+                    {
+                        compressedSizeTruncated = 0;
+                        uncompressedSizeTruncated = 0;
+                    }
 
-                    // zero the CRC/sizes since the real values live in the trailing descriptor that remains on disk.
+                    // The descriptor carries the final CRC and sizes. Retain the size selectors
+                    // when Zip64 extra fields are present (APPNOTE 4.5.3).
                     crc32ToWrite = 0;
 
                     if (zip64ExtraField is not null)
@@ -1925,8 +1930,7 @@ namespace System.IO.Compression
                     }
 
                     // For unchanged entries, we need to write the header correctly but avoid
-                    // WriteLocalFileHeader creating NEW encryption structures (which would have
-                    // wrong compression method from _compressionLevel).
+                    // WriteLocalFileHeader creating new encryption structures.
                     // The original AES extra field is preserved in _lhUnknownExtraFields.
                     BitFlagValues savedFlags = _generalPurposeBitFlag;
                     ZipEncryptionMethod savedEncryption = Encryption;
@@ -1934,34 +1938,17 @@ namespace System.IO.Compression
 
                     try
                     {
-                        // For AES entries: set CompressionMethod to Aes so header writes method 99,
-                        // but clear _encryptionMethod so WriteLocalFileHeader doesn't create a new
-                        // AES extra field (the original one in _lhUnknownExtraFields will be used).
+                        // For AES entries: set CompressionMethod to Aes so the header writes method 99.
                         if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
                         {
                             CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
-                            Encryption = ZipEncryptionMethod.None;
                         }
+                        // Clear Encryption so WriteLocalFileHeader doesn't create new encryption structures.
+                        // The original encryption flags are preserved when copying the existing ciphertext.
+                        Encryption = ZipEncryptionMethod.None;
 
-                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true);
-
-                        // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
-                        // (because Encryption was temporarily set to None and the stream is seekable).
-                        // If the original entry had a data descriptor, patch the general-purpose bit
-                        // flags in the already-written local header to match, so the header on disk
-                        // is consistent with the data descriptor we conditionally write below.
-                        if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
-                            (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
-                        {
-                            long currentPos = _archive.ArchiveStream.Position;
-                            _archive.ArchiveStream.Seek(
-                                _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
-                                SeekOrigin.Begin);
-                            Span<byte> flagBytes = stackalloc byte[2];
-                            BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
-                            _archive.ArchiveStream.Write(flagBytes);
-                            _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
-                        }
+                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true,
+                            preserveDataDescriptor: (savedFlags & BitFlagValues.DataDescriptor) != 0);
                     }
                     finally
                     {
@@ -1993,11 +1980,15 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
-                    // Preserve the data descriptor flag for entries that originally had one,
-                    // since the descriptor bytes remain on disk after the compressed data.
-                    bool preserveDataDescriptor = _originallyInArchive
-                        && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
-                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor);
+                    if (_originallyInArchive)
+                    {
+                        Debug.Assert(!forceWrite);
+                        WriteVersionAndLastModifiedInLocalHeader();
+                    }
+                    else
+                    {
+                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
+                    }
 
                     // Advance the stream past the compressed data and any trailing data descriptor
                     // by seeking to the pre-computed end-of-entry boundary.
@@ -2006,6 +1997,35 @@ namespace System.IO.Compression
                         _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                     }
                 }
+            }
+        }
+
+        private bool PrepareToWriteVersionAndLastModifiedInLocalHeader(Span<byte> buffer)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)_versionToExtract);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer[sizeof(ushort)..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
+            _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.VersionNeededToExtract, SeekOrigin.Begin);
+
+            return _lastModified.DateTime != _originalLastModified.DateTime;
+        }
+
+        // Writes version-needed and, if changed, the timestamp for an existing entry whose data stays in place.
+        // With data left in place, preserve the local header layout (APPNOTE 4.3.7),
+        // including Zip64 extra fields and the flags describing existing ciphertext.
+        private void WriteVersionAndLastModifiedInLocalHeader()
+        {
+            if (Changes == ZipArchive.ChangeState.Unchanged)
+            {
+                return;
+            }
+
+            Span<byte> buffer = stackalloc byte[sizeof(ushort) + sizeof(uint)];
+            bool lastModifiedChanged = PrepareToWriteVersionAndLastModifiedInLocalHeader(buffer);
+            _archive.ArchiveStream.Write(buffer[..sizeof(ushort)]);
+            if (lastModifiedChanged)
+            {
+                _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.LastModified, SeekOrigin.Begin);
+                _archive.ArchiveStream.Write(buffer[sizeof(ushort)..]);
             }
         }
 
@@ -2103,9 +2123,7 @@ namespace System.IO.Compression
                 int relativeCrc32Location = ZipLocalFileHeader.FieldLocations.Crc32 - ZipLocalFileHeader.FieldLocations.Crc32;
                 int relativeCompressedSizeLocation = ZipLocalFileHeader.FieldLocations.CompressedSize - ZipLocalFileHeader.FieldLocations.Crc32;
                 int relativeUncompressedSizeLocation = ZipLocalFileHeader.FieldLocations.UncompressedSize - ZipLocalFileHeader.FieldLocations.Crc32;
-                // when using aes encryption, ae-2 standard dictates crc to be 0
-                uint crcToWrite = IsAesEncrypted ? 0 : _crc32;
-                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCrc32Location..], crcToWrite);
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCrc32Location..], Crc32ToWrite);
                 BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCompressedSizeLocation..], compressedSizeTruncated);
                 BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeUncompressedSizeLocation..], uncompressedSizeTruncated);
             }
@@ -2132,9 +2150,7 @@ namespace System.IO.Compression
             int relativeCrc32Location = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32 - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
             int relativeCompressedSizeLocation = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.CompressedSize - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
             int relativeUncompressedSizeLocation = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
-            // when using aes encryption, ae-2 standard dictates crc to be 0
-            uint crcToWrite = IsAesEncrypted ? 0 : _crc32;
-            BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer.Slice(relativeCrc32Location), crcToWrite);
+            BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer.Slice(relativeCrc32Location), Crc32ToWrite);
             BinaryPrimitives.WriteInt64LittleEndian(writeBuffer.Slice(relativeCompressedSizeLocation), _compressedSize);
             BinaryPrimitives.WriteInt64LittleEndian(writeBuffer.Slice(relativeUncompressedSizeLocation), _uncompressedSize);
 
@@ -2159,9 +2175,7 @@ namespace System.IO.Compression
             int bytesToWrite;
 
             ZipLocalFileHeader.DataDescriptorSignatureConstantBytes.CopyTo(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Signature..]);
-            // when using aes encryption, ae-2 standard dictates crc to be 0
-            uint crcToWrite = IsAesEncrypted ? 0 : _crc32;
-            BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Crc32..], crcToWrite);
+            BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Crc32..], Crc32ToWrite);
 
             if (AreSizesTooLarge)
             {

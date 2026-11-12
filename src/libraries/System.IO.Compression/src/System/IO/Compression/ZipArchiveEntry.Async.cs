@@ -887,8 +887,7 @@ public partial class ZipArchiveEntry
                 }
 
                 // For unchanged entries, we need to write the header correctly but avoid
-                // WriteLocalFileHeaderAsync creating NEW encryption structures (which would have
-                // wrong compression method from _compressionLevel).
+                // WriteLocalFileHeaderAsync creating new encryption structures.
                 // The original AES extra field is preserved in _lhUnknownExtraFields.
                 BitFlagValues savedFlags = _generalPurposeBitFlag;
                 ZipEncryptionMethod savedEncryption = Encryption;
@@ -896,34 +895,17 @@ public partial class ZipArchiveEntry
 
                 try
                 {
-                    // For AES entries: set CompressionMethod to Aes so header writes method 99,
-                    // but clear _encryptionMethod so WriteLocalFileHeaderAsync doesn't create a new
-                    // AES extra field (the original one in _lhUnknownExtraFields will be used).
+                    // For AES entries: set CompressionMethod to Aes so the header writes method 99.
                     if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
                     {
                         CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
-                        Encryption = ZipEncryptionMethod.None;
                     }
+                    // Clear Encryption so WriteLocalFileHeaderAsync doesn't create new encryption structures.
+                    // The original encryption flags are preserved when copying the existing ciphertext.
+                    Encryption = ZipEncryptionMethod.None;
 
-                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
-
-                    // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
-                    // (because Encryption was temporarily set to None and the stream is seekable).
-                    // If the original entry had a data descriptor, patch the general-purpose bit
-                    // flags in the already-written local header to match, so the header on disk
-                    // is consistent with the data descriptor we conditionally write below.
-                    if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
-                        (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
-                    {
-                        long currentPos = _archive.ArchiveStream.Position;
-                        _archive.ArchiveStream.Seek(
-                            _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
-                            SeekOrigin.Begin);
-                        byte[] flagBytes = new byte[2];
-                        BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
-                        await _archive.ArchiveStream.WriteAsync(flagBytes, cancellationToken).ConfigureAwait(false);
-                        _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
-                    }
+                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true,
+                        preserveDataDescriptor: (savedFlags & BitFlagValues.DataDescriptor) != 0, cancellationToken).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -955,11 +937,15 @@ public partial class ZipArchiveEntry
             if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
             {
                 _everOpenedForWrite = true;
-                // Preserve the data descriptor flag for entries that originally had one,
-                // since the descriptor bytes remain on disk after the compressed data.
-                bool preserveDataDescriptor = _originallyInArchive
-                    && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor, cancellationToken).ConfigureAwait(false);
+                if (_originallyInArchive)
+                {
+                    Debug.Assert(!forceWrite);
+                    await WriteVersionAndLastModifiedInLocalHeaderAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+                }
 
                 // Advance the stream past the compressed data and any trailing data descriptor
                 // by seeking to the pre-computed end-of-entry boundary.
@@ -968,6 +954,26 @@ public partial class ZipArchiveEntry
                     _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                 }
             }
+        }
+    }
+
+    // Writes version-needed and, if changed, the timestamp for an existing entry whose data stays in place.
+    // With data left in place, preserve the local header layout (APPNOTE 4.3.7),
+    // including Zip64 extra fields and the flags describing existing ciphertext.
+    private async Task WriteVersionAndLastModifiedInLocalHeaderAsync(CancellationToken cancellationToken)
+    {
+        if (Changes == ZipArchive.ChangeState.Unchanged)
+        {
+            return;
+        }
+
+        byte[] buffer = new byte[sizeof(ushort) + sizeof(uint)];
+        bool lastModifiedChanged = PrepareToWriteVersionAndLastModifiedInLocalHeader(buffer);
+        await _archive.ArchiveStream.WriteAsync(buffer.AsMemory(0, sizeof(ushort)), cancellationToken).ConfigureAwait(false);
+        if (lastModifiedChanged)
+        {
+            _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.LastModified, SeekOrigin.Begin);
+            await _archive.ArchiveStream.WriteAsync(buffer.AsMemory(sizeof(ushort)), cancellationToken).ConfigureAwait(false);
         }
     }
 
