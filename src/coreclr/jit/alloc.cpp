@@ -146,4 +146,51 @@ void __cdecl operator delete[](void* ptr) noexcept
     free(ptr);
 }
 
+// Code linked into the JIT also uses the nothrow and sized forms: the PAL allocates its per-thread data and
+// synchronization state with new (std::nothrow), at any time including thread exit, and frees it with delete.
+// Override these forms as well so that every allocation and deallocation in the JIT pairs malloc with free.
+// Otherwise the nothrow forms come from the C++ runtime library, and in a host that replaces the global
+// operator new they resolve to the host's allocator while the deletes above call free(). They do not assert:
+// these allocations are made by the PAL outside of compilation, not by the JIT.
+
+void* __cdecl operator new(std::size_t size, const std::nothrow_t&) noexcept
+{
+    if (size == 0)
+    {
+        size++;
+    }
+
+    return malloc(size);
+}
+
+void* __cdecl operator new[](std::size_t size, const std::nothrow_t&) noexcept
+{
+    if (size == 0)
+    {
+        size++;
+    }
+
+    return malloc(size);
+}
+
+void __cdecl operator delete(void* ptr, const std::nothrow_t&) noexcept
+{
+    free(ptr);
+}
+
+void __cdecl operator delete[](void* ptr, const std::nothrow_t&) noexcept
+{
+    free(ptr);
+}
+
+void __cdecl operator delete(void* ptr, std::size_t) noexcept
+{
+    free(ptr);
+}
+
+void __cdecl operator delete[](void* ptr, std::size_t) noexcept
+{
+    free(ptr);
+}
+
 #endif
