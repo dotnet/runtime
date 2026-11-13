@@ -106,7 +106,8 @@
     <PropertyGroup>
       <_SharedFrameworkTrimFlavorSuffix Condition="'$(SharedFrameworkTrimFlavor)' != ''">-$(SharedFrameworkTrimFlavor)</_SharedFrameworkTrimFlavorSuffix>
       <SharedFrameworkAssembliesTrimDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'illink-$(TargetArchitecture)$(_SharedFrameworkTrimFlavorSuffix)'))</SharedFrameworkAssembliesTrimDir>
-      <SharedFrameworkAssembliesTrimMarkerFile>$(SharedFrameworkAssembliesTrimDir)linker-marker.txt</SharedFrameworkAssembliesTrimMarkerFile>
+      <_SharedFrameworkTrimRootModeSuffix Condition="'$(SharedFrameworkTrimRootMode)' != ''">-$(SharedFrameworkTrimRootMode)</_SharedFrameworkTrimRootModeSuffix>
+      <SharedFrameworkAssembliesTrimMarkerFile>$(SharedFrameworkAssembliesTrimDir)linker-marker$(_SharedFrameworkTrimRootModeSuffix).txt</SharedFrameworkAssembliesTrimMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -134,13 +135,14 @@
     <PropertyGroup>
       <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
       <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes "@(SharedFrameworkSuppressionsXml, '" --link-attributes "')"</SharedFrameworkILLinkArgs>
-      <SharedFrameworkILLinkNoWarn Condition="'$(EventSourceSupport)' == 'false'">IL2121</SharedFrameworkILLinkNoWarn>
+      <SharedFrameworkILLinkNoWarn Condition="'$(SharedFrameworkTrimFlavor)' != ''">IL2121</SharedFrameworkILLinkNoWarn>
     </PropertyGroup>
 
     <ItemGroup>
       <SharedFrameworkAssembly RootMode="library" />
       <_SharedFrameworkRootAssemblyName Include="@(SharedFrameworkAssembly->'%(Filename)')">
-        <RootMode>library</RootMode>
+        <RootMode Condition="'$(SharedFrameworkTrimRootMode)' == ''">library</RootMode>
+        <RootMode Condition="'$(SharedFrameworkTrimRootMode)' != ''">$(SharedFrameworkTrimRootMode)</RootMode>
       </_SharedFrameworkRootAssemblyName>
     </ItemGroup>
 

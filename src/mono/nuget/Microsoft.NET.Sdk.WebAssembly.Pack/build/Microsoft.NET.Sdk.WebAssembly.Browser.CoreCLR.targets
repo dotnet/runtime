@@ -72,13 +72,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCoreClrSelectedManagedFlavorDir>$([MSBuild]::NormalizeDirectory('$(_WasmCoreClrNativeFlavorRoot)', '$(_WasmCoreClrNativeFlavor)', 'managed'))</_WasmCoreClrSelectedManagedFlavorDir>
     </PropertyGroup>
 
-    <Error Condition="'$(WasmBuildNative)' != 'true' and
-                      (!Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm') or
-                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js') or
-                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols'))"
-           Text="The CoreCLR browser native flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its complete dotnet.native.wasm, dotnet.native.js, and dotnet.native.js.symbols asset set. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
-    <Error Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true' and !Exists('$(_WasmCoreClrSelectedManagedFlavorDir)System.Private.CoreLib.dll')"
-           Text="The CoreCLR browser managed flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its managed framework closure." />
   </Target>
 
   <Target Name="_WasmCoreClrConfigureManagedFlavor"
@@ -93,6 +86,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrSelectManagedFlavor"
           DependsOnTargets="_WasmCoreClrConfigureManagedFlavor"
           BeforeTargets="_ComputeWasmBuildCandidates">
+    <Error Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true' and !Exists('$(_WasmCoreClrSelectedManagedFlavorDir)System.Private.CoreLib.dll')"
+           Text="The CoreCLR browser managed flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its managed framework closure." />
     <ItemGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true'">
       <_WasmCoreClrManagedFlavorAssembly Include="$(_WasmCoreClrSelectedManagedFlavorDir)*.dll" />
       <_WasmCoreClrManagedFlavorAssemblyName Include="@(_WasmCoreClrManagedFlavorAssembly->';%(FileName)%(Extension);')" />
@@ -114,6 +109,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrSelectNativeFlavor"
           DependsOnTargets="_WasmCoreClrResolveNativeFlavor"
           BeforeTargets="_ComputeWasmBuildCandidates;_HandleFileConflictsForPublish;ProcessPublishFilesForWasm">
+    <Error Condition="'$(WasmBuildNative)' != 'true' and
+                      (!Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols'))"
+           Text="The CoreCLR browser native flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its complete dotnet.native.wasm, dotnet.native.js, and dotnet.native.js.symbols asset set. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
     <ItemGroup Condition="'$(WasmBuildNative)' != 'true'">
       <WasmNativeAsset Remove="@(WasmNativeAsset)"
                        Condition="'%(FileName)%(Extension)' == 'dotnet.native.wasm' or
