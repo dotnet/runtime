@@ -38,7 +38,6 @@ The managed mechanism for calling into native code must also support the special
 
 The CLR provides a [`mscorlib` binder](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/binder.cpp) internally, providing a mapping between unmanaged types and fields to managed types and fields. The binder will look up and load classes and allows the calling of managed methods. It also performs simple verification to ensure the correctness of any layout information specified in both managed and native code. The binder ensures that the managed class attempting to load exists in mscorlib, has been loaded, and the field offsets are correct. It also needs the ability to differentiate between method overloads with different signatures.
 
-
 # Calling from managed to native code
 
 Two techniques exist for calling into the CLR from managed code. FCall allows you to call directly into the CLR code, and provides a lot of flexibility in terms of manipulating objects, though it is easy to cause GC holes by not tracking object references correctly. QCall also allows you to call into the CLR via the P/Invoke, but is much harder to accidentally mis-use. FCalls are identified in managed code as extern methods with the [`MethodImplOptions.InternalCall`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.methodimploptions) bit set. QCalls are marked `static extern` methods similar to regular P/Invokes, but are directed toward a library called `"QCall"`.
