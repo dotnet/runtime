@@ -13,9 +13,13 @@
 // Can trash volatile FP/SIMD registers.
 // Only for functions whose CFA is sp-based (no fp frame): the x0/lr save adjusts the CFA offset.
 .macro INLINE_GETTHREAD target
+    // The caller may have saved lr already, so restore its unwind rules instead of resetting
+    // them to the state at function entry.
+    .cfi_remember_state
     PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
     EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
+    .cfi_restore_state
 .endm
 
 // Target cannot be x0 or x2. Preserves x0-x2, which the allocation helpers keep live across it.
