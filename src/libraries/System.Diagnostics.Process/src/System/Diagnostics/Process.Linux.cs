@@ -135,7 +135,8 @@ namespace System.Diagnostics
                     // recycled. This only detects an exit that has already been observed (such as for a child process),
                     // so it is just a cheap shortcut: PopulateThreads validates the identity of the process (its PID and
                     // start time) itself, which is what guards against reading the threads of a different process.
-                    if (_haveProcessId && !GetHasExited(refresh: false))
+                    // Without a wait state holder no exit can have been observed, so don't allocate one just for this check.
+                    if (_haveProcessId && (_waitStateHolder == null || !GetHasExited(refresh: false)))
                     {
                         ProcessManager.PopulateThreads(processInfo.ProcPid, processInfo);
                     }
