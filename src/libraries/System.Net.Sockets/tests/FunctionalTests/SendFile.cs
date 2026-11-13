@@ -399,13 +399,13 @@ namespace System.Net.Sockets.Tests
         public SendFile_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
     public sealed class SendFile_Task : SendFile<SocketHelperTask>
     {
         public SendFile_Task(ITestOutputHelper output) : base(output) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
     public sealed class SendFile_CancellableTask : SendFile<SocketHelperCancellableTask>
     {
         public SendFile_CancellableTask(ITestOutputHelper output) : base(output) { }
@@ -465,7 +465,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
     public sealed class SendFile_Apm : SendFile<SocketHelperApm>
     {
         public SendFile_Apm(ITestOutputHelper output) : base(output) { }
@@ -553,13 +553,13 @@ namespace System.Net.Sockets.Tests
         public SendFile_NonParallel_ArraySync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
     public sealed class SendFile_NonParallel_Task : SendFile_NonParallel<SocketHelperTask>
     {
         public SendFile_NonParallel_Task(ITestOutputHelper output) : base(output) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
     public sealed class SendFile_NonParallel_Apm : SendFile_NonParallel<SocketHelperApm>
     {
         public SendFile_NonParallel_Apm(ITestOutputHelper output) : base(output) { }
