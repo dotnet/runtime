@@ -888,6 +888,17 @@ int LinearScan::BuildRMWUses(
     {
         delayUseOperand = nullptr;
     }
+
+#ifdef TARGET_AMD64
+    if ((delayUseOperand != nullptr) && node->OperIs(GT_SUB) && !varTypeIsFloating(node) && !op2->isContained() &&
+        m_compiler->GetEmitter()->DoJitUseApxNDD(INS_sub) && op1->OperIs(GT_LCL_VAR) && isCandidateLocalRef(op1) &&
+        !op1->AsLclVar()->IsLastUse(0))
+    {
+        // NDD reads op2 before writing dst. Not when op1 dies: dst should reuse op1's register (legacy sub).
+        delayUseOperand = nullptr;
+    }
+#endif // TARGET_AMD64
+
     if (delayUseOperand != nullptr)
     {
         assert(!prefOp1 || delayUseOperand != op1);
