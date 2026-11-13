@@ -94,7 +94,7 @@ ep_event_init (
 	instance->event_version = event_version;
 	instance->level = level;
 	instance->need_stack = need_stack;
-	instance->enabled_mask = 0;
+	ep_event_set_enabled_mask (instance, 0);
 	instance->metadata_written_mask = 0;
 
 	if (metadata != NULL) {
@@ -123,8 +123,18 @@ ep_event_fini (EventPipeEvent *ep_event)
 {
 	ep_return_void_if_nok (ep_event != NULL);
 
+	// Static event addresses remain visible to enabled checks, including on an initialization failure.
+	ep_event_set_enabled_mask (ep_event, 0);
 	ep_rt_byte_array_free (ep_event->metadata);
-	memset (ep_event, 0, sizeof (*ep_event));
+	ep_event->keywords = 0;
+	ep_event->metadata_written_mask = 0;
+	ep_event->metadata = NULL;
+	ep_event->provider = NULL;
+	ep_event->event_id = 0;
+	ep_event->event_version = 0;
+	ep_event->metadata_len = 0;
+	ep_event->level = EP_EVENT_LEVEL_LOGALWAYS;
+	ep_event->need_stack = false;
 }
 
 void

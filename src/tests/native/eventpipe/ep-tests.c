@@ -97,6 +97,33 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+static EventPipeEvent *publication_event;
+static uint64_t publication_session_mask;
+static bool publication_observed;
+static bool publication_valid;
+static uint32_t publication_disabled_stores;
+
+static void
+observe_event_publication (volatile int64_t *ptr, int64_t value)
+{
+	if (ptr != ep_event_get_enabled_mask_ref (publication_event))
+		return;
+	if (value == 0)
+		publication_disabled_stores++;
+	if ((value & publication_session_mask) == 0)
+		return;
+
+	publication_observed = true;
+	publication_valid = publication_valid &&
+		ep_event_get_provider (publication_event) != NULL &&
+		ep_event_get_event_id (publication_event) == 101 &&
+		ep_event_get_event_version (publication_event) == UINT8_MAX &&
+		ep_event_get_keywords (publication_event) == 1 &&
+		ep_event_get_metadata (publication_event) != NULL &&
+		ep_event_get_metadata_len (publication_event) > 0 &&
+		!ep_event_was_metadata_written (publication_event, publication_session_mask);
+}
+
 static RESULT
 test_static_event_table (void)
 {
@@ -132,12 +159,31 @@ test_static_event_table (void)
 			NULL, 1, &configs [0], 1, EP_SESSION_TYPE_LISTENER,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 		ep_raise_error_if_nok (sessions [0] != 0);
+		sessions [1] = ep_init_session (
+			NULL, 1, &configs [1], 1, EP_SESSION_TYPE_LISTENER,
+			EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+		ep_raise_error_if_nok (sessions [1] != 0);
+		uint64_t mask0 = ep_session_get_mask ((EventPipeSession *)(uintptr_t)sessions [0]);
+		uint64_t mask1 = ep_session_get_mask ((EventPipeSession *)(uintptr_t)sessions [1]);
+		publication_event = &events [0];
+		publication_session_mask = mask0;
+		publication_observed = false;
+		publication_valid = true;
+		publication_disabled_stores = 0;
+		ep_rt_test_before_store_int64 = observe_event_publication;
 		ep_start_session (sessions [0]);
 		if (create_while_enabled) {
 			provider = ep_create_provider_with_events (TEST_PROVIDER_NAME, NULL, NULL, &table);
 			ep_raise_error_if_nok (provider != NULL);
 		}
 
+		test_location = 31;
+		ep_raise_error_if_nok (publication_observed && publication_valid);
+		test_location = 32;
+		ep_raise_error_if_nok (ep_rt_volatile_load_int64_t (ep_event_get_enabled_mask_cref (&events [0])) == (int64_t)mask0);
+		ep_raise_error_if_nok (!ep_event_is_enabled (&events [1]));
+		test_location = 33;
+		ep_raise_error_if_nok (publication_disabled_stores != 0);
 		test_location = 3;
 		for (uint32_t i = 0; i < ARRAY_SIZE (events); ++i) {
 			ep_raise_error_if_nok (ep_event_get_provider (&events [i]) == provider);
@@ -166,13 +212,7 @@ test_static_event_table (void)
 		ep_raise_error_if_nok (instance != NULL && ep_event_instance_get_ep_event (instance) == &events [0]);
 
 		test_location = 5;
-		sessions [1] = ep_init_session (
-			NULL, 1, &configs [1], 1, EP_SESSION_TYPE_LISTENER,
-			EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
-		ep_raise_error_if_nok (sessions [1] != 0);
 		ep_start_session (sessions [1]);
-		uint64_t mask0 = ep_session_get_mask ((EventPipeSession *)(uintptr_t)sessions [0]);
-		uint64_t mask1 = ep_session_get_mask ((EventPipeSession *)(uintptr_t)sessions [1]);
 		test_location = 6;
 		ep_raise_error_if_nok (ep_event_is_enabled_by_mask (&events [0], mask0));
 		ep_raise_error_if_nok (!ep_event_is_enabled_by_mask (&events [0], mask1));
@@ -189,10 +229,28 @@ test_static_event_table (void)
 		ep_raise_error_if_nok ((ep_rt_volatile_load_int64_t (ep_event_get_metadata_written_mask_cref (&events [0])) & mask0) == 0);
 
 		test_location = 9;
+		// Model an old writer completing its metadata update after disable cleared the bit.
+		ep_event_update_metadata_written_mask (&events [0], mask0, true);
+		sessions [0] = ep_init_session (
+			NULL, 1, &configs [0], 1, EP_SESSION_TYPE_LISTENER,
+			EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+		ep_raise_error_if_nok (sessions [0] != 0);
+		ep_raise_error_if_nok (ep_session_get_mask ((EventPipeSession *)(uintptr_t)sessions [0]) == mask0);
+		publication_observed = false;
+		publication_valid = true;
+		ep_start_session (sessions [0]);
+		ep_raise_error_if_nok (publication_observed && publication_valid);
+		ep_raise_error_if_nok (!ep_event_was_metadata_written (&events [0], mask0));
+		ep_disable (sessions [0]);
+		sessions [0] = 0;
+
+		test_location = 10;
 		ep_disable (sessions [1]);
 		sessions [1] = 0;
+		uint32_t disabled_stores_before_free = publication_disabled_stores;
 		ep_delete_provider (provider);
 		provider = NULL;
+		ep_raise_error_if_nok (publication_disabled_stores == disabled_stores_before_free + 1);
 		for (uint32_t i = 0; i < ARRAY_SIZE (events); ++i) {
 			ep_raise_error_if_nok (ep_event_get_provider (&events [i]) == NULL);
 			ep_raise_error_if_nok (ep_event_get_metadata (&events [i]) == NULL);
@@ -201,6 +259,7 @@ test_static_event_table (void)
 	}
 
 ep_on_exit:
+	ep_rt_test_before_store_int64 = NULL;
 	for (uint32_t i = 0; i < ARRAY_SIZE (sessions); ++i)
 		ep_disable (sessions [i]);
 	ep_delete_provider (provider);

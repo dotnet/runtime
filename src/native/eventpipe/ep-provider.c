@@ -185,12 +185,14 @@ provider_refresh_event_state (
 	EP_ASSERT (config != NULL);
 
 	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event);
-	ep_event_set_enabled_mask (ep_event, enable_mask);
 
 	// If session_mask is not zero, that session is being enabled/disabled.
 	// We need to unset the metadata_written_mask for this session.
 	if (session_mask != 0)
 		ep_event_update_metadata_written_mask (ep_event, session_mask, false);
+
+	// Publish prepared fields and the metadata reset to lock-free enabled checks.
+	ep_event_set_enabled_mask (ep_event, enable_mask);
 
 	ep_requires_lock_held ();
 	return;
@@ -215,7 +217,7 @@ provider_compute_event_enable_mask (
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
-		if (session == NULL)
+		if (session == NULL || !ep_provider_is_enabled_by_mask (provider, ep_session_get_mask (session)))
 			continue;
 
 		EventPipeSessionProvider *session_provider = config_get_session_provider (config, session, provider);

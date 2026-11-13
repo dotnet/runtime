@@ -69,7 +69,6 @@ struct _EventPipeEvent {
 
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint64_t, keywords)
 EP_DEFINE_GETTER_REF(EventPipeEvent *, event, volatile int64_t *, enabled_mask)
-EP_DEFINE_SETTER(EventPipeEvent *, event, int64_t, enabled_mask)
 EP_DEFINE_GETTER_REF(EventPipeEvent *, event, volatile int64_t *, metadata_written_mask)
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint8_t *, metadata)
 EP_DEFINE_GETTER(EventPipeEvent *, event, EventPipeProvider *, provider)
@@ -78,6 +77,16 @@ EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, event_version)
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, metadata_len)
 EP_DEFINE_GETTER(EventPipeEvent *, event, EventPipeEventLevel, level)
 EP_DEFINE_GETTER(EventPipeEvent *, event, bool, need_stack)
+
+static
+inline
+void
+ep_event_set_enabled_mask (
+	EventPipeEvent *ep_event,
+	int64_t enabled_mask)
+{
+	ep_rt_volatile_store_int64_t (ep_event_get_enabled_mask_ref (ep_event), enabled_mask);
+}
 
 static
 inline
