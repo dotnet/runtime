@@ -1805,7 +1805,26 @@ private:
     static void  LockAbortRequest(Thread *pThread);
     static void  UnlockAbortRequest(Thread *pThread);
 
-    typedef Holder<Thread*, Thread::LockAbortRequest, Thread::UnlockAbortRequest> AbortRequestLockHolder;
+    struct AbortRequestLockHolderTraits final
+    {
+        using Type = Thread*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                Thread::UnlockAbortRequest(value);
+        }
+    };
+
+    using AbortRequestLockHolder = LifetimeHolder<AbortRequestLockHolderTraits>;
+
+    AbortRequestLockHolder TakeAbortRequestLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        LockAbortRequest(this);
+        return AbortRequestLockHolder(this);
+    }
 
     static void AcquireAbortControl(Thread *pThread)
     {
@@ -1820,7 +1839,26 @@ private:
         InterlockedDecrement (&pThread->m_AbortController);
     }
 
-    typedef Holder<Thread*, Thread::AcquireAbortControl, Thread::ReleaseAbortControl> AbortControlHolder;
+    struct AbortControlHolderTraits final
+    {
+        using Type = Thread*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                Thread::ReleaseAbortControl(value);
+        }
+    };
+
+    using AbortControlHolder = LifetimeHolder<AbortControlHolderTraits>;
+
+    AbortControlHolder TakeAbortControl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        AcquireAbortControl(this);
+        return AbortControlHolder(this);
+    }
 
 public:
 #ifdef _DEBUG
