@@ -136,6 +136,8 @@ namespace ILCompiler
             new("--wasm-debug-info") { CustomParser = MakeWasmDebugInfo, DefaultValueFactory = MakeWasmDebugInfo, Description = SR.WasmDebugInfoOption, HelpName = "formats" };
         public Option<bool> DisableDeferredWasmCalls { get; } =
             new("--disable-deferred-wasm-calls") { Description = SR.DisableDeferredWasmCallsOption };
+        public Option<bool> AuxiliaryModules { get; } =
+            new("--auxiliary-modules") { Description = SR.AuxiliaryModulesOption };
         public Option<string[]> CrossModuleInlining { get; } =
             new("--opt-cross-module") { Description = SR.CrossModuleInlining };
         public Option<bool> AsyncMethodOptimization { get; } =
@@ -190,6 +192,7 @@ namespace ILCompiler
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
             Options.Add(DisableDeferredWasmCalls);
+            Options.Add(AuxiliaryModules);
             Options.Add(EnableCachedInterfaceDispatchSupport);
             Options.Add(GenerateUnboxingStubs);
             Options.Add(TypeValidation);

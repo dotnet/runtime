@@ -22,6 +22,34 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static void AssertPrimaryOnlyAuxiliaryMetadata(ReadyToRunReader reader)
+    {
+        const int RuntimeFunctionEntrySize = sizeof(uint) * 2;
+
+        Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.AuxiliaryModuleMetadata));
+        ReadyToRunSection metadataSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.AuxiliaryModuleMetadata];
+        Assert.Equal(sizeof(uint) * 6, metadataSection.Size);
+
+        ReadOnlySpan<byte> image = reader.CompositeReader.GetEntireImage().AsSpan();
+        int metadataOffset = reader.CompositeReader.GetOffset(metadataSection.RelativeVirtualAddress);
+        int offset = metadataOffset;
+        Assert.Equal(0u, ReadUInt32(image, ref offset));
+        Assert.Equal(0u, ReadUInt32(image, ref offset));
+        Assert.Equal(0u, ReadUInt32(image, ref offset));
+        Assert.Equal(1u, ReadUInt32(image, ref offset));
+
+        Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.RuntimeFunctions));
+        ReadyToRunSection runtimeFunctionsSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        Assert.Equal(0, runtimeFunctionsSection.Size % RuntimeFunctionEntrySize);
+        Assert.Equal(
+            checked((uint)(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize)),
+            ReadUInt32(image, ref offset));
+        Assert.Equal(0u, ReadUInt32(image, ref offset));
+        Assert.Equal(metadataSection.Size, offset - metadataOffset);
+    }
+
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
     {
         ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
@@ -143,6 +171,13 @@ internal static class WasmR2RAssert
         Assert.Equal(payloadSize, payloadLength);
         Assert.Equal(0, offset % WebCilObjectWriter.WebcilSectionAlignment);
         Assert.Equal((long)end, offset + (long)payloadLength);
+    }
+
+    private static uint ReadUInt32(ReadOnlySpan<byte> image, ref int offset)
+    {
+        uint value = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset, sizeof(uint)));
+        offset += sizeof(uint);
+        return value;
     }
 
     private static void AssertGlobalGetOffset(
