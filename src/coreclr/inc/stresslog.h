@@ -382,8 +382,6 @@ inline void* StressLog::ConvertArgument(int64_t arg)
 }
 #endif
 
-typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, 0, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
-
 #if defined(DACCESS_COMPILE)
 inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 {
