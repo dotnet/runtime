@@ -455,6 +455,46 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => p.Start());
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UseShellExecute_EnvironmentReadButNotModified_DoesNotThrowInvalidOperationException()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                FileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".exe")
+            };
+
+            Assert.NotEmpty(psi.Environment);
+            Assert.NotEmpty(psi.EnvironmentVariables);
+
+            // Validation passes, so the failure comes from ShellExecuteEx not finding the file.
+            Assert.Throws<Win32Exception>(() => Process.Start(psi));
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("set")]
+        [InlineData("remove")]
+        [InlineData("clear")]
+        public void UseShellExecute_EnvironmentModified_ThrowsInvalidOperationException(string modification)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                FileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".exe")
+            };
+
+            switch (modification)
+            {
+                case "set": psi.Environment["NewVariable"] = "value"; break;
+                case "remove": Assert.True(psi.Environment.Remove(psi.Environment.Keys.First())); break;
+                case "clear": psi.Environment.Clear(); break;
+            }
+
+            Assert.Throws<InvalidOperationException>(() => Process.Start(psi));
+        }
+
         [Fact]
         public void TestArgumentsProperty()
         {

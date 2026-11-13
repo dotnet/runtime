@@ -5355,8 +5355,8 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
 
         AppDomain::AssemblyIterator assemblyIterator = pDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (assemblyIterator.Next(pAssembly.This()))
+        CollectibleAssemblyHolder pAssembly;
+        while (assemblyIterator.Next(&pAssembly))
         {
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
             {

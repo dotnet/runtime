@@ -43,13 +43,3 @@ jobs:
         ## Risk
 
         [High/Medium/Low. Justify the indication by mentioning how risks were measured and addressed.]
-
-        **IMPORTANT**: If this backport is for a servicing release, please verify that:
-
-        - For .NET 8 and .NET 9: The PR target branch is `release/X.0-staging`, not `release/X.0`.
-        - For .NET 10+: The PR target branch is `release/X.0` (no `-staging` suffix).
-
-        ## Package authoring no longer needed in .NET 9
-
-        **IMPORTANT**: Starting with .NET 9, you no longer need to edit a NuGet package's csproj to enable building and bump the version.
-        Keep in mind that we still need package authoring in .NET 8 and older versions.

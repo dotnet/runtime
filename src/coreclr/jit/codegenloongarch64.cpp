@@ -364,9 +364,9 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
  *
  *  Funclets have the following incoming arguments:
  *
- *     catch:          a0 = the exception object that was caught (see GT_CATCH_ARG)
- *     filter:         a0 = the exception object to filter (see GT_CATCH_ARG)
- *     finally/fault:  none
+ *      catch:          a0 = the exception object that was caught (see GT_CATCH_ARG)
+ *      filter:         a0 = the exception object to filter (see GT_CATCH_ARG)
+ *      finally/fault:  none
  *
  *  Funclets set the following registers on exit:
  *
@@ -374,62 +374,40 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
  *     filter:         a0 = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
  *     finally/fault:  none
  *
- *  The LoongArch64 funclet prolog is the following (Note: #framesz is total funclet frame size,
- *  including everything; #outsz is outgoing argument space. #framesz must be a multiple of 16):
+ *  The runtime calls funclets with FP set to the FP of the parent function, and the funclet does not change it.
+ *  Funclets access the locals of the parent function relative to FP. Funclets do not save the callee-saved
+ *  registers: the runtime preserves them around funclets that it calls, and the main function saves the ones used
+ *  by the funclets in its own prolog. Call-to-finally sites do not keep any values in registers across the call.
+ *  All temps are allocated in the parent frame, so the funclet frame only needs to hold RA and the outgoing
+ *  argument space.
  *
- *  Frame type liking:
- *     addi_d sp,sp,-#framesz    ; establish the frame, maybe multi-instruction.
- *     st.d s0,sp,#outsz         ; save callee-saved registers, as necessary
- *     st.d s1,sp,#outsz+8
- *     st.d ra,sp,#outsz+?
- *     st.d fp,sp,#outsz+?
+ *  The funclet prolog sequence is (Note: #outsz is the outgoing argument space, aligned to 16):
  *
- *  The funclet frame layout:
+ *     addi.d $sp, $sp, -16      ; allocate the RA save slot
+ *     st.d $ra, $sp, 8          ; save RA
+ *     addi.d $sp, $sp, -#outsz  ; create space for outgoing argument space, if any
+ *
+ *  The funclet frame is thus:
  *
  *      |                       |
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |  Varargs regs space   | // Only for varargs main functions; not used for LA64.
+ *      |   Saved RA, padding   | // 16 bytes
  *      |-----------------------|
- *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
- *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes, not including FP/RA
- *      |-----------------------|
- *      |      Saved FP, RA     | // 16 bytes
- *      |-----------------------|
- *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned
- *      |-----------------------|
- *      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
+ *      |   Outgoing arg space  | // multiple of 16 bytes (optional; if #outsz > 0)
  *      |-----------------------| <---- Ambient SP
  *      |       |               |
  *      ~       | Stack grows   ~
  *      |       | downward      |
  *              V
  *
+ *  The epilog sequence is then:
  *
- * The outgoing argument size, however, can be very large, if we call a function that takes a large number of
- * arguments (note that we currently use the same outgoing argument space size in the funclet as for the main
- * function, even if the funclet doesn't have any calls, or has a much smaller, or larger, maximum number of
- * outgoing arguments for any call).
- *
- * TODO-LoongArch64: the funclet's callee-saved registers should not shared with main function.
- *
- * Funclets do not have varargs arguments.
- *
- * Note that localloc cannot be used in a funclet.
- *
- *  An example epilog sequence is then:
- *
- *     addi.d sp,sp,#outsz          ; if any outgoing argument space
- *     ...                          ; restore callee-saved registers
- *     ld.d s0,sp,#xxx-8
- *     ld.d s1,sp,#xxx
- *     ld.d ra,sp,#xxx+?
- *     ld.d fp,sp,#xxx+?
- *     addi.d  sp,sp,#framesz
- *     jr  ra
- *
+ *     addi.d $sp, $sp, #outsz   ; if any outgoing argument space
+ *     ld.d $ra, $sp, 8
+ *     addi.d $sp, $sp, 16
+ *     jirl $zero, $ra, 0
  */
 // clang-format on
 
@@ -449,57 +427,15 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     m_compiler->unwindBegProlog();
 
-    bool isFilter  = block->CatchTypeIs(BBCT_FILTER);
-    int  frameSize = genFuncletInfo.fiSpDelta;
-    assert(frameSize < 0);
+    genStackPointerAdjustment(-STACK_ALIGN, REG_R21, nullptr, /* reportUnwindData */ true);
 
-    regMaskTP maskArgRegsLiveIn;
-    if (isFilter)
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, REGSIZE_BYTES);
+    m_compiler->unwindSaveReg(REG_RA, REGSIZE_BYTES);
+
+    if (genFuncletInfo.fiSpDelta > 0)
     {
-        maskArgRegsLiveIn = RBM_A0 | RBM_A1;
-    }
-    else if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
-    {
-        maskArgRegsLiveIn = RBM_NONE;
-    }
-    else
-    {
-        maskArgRegsLiveIn = RBM_A0;
-    }
-
-    regMaskTP maskSaveRegs = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
-    int       FP_offset    = genFuncletInfo.fiSP_to_CalleeSaved_delta;
-
-    if ((FP_offset + (genCountBits(maskSaveRegs) << 3)) <= (2040 - 16)) // no FP/RA.
-    {
-        genStackPointerAdjustment(frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
-
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-        m_compiler->unwindSaveReg(REG_FP, FP_offset);
-
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
-        m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
-
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
-    }
-    else
-    {
-        assert(frameSize < -2040);
-
-        genStackPointerAdjustment(frameSize + (FP_offset & -16), REG_R21, nullptr, true);
-
-        frameSize = -(FP_offset & -16);
-        FP_offset &= 0xf;
-
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-        m_compiler->unwindSaveReg(REG_FP, FP_offset);
-
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
-        m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
-
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
-
-        genStackPointerAdjustment(frameSize, REG_R21, nullptr, true);
+        genStackPointerAdjustment(-(int)genFuncletInfo.fiSpDelta, REG_R21, nullptr,
+                                  /* reportUnwindData */ true);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -509,8 +445,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 /*****************************************************************************
  *
  *  Generates code for an EH funclet epilog.
+ *
+ *  See the description of the funclet frame at genFuncletProlog().
  */
-
 void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
@@ -522,31 +459,16 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 
     m_compiler->unwindBegEpilog();
 
-    int frameSize = genFuncletInfo.fiSpDelta;
-    assert(frameSize < 0);
-
-    regMaskTP maskSaveRegs = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
-    int       FP_offset    = genFuncletInfo.fiSP_to_CalleeSaved_delta;
-
-    if ((FP_offset + (genCountBits(maskSaveRegs) << 3)) > (2040 - 16)) // no FP/RA.
+    if (genFuncletInfo.fiSpDelta > 0)
     {
-        assert(frameSize < -2040);
-
-        genStackPointerAdjustment(FP_offset & -16, REG_R21, nullptr, /* reportUnwindData */ true);
-
-        frameSize += FP_offset & -16;
-        FP_offset = FP_offset & 0xf;
+        genStackPointerAdjustment((int)genFuncletInfo.fiSpDelta, REG_R21, nullptr,
+                                  /* reportUnwindData */ true);
     }
 
-    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, REG_SPBASE, FP_offset + 16, /* reportUnwindData */ true);
+    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, REGSIZE_BYTES);
+    m_compiler->unwindSaveReg(REG_RA, REGSIZE_BYTES);
 
-    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
-    m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
-
-    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
-    m_compiler->unwindSaveReg(REG_FP, FP_offset);
-
-    genStackPointerAdjustment(-frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
+    genStackPointerAdjustment(STACK_ALIGN, REG_R21, nullptr, /* reportUnwindData */ true);
 
     GetEmitter()->emitIns_R_R_I(INS_jirl, emitActualTypeSize(TYP_I_IMPL), REG_R0, REG_RA, 0);
     m_compiler->unwindReturn(REG_RA);
@@ -558,12 +480,10 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
  *
  *  Capture the information used to generate the funclet prologs and epilogs.
  *  Note that all funclet prologs are identical, and all funclet epilogs are
- *  identical (per type: filters are identical, and non-filters are identical).
- *  Thus, we compute the data used for these just once.
+ *  identical. Thus, we compute the data used for these just once.
  *
  *  See genFuncletProlog() for more information about the prolog/epilog sequences.
  */
-
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
     if (!m_compiler->ehAnyFunclets())
@@ -575,41 +495,16 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     // The frame size and offsets must be finalized
     assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
 
-    regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
-    assert((rsMaskSaveRegs & RBM_RA) != 0);
-    assert((rsMaskSaveRegs & RBM_FP) != 0);
-
-    /* Now save it for future use */
-    int funcletFrameSize = m_compiler->lvaOutgoingArgSpaceSize;
-
-    genFuncletInfo.fiSP_to_CalleeSaved_delta = funcletFrameSize;
-
-    funcletFrameSize += genCountBits(rsMaskSaveRegs) * REGSIZE_BYTES;
-
-    int delta_PSP = -TARGET_POINTER_SIZE;
-    if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-
-    funcletFrameSize = funcletFrameSize - delta_PSP;
-    funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
-
-    genFuncletInfo.fiSpDelta  = -funcletFrameSize;
-    genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
+    assert(m_compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
+    genFuncletInfo.fiSpDelta = roundUp(m_compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("\n");
         printf("Funclet prolog / epilog info\n");
-        printf("                        Save regs: ");
-        dspRegMask(genFuncletInfo.fiSaveRegs);
-        printf("\n");
-        printf("  SP to CalleeSaved location delta: %d\n", genFuncletInfo.fiSP_to_CalleeSaved_delta);
-        printf("                       SP delta: %d\n", genFuncletInfo.fiSpDelta);
+        printf("              Outgoing arg space: %u\n", genFuncletInfo.fiSpDelta);
     }
-    assert(genFuncletInfo.fiSP_to_CalleeSaved_delta >= 0);
 #endif // DEBUG
 }
 

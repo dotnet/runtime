@@ -31,7 +31,7 @@ namespace System.Runtime.Caching
             _ref = ((((uint)pageIndex) << PAGE_SHIFT) | (((uint)(entryIndex)) & ENTRY_MASK));
         }
 
-        public override bool Equals(object value) => value is ExpiresEntryRef other && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? value) => value is ExpiresEntryRef other && Equals(other);
 
         public bool Equals(ExpiresEntryRef other) => _ref == other._ref;
 
@@ -58,7 +58,7 @@ namespace System.Runtime.Caching
         internal int _cFree;
 
         [FieldOffset(8)]
-        internal MemoryCacheEntry _cacheEntry;
+        internal MemoryCacheEntry? _cacheEntry;
     }
 
     internal struct ExpiresPage
@@ -90,7 +90,7 @@ namespace System.Runtime.Caching
         private readonly CacheExpires _cacheExpires;
         private readonly byte _bucket;
 
-        private ExpiresPage[] _pages;
+        private ExpiresPage[] _pages = [];
 
         private int _cEntriesInUse;
         private int _cPagesInUse;
@@ -119,7 +119,7 @@ namespace System.Runtime.Caching
             Debug.Assert(_cEntriesInUse == 0, "_cEntriesInUse == 0");
             Debug.Assert(_cEntriesInFlush == 0, "_cEntriesInFlush == 0");
 
-            _pages = null;
+            _pages = [];
             _minEntriesInUse = -1;
             _freePageList._head = -1;
             _freePageList._tail = -1;
@@ -310,7 +310,7 @@ namespace System.Runtime.Caching
             AddToListHead(pageIndex, ref _freePageList);
 
             Debug.Assert((_pages[(pageIndex)]._entries) != null, "EntriesI(pageIndex) != null");
-            (_pages[(pageIndex)]._entries) = null;
+            (_pages[(pageIndex)]._entries) = null!;
 
             _cPagesInUse--;
             if (_cPagesInUse == 0)
@@ -374,7 +374,7 @@ namespace System.Runtime.Caching
             if (_freePageList._head == -1)
             {
                 int oldLength;
-                if (_pages == null)
+                if (_pages.Length == 0)
                 {
                     oldLength = 0;
                 }
@@ -480,14 +480,13 @@ namespace System.Runtime.Caching
 
                 for (int i = 1; i < entries.Length; i++)
                 {
-                    if (entries[i]._cacheEntry == null)
+                    MemoryCacheEntry? cacheEntry = entries[i]._cacheEntry;
+                    if (cacheEntry == null)
                         continue;
 
                     Debug.Assert(_freeEntryList._head != _freeEntryList._tail, "_freeEntryList._head != _freeEntryList._tail");
                     ExpiresEntryRef newRef = GetFreeExpiresEntry();
                     Debug.Assert(newRef.PageIndex != _freeEntryList._tail, "newRef.PageIndex != _freeEntryList._tail");
-
-                    MemoryCacheEntry cacheEntry = entries[i]._cacheEntry;
 
                     cacheEntry.ExpiresEntryRef = newRef;
 
@@ -613,7 +612,7 @@ namespace System.Runtime.Caching
 
             ExpiresEntry[] entries;
             int entryIndex;
-            MemoryCacheEntry cacheEntry;
+            MemoryCacheEntry? cacheEntry;
             int flushed = 0;
 
             try
@@ -706,8 +705,11 @@ namespace System.Runtime.Caching
 
                 cacheEntry = entries[entryIndex]._cacheEntry;
                 entries[entryIndex]._cacheEntry = null;
-                Debug.Assert(cacheEntry.ExpiresEntryRef.IsInvalid, "cacheEntry.ExpiresEntryRef.IsInvalid");
-                cacheStore.Remove(cacheEntry, cacheEntry, CacheEntryRemovedReason.Expired);
+                if (cacheEntry != null)
+                {
+                    Debug.Assert(cacheEntry.ExpiresEntryRef.IsInvalid, "cacheEntry.ExpiresEntryRef.IsInvalid");
+                    cacheStore.Remove(cacheEntry, cacheEntry, CacheEntryRemovedReason.Expired);
+                }
 
                 current = next;
             }
@@ -766,7 +768,7 @@ namespace System.Runtime.Caching
 
         private readonly MemoryCacheStore _cacheStore;
         private readonly ExpiresBucket[] _buckets;
-        private GCHandleRef<Timer> _timerHandleRef;
+        private GCHandleRef<Timer>? _timerHandleRef;
         private DateTime _utcLastFlush;
         private int _inFlush;
 
@@ -830,7 +832,7 @@ namespace System.Runtime.Caching
             return FlushExpiredItems(true, useInsertBlock);
         }
 
-        private void TimerCallback(object state)
+        private void TimerCallback(object? state)
         {
             FlushExpiredItems(false, false);
         }
@@ -870,7 +872,7 @@ namespace System.Runtime.Caching
             }
             else
             {
-                GCHandleRef<Timer> timerHandleRef = _timerHandleRef;
+                GCHandleRef<Timer>? timerHandleRef = _timerHandleRef;
                 if (timerHandleRef != null && Interlocked.CompareExchange(ref _timerHandleRef, null, timerHandleRef) == timerHandleRef)
                 {
                     timerHandleRef.Dispose();
