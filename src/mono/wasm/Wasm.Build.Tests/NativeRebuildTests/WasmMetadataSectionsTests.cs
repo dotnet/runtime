@@ -81,6 +81,22 @@ namespace Wasm.Build.NativeRebuild.Tests
             Assert.NotEmpty(buildId!);
         }
 
+        [Theory]
+        [InlineData(Configuration.Release)]
+        public void NativeWasm_Relink_MissingRuntimePackProducersSource_Succeeds(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_relink_missing_producers");
+            string missingSource = Path.Combine(_projectDir, "missing-dotnet-producers.s");
+            PublishProject(info, config,
+                new PublishOptions(
+                    AssertAppBundle: false,
+                    ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmBuildNative=true -p:_WasmProducersSourcePath=\"{missingSource}\""),
+                isNativeBuild: true);
+
+            string wasm = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), "dotnet.native");
+            Assert.Null(ReadCustomSection(wasm, "producers"));
+        }
+
         [TestCategory("no-workload")]
         [ConditionalTheory(typeof(BuildTestBase), nameof(UseWebcil))]
         [InlineData(Configuration.Release)]

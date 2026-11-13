@@ -313,11 +313,9 @@
   <Target Name="_BrowserWasmWriteRspForLinking" BeforeTargets="_WasmWriteRspForLinking">
     <PropertyGroup>
       <WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
-      <_WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == 'true'">true</_WasmEmitProducersSection>
-      <_WasmProducersSourcePath>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s</_WasmProducersSourcePath>
+      <_WasmProducersSourcePath Condition="'$(_WasmProducersSourcePath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s</_WasmProducersSourcePath>
+      <_WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == 'true' and Exists('$(_WasmProducersSourcePath)')">true</_WasmEmitProducersSection>
     </PropertyGroup>
-    <Error Condition="'$(_WasmEmitProducersSection)' == 'true' and !Exists('$(_WasmProducersSourcePath)')"
-           Text="The browser runtime pack is missing '$(_WasmProducersSourcePath)'." />
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
       <!-- _EmccIncomingModuleJSAPI defaults (incl. wasmMemory when threads are enabled) come from wasm-props.json

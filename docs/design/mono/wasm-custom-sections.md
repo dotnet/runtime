@@ -27,8 +27,8 @@ language metadata.
 
 ## Native runtime links
 
-Each .NET 12+ Browser runtime pack contains a flavor-specific
-`runtimes/browser-wasm/native/dotnet-producers.s`. It contributes:
+Current .NET 12+ Browser runtime packs contain a flavor-specific
+`runtimes/browser-wasm/native/dotnet-producers.s`. When present, it contributes:
 
 - `processed-by=<Mono|CoreCLR>` with the runtime-pack version
 - `sdk=.NET` with the runtime-pack version
@@ -37,6 +37,10 @@ Application native relinks pass this assembly source to Emscripten. `wasm-ld` me
 with producer entries from other inputs, and `-sEMIT_PRODUCERS_SECTION=1` prevents Emscripten from
 stripping the merged section. `$(WasmEmitProducersSection)=false` disables the .NET runtime
 contribution.
+
+The source is optional when a newer WebAssembly SDK resolves an older runtime pack that predates
+it. Native relinking still succeeds in that version-skew scenario and retains the linker-generated
+build ID, but the final module has no `producers` section.
 
 Full repository builds link the prebuilt runtime before its pack exists. `WasmApp.InTree.targets`
 therefore generates an equivalent intermediate source; shipped workload targets consume only the
