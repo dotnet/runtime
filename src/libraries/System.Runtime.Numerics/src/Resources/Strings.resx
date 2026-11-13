@@ -78,6 +78,9 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="Arithmetic_ModInverseDoesNotExist" xml:space="preserve">
+    <value>The value and the modulus are not coprime, so no modular inverse exists.</value>
+  </data>
   <data name="Format_TooLarge" xml:space="preserve">
     <value>The value is too large to be represented by this format specifier.</value>
   </data>
