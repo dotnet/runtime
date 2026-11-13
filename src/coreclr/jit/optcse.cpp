@@ -791,6 +791,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdNextInBucket = optCSEhash[hval];
             optCSEhash[hval]         = hashDsc;
         }
+#ifdef DEBUG
+        else
+        {
+            JITDUMP("CSE budget exhausted: untracked occurrence [%06u] in " FMT_BB ", key %zx, cost %u, weight %f\n",
+                    dspTreeID(tree), compCurBB->bbNum, key, tree->GetCostEx(), compCurBB->getBBWeight(this));
+        }
+#endif
         return 0;
     }
     else // newCSE is true
@@ -801,10 +808,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
         if (optCSECandidateCount == MAX_CSE_CNT)
         {
+            Metrics.CseDeniedCount++;
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Exceeded the MAX_CSE_CNT, not using tree:\n");
+                printf("CSE budget exhausted: repeated occurrence [%06u] in " FMT_BB
+                       ", key %zx, cost %u, weight %f; no candidate slot:\n",
+                       dspTreeID(tree), compCurBB->bbNum, key, tree->GetCostEx(), compCurBB->getBBWeight(this));
                 gtDispTree(tree);
             }
 #endif // DEBUG
@@ -5919,6 +5929,14 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
         optValnumCSE_Availability();
         optValnumCSE_Heuristic(heuristic);
     }
+
+#ifdef DEBUG
+    if (optCSECandidateCount == MAX_CSE_CNT)
+    {
+        JITDUMP("CSE candidate budget: %u/%u slots; %d repeated occurrences denied a slot.\n", optCSECandidateCount,
+                MAX_CSE_CNT, Metrics.CseDeniedCount);
+    }
+#endif
 
     optValnumCSE_phase = false;
 
