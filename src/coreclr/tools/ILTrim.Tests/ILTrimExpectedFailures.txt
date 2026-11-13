@@ -269,6 +269,7 @@ Libraries.CanLinkPublicApisOfLibrary
 Libraries.CopyUsedAssemblyWithMainEntryRoot
 Libraries.CopyUsedAssemblyWithPublicRoots
 Libraries.DefaultLibraryLinkBehavior
+Libraries.LibraryModeFeatureSwitchConstants
 Libraries.LibraryWithUnresolvedInterfaces
 Libraries.RootAllLibraryBehavior
 Libraries.RootAllLibraryCopyBehavior

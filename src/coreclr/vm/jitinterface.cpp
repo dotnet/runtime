@@ -105,7 +105,7 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -113,7 +113,7 @@ FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -121,7 +121,7 @@ FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -9090,7 +9090,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);

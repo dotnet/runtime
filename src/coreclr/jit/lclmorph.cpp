@@ -1499,9 +1499,15 @@ private:
 
                 if (isSuitableLocal)
                 {
-                    m_compiler->lvaSetHiddenBufferStructArg(lclNum);
-                    callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                    defSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+                    // The return buffer may be wider than the local, e.g. if the address
+                    // of a promoted field was reinterpreted as a pointer to a larger struct.
+                    unsigned retSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+                    if (!m_compiler->IsWideAccess(lclNum, val.Offset(), ValueSize(retSize)))
+                    {
+                        m_compiler->lvaSetHiddenBufferStructArg(lclNum);
+                        callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                        defSize = retSize;
+                    }
                 }
             }
             else if (callUser->IsAsync())

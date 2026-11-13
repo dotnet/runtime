@@ -3067,7 +3067,7 @@ namespace __OptionValidationGeneratedAttributes
         public bool ParseLimitsInInvariantCulture { get; set; }
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
-                string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
+                string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessage is null && ErrorMessageResourceName is null && ErrorMessageResourceType is null ? GetValidationErrorMessage() : ErrorMessageString, name, Minimum, Maximum);
         public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
         {
             EnsureInitialized();

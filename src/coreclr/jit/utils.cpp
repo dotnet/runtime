@@ -1452,6 +1452,7 @@ void HelperCallProperties::init()
         bool mayRunCctor = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape  = false; // true if none of the GC ref arguments can escape
         bool isNoGC      = false; // true if the helper cannot trigger GC
+        bool nativeAotMayThrow = false; // true if the helper may throw on NativeAOT even when 'exceptions' is None
 
         switch (helper)
         {
@@ -1540,11 +1541,18 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
                 exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
+                break;
+
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
+                // NativeAOT compiles generic lookups it failed to build into helpers that throw when invoked.
+                nativeAotMayThrow = true;
                 break;
 
             // type casting helpers
@@ -1813,6 +1821,8 @@ void HelperCallProperties::init()
         m_mayRunCctor[helper]   = mayRunCctor;
         m_isNoEscape[helper]    = isNoEscape;
         m_isNoGC[helper]        = isNoGC;
+
+        m_nativeAotExceptions[helper] = nativeAotMayThrow ? ExceptionSetFlags::UnknownException : exceptions;
     }
 }
 
