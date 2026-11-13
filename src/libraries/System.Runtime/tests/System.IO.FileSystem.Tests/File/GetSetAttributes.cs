@@ -19,9 +19,9 @@ namespace System.IO.Tests
         }
 
         // Getting only throws for File, not FileInfo
-        [Theory,
-            InlineData(":bar"),
-            InlineData(":bar:$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData(":bar")]
+        [InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetAttributes_MissingAlternateDataStream_Windows(string streamName)
         {
