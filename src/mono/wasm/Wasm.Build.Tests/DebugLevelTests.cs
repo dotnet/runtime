@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,6 +26,57 @@ public class DebugLevelTests : WasmTemplateTestsBase
 
     private void AssertDebugLevel(IReadOnlyCollection<string> result, int value)
         => Assert.Contains(result, m => m.Contains($"WasmDebugLevel: {value}"));
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [TestCategory("coreclr"), TestCategory("no-workload")]
+    public async Task TrimmedPublishWithDebuggerSupport(bool debuggerSupport)
+    {
+        Configuration configuration = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "DebuggerSupport",
+            extraProperties: $"""
+                <DebuggerSupport>{debuggerSupport.ToString().ToLowerInvariant()}</DebuggerSupport>
+                <PublishTrimmed>true</PublishTrimmed>
+                <PublishReadyToRun>false</PublishReadyToRun>
+                <WasmBuildNative>false</WasmBuildNative>
+                """);
+        UpdateFile(Path.Combine("Common", "Program.cs"), """
+            // Licensed to the .NET Foundation under one or more agreements.
+            // The .NET Foundation licenses this file to you under the MIT license.
+
+            if (!System.AppContext.TryGetSwitch("System.Diagnostics.Debugger.IsSupported", out bool supported))
+                throw new System.InvalidOperationException("Debugger support switch is missing.");
+            System.Console.WriteLine($"TestOutput -> Debugger support: {supported}");
+            return 42;
+            """);
+        ReplaceMainJsWithMinimalRunMain();
+
+        PublishProject(info, configuration, isNativeBuild: false);
+
+        using (FileStream stream = File.OpenRead(Path.Combine(GetObjDir(configuration), "linked", "System.Private.CoreLib.dll")))
+        using (var reader = new PEReader(stream))
+        {
+            MetadataReader metadata = reader.GetMetadataReader();
+            string[] layoutTypes = metadata.TypeDefinitions
+                .Select(handle => metadata.GetTypeDefinition(handle))
+                .Where(type => !type.GetDeclaringType().IsNil &&
+                    metadata.GetString(metadata.GetTypeDefinition(type.GetDeclaringType()).Name) == "FunctionEvaluation")
+                .Select(type => metadata.GetString(type.Name))
+                .Where(name => name is "Context" or "NativeArgument")
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(debuggerSupport ? new[] { "Context", "NativeArgument" } : Array.Empty<string>(), layoutTypes);
+        }
+
+        RunResult result = await RunForPublishWithWebServer(
+            new BrowserRunOptions(configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+        Assert.Contains($"Debugger support: {debuggerSupport}", result.TestOutput);
+    }
 
     [Theory]
     [InlineData(Configuration.Debug)]
