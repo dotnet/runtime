@@ -286,12 +286,16 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            return source.TryGetSpan(out ReadOnlySpan<TSource> span) ?
+            // The loops return the accumulator rather than a TResult? so that the value merged here is a
+            // primitive and the nullable result is created once, without going through memory.
+            TAccumulator sum = source.TryGetSpan(out ReadOnlySpan<TSource> span) ?
                 Sum<TSource, TResult, TAccumulator>(span, selector) :
                 SumEnumerable<TSource, TResult, TAccumulator>(source, selector);
+
+            return TResult.CreateTruncating(sum);
         }
 
-        private static TResult? Sum<TSource, TResult, TAccumulator>(ReadOnlySpan<TSource> span, Func<TSource, TResult?> selector)
+        private static TAccumulator Sum<TSource, TResult, TAccumulator>(ReadOnlySpan<TSource> span, Func<TSource, TResult?> selector)
             where TResult : struct, INumber<TResult>
             where TAccumulator : struct, INumber<TAccumulator>
         {
@@ -304,10 +308,10 @@ namespace System.Linq
                 }
             }
 
-            return TResult.CreateTruncating(sum);
+            return sum;
         }
 
-        private static TResult? SumEnumerable<TSource, TResult, TAccumulator>(IEnumerable<TSource> source, Func<TSource, TResult?> selector)
+        private static TAccumulator SumEnumerable<TSource, TResult, TAccumulator>(IEnumerable<TSource> source, Func<TSource, TResult?> selector)
             where TResult : struct, INumber<TResult>
             where TAccumulator : struct, INumber<TAccumulator>
         {
@@ -320,7 +324,7 @@ namespace System.Linq
                 }
             }
 
-            return TResult.CreateTruncating(sum);
+            return sum;
         }
     }
 }
