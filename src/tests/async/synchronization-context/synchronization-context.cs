@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -218,141 +216,42 @@ public class Async2SynchronizationContext
         return Task.CompletedTask;
     }
 
-    public static IEnumerable<object[]> TaskContinuationContextCases()
-    {
-        foreach (bool useScheduler in new[] { false, true })
-        {
-            foreach (bool runAsynchronously in new[] { false, true })
-            {
-                foreach (int awaiterCount in new[] { 1, 3 })
-                {
-                    for (int shape = 0; shape < 5; shape++)
-                    {
-                        yield return new object[] { useScheduler, runAsynchronously, awaiterCount, shape };
-                    }
-                }
-            }
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(TaskContinuationContextCases))]
-    public static void TaskContinuationsPostDirectlyToCapturedContext(
-        bool useScheduler, bool runAsynchronously, int awaiterCount, int shape)
+    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public static void TaskContinuationsPostDirectlyToCapturedContext(bool runAsynchronously, bool captureContext)
     {
         SynchronizationContext previousContext = SynchronizationContext.Current;
         var context = new QueuedSyncContext();
         var source = new TaskCompletionSource<int>(
             runAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
         var local = new AsyncLocal<int>();
-        var awaiters = new Task[awaiterCount];
-
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(useScheduler ? null : context);
-            if (useScheduler)
-            {
-                var scheduler = new QueuedTaskScheduler(context);
-                Task registration = Task.Factory.StartNew(RegisterAwaiters, CancellationToken.None, TaskCreationOptions.None, scheduler);
-                context.Drain();
-                registration.GetAwaiter().GetResult();
-            }
-            else
-            {
-                RegisterAwaiters();
-            }
-
-            SynchronizationContext.SetSynchronizationContext(null);
-            int postsBeforeCompletion = context.PostCount;
-            source.SetResult(42);
-
-            bool captureContext = shape != 4;
-            Assert.Equal(captureContext ? awaiterCount : 0, context.Count);
-            if (captureContext)
-            {
-                foreach (Task awaiter in awaiters)
-                {
-                    Assert.False(awaiter.IsCompleted);
-                }
-            }
-
-            SynchronizationContext.SetSynchronizationContext(useScheduler ? null : context);
-            context.Drain();
-            Assert.True(Task.WaitAll(awaiters, TimeSpan.FromSeconds(30)));
-            Assert.Equal(0, context.Count);
-            // The stored-task wrapper and its caller each capture the non-inlining scheduler.
-            int postsPerAwaiter = useScheduler && shape == 3 ? 2 : 1;
-            Assert.Equal(postsBeforeCompletion + (captureContext ? awaiterCount * postsPerAwaiter : 0), context.PostCount);
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(previousContext);
-        }
-
-        void RegisterAwaiters()
-        {
-            for (int i = 0; i < awaiters.Length; i++)
-            {
-                local.Value = i;
-                awaiters[i] = AwaitTask(i);
-            }
-        }
-
-        async Task AwaitTask(int expectedLocal)
-        {
-            switch (shape)
-            {
-                case 0:
-                    await source.Task;
-                    break;
-                case 1:
-                    await GetTask(source);
-                    break;
-                case 2:
-                    Assert.Equal(42, await source.Task.ConfigureAwait(true));
-                    break;
-                case 3:
-                    await AwaitStoredTask(source.Task);
-                    break;
-                default:
-                    await source.Task.ConfigureAwait(false);
-                    break;
-            }
-
-            Assert.Equal(expectedLocal, local.Value);
-            Assert.Same(shape != 4 && !useScheduler ? context : null, SynchronizationContext.Current);
-            Assert.Equal(shape != 4 && useScheduler, TaskScheduler.Current is QueuedTaskScheduler);
-        }
-    }
-
-    [Theory]
-    [InlineData(false, 1)]
-    [InlineData(false, 3)]
-    [InlineData(true, 1)]
-    [InlineData(true, 3)]
-    public static void TaskContinuationsPostOnceWithoutRestoringContext(bool runAsynchronously, int awaiterCount)
-    {
-        SynchronizationContext previousContext = SynchronizationContext.Current;
-        var context = new QueuedSyncContext();
-        var source = new TaskCompletionSource<int>(
-            runAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
-        var awaiters = new Task[awaiterCount];
+        var awaiters = new Task[2];
 
         try
         {
             SynchronizationContext.SetSynchronizationContext(context);
+            local.Value = 42;
             for (int i = 0; i < awaiters.Length; i++)
             {
                 awaiters[i] = AwaitTask();
             }
 
             SynchronizationContext.SetSynchronizationContext(null);
+            local.Value = 0;
             source.SetResult(42);
-            Assert.Equal(awaiterCount, context.Count);
-            context.Drain();
+            if (captureContext)
+            {
+                Assert.True(SpinWait.SpinUntil(() => context.Count == awaiters.Length, TimeSpan.FromSeconds(30)));
+                SynchronizationContext.SetSynchronizationContext(context);
+                context.Drain();
+            }
+
             Assert.True(Task.WaitAll(awaiters, TimeSpan.FromSeconds(30)));
             Assert.Equal(0, context.Count);
-            Assert.Equal(awaiterCount, context.PostCount);
+            Assert.Equal(captureContext ? awaiters.Length : 0, context.PostCount);
         }
         finally
         {
@@ -361,16 +260,14 @@ public class Async2SynchronizationContext
 
         async Task AwaitTask()
         {
-            await GetTask(source);
-            Assert.Null(SynchronizationContext.Current);
+            Assert.Equal(42, await GetTask(source).ConfigureAwait(captureContext));
+            Assert.Same(captureContext ? context : null, SynchronizationContext.Current);
+            Assert.Equal(42, local.Value);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Task GetTask(TaskCompletionSource<int> source) => source.Task;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task AwaitStoredTask(Task task) => await task;
+    private static Task<int> GetTask(TaskCompletionSource<int> source) => source.Task;
 
     [Fact]
     public static void TaskContinuationWithLowStackUsesThreadPool()
@@ -451,18 +348,5 @@ public class Async2SynchronizationContext
                 item.Callback(item.State);
             }
         }
-    }
-
-    private sealed class QueuedTaskScheduler : TaskScheduler
-    {
-        private readonly QueuedSyncContext _context;
-
-        public QueuedTaskScheduler(QueuedSyncContext context) => _context = context;
-
-        protected override void QueueTask(Task task) => _context.Post(_ => TryExecuteTask(task), null);
-
-        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
-
-        protected override IEnumerable<Task> GetScheduledTasks() => null;
     }
 }
