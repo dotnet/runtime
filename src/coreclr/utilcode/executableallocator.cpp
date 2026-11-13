@@ -171,7 +171,7 @@ public:
 
 void ExecutableAllocator::LogUsage(const char* source, int line, const char* function)
 {
-    CRITSEC_Holder csh(s_LoggerCriticalSection);
+    CRITSEC_Holder csh = ClrTakeCriticalSection(s_LoggerCriticalSection);
 
     for (int i = 0; i < s_logMaxIndex; i++)
     {
@@ -192,7 +192,7 @@ void ExecutableAllocator::LogUsage(const char* source, int line, const char* fun
 
 void ExecutableAllocator::DumpHolderUsage()
 {
-    CRITSEC_Holder csh(s_LoggerCriticalSection);
+    CRITSEC_Holder csh = ClrTakeCriticalSection(s_LoggerCriticalSection);
 
     LARGE_INTEGER freq;
     QueryPerformanceFrequency(&freq);
@@ -623,7 +623,7 @@ void ExecutableAllocator::ReleaseWorker(void* pRX, size_t size, bool releaseTemp
 
     if (IsDoubleMappingEnabled())
     {
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
         // Locate the RX block corresponding to the pRX and remove it from the linked list
         BlockRX* pBlock;
@@ -790,7 +790,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
     _ASSERTE((size & (Granularity() - 1)) == 0);
     if (IsDoubleMappingEnabled())
     {
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
         bool isFreeBlock;
         BlockRX* block = AllocateBlock(size, &isFreeBlock);
@@ -875,7 +875,7 @@ void* ExecutableAllocator::Reserve(size_t size)
     {
         if (IsDoubleMappingEnabled())
         {
-            CRITSEC_Holder csh(m_CriticalSection);
+            CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
             bool isFreeBlock;
             BlockRX* block = AllocateBlock(size, &isFreeBlock);
@@ -921,7 +921,7 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
     StopWatch swAll(&g_mapTimeWithLockSum);
 #endif
 
-    CRITSEC_Holder csh(m_CriticalSection);
+    CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     ExecutableAllocator::g_MapRW_Calls++;
 #endif
@@ -1006,7 +1006,7 @@ void ExecutableAllocator::UnmapRW(void* pRW) noexcept
         return;
     }
 
-    CRITSEC_Holder csh(m_CriticalSection);
+    CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
     _ASSERTE(pRW != NULL);
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
@@ -1031,7 +1031,7 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
 {
     if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
     {
-        CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh = ClrTakeCriticalSection(m_CriticalSection);
 
         bool isFreeBlock;
         BlockRX* block = AllocateBlock(templateSize * 2, &isFreeBlock);

@@ -79,7 +79,27 @@ void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept;
 // be used.  This guarantees that the locks will be vacated when the scope is popped,
 // either on exception or on return.
 
-typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection, 0> CRITSEC_Holder;
+struct CRITSECHolderTraits final
+{
+    using Type = CRITSEC_COOKIE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type cookie) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (cookie != NULL)
+            ClrLeaveCriticalSection(cookie);
+    }
+};
+
+using CRITSEC_Holder = LifetimeHolder<CRITSECHolderTraits>;
+
+inline CRITSEC_Holder ClrTakeCriticalSection(CRITSEC_COOKIE cookie)
+{
+    STATIC_CONTRACT_WRAPPER;
+    if (cookie != NULL)
+        ClrEnterCriticalSection(cookie);
+    return CRITSEC_Holder(cookie);
+}
 
 // Use this holder to manage CRITSEC_COOKIE allocation to ensure it will be released if anything goes wrong
 struct CRITSECCookieAllocationTraits final

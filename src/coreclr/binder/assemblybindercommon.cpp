@@ -209,7 +209,7 @@ namespace BINDER_SPACE
     Retry:
         {
             // Lock the binding application context
-            CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
+            CRITSEC_Holder contextLock = ClrTakeCriticalSection(pApplicationContext->GetCriticalSectionCookie());
 
             _ASSERTE(pAssemblyName != NULL);
             IF_FAIL_GO(BindByName(pApplicationContext,
@@ -1106,7 +1106,7 @@ namespace BINDER_SPACE
 
             {
                 // Lock the application context
-                CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
+                CRITSEC_Holder contextLock = ClrTakeCriticalSection(pApplicationContext->GetCriticalSectionCookie());
 
                 // Only perform costly validation if other binds succeeded before us
                 if (kContextVersion != pApplicationContext->GetVersion())
@@ -1218,7 +1218,7 @@ Retry:
     bool mvidMismatch = false;
     {
         // Lock the application context
-        CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
+        CRITSEC_Holder contextLock = ClrTakeCriticalSection(pApplicationContext->GetCriticalSectionCookie());
 
         // Attempt uncached bind and register stream if possible
         // We skip version compatibility check - so assemblies with same simple name will be reported
