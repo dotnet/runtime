@@ -146,6 +146,13 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    // Implemented by AsyncHelpers.RuntimeAsyncTask<T> so that non-generic code can get
+    // the delegate that resumes the task's continuation chain.
+    internal interface IRuntimeAsyncTask
+    {
+        Action GetContinuationAction();
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe ref struct AsyncDispatcherInfo
     {
@@ -731,7 +738,7 @@ namespace System.Runtime.CompilerServices
 
         // Represents execution of a chain of suspended and resuming runtime
         // async functions.
-        private sealed class RuntimeAsyncTask<T> : Task<T>
+        private sealed class RuntimeAsyncTask<T> : Task<T>, IRuntimeAsyncTask
         {
             public RuntimeAsyncTask()
             {
@@ -739,7 +746,6 @@ namespace System.Runtime.CompilerServices
                 // Ensure that state object isn't published out for others to see.
                 Debug.Assert((m_stateFlags & (int)InternalTaskOptions.PromiseTask) != 0, "Expected state flags to already be configured.");
                 Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for Continuation.");
-                m_action = DispatchContinuations;
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
 
@@ -748,9 +754,18 @@ namespace System.Runtime.CompilerServices
                 DispatchContinuations();
             }
 
-            private Action GetContinuationAction()
+            // The delegate is only needed when handing the task to a custom awaiter, a notifier or a
+            // TaskScheduler. Task and IValueTaskSource awaits resume without it, so create it lazily
+            // to avoid allocating it for every suspended chain.
+            public Action GetContinuationAction()
             {
-                object? action = m_action;
+                Delegate? action = m_action;
+                if (action is null)
+                {
+                    action = new Action(DispatchContinuations);
+                    m_action = action;
+                }
+
                 Debug.Assert(action is Action);
                 return Unsafe.As<Action>(action);
             }
@@ -1018,7 +1033,7 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
+                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation, awaitState.CurrentThread!))
                     {
                         contexts.Pop(awaitState.CurrentThread!);
                         awaitState.Pop();
@@ -1152,7 +1167,7 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
+                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation, awaitState.CurrentThread!))
                     {
                         RuntimeAsyncInstrumentationHelpers.QueueSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, asyncDispatcherInfo.NextContinuation);
 
@@ -1189,11 +1204,15 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private bool QueueContinuationFollowUpActionIfNecessary(Continuation continuation)
+            private bool QueueContinuationFollowUpActionIfNecessary(Continuation continuation, Thread currentThread)
             {
+                // The dispatcher passes the thread cached in t_runtimeAsyncAwaitState to avoid a TLS lookup.
+                // Dispatch runs synchronously on one thread, so the cached thread must be the current one.
+                Debug.Assert(currentThread == Thread.CurrentThreadAssumedInitialized);
+
                 if ((continuation.Flags & ContinuationFlags.ContinueOnThreadPool) != 0)
                 {
-                    SynchronizationContext? ctx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+                    SynchronizationContext? ctx = currentThread._synchronizationContext;
                     if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
                     {
                         TaskScheduler? sched = TaskScheduler.InternalCurrent;
@@ -1215,7 +1234,7 @@ namespace System.Runtime.CompilerServices
                     Debug.Assert(continuationContext is SynchronizationContext { });
                     SynchronizationContext continuationSyncCtx = (SynchronizationContext)continuationContext;
 
-                    if (continuationSyncCtx == Thread.CurrentThreadAssumedInitialized._synchronizationContext)
+                    if (continuationSyncCtx == currentThread._synchronizationContext)
                     {
                         // Inline
                         return false;
