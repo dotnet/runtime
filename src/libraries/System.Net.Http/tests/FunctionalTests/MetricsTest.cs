@@ -537,27 +537,35 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("System.Net.Http.HttpRequestOut.Start")]
-        [InlineData("System.Net.Http.Request")]
-        public async Task RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
+        [InlineData("System.Net.Http.HttpRequestOut.Start", false)]
+        [InlineData("System.Net.Http.HttpRequestOut.Start", true)]
+        [InlineData("System.Net.Http.Request", false)]
+        [InlineData("System.Net.Http.Request", true)]
+        public async Task RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName, bool cancelRequest)
         {
-            await RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
+            await RemoteExecutor.Invoke(static async (testClassName, eventNameInner, cancelRequestInner) =>
             {
                 using HttpMetricsTest test = (HttpMetricsTest)Activator.CreateInstance(Type.GetType(testClassName), (ITestOutputHelper)null);
-                await test.RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(eventNameInner);
-            }, GetType().FullName, eventName).DisposeAsync();
+                await test.RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(eventNameInner, bool.Parse(cancelRequestInner));
+            }, GetType().FullName, eventName, cancelRequest.ToString()).DisposeAsync();
         }
 
-        private async Task RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(string eventName)
+        private async Task RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(string eventName, bool cancelRequest)
         {
+            using CancellationTokenSource requestCts = new();
+            TaskCompletionSource requestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource clientCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            HttpResponseMessage? enrichmentResponse = null;
+
             FakeDiagnosticListenerObserver diagnosticListenerObserver = new(kv =>
             {
                 if (kv.Key == eventName)
                 {
                     HttpRequestMessage request = GetProperty<HttpRequestMessage>(kv.Value, "Request");
-                    HttpMetricsEnrichmentContext.AddCallback(request, static ctx =>
+                    HttpMetricsEnrichmentContext.AddCallback(request, ctx =>
                     {
                         ctx.AddCustomTag("observed?", "observed!");
+                        enrichmentResponse = ctx.Response;
                         Assert.NotNull(ctx.Response);
                     });
                 }
@@ -576,16 +584,53 @@ namespace System.Net.Http.Functional.Tests
                     ctx.AddCustomTag("route", "/test");
                 });
 
-                using HttpResponseMessage response = await SendAsync(client, request);
+                try
+                {
+                    Task<HttpResponseMessage> sendTask = SendAsync(client, request, requestCts.Token);
+                    if (cancelRequest)
+                    {
+                        await requestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        requestCts.Cancel();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sendTask);
+                        Assert.Null(enrichmentResponse);
+                    }
+                    else
+                    {
+                        using HttpResponseMessage response = await sendTask;
+                        Assert.Same(response, enrichmentResponse);
+                    }
 
-                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                VerifyRequestDuration(m, uri, UseVersion, 200);
-                Assert.Equal("/test", m.Tags.ToArray().Single(t => t.Key == "route").Value);
-                Assert.Equal("observed!", m.Tags.ToArray().Single(t => t.Key == "observed?").Value);
-
+                    Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                    if (cancelRequest)
+                    {
+                        VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, typeof(OperationCanceledException).FullName]);
+                    }
+                    else
+                    {
+                        VerifyRequestDuration(m, uri, UseVersion, 200);
+                    }
+                    Assert.Equal("/test", m.Tags.ToArray().Single(t => t.Key == "route").Value);
+                    Assert.Equal("observed!", m.Tags.ToArray().Single(t => t.Key == "observed?").Value);
+                }
+                finally
+                {
+                    clientCompleted.SetResult();
+                }
             }, async server =>
             {
-                await server.AcceptConnectionSendResponseAndCloseAsync();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    if (cancelRequest)
+                    {
+                        requestReceived.SetResult();
+                        await clientCompleted.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    }
+                    else
+                    {
+                        await connection.SendResponseAsync();
+                    }
+                });
             });
 
             static T GetProperty<T>(object obj, string propertyName)
