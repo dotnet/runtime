@@ -271,7 +271,7 @@ namespace ILCompiler.Logging
 
         public string ToMSBuildString()
         {
-            const string originApp = "ILC";
+            const string originApp = "ILC "; // extra space for MSBuild sake: https://github.com/dotnet/runtime/issues/118788
             string origin = Origin?.ToString() ?? originApp;
 
             StringBuilder sb = new StringBuilder();
