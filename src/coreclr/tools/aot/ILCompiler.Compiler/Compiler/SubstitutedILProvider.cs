@@ -129,11 +129,7 @@ namespace ILCompiler
             // offsets for jumps, and replacing parts that are unreachable with the infinite loop.
             //
             // We also attempt to rewrite calls to SR.SomeResourceString accessors with string
-            // literals looked up from the managed resources.
-
-            // Do not attempt to inline resource strings if we only want to use resource keys.
-            // The optimizations are not compatible.
-            bool shouldInlineResourceStrings = _substitutionProvider.ShouldInlineResourceStrings;
+            // literals looked up from the managed resources, or with resource keys.
 
             ILExceptionRegion[] ehRegions = method.GetExceptionRegions();
             byte[] methodBytes = method.GetILBytes();
@@ -410,7 +406,7 @@ namespace ILCompiler
                         if (reader.HasNext)
                             flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
                     }
-                    else if (shouldInlineResourceStrings && opcode == ILOpcode.call)
+                    else if (opcode == ILOpcode.call)
                     {
                         var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
                         if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType

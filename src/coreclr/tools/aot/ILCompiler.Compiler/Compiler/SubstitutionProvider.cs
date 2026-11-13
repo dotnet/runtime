@@ -130,7 +130,7 @@ namespace ILCompiler
             return GetSubstitution(field) != null;
         }
 
-        internal bool ShouldInlineResourceStrings => !_hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) || !useResourceKeys;
+        private bool UseResourceKeys => _hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) && useResourceKeys;
 
         internal string GetResourceStringForAccessor(EcmaMethod method)
         {
@@ -141,7 +141,7 @@ namespace ILCompiler
             if (dict != null
                 && dict.TryGetValue(resourceStringName, out string result))
             {
-                return result;
+                return UseResourceKeys ? resourceStringName : result;
             }
 
             return null;
