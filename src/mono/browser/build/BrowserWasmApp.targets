@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
+  <!-- TODO: Remove this compatibility import once late type-map forwarding flows through the SDK. -->
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.TypeMap.targets" Condition="'$(_BrowserWasmAppTypeMapTargetsImported)' != 'true'" />
 
   <PropertyGroup>
     <PrepareForWasmBuildNativeDependsOn>

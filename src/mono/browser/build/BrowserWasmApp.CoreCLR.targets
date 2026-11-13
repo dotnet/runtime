@@ -7,6 +7,8 @@
   <PropertyGroup>
     <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
   </PropertyGroup>
+  <!-- TODO: Remove this compatibility import once late type-map forwarding flows through the SDK. -->
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.TypeMap.targets" Condition="'$(_BrowserWasmAppTypeMapTargetsImported)' != 'true'" />
   <ItemGroup>
     <!-- The native entry point must be rooted before type-map providers can be discovered. -->
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml" />

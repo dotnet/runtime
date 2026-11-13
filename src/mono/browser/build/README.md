@@ -6,6 +6,10 @@ Browser builds default the trimming discovery root `TypeMapEntryAssembly` to the
 application's assembly name. The JSExport provider linker descriptor preserves
 the native `BindAssemblyExports` entry point, which makes the type-map lookup
 reachable even when JavaScript is the only caller of the application's exports.
+ILLink forwards this root at target execution time so late WebAssembly imports
+also work for library-mode applications without a managed entry point. Until that
+ILLink fix flows through supported SDKs, a shared compatibility target supplies
+the argument for in-tree, local-build, and packaged SDK paths without duplicating it.
 
 Runtime discovery reads only the requested assembly's local type map, including
 its ReadyToRun map when available. It does not follow assembly-target edges or

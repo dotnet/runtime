@@ -117,6 +117,11 @@ Managed JSON parsing remains the consumer's responsibility.
 
 ## How to add tests
 
+`WasmTemplateTests.LibraryMode` verifies build and publish for libraries with and
+without the WebAssembly SDK. Trimmed publishing checks that exactly one
+`--typemap-entry-assembly` argument names the library, then invokes its JSExport
+without relying on a managed entry point.
+
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
 
 Native relinking tests can run on both runtimes. For theories that also cover Mono AOT, use runtime-aware test data to keep the non-AOT cases on CoreCLR without removing the existing Mono cases. Incremental rebuild assertions must track the appropriate runtime's generated files: CoreCLR uses the portable call-helper sources and objects rather than Mono's P/Invoke tables and driver objects.

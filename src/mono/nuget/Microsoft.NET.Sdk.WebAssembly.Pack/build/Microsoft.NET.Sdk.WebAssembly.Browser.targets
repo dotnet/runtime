@@ -15,7 +15,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
     <_JSExportProviderDescriptor>$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml</_JSExportProviderDescriptor>
     <_JSExportProviderDescriptor Condition="!Exists('$(_JSExportProviderDescriptor)')">$(MSBuildThisFileDirectory)..\..\..\browser\build\ILLink.Descriptors.JSExportProvider.xml</_JSExportProviderDescriptor>
+    <_BrowserWasmAppTypeMapTargetsPath>$(MSBuildThisFileDirectory)BrowserWasmApp.TypeMap.targets</_BrowserWasmAppTypeMapTargetsPath>
+    <_BrowserWasmAppTypeMapTargetsPath Condition="!Exists('$(_BrowserWasmAppTypeMapTargetsPath)')">$(MSBuildThisFileDirectory)..\..\..\browser\build\BrowserWasmApp.TypeMap.targets</_BrowserWasmAppTypeMapTargetsPath>
   </PropertyGroup>
+  <!-- TODO: Remove this compatibility import once late type-map forwarding flows through the SDK. -->
+  <Import Project="$(_BrowserWasmAppTypeMapTargetsPath)" Condition="'$(_BrowserWasmAppTypeMapTargetsImported)' != 'true'" />
   <ItemGroup>
     <!-- The native entry point must be rooted before type-map providers can be discovered. -->
     <TrimmerRootDescriptor Include="$(_JSExportProviderDescriptor)" />
