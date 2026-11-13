@@ -10,7 +10,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project>
   <PropertyGroup Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">
     <_WasmCoreClrEnableDiagnosticsSpecified Condition="'$(EnableDiagnostics)' != ''">true</_WasmCoreClrEnableDiagnosticsSpecified>
-    <_WasmCoreClrEventSourceSupportSpecified Condition="'$(EventSourceSupport)' != ''">true</_WasmCoreClrEventSourceSupportSpecified>
+    <_WasmCoreClrEventSourceSupportSpecified Condition="'$(EventSourceSupport)' != '' and '$(_WasmEventSourceSupportDefaulted)' != 'true'">true</_WasmCoreClrEventSourceSupportSpecified>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.targets" />

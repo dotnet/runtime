@@ -42,7 +42,7 @@
     <MSBuild Projects="$(LibrariesProjectRoot)sfx-finish.proj"
              Targets="TrimSharedFrameworkAssemblies"
              BuildInParallel="false"
-             Properties="Configuration=$(LibrariesConfiguration);TargetOS=browser;TargetArchitecture=wasm;RuntimeFlavor=CoreCLR;BuildProjectReferences=false;RunILLinkInBuild=true;SharedFrameworkTrimFlavor=$(BrowserHostNativeFlavor);SharedFrameworkTrimInputDir=$(LibrariesSharedFrameworkBinArtifactsPath);SharedFrameworkTrimCoreLibPath=$(CoreCLRArtifactsPath)System.Private.CoreLib.dll;EventSourceSupport=$(EventSourceSupport);EnableDiagnostics=$(EnableDiagnostics)" />
+             Properties="Configuration=$(LibrariesConfiguration);TargetOS=browser;TargetArchitecture=wasm;RuntimeFlavor=CoreCLR;BuildProjectReferences=false;RunILLinkInBuild=true;SharedFrameworkTrimFlavor=$(BrowserHostNativeFlavor);SharedFrameworkTrimInputDir=$(LibrariesSharedFrameworkBinArtifactsPath);SharedFrameworkTrimCoreLibPath=$(CoreCLRArtifactsPath)System.Private.CoreLib.dll;SharedFrameworkTrimRootMode=all;EventSourceSupport=$(EventSourceSupport);EnableDiagnostics=$(EnableDiagnostics)" />
   </Target>
 
   <Target Name="PrepareBrowserHost"

@@ -30,6 +30,7 @@ extern "C" {
     int32_t GlobalizationNative_GetCalendarInfo (void *, uint32_t, int32_t, void *, int32_t);
     int32_t GlobalizationNative_GetCalendars (void *, void *, int32_t);
     int32_t GlobalizationNative_GetDefaultLocaleName (void *, int32_t);
+    int32_t GlobalizationNative_GetICUVersion ();
     int32_t GlobalizationNative_GetJapaneseEraStartDate (int32_t, void *, void *, void *);
     int32_t GlobalizationNative_GetLatestJapaneseEra ();
     int32_t GlobalizationNative_GetLocaleInfoGroupingSizes (void *, uint32_t, void *, void *);
@@ -160,6 +161,7 @@ static const Entry s_libSystem_Globalization_Native [] = {
     DllImportEntry(GlobalizationNative_GetCalendarInfo) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_GetCalendars) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_GetDefaultLocaleName) // System.Private.CoreLib
+    DllImportEntry(GlobalizationNative_GetICUVersion) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_GetJapaneseEraStartDate) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_GetLatestJapaneseEra) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_GetLocaleInfoGroupingSizes) // System.Private.CoreLib
@@ -307,7 +309,7 @@ typedef struct PInvokeTable {
 } PInvokeTable;
 
 static PInvokeTable s_PInvokeTables[] = {
-    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
+    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
     {"libSystem.Native", s_libSystem_Native, 87},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
@@ -575,6 +577,7 @@ extern "C" {
     int32_t QCall_Signature_AreEqual (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Signature_AreEqual");
     void QCall_Signature_GetCustomModifiersAtOffset (void *, int32_t, int32_t, void *, void *) __asm__("Signature_GetCustomModifiersAtOffset");
     void QCall_Signature_Init (void *, void *, int32_t, void *, void *, void *) __asm__("Signature_Init");
+    void * QCall_StackFrame_GetMethodDescFromNativeIP (void *, void *) __asm__("StackFrame_GetMethodDescFromNativeIP");
     void QCall_StackTrace_GetStackFramesInternal (void *, int32_t, void *, void *) __asm__("StackTrace_GetStackFramesInternal");
     int32_t QCall_Stream_HasOverriddenSlow (void *, int32_t, void *) __asm__("Stream_HasOverriddenSlow");
     void QCall_String_Intern (void *, void *) __asm__("String_Intern");
@@ -877,6 +880,7 @@ static const Entry s_QCall[] = {
     { "Signature_AreEqual", (void*)&QCall_Signature_AreEqual },
     { "Signature_GetCustomModifiersAtOffset", (void*)&QCall_Signature_GetCustomModifiersAtOffset },
     { "Signature_Init", (void*)&QCall_Signature_Init },
+    { "StackFrame_GetMethodDescFromNativeIP", (void*)&QCall_StackFrame_GetMethodDescFromNativeIP },
     { "StackTrace_GetStackFramesInternal", (void*)&QCall_StackTrace_GetStackFramesInternal },
     { "Stream_HasOverriddenSlow", (void*)&QCall_Stream_HasOverriddenSlow },
     { "String_Intern", (void*)&QCall_String_Intern },
