@@ -17,7 +17,7 @@ extern "C" int32_t QCALLTYPE Thread_GetOptimalMaxSpinWaitsPerSpinIteration();
 #ifdef TARGET_UNIX
 // Implemented in ProcessEnvironment.cpp.
 extern "C" const char* QCALLTYPE Environment_GetEnvironmentVariable(const char* name, int32_t* needsFree);
-extern "C" uint32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value);
+extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value);
 extern "C" char** QCALLTYPE Environment_GetEnviron(int32_t* needsFree);
 #endif // TARGET_UNIX
 

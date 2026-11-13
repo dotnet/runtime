@@ -423,9 +423,9 @@ extern "C" const char* QCALLTYPE Environment_GetEnvironmentVariable(const char* 
 }
 
 // Returns 0 on success, or a PROCESSENVIRONMENT_ERROR_* code.
-extern "C" uint32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value)
+extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value)
 {
-    return SetVariableUtf8(name, value);
+    return (int32_t)SetVariableUtf8(name, value);
 }
 
 // Returns the null-terminated array of "name=value" strings. If *needsFree is set, the array is a copy,

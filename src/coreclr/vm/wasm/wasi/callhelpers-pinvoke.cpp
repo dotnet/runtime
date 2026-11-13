@@ -701,7 +701,7 @@ extern "C" {
     void RuntimeHelper_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
     void * RuntimeHelper_Environment_GetEnviron (void *) __asm__("Environment_GetEnviron");
     void * RuntimeHelper_Environment_GetEnvironmentVariable (void *, void *) __asm__("Environment_GetEnvironmentVariable");
-    uint32_t RuntimeHelper_Environment_SetEnvironmentVariable (void *, void *) __asm__("Environment_SetEnvironmentVariable");
+    int32_t RuntimeHelper_Environment_SetEnvironmentVariable (void *, void *) __asm__("Environment_SetEnvironmentVariable");
     int32_t RuntimeHelper_Environment_get_ExitCode (uintptr_t, uintptr_t) __asm__("Environment_get_ExitCode");
     void RuntimeHelper_Environment_set_ExitCode (uintptr_t, int32_t, uintptr_t) __asm__("Environment_set_ExitCode");
     void * RuntimeHelper_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
