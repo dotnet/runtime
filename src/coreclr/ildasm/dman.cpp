@@ -74,7 +74,7 @@ void DumpFiles(void* GUICookie)
                         int L = ulNameLen*3+3;
                         char* sz = new char[L];
                         memset(sz,0,L);
-                        WideCharToMultiByte(CP_UTF8,0,rFile[ix].name,-1,sz,L,NULL,NULL);
+                        minipal_convert_utf16_to_utf8((const CHAR16_T*)rFile[ix].name,u16_strlen(rFile[ix].name)+1,sz,L,0);
                         strcpy_s(szptr,SZSTRING_REMAINING_SIZE(szptr), ANCHORPT(ProperName(sz),rFileTok[ix]));
                         VDELETE(sz);
                     }
@@ -126,7 +126,7 @@ void DumpScope(void* GUICookie)
             UINT32 L = (UINT32)u16_strlen(scopeName)*3+3;
             char* sz = new char[L];
             memset(sz,0,L);
-            WideCharToMultiByte(CP_UTF8,0,scopeName,-1,sz,L,NULL,NULL);
+            minipal_convert_utf16_to_utf8((const CHAR16_T*)scopeName,u16_strlen(scopeName)+1,sz,L,0);
             sprintf_s(szString,SZSTRING_SIZE,"%s%s %s",g_szAsmCodeIndent,KEYWORD(".module"),ProperName(sz));
             VDELETE(sz);
         }
@@ -232,7 +232,7 @@ void DumpAssembly(void* GUICookie, BOOL fFullDump)
             {
                 char* sz = new char[3*ulNameLen+3];
                 memset(sz,0,3*ulNameLen+3);
-                WideCharToMultiByte(CP_UTF8,0,wzName,-1,sz,3*ulNameLen+3,NULL,NULL);
+                minipal_convert_utf16_to_utf8((const CHAR16_T*)wzName,u16_strlen(wzName)+1,sz,3*ulNameLen+3,0);
                 strcat_s(szString,SZSTRING_SIZE,ANCHORPT(ProperName(sz),tkAsm));
                 VDELETE(sz);
             }
@@ -354,7 +354,7 @@ void DumpAssemblyRefs(void* GUICookie)
                     {
                         char* sz = new char[3*ulNameLen+32];
                         memset(sz,0,3*ulNameLen+3);
-                        WideCharToMultiByte(CP_UTF8,0,rAsmRef[ix].name,-1,sz,3*ulNameLen+3,NULL,NULL);
+                        minipal_convert_utf16_to_utf8((const CHAR16_T*)rAsmRef[ix].name,u16_strlen(rAsmRef[ix].name)+1,sz,3*ulNameLen+3,0);
                         // check for name duplication and introduce alias if needed
                         for(ixx = 0; ixx < ix; ixx++)
                         {
@@ -424,7 +424,7 @@ void DumpComTypeFQN(
     UINT32 L = (UINT32)u16_strlen(pCTD->wzName)*3+3;
     char* sz = new char[L];
     memset(sz,0,L);
-    WideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)pCTD->wzName,u16_strlen(pCTD->wzName)+1,sz,L,0);
     strcat_s(szName, SZSTRING_SIZE, JUMPPT(ProperName(sz), pCTD->tkComTypeTok));
     VDELETE(sz);
 }
@@ -447,7 +447,7 @@ void DumpImplementation(mdToken tkImplementation,
                     UINT32 L = (UINT32)u16_strlen(rFile[i].name)*3+3;
                     char* sz = new char[L];
                     memset(sz,0,L);
-                    WideCharToMultiByte(CP_UTF8,0,rFile[i].name,-1,sz,L,NULL,NULL);
+                    minipal_convert_utf16_to_utf8((const CHAR16_T*)rFile[i].name,u16_strlen(rFile[i].name)+1,sz,L,0);
                     sprintf_s(szString,SZSTRING_SIZE,"%s%s %s",g_szAsmCodeIndent,KEYWORD(".file"),
                             JUMPPT(ProperName(sz),tkImplementation));
                     VDELETE(sz);
@@ -467,7 +467,7 @@ void DumpImplementation(mdToken tkImplementation,
                     UINT32 L = (UINT32)u16_strlen(rAsmRef[i].name)*3+3;
                     char* sz = new char[L];
                     memset(sz,0,L);
-                    WideCharToMultiByte(CP_UTF8,0,rAsmRef[i].name,-1,sz,L,NULL,NULL);
+                    minipal_convert_utf16_to_utf8((const CHAR16_T*)rAsmRef[i].name,u16_strlen(rAsmRef[i].name)+1,sz,L,0);
                     sprintf_s(szString,SZSTRING_SIZE,"%s%s %s",g_szAsmCodeIndent,KEYWORD(".assembly extern"),
                             JUMPPT(ProperName(sz),tkImplementation));
                     VDELETE(sz);
@@ -513,7 +513,7 @@ void DumpComType(LocalComTypeDescr* pCTD,
         UINT32 L = (UINT32)u16_strlen(pCTD->wzName)*3+3;
         char* sz = new char[L];
         memset(sz,0,L);
-        WideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
+        minipal_convert_utf16_to_utf8((const CHAR16_T*)pCTD->wzName,u16_strlen(pCTD->wzName)+1,sz,L,0);
         strcpy_s(pc,SZSTRING_REMAINING_SIZE(pc),ANCHORPT(ProperName(sz),pCTD->tkComTypeTok));
         VDELETE(sz);
     }
@@ -627,7 +627,7 @@ static BOOL ConvertToLegalFileNameInPlace(__inout LPWSTR wzName)
     for (size_t i = 0; i < (sizeof(rwzReserved) / sizeof(WCHAR *)); i++)
     {
         _ASSERTE(u16_strlen(rwzReserved[i]) == 3);
-        if (_wcsnicmp(wzName, rwzReserved[i], 3) == 0)
+        if (u16_strnicmp(wzName, rwzReserved[i], 3) == 0)
         {
             LPWSTR pwc = wzName + 3;
 
@@ -778,7 +778,7 @@ void DumpManifestResources(void* GUICookie)
 
             static WCHAR wzFileName[2048];
 
-            MultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzFileName,2048);
+            minipal_convert_utf8_to_utf16(g_szOutputFile,strlen(g_szOutputFile)+1,(CHAR16_T*)wzFileName,2048,0);
             wzName = (WCHAR*)u16_strrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_W);
 #ifdef HOST_WINDOWS
             if(wzName == NULL) wzName = (WCHAR*)u16_strrchr(wzFileName,':');
@@ -835,7 +835,7 @@ void DumpManifestResources(void* GUICookie)
                     char* pc = szString + strlen(szString);
                     wzName[ulNameLen]=0;
 
-                    WideCharToMultiByte(CP_UTF8,0,wzName,-1,sz,sizeof(sz),NULL,NULL);
+                    minipal_convert_utf16_to_utf8((const CHAR16_T*)wzName,u16_strlen(wzName)+1,sz,sizeof(sz),0);
                     strcpy_s(pc,SZSTRING_REMAINING_SIZE(pc),ProperName(sz));
 
                     // get rid of invalid characters and reserved names
@@ -856,7 +856,7 @@ void DumpManifestResources(void* GUICookie)
                             for (ULONG i = 0; i < (ix + 2); i++)
                             {
                                 WCHAR *wzPreviousName = (WCHAR *)qbNameArray[i].Ptr();
-                                if (wzPreviousName && _wcsicmp(wzName, wzPreviousName) == 0)
+                                if (wzPreviousName && u16_stricmp(wzName, wzPreviousName) == 0)
                                 {
                                     // resource with the same name as another resource
                                     // or with the same name as the output IL/RES file
@@ -890,7 +890,7 @@ void DumpManifestResources(void* GUICookie)
                     if(fAlias)
                     {
                         // update sz with the aliased name and print the 'as' keyword
-                        if (WideCharToMultiByte(CP_UTF8, 0, wzName, -1, sz, sizeof(sz), NULL, NULL) == 0)
+                        if (minipal_convert_utf16_to_utf8((const CHAR16_T*)wzName, u16_strlen(wzName) + 1, sz, sizeof(sz), 0) == 0)
                         {
                             sz[sizeof(sz) - 1] = 0;
                         }

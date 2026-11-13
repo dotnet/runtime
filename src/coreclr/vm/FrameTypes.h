@@ -6,7 +6,7 @@
 #endif
 
 FRAME_TYPE_NAME(InlinedCallFrame)
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 FRAME_TYPE_NAME(TailCallFrame)
 #endif
 #ifdef FEATURE_HIJACK

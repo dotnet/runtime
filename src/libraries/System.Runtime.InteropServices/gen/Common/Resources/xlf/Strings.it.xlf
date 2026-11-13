@@ -84,7 +84,7 @@
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">È necessario effettuare il marshalling del parametro specificato da gestito a non gestito e da non gestito a gestito, ma il tipo di gestore del marshalling ''{0}'' non lo supporta.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
@@ -179,7 +179,7 @@
       </trans-unit>
       <trans-unit id="ComObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
+        <target state="translated"> L'interfaccia ''{0}'' non specifica ''ComInterfaceOptions.ComObjectWrapper'', quindi non viene generato alcun wrapper di oggetti COM (RCW). Il marshalling di questa interfaccia da codice non gestito a codice gestito non funzionerà.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -809,12 +809,12 @@
       </trans-unit>
       <trans-unit id="ManagedObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</target>
+        <target state="translated"> L'interfaccia ''{0}'' non specifica ''ComInterfaceOptions.ManagedObjectWrapper'', quindi non viene generato alcun wrapper di oggetti COM (CCW). Il marshalling di questa interfaccia da codice gestito a codice non gestito non funzionerà.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">È necessario effettuare il marshalling del parametro specificato da gestito a non gestito, ma il tipo di gestore del marshalling ''{0}'' non lo supporta.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -1361,7 +1361,7 @@
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">È necessario effettuare il marshalling del parametro specificato da non gestito a gestito, ma il tipo di gestore del marshalling ''{0}'' non lo supporta.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">

@@ -20,6 +20,8 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class CustomAttributeTests
     {
+        // TypeAttributes.ExtendedLayout is not defined in .NET 10.
+        private const TypeAttributes ExtendedLayout = (TypeAttributes)0x00000018;
 
         [Fact]
         public void CustomAttribute_HexByteBlob_ParsedCorrectly()
@@ -526,12 +528,16 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 42);
         }
 
-        [Fact]
-        public void CustomAttribute_VerbalTypeArgumentFromUnversionedAssemblyReference_EmitsAssemblyQualifiedTypeName()
+        [Theory]
+        [InlineData("", "PublicKeyToken=null")]
+        [InlineData(".publickeytoken = (B7 7A 5C 56 19 34 E0 89)", "PublicKeyToken=b77a5c561934e089")]
+        [InlineData(".publickey = (01 02 03 04)", "PublicKey=01020304")]
+        public void CustomAttribute_VerbalTypeArgumentFromUnversionedAssemblyReference_EmitsAssemblyQualifiedTypeName(
+            string keyDeclaration, string expectedKey)
         {
-            string source = """
+            string source = $$"""
                 .assembly extern mscorlib { }
-                .assembly extern External.Assembly { }
+                .assembly extern External.Assembly { {{keyDeclaration}} }
                 .assembly test { }
                 .class public auto ansi sealed TypeAttribute extends [mscorlib]System.Attribute
                 {
@@ -565,7 +571,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             var argument = Assert.Single(value.FixedArguments);
             Assert.Equal("System.Type", argument.Type);
             Assert.Equal(
-                "Contoso.ExternalType, External.Assembly, PublicKeyToken=null",
+                "Contoso.ExternalType, External.Assembly, " + expectedKey,
                 argument.Value);
             Assert.Empty(value.NamedArguments);
         }
@@ -1213,7 +1219,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
         [Theory]
         [InlineData("( 01 00 00 00 00 00 00 00 )", TypeAttributes.SequentialLayout)]
-        [InlineData("( 01 00 01 00 00 00 00 00 )", TypeAttributes.ExtendedLayout)]
+        [InlineData("( 01 00 01 00 00 00 00 00 )", ExtendedLayout)]
         [InlineData("( 01 00 02 00 00 00 00 00 )", TypeAttributes.ExplicitLayout)]
         [InlineData("( 01 00 03 00 00 00 00 00 )", TypeAttributes.AutoLayout)]
         public void PseudoCustomAttribute_StructLayout_SetsLayoutMask(string value, TypeAttributes expected)

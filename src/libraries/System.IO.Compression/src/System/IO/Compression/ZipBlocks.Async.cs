@@ -129,7 +129,7 @@ internal sealed partial class Zip64EndOfCentralDirectoryRecord
 
 internal readonly partial struct ZipLocalFileHeader
 {
-    public static async Task<(List<ZipGenericExtraField>, byte[] trailingData)> GetExtraFieldsAsync(Stream stream, CancellationToken cancellationToken)
+    public static async Task<(List<ZipGenericExtraField>, byte[] trailingData, bool usesZip64)> GetExtraFieldsAsync(Stream stream, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -149,9 +149,9 @@ internal readonly partial struct ZipLocalFileHeader
             stream.Seek(filenameLength, SeekOrigin.Current);
             await stream.ReadExactlyAsync(extraFieldBuffer, cancellationToken).ConfigureAwait(false);
 
-            List<ZipGenericExtraField> list = GetExtraFieldPostReadWork(extraFieldBuffer.Span, out byte[] trailingData);
+            List<ZipGenericExtraField> list = GetExtraFieldPostReadWork(extraFieldBuffer.Span, out byte[] trailingData, out bool usesZip64);
 
-            return (list, trailingData);
+            return (list, trailingData, usesZip64);
         }
         finally
         {

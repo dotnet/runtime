@@ -48,6 +48,31 @@ public class LPTStrTest
         Assert.True(Verify_NullTerminators_PastEnd_Out(nullTerminatorBuilder, length));
     }
 
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
+    public static void StringBuilderNativeBufferSizeOverflow()
+    {
+        // The native buffer for a UTF-16 StringBuilder is Capacity * 2 + 4 bytes,
+        // with the extra null terminator at offset Capacity * 2 + 2.
+        // For this capacity that offset does not fit in an int32;
+        // the marshaler must throw instead of allocating a truncated buffer.
+        const int Capacity = 1_073_741_823;
+
+        StringBuilder sb;
+        try
+        {
+            sb = new StringBuilder(Capacity);
+        }
+        catch (OutOfMemoryException)
+        {
+            Console.WriteLine($"Skipping {nameof(StringBuilderNativeBufferSizeOverflow)}: unable to allocate a StringBuilder with capacity {Capacity}.");
+            return;
+        }
+
+        Assert.Equal(Capacity, sb.Capacity);
+        Assert.Throws<OverflowException>(() => Verify_NullTerminators_PastEnd(sb, 0));
+        GC.KeepAlive(sb);
+    }
+
     [Fact]
     public static void RunByValTStrTests()
     {

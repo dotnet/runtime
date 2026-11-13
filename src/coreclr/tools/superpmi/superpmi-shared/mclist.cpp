@@ -151,38 +151,36 @@ checkMCL: // check that mcl list is increasing only
 /* static */
 bool MCList::getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes)
 {
-    HANDLE hFile = CreateFileA(nameOfInput, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFile == INVALID_HANDLE_VALUE)
+    FILE* hFile = fopen(nameOfInput, "rb");
+    if (hFile == nullptr)
     {
-        LogError("Unable to open '%s'. GetLastError()=%u", nameOfInput, GetLastError());
+        LogError("Unable to open '%s'. errno=%d", nameOfInput, errno);
         return false;
     }
-    LARGE_INTEGER DataTemp;
-    if (!GetFileSizeEx(hFile, &DataTemp))
+    int64_t fileSize = fgetsize(hFile);
+    if (fileSize < 0)
     {
-        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
-        return false;
-    }
-
-    if (DataTemp.QuadPart > MAXMCLFILESIZE)
-    {
-        LogError("Size %d exceeds max size of %d", DataTemp.QuadPart, MAXMCLFILESIZE);
+        LogError("fgetsize failed. errno=%d", errno);
         return false;
     }
 
-    int   sz   = DataTemp.u.LowPart;
+    if (fileSize > MAXMCLFILESIZE)
+    {
+        LogError("Size %lld exceeds max size of %d", (long long)fileSize, MAXMCLFILESIZE);
+        return false;
+    }
+
+    int   sz   = (int)fileSize;
     char* buff = new char[sz];
-    DWORD bytesRead;
-    if (ReadFile(hFile, buff, sz, &bytesRead, nullptr) == 0)
+    if (fread(buff, 1, sz, hFile) != (size_t)sz)
     {
-        LogError("ReadFile failed. GetLastError()=%u", GetLastError());
+        LogError("fread failed. errno=%d", errno);
         delete[] buff;
         return false;
     }
-    if (!CloseHandle(hFile))
+    if (fclose(hFile) != 0)
     {
-        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("fclose failed. errno=%d", errno);
         delete[] buff;
         return false;
     }
@@ -221,37 +219,37 @@ bool MCList::getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /*
 
 void MCList::InitializeMCL(char* filename)
 {
-    hMCLFile = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hMCLFile == INVALID_HANDLE_VALUE)
+    hMCLFile = fopen(filename, "wb");
+    if (hMCLFile == nullptr)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", filename, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", filename, errno);
     }
 }
 
 void MCList::AddMethodToMCL(int methodIndex)
 {
-    if (hMCLFile != INVALID_HANDLE_VALUE)
+    if (hMCLFile != nullptr)
     {
         char  strMethodIndex[12];
         DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
 
         charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", methodIndex);
 
-        if (!WriteFile(hMCLFile, strMethodIndex, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
+        if (fwrite(strMethodIndex, 1, charCount, hMCLFile) != charCount)
         {
-            LogError("Failed to write method index '%d'. GetLastError()=%u", strMethodIndex, GetLastError());
+            LogError("Failed to write method index '%d'. errno=%d", methodIndex, errno);
         }
     }
 }
 
 void MCList::CloseMCL()
 {
-    if (hMCLFile != INVALID_HANDLE_VALUE)
+    if (hMCLFile != nullptr)
     {
-        if (CloseHandle(hMCLFile) == 0)
+        if (fclose(hMCLFile) != 0)
         {
-            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("fclose failed. errno=%d", errno);
         }
+        hMCLFile = nullptr;
     }
 }

@@ -89,6 +89,9 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 #define OFFSETOF__CONTEXT__R4         0x14
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__R4 == offsetof(T_CONTEXT, R4));
 
+#define OFFSETOF__CONTEXT__D          0x50
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__D == offsetof(T_CONTEXT, D));
+
 #define SIZEOF__CalleeSavedRegisters 0x24
 ASMCONSTANTS_C_ASSERT(SIZEOF__CalleeSavedRegisters == sizeof(CalleeSavedRegisters))
 

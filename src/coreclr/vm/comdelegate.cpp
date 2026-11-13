@@ -515,7 +515,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         //   RDI->RSI, RDX->RCX, R8->RDX, R9->R8, stack[0]->R9, xmm0->xmm1, xmm1->xmm2, ... xmm6->xmm7, xmm7->stack[0], stack[1]->xmm0, stack[2]->stack[1], stack[3]->stack[2]
         // To prevent overwriting of slots before they are moved, we need to perform the shuffling in correct order
 
-        NewArrayHolder<ShuffleGraphNode> pGraphNodes = new ShuffleGraphNode[argSlots];
+        NewArrayHolder<ShuffleGraphNode> pGraphNodes(new ShuffleGraphNode[argSlots]);
 
         // Initialize the graph array
         for (unsigned int i = 0; i < argSlots; i++)
@@ -667,12 +667,7 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
     UINT stackSizeDelta;
 
-#ifdef UNIX_X86_ABI
-    // Stack does not shrink as UNIX_X86_ABI uses CDECL (instead of STDCALL).
-    stackSizeDelta = 0;
-#else
     stackSizeDelta = stackSizeSrc - stackSizeDst;
-#endif
 
     INT ofsSrc, ofsDst;
 
@@ -1991,7 +1986,7 @@ extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnSta
     return pMD;
 }
 
-FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
+FCIMPL1(MethodDesc*, Delegate_GetInvokeMethod, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
@@ -2002,7 +1997,7 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
 }
 FCIMPLEND
 
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
+FCIMPL1(PCODE, Delegate_GetMulticastInvoke, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);

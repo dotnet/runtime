@@ -34,15 +34,17 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
     HRESULT     hr;                     // A result.
 
     LPUTF8      szName;                 // Name in UFT8.
-    int         iLen;                   // A length.
+    size_t      cchName;                // Length of the name, including the terminator.
+    size_t      iLen;                   // A length.
     CMiniMdRW   *pMiniMd = NULL;
 
     LOCKREAD();
     pMiniMd = &(m_pStgdb->m_MiniMd);
 
-    iLen = WideCharToMultiByte(CP_UTF8,0, wzName,-1, NULL,0, 0,0);
+    cchName = u16_strlen(wzName) + 1;
+    iLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wzName, cchName, 0);
     szName = (LPUTF8)_alloca(iLen);
-    VERIFY(WideCharToMultiByte(CP_UTF8,0, wzName,-1, szName,iLen, 0,0));
+    VERIFY(minipal_convert_utf16_to_utf8((const CHAR16_T*)wzName, cchName, szName, iLen, 0));
 
     hr = ImportHelper::GetCustomAttributeByName(pMiniMd, tkObj, szName, ppData, pcbData);
 

@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 /*****************************************************************************/
 
@@ -1451,6 +1452,7 @@ void HelperCallProperties::init()
         bool mayRunCctor = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape  = false; // true if none of the GC ref arguments can escape
         bool isNoGC      = false; // true if the helper cannot trigger GC
+        bool nativeAotMayThrow = false; // true if the helper may throw on NativeAOT even when 'exceptions' is None
 
         switch (helper)
         {
@@ -1539,11 +1541,18 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
                 exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
+                break;
+
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
+                // NativeAOT compiles generic lookups it failed to build into helpers that throw when invoked.
+                nativeAotMayThrow = true;
                 break;
 
             // type casting helpers
@@ -1812,6 +1821,8 @@ void HelperCallProperties::init()
         m_mayRunCctor[helper]   = mayRunCctor;
         m_isNoEscape[helper]    = isNoEscape;
         m_isNoGC[helper]        = isNoGC;
+
+        m_nativeAotExceptions[helper] = nativeAotMayThrow ? ExceptionSetFlags::UnknownException : exceptions;
     }
 }
 
@@ -3934,13 +3945,10 @@ private:
 public:
     Utf16String(const char* str)
     {
-        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-        if (strBufferSize == 0)
-        {
-            return;
-        }
+        size_t strLength     = strlen(str) + 1;
+        size_t strBufferSize = minipal_get_length_utf8_to_utf16(str, strLength, 0);
 
-        if (static_cast<size_t>(strBufferSize) > bufferSize)
+        if (strBufferSize > bufferSize)
         {
             m_pBuffer = new WCHAR[strBufferSize];
         }
@@ -3949,15 +3957,7 @@ public:
             m_pBuffer = m_bufferUnsafe;
         }
 
-        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
-        {
-            if (m_pBuffer != m_bufferUnsafe)
-            {
-                delete[] m_pBuffer;
-            }
-
-            m_pBuffer = nullptr;
-        }
+        minipal_convert_utf8_to_utf16(str, strLength, (CHAR16_T*)m_pBuffer, strBufferSize, 0);
     }
 
     ~Utf16String()
