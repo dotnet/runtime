@@ -27,6 +27,7 @@ Below is a table of contents.
 - [ReadyToRun Overview](readytorun-overview.md)
 - [CLR ABI](clr-abi.md)
 - [Cross-platform Minidumps](xplat-minidump-generation.md)
+- [In-process Crash Reporting](in-process-crash-reporting.md)
 - [Mixed Mode Assemblies](mixed-mode.md)
 - [Guide For Porting](guide-for-porting.md)
 - [Vectors and Intrinsics](vectors-and-intrinsics.md)
