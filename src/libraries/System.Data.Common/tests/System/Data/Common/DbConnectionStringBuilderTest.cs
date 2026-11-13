@@ -70,6 +70,17 @@ namespace System.Data.Tests.Common
         }
 
         [Fact]
+        public void ConnectionString_EmptyValue_ParsedAsEmptyString()
+        {
+            _builder.ConnectionString = "Persist Security Info=";
+            Assert.False(_builder.ContainsKey("Persist Security Info"));
+
+            _builder.ConnectionString = "Persist Security Info=\"\"";
+            Assert.True(_builder.ContainsKey("Persist Security Info"));
+            Assert.Equal(string.Empty, _builder["Persist Security Info"]);
+        }
+
+        [Fact]
         public void Add_Keyword_Invalid()
         {
             string[] invalid_keywords = new string[] {
