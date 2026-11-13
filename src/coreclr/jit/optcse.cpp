@@ -1648,6 +1648,11 @@ ValueNum Compiler::optValnumCSE_ImpliedExcSet(GenTree* tree)
 // sets.
 //
 // Everything here is a screening estimate, not an allocation outcome:
+// - The fit check (FitsCalleeSavedRegister) compares the demand with the
+//   allocatable callee-saved count (CNT_CALLEE_ENREG_*, which excludes
+//   registers that are saved but not allocatable, such as an established
+//   frame pointer), reserving one register for transient demands and
+//   counting the residents earlier promotions placed.
 // - Locals whose reads were all removed since liveness ran do not
 //   compete, and neither do locals rematerializable from a unique
 //   constant definition.
@@ -4667,6 +4672,8 @@ bool CSE_Heuristic::ConsiderTree(GenTree* tree, bool isReturn)
 //
 void CSE_Heuristic::Initialize()
 {
+    residencyPromoted[0] = residencyPromoted[1] = residencyPromoted[2] = 0;
+
     // Record the weighted ref count of the last "for sure" callee saved LclVar
 
     unsigned   frameSize           = 0;
@@ -5001,6 +5008,79 @@ void CSE_Heuristic::SortCandidates()
         printf("\n");
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// FitsCalleeSavedRegister: would this candidate fit in a callee-saved
+// register at every call it is live across?
+//
+// The availability pass measured the competing same-class register demand
+// at those calls into csdCallPressure. The budget is the callee-saved
+// register count of the candidate's register class, less the candidate's own
+// registers and one more for transient fixed and internal demands at a call;
+// values a call does not preserve in full never fit.
+//
+bool CSE_Heuristic::FitsCalleeSavedRegister(CSE_Candidate* candidate)
+{
+    CSEdsc* dsc = candidate->CseDsc();
+
+    if (m_compiler->lvaTrackedCount == static_cast<unsigned>(JitConfig.JitMaxLocalsToTrack()))
+    {
+        // The temp may end up untracked, and then it spills no matter what
+        // the measured pressure says. (The measurement itself also ignores
+        // the untracked locals such a method must already have.)
+        return false;
+    }
+
+    var_types candidateType = candidate->Expr()->TypeGet();
+    unsigned  budget;
+    if (varTypeUsesIntReg(candidateType))
+    {
+        // The enregisterable count excludes registers that are saved but not
+        // allocatable, such as an established frame pointer.
+        budget = CNT_CALLEE_ENREG_FOR_CSE;
+    }
+    else if (varTypeUsesMaskReg(candidateType))
+    {
+        budget = CNT_CALLEE_ENREG_MASK_FOR_CSE;
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(candidateType));
+        budget = CNT_CALLEE_ENREG_FLOAT_FOR_CSE;
+#if defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH)
+        if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
+        {
+            budget = 0;
+        }
+#elif defined(TARGET_ARM64)
+        if (candidate->Expr()->TypeIs(TYP_SIMD16))
+        {
+            budget = 0;
+        }
+#endif
+#endif // FEATURE_SIMD
+    }
+
+    // The candidate's own registers, plus one for transient fixed and
+    // internal demands at the calls, plus the residents this method's earlier
+    // promotions already placed (the measurement predates them).
+    unsigned candidateUnits = 1;
+#ifndef TARGET_64BIT
+    if (candidateType == TYP_LONG)
+    {
+        candidateUnits = 2; // register pair
+    }
+#endif
+#ifdef TARGET_ARM
+    if (candidateType == TYP_DOUBLE)
+    {
+        candidateUnits = 2; // two float registers
+    }
+#endif
+    unsigned classIndex = varTypeUsesIntReg(candidateType) ? 0 : (varTypeUsesFloatReg(candidateType) ? 1 : 2);
+    return (budget != 0) && (dsc->csdCallPressure + candidateUnits + 1 + residencyPromoted[classIndex] <= budget);
 }
 
 //------------------------------------------------------------------------
@@ -5386,6 +5466,31 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             if (cseRefCnt < moderateRefCnt) // If Conservative CSE promotion
             {
                 extra_yes_cost *= 2; // full cost if we are being Conservative
+            }
+        }
+
+        // The moderate and conservative costs above model stores and reloads
+        // around the intervening calls. A candidate that fits in a callee-saved
+        // register at every such call can instead stay enregistered for the
+        // price of one save/restore at method entry weight (headroom does not
+        // imply the register is already saved for another lifetime). Take that
+        // model when it is cheaper; the global estimate above remains the
+        // fallback.
+        // ConsumesCallPressure also keeps this model off targets without
+        // callee-saved registers: there is no prolog save to price and
+        // FitsCalleeSavedRegister would be reading unmeasured pressure.
+        if (ConsumesCallPressure() && canEnregister && !candidate->IsAggressive())
+        {
+            weight_t entrySaveCost = 2 * m_compiler->fgFirstBB->getBBWeight(m_compiler);
+            weight_t residencyCost = candidate->DefCount() + candidate->UseCount() + entrySaveCost;
+            weight_t fallbackCost =
+                (candidate->DefCount() * cse_def_cost) + (candidate->UseCount() * cse_use_cost) + extra_yes_cost;
+            if ((residencyCost < fallbackCost) && FitsCalleeSavedRegister(candidate))
+            {
+                candidate->SetResidencyPriced();
+                cse_def_cost   = 1;
+                cse_use_cost   = 1;
+                extra_yes_cost = entrySaveCost;
             }
         }
     }
@@ -5994,6 +6099,12 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
 
 void CSE_Heuristic::AdjustHeuristic(CSE_Candidate* successfulCandidate)
 {
+    if (successfulCandidate->IsResidencyPriced())
+    {
+        var_types type = successfulCandidate->Expr()->TypeGet();
+        residencyPromoted[varTypeUsesIntReg(type) ? 0 : (varTypeUsesFloatReg(type) ? 1 : 2)]++;
+    }
+
     weight_t cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
 
     // FACTOR THIS
