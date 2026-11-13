@@ -74,6 +74,7 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
+        private readonly SortedSet<UnboxingStubNode> _unboxingStubsGenerated = new SortedSet<UnboxingStubNode>(CompilerComparer.Instance);
         private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
@@ -226,6 +227,9 @@ namespace ILCompiler
             var stackTraceLineNumbersNode = new StackTraceLineNumbersNode(commonFixupsTableNode, stackTraceDocumentsNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceLineNumbers), stackTraceLineNumbersNode);
 
+            if (nodeFactory.Target.IsWasm)
+                header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.UnboxingStubMap), new UnboxingStubMapNode());
+
             var interfaceDispatchCellInfoNode = new InterfaceDispatchCellInfoSectionNode(nativeReferencesTableNode);
             header.Add(ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, interfaceDispatchCellInfoNode);
 
@@ -269,6 +273,9 @@ namespace ILCompiler
             {
                 _methodBodiesGenerated.Add(methodBodyNode);
             }
+
+            if (obj is UnboxingStubNode unboxingStub)
+                _unboxingStubsGenerated.Add(unboxingStub);
 
             IMethodNode methodNode = methodBodyNode;
             if (methodNode != null)
@@ -1125,6 +1132,8 @@ namespace ILCompiler
         {
             return _methodBodiesGenerated;
         }
+
+        internal IEnumerable<UnboxingStubNode> GetUnboxingStubs() => _unboxingStubsGenerated;
 
         internal bool TypeGeneratesEEType(TypeDesc type)
         {

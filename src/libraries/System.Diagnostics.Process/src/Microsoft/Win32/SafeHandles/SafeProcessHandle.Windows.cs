@@ -589,7 +589,7 @@ namespace Microsoft.Win32.SafeHandles
             if (startInfo.StandardOutputEncoding != null)
                 throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
 
-            if (startInfo._environmentVariables != null)
+            if (startInfo._environmentVariables is { WasMutated: true })
                 throw new InvalidOperationException(SR.CantUseEnvVars);
 
             string arguments = startInfo.BuildArguments();

@@ -468,7 +468,7 @@ namespace System.Diagnostics.Contracts
         /// </summary>
         /// <param name="condition">Boolean expression representing the contract.</param>
         /// <remarks>
-        /// This contact can only be specified in a dedicated invariant method declared on a class.
+        /// This contract can only be specified in a dedicated invariant method declared on a class.
         /// This contract is not exposed to clients so may reference members less visible as the enclosing method.
         /// The contract rewriter must be used for runtime enforcement of this invariant.
         /// </remarks>
@@ -485,7 +485,7 @@ namespace System.Diagnostics.Contracts
         /// <param name="condition">Boolean expression representing the contract.</param>
         /// <param name="userMessage">If it is not a constant string literal, then the contract may not be understood by tools.</param>
         /// <remarks>
-        /// This contact can only be specified in a dedicated invariant method declared on a class.
+        /// This contract can only be specified in a dedicated invariant method declared on a class.
         /// This contract is not exposed to clients so may reference members less visible as the enclosing method.
         /// The contract rewriter must be used for runtime enforcement of this invariant.
         /// </remarks>

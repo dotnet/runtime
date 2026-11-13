@@ -37,115 +37,48 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (typeof(TFrom) == typeof(float) && IsUInt32Like<TTo>())
+            if (TryConvertFloatingPointToInteger(source, destination))
             {
-                InvokeSpanIntoSpan<float, uint, ConvertSingleToUInt32>(Rename<TFrom, float>(source), Rename<TTo, uint>(destination));
                 return;
             }
 
-            if (typeof(TFrom) == typeof(float) && IsInt32Like<TTo>())
-            {
-                InvokeSpanIntoSpan<float, int, ConvertSingleToInt32>(Rename<TFrom, float>(source), Rename<TTo, int>(destination));
-                return;
-            }
-
-            if (typeof(TFrom) == typeof(double) && IsUInt64Like<TTo>())
-            {
-                InvokeSpanIntoSpan<double, ulong, ConvertDoubleToUInt64>(Rename<TFrom, double>(source), Rename<TTo, ulong>(destination));
-                return;
-            }
-
-            if (typeof(TFrom) == typeof(double) && IsInt64Like<TTo>())
-            {
-                InvokeSpanIntoSpan<double, long, ConvertDoubleToInt64>(Rename<TFrom, double>(source), Rename<TTo, long>(destination));
-                return;
-            }
-
-            if (typeof(TFrom) == typeof(ushort) && typeof(TTo) == typeof(byte))
+            if (typeof(TFrom) == typeof(ushort) && (typeof(TTo) == typeof(byte) || typeof(TTo) == typeof(sbyte)))
             {
                 InvokeSpanIntoSpan_2to1<ushort, byte, NarrowUInt16ToByteOperator>(Rename<TFrom, ushort>(source), Rename<TTo, byte>(destination));
                 return;
             }
 
-            if (typeof(TFrom) == typeof(short) && typeof(TTo) == typeof(sbyte))
+            if (typeof(TFrom) == typeof(short) && (typeof(TTo) == typeof(sbyte) || typeof(TTo) == typeof(byte)))
             {
                 InvokeSpanIntoSpan_2to1<short, sbyte, NarrowInt16ToSByteOperator>(Rename<TFrom, short>(source), Rename<TTo, sbyte>(destination));
                 return;
             }
 
-            if (IsUInt32Like<TFrom>() && typeof(TTo) == typeof(ushort))
+            if (IsUInt32Like<TFrom>() && (typeof(TTo) == typeof(ushort) || typeof(TTo) == typeof(short)))
             {
                 InvokeSpanIntoSpan_2to1<uint, ushort, NarrowUInt32ToUInt16Operator>(Rename<TFrom, uint>(source), Rename<TTo, ushort>(destination));
                 return;
             }
 
-            if (IsInt32Like<TFrom>() && typeof(TTo) == typeof(short))
+            if (IsInt32Like<TFrom>() && (typeof(TTo) == typeof(short) || typeof(TTo) == typeof(ushort)))
             {
                 InvokeSpanIntoSpan_2to1<int, short, NarrowInt32ToInt16Operator>(Rename<TFrom, int>(source), Rename<TTo, short>(destination));
                 return;
             }
 
-            if (IsUInt64Like<TFrom>() && IsUInt32Like<TTo>())
+            if (IsUInt64Like<TFrom>() && (IsUInt32Like<TTo>() || IsInt32Like<TTo>()))
             {
                 InvokeSpanIntoSpan_2to1<ulong, uint, NarrowUInt64ToUInt32Operator>(Rename<TFrom, ulong>(source), Rename<TTo, uint>(destination));
                 return;
             }
 
-            if (IsInt64Like<TFrom>() && IsInt32Like<TTo>())
+            if (IsInt64Like<TFrom>() && (IsInt32Like<TTo>() || IsUInt32Like<TTo>()))
             {
                 InvokeSpanIntoSpan_2to1<long, int, NarrowInt64ToInt32Operator>(Rename<TFrom, long>(source), Rename<TTo, int>(destination));
                 return;
             }
 
             InvokeSpanIntoSpan<TFrom, TTo, ConvertTruncatingFallbackOperator<TFrom, TTo>>(source, destination);
-        }
-
-        /// <summary>(float)int</summary>
-        private readonly struct ConvertSingleToInt32 : IUnaryOperator<float, int>
-        {
-            public static bool Vectorizable =>
-                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
-
-            public static int Invoke(float x) => int.CreateTruncating(x);
-            public static Vector128<int> Invoke(Vector128<float> x) => Vector128.ConvertToInt32(x);
-            public static Vector256<int> Invoke(Vector256<float> x) => Vector256.ConvertToInt32(x);
-            public static Vector512<int> Invoke(Vector512<float> x) => Vector512.ConvertToInt32(x);
-        }
-
-        /// <summary>(float)uint</summary>
-        private readonly struct ConvertSingleToUInt32 : IUnaryOperator<float, uint>
-        {
-            public static bool Vectorizable =>
-                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
-
-            public static uint Invoke(float x) => uint.CreateTruncating(x);
-            public static Vector128<uint> Invoke(Vector128<float> x) => Vector128.ConvertToUInt32(x);
-            public static Vector256<uint> Invoke(Vector256<float> x) => Vector256.ConvertToUInt32(x);
-            public static Vector512<uint> Invoke(Vector512<float> x) => Vector512.ConvertToUInt32(x);
-        }
-
-        /// <summary>(ulong)double</summary>
-        private readonly struct ConvertDoubleToUInt64 : IUnaryOperator<double, ulong>
-        {
-            public static bool Vectorizable =>
-                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
-
-            public static ulong Invoke(double x) => ulong.CreateTruncating(x);
-            public static Vector128<ulong> Invoke(Vector128<double> x) => Vector128.ConvertToUInt64(x);
-            public static Vector256<ulong> Invoke(Vector256<double> x) => Vector256.ConvertToUInt64(x);
-            public static Vector512<ulong> Invoke(Vector512<double> x) => Vector512.ConvertToUInt64(x);
-        }
-
-        /// <summary>(long)double</summary>
-        private readonly struct ConvertDoubleToInt64 : IUnaryOperator<double, long>
-        {
-            public static bool Vectorizable =>
-                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
-
-            public static long Invoke(double x) => long.CreateTruncating(x);
-            public static Vector128<long> Invoke(Vector128<double> x) => Vector128.ConvertToInt64(x);
-            public static Vector256<long> Invoke(Vector256<double> x) => Vector256.ConvertToInt64(x);
-            public static Vector512<long> Invoke(Vector512<double> x) => Vector512.ConvertToInt64(x);
         }
 
         /// <summary>(byte)ushort</summary>

@@ -111,9 +111,8 @@ public sealed class FieldAttribute : Attribute
 
     /// <summary>
     /// One or more candidate descriptor field names tried in priority order.
-    /// The cdac LayoutSet cascade tries each name against the native cdac
-    /// descriptor first; if none match (or the native descriptor isn't
-    /// available), it then tries each name against the managed type metadata.
+    /// The cdac source generator tries each name against the type's selected
+    /// native or managed layout.
     /// </summary>
     public FieldAttribute(params string[] names)
     {
@@ -121,9 +120,8 @@ public sealed class FieldAttribute : Attribute
     }
 
     /// <summary>
-    /// Candidate field names tried in priority order against the native
-    /// descriptor first, then the managed descriptor. The C# property name
-    /// is appended as a lowest-priority candidate when
+    /// Candidate field names tried in priority order against the selected
+    /// type layout. The C# property name is appended as a lowest-priority candidate when
     /// <see cref="UsePropertyName"/> is <c>true</c> (the default).
     /// </summary>
     public string[]? Names { get; set; }
@@ -131,7 +129,7 @@ public sealed class FieldAttribute : Attribute
     /// <summary>
     /// When <c>true</c> (the default), the C# property name is appended to
     /// the candidate name list as the lowest-priority entry. Set to
-    /// <c>false</c> to suppress the fallback -- the cascade will then only
+    /// <c>false</c> to suppress the fallback -- the lookup will then only
     /// try the names explicitly listed in <see cref="Names"/>.
     /// </summary>
     public bool UsePropertyName { get; set; } = true;

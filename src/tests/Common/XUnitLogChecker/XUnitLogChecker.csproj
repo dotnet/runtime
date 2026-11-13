@@ -8,6 +8,7 @@
     <PublishTrimmed Condition="'$(SelfContained)' != 'false'">true</PublishTrimmed>
     <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
     <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true' And '$(SelfContained)' != 'false'">true</PublishSingleFile>
+    <UseAppHost Condition="'$(PublishSingleFile)' == 'true'">true</UseAppHost>
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 

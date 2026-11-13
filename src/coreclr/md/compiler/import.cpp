@@ -2978,7 +2978,7 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
 
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
-    DWORD       cch;                    // Length of WideChar string.
+    size_t      cch;                    // Length of WideChar string.
     LPCSTR      pVer;                   // Pointer to version string.
 
     LOCKREAD();
@@ -2988,17 +2988,24 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
         // For convenience, get a pointer to the version string.
         // @todo: get from alternate locations when there is no STOREAGESIGNATURE.
         pVer = reinterpret_cast<const char*>(reinterpret_cast<const STORAGESIGNATURE*>(m_pStgdb->m_pvMd)->pVersion);
-        // Attempt to convert into caller's buffer.
-        cch = MultiByteToWideChar(CP_UTF8,0, pVer,-1, pwzBuf,cchBufSize);
-        // Did the string fit?
-        if (cch == 0)
-        {   // No, didn't fit.  Find out space required.
-            cch = MultiByteToWideChar(CP_UTF8,0, pVer,-1, pwzBuf,0);
-            // NUL terminate string.
-            if (cchBufSize > 0)
+        size_t cchVer = strlen(pVer) + 1;
+        if (cchBufSize == 0)
+        {   // Only the space required.
+            cch = minipal_get_length_utf8_to_utf16(pVer, cchVer, 0);
+        }
+        else
+        {
+            // Attempt to convert into caller's buffer.
+            cch = minipal_convert_utf8_to_utf16(pVer, cchVer, (CHAR16_T*)pwzBuf, cchBufSize, 0);
+            // Did the string fit?
+            if (cch == 0)
+            {   // No, didn't fit.  Find out space required.
+                cch = minipal_get_length_utf8_to_utf16(pVer, cchVer, 0);
+                // NUL terminate string.
                 pwzBuf[cchBufSize-1] = W('\0');
-            // Truncation return code.
-            hr = CLDB_S_TRUNCATION;
+                // Truncation return code.
+                hr = CLDB_S_TRUNCATION;
+            }
         }
     }
     else
@@ -3009,7 +3016,7 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
     }
 
     if (pchBufSize)
-        *pchBufSize = cch;
+        *pchBufSize = (DWORD)cch;
 
 ErrExit:
     return hr;

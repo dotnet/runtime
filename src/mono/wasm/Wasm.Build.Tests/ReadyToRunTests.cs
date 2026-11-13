@@ -11,6 +11,7 @@ using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
+using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -20,6 +21,9 @@ namespace Wasm.Build.Tests
     // System.Private.CoreLib webcil is the marker that R2R was produced and staged. These tests cover R2R in
     // both build and publish, with and without IL trimming, driving all pages in a real browser. CoreCLR only.
     [TestCategory("coreclr")]
+    // Keeps this class out of the CoreCLR no-workload Helix work item, which runs it in a separate one by
+    // class name instead (see _SplitOutReadyToRunTests in src/libraries/sendtohelix-wasm.targets).
+    [TestCategory("r2r")]
     public class ReadyToRunTests : BlazorWasmTestBase
     {
         private const int InteractionTimeoutMs = 60_000;
@@ -78,6 +82,82 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Debug, false, false, null, null, "", false, false)]
+        [InlineData(Configuration.Release, false, false, null, null, "", true, true)]
+        [InlineData(Configuration.Release, false, true, null, null, "", false, false)]
+        [InlineData(Configuration.Release, false, true, "true", "false", "", true, false)]
+        [InlineData(Configuration.Release, false, true, "false", "true", "", false, true)]
+        [InlineData(Configuration.Debug, false, false, "true", "true", "--optimize", true, true)]
+        [InlineData(Configuration.Debug, true, false, null, null, "", false, false)]
+        [InlineData(Configuration.Release, true, false, null, null, "", true, true)]
+        [InlineData(Configuration.Release, true, true, null, null, "", false, false)]
+        [InlineData(Configuration.Release, true, true, "true", "false", "", true, false)]
+        [InlineData(Configuration.Release, true, true, "false", "true", "", false, true)]
+        [InlineData(Configuration.Debug, true, false, "true", "true", "--optimize", true, true)]
+        [TestCategory("no-workload")]
+        public void PublishCrossgen2ArgumentsReflectWasmDebugInfoProperties(
+            Configuration config,
+            bool composite,
+            bool debuggerSupport,
+            string? stripInliningInfo,
+            string? stripDebugInfo,
+            string extraCrossgen2Args,
+            bool expectStripInliningInfo,
+            bool expectStripDebugInfo)
+        {
+            string extraProperties = $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite><DebuggerSupport>{debuggerSupport.ToString().ToLowerInvariant()}</DebuggerSupport>";
+            if (extraCrossgen2Args.Length > 0)
+                extraProperties += $"<PublishReadyToRunCrossgen2ExtraArgs>{extraCrossgen2Args}</PublishReadyToRunCrossgen2ExtraArgs>";
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_args",
+                extraProperties: extraProperties);
+
+            string r2rBuildArgs = GetR2RBuildArgs(config, composite);
+            if (composite)
+            {
+                Assert.Contains("-p:Crossgen2SdkOverridePropsPath=", r2rBuildArgs);
+                Assert.Contains("-p:Crossgen2SdkOverrideTargetsPath=", r2rBuildArgs);
+            }
+            List<string> extraBuildArgs = [r2rBuildArgs];
+            if (stripInliningInfo is not null)
+                extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
+            if (stripDebugInfo is not null)
+                extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
+
+            // These arguments are computed at evaluation time, so evaluating the publish checks them without running
+            // crossgen2. PublishRunAllPagesCore checks that a real publish passes them to crossgen2.
+            string crossgen2Args = EvaluatePublishReadyToRunCrossgen2ExtraArgs(config, info.ProjectName, string.Join(" ", extraBuildArgs));
+            AssertCrossgen2DebugInfoArgs(config, crossgen2Args, expectStripInliningInfo, expectStripDebugInfo);
+            if (extraCrossgen2Args.Length > 0)
+                Assert.Contains(extraCrossgen2Args, crossgen2Args);
+        }
+
+        // Composite ReadyToRun in workload mode. The wasm-opt lane runs it with WasmRunWasmOpt=true, which rewrites
+        // the composite in place with wasm-opt before it is staged; it must keep the self-installing Webcil host ABI
+        // and still run. Per-assembly wasm-opt coverage comes from NativeLibraryTests.ProjectWithNativeReference_ReadyToRun.
+        [Theory]
+        [InlineData(Configuration.Release)]
+        [TestCategory("wasm-opt")]
+        public async Task PublishRunAllPagesCompositeWithWorkload(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_pub_composite_workload",
+                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite>",
+                extraItems: """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />""");
+            LogR2RSuffixLibraryMarker();
+
+            (string _, string publishOutput) = BlazorPublish(info, config,
+                new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
+            AssertReadyToRunWasmOpt(GetObjSubDir(config, "R2R"), publishOutput, composite: true);
+            AssertCompositeReadyToRun(GetBlazorBinFrameworkDir(config, forPublish: true));
+
+            bool suffixLibraryLoaded = false;
+            await RunForPublishWithWebServer(new BlazorRunOptions(config,
+                CheckCounter: false,
+                OnConsoleMessage: (_, msg) => suffixLibraryLoaded |= msg.Contains(SuffixLibraryLoadedMessage),
+                ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
+            Assert.True(suffixLibraryLoaded, $"'{SuffixLibraryLoadedMessage}' was not logged; R2rSuffixLibrary.r2r did not load as a component assembly.");
+        }
+
         private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
         {
             // Publish runs per-app crossgen2 for the whole closure, trimmed or not: even the untrimmed CoreLib
@@ -86,8 +166,9 @@ namespace Wasm.Build.Tests
             string extraItems = composite
                 ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />"""
                 : string.Empty;
+            string compositeProperty = composite ? string.Empty : "<PublishReadyToRunComposite>false</PublishReadyToRunComposite>";
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
-                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{(composite ? "true" : "false")}</PublishReadyToRunComposite><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
+                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun>{compositeProperty}<PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
                 extraItems: extraItems);
             if (composite)
                 LogR2RSuffixLibraryMarker();
@@ -113,6 +194,10 @@ namespace Wasm.Build.Tests
             AssertNoManagedAssembliesOutsideFramework(frameworkDir);
             AssertTrimmedClosureIsFullyStaged(config, frameworkDir);
             AssertPerAppCrossgenRan(config, expected: true);
+            bool expectStrip = config != Configuration.Debug;
+            AssertCrossgen2DebugInfoArgs(config,
+                GetCrossgen2ExtraCommandLineArgs(Path.Combine(_logPath, $"{info.ProjectName}-publish.binlog")),
+                expectStripInliningInfo: expectStrip, expectStripDebugInfo: expectStrip);
 
             if (trimmed && !nativeRelink)
             {
@@ -278,6 +363,33 @@ namespace Wasm.Build.Tests
             Assert.Contains("PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies", output);
         }
 
+        // An unnormalized intermediate path (e.g. ArtifactsPath=$(MSBuildThisFileDirectory)../artifacts) leaves '..'
+        // segments in OutputR2RImage. The stale-image prune must still recognize the freshly emitted images.
+        // A '//' link dir (no backslash, so MSBuild keeps it on Unix) makes globbed linked items differ in spelling.
+        [Theory]
+        [InlineData(Configuration.Release, /*composite*/ false)]
+        [InlineData(Configuration.Release, /*composite*/ true)]
+        [TestCategory("no-workload")]
+        public void PublishWithUnnormalizedIntermediatePathKeepsReadyToRunImages(Configuration config, bool composite)
+        {
+            string extraItems = composite
+                ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />"""
+                : string.Empty;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, $"r2r_unnormalized{(composite ? "_composite" : "")}",
+                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite><PublishTrimmed>true</PublishTrimmed>" +
+                    "<IntermediateOutputPath>$(MSBuildProjectDirectory)/obj/..//obj/$(Configuration)/</IntermediateOutputPath>" +
+                    "<IntermediateLinkDir>$(IntermediateOutputPath)$(TargetFramework)/linked/</IntermediateLinkDir>",
+                extraItems: extraItems);
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite)));
+
+            string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+            if (composite)
+                AssertCompositeReadyToRun(frameworkDir);
+            else
+                AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            AssertPerAppCrossgenRan(config, expected: true);
+        }
+
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
         // at each step. DetectRuntimeFailures (default) fails the run on any unhandled managed/JS exception.
         private static async Task InteractAllPagesAsync(IPage page)
@@ -385,6 +497,64 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount > 0, $"Expected per-app ReadyToRun images under '{r2rDir}'.");
             else
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
+        }
+
+        private string EvaluatePublishReadyToRunCrossgen2ExtraArgs(Configuration config, string projectName, string extraMSBuildArgs)
+        {
+            string[] commonArgs = [$"-p:Configuration={config}", "-p:_IsPublishing=true", "-nr:false", extraMSBuildArgs];
+
+            // MSBuild skips -restore when -getProperty is used without a target, so restore separately. The WebAssembly
+            // SDK pack, which sets these arguments, is imported from the restored packages.
+            using (ToolCommand restore = new DotNetCommand(s_buildEnv, _testOutput)
+                .WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir))
+            {
+                restore.ExecuteWithCapturedOutput(["msbuild", "-t:Restore", $"-bl:{Path.Combine(_logPath, $"{projectName}-restore.binlog")}", .. commonArgs])
+                    .EnsureSuccessful();
+            }
+
+            List<string> stdout = [];
+            using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                .WithWorkingDirectory(_projectDir)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .WithOutputDataReceived(line =>
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                        stdout.Add(line);
+                });
+            cmd.ExecuteWithCapturedOutput(["msbuild", "-getProperty:PublishReadyToRunCrossgen2ExtraArgs",
+                    $"-bl:{Path.Combine(_logPath, $"{projectName}-evaluate.binlog")}", .. commonArgs])
+                .EnsureSuccessful();
+            return Assert.Single(stdout);
+        }
+
+        private static void AssertCrossgen2DebugInfoArgs(Configuration config, string crossgen2Args, bool expectStripInliningInfo, bool expectStripDebugInfo)
+        {
+            string expectedWasmDebugInfo = config == Configuration.Debug ? "--wasm-debug-info=all" : "--wasm-debug-info=none";
+            Assert.Contains(expectedWasmDebugInfo, crossgen2Args);
+            Assert.Equal(expectStripInliningInfo, crossgen2Args.Contains("--strip-inlining-info", System.StringComparison.Ordinal));
+            Assert.Equal(expectStripDebugInfo, crossgen2Args.Contains("--strip-debug-info", System.StringComparison.Ordinal));
+            Assert.Contains("--opt-cross-module:*", crossgen2Args);
+        }
+
+        private static string GetCrossgen2ExtraCommandLineArgs(string binlogPath)
+        {
+            SL.Build build = SL.BinaryLog.ReadBuild(binlogPath);
+            List<string> extraArgs = [];
+            build.VisitAllChildren<SL.Task>(task =>
+            {
+                if (task.Name != "RunReadyToRunCompiler")
+                    return;
+
+                task.VisitAllChildren<SL.Property>(parameter =>
+                {
+                    if (parameter.Name == "Crossgen2ExtraCommandLineArgs")
+                        extraArgs.Add(parameter.Value);
+                });
+            });
+
+            Assert.NotEmpty(extraArgs);
+            return string.Join(" ", extraArgs);
         }
 
         // Total table bytes across the canonical per-app R2R outputs. The base SDK names them .dll while the

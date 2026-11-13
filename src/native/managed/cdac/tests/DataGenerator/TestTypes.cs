@@ -25,7 +25,7 @@ internal sealed partial class TestManagedRef : IData<TestManagedRef>
 }
 
 // 3. Cross-source -- same field names used in both native and managed
-//    descriptors. Tests source priority (native first, managed fallback).
+//    descriptors. Tests whole-layout selection (native first, managed fallback).
 [CdacType("TestCross", "Test.Cross")]
 internal sealed partial class TestCross : IData<TestCross>
 {
@@ -50,7 +50,7 @@ internal sealed partial class TestManagedAlias : IData<TestManagedAlias>
 }
 
 // 6. Cross-source with multiple candidate names spanning both sides.
-//    Tests both name fallback AND source priority together.
+//    Tests field-name aliases within the selected layout.
 [CdacType("TestCrossAlias", "Test.CrossAlias")]
 internal sealed partial class TestCrossAlias : IData<TestCrossAlias>
 {
@@ -71,7 +71,7 @@ internal sealed partial class TestWriteManaged : IData<TestWriteManaged>
     [Field("_flags", Writable = true)] public partial uint Flags { get; private set; }
 }
 
-// 9. Writable, cross-source (write must hit whichever side resolved).
+// 9. Writable, cross-source (writes use the selected layout).
 [CdacType("TestWriteCross", "Test.WriteCross")]
 internal sealed partial class TestWriteCross : IData<TestWriteCross>
 {
@@ -86,7 +86,7 @@ internal sealed partial class TestOptional : IData<TestOptional>
     [Field] public partial uint? Optional { get; }
 }
 
-// 11. FieldAddress under cross-source fallback.
+// 11. FieldAddress under whole-layout fallback.
 [CdacType("TestFieldAddr", "Test.FieldAddr")]
 internal sealed partial class TestFieldAddr : IData<TestFieldAddr>
 {

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <OutputType>exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+    <Optimize>true</Optimize>
+    <!-- The test reads IL-to-native mappings of JIT-compiled code, which interpreted methods do not have. -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- 3,036 JIT compilations take too long under GC stress, which also perturbs the race the test needs. -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="../common/profiler_common.csproj" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+  </ItemGroup>
+</Project>

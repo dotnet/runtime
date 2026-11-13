@@ -99,9 +99,9 @@ namespace System.Diagnostics
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
-                    _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
+                    Dictionary<string, string?> contents = new Dictionary<string, string?>(
                         envVars.Count,
-                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal));
+                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = envVars.GetEnumerator();
@@ -109,8 +109,13 @@ namespace System.Diagnostics
                     while (e.MoveNext())
                     {
                         DictionaryEntry entry = e.Entry;
-                        _environmentVariables.Add((string)entry.Key, (string?)entry.Value);
+                        // Values that come from the OS can't contain null characters, so the wrapper's validation is not needed.
+                        // Populating the inner dictionary directly also keeps the wrapper from being marked as mutated.
+                        // The indexer is used because the OS environment can contain keys that differ only by case.
+                        contents[(string)entry.Key] = (string?)entry.Value;
                     }
+
+                    _environmentVariables = new DictionaryWrapper(contents);
                 }
                 return _environmentVariables;
             }

@@ -17,6 +17,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Build.Logging.StructuredLogger;
+using Microsoft.NET.WebAssembly.Webcil;
 
 #nullable enable
 
@@ -222,9 +223,6 @@ namespace Wasm.Build.Tests
             };
             commandLineArgs.AddRange(buildOptions.ExtraMSBuildArgs);
 
-            if (buildOptions.IsPublish && buildOptions is PublishOptions po && po.BuildOnlyAfterPublish)
-                commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
-
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir);
             cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
@@ -386,6 +384,42 @@ namespace Wasm.Build.Tests
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
+        // In the wasm-opt lane, every image crossgen2 compiled into r2rDir is optimized and stamped: each
+        // per-assembly image, or just the composite. An image newer than its stamp was rewritten after wasm-opt
+        // ran and ships unoptimized, and the payload must keep the file alignment crossgen2 gave it for tools
+        // such as R2RDump. Outside the lane, WasmRunWasmOpt stays off and no image is optimized.
+        internal static void AssertReadyToRunWasmOpt(string r2rDir, string buildOutput, bool composite)
+        {
+            const string StampSuffix = ".wasm-opt.stamp";
+            string[] optimized = Directory.EnumerateFiles(r2rDir, $"*{StampSuffix}")
+                .Select(stamp => Path.GetFileName(stamp)[..^StampSuffix.Length])
+                .ToArray();
+
+            if (!EnvironmentVariables.UseWasmOpt)
+            {
+                Assert.DoesNotContain("ReadyToRun image(s) with", buildOutput);
+                Assert.Empty(optimized);
+                return;
+            }
+
+            Assert.Contains("ReadyToRun image(s) with", buildOutput);
+            if (composite)
+                Assert.EndsWith(".r2r.wasm", Assert.Single(optimized));
+            else
+                Assert.Contains("System.Private.CoreLib.wasm", optimized);
+
+            foreach (string image in optimized)
+            {
+                string imagePath = Path.Combine(r2rDir, image);
+                Assert.True(File.GetLastWriteTimeUtc(imagePath) <= File.GetLastWriteTimeUtc(imagePath + StampSuffix),
+                    $"'{imagePath}' is newer than its wasm-opt stamp.");
+                Assert.True(WebcilWasmPayloadAlignment.TryGetPayloadFileOffset(File.ReadAllBytes(imagePath), out long payloadOffset),
+                    $"'{imagePath}' has no Webcil payload segment.");
+                Assert.True(payloadOffset % WebcilWasmPayloadAlignment.PayloadFileAlignment == 0,
+                    $"The Webcil payload of '{imagePath}' starts at unaligned file offset {payloadOffset}.");
+            }
+        }
+
         // Use the in-build crossgen2 when the test leg provides it. Composite builds also need the
         // wasm-aware task shim until the base SDK supports wasm R2R output naming.
         internal static string GetR2RBuildArgs(Configuration config, bool composite = false)
@@ -397,6 +431,9 @@ namespace Wasm.Build.Tests
             string hostArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
             string crossgenDir = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2");
             string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
+            // The shim's build configuration is independent of the app's configuration.
+            if (composite && !Directory.Exists(shimDir))
+                shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config == Configuration.Debug ? "Release" : "Debug");
             string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
             string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
 

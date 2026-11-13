@@ -13,12 +13,9 @@ Abstract:
 /* PAL headers */
 
 #include "pal/thread.hpp"
-#include "pal/file.hpp"
 
 #include "config.h"
 #include "pal/dbgmsg.h"
-#include "pal/cruntime.h"
-#include "pal/file.h"
 #include "pal/environ.h"
 
 /* standard headers */
@@ -74,7 +71,6 @@ static const char *dbg_channel_names[]=
     "THREAD",
     "EXCEPT",
     "CRT",
-    "UNICODE",
     "ARCH",
     "SYNC",
     "FILE",

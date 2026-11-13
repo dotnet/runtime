@@ -355,6 +355,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-debug-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! debug
     )
+    if not "!string:-cdac-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! cdac
+    )
 )
 if "!__CMakeTarget!" == "" (
     set __CMakeTarget=install
@@ -604,7 +607,7 @@ echo Build architecture: one of -x64, -x86, -arm, -arm64, -loongarch64, -riscv64
 echo                     Can also be set with "-arch ^<value^>" ^(e.g. -arch arm64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
-echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi
+echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi cdac
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -cmakeargs: user-settable additional arguments passed to CMake.
