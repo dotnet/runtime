@@ -8,7 +8,10 @@
 #endif
 
 #include "ProcessEnvironment.h"
+
+#ifndef TARGET_WINDOWS
 #include "gcenv.base.h"
+#endif
 
 #include <sys/types.h>
 
