@@ -275,7 +275,8 @@ namespace ILLink.Tasks
 
         protected override string GenerateFullPathToTool() => DotNetPath;
 
-        private readonly List<InvocationArgument> _arguments = new();
+        private readonly List<string> _context = new();
+        private readonly List<string> _orderedPaths = new();
         private readonly List<string> _inputFiles = new();
         private readonly List<(string Path, bool CheckOutputSymbols)> _assemblies = new();
         private List<(string Option, string Path)> _extraPaths;
@@ -373,8 +374,8 @@ namespace ILLink.Tasks
                     using var input = File.OpenRead(file);
                 }
 
-                return new InvocationDescription(new InvocationInputs(files.ToArray()),
-                    _arguments.ToArray(),
+                return new InvocationDescription(new InvocationInputs(files.ToArray(), _orderedPaths.ToArray()),
+                    _context.ToArray(),
                     new InvocationOutputs(_outputDirectory, Array.Empty<string>()),
                     pathMap: paths);
 
@@ -618,15 +619,15 @@ namespace ILLink.Tasks
 
         private string BuildResponseFileCommands()
         {
-            _arguments.Clear();
+            _context.Clear();
+            _orderedPaths.Clear();
             _inputFiles.Clear();
             _assemblies.Clear();
             _outputDirectory = null;
             _cacheBypassReason = null;
             _baseDirectory = Environment.CurrentDirectory;
             _toolPath = PreparePath(ILLinkPath);
-            _arguments.Add(new InvocationArgument("ILLink"));
-            _arguments.Add(new InvocationArgument(_toolPath, isPath: true));
+            _orderedPaths.Add(_toolPath);
             if (!TryGetExtraArgsPaths(out _extraPaths))
             {
                 _extraPaths = null;
@@ -636,15 +637,37 @@ namespace ILLink.Tasks
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
                 _cacheBypassReason = "custom steps/data, dependency dumps, and task environment overrides are not supported.";
 
+            string trimMode = TrimMode switch
+            {
+                "full" => "link",
+                "partial" => "link",
+                var x => x
+            };
+            string defaultAction = TrimMode switch
+            {
+                "full" => "link",
+                "partial" => "copy",
+                _ => DefaultAction
+            };
+            _context.AddRange(new[] {
+                "ILLink", _singleWarn.ToString(), trimMode, defaultAction,
+                NoWarn, Warn, (_treatWarningsAsErrors == true).ToString(),
+                WarningsAsErrors, WarningsNotAsErrors,
+                _beforeFieldInit.ToString(), _overrideRemoval.ToString(),
+                _unreachableBodies.ToString(), _unusedInterfaces.ToString(),
+                _iPConstProp.ToString(), _sealer.ToString(),
+                (_removeSymbols == false).ToString(), PreserveSymbolPaths.ToString(),
+                (!string.IsNullOrWhiteSpace(ExtraArgs)).ToString()
+            });
+
             var args = new StringBuilder();
-            int contextStart = 0;
 
             if (RootDescriptorFiles != null)
             {
                 foreach (var rootFile in RootDescriptorFiles)
                 {
                     args.Append("-x ");
-                    _inputFiles.Add(AppendPath(rootFile.ItemSpec));
+                    _inputFiles.Add(AppendInputPath(nameof(RootDescriptorFiles), rootFile.ItemSpec));
                     args.AppendLine();
                 }
             }
@@ -654,6 +677,7 @@ namespace ILLink.Tasks
                 args.Append("-a ").Append(Quote(assemblyItem.ItemSpec));
 
                 string rootMode = assemblyItem.GetMetadata("RootMode");
+                _context.AddRange(new[] { nameof(RootAssemblyNames), assemblyItem.ItemSpec, rootMode });
                 if (!string.IsNullOrEmpty(rootMode))
                 {
                     args.Append(' ');
@@ -671,21 +695,9 @@ namespace ILLink.Tasks
                     args.AppendLine("--singlewarn-");
             }
 
-            string trimMode = TrimMode switch
-            {
-                "full" => "link",
-                "partial" => "link",
-                var x => x
-            };
             if (trimMode != null)
                 args.Append("--trim-mode ").AppendLine(trimMode);
 
-            string defaultAction = TrimMode switch
-            {
-                "full" => "link",
-                "partial" => "copy",
-                _ => DefaultAction
-            };
             if (defaultAction != null)
                 args.Append("--action ").AppendLine(defaultAction);
 
@@ -701,7 +713,7 @@ namespace ILLink.Tasks
                     continue;
 
                 args.Append("-reference ");
-                _assemblies.Add((AppendPath(assemblyPath), true));
+                _assemblies.Add((AppendInputPath(nameof(AssemblyPaths), assemblyPath), true));
                 args.AppendLine();
 
                 string assemblyTrimMode = assembly.GetMetadata("TrimMode");
@@ -725,11 +737,13 @@ namespace ILLink.Tasks
                     args.Append(assemblyTrimMode);
                     args.Append(' ').AppendLine(Quote(assemblyName));
                 }
+                _context.Add(assemblyTrimMode);
 
                 // Add per-assembly optimization arguments
                 foreach (var optimization in _optimizationNames)
                 {
                     string optimizationValue = assembly.GetMetadata(optimization);
+                    _context.Add(optimizationValue);
                     if (string.IsNullOrEmpty(optimizationValue))
                         continue;
 
@@ -741,6 +755,7 @@ namespace ILLink.Tasks
 
                 // Add per-assembly verbosity arguments
                 string singleWarn = assembly.GetMetadata("TrimmerSingleWarn");
+                _context.Add(singleWarn);
                 if (!string.IsNullOrEmpty(singleWarn))
                 {
                     if (!bool.TryParse(singleWarn, out bool value))
@@ -766,7 +781,7 @@ namespace ILLink.Tasks
                         continue;
 
                     args.Append("-reference ");
-                    _assemblies.Add((AppendPath(assemblyPath), false));
+                    _assemblies.Add((AppendInputPath(nameof(ReferenceAssemblyPaths), assemblyPath), false));
                     args.AppendLine();
 
                     // Treat reference assemblies as "skip". Ideally we
@@ -832,6 +847,7 @@ namespace ILLink.Tasks
                     var featureValue = featureSetting.GetMetadata("Value");
                     if (string.IsNullOrEmpty(featureValue))
                         throw new ArgumentException("feature settings require \"Value\" metadata");
+                    _context.AddRange(new[] { nameof(FeatureSettings), feature, featureValue });
                     args.Append("--feature ").Append(feature).Append(' ').AppendLine(featureValue);
                 }
             }
@@ -839,7 +855,10 @@ namespace ILLink.Tasks
             if (KeepMetadata != null)
             {
                 foreach (var metadata in KeepMetadata)
+                {
+                    _context.AddRange(new[] { nameof(KeepMetadata), metadata.ItemSpec });
                     args.Append("--keep-metadata ").AppendLine(Quote(metadata.ItemSpec));
+                }
             }
 
             if (_removeSymbols == false)
@@ -886,7 +905,7 @@ namespace ILLink.Tasks
                     {
                         var argument = _extraPaths[i];
                         args.Append(argument.Option).Append(' ');
-                        _extraPaths[i] = (argument.Option, AppendPath(argument.Path));
+                        _extraPaths[i] = (argument.Option, AppendInputPath(argument.Option, argument.Path));
                         args.AppendLine();
                     }
                 }
@@ -904,27 +923,20 @@ namespace ILLink.Tasks
             if (OutputDirectory is not null)
             {
                 args.Append("-out ");
-                _outputDirectory = AppendPath(OutputDirectory.ItemSpec);
+                _outputDirectory = PreparePath(OutputDirectory.ItemSpec);
+                args.Append(Quote(_outputDirectory));
                 args.AppendLine();
             }
 
-            AppendContextText();
             return args.ToString();
 
-            string AppendPath(string path)
+            string AppendInputPath(string parameterName, string path)
             {
                 path = PreparePath(path);
-                AppendContextText();
-                _arguments.Add(new InvocationArgument(path, isPath: true));
+                _context.Add(parameterName);
+                _orderedPaths.Add(path);
                 args.Append(Quote(path));
-                contextStart = args.Length;
                 return path;
-            }
-
-            void AppendContextText()
-            {
-                if (args.Length > contextStart)
-                    _arguments.Add(new InvocationArgument(args.ToString(contextStart, args.Length - contextStart)));
             }
 
             string PreparePath(string path)

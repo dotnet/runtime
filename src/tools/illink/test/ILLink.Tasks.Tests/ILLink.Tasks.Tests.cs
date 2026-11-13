@@ -2456,7 +2456,7 @@ namespace ILLink.Tasks.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("bad\"path")]
-        public void InvocationDescriptionKeepsFullPathArguments(string invalidOutputPath)
+        public void InvocationDescriptionKeepsTaskInputs(string invalidOutputPath)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -2466,6 +2466,7 @@ namespace ILLink.Tasks.Tests
             string xml = Path.Combine(test.Root, "roots.xml");
             string output = invalidOutputPath ?? Path.Combine(test.Root, "output");
             test.Task.OutputDirectory = new TaskItem(output);
+            test.Task.TrimMode = "copy";
             test.Task.ExtraArgs = $"  --ignore-link-attributes true   --substitutions \"{xml}\"  ";
             string response = test.Task.GetResponseFileCommands();
             Assert.Contains($"-x \"{xml}\"", response);
@@ -2482,12 +2483,65 @@ namespace ILLink.Tasks.Tests
             {
                 Assert.True(test.Task.TryGetCacheKey(host, out _));
                 InvocationDescription description = test.Task.CacheDescription;
-                Assert.Equal(new[] { tool, xml, input, reference, xml, output },
-                    description.Context.Where(argument => argument.IsPath).Select(argument => argument.Value));
+                Assert.Contains("copy", description.Context);
+                Assert.Contains(nameof(ILLink.AssemblyPaths), description.Context);
+                Assert.DoesNotContain(input, description.Context);
+                Assert.Equal(new[] { tool, xml, input, reference, xml }, description.Inputs.OrderedPaths);
                 Assert.Contains(input, description.Inputs.Files);
                 Assert.Contains(reference, description.Inputs.Files);
                 Assert.Equal(output, description.Outputs.DirectoryPath);
             }
+        }
+
+        [Theory]
+        [InlineData(nameof(ILLink.SingleWarn), true)]
+        [InlineData(nameof(ILLink.TrimMode), "copy")]
+        [InlineData(nameof(ILLink.DefaultAction), "skip")]
+        [InlineData(nameof(ILLink.NoWarn), "2026")]
+        [InlineData(nameof(ILLink.Warn), "5")]
+        [InlineData(nameof(ILLink.TreatWarningsAsErrors), true)]
+        [InlineData(nameof(ILLink.WarningsAsErrors), "2026")]
+        [InlineData(nameof(ILLink.WarningsNotAsErrors), "2026")]
+        [InlineData(nameof(ILLink.BeforeFieldInit), false)]
+        [InlineData(nameof(ILLink.OverrideRemoval), false)]
+        [InlineData(nameof(ILLink.UnreachableBodies), false)]
+        [InlineData(nameof(ILLink.UnusedInterfaces), false)]
+        [InlineData(nameof(ILLink.IPConstProp), false)]
+        [InlineData(nameof(ILLink.Sealer), false)]
+        [InlineData(nameof(ILLink.RemoveSymbols), false)]
+        [InlineData(nameof(ILLink.PreserveSymbolPaths), true)]
+        public void CacheKeyTracksTaskSettings(string parameter, object value)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            Assert.True(test.Task.TryGetCacheKey(host, out string before));
+
+            typeof(ILLink).GetProperty(parameter).SetValue(test.Task, value);
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string after));
+            Assert.NotEqual(before, after);
+        }
+
+        [Theory]
+        [InlineData("TrimMode", "copy")]
+        [InlineData("IsTrimmable", "false")]
+        [InlineData("BeforeFieldInit", "false")]
+        [InlineData("OverrideRemoval", "false")]
+        [InlineData("UnreachableBodies", "false")]
+        [InlineData("UnusedInterfaces", "false")]
+        [InlineData("IPConstProp", "false")]
+        [InlineData("Sealer", "false")]
+        [InlineData("TrimmerSingleWarn", "true")]
+        public void CacheKeyTracksAssemblyMetadata(string metadata, string value)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            Assert.True(test.Task.TryGetCacheKey(host, out string before));
+
+            test.Task.AssemblyPaths[0].SetMetadata(metadata, value);
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string after));
+            Assert.NotEqual(before, after);
         }
 
         private sealed class CountingTaskItem(ITaskItem item) : ITaskItem

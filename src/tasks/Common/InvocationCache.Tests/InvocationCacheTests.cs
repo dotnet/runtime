@@ -1026,6 +1026,7 @@ public class InvocationCacheTests
     [InlineData("content")]
     [InlineData("absence")]
     [InlineData("context")]
+    [InlineData("null-context")]
     [InlineData("output")]
     [InlineData("input-path")]
     public void SharedFingerprintIncludesDeclaredInputsContextAndOutputs(string change)
@@ -1037,7 +1038,7 @@ public class InvocationCacheTests
         string second = Path.Combine(test.Source, "second.dll");
         string missing = Path.Combine(test.Source, "missing.dll");
         string[] inputs = new[] { first, second, missing };
-        string[] context = new[] { "arguments" };
+        string?[] context = new[] { change == "null-context" ? "" : "arguments" };
         InvocationOutputs outputs = test.OutputOutputs;
         string before = InvocationCache.ComputeKey(new InvocationDescription(InvocationInputs.FromFiles(inputs), context, outputs));
 
@@ -1046,6 +1047,7 @@ public class InvocationCacheTests
             case "content": File.WriteAllText(first, "changed"); break;
             case "absence": File.WriteAllText(missing, "now present"); break;
             case "context": context = new[] { "changed arguments" }; break;
+            case "null-context": context = new string?[] { null }; break;
             case "output": outputs = InvocationOutputs.FromFiles(Path.Combine(test.Output, "other.dll")); break;
             case "input-path":
                 string renamed = Path.Combine(test.Source, "renamed.dll");
@@ -1161,11 +1163,13 @@ public class InvocationCacheTests
         InvocationDescription second = Describe("second/a-repo", "second/z-packages/deeper", reverseInputs: true);
         string key = InvocationCache.ComputeKey(first);
         Assert.Equal(key, InvocationCache.ComputeKey(second));
+        Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(
+            "second/a-repo", "second/z-packages/deeper", reversePaths: true)));
 
         File.WriteAllText(second.Inputs.Files[0], "changed package contents");
         Assert.NotEqual(key, InvocationCache.ComputeKey(second));
 
-        InvocationDescription Describe(string repo, string packages, bool reverseInputs = false)
+        InvocationDescription Describe(string repo, string packages, bool reverseInputs = false, bool reversePaths = false)
         {
             repo = Path.Combine(test.Root, repo);
             packages = Path.Combine(test.Root, packages);
@@ -1181,8 +1185,9 @@ public class InvocationCacheTests
                 new TaskItem(packages, new Dictionary<string, string> { { "MappedPath", "/_1/" } })
             });
             string[] inputs = reverseInputs ? new[] { reference, input } : new[] { input, reference };
-            return new InvocationDescription(new InvocationInputs(inputs),
-                new[] { new InvocationArgument(input, isPath: true), new InvocationArgument(reference, isPath: true) },
+            string[] paths = reversePaths ? new[] { reference, input } : new[] { input, reference };
+            return new InvocationDescription(new InvocationInputs(inputs, paths),
+                new[] { "input", "reference" },
                 InvocationOutputs.FromDirectory(Path.Combine(repo, "output")), roots);
         }
     }

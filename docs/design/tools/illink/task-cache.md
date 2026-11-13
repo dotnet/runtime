@@ -21,19 +21,20 @@ maintenance commands.
 
 `ILLink` derives from the shared `CachedToolTask`, supplying `CacheConfiguration`, `DescribeInvocation`,
 and `ExecuteToolCore`. The base class checks whether caching is enabled before describing the invocation.
-Argument construction uses an ordinary `StringBuilder`, recording input roles and plain text/path
-context records in a single walk over the task inputs. Registering a path resolves it once against the captured caller's working
-directory. Argument records and input/output inventories share that physical full path.
+Argument construction uses an ordinary `StringBuilder`. In the same walk, it records effective task
+settings and item roles/metadata in context, with ordered path-valued inputs stored separately in
+`InvocationInputs.OrderedPaths`. Registering a path resolves it once against the captured caller's
+working directory. Ordered inputs and input/output inventories retain that physical full path.
 Known path arguments are passed to ILLink as full paths, without changing its working directory.
 The command-line and response-file hooks reuse that construction;
 execution does not reconstruct or compare arguments.
 The description callback expands the recorded inputs through `DescribeInvocation` and declares
 one owned output directory; it runs only when caching is enabled. Discovered dependencies already
 have full paths derived from their physical parent directories.
-Description construction retains prepared physical paths, context records, and a source-root map,
-without argument-rendering callbacks. Only key construction
-maps paths to portable identities, including known paths in the structured arguments, and orders the
-inventory by mapped identity. File reads, output
+The description contains task-input data rather than rendered arguments or argument fragments.
+The task assembly contributes to the key, identifying the logic that constructs arguments from those
+inputs. Only key construction maps paths to portable identities, preserving ordered inputs and sorting
+the file inventory by mapped identity. File reads, output
 validation, and restoration use the stored physical paths directly. Normal execution uses
 the already-generated arguments regardless of cache eligibility. ILLink owns metadata inspection
 and path-independence checks; the shared layer owns key serialization, full-content hashing,
@@ -62,7 +63,7 @@ working directory, or mutate task inputs. Source-root directories need not exist
 actually reads files from them. Unsupported opaque extra arguments retain their original spelling.
 
 Use the shared SHA-256 key builder over a length-delimited description with ILLink-specific context. Include
-generated arguments with mapped path tokens, logical output identity,
+effective task settings, ordered mapped path inputs, logical output identity,
 platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
 replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
 sidecar associations, and ordered search directories. The model describes the task's built-in

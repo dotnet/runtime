@@ -10,7 +10,7 @@ Derive from `CachedToolTask` and compile the shared sources into the task assemb
 - `CacheConfiguration` with an `InvocationCacheConfiguration` naming the tool and its enable/path
   environment variables. Only `true` enables caching; a path alone does not. Without an override,
   storage uses the platform's user cache directory.
-- `DescribeInvocation` to return input paths, effective arguments/context, and an owned
+- `DescribeInvocation` to return input paths, task settings/context, and an owned
   directory or file set through `InvocationDescription`. Return null for unsupported invocations.
 - `ExecuteToolCore` when the task needs tool-specific output preparation before calling the base
   implementation. It runs only on misses and bypasses.
@@ -56,11 +56,12 @@ physical declarations for consumers that do not prepare paths themselves.
 For cross-worktree sharing, attach a shared `SourceRootPathMap` constructed from MSBuild `SourceRoot`
 items with stable `MappedPath` metadata. Only key construction maps physical paths to cache identities.
 It maps paths for the key, sorts the input inventory by mapped identity, and hashes
-each identity together with the contents read from its physical path. Argument and search order
-belong in context, independently of inventory ordering.
-Path-bearing context uses `InvocationArgument` records marked with `IsPath`. The description stores
-their full physical values, without callbacks or rendering logic; key construction maps only those
-records, rather than replacing substrings in raw text.
+each identity together with the contents read from its physical path.
+`InvocationInputs.OrderedPaths` retains ordered path-valued task inputs, including search directories,
+independently of the file inventory's ordering. These values remain physical full paths until key
+construction maps them, preserving their order. `Context` contains non-path task settings and item
+roles/metadata; it distinguishes null from empty values. It need not contain rendered arguments:
+the task identity and its effective inputs determine those arguments.
 Without a root map, identities remain physical absolute paths.
 
 Consumers must preserve complete within-root layouts and distinguish external paths rather than

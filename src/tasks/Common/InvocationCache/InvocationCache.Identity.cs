@@ -42,11 +42,15 @@ internal sealed partial class InvocationCache
         writer.Write(CultureInfo.CurrentCulture.Name);
         writer.Write(CultureInfo.CurrentUICulture.Name);
         writer.Write(invocation.Context.Length);
-        foreach (InvocationArgument argument in invocation.Context)
+        foreach (string? value in invocation.Context)
         {
-            writer.Write(argument.IsPath);
-            writer.Write(argument.IsPath ? invocation.MapPath(argument.Value) : argument.Value);
+            writer.Write(value is not null);
+            if (value is not null)
+                writer.Write(value);
         }
+        writer.Write(invocation.Inputs.OrderedPaths.Length);
+        foreach (string path in invocation.Inputs.OrderedPaths)
+            writer.Write(invocation.MapPath(path));
         writer.Write(invocation.Outputs.DirectoryPath is not null);
         if (invocation.Outputs.DirectoryPath is not null)
             writer.Write(invocation.MapPath(invocation.Outputs.DirectoryPath));

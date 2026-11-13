@@ -3,21 +3,7 @@
 
 #nullable enable
 
-using System;
-
 namespace Microsoft.NET.Build.Tasks;
-
-internal readonly struct InvocationArgument
-{
-    internal string Value { get; }
-    internal bool IsPath { get; }
-
-    internal InvocationArgument(string value, bool isPath = false)
-    {
-        Value = value;
-        IsPath = isPath;
-    }
-}
 
 internal sealed class InvocationDescription
 {
@@ -25,16 +11,10 @@ internal sealed class InvocationDescription
 
     internal InvocationInputs Inputs { get; }
     internal InvocationOutputs Outputs { get; }
-    internal InvocationArgument[] Context { get; }
+    internal string?[] Context { get; }
 
-    internal InvocationDescription(InvocationInputs inputs, string[] context, InvocationOutputs outputs,
+    internal InvocationDescription(InvocationInputs inputs, string?[] context, InvocationOutputs outputs,
         SourceRootPathMap? pathMap = null)
-        : this(inputs, Array.ConvertAll(context, static value => new InvocationArgument(value)), outputs, pathMap)
-    {
-    }
-
-    internal InvocationDescription(InvocationInputs inputs, InvocationArgument[] context,
-        InvocationOutputs outputs, SourceRootPathMap? pathMap = null)
     {
         _pathMap = pathMap;
         Context = context;
