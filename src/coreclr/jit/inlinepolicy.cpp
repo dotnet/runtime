@@ -789,18 +789,18 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
+    // For prejit roots we do not see the call sites. To be suitably optimistic
+    // assume that call sites may pass constants.
+    if (m_IsPrejitRoot && ((m_ArgFeedsConstantTest > 0) || (m_ArgFeedsTest > 0)))
+    {
+        multiplier += 3.0;
+        JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+
     if (m_MayReturnSmallArray)
     {
         multiplier += 4.0;
         JITDUMP("\nInline candidate may return small known-size array.  Multiplier increased to %g.", multiplier);
-    }
-
-    // For prejit roots we do not see the call sites. To be suitably optimistic
-    // assume that call sites may pass constants.
-    else if (m_IsPrejitRoot && ((m_ArgFeedsConstantTest > 0) || (m_ArgFeedsTest > 0)))
-    {
-        multiplier += 3.0;
-        JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
     switch (m_CallsiteFrequency)

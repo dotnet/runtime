@@ -192,6 +192,8 @@ namespace ObjectStackAllocation
             // Fixed-sized stack array cases
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElements, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayWithGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithLongElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithDoubleElements, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
 
@@ -464,6 +466,22 @@ namespace ObjectStackAllocation
             array[24] = "42";
             GC.Collect();
             return array[24].Length * 21 + array.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithLongElements()
+        {
+            long[] array = new long[42];
+            array[24] = 42;
+            return (int)array[24] + array.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithDoubleElements()
+        {
+            double[] array = new double[42];
+            array[24] = 42;
+            return (int)array[24] + array.Length;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

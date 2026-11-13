@@ -1806,7 +1806,20 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
 
     const bool         shortLifetime = false;
-    const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
+    bool               alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (!alignTo8)
+    {
+        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+        var_types elemType = JITtype2varType(m_compiler->info.compCompHnd->getChildType(clsHnd, &elemClsHnd));
+        alignTo8 = (elemType == TYP_LONG) || (elemType == TYP_ULONG) || (elemType == TYP_DOUBLE);
+        if (elemType == TYP_STRUCT)
+        {
+            assert(elemClsHnd != NO_CLASS_HANDLE);
+            alignTo8 = m_compiler->info.compCompHnd->getClassAlignmentRequirement(elemClsHnd) == 8;
+        }
+    }
+#endif
     const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
     LclVarDsc* const   lclDsc        = m_compiler->lvaGetDesc(lclNum);
 
