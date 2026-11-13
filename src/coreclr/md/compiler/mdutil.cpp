@@ -50,7 +50,7 @@ LOADEDMODULES::InitializeStatics()
 
         // Initialize the global instance
         {
-            NewHolder<LOADEDMODULES> pLoadedModules = new (nothrow) LOADEDMODULES();
+            NewHolder<LOADEDMODULES> pLoadedModules(new (nothrow) LOADEDMODULES());
             IfNullGo(pLoadedModules);
 
             {
@@ -59,7 +59,7 @@ LOADEDMODULES::InitializeStatics()
 
                 if (VolatileLoad(&s_pLoadedModules) == NULL)
                 {
-                    VolatileStore(&s_pLoadedModules, pLoadedModules.Extract());
+                    VolatileStore(&s_pLoadedModules, pLoadedModules.Detach());
                 }
             }
         }

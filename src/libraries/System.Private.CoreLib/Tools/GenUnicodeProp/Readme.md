@@ -8,7 +8,7 @@ Before running this tool, ensure the following are all in sync:
  - The <SystemPrivateRuntimeUnicodeDataVersion> element in $(REPOROOT)/eng/Versions.props contains the correct version
    of the package mentioned above.
 
- - The <UnicodeUcdVersion> element in ./GenUnicodeProp.csproj contains the UCD version of the files you wish to process.
+ - The <UnicodeUcdVersion> property in eng/Versions.props contains the UCD version of the files you wish to process.
 
 Once this has been configured, from this directory, invoke:
 
@@ -22,5 +22,5 @@ Then move the generated CharUnicodeInfoData.cs file to $(LIBRARIESROOT)/System.P
 overwriting the file in that directory, and commit it. DO NOT commit the file to this directory.
 
 ### Update other components
-- Follow the [instructions](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Text.RegularExpressions/tools/Readme.md) to update the Unicode data in RegularExpressions library.
+- Follow the [instructions](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Text.RegularExpressions/tools/GenerateRegexCasingTable/Readme.md) to update the Unicode data in RegularExpressions library.
 - Follow the [instructions](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Text.Encodings.Web/tools/updating-encodings.md) to update the Unicode data in System.Text.Encodings.Web library.

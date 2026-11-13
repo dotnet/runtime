@@ -4810,6 +4810,18 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             if (fgCanCompactBlock(block))
             {
+                // Removing an empty source can avoid repeatedly moving a shared target's predecessor list.
+                // Compaction only needs to redirect the target's other incoming edges.
+                BasicBlock* const target = block->GetTarget();
+                if ((target->countOfInEdges() > 1) && (block->countOfInEdges() < (target->countOfInEdges() - 1)) &&
+                    !block->HasFlag(BBF_DONT_REMOVE) && fgOptimizeEmptyBlock(block))
+                {
+                    assert(block->HasFlag(BBF_REMOVED));
+                    change   = true;
+                    modified = true;
+                    continue;
+                }
+
                 fgCompactBlock(block);
 
                 // we compacted two blocks - goto REPEAT to catch similar cases
@@ -6018,7 +6030,10 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
     }
     if ((tree2Flags & GTF_ORDER_SIDEEFF) != 0)
     {
-        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0)
+        // A non-faulting head can depend on a check in the terminator. Invariant
+        // loads can perform that check without GTF_GLOB_REF. Moving ahead of it
+        // can also change which exception is raised first.
+        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF | GTF_EXCEPT)) != 0)
         {
             JITDUMP("  cannot reorder ordering side effect\n");
             return false;

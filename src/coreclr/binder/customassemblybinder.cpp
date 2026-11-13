@@ -200,7 +200,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
                 }
 #endif
                 // Return reference to the allocated Binder instance
-                *ppBindContext = pBinder.Extract();
+                *ppBindContext = pBinder.Detach();
             }
         }
     }

@@ -71,14 +71,14 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         EmitReturnDroppingThunk(pThunkTarget, msig, &sl);
     }
 
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> ilResolver{ new ILStubResolver() };
     // Initialize the resolver target details.
     ilResolver->SetStubMethodDesc(this);
     ilResolver->SetStubTargetMethodDesc(pThunkTarget);
 
     // Generate all IL associated data for JIT
     *methodILDecoder = ilResolver->FinalizeILStub(&sl);
-    *resolver = ilResolver.Extract();
+    *resolver = ilResolver.Detach();
     return true;
 }
 

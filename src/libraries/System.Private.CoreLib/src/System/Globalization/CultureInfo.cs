@@ -608,7 +608,10 @@ namespace System.Globalization
         public virtual CompareInfo CompareInfo => _compareInfo ??=
             // Since CompareInfo's don't have any overrideable properties, get the CompareInfo from
             // the Non-Overridden CultureInfo so that we only create one CompareInfo per culture
-            (UseUserOverride ? GetCultureInfo(_name).CompareInfo : new CompareInfo(this));
+            // In invariant predefined-only mode, user overrides are never used.
+            (!(GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly) && UseUserOverride
+                ? GetCultureInfo(_name).CompareInfo
+                : new CompareInfo(this));
 
         /// <summary>
         /// Gets the TextInfo for this culture.

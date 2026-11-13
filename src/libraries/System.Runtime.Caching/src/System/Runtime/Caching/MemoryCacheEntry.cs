@@ -26,15 +26,15 @@ namespace System.Runtime.Caching
         private UsageEntryRef _usageEntryRef;   // ref into the usage list
         private DateTime _utcLastUpdateUsage;   // time we last updated usage
 
-        private readonly CacheEntryRemovedCallback _callback;
-        private SeldomUsedFields _fields; // optimization to reduce workingset when the entry hasn't any dependencies
+        private readonly CacheEntryRemovedCallback? _callback;
+        private SeldomUsedFields? _fields; // optimization to reduce workingset when the entry hasn't any dependencies
 
         private sealed class SeldomUsedFields
         {
-            internal Collection<ChangeMonitor> _dependencies; // the entry's dependency needs to be disposed when the entry is released
-            internal Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor> _dependents;  // dependents must be notified when this entry is removed
-            internal MemoryCache _cache;
-            internal Tuple<MemoryCacheStore, MemoryCacheEntry> _updateSentinel; // the MemoryCacheEntry (and its associated store) of the OnUpdateSentinel for this entry, if there is one
+            internal Collection<ChangeMonitor>? _dependencies; // the entry's dependency needs to be disposed when the entry is released
+            internal Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor>? _dependents;  // dependents must be notified when this entry is removed
+            internal MemoryCache? _cache;
+            internal Tuple<MemoryCacheStore, MemoryCacheEntry>? _updateSentinel; // the MemoryCacheEntry (and its associated store) of the OnUpdateSentinel for this entry, if there is one
         }
 
         internal object Value
@@ -108,8 +108,8 @@ namespace System.Runtime.Caching
                                   DateTimeOffset absExp,
                                   TimeSpan slidingExp,
                                   CacheItemPriority priority,
-                                  Collection<ChangeMonitor> dependencies,
-                                  CacheEntryRemovedCallback removedCallback,
+                                  Collection<ChangeMonitor>? dependencies,
+                                  CacheEntryRemovedCallback? removedCallback,
                                   MemoryCache cache) : base(key)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -223,7 +223,7 @@ namespace System.Runtime.Caching
             return !_usageEntryRef.IsInvalid;
         }
 
-        private void OnDependencyChanged(object state)
+        private void OnDependencyChanged(object? state)
         {
             if (State == EntryState.AddedToCache)
             {
@@ -231,7 +231,7 @@ namespace System.Runtime.Caching
                 // to throw potentially unhandled "disposed" exceptions in this case.
                 // However, RemoveEntry sidesteps 'throwOnDispose' so we don't need to
                 // worry about a try/catch here.
-                _fields._cache.RemoveEntry(this.Key, this, CacheEntryRemovedReason.ChangeMonitorChanged);
+                _fields?._cache?.RemoveEntry(this.Key, this, CacheEntryRemovedReason.ChangeMonitorChanged);
             }
         }
 
@@ -241,7 +241,7 @@ namespace System.Runtime.Caching
 
             // Are there any cache entries that depend on this entry?
             // If so, we need to fire their dependencies.
-            Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor>.KeyCollection deps = null;
+            Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor>.KeyCollection? deps = null;
             // clone the dependents
             lock (this)
             {
@@ -300,10 +300,10 @@ namespace System.Runtime.Caching
         internal void UpdateSlidingExpForUpdateSentinel()
         {
             // We don't need a lock to get information about the update sentinel
-            SeldomUsedFields fields = _fields;
+            SeldomUsedFields? fields = _fields;
             if (fields != null)
             {
-                Tuple<MemoryCacheStore, MemoryCacheEntry> sentinelInfo = fields._updateSentinel;
+                Tuple<MemoryCacheStore, MemoryCacheEntry>? sentinelInfo = fields._updateSentinel;
 
                 // touch the update sentinel to keep it from expiring
                 if (sentinelInfo != null)
@@ -326,15 +326,21 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in _fields._dependencies)
                     {
-                        MemoryCacheEntryChangeMonitor m = monitor as MemoryCacheEntryChangeMonitor;
+                        MemoryCacheEntryChangeMonitor? m = monitor as MemoryCacheEntryChangeMonitor;
                         if (m == null)
                         {
                             continue;
                         }
-                        foreach (MemoryCacheEntry e in m.Dependencies)
+                        if (m.Dependencies != null)
                         {
-                            MemoryCacheStore store = e._fields._cache.GetStore(e);
-                            e.UpdateUsage(utcNow, store.Usage);
+                            foreach (MemoryCacheEntry e in m.Dependencies)
+                            {
+                                MemoryCacheStore? store = e._fields?._cache?.GetStore(e);
+                                if (store != null)
+                                {
+                                    e.UpdateUsage(utcNow, store.Usage);
+                                }
+                            }
                         }
                     }
                 }

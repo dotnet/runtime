@@ -96,7 +96,6 @@ typedef ComCallWrapper *ComCallWrapperPtr;
 // This is used to hold a newly created CCW. It will release the CCW (and linked wrappers)
 // upon exit, if SuppressRelease() is not called. It doesn't try to release the SimpleComCallWrapper
 // or destroy the handle
-// I need to use BaseHolder instead of BaseWrapper because BaseHolder allows me to use a class as BASE
 //
 class NewCCWHolder : public BaseHolder<ComCallWrapperPtr, NewCCWHolderBase>
 {
@@ -751,14 +750,14 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         return;
 
     // Create the DispatchExInfo object.
-    NewHolder<DispatchExInfo> pDispExInfo = new DispatchExInfo(this, m_pMT);
+    NewHolder<DispatchExInfo> pDispExInfo{ new DispatchExInfo(this, m_pMT) };
 
     // Synchronize the DispatchExInfo with the actual object.
     pDispExInfo->SynchWithManagedView();
 
     // Swap the lock into the class member in a thread safe manner.
-    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, pDispExInfo.GetValue(), NULL))
-        pDispExInfo.SuppressRelease();
+    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, static_cast<DispatchExInfo*>(pDispExInfo), NULL))
+        pDispExInfo.Detach();
 
     // Set the vtable entry to ensure that the next QI call will return immediately.
     m_rgpVtable[enum_IDispatchEx] = g_rgStdVtables[enum_IDispatchEx];
@@ -1273,13 +1272,13 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
 
     // Create a new connection point enum.
     ComCallWrapper *pWrap = GetMainWrapper();
-    NewHolder<ConnectionPointEnum>pCPEnum = new ConnectionPointEnum(pWrap, m_pCPList);
+    NewHolder<ConnectionPointEnum> pCPEnum{ new ConnectionPointEnum(pWrap, m_pCPList) };
 
     // Retrieve the IEnumConnectionPoints interface. This cannot fail.
     HRESULT hr = SafeQueryInterface((IUnknown*)pCPEnum, IID_IEnumConnectionPoints, (IUnknown**)ppEnumCP);
     _ASSERTE(hr == S_OK);
 
-    pCPEnum.SuppressRelease();
+    pCPEnum.Detach();
 }
 
 //--------------------------------------------------------------------------
@@ -1899,7 +1898,8 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                 pStartWrapper = GetWrapperForObject(pServer, pTemplate);
                 if (pStartWrapper == NULL)
                 {
-                    Wrapper<OBJECTHANDLE, DoNothing, DestroyRefcountedHandle> oh;
+                    RefcountedHandleHolder ownedHandle;
+                    OBJECTHANDLE oh = NULL;
 
                     ComCallWrapper *pRootWrapper = GetWrapperForObject(pServer, NULL);
                     if (pRootWrapper == NULL)
@@ -1909,19 +1909,19 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         // attempt to hand this out to another domain then we will assume that the object is truly
                         // agile and will convert the handle to a global handle.
                         oh = GetAppDomain()->CreateRefcountedHandle(NULL);
+                        ownedHandle = oh;
                         _ASSERTE(oh);
                     }
                     else
                     {
                         // if the object already has a CCW, we reuse the handle
                         oh = pRootWrapper->GetObjectHandle();
-                        oh.SuppressRelease();
                     }
 
                     // copy from template
                     pNewCCW = CopyFromTemplate(pTemplate, pWrapperCache, oh);
 
-                    NewHolder<SimpleComCallWrapper> pSimpleWrap = new SimpleComCallWrapper();
+                    NewHolder<SimpleComCallWrapper> pSimpleWrap{ new SimpleComCallWrapper() };
 
                     pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pSyncBlock, pTemplate);
 
@@ -1946,9 +1946,9 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         ComCallWrapper::SetNext(pRootWrapper, pNewCCW);
                     }
 
-                    oh.SuppressRelease();
+                    ownedHandle.Detach();
                     pNewCCW.SuppressRelease();
-                    pSimpleWrap.SuppressRelease();
+                    pSimpleWrap.Detach();
 
                     pStartWrapper = pNewCCW;
                 }
@@ -2658,21 +2658,19 @@ ComCallWrapperCache *ComCallWrapperCache::Create(LoaderAllocator *pLoaderAllocat
     }
     CONTRACTL_END;
 
-    NewHolder<ComCallWrapperCache> pWrapperCache = new ComCallWrapperCache();
+    NewHolder<ComCallWrapperCache> pWrapperCache{ new ComCallWrapperCache() };
 
     LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Create %8.8x in loader allocator [%d] %8.8x\n",
         (ComCallWrapperCache *)pWrapperCache, pLoaderAllocator ? pLoaderAllocator->GetCreationNumber() : 0, pLoaderAllocator));
 
-    NewHolder<CCacheLineAllocator> line = new CCacheLineAllocator;
+    NewHolder<CCacheLineAllocator> line{ new CCacheLineAllocator };
 
     pWrapperCache->m_pLoaderAllocator = pLoaderAllocator;
-    pWrapperCache->m_pCacheLineAllocator = line;
+    pWrapperCache->m_pCacheLineAllocator = line.Detach();
 
     pWrapperCache->AddRef();
 
-    line.SuppressRelease();
-    pWrapperCache.SuppressRelease();
-    return pWrapperCache;
+    return pWrapperCache.Detach();
 }
 
 //-------------------------------------------------------------------
@@ -2826,8 +2824,8 @@ void ComMethodTable::LayOutClassMethodTable()
     if (cbTempVtable.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewArrayHolder<BYTE> pTempVtable = new BYTE[cbTempVtable.Value()];
-    pDispVtable = (IDispatchVtable *)pTempVtable.GetValue();
+    NewArrayHolder<BYTE> pTempVtable{ new BYTE[cbTempVtable.Value()] };
+    pDispVtable = reinterpret_cast<IDispatchVtable*>(static_cast<BYTE*>(pTempVtable));
 
     //
     // Set up the IUnknown and IDispatch methods.
@@ -3113,9 +3111,9 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     if (cbTempVtable.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewArrayHolder<BYTE> pTempVtable = new BYTE[cbTempVtable.Value()];
+    NewArrayHolder<BYTE> pTempVtable{ new BYTE[cbTempVtable.Value()] };
 
-    pUnkVtable = (IUnkVtable *)pTempVtable.GetValue();
+    pUnkVtable = reinterpret_cast<IUnkVtable*>(static_cast<BYTE*>(pTempVtable));
     pComVtable = ((SLOT*)pUnkVtable) + cbExtraSlots;
 
     // Set all vtable slots to -1 for sparse vtables. That way we catch attempts
@@ -3378,14 +3376,14 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
     if (!m_pDispatchInfo)
     {
         // Create the DispatchInfo object.
-        NewHolder<DispatchInfo> pDispInfo = new DispatchInfo(m_pMT);
+        NewHolder<DispatchInfo> pDispInfo{ new DispatchInfo(m_pMT) };
 
         // Synchronize the DispatchInfo with the actual object.
         pDispInfo->SynchWithManagedView();
 
         // Swap the lock into the class member in a thread safe manner.
-        if (NULL == InterlockedCompareExchangeT(&m_pDispatchInfo, pDispInfo.GetValue(), NULL))
-            pDispInfo.SuppressRelease();
+        if (NULL == InterlockedCompareExchangeT(&m_pDispatchInfo, static_cast<DispatchInfo*>(pDispInfo), NULL))
+            pDispInfo.Detach();
 
     }
 

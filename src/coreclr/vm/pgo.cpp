@@ -62,8 +62,10 @@ void PgoManager::Initialize()
 
     s_pgoMgrLock.Init(CrstLeafLock, CRST_DEFAULT);
 
-    // If we're reading in counts, do that now
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    // Text profiles are consumed by the JIT, not by the interpreter.
     ReadPgoData();
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 }
 
 void PgoManager::Shutdown()
@@ -73,7 +75,12 @@ void PgoManager::Shutdown()
     if (!written)
     {
         written = true;
+#ifndef PERFTRACING_DISABLE_THREADS
+        LogInstrumentationData();
+#endif
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
         WritePgoData();
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
     }
 }
 
@@ -186,10 +193,6 @@ void PgoManager::LogInstrumentationData()
 
 void PgoManager::WritePgoData()
 {
-#ifndef PERFTRACING_DISABLE_THREADS
-    LogInstrumentationData();
-#endif
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) == 0)
     {
         return;
@@ -1140,7 +1143,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
             r2rReader.instrumentationData.Append(0);
         }
         size_t schemaDataSize = r2rReader.schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
-        NewArrayHolder<BYTE> allocatedData = new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize];
+        NewArrayHolder<BYTE> allocatedData(new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize]);
 
         *pInstrumentationData = (BYTE*)allocatedData;
         *pCountSchemaItems = r2rReader.schemaArray.GetCount();
@@ -1150,8 +1153,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
         memcpy(*ppSchema, r2rReader.schemaArray.OpenRawBuffer(), schemaDataSize);
         r2rReader.schemaArray.CloseRawBuffer();
 
-        allocatedData.SuppressRelease();
-        *pAllocatedData = allocatedData;
+        *pAllocatedData = allocatedData.Detach();
         return S_OK;
     }
 }

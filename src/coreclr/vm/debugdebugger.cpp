@@ -942,20 +942,6 @@ extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip,
     return pResult;
 }
 
-struct StrongHandleHolderTraits final
-{
-    using Type = OBJECTHANDLE;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type handle) noexcept
-    {
-        WRAPPER_NO_CONTRACT;
-        if (handle != NULL)
-            DestroyStrongHandle(handle);
-    }
-};
-
-using StrongHandleHolder = LifetimeHolder<StrongHandleHolderTraits>;
-
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent
@@ -1166,11 +1152,10 @@ extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
             pMT->EnsureInstanceActive();
             SIZE_T size = pMT->GetNumInstanceFieldBytes();
             NewArrayHolder<BYTE> memory(new BYTE[size]);
-            memset(memory.GetValue(), 0, size);
-            ExternalMemoryHandle* handle = ExternalMemoryHandle::Add(resultType, memory.GetValue());
-            pContext->pResultData = memory.GetValue();
+            memset(memory, 0, size);
+            ExternalMemoryHandle* handle = ExternalMemoryHandle::Add(resultType, memory);
+            pContext->pResultData = memory.Detach();
             pContext->pTemporaryResult = handle;
-            memory.SuppressRelease();
             pContext->flags |= FuncEvalValueTypeResult;
         }
         if (resultType.IsByRef())
