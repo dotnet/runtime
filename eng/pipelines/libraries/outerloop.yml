@@ -144,7 +144,7 @@ extends:
               jobParameters:
                 testScope: all
                 nameSuffix: LibraryTestsCoreCLR
-                buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope all /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) /p:InstallChromeForTests=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
+                buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope all /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) /p:InstallChromeForTests=true /p:TestWasmReadyToRun=false /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
                 # This lane runs the slow suites with a 04:00:00 per-suite xharness
                 # timeout and a per-batch Helix cap of 300 min (see
                 # eng/testing/tests.wasm.targets and src/libraries/sendtohelix-browser.targets).
@@ -161,7 +161,7 @@ extends:
                       testScope: all
                       creator: dotnet-bot
                       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-                      extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+                      extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:TestWasmReadyToRun=false
                       useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
           # Full trimmed CoreCLR ReadyToRun library tests, including slow [OuterLoop] tests
