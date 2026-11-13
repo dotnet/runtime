@@ -104,6 +104,7 @@ internal static partial class Interop
 
             SafeBignumHandle n, e, d, p, dmp1, q, dmq1, iqmp;
             if (!GetRsaParameters(key,
+                includePrivateParameters ? 1 : 0,
                 out n,
                 out e,
                 out d,
@@ -163,6 +164,7 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetRsaParameters(
             SafeRsaHandle key,
+            int includePrivateParameters,
             out SafeBignumHandle n,
             out SafeBignumHandle e,
             out SafeBignumHandle d,
