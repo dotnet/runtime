@@ -99,19 +99,14 @@ namespace System.Reflection
 
         private static void AppendQuoted(this ref ValueStringBuilder vsb, string s)
         {
-            bool needsQuoting = false;
-            const char quoteChar = '\"';
-
             // App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
             // You can use double or single quotes to quote a name. We use double quotes consistently.
             const char quoteChar = '\"';
             ReadOnlySpan<char> span = s.AsSpan();
+
             // Only whitespace recognized by the assembly name parser needs quoting.
             Debug.Assert(!span.IsEmpty);
             bool needsQuoting = IsWhiteSpace(span[0]) || IsWhiteSpace(span[span.Length - 1]) || span.IndexOfAny('\"', '\'') >= 0;
-                span.IndexOfAny('\"', '\'') >= 0)
-                needsQuoting = true;
-
             if (needsQuoting)
                 vsb.Append(quoteChar);
 
