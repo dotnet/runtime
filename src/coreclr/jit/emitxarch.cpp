@@ -20093,6 +20093,13 @@ emitter::insFormat emitter::getMemoryOperation(instrDesc* id) const
         return IF_NONE;
     }
 
+    if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
+    {
+        // a call or tail jmp through a register carries an addressing mode
+        // format but doesn't actually read memory
+        return IF_NONE;
+    }
+
     return ExtractMemoryFormat(insFmt);
 }
 
@@ -20514,7 +20521,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case IF_SRD:
                 case IF_ARD:
                 case IF_MRD:
-                    insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    // A call through a register reads no memory (its phantom
+                    // access is dropped in getMemoryOperation) and prices as
+                    // a taken indirect branch. A call through memory also
+                    // pays its load.
+                    insThroughput = id->idIsCallRegPtr() ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_3C;
                     break;
 
                 default:
