@@ -255,7 +255,13 @@ namespace System.Net.Sockets
             }
             if (OperatingSystem.IsWasi())
             {
-                // WASI never blocks and doesn't support linger options
+                // WASI doesn't support linger options. Closing a TCP socket with a write in flight blocks
+                // until the write completes, so defer the close instead of blocking the whole guest.
+                if (System.Threading.UnixHandleAsyncContext.TryDeferCloseWhileWritePending(handle, h => CloseHandle(h)))
+                {
+                    return SocketError.Success;
+                }
+
                 return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
             }
 

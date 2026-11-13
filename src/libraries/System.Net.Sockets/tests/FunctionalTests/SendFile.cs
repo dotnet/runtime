@@ -431,7 +431,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Hangs on WASI: canceling pending SendFileAsync operations stalls the event loop")]
         public async Task SendFileAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
             const int CancelAfter = 200; // ms

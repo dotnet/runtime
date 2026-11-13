@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using static Interop;
 using static Interop.Sys;
 
@@ -301,6 +302,52 @@ namespace System.Threading
                 Environment.FailFast("Failed to subscribe WASI pollable for kind " + kind + " and handle " + streamOrSocketHandle);
             }
             return pollableHandle;
+        }
+
+        /// <summary>
+        /// Defers closing a connected TCP socket while its output stream still has a write in flight.
+        /// </summary>
+        /// <remarks>
+        /// wasmtime's TCP output stream waits for in-flight background writes to finish when it is dropped,
+        /// which blocks the whole single-threaded guest. If the peer that has to read that data runs in the
+        /// same guest, it can never run and closing the socket deadlocks. Waiting for the output stream's
+        /// pollable through the event loop keeps other work running until the write completes.
+        /// </remarks>
+        /// <returns><see langword="true"/> if <paramref name="close"/> will be called once the pending write completes;
+        /// <see langword="false"/> if the caller should close the socket now.</returns>
+        public static unsafe bool TryDeferCloseWhileWritePending(IntPtr socketHandle, Action<IntPtr> close)
+        {
+            nint entryPtr = default;
+            int socketType = 0;
+            if (Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr, &socketType) != Interop.Error.SUCCESS || socketType != 1)
+            {
+                return false;
+            }
+
+            tcp_socket_t* socket = (tcp_socket_t*)entryPtr;
+            if (socket->state.tag != tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTED)
+            {
+                return false;
+            }
+
+            int pollableHandle = EnsurePollable(SubscribeKindOutputStream, socket->state.state.connected.output.handle, ref socket->state.state.connected.output_pollable.handle);
+            if (WasiPollWorld.wit.Imports.wasi.io.v0_2_8.PollImportsInterop.Pollable.ReadyWasmInterop.wasmImportReady(pollableHandle) != 0)
+            {
+                return false;
+            }
+
+            // wasi-libc owns the pollable and drops it when the socket is closed.
+            WasiEventLoop.RegisterWasiPollableHandle(pollableHandle, ownsPollable: false, CancellationToken.None).ContinueWith(
+                static (_, state) =>
+                {
+                    var (handle, close) = ((IntPtr, Action<IntPtr>))state!;
+                    close(handle);
+                },
+                (socketHandle, close),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            return true;
         }
 
         private static unsafe IList<int> BeforePollHook(object? state)

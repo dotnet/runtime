@@ -53,6 +53,7 @@ namespace System.Threading
         public System.Threading.UnixHandleAsyncContext.SyncResult Read(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
         public System.Threading.UnixHandleAsyncContext.SyncResult Write(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
         public bool AbortAndDispose() { throw null; }
+        public static bool TryDeferCloseWhileWritePending(System.IntPtr socketHandle, System.Action<System.IntPtr> close) { throw null; }
         public enum AsyncResult
         {
             Pending = 0,

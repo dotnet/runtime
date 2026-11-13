@@ -1218,7 +1218,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Hangs on WASI: disposing a socket with a large pending send stalls the event loop")]
         public async Task TcpPeerReceivesFinOnShutdownWithPendingData()
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
