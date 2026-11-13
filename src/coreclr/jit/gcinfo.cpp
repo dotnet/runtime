@@ -382,12 +382,7 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 
     /* Allocate a new entry and initialize it */
 
-    regPtrNext = new (m_compiler, CMK_GC) regPtrDsc;
-
-    regPtrNext->rpdIsThis = false;
-
-    regPtrNext->rpdOffs = 0;
-    regPtrNext->rpdNext = nullptr;
+    regPtrNext = new (m_compiler, CMK_GC) regPtrDsc{};
 
     // Append the entry to the end of the list.
     if (gcRegPtrLast == nullptr)
