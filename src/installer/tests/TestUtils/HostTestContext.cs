@@ -11,6 +11,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static string BuildArchitecture { get; }
         public static string BuildRID { get; }
         public static string Configuration { get; }
+        public static string RuntimeFlavor { get; }
 
         public static string MicrosoftNETCoreAppVersion { get; }
         public static string Tfm { get; }
@@ -38,6 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             BuildArchitecture = GetTestContextVariable("BUILD_ARCHITECTURE");
             BuildRID = GetTestContextVariable("BUILD_RID");
             Configuration = GetTestContextVariable("BUILD_CONFIGURATION");
+            RuntimeFlavor = GetTestContextVariable("RUNTIME_FLAVOR");
 
             MicrosoftNETCoreAppVersion = GetTestContextVariable("MNA_VERSION");
             Tfm = GetTestContextVariable("MNA_TFM");
