@@ -20,6 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="Interop\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFBundle.cs" Link="Interop\OSX\Interop.CoreFoundation.CFBundle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentPackageFamilyName.cs" Link="Interop\Windows\Kernel32\Interop.GetCurrentPackageFamilyName.cs" />
+    <Compile Include="System\Configuration\AppleApplication.cs" />
     <Compile Include="System\Configuration\DictionarySectionHandler.cs" />
     <Compile Include="System\Configuration\DpapiProtectedConfigurationProvider.cs" />
     <Compile Include="System\Configuration\IConfigurationSystem.cs" />
@@ -249,6 +253,7 @@
     <Compile Include="System\Configuration\ValidatorCallback.cs" />
     <Compile Include="System\Configuration\ValidatorUtils.cs" />
     <Compile Include="System\Configuration\WhiteSpaceTrimStringConverter.cs" />
+    <Compile Include="System\Configuration\WindowsApplication.cs" />
     <Compile Include="System\Configuration\XmlUtil.cs" />
     <Compile Include="System\Configuration\XmlUtilWriter.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
