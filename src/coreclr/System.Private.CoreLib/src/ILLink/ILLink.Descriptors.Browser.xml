@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Threading.TimerQueue">
+      <!-- Required by the native library even when managed timers are unused. -->
+      <method name="TimerHandler" />
+    </type>
+  </assembly>
+</linker>
