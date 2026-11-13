@@ -57,11 +57,11 @@ internal sealed partial class InvocationCache
         writer.Write(invocation.Outputs.Files.Length);
         foreach (string output in invocation.Outputs.Files)
             writer.Write(invocation.MapPath(output));
-        var inputs = new (string Path, string Identity)[invocation.Inputs.Files.Length];
-        for (int i = 0; i < inputs.Length; i++)
+        var inputs = new (string Path, string Identity)[invocation.Inputs.Files.Count];
+        int i = 0;
+        foreach (string path in invocation.Inputs.Files)
         {
-            string path = invocation.Inputs.Files[i];
-            inputs[i] = (path, invocation.MapPath(path));
+            inputs[i++] = (path, invocation.MapPath(path));
         }
         Array.Sort(inputs, static (left, right) => StringComparer.Ordinal.Compare(left.Identity, right.Identity));
         writer.Write(inputs.Length);

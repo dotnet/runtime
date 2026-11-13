@@ -117,7 +117,7 @@ namespace ILLink.Tasks.Tests
             {
                 var context = driver.Context;
 
-                var expectedReferences = assemblyPaths.Select(p => Path.GetFullPath(p.ItemSpec))
+                var expectedReferences = assemblyPaths.Select(p => p.ItemSpec)
                     .GroupBy(p => Path.GetFileNameWithoutExtension(p))
                     .Select(g => g.First());
                 var actualReferences = driver.GetReferenceAssemblies();
@@ -166,7 +166,7 @@ namespace ILLink.Tasks.Tests
             };
             using (var driver = task.CreateDriver())
             {
-                var expectedReferences = referenceAssemblyPaths.Select(Path.GetFullPath);
+                var expectedReferences = referenceAssemblyPaths;
                 var actualReferences = driver.GetReferenceAssemblies();
                 Assert.Equal(expectedReferences.OrderBy(a => a), actualReferences.OrderBy(a => a));
                 foreach (var reference in expectedReferences)
@@ -208,7 +208,7 @@ namespace ILLink.Tasks.Tests
             using (var driver = task.CreateDriver())
             {
                 var actualOutputDirectory = driver.Context.OutputDirectory;
-                Assert.Equal(Path.GetFullPath(outputDirectory), actualOutputDirectory);
+                Assert.Equal(outputDirectory, actualOutputDirectory);
             }
         }
 
@@ -242,7 +242,7 @@ namespace ILLink.Tasks.Tests
             using (var driver = task.CreateDriver())
             {
                 var actualDescriptors = driver.GetRootDescriptors();
-                Assert.Equal(rootDescriptorFiles.Select(Path.GetFullPath).OrderBy(f => f), actualDescriptors.OrderBy(f => f));
+                Assert.Equal(rootDescriptorFiles.OrderBy(f => f), actualDescriptors.OrderBy(f => f));
             }
         }
 
@@ -1877,7 +1877,7 @@ namespace ILLink.Tasks.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void CacheInvocationUsesFullPathsAndCallerWorkingDirectory(bool relativeInputs, bool externalReference)
+        public void CacheInvocationPreservesPathsAndCallerWorkingDirectory(bool relativeInputs, bool externalReference)
         {
             RemoteExecutor.Invoke(static (relative, external) =>
             {
@@ -1913,15 +1913,15 @@ namespace ILLink.Tasks.Tests
                     Assert.NotNull(test.Task.CacheInvocation);
                     var invocation = test.Task.CacheInvocation.Value;
                     Assert.Equal(caller, invocation.WorkingDirectory);
-                    Assert.Equal($" \"{Path.Combine(test.Root, "tools", "illink.dll")}\"", invocation.CommandLine);
+                    Assert.Equal($" \"{test.Task.ILLinkPath}\"", invocation.CommandLine);
                     var arguments = new Queue<string>();
                     using var response = new StringReader(invocation.ResponseFile);
                     Mono.Linker.Driver.ParseResponseFile(response, arguments);
-                    Assert.Contains(Path.Combine(test.Root, "inputs", "Input.dll"), arguments);
-                    Assert.Contains(bool.Parse(external) ? Path.Combine(outside.Root, "Reference.dll") : Path.Combine(test.Root, "inputs", "Reference.dll"), arguments);
-                    Assert.Equal(2, arguments.Count(argument => argument == Path.Combine(test.Root, "roots.xml")));
-                    Assert.Contains(test.Root, arguments);
-                    Assert.Equal(test.Output, arguments.Last());
+                    Assert.Contains(test.Task.AssemblyPaths[0].ItemSpec, arguments);
+                    Assert.Contains(test.Task.ReferenceAssemblyPaths[0].ItemSpec, arguments);
+                    Assert.Equal(2, arguments.Count(argument => argument == xml));
+                    Assert.Contains(directory, arguments);
+                    Assert.Equal(test.Task.OutputDirectory.ItemSpec, arguments.Last());
                     Assert.Equal(originalResponse, test.Task.GetResponseFileCommands());
                     Assert.Equal(caller, test.Task.WorkingDirectory);
 
@@ -2167,7 +2167,7 @@ namespace ILLink.Tasks.Tests
         [InlineData(true, "missing")]
         [InlineData(true, "duplicate")]
         [InlineData(true, "nested")]
-        public void TaskUsesFullPathsWithoutDeterministicSourceMappings(bool cacheEnabled, string mapping)
+        public void TaskPreservesPathsWithoutDeterministicSourceMappings(bool cacheEnabled, string mapping)
         {
             RemoteExecutor.Invoke(static (enabled, mapping) =>
             {
@@ -2252,8 +2252,8 @@ namespace ILLink.Tasks.Tests
                     Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", enabled.ToString());
                     Assert.True(test.Task.Execute());
                     Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
-                    Assert.Contains(input, test.Task.ResponseFiles.Last());
-                    Assert.Contains($"\"{test.Output}\"", test.Task.ResponseFiles.Last());
+                    Assert.Contains($"\"{test.Task.AssemblyPaths[0].ItemSpec}\"", test.Task.ResponseFiles.Last());
+                    Assert.Contains($"\"{test.Task.OutputDirectory.ItemSpec}\"", test.Task.ResponseFiles.Last());
                     Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
                 }
                 Assert.Equal(test.Task.ResponseFiles[0], test.Task.ResponseFiles[1]);
@@ -2315,7 +2315,7 @@ namespace ILLink.Tasks.Tests
                     }
                     string executedResponse = Assert.Single(first.Task.ResponseFiles);
                     Assert.Contains($"\"{Path.Combine(first.Root, "Fixture.dll")}\"", executedResponse);
-                    Assert.Contains($"\"{first.Output}\"", executedResponse);
+                    Assert.Contains($"\"{first.Task.OutputDirectory.ItemSpec}\"", executedResponse);
                     Assert.Empty(second.Task.ResponseFiles);
                     Assert.Contains(first.Task.WorkingDirectories, directory => directory == Path.Combine(first.Root, "first caller"));
                     Assert.Contains(first.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
@@ -2427,15 +2427,17 @@ namespace ILLink.Tasks.Tests
         }
 
         [Fact]
-        public void CacheDescriptionReusesArgumentConstruction()
+        public void CacheDescriptionDoesNotDependOnArgumentConstruction()
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
-            var input = new CountingTaskItem(test.Task.AssemblyPaths[0]);
-            test.Task.AssemblyPaths[0] = input;
+            test.Task.TrimMode = "copy";
+            MethodInfo describe = typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
+            var description = Assert.IsType<InvocationDescription>(
+                describe.Invoke(test.Task, new object[] { host, "", "" }));
 
-            Assert.True(test.Task.TryGetCacheKey(host, out _));
-            Assert.Equal(1, input.TrimModeReads);
+            Assert.Contains(test.Task.AssemblyPaths[0].ItemSpec, description.Inputs.Files);
+            Assert.Contains("copy", description.Context);
         }
 
         [Fact]
@@ -2473,6 +2475,7 @@ namespace ILLink.Tasks.Tests
             Assert.Contains($"-reference \"{input}\"", response);
             Assert.Contains($"--substitutions \"{xml}\"", response);
             Assert.Contains($"-out \"{output}\"", response);
+            Assert.Contains(test.Task.ExtraArgs, response);
 
             if (invalidOutputPath is not null)
             {
@@ -2546,7 +2549,6 @@ namespace ILLink.Tasks.Tests
 
         private sealed class CountingTaskItem(ITaskItem item) : ITaskItem
         {
-            public int TrimModeReads { get; private set; }
             public int MappedPathReads { get; private set; }
             public string ItemSpec { get => item.ItemSpec; set => item.ItemSpec = value; }
             public int MetadataCount => item.MetadataCount;
@@ -2558,8 +2560,6 @@ namespace ILLink.Tasks.Tests
 
             public string GetMetadata(string metadataName)
             {
-                if (metadataName == nameof(ILLink.TrimMode))
-                    TrimModeReads++;
                 if (metadataName == "MappedPath")
                     MappedPathReads++;
                 return item.GetMetadata(metadataName);

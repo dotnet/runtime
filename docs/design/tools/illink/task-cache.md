@@ -21,16 +21,15 @@ maintenance commands.
 
 `ILLink` derives from the shared `CachedToolTask`, supplying `CacheConfiguration`, `DescribeInvocation`,
 and `ExecuteToolCore`. The base class checks whether caching is enabled before describing the invocation.
-Argument construction uses an ordinary `StringBuilder`. In the same walk, it records effective task
-settings and item roles/metadata in context, with ordered path-valued inputs stored separately in
-`InvocationInputs.OrderedPaths`. Registering a path resolves it once against the captured caller's
-working directory. Ordered inputs and input/output inventories retain that physical full path.
-Known path arguments are passed to ILLink as full paths, without changing its working directory.
-The command-line and response-file hooks reuse that construction;
-execution does not reconstruct or compare arguments.
-The description callback expands the recorded inputs through `DescribeInvocation` and declares
-one owned output directory; it runs only when caching is enabled. Discovered dependencies already
-have full paths derived from their physical parent directories.
+Argument construction retains the task's ordinary `StringBuilder` flow and parameter order.
+Path values and extra arguments are passed through as supplied; cache identity does not alter
+argument construction or the working directory.
+
+`DescribeInvocation` runs only when caching is enabled. It reads relevant task settings and item
+roles/metadata into context, records ordered path-valued inputs in `InvocationInputs.OrderedPaths`,
+discovers file dependencies, and declares one owned output directory. Relative paths are resolved
+against the caller's working directory only for this cache description. Ordered inputs and
+input/output inventories retain physical full paths for file access.
 The description contains task-input data rather than rendered arguments or argument fragments.
 The task assembly contributes to the key, identifying the logic that constructs arguments from those
 inputs. Only key construction maps paths to portable identities, preserving ordered inputs and sorting
@@ -57,13 +56,13 @@ Independent roots, such as a checkout and a NuGet package directory, need not re
 placement relative to each other. Physically nested roots may also use independent logical prefixes;
 overlapping logical prefixes must agree with the physical layout to avoid identity collisions.
 
-Resolve original relative inputs against the caller's cwd and pass known paths as full paths,
-whether caching is enabled, disabled, or bypassed. Do not select an execution root, change the
-working directory, or mutate task inputs. Source-root directories need not exist unless the invocation
-actually reads files from them. Unsupported opaque extra arguments retain their original spelling.
+Preserve original task path values and extra arguments whether caching is enabled, disabled, or
+bypassed. Do not select an execution root, change the working directory, or mutate task inputs.
+Resolve paths separately when describing inputs for the cache. Source-root directories need not
+exist unless the invocation actually reads files from them.
 
 Use the shared SHA-256 key builder over a length-delimited description with ILLink-specific context. Include
-effective task settings, ordered mapped path inputs, logical output identity,
+relevant task settings, ordered mapped path inputs, logical output identity,
 platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
 replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
 sidecar associations, and ordered search directories. The model describes the task's built-in

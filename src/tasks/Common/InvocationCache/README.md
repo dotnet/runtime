@@ -47,7 +47,7 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
-Resolve relative paths against the caller's working directory once during registration. Supply
+Inside `DescribeInvocation`, resolve relative paths against the caller's working directory. Supply
 canonical physical full paths to `InvocationInputs`, `InvocationOutputs`, and `InvocationDescription`.
 These containers retain physical paths for file reads, output validation, and restoration.
 The `FromFiles` and `FromDirectory` factories canonicalize
@@ -55,7 +55,8 @@ physical declarations for consumers that do not prepare paths themselves.
 
 For cross-worktree sharing, attach a shared `SourceRootPathMap` constructed from MSBuild `SourceRoot`
 items with stable `MappedPath` metadata. Only key construction maps physical paths to cache identities.
-It maps paths for the key, sorts the input inventory by mapped identity, and hashes
+`InvocationInputs.Files` is an unordered read-only collection. Key construction
+maps paths for the key, sorts the input inventory by mapped identity, and hashes
 each identity together with the contents read from its physical path.
 `InvocationInputs.OrderedPaths` retains ordered path-valued task inputs, including search directories,
 independently of the file inventory's ordering. These values remain physical full paths until key
@@ -71,8 +72,8 @@ describe the same physical layout, so distinct files cannot acquire the same ide
 Tool-specific eligibility checks remain with the consumer. Physical path storage also leaves file
 access independent of cache identity, including any future metadata-based file-hash optimization.
 
-Prepare any execution-path normalization independently of the cache callbacks so disabling or
-bypassing caching does not change the invocation.
+Do not change tool arguments or the working directory to implement cache identity. Disabling or
+bypassing caching must not change the invocation.
 
 ## Behavior and limitations
 

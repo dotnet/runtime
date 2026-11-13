@@ -57,16 +57,16 @@ Keep the cache and output directories separate: neither may equal or contain the
 For eligible cache-enabled invocations, overlap fails the task before output cleanup;
 it does not fall back to uncached linking.
 
-Eligible invocations use a key covering arguments, input-file and sidecar contents, the task
+Eligible invocations use a key covering task settings, ordered path inputs, input-file and sidecar contents, the task
 assembly, the selected dotnet host executable, and the entire ILLink assembly.
 File contents are hashed on every invocation. Linker changes invalidate the cache even when
 the module version ID (MVID), file length, and timestamp are unchanged.
 `SourceRoots` with stable `MappedPath` metadata allow equivalent relative layouts in different
 clones/worktrees to share a key. Only known path arguments and input identities are mapped;
 external paths remain absolute and argument/search-directory order is preserved.
-Known path arguments are resolved against the caller's working directory and passed to ILLink as
-full paths, independently of whether caching is enabled. Cache descriptions retain physical paths;
-only key construction maps them to portable identities. Multiple roots, such as a checkout and a
+Tool arguments retain the task's original path values, independently of whether caching is enabled.
+Cache descriptions resolve relative paths against the caller's working directory and retain physical
+full paths; only key construction maps them to portable identities. Multiple roots, such as a checkout and a
 NuGet package directory, can be mapped independently. This does not change the working directory,
 mutate task inputs, or normalize bytes embedded in inputs or outputs. Missing logical mappings or
 unsuitable symbols bypass caching without changing execution. Unsupported opaque extra arguments

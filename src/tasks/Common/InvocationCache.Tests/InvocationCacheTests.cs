@@ -1166,7 +1166,8 @@ public class InvocationCacheTests
         Assert.NotEqual(key, InvocationCache.ComputeKey(Describe(
             "second/a-repo", "second/z-packages/deeper", reversePaths: true)));
 
-        File.WriteAllText(second.Inputs.Files[0], "changed package contents");
+        string packageInput = Assert.Single(second.Inputs.Files, path => Path.GetFileName(path) == "reference.dll");
+        File.WriteAllText(packageInput, "changed package contents");
         Assert.NotEqual(key, InvocationCache.ComputeKey(second));
 
         InvocationDescription Describe(string repo, string packages, bool reverseInputs = false, bool reversePaths = false)
@@ -1186,7 +1187,7 @@ public class InvocationCacheTests
             });
             string[] inputs = reverseInputs ? new[] { reference, input } : new[] { input, reference };
             string[] paths = reversePaths ? new[] { reference, input } : new[] { input, reference };
-            return new InvocationDescription(new InvocationInputs(inputs, paths),
+            return new InvocationDescription(new InvocationInputs(new HashSet<string>(inputs, StringComparer.Ordinal), paths),
                 new[] { "input", "reference" },
                 InvocationOutputs.FromDirectory(Path.Combine(repo, "output")), roots);
         }

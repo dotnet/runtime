@@ -275,24 +275,13 @@ namespace ILLink.Tasks
 
         protected override string GenerateFullPathToTool() => DotNetPath;
 
-        private readonly List<string> _context = new();
-        private readonly List<string> _orderedPaths = new();
-        private readonly List<string> _inputFiles = new();
-        private readonly List<(string Path, bool CheckOutputSymbols)> _assemblies = new();
-        private List<(string Option, string Path)> _extraPaths;
-        private string _baseDirectory;
-        private string _toolPath;
-        private string _outputDirectory;
-        private string _cacheBypassReason;
-        private string _pendingResponseFile;
-
         private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
 
         protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
-                string outputDirectory = _outputDirectory ?? Path.GetFullPath(OutputDirectory.ItemSpec);
+                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
                 if (Directory.Exists(outputDirectory))
                     Directory.Delete(outputDirectory, recursive: true);
 
@@ -307,23 +296,18 @@ namespace ILLink.Tasks
             return base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
         }
 
-        private string GetFullPath(string path)
-        {
-            path = Path.GetFullPath(string.IsNullOrEmpty(path) ? path : Path.Combine(_baseDirectory, path));
-            if (path.Length > Path.GetPathRoot(path).Length)
-                path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
-                (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
-                throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
-            return path;
-        }
-
         private protected override InvocationDescription DescribeInvocation(
             string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            if (_toolPath is null || _cacheBypassReason is not null)
+            if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
+                !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
             {
-                Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: {_cacheBypassReason ?? "arguments have not been prepared."}");
+                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: custom steps/data, dependency dumps, and task environment overrides are not supported.");
+                return null;
+            }
+            if (!TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths))
+            {
+                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
                 return null;
             }
             try
@@ -332,18 +316,53 @@ namespace ILLink.Tasks
                 var files = new HashSet<string>(StringComparer.Ordinal);
                 var directories = new SortedSet<string>(StringComparer.Ordinal);
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var assembly in _assemblies)
+                var assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var orderedPaths = new List<string>();
+                var context = new List<string> {
+                    "ILLink", _singleWarn.ToString(), TrimMode, DefaultAction,
+                    NoWarn, Warn, (_treatWarningsAsErrors == true).ToString(),
+                    WarningsAsErrors, WarningsNotAsErrors,
+                    _beforeFieldInit.ToString(), _overrideRemoval.ToString(),
+                    _unreachableBodies.ToString(), _unusedInterfaces.ToString(),
+                    _iPConstProp.ToString(), _sealer.ToString(),
+                    (_removeSymbols == false).ToString(), PreserveSymbolPaths.ToString(),
+                    (!string.IsNullOrWhiteSpace(ExtraArgs)).ToString()
+                };
+                string toolPath = AddPath(nameof(ILLinkPath), ILLinkPath);
+                foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
+                    files.Add(AddPath(nameof(RootDescriptorFiles), descriptor.ItemSpec));
+                foreach (ITaskItem root in RootAssemblyNames)
+                    context.AddRange(new[] { nameof(RootAssemblyNames), root.ItemSpec, root.GetMetadata("RootMode") });
+                foreach (ITaskItem assembly in AssemblyPaths)
                 {
-                    if (!AddAssembly(assembly.Path, assembly.CheckOutputSymbols))
+                    if (!assemblyNames.Add(Path.GetFileNameWithoutExtension(assembly.ItemSpec)))
+                        continue;
+                    if (!AddAssembly(AddPath(nameof(AssemblyPaths), assembly.ItemSpec)))
+                        return null;
+                    context.Add(assembly.GetMetadata("TrimMode"));
+                    context.Add(assembly.GetMetadata("IsTrimmable"));
+                    foreach (string optimization in _optimizationNames)
+                        context.Add(assembly.GetMetadata(optimization));
+                    context.Add(assembly.GetMetadata("TrimmerSingleWarn"));
+                }
+                foreach (ITaskItem reference in ReferenceAssemblyPaths ?? Array.Empty<ITaskItem>())
+                {
+                    if (assemblyNames.Contains(Path.GetFileNameWithoutExtension(reference.ItemSpec)))
+                        continue;
+                    if (!AddAssembly(AddPath(nameof(ReferenceAssemblyPaths), reference.ItemSpec), checkOutputSymbols: false))
                         return null;
                 }
-                files.UnionWith(_inputFiles);
-                foreach (var argument in _extraPaths)
+                foreach (ITaskItem feature in FeatureSettings ?? Array.Empty<ITaskItem>())
+                    context.AddRange(new[] { nameof(FeatureSettings), feature.ItemSpec, feature.GetMetadata("Value") });
+                foreach (ITaskItem metadata in KeepMetadata ?? Array.Empty<ITaskItem>())
+                    context.AddRange(new[] { nameof(KeepMetadata), metadata.ItemSpec });
+                foreach (var argument in extraPaths)
                 {
+                    string path = AddPath(argument.Option, argument.Path);
                     if (argument.Option == "-d")
-                        directories.Add(argument.Path);
+                        directories.Add(path);
                     else
-                        files.Add(argument.Path);
+                        files.Add(path);
                 }
 
                 // Keep search-directory ordering in the arguments; hash even shadowed candidates.
@@ -367,17 +386,25 @@ namespace ILLink.Tasks
 #pragma warning restore IL3000
                 files.Add(taskAssemblyPath);
                 files.Add(GetFullPath(pathToTool));
-                files.Add(_toolPath);
+                files.Add(toolPath);
                 foreach (string file in files)
                 {
                     // Required inputs must be readable, not represented as absent by shared hashing.
                     using var input = File.OpenRead(file);
                 }
 
-                return new InvocationDescription(new InvocationInputs(files.ToArray(), _orderedPaths.ToArray()),
-                    _context.ToArray(),
-                    new InvocationOutputs(_outputDirectory, Array.Empty<string>()),
+                return new InvocationDescription(new InvocationInputs(files, orderedPaths.ToArray()),
+                    context.ToArray(),
+                    new InvocationOutputs(OutputDirectory is null ? null : GetFullPath(OutputDirectory.ItemSpec), Array.Empty<string>()),
                     pathMap: paths);
+
+                string AddPath(string parameterName, string path)
+                {
+                    path = GetFullPath(path);
+                    context.Add(parameterName);
+                    orderedPaths.Add(path);
+                    return path;
+                }
 
                 void AddOptionalFile(string path)
                 {
@@ -419,6 +446,17 @@ namespace ILLink.Tasks
                     if (checkOutputSymbols)
                         CheckCacheableSymbols(path, pe);
                     return true;
+                }
+
+                static string GetFullPath(string path)
+                {
+                    path = Path.GetFullPath(path);
+                    if (path.Length > Path.GetPathRoot(path).Length)
+                        path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
+                        (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
+                        throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
+                    return path;
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException)
@@ -592,9 +630,12 @@ namespace ILLink.Tasks
 
         protected override string GenerateCommandLineCommands()
         {
-            _pendingResponseFile = BuildResponseFileCommands();
-            Log.LogMessage(MessageImportance.Normal, $"ILLink.Tasks path: {ILLinkPath}");
-            return Quote(_toolPath);
+            var args = new StringBuilder();
+            var path = ILLinkPath;
+            args.Append(Quote(path));
+            Log.LogMessage(MessageImportance.Normal, $"ILLink.Tasks path: {path}");
+
+            return args.ToString();
         }
 
         private static void SetOpt(StringBuilder args, string opt, bool enabled)
@@ -609,67 +650,12 @@ namespace ILLink.Tasks
 
         protected override string GenerateResponseFileCommands()
         {
-            if (_pendingResponseFile is { } responseFile)
-            {
-                _pendingResponseFile = null;
-                return responseFile;
-            }
-            return BuildResponseFileCommands();
-        }
-
-        private string BuildResponseFileCommands()
-        {
-            _context.Clear();
-            _orderedPaths.Clear();
-            _inputFiles.Clear();
-            _assemblies.Clear();
-            _outputDirectory = null;
-            _cacheBypassReason = null;
-            _baseDirectory = Environment.CurrentDirectory;
-            _toolPath = PreparePath(ILLinkPath);
-            _orderedPaths.Add(_toolPath);
-            if (!TryGetExtraArgsPaths(out _extraPaths))
-            {
-                _extraPaths = null;
-                _cacheBypassReason = "extra arguments are not supported.";
-            }
-            if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
-                !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
-                _cacheBypassReason = "custom steps/data, dependency dumps, and task environment overrides are not supported.";
-
-            string trimMode = TrimMode switch
-            {
-                "full" => "link",
-                "partial" => "link",
-                var x => x
-            };
-            string defaultAction = TrimMode switch
-            {
-                "full" => "link",
-                "partial" => "copy",
-                _ => DefaultAction
-            };
-            _context.AddRange(new[] {
-                "ILLink", _singleWarn.ToString(), trimMode, defaultAction,
-                NoWarn, Warn, (_treatWarningsAsErrors == true).ToString(),
-                WarningsAsErrors, WarningsNotAsErrors,
-                _beforeFieldInit.ToString(), _overrideRemoval.ToString(),
-                _unreachableBodies.ToString(), _unusedInterfaces.ToString(),
-                _iPConstProp.ToString(), _sealer.ToString(),
-                (_removeSymbols == false).ToString(), PreserveSymbolPaths.ToString(),
-                (!string.IsNullOrWhiteSpace(ExtraArgs)).ToString()
-            });
-
             var args = new StringBuilder();
 
             if (RootDescriptorFiles != null)
             {
                 foreach (var rootFile in RootDescriptorFiles)
-                {
-                    args.Append("-x ");
-                    _inputFiles.Add(AppendInputPath(nameof(RootDescriptorFiles), rootFile.ItemSpec));
-                    args.AppendLine();
-                }
+                    args.Append("-x ").AppendLine(Quote(rootFile.ItemSpec));
             }
 
             foreach (var assemblyItem in RootAssemblyNames)
@@ -677,7 +663,6 @@ namespace ILLink.Tasks
                 args.Append("-a ").Append(Quote(assemblyItem.ItemSpec));
 
                 string rootMode = assemblyItem.GetMetadata("RootMode");
-                _context.AddRange(new[] { nameof(RootAssemblyNames), assemblyItem.ItemSpec, rootMode });
                 if (!string.IsNullOrEmpty(rootMode))
                 {
                     args.Append(' ');
@@ -695,9 +680,21 @@ namespace ILLink.Tasks
                     args.AppendLine("--singlewarn-");
             }
 
+            string trimMode = TrimMode switch
+            {
+                "full" => "link",
+                "partial" => "link",
+                var x => x
+            };
             if (trimMode != null)
                 args.Append("--trim-mode ").AppendLine(trimMode);
 
+            string defaultAction = TrimMode switch
+            {
+                "full" => "link",
+                "partial" => "copy",
+                _ => DefaultAction
+            };
             if (defaultAction != null)
                 args.Append("--action ").AppendLine(defaultAction);
 
@@ -712,9 +709,7 @@ namespace ILLink.Tasks
                 if (!assemblyNames.Add(assemblyName))
                     continue;
 
-                args.Append("-reference ");
-                _assemblies.Add((AppendInputPath(nameof(AssemblyPaths), assemblyPath), true));
-                args.AppendLine();
+                args.Append("-reference ").AppendLine(Quote(assemblyPath));
 
                 string assemblyTrimMode = assembly.GetMetadata("TrimMode");
                 string isTrimmable = assembly.GetMetadata("IsTrimmable");
@@ -737,13 +732,11 @@ namespace ILLink.Tasks
                     args.Append(assemblyTrimMode);
                     args.Append(' ').AppendLine(Quote(assemblyName));
                 }
-                _context.Add(assemblyTrimMode);
 
                 // Add per-assembly optimization arguments
                 foreach (var optimization in _optimizationNames)
                 {
                     string optimizationValue = assembly.GetMetadata(optimization);
-                    _context.Add(optimizationValue);
                     if (string.IsNullOrEmpty(optimizationValue))
                         continue;
 
@@ -755,7 +748,6 @@ namespace ILLink.Tasks
 
                 // Add per-assembly verbosity arguments
                 string singleWarn = assembly.GetMetadata("TrimmerSingleWarn");
-                _context.Add(singleWarn);
                 if (!string.IsNullOrEmpty(singleWarn))
                 {
                     if (!bool.TryParse(singleWarn, out bool value))
@@ -780,9 +772,7 @@ namespace ILLink.Tasks
                     if (assemblyNames.Contains(assemblyName))
                         continue;
 
-                    args.Append("-reference ");
-                    _assemblies.Add((AppendInputPath(nameof(ReferenceAssemblyPaths), assemblyPath), false));
-                    args.AppendLine();
+                    args.Append("-reference ").AppendLine(Quote(assemblyPath));
 
                     // Treat reference assemblies as "skip". Ideally we
                     // would not even look at the IL, but only use them to
@@ -847,7 +837,6 @@ namespace ILLink.Tasks
                     var featureValue = featureSetting.GetMetadata("Value");
                     if (string.IsNullOrEmpty(featureValue))
                         throw new ArgumentException("feature settings require \"Value\" metadata");
-                    _context.AddRange(new[] { nameof(FeatureSettings), feature, featureValue });
                     args.Append("--feature ").Append(feature).Append(' ').AppendLine(featureValue);
                 }
             }
@@ -855,10 +844,7 @@ namespace ILLink.Tasks
             if (KeepMetadata != null)
             {
                 foreach (var metadata in KeepMetadata)
-                {
-                    _context.AddRange(new[] { nameof(KeepMetadata), metadata.ItemSpec });
                     args.Append("--keep-metadata ").AppendLine(Quote(metadata.ItemSpec));
-                }
             }
 
             if (_removeSymbols == false)
@@ -892,24 +878,8 @@ namespace ILLink.Tasks
                 }
             }
 
-            if (ExtraArgs is not null)
-            {
-                if (_extraPaths is null)
-                {
-                    args.AppendLine(ExtraArgs);
-                }
-                else if (!string.IsNullOrWhiteSpace(ExtraArgs))
-                {
-                    args.AppendLine("--ignore-link-attributes true");
-                    for (int i = 0; i < _extraPaths.Count; i++)
-                    {
-                        var argument = _extraPaths[i];
-                        args.Append(argument.Option).Append(' ');
-                        _extraPaths[i] = (argument.Option, AppendInputPath(argument.Option, argument.Path));
-                        args.AppendLine();
-                    }
-                }
-            }
+            if (ExtraArgs != null)
+                args.AppendLine(ExtraArgs);
 
             if (DumpDependencies)
                 args.AppendLine("--dump-dependencies");
@@ -921,36 +891,9 @@ namespace ILLink.Tasks
 
             // Keep the tool's output directory consistent with the directory owned by the task.
             if (OutputDirectory is not null)
-            {
-                args.Append("-out ");
-                _outputDirectory = PreparePath(OutputDirectory.ItemSpec);
-                args.Append(Quote(_outputDirectory));
-                args.AppendLine();
-            }
+                args.Append("-out ").AppendLine(Quote(OutputDirectory.ItemSpec));
 
             return args.ToString();
-
-            string AppendInputPath(string parameterName, string path)
-            {
-                path = PreparePath(path);
-                _context.Add(parameterName);
-                _orderedPaths.Add(path);
-                args.Append(Quote(path));
-                return path;
-            }
-
-            string PreparePath(string path)
-            {
-                try
-                {
-                    return GetFullPath(path);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-                {
-                    _cacheBypassReason = ex.Message;
-                    return path;
-                }
-            }
         }
     }
 }
