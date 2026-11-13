@@ -1335,6 +1335,7 @@ private:
 
         bool             applySelection(int selectionScore, SingleTypeRegSet selectionCandidates);
         bool             applySingleRegSelection(int selectionScore, SingleTypeRegSet selectionCandidate);
+        LsraLocation     getRegisterCoverageEnd(regNumber regNum);
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);

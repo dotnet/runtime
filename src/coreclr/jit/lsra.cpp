@@ -12666,16 +12666,66 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
 void LinearScan::RegisterSelection::try_FREE()
 {
     assert(!found);
-#ifdef DEBUG
-    // We try the "free" heuristics only if we have free candidates and this is
-    // guarded by a check in Release mode.
-    // In Debug mode, JitLsraOrdering can reorder the heuristics and we can come
-    // here in any order, hence we should check if it is RBM_NONE or not.
+    // JitLsraOrdering can invoke this after other heuristics have narrowed the candidates.
+    freeCandidates &= candidates;
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+
+    // When no free register covers the range, consider evicting a cheaper
+    // callee-saved occupant. Let the normal spill-selection heuristics choose
+    // the register.
+    if (preferCalleeSave && currentInterval->isLocalVar && refPosition->IsActualRef() && !currentInterval->isWriteThru
+#ifdef TARGET_ARM64
+        && !refPosition->needsConsecutive
 #endif
+    )
+    {
+        SingleTypeRegSet calleeSaves = linearScan->calleeSaveRegs(currentInterval->registerType) & candidates;
+        if (((freeCandidates & calleeSaves) == RBM_NONE) && (calleeSaves != RBM_NONE))
+        {
+            bool anyFreeCovers = false;
+            for (SingleTypeRegSet freeRegs = freeCandidates; freeRegs != RBM_NONE;)
+            {
+                regNumber        freeReg = genFirstRegNumFromMask(freeRegs, regType);
+                SingleTypeRegSet freeBit = genSingleTypeRegMask(freeReg);
+                freeRegs ^= freeBit;
+                if (getRegisterCoverageEnd(freeReg) > lastLocation)
+                {
+                    anyFreeCovers = true;
+                    break;
+                }
+            }
+            if (!anyFreeCovers)
+            {
+                weight_t thisWeight   = linearScan->getWeight(refPosition);
+                weight_t bestEviction = FloatingPointUtils::infinite_double();
+                for (SingleTypeRegSet busyCallees = calleeSaves; busyCallees != RBM_NONE;)
+                {
+                    regNumber        busyReg = genFirstRegNumFromMask(busyCallees, regType);
+                    SingleTypeRegSet busyBit = genSingleTypeRegMask(busyReg);
+                    busyCallees ^= busyBit;
+
+                    // Use the spill selector's own eligibility and pricing,
+                    // so this check can not commit to an eviction that
+                    // try_SPILL_COST would exclude or price differently.
+                    weight_t evictionCost;
+                    if (!spillCandidateCost(busyReg, &evictionCost))
+                    {
+                        continue;
+                    }
+                    bestEviction = min(bestEviction, evictionCost);
+                }
+                if (bestEviction < thisWeight)
+                {
+                    candidates     = calleeSaves;
+                    freeCandidates = RBM_NONE;
+                    return;
+                }
+            }
+        }
+    }
 
     found = applySelection(FREE, freeCandidates);
 }
@@ -13074,9 +13124,6 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     found = applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
 }
 
-// ----------------------------------------------------------
-//  try_SPILL_COST: Apply the SPILL_COST heuristic.
-//
 //------------------------------------------------------------------------
 // spillCandidateCost: whether the given busy register may be spilled for
 // the current RefPosition, and the effective weight of doing so. This is
@@ -13098,6 +13145,20 @@ bool LinearScan::RegisterSelection::spillCandidateCost(regNumber spillCandidateR
     Interval*    assignedInterval        = spillCandidateRegRecord->assignedInterval;
     RefPosition* recentRefPosition       = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
 
+    auto hasRequiredRef = [&](regNumber regNum) {
+        Interval* interval = linearScan->physRegs[regNum].assignedInterval;
+        return (interval != nullptr) && (linearScan->nextIntervalRef[regNum] == thisLocation) &&
+               !interval->getNextRefPosition()->RegOptional();
+    };
+    if (hasRequiredRef(spillCandidateRegNum)
+#ifdef TARGET_ARM
+        || ((currentInterval->registerType == TYP_DOUBLE) && hasRequiredRef(REG_NEXT(spillCandidateRegNum)))
+#endif
+    )
+    {
+        return false;
+    }
+
     // Can and should the interval in this register be spilled for this one,
     // if we don't find a better alternative?
 
@@ -13111,11 +13172,6 @@ bool LinearScan::RegisterSelection::spillCandidateCost(regNumber spillCandidateR
     else if (assignedInterval != nullptr)
 #endif
     {
-        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == thisLocation) &&
-            !assignedInterval->getNextRefPosition()->RegOptional())
-        {
-            return false;
-        }
         if (!linearScan->isSpillCandidate(currentInterval, refPosition, spillCandidateRegRecord))
         {
             return false;
@@ -13178,6 +13234,9 @@ bool LinearScan::RegisterSelection::spillCandidateCost(regNumber spillCandidateR
     return true;
 }
 
+// ----------------------------------------------------------
+//  try_SPILL_COST: Apply the SPILL_COST heuristic.
+//
 void LinearScan::RegisterSelection::try_SPILL_COST()
 {
     assert(!found);
@@ -13395,6 +13454,22 @@ void LinearScan::RegisterSelection::calculateUnassignedSets() // TODO: Seperate 
     }
 }
 
+//------------------------------------------------------------------------
+// getRegisterCoverageEnd: Find the next interference, allowing a fixed use
+// at the range endpoint to use its own register.
+//
+LsraLocation LinearScan::RegisterSelection::getRegisterCoverageEnd(regNumber regNum)
+{
+    LsraLocation location =
+        Min(linearScan->getNextFixedRef(regNum, regType), linearScan->getNextIntervalRef(regNum, regType));
+    if ((location == rangeEndLocation) && rangeEndRefPosition->isFixedRefOfReg(regNum))
+    {
+        INDEBUG(linearScan->dumpLsraAllocationEvent(LSRA_EVENT_INCREMENT_RANGE_END, currentInterval));
+        location++;
+    }
+    return location;
+}
+
 // ----------------------------------------------------------
 //  calculateCoversSets: Calculate the necessary covers set registers to be used
 //      for heuristics lke COVERS, COVERS_RELATED, COVERS_FULL.
@@ -13418,22 +13493,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
         // do need to compute the unassignedSet.
         if (!found)
         {
-            // Find the next RefPosition of the register.
-            LsraLocation nextIntervalLocation    = linearScan->getNextIntervalRef(coversCandidateRegNum, regType);
-            LsraLocation nextPhysRefLocation     = linearScan->getNextFixedRef(coversCandidateRegNum, regType);
-            LsraLocation coversCandidateLocation = Min(nextPhysRefLocation, nextIntervalLocation);
-
-            // If the nextPhysRefLocation is a fixedRef for the rangeEndRefPosition, increment it so that
-            // we don't think it isn't covering the live range.
-            // This doesn't handle the case where earlier RefPositions for this Interval are also
-            // FixedRefs of this regNum, but at least those are only interesting in the case where those
-            // are "local last uses" of the Interval - otherwise the liveRange would interfere with the reg.
-            if (coversCandidateLocation == rangeEndLocation &&
-                rangeEndRefPosition->isFixedRefOfReg(coversCandidateRegNum))
-            {
-                INDEBUG(linearScan->dumpLsraAllocationEvent(LSRA_EVENT_INCREMENT_RANGE_END, currentInterval));
-                coversCandidateLocation++;
-            }
+            LsraLocation coversCandidateLocation = getRegisterCoverageEnd(coversCandidateRegNum);
             if (coversCandidateLocation > rangeEndLocation)
             {
                 coversSet |= coversCandidateBit;
@@ -13880,57 +13940,6 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         }
     }
 
-    // When no free register covers the range, consider evicting a cheaper
-    // callee-saved occupant. Let the normal spill-selection heuristics choose
-    // the register.
-    if (!found && (freeCandidates != RBM_NONE) && preferCalleeSave && currentInterval->isLocalVar &&
-        refPosition->IsActualRef() && !needsConsecutiveRegisters && !currentInterval->isWriteThru)
-    {
-        SingleTypeRegSet calleeSaves = linearScan->calleeSaveRegs(currentInterval->registerType) & candidates;
-        if (((freeCandidates & calleeSaves) == RBM_NONE) && (calleeSaves != RBM_NONE))
-        {
-            bool anyFreeCovers = false;
-            for (SingleTypeRegSet freeRegs = freeCandidates; freeRegs != RBM_NONE;)
-            {
-                regNumber        freeReg = genFirstRegNumFromMask(freeRegs, regType);
-                SingleTypeRegSet freeBit = genSingleTypeRegMask(freeReg);
-                freeRegs ^= freeBit;
-                if ((linearScan->getNextFixedRef(freeReg, currentInterval->registerType) > lastLocation) &&
-                    (linearScan->getNextIntervalRef(freeReg, currentInterval->registerType) > lastLocation))
-                {
-                    anyFreeCovers = true;
-                    break;
-                }
-            }
-            if (!anyFreeCovers)
-            {
-                weight_t thisWeight   = linearScan->getWeight(refPosition);
-                weight_t bestEviction = FloatingPointUtils::infinite_double();
-                for (SingleTypeRegSet busyCallees = calleeSaves; busyCallees != RBM_NONE;)
-                {
-                    regNumber        busyReg = genFirstRegNumFromMask(busyCallees, regType);
-                    SingleTypeRegSet busyBit = genSingleTypeRegMask(busyReg);
-                    busyCallees ^= busyBit;
-
-                    // Use the spill selector's own eligibility and pricing,
-                    // so this check can not commit to an eviction that
-                    // try_SPILL_COST would exclude or price differently.
-                    weight_t evictionCost;
-                    if (!spillCandidateCost(busyReg, &evictionCost))
-                    {
-                        continue;
-                    }
-                    bestEviction = min(bestEviction, evictionCost);
-                }
-                if (bestEviction < thisWeight)
-                {
-                    candidates     = calleeSaves;
-                    freeCandidates = RBM_NONE;
-                }
-            }
-        }
-    }
-
 #define IF_FOUND_GOTO_DONE                                                                                             \
     if (found)                                                                                                         \
         goto Selection_Done;
@@ -13962,12 +13971,19 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
     }
 #else // RELEASE
 
-    // In release, just invoke the default order
+    // FREE may choose eviction instead. Dispatch the remaining heuristics using that decision.
+    IF_FOUND_GOTO_DONE
+    try_FREE();
+    IF_FOUND_GOTO_DONE
+
     if (freeCandidates != RBM_NONE)
     {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
-    try_##stat();                                                                                                      \
-    IF_FOUND_GOTO_DONE
+    if constexpr (stat != FREE)                                                                                        \
+    {                                                                                                                  \
+        try_##stat();                                                                                                  \
+        IF_FOUND_GOTO_DONE                                                                                             \
+    }
 
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
