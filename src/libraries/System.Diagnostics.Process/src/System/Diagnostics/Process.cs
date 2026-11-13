@@ -51,8 +51,6 @@ namespace System.Diagnostics
 
         private bool _watchForExit;
         private bool _watchingForExit;
-        // Independent exit waits can subscribe and unsubscribe concurrently.
-        private event EventHandler? _onExited;
         private bool _exited;
         private int _exitCode;
 
@@ -736,17 +734,8 @@ namespace System.Diagnostics
         public int WorkingSet
             => unchecked((int)GetProcessInfo().WorkingSet);
 
-        public event EventHandler Exited
-        {
-            add
-            {
-                _onExited += value;
-            }
-            remove
-            {
-                _onExited -= value;
-            }
-        }
+        // Independent exit waits can subscribe and unsubscribe concurrently.
+        public event EventHandler Exited = null!;
 
         /// <devdoc>
         ///     This is called from the threadpool when a process exits.
@@ -1149,7 +1138,7 @@ namespace System.Diagnostics
         /// </devdoc>
         protected void OnExited()
         {
-            EventHandler? exited = _onExited;
+            EventHandler? exited = Exited;
             if (exited != null)
             {
                 if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
