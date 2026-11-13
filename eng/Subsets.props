@@ -268,6 +268,7 @@
     <SubsetName Include="Tools.CdacDumpTests" OnDemand="true" Description="Dump-based integration tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacStressTests" OnDemand="true" Description="Stress integration tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build and package the ilasm tool." />
+    <SubsetName Include="Tools.ILDAsm" OnDemand="true" Description="Build and package the managed ildasm tool." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -627,6 +628,18 @@
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj"
                     Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"
                     Category="clr" />
+  </ItemGroup>
+
+  <!-- Not part of clr.tools or clr.packages: Microsoft.NETCore.ILDAsm still ships the native ildasm until the managed one reaches parity. -->
+  <ItemGroup Condition="$(_subset.Contains('+tools.ildasm+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)ildasm\src\ILDisassembler\ILDisassembler.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ildasm\tests\ILDisassembler.Tests\ILDisassembler.Tests.csproj" Category="tools" Test="true" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ildasm\src\ildasm\ildasm.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ildasm\src\ildasm\ildasm_inbuild.csproj"
+                    Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"
+                    Category="tools" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.Package.csproj"
+                    Category="tools" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
