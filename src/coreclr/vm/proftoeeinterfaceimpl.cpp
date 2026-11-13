@@ -6955,7 +6955,8 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
         return E_INVALIDARG;
     }
 
-    return ProcessEnvironment_SetVariable((const CHAR16_T*)szName, (const CHAR16_T*)szValue) ? S_OK : E_FAIL;
+    uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)szName, (const CHAR16_T*)szValue);
+    return HRESULT_FROM_WIN32(error);
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(

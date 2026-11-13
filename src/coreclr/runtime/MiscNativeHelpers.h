@@ -15,10 +15,10 @@ extern "C" int32_t QCALLTYPE Thread_Yield();
 extern "C" int32_t QCALLTYPE Thread_GetOptimalMaxSpinWaitsPerSpinIteration();
 
 #ifdef TARGET_UNIX
-extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const char* name, char* buffer, int32_t bufferSize);
-extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value);
-extern "C" char* QCALLTYPE Environment_GetEnvironmentStrings();
-extern "C" void QCALLTYPE Environment_FreeEnvironmentStrings(char* strings);
+// Implemented in ProcessEnvironment.cpp.
+extern "C" const char* QCALLTYPE Environment_GetEnvironmentVariable(const char* name, int32_t* needsFree);
+extern "C" uint32_t QCALLTYPE Environment_SetEnvironmentVariable(const char* name, const char* value);
+extern "C" char** QCALLTYPE Environment_GetEnviron(int32_t* needsFree);
 #endif // TARGET_UNIX
 
 // WASM-TODO: once we have R2R stack walking working we should be able to set pTransitionBlock to &transitionBlock unconditionally

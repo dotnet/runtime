@@ -215,8 +215,7 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(Environment_Exit)
     DllImportEntry(Environment_FailFast)
 #ifdef TARGET_UNIX
-    DllImportEntry(Environment_FreeEnvironmentStrings)
-    DllImportEntry(Environment_GetEnvironmentStrings)
+    DllImportEntry(Environment_GetEnviron)
     DllImportEntry(Environment_GetEnvironmentVariable)
 #endif // TARGET_UNIX
     DllImportEntry(Environment_GetProcessorCount)

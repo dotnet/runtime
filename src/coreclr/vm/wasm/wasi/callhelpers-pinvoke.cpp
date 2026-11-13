@@ -699,10 +699,9 @@ extern "C" {
     void RuntimeHelper_Enum_GetValuesAndNames (void *, void *, void *, int32_t, void *) __asm__("Enum_GetValuesAndNames");
     void RuntimeHelper_Environment_Exit (int32_t, void *) __asm__("Environment_Exit");
     void RuntimeHelper_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
-    void RuntimeHelper_Environment_FreeEnvironmentStrings (void *) __asm__("Environment_FreeEnvironmentStrings");
-    void * RuntimeHelper_Environment_GetEnvironmentStrings () __asm__("Environment_GetEnvironmentStrings");
-    int32_t RuntimeHelper_Environment_GetEnvironmentVariable (void *, void *, int32_t) __asm__("Environment_GetEnvironmentVariable");
-    int32_t RuntimeHelper_Environment_SetEnvironmentVariable (void *, void *) __asm__("Environment_SetEnvironmentVariable");
+    void * RuntimeHelper_Environment_GetEnviron (void *) __asm__("Environment_GetEnviron");
+    void * RuntimeHelper_Environment_GetEnvironmentVariable (void *, void *) __asm__("Environment_GetEnvironmentVariable");
+    uint32_t RuntimeHelper_Environment_SetEnvironmentVariable (void *, void *) __asm__("Environment_SetEnvironmentVariable");
     int32_t RuntimeHelper_Environment_get_ExitCode (uintptr_t, uintptr_t) __asm__("Environment_get_ExitCode");
     void RuntimeHelper_Environment_set_ExitCode (uintptr_t, int32_t, uintptr_t) __asm__("Environment_set_ExitCode");
     void * RuntimeHelper_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
@@ -1209,8 +1208,7 @@ static const Entry s_RuntimeHelpers[] = {
     { "Enum_GetValuesAndNames", (void*)&RuntimeHelper_Enum_GetValuesAndNames },
     { "Environment_Exit", (void*)&RuntimeHelper_Environment_Exit },
     { "Environment_FailFast", (void*)&RuntimeHelper_Environment_FailFast },
-    { "Environment_FreeEnvironmentStrings", (void*)&RuntimeHelper_Environment_FreeEnvironmentStrings },
-    { "Environment_GetEnvironmentStrings", (void*)&RuntimeHelper_Environment_GetEnvironmentStrings },
+    { "Environment_GetEnviron", (void*)&RuntimeHelper_Environment_GetEnviron },
     { "Environment_GetEnvironmentVariable", (void*)&RuntimeHelper_Environment_GetEnvironmentVariable },
     { "Environment_SetEnvironmentVariable", (void*)&RuntimeHelper_Environment_SetEnvironmentVariable },
     { "Environment_get_ExitCode", (void*)&RuntimeHelper_Environment_get_ExitCode },

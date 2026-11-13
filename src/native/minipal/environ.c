@@ -5,6 +5,7 @@
 #include "strings.h"
 #include "utf8.h"
 
+#include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,10 +18,7 @@
 
 uint32_t minipal_environ_get_variable(const char* name, char* buffer, uint32_t buffer_size)
 {
-    if (name == NULL || name[0] == '\0' || strchr(name, '=') != NULL)
-    {
-        return 0;
-    }
+    assert(name != NULL && name[0] != '\0' && strchr(name, '=') == NULL);
 
 #ifdef HOST_WINDOWS
     return (uint32_t)GetEnvironmentVariableA(name, buffer, buffer_size);
@@ -66,10 +64,7 @@ static char* utf16_to_utf8_alloc(const CHAR16_T* source)
 
 uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer, uint32_t buffer_size)
 {
-    if (name == NULL || name[0] == 0)
-    {
-        return 0;
-    }
+    assert(name != NULL && name[0] != 0);
 
 #ifdef HOST_WINDOWS
     return (uint32_t)GetEnvironmentVariableW((LPCWSTR)name, (LPWSTR)buffer, buffer_size);
@@ -80,7 +75,8 @@ uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer
         return 0;
     }
 
-    const char* value = strchr(name_utf8, '=') == NULL ? getenv(name_utf8) : NULL;
+    assert(strchr(name_utf8, '=') == NULL);
+    const char* value = getenv(name_utf8);
     free(name_utf8);
     if (value == NULL)
     {
@@ -102,48 +98,6 @@ uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer
     }
 
     return (uint32_t)(needed + 1);
-#endif
-}
-
-char* minipal_environ_getenv(const char* name)
-{
-    if (name == NULL || name[0] == '\0')
-    {
-        return NULL;
-    }
-
-#ifdef HOST_WINDOWS
-    // Probe returns 0 if missing, 1+ (including null) if present — even when empty.
-    DWORD needed = GetEnvironmentVariableA(name, NULL, 0);
-    if (needed == 0)
-    {
-        return NULL;
-    }
-
-    char* value = (char*)malloc(needed);
-    if (value == NULL)
-    {
-        return NULL;
-    }
-
-    // Empty values return 0 without setting the last error. Treat removal or growth since the probe as failure.
-    SetLastError(ERROR_SUCCESS);
-    DWORD written = GetEnvironmentVariableA(name, value, needed);
-    if (written >= needed || (written == 0 && GetLastError() != ERROR_SUCCESS))
-    {
-        free(value);
-        return NULL;
-    }
-
-    return value;
-#else
-    if (strchr(name, '=') != NULL)
-    {
-        return NULL;
-    }
-
-    const char* value = getenv(name);
-    return value != NULL ? strdup(value) : NULL;
 #endif
 }
 
@@ -197,6 +151,12 @@ CHAR16_T* minipal_environ_get_strings_u16(void)
     size_t remaining = total_chars;
     for (char** entry = env; entry != NULL && *entry != NULL; entry++)
     {
+        // An empty entry would terminate the block early.
+        if (**entry == '\0')
+        {
+            continue;
+        }
+
         size_t written = minipal_convert_utf8_to_utf16(*entry, strlen(*entry), dest, remaining, 0);
         dest[written] = 0;
         dest += written + 1;

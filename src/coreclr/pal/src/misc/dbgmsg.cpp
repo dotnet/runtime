@@ -16,7 +16,6 @@ Abstract:
 
 #include "config.h"
 #include "pal/dbgmsg.h"
-#include <minipal/environ.h>
 
 /* standard headers */
 
@@ -151,7 +150,11 @@ BOOL DBG_init_channels(void)
 
     /* parse PAL_DBG_CHANNELS environment variable */
 
-    env_string = minipal_environ_getenv(ENV_CHANNELS);
+    env_string = getenv(ENV_CHANNELS);
+    if (env_string != NULL)
+    {
+        env_string = strdup(env_string);
+    }
     env_pcache = env_workstring = env_string;
 
     while(env_workstring)

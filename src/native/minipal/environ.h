@@ -27,12 +27,6 @@ uint32_t minipal_environ_get_variable(const char* name, char* buffer, uint32_t b
 uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer, uint32_t buffer_size);
 
 /**
- * Get a malloc'd copy of the variable value (narrow string; ANSI code page on Windows). Caller frees with free().
- * Returns NULL if the variable is not set.
- */
-char* minipal_environ_getenv(const char* name);
-
-/**
  * Snapshot the process environment as a double-null-terminated UTF-16 block
  * (same layout as GetEnvironmentStringsW). Caller frees with
  * minipal_environ_free_strings_u16.

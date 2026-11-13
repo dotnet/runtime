@@ -228,7 +228,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	return ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value) ? S_OK : E_FAIL;
+	uint32_t error = ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value);
+	return HRESULT_FROM_WIN32(error);
 }
 
 static

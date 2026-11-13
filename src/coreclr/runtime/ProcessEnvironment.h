@@ -12,6 +12,12 @@
 // It exists so that changes made through ICorProfilerInfo11::SetEnvironmentVariable and the diagnostic
 // server are visible to managed code and runtime configuration, and vice versa. Do not add other uses.
 
+// Errors returned by ProcessEnvironment_SetVariable. These are the Windows error codes so that callers
+// can convert them with HRESULT_FROM_WIN32.
+#define PROCESSENVIRONMENT_ERROR_NOT_ENOUGH_MEMORY 8L
+#define PROCESSENVIRONMENT_ERROR_INVALID_PARAMETER 87L
+#define PROCESSENVIRONMENT_ERROR_ENVVAR_NOT_FOUND 203L
+
 // Returns false if the variable is not set. Otherwise, sets *length to the length of the value if it fits
 // in the buffer, or to the required buffer size including the null terminator if it does not.
 bool ProcessEnvironment_TryGetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize, uint32_t* length);
@@ -19,8 +25,9 @@ bool ProcessEnvironment_TryGetVariable(const CHAR16_T* name, CHAR16_T* buffer, u
 // Same contract as GetEnvironmentVariableW.
 uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize);
 
-// Sets the variable, or unsets it if value is null. Returns false when unsetting a variable that is not set.
-bool ProcessEnvironment_SetVariable(const CHAR16_T* name, const CHAR16_T* value);
+// Sets the variable, or unsets it if value is null. Returns 0 on success, or one of the errors above;
+// PROCESSENVIRONMENT_ERROR_ENVVAR_NOT_FOUND is returned when unsetting a variable that is not set.
+uint32_t ProcessEnvironment_SetVariable(const CHAR16_T* name, const CHAR16_T* value);
 
 // Returns a double-null-terminated block of "name=value" strings, in the same layout as
 // GetEnvironmentStringsW. Free it with ProcessEnvironment_FreeStrings.
@@ -28,15 +35,6 @@ CHAR16_T* ProcessEnvironment_GetStrings();
 void ProcessEnvironment_FreeStrings(CHAR16_T* strings);
 
 #ifndef TARGET_WINDOWS
-// UTF-8 versions of the functions above.
-bool ProcessEnvironment_TryGetVariableUtf8(const char* name, char* buffer, uint32_t bufferSize, uint32_t* length);
-
-// Returns 0 on success, ENOENT when unsetting a variable that is not set, EINVAL for an invalid name,
-// or ENOMEM when out of memory.
-int ProcessEnvironment_SetVariableUtf8(const char* name, const char* value);
-char* ProcessEnvironment_GetStringsUtf8();
-void ProcessEnvironment_FreeStringsUtf8(char* strings);
-
 // Same contract as GetEnvironmentVariableA.
 uint32_t ProcessEnvironment_GetVariableUtf8(const char* name, char* buffer, uint32_t bufferSize);
 
