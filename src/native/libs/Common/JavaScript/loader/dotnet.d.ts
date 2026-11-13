@@ -255,6 +255,7 @@ interface Assets {
     coreAssembly: AssemblyAsset[];
     assembly: AssemblyAsset[];
     lazyAssembly?: AssemblyAsset[];
+    r2rAssembly?: WebcilAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
     jsModuleDiagnostics?: JsAsset[];
@@ -300,6 +301,25 @@ type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+};
+type WebcilAsset = AssemblyAsset & {
+    /**
+     * The size in bytes of the Webcil payload to allocate. Present for every Webcil-in-wasm
+     * assembly; the runtime uses it to instantiate the image without buffering its bytes or parsing
+     * the wasm data section.
+     */
+    payloadSize?: number;
+    /**
+     * For ReadyToRun (R2R) webcil-in-wasm images only: the number of table entries the module needs.
+     * The runtime grows the indirect-call table by this amount before instantiation. Absent for
+     * plain (non-R2R) webcil.
+     */
+    tableSize?: number;
+    /**
+     * Set on the composite ReadyToRun owner image. It carries native code for its component assemblies
+     * but is not itself a managed assembly: it keeps its .wasm virtual path and is not a trusted platform assembly.
+     */
+    isCompositeImage?: boolean;
 };
 type PdbAsset = Asset & {
     virtualPath: string;

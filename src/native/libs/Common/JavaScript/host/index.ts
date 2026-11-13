@@ -8,7 +8,7 @@ import { ENVIRONMENT_IS_NODE } from "../per-module";
 
 import GitHash from "consts:gitHash";
 
-import { runMain, runMainAndExit, initializeCoreCLR } from "./host";
+import { runMain, runMainAndExit, initializeCoreCLR, activateDeferredR2R } from "./host";
 import { registerPdbBytes, instantiateWebcilModule, registerDllBytes, installVfsFile, loadIcuData, instantiateWasm, } from "./assets";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -32,6 +32,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         registerPdbBytes,
         instantiateWasm,
         instantiateWebcilModule,
+        activateDeferredR2R,
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
@@ -47,6 +48,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.registerPdbBytes,
             map.instantiateWasm,
             map.instantiateWebcilModule,
+            map.activateDeferredR2R,
         ];
     }
 }

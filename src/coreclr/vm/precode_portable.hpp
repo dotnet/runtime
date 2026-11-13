@@ -23,6 +23,7 @@ public: // static
     static void* GetInterpreterData(PCODE addr);
     // Returns the existing data, or interpreterData if this call installs it.
     static void* SetInterpreterDataInterlocked(PCODE addr, void* interpreterData);
+    static void ClearInterpreterData(PCODE addr);
     static bool PrefersInterpreterEntryPoint(PCODE addr);
 
 private:

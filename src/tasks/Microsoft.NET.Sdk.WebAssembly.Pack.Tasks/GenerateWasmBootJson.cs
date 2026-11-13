@@ -84,6 +84,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsPublish { get; set; }
 
+    public bool EnableDeferredR2R { get; set; }
+
     public bool IsAot { get; set; }
 
     public bool IsMultiThreaded { get; set; }
@@ -125,6 +127,8 @@ public class GenerateWasmBootJson : Task
     private void WriteBootConfig(string entryAssemblyName)
     {
         bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+        if (EnableDeferredR2R && (!IsPublish || isMonoRuntime || IsMultiThreaded || !IsTargeting110OrLater()))
+            throw new InvalidOperationException("Deferred ReadyToRun requires publishing a single-threaded CoreCLR browser application targeting .NET 11 or later.");
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         // ReadyToRun webcil-in-wasm images carry payload/table sizes that the loader needs before
@@ -302,7 +306,15 @@ public class GenerateWasmBootJson : Task
                     MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a composite ReadyToRun image.", resource.ItemSpec);
                     compositeImages.Add(resourceRoute);
-                    resourceList = resourceData.coreAssembly;
+                    if (EnableDeferredR2R)
+                    {
+                        resourceData.r2rAssembly ??= new ResourceHashesByNameDictionary();
+                        resourceList = resourceData.r2rAssembly;
+                    }
+                    else
+                    {
+                        resourceList = resourceData.coreAssembly;
+                    }
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
@@ -528,6 +540,9 @@ public class GenerateWasmBootJson : Task
         string? imports = null;
         if (IsTargeting100OrLater())
             imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, !isMonoRuntime && IsTargeting120OrLater(), FilesystemUsageDetected);
+
+        if (EnableDeferredR2R && compositeImages.Count != 1)
+            throw new InvalidOperationException("Deferred ReadyToRun requires exactly one composite image.");
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 

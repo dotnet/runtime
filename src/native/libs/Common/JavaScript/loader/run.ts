@@ -3,9 +3,9 @@
 
 import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
 
-import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
-import { exit, runtimeState } from "./exit";
-import { createPromiseCompletionSource } from "./promise-completion-source";
+import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, dotnetLogger, Module } from "./cross-module";
+import { exit, isExited, runtimeState } from "./exit";
+import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
 import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
@@ -13,7 +13,7 @@ import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 import { loaderCallbacks } from "./callbacks";
 import { getAppSettingsAssets } from "../appsettings";
-import { fetchAppSettings } from "./assets";
+import { fetchAppSettings, nativeWasmReadyTime } from "./assets";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
@@ -23,6 +23,63 @@ let downloadDeferred: PromiseCompletionSource<void> | undefined;
 let downloadedIntoMemory = false;
 let configInitialized = false;
 let modulesAfterConfigLoadedCache: [JsAsset, Promise<any>][] = [];
+let deferredR2RPromise: Promise<void> | undefined;
+const deferredR2RState = {
+    status: "disabled" as "disabled" | "pending" | "downloading" | "activating" | "completed" | "failed" | "exited",
+    eagerReadyTime: 0,
+    nativeWasmReadyTime: 0,
+    downloadStartedTime: 0,
+    instantiatedTime: 0,
+    completedTime: 0,
+    publishedMethods: 0,
+};
+
+export function getDeferredR2RState() {
+    return { ...deferredR2RState };
+}
+
+export async function waitForDeferredR2R(): Promise<void> {
+    if (!deferredR2RPromise) throw new Error("Deferred ReadyToRun has not been started.");
+    await deferredR2RPromise;
+}
+
+function startDeferredR2R(): void {
+    const assets = loaderConfig.resources?.r2rAssembly;
+    if (!assets?.length || deferredR2RPromise) return;
+    deferredR2RState.status = "pending";
+    deferredR2RState.eagerReadyTime = performance.now();
+    deferredR2RState.nativeWasmReadyTime = nativeWasmReadyTime;
+    deferredR2RPromise = activate();
+    void deferredR2RPromise.catch(error => {
+        if (isExited()) {
+            deferredR2RState.status = "exited";
+            return;
+        }
+        deferredR2RState.status = "failed";
+        dotnetLogger.error("Deferred ReadyToRun failed", error);
+        setTimeout(() => exit(1, error), 0);
+    });
+
+    async function activate(): Promise<void> {
+        await delay(0);
+        if (isExited()) throw new Error("Runtime exited before deferred ReadyToRun started.");
+        deferredR2RState.status = "downloading";
+        deferredR2RState.downloadStartedTime = performance.now();
+        await fetchAssembly(assets![0], false);
+        deferredR2RState.instantiatedTime = performance.now();
+        deferredR2RState.status = "activating";
+        let remaining = 1;
+        while (remaining > 0) {
+            await delay(0);
+            if (isExited()) throw new Error("Runtime exited during deferred ReadyToRun activation.");
+            const batch = dotnetBrowserHostExports.activateDeferredR2R();
+            deferredR2RState.publishedMethods += batch.published;
+            remaining = batch.remaining;
+        }
+        deferredR2RState.status = "completed";
+        deferredR2RState.completedTime = performance.now();
+    }
+}
 
 // many things happen in parallel here, but order matters for performance!
 // ideally we want to utilize network and CPU at the same time
@@ -46,6 +103,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         if (downloadedIntoMemory && !downloadOnly) {
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
+            startDeferredR2R();
 
             await loaderCallbacks.dotnetReady?.();
 
@@ -165,6 +223,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         await wasmNativePromise; // this is just to propagate errors
 
         if (!downloadOnly) {
+            if (resources.r2rAssembly?.length) await assembliesPromise;
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
         }
@@ -184,6 +243,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             return;
         }
 
+        startDeferredR2R();
         await loaderCallbacks.dotnetReady?.();
 
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
@@ -203,7 +263,11 @@ export function abortStartup(reason: any): void {
 
 async function initializeCoreCLR(): Promise<void> {
     dotnetAssert.check(!runtimeState.dotnetReady, "CoreCLR should be initialized just once");
-    const res = dotnetBrowserHostExports.initializeCoreCLR();
+    const assets = loaderConfig.resources?.r2rAssembly;
+    if (assets?.length && (assets.length !== 1 || !assets[0].isCompositeImage || !assets[0].tableSize || !assets[0].payloadSize)) {
+        throw new Error("Deferred ReadyToRun requires exactly one composite Webcil image with payload and table sizes.");
+    }
+    const res = dotnetBrowserHostExports.initializeCoreCLR(!!assets?.length);
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
         runMainPromiseController.reject(reason);
@@ -229,7 +293,7 @@ function forEachResource<T, R>(collection: T[] | undefined, callback: (item: T) 
         return Promise.resolve([]);
     }
     const filteredCollection = filter ? collection.filter(filter) : collection;
-    return Promise.all(filteredCollection.map(callback));
+    return Promise.all(filteredCollection.map(asset => callback(asset)));
 }
 
 function normalizeCollection<T>(collection: T[] | undefined): T[] {

@@ -58,6 +58,7 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     const tableEntries = typeof tableSize === "number" ? tableSize : 0;
 
     const res = await checkWebcilResponse(webcilPromise, virtualPath);
+    if (_ems_.dotnetLoaderExports.isExited()) throw new Error("Runtime exited before Webcil instantiation.");
     let payloadPtr = 0;
     try {
         payloadPtr = allocWebcilPayload(payloadSize);
@@ -71,11 +72,12 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
             const data = await res.arrayBuffer();
             instance = (await WebAssembly.instantiate(data, imports)).instance;
         }
+        if (_ems_.dotnetLoaderExports.isExited()) throw new Error("Runtime exited during Webcil instantiation.");
         finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
-        if (payloadPtr !== 0) {
+        if (payloadPtr !== 0 && !_ems_.dotnetLoaderExports.isExited()) {
             _ems_._free(payloadPtr as any);
         }
         throw err;

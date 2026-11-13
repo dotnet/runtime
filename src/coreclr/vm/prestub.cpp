@@ -573,6 +573,35 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+bool MethodDesc::TryActivateDeferredR2RCode()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (!IsIL() || IsWrapperStub() || ContainsGenericVariables())
+        return false;
+
+    PCODE entryPoint = GetPortableEntryPointIfExists();
+    if (entryPoint == (PCODE)nullptr || PortableEntryPoint::HasNativeEntryPoint(entryPoint))
+        return false;
+
+    PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+    config.SetCallerGCMode(CallerGCMode::Preemptive);
+    PCODE code = GetPrecompiledCode(&config, false);
+    if (config.ReadyToRunRejectedPrecompiledCode())
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    if (code == (PCODE)nullptr)
+        return false;
+
+    SetCodeEntryPoint(code);
+    PoisonInterpreterCode();
+    PortableEntryPoint::ClearInterpreterData(entryPoint);
+    PerfMap::LogPreCompiledMethod(this, code);
+    DACNotifyCompilationFinished(this, code);
+    return true;
+}
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;

@@ -1359,6 +1359,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
+      <_WasmPublishEnableDeferredR2R>false</_WasmPublishEnableDeferredR2R>
+      <_WasmPublishEnableDeferredR2R Condition="'$(WasmEnableDeferredR2R)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">true</_WasmPublishEnableDeferredR2R>
       <_WasmFilesystemUsageDetected Condition="'@(WasmFilesToIncludeInFileSystem)' != ''">true</_WasmFilesystemUsageDetected>
       <!-- TODO-WASM: Default to false once IL trimming provides better filesystem usage detection. -->
       <_WasmFilesystemUsageDetected Condition="'$(_WasmFilesystemUsageDetected)' == ''">true</_WasmFilesystemUsageDetected>
@@ -1366,7 +1368,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)"
+      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)|$(_WasmPublishEnableDeferredR2R)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -1408,6 +1410,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
       IsPublish="true"
+      EnableDeferredR2R="$(_WasmPublishEnableDeferredR2R)"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       UseMonoRuntime="$(UseMonoRuntime)"

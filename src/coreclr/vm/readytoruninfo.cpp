@@ -21,6 +21,18 @@
 
 #include "perfmap.h"
 
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+static bool s_deferredR2RPending = false;
+static bool s_deferredR2RConfigured = false;
+
+void ReadyToRunInfo::SetDeferredR2R(bool pending)
+{
+    LIMITED_METHOD_CONTRACT;
+    s_deferredR2RPending = pending;
+    s_deferredR2RConfigured |= pending;
+}
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+
 #ifndef DACCESS_COMPILE
 extern "C" PCODE g_pMethodWithSlotAndModule;
 extern "C" PCODE g_pClassWithSlotAndModule;
@@ -515,9 +527,9 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
 }
 
 /// <summary>
-/// Try to locate composite R2R image for a given component module.
+/// Read the composite owner identity without loading its native image.
 /// </summary>
-static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER *pHeader)
+static LPCUTF8 GetOwnerCompositeExecutableName(PEImageLayout* pLayout, READYTORUN_HEADER* pHeader)
 {
     READYTORUN_SECTION * pSections = (READYTORUN_SECTION*)(pHeader + 1);
     DWORD virtualAddress = UINT32_MAX;
@@ -562,6 +574,36 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         }
     }
 
+    return ownerCompositeExecutableName;
+}
+
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+bool ReadyToRunInfo::ShareDeferredComposite(Module* module1, Module* module2)
+{
+    STANDARD_VM_CONTRACT;
+    if (!s_deferredR2RConfigured)
+        return false;
+
+    PEAssembly* file1 = module1->GetPEAssembly();
+    PEAssembly* file2 = module2->GetPEAssembly();
+    if (file1->GetAssemblyBinder() != file2->GetAssemblyBinder() ||
+        !file1->HasLoadedPEImage() || !file2->HasLoadedPEImage())
+        return false;
+
+    PEImageLayout* layout1 = file1->GetLoadedLayout();
+    PEImageLayout* layout2 = file2->GetLoadedLayout();
+    if (!layout1->IsComponentAssembly() || !layout2->IsComponentAssembly())
+        return false;
+
+    LPCUTF8 owner1 = GetOwnerCompositeExecutableName(layout1, layout1->GetReadyToRunHeader());
+    LPCUTF8 owner2 = GetOwnerCompositeExecutableName(layout2, layout2->GetReadyToRunHeader());
+    return owner1 != nullptr && owner2 != nullptr && strcmp(owner1, owner2) == 0;
+}
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+
+static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER *pHeader)
+{
+    LPCUTF8 ownerCompositeExecutableName = GetOwnerCompositeExecutableName(pLayout, pHeader);
     if (ownerCompositeExecutableName != NULL)
     {
         AssemblyBinder *binder = pModule->GetPEAssembly()->GetAssemblyBinder();
@@ -626,6 +668,14 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
     // The file must have been loaded using LoadLibrary
     bool isComponentAssembly = pLayout->IsComponentAssembly();
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    if (isComponentAssembly && s_deferredR2RPending)
+    {
+        if ((pLayout->GetReadyToRunHeader()->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES) != 0)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        return nullptr;
+    }
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
     if (!isComponentAssembly && !pLayout->IsRelocated())
     {
         DoLog("Ready to Run disabled - module not loaded for execution");

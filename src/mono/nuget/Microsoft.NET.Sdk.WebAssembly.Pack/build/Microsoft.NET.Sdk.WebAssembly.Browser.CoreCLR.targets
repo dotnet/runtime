@@ -78,6 +78,16 @@ Copyright (c) .NET Foundation. All rights reserved.
              Text="WasmPerformanceInstrumentation during build provides incomplete sampling coverage because prebuilt framework ReadyToRun images are not instrumented. Publish the application for complete instrumentation coverage." />
   </Target>
 
+  <Target Name="_WasmCoreClrValidateDeferredR2R"
+          Condition="'$(WasmEnableDeferredR2R)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          BeforeTargets="CreateReadyToRunImages;GeneratePublishWasmBootJson">
+    <Error Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and ('$(PublishReadyToRun)' != 'true' or '$(PublishReadyToRunComposite)' != 'true')"
+           Text="WasmEnableDeferredR2R requires PublishReadyToRun=true and PublishReadyToRunComposite=true." />
+    <Error Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(PublishReadyToRunStripILBodies)' == 'true')"
+           Text="WasmEnableDeferredR2R requires single-threaded execution and retained IL bodies." />
+  </Target>
+
   <!-- Fail comprehensibly instead of emitting PE images the runtime cannot load. The config checks
        run on both build and publish; the crossgen2 requirement is publish-only, since a dev-loop build stages
        the pack R2R and never invokes crossgen2. -->

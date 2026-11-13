@@ -92,6 +92,15 @@ bool PortableEntryPoint::PrefersInterpreterEntryPoint(PCODE addr)
     return portableEntryPoint->PrefersInterpreterEntryPoint();
 }
 
+void PortableEntryPoint::ClearInterpreterData(PCODE addr)
+{
+    LIMITED_METHOD_CONTRACT;
+    PortableEntryPoint* entryPoint = ToPortableEntryPoint(addr);
+    _ASSERTE(HasNativeEntryPoint(addr));
+    // Suspended interpreter frames own their bytecode independently of this dispatch pointer.
+    entryPoint->_pInterpreterData = nullptr;
+}
+
 #ifdef _DEBUG
 bool PortableEntryPoint::IsValid() const
 {

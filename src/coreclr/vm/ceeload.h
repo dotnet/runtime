@@ -1554,6 +1554,11 @@ public:
         return m_pReadyToRunInfo;
     }
 
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    void AttachDeferredReadyToRunInfo();
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+    void InitializeReadyToRunInfo(AllocMemTracker* pamTracker);
+
     PTR_NativeImage GetCompositeNativeImage() const
     {
         LIMITED_METHOD_DAC_CONTRACT;

@@ -31,6 +31,7 @@ export function setLoadBootResourceCallback(callback: LoadBootResourceCallback |
 }
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
 export const wasmMemoryPromiseController = createPromiseCompletionSource<WebAssembly.Memory>();
+export let nativeWasmReadyTime = 0;
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
 });
@@ -131,6 +132,7 @@ export async function instantiateMainWasm(imports: WebAssembly.Imports, successC
     }
     successCallback(instance, module);
     const memory = dotnetNativeBrowserExports.getWasmMemory();
+    nativeWasmReadyTime = performance.now();
     wasmMemoryPromiseController.resolve(memory);
 }
 
@@ -153,9 +155,9 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
     }
 }
 
-export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
+export async function fetchAssembly(asset: AssemblyAsset, reportProgress = true): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
-    totalAssetsToDownload++;
+    if (reportProgress) totalAssetsToDownload++;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
     const assetNameForUrl = assetInternal.culture
         ? `${assetInternal.culture}/${assetInternal.name}`
@@ -168,13 +170,13 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
     normalizeVirtualPath(assetInternal);
 
     if (isWebcilInWasm) {
-        await fetchWebcil(assetInternal);
+        await fetchWebcil(assetInternal, reportProgress);
     } else {
         await fetchDll(assetInternal);
     }
 }
 
-async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
+async function fetchWebcil(assetInternal: AssetEntryInternal, reportProgress: boolean): Promise<void> {
     try {
         assetInternal.behavior = "webcil";
 
@@ -184,7 +186,7 @@ async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
         const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!, assetInternal.tableSize, assetInternal.payloadSize);
         await instancePromise;
     } finally {
-        onDownloadedAsset(assetInternal);
+        onDownloadedAsset(assetInternal, reportProgress);
     }
 }
 
@@ -590,12 +592,14 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
     return fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
 }
 
-function onDownloadedAsset(asset: AssetEntryInternal): void {
+function onDownloadedAsset(asset: AssetEntryInternal, reportProgress = true): void {
     if (asset.inprogress) {
         finishThrottling(asset);
     }
-    ++downloadedAssetsCount;
-    loaderCallbacks.downloadResourceProgress?.(downloadedAssetsCount, totalAssetsToDownload);
+    if (reportProgress) {
+        ++downloadedAssetsCount;
+        loaderCallbacks.downloadResourceProgress?.(downloadedAssetsCount, totalAssetsToDownload);
+    }
     // release memory
     asset.buffer = null!;
     asset.pendingDownload = undefined;

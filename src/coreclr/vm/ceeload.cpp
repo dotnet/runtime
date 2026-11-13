@@ -465,32 +465,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
-    if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
-    {
-#ifdef TARGET_WASM
-        // Direct R2R calls can execute before assembly activation. Register virtual IPs as soon as
-        // the R2R info is installed so stack walks can resolve those frames.
-        m_pReadyToRunInfo->RegisterVirtualIPRange(this);
-#endif
-        if (m_pReadyToRunInfo->SkipTypeValidation())
-            m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
-
-        m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
-        if (m_pNativeImage != NULL)
-        {
-            m_NativeMetadataAssemblyRefMap = m_pNativeImage->GetManifestMetadataAssemblyRefMap();
-        }
-        else
-        {
-            // For composite images, manifest metadata gets loaded as part of the native image
-            COUNT_T cMeta = 0;
-            if (GetPEAssembly()->GetPEImage()->GetNativeManifestMetadata(&cMeta) != NULL)
-            {
-                // Load the native assembly import
-                GetNativeAssemblyImport(TRUE /* loadAllowed */);
-            }
-        }
-    }
+    InitializeReadyToRunInfo(pamTracker);
 #endif
 
     // Initialize the instance fields that we need for all Modules
@@ -539,6 +514,51 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
+
+#ifdef FEATURE_READYTORUN
+void Module::InitializeReadyToRunInfo(AllocMemTracker* pamTracker)
+{
+    STANDARD_VM_CONTRACT;
+
+    if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != nullptr)
+    {
+#ifdef TARGET_WASM
+        m_pReadyToRunInfo->RegisterVirtualIPRange(this);
+#endif // TARGET_WASM
+        if (m_pReadyToRunInfo->SkipTypeValidation())
+            m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION;
+
+        m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
+        if (m_pNativeImage != nullptr)
+        {
+            m_NativeMetadataAssemblyRefMap = m_pNativeImage->GetManifestMetadataAssemblyRefMap();
+        }
+        else
+        {
+            COUNT_T cMeta = 0;
+            if (GetPEAssembly()->GetPEImage()->GetNativeManifestMetadata(&cMeta) != nullptr)
+                GetNativeAssemblyImport(TRUE /* loadAllowed */);
+        }
+    }
+}
+
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+void Module::AttachDeferredReadyToRunInfo()
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!IsReadyToRun() && !IsCollectible());
+
+    AllocMemTracker tracker;
+    InitializeReadyToRunInfo(&tracker);
+    if (!IsReadyToRun())
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    tracker.SuppressRelease();
+    RunEagerFixups();
+    if (GetReadyToRunInfo()->ReadyToRunCodeDisabled())
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+}
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+#endif // FEATURE_READYTORUN
 
 #endif // DACCESS_COMPILE
 

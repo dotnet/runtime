@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
@@ -29,6 +30,164 @@ namespace Wasm.Build.Tests
             : base(output, buildContext)
         {
             _enablePerTestCleanup = true;
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [TestCategory("no-workload")]
+        public Task PublishDeferredReadyToRun(bool nativeRelink, bool failDownload) =>
+            PublishDeferredReadyToRunCore(nativeRelink, failDownload, useWorkload: false);
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task PublishDeferredReadyToRunWithWorkload(bool failDownload) =>
+            PublishDeferredReadyToRunCore(nativeRelink: true, failDownload, useWorkload: true);
+
+        private async Task PublishDeferredReadyToRunCore(bool nativeRelink, bool failDownload, bool useWorkload)
+        {
+            Configuration config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_deferred",
+                extraProperties: """
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+                    <WasmEnableDeferredR2R>true</WasmEnableDeferredR2R>
+                    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                    """);
+            File.AppendAllText(Path.Combine(_projectDir, "Program.cs"), """
+
+                [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+                public static partial class DeferredR2RProbe
+                {
+                    private sealed class LayoutProbe : System.ComponentModel.CancelEventArgs
+                    {
+                        public byte Marker = 42;
+                        public LayoutProbe() : base(false) { }
+                    }
+
+                    private static readonly LayoutProbe s_layout = new();
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    public static int ReadLayoutMarker() => s_layout.Marker;
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    public static int AddOne(int value) => Echo(value) + 1;
+
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    private static T Echo<T>(T value) => value;
+
+                    [System.Runtime.InteropServices.JavaScript.JSExport]
+                    public static int EntryPoint() =>
+                        new System.Func<int, int>(AddOne).Method.MethodHandle.GetFunctionPointer().ToInt32();
+                }
+                """);
+            UpdateFile(Path.Combine("wwwroot", "index.html"), new Dictionary<string, string>
+            {
+                {
+                    """<script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>""",
+                    """
+                    <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
+                    <script>
+                        if (location.search.includes("deferred-setup")) {
+                            document.querySelector("#app").classList.add("page");
+                        } else {
+                            Blazor.start();
+                        }
+                    </script>
+                    """
+                }
+            });
+            string extraArgs = $"{GetR2RBuildArgs(config, composite: true)} -p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload={useWorkload.ToString().ToLowerInvariant()}";
+            BlazorPublish(info, config, new PublishOptions(ExtraMSBuildArgs: extraArgs), isNativeBuild: nativeRelink);
+            string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+            AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+            WebcilAsset composite = Assert.Single(assets.r2rAssembly);
+            Assert.True(composite.isCompositeImage);
+            Assert.DoesNotContain(assets.coreAssembly, asset => asset.isCompositeImage == true);
+            // Component wrappers contain getWebcilSize and patchWebcilHeader, but no managed functions.
+            Assert.All(assets.coreAssembly.Concat(assets.assembly), asset => Assert.True(asset.tableSize is null or 2));
+            AssertTrimmedClosureIsFullyStaged(config, frameworkDir);
+
+            var failedExit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            await RunForPublishWithWebServer(new BlazorRunOptions(config,
+                BrowserPath: "index.html?deferred-setup",
+                CheckCounter: false,
+                DetectRuntimeFailures: !failDownload,
+                ExpectedExitCode: failDownload ? null : 0,
+                OnConsoleMessage: (_, message) =>
+                {
+                    if (message.Contains("WASM EXIT 1", System.StringComparison.Ordinal))
+                        failedExit.TrySetResult();
+                },
+                Test: async page =>
+                {
+                    var requested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    await page.RouteAsync($"**/{composite.name}", async route =>
+                    {
+                        requested.TrySetResult();
+                        await release.Task;
+                        if (failDownload)
+                            await route.FulfillAsync(new() { Status = 404, ContentType = "application/wasm", Body = "Missing late image" });
+                        else
+                            await route.ContinueAsync();
+                    });
+                    string baseUrl = new System.Uri(page.Url).GetLeftPart(System.UriPartial.Authority);
+                    try
+                    {
+                        await page.GotoAsync(baseUrl);
+                        await page.Locator(".page").WaitForAsync(new() { Timeout = InteractionTimeoutMs });
+                        await requested.Task.WaitAsync(System.TimeSpan.FromSeconds(60));
+                        await InteractAllPagesAsync(page);
+                        uint[] before = await page.EvaluateAsync<uint[]>("""
+                            async () => {
+                                const runtime = getDotnetRuntime(0);
+                                const exports = await runtime.getAssemblyExports(runtime.getConfig().mainAssemblyName);
+                                globalThis.deferredProbe = exports.DeferredR2RProbe;
+                                const pointer = deferredProbe.EntryPoint() >>> 0;
+                                return [deferredProbe.AddOne(41), pointer, runtime.getHeapU32(pointer)];
+                            }
+                            """);
+                        Assert.Equal(42u, before[0]);
+                        Assert.Equal(42, await page.EvaluateAsync<int>("deferredProbe.ReadLayoutMarker()"));
+                        release.TrySetResult();
+                        if (failDownload)
+                        {
+                            await failedExit.Task.WaitAsync(System.TimeSpan.FromSeconds(60));
+                            JsonElement failure = await page.EvaluateAsync<JsonElement>("getDotnetRuntime(0).INTERNAL.getDeferredR2RState()");
+                            Assert.Equal("failed", failure.GetProperty("status").GetString());
+                            Assert.Equal(0, failure.GetProperty("publishedMethods").GetInt32());
+                            return;
+                        }
+
+                        await page.EvaluateAsync("getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()");
+                        uint[] after = await page.EvaluateAsync<uint[]>("""
+                            () => {
+                                const pointer = deferredProbe.EntryPoint() >>> 0;
+                                return [deferredProbe.AddOne(41), pointer, getDotnetRuntime(0).getHeapU32(pointer)];
+                            }
+                            """);
+                        Assert.Equal(before[0], after[0]);
+                        Assert.Equal(before[1], after[1]);
+                        Assert.NotEqual(before[2], after[2]);
+                        Assert.Equal(42, await page.EvaluateAsync<int>("deferredProbe.ReadLayoutMarker()"));
+                        JsonElement state = await page.EvaluateAsync<JsonElement>("getDotnetRuntime(0).INTERNAL.getDeferredR2RState()");
+                        Assert.Equal("completed", state.GetProperty("status").GetString());
+                        Assert.True(state.GetProperty("publishedMethods").GetInt32() > 0);
+                        double started = state.GetProperty("downloadStartedTime").GetDouble();
+                        Assert.True(started >= state.GetProperty("eagerReadyTime").GetDouble());
+                        Assert.True(started >= state.GetProperty("nativeWasmReadyTime").GetDouble());
+                        await InteractAllPagesAsync(page);
+                    }
+                    finally
+                    {
+                        release.TrySetResult();
+                    }
+                }));
         }
 
         [Theory]

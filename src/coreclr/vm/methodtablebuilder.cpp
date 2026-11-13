@@ -12483,6 +12483,12 @@ bool ModulesAreDistributedAsAnIndivisibleUnit(Module* module1, Module* module2)
     if (module1 == module2)
         return true;
 
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    // Field layout must use the composite distribution unit before its native image is downloaded.
+    if (ReadyToRunInfo::ShareDeferredComposite(module1, module2))
+        return true;
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+
     bool nativeImagesIdentical = false;
     if (module1->GetCompositeNativeImage() != NULL)
     {

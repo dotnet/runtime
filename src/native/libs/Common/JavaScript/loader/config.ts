@@ -64,6 +64,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
     source.assembly = [...target.assembly!, ...source.assembly || []];
     source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
+    source.r2rAssembly = [...target.r2rAssembly!, ...source.r2rAssembly || []];
     source.corePdb = [...target.corePdb!, ...source.corePdb || []];
     source.pdb = [...target.pdb!, ...source.pdb || []];
     source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
@@ -116,6 +117,7 @@ function normalizeResources(target: Assets) {
     if (!target.coreAssembly) target.coreAssembly = [];
     if (!target.assembly) target.assembly = [];
     if (!target.lazyAssembly) target.lazyAssembly = [];
+    if (!target.r2rAssembly) target.r2rAssembly = [];
     if (!target.corePdb) target.corePdb = [];
     if (!target.pdb) target.pdb = [];
     if (!target.jsModuleNative) target.jsModuleNative = [];

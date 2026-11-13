@@ -134,6 +134,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             AddDictionary(sb, resources.icu);
             AddDictionary(sb, resources.runtime);
             AddDictionary(sb, resources.lazyAssembly);
+            AddDictionary(sb, resources.r2rAssembly);
 
             if (resources.satelliteResources != null)
             {
@@ -257,6 +258,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.corePdb = MapGeneralAssets(resources.corePdb);
             assets.pdb = MapGeneralAssets(resources.pdb);
             assets.lazyAssembly = MapWebcilAssets(resources.lazyAssembly);
+            assets.r2rAssembly = MapWebcilAssets(resources.r2rAssembly);
 
             if (resources.satelliteResources != null)
             {

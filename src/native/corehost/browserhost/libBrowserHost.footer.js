@@ -26,6 +26,7 @@ function libBrowserHostFactory() {
         "BrowserHost_InitializeDotnet",
         "BrowserHost_ExecuteAssembly",
         "BrowserHost_ShutdownDotnet",
+        "BrowserHost_ActivateDeferredR2R",
     ];
     let commonDeps = [
         "$DOTNET",

@@ -19,7 +19,7 @@ import { invokeLibraryInitializers } from "./lib-initializers";
 import { check, error, info, warn, debug, fastCheck, normalizeException } from "./logging";
 
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
-import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise, abortStartup } from "./run";
+import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise, abortStartup, getDeferredR2RState, waitForDeferredR2R } from "./run";
 import { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "./promise-completion-source";
 import { fetchLazyAssembly, fetchSatelliteAssemblies, instantiateMainWasm } from "./assets";
 import { getAppSettingsFiles, getAppSettingsBytes } from "../appsettings";
@@ -27,7 +27,7 @@ import { getAppSettingsFiles, getAppSettingsBytes } from "../appsettings";
 export function dotnetInitializeModule(): RuntimeAPI {
 
     const dotnetApi: Partial<RuntimeAPI> = {
-        INTERNAL: { getAppSettingsFiles, getAppSettingsBytes },
+        INTERNAL: { getAppSettingsFiles, getAppSettingsBytes, getDeferredR2RState, waitForDeferredR2R },
         Module: {} as any,
         runtimeId: undefined,
         runtimeBuildInfo: {

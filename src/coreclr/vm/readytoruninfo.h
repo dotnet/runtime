@@ -204,6 +204,11 @@ class ReadyToRunInfo
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
+#if defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    static void SetDeferredR2R(bool pending);
+    static bool ShareDeferredComposite(Module* module1, Module* module2);
+#endif // TARGET_BROWSER && !FEATURE_MULTITHREADING
+
     static PTR_ReadyToRunInfo ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod);
     static PTR_ReadyToRunInfo GetUnrelatedR2RModules();
     PTR_ReadyToRunInfo GetNextUnrelatedR2RModule() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(m_pNextR2RForUnrelatedCode) & ~0x1); }

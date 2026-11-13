@@ -239,6 +239,9 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary lazyAssembly { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary r2rAssembly { get; set; }
+
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
     /// </summary>
@@ -336,6 +339,9 @@ public class AssetsData
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public List<WebcilAsset> lazyAssembly { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<WebcilAsset> r2rAssembly { get; set; }
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.

@@ -401,7 +401,7 @@ namespace ILCompiler.PortableCallHelpers
                 string r2rSection = cb.IsExport
                     ? w.NewLine + $$"""
                             // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-                            // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+                            // Cache entrypoints until deferred activation resets the cache.
                             void* r2r = __atomic_load_n(&R2RCode_{{cb.EntrySymbol}}, __ATOMIC_ACQUIRE);
                             if (r2r == (void*)(intptr_t)-1)
                             {
@@ -454,6 +454,15 @@ namespace ILCompiler.PortableCallHelpers
                 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
 
                 """);
+
+            w.WriteLine("void ResetReverseThunkCaches()");
+            w.WriteLine("{");
+            foreach (PInvokeCallback callback in callbacks)
+            {
+                if (callback.IsExport)
+                    w.WriteLine($"    __atomic_store_n(&R2RCode_{callback.EntrySymbol}, (void*)(intptr_t)-1, __ATOMIC_RELEASE);");
+            }
+            w.WriteLine("}");
 
             // The runtime walks every [UnmanagedCallersOnly] method the type declares, so match that.
             static void RejectAmbiguousExport(PInvokeCallback cb)

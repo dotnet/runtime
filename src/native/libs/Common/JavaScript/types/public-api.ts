@@ -219,6 +219,7 @@ export interface Assets {
     coreAssembly: AssemblyAsset[];
     assembly: AssemblyAsset[];
     lazyAssembly?: AssemblyAsset[];
+    r2rAssembly?: WebcilAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
     jsModuleDiagnostics?: JsAsset[];

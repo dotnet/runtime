@@ -156,6 +156,7 @@ export function dotnetUpdateInternalsSubscriber() {
             registerPdbBytes: table[4],
             instantiateWasm: table[5],
             instantiateWebcilModule: table[6],
+            activateDeferredR2R: table[7],
         };
         Object.assign(native, nativeLocal);
     }

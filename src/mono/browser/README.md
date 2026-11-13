@@ -12,6 +12,32 @@ Windows build [requirements](../../../docs/workflow/requirements/windows-require
 
 ## Building
 
+### Experimental CoreCLR deferred ReadyToRun publishing
+
+`WasmEnableDeferredR2R=true` opts a published, single-threaded CoreCLR browser app into
+eager interpreter startup followed by background activation of one composite ReadyToRun
+image. Set `PublishReadyToRun=true` and `PublishReadyToRunComposite=true`, and retain IL
+bodies. Development builds and the existing publish modes are unchanged.
+
+The complete eager assembly closure is downloaded before runtime initialization. The
+compiled composite is listed separately in `resources.r2rAssembly`, fetched only after
+the eager assets and native Wasm are ready, and stream-instantiated with the shared memory
+and function table. Prepared methods are upgraded in browser event-loop batches. Existing
+interpreted frames and suspended continuations keep their bytecode; there is no on-stack
+replacement.
+
+Eager component stubs retain their composite owner identity, keeping cross-assembly
+field layouts compatible with the late code before its native image is available.
+
+For prototype validation, `getDotnetRuntime(0).INTERNAL.waitForDeferredR2R()` awaits full
+activation and `INTERNAL.getDeferredR2RState()` reports phase timings and published method
+counts. These are internal diagnostics, not supported public APIs. Late failures are fatal;
+benchmarking must await successful activation before measuring steady state.
+
+The browser sample detects this mode and withholds the late response until it has exercised
+an interpreter probe. It then verifies the same portable entrypoint transitions to compiled
+code and resumes an already-suspended async call.
+
 At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
 ## macOS

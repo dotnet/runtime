@@ -21,6 +21,90 @@ namespace Wasm.Build.Tests;
     public class GenerateWasmBootJsonTests
     {
         [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void DeferredReadyToRunManifest(bool deferred, bool publish)
+        {
+            using var dir = new TempDirectory();
+            const string name = "App.r2r.wasm";
+            const string route = "App.r2r.012345abcd.wasm";
+            string assetPath = Path.Combine(dir.Path, name);
+            var resource = new TaskItem(assetPath, new Dictionary<string, string>
+            {
+                ["AssetTraitName"] = "WasmResource",
+                ["AssetTraitValue"] = "readyToRunComposite",
+                ["OriginalItemSpec"] = name,
+                ["PayloadSize"] = "16",
+                ["TableSize"] = "2",
+                ["Integrity"] = "test-hash"
+            });
+            var endpoint = new TaskItem(route, new Dictionary<string, string> { ["AssetFile"] = assetPath });
+            string output = Path.Combine(dir.Path, "boot.json");
+            var task = new GenerateWasmBootJson
+            {
+                BuildEngine = new TestBuildEngine(),
+                AssemblyPath = typeof(GenerateWasmBootJsonTests).Assembly.Location,
+                Resources = [resource],
+                Endpoints = [endpoint],
+                TargetFrameworkVersion = "v12.0",
+                UseMonoRuntime = "false",
+                FingerprintAssets = true,
+                IsPublish = publish,
+                EnableDeferredR2R = deferred,
+                OutputPath = output
+            };
+            Assert.True(task.Execute());
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(output));
+            JsonElement resources = document.RootElement.GetProperty("resources");
+            JsonElement asset = Assert.Single(resources.GetProperty(deferred ? "r2rAssembly" : "coreAssembly").EnumerateArray());
+            Assert.Equal(name, asset.GetProperty("virtualPath").GetString());
+            Assert.Equal(route, asset.GetProperty("name").GetString());
+            Assert.Equal("sha256-test-hash", asset.GetProperty("hash").GetString());
+            Assert.Equal(16, asset.GetProperty("payloadSize").GetInt32());
+            Assert.Equal(2, asset.GetProperty("tableSize").GetInt32());
+            Assert.True(asset.GetProperty("isCompositeImage").GetBoolean());
+            if (deferred)
+                Assert.Empty(resources.GetProperty("coreAssembly").EnumerateArray());
+            else
+                Assert.False(resources.TryGetProperty("r2rAssembly", out _));
+            Assert.False(resources.TryGetProperty("lazyAssembly", out _));
+            string? originalHash = resources.GetProperty("hash").GetString();
+            resource.SetMetadata("Integrity", "changed-hash");
+            Assert.True(task.Execute());
+            using JsonDocument changed = JsonDocument.Parse(File.ReadAllText(output));
+            Assert.NotEqual(originalHash, changed.RootElement.GetProperty("resources").GetProperty("hash").GetString());
+        }
+
+        [Theory]
+        [InlineData(false, false, false, "v12.0")]
+        [InlineData(true, true, false, "v12.0")]
+        [InlineData(true, false, true, "v12.0")]
+        [InlineData(true, false, false, "v10.0")]
+        public void DeferredReadyToRunRejectsUnsupportedConfigurations(bool publish, bool mono, bool threads, string framework)
+        {
+            using var dir = new TempDirectory();
+            string output = Path.Combine(dir.Path, "boot.json");
+            var engine = new TestBuildEngine(throwOnError: false);
+            var task = new GenerateWasmBootJson
+            {
+                BuildEngine = engine,
+                AssemblyPath = typeof(GenerateWasmBootJsonTests).Assembly.Location,
+                Resources = [],
+                Endpoints = [],
+                TargetFrameworkVersion = framework,
+                UseMonoRuntime = mono.ToString(),
+                IsPublish = publish,
+                IsMultiThreaded = threads,
+                EnableDeferredR2R = true,
+                OutputPath = output
+            };
+            Assert.False(task.Execute());
+            Assert.Contains("Deferred ReadyToRun requires", Assert.Single(engine.Errors).Message);
+            Assert.False(File.Exists(output));
+        }
+
+        [Theory]
         [InlineData("v12.0", false, false, true)]
         [InlineData("v12.0", false, true, true)]
         [InlineData("v13.0", false, false, true)]
@@ -237,13 +321,19 @@ namespace Wasm.Build.Tests;
             Assert.Equal("value1", result.runtimeOptions.configProperties["key1"].ToString());
         }
 
-        private sealed class TestBuildEngine : IBuildEngine
+        private sealed class TestBuildEngine(bool throwOnError = true) : IBuildEngine
         {
+            public List<BuildErrorEventArgs> Errors { get; } = [];
             public bool ContinueOnError => false;
             public int LineNumberOfTaskNode => 0;
             public int ColumnNumberOfTaskNode => 0;
             public string ProjectFileOfTaskNode => string.Empty;
-            public void LogErrorEvent(BuildErrorEventArgs e) => throw new InvalidOperationException(e.Message);
+            public void LogErrorEvent(BuildErrorEventArgs e)
+            {
+                Errors.Add(e);
+                if (throwOnError)
+                    throw new InvalidOperationException(e.Message);
+            }
             public void LogWarningEvent(BuildWarningEventArgs e) => throw new InvalidOperationException(e.Message);
             public void LogMessageEvent(BuildMessageEventArgs e) { }
             public void LogCustomEvent(CustomBuildEventArgs e) { }

@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace Sample
 {
@@ -18,6 +19,17 @@ namespace Sample
 
         [JSImport("Sample.Test.displayMeaning", "main.js")]
         internal static partial void DisplayMeaning(int meaning);
+
+        [JSExport]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int DeferredProbe(int value) => DeferredGeneric(value) + 1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T DeferredGeneric<T>(T value) => value;
+
+        [JSExport]
+        public static int GetDeferredProbeEntryPoint() =>
+            new Func<int, int>(DeferredProbe).Method.MethodHandle.GetFunctionPointer().ToInt32();
 
         [JSExport]
         internal static async Task PrintMeaning(Task<int> meaningPromise)

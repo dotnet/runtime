@@ -7,7 +7,7 @@ import type { check, error, info, warn, debug, fastCheck, normalizeException } f
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../loader/run";
 import type { addOnExitListener, exit, isExited, isRuntimeRunning, quitNow } from "../loader/exit";
 
-import type { initializeCoreCLR } from "../host/host";
+import type { initializeCoreCLR, activateDeferredR2R } from "../host/host";
 import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes, instantiateWebcilModule } from "../host/assets";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../loader/promise-completion-source";
 import type { fetchSatelliteAssemblies, fetchLazyAssembly } from "../loader/assets";
@@ -116,6 +116,7 @@ export type BrowserHostExports = {
     registerPdbBytes: typeof registerPdbBytes
     instantiateWasm: typeof instantiateWasm
     instantiateWebcilModule: typeof instantiateWebcilModule
+    activateDeferredR2R: typeof activateDeferredR2R
 }
 
 export type BrowserHostExportsTable = [
@@ -126,6 +127,7 @@ export type BrowserHostExportsTable = [
     typeof registerPdbBytes,
     typeof instantiateWasm,
     typeof instantiateWebcilModule,
+    typeof activateDeferredR2R,
 ]
 
 export type InteropJavaScriptExports = {

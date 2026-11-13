@@ -45,6 +45,8 @@ extern "C"
         coreclr_error_writer_callback_fn error_writer);
 
     void coreclr_wasm_set_relaxed_simd_supported();
+    int coreclr_wasm_defer_r2r();
+    int coreclr_wasm_activate_deferred_r2r(int batchSize, uint32_t* result);
 
 #if !GEN_PINVOKE
     const void* SystemResolveDllImport(const char* name);
@@ -110,8 +112,14 @@ extern "C" void* BrowserHost_CreateHostContract(void)
     return &host_contract;
 }
 
-extern "C" int BrowserHost_InitializeDotnet(int propertiesCount, const char** propertyKeys, const char** propertyValues)
+extern "C" int BrowserHost_InitializeDotnet(int propertiesCount, const char** propertyKeys, const char** propertyValues, int deferR2R)
 {
+    if (deferR2R)
+    {
+        int result = coreclr_wasm_defer_r2r();
+        if (result < 0)
+            return result;
+    }
     for (int i = 0; i < propertiesCount; i++)
     {
         if ((strcmp(propertyKeys[i], "System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported") == 0) &&
@@ -132,6 +140,14 @@ extern "C" int BrowserHost_InitializeDotnet(int propertiesCount, const char** pr
         return -1;
     }
     return 0;
+}
+
+extern "C" int BrowserHost_ActivateDeferredR2R(int batchSize, uint32_t* result)
+{
+    int status = coreclr_wasm_activate_deferred_r2r(batchSize, result);
+    if (status < 0)
+        std::fprintf(stderr, "Deferred ReadyToRun activation failed - Error: 0x%08x\n", status);
+    return status;
 }
 
 static bool executeAssemblyFailed = false;

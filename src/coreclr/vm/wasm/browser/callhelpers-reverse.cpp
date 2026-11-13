@@ -38,7 +38,7 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -68,7 +68,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "BindAssemblyExports", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -126,7 +126,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallDelegate", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -171,7 +171,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallJSExport", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -268,7 +268,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CompleteTask", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -592,7 +592,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "GetManagedStackTrace", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -998,7 +998,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "ReleaseJSOwnedObjectByGCHandle", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -1216,7 +1216,7 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-    // Resolve once and cache; a method's native-code availability is fixed after first prepare.
+    // Cache entrypoints until deferred activation resets the cache.
     void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
@@ -1322,3 +1322,14 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
 };
 
 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
+void ResetReverseThunkCaches()
+{
+    __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+    __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+    __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+    __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+    __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+    __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+    __atomic_store_n(&R2RCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+    __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, (void*)(intptr_t)-1, __ATOMIC_RELEASE);
+}
