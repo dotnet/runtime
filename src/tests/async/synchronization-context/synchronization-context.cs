@@ -325,6 +325,47 @@ public class Async2SynchronizationContext
         }
     }
 
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(false, 3)]
+    [InlineData(true, 1)]
+    [InlineData(true, 3)]
+    public static void TaskContinuationsPostOnceWithoutRestoringContext(bool runAsynchronously, int awaiterCount)
+    {
+        SynchronizationContext previousContext = SynchronizationContext.Current;
+        var context = new QueuedSyncContext();
+        var source = new TaskCompletionSource<int>(
+            runAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+        var awaiters = new Task[awaiterCount];
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            for (int i = 0; i < awaiters.Length; i++)
+            {
+                awaiters[i] = AwaitTask();
+            }
+
+            SynchronizationContext.SetSynchronizationContext(null);
+            source.SetResult(42);
+            Assert.Equal(awaiterCount, context.Count);
+            context.Drain();
+            Assert.True(Task.WaitAll(awaiters, TimeSpan.FromSeconds(30)));
+            Assert.Equal(0, context.Count);
+            Assert.Equal(awaiterCount, context.PostCount);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        async Task AwaitTask()
+        {
+            await GetTask(source);
+            Assert.Null(SynchronizationContext.Current);
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Task GetTask(TaskCompletionSource<int> source) => source.Task;
 
