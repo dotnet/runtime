@@ -10,8 +10,6 @@ namespace System.Threading
     {
         public static bool IsSupported => true;
 
-        public static bool TryDeferCloseWhileWritePending(IntPtr socketHandle, Action<IntPtr> close) => false;
-
         internal bool IsRegistered
         {
             get;

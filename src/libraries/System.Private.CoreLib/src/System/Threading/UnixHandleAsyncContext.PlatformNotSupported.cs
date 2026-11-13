@@ -9,8 +9,6 @@ namespace System.Threading
     {
         public static bool IsSupported => false;
 
-        public static bool TryDeferCloseWhileWritePending(IntPtr socketHandle, Action<IntPtr> close) => false;
-
         public UnixHandleAsyncContext(SafeHandle handle) { throw new PlatformNotSupportedException(); }
 
         public bool InlineCompletions { get; set; }

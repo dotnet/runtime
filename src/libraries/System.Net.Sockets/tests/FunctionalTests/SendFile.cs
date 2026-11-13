@@ -431,6 +431,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/137519", TestPlatforms.Wasi)]
         public async Task SendFileAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
             const int CancelAfter = 200; // ms

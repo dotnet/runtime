@@ -1218,6 +1218,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/137519", TestPlatforms.Wasi)]
         public async Task TcpPeerReceivesFinOnShutdownWithPendingData()
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
