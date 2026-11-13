@@ -107,6 +107,10 @@ namespace System.Diagnostics.Tests
                 Assert.False(environment.ContainsKey(CallerOnlyEnvironmentVariable));
                 environment[OverrideEnvironmentVariable] = OverrideEnvironmentValue;
 
+                Assert.Throws<InvalidOperationException>(() => startInfo.UserName = "otherUsername");
+                Assert.Throws<InvalidOperationException>(() => startInfo.Domain = "otherDomain");
+                Assert.Throws<InvalidOperationException>(() => startInfo.UseCredentialsForNetworkingOnly = true);
+
                 startInfo.ArgumentList.Add("/d");
                 startInfo.ArgumentList.Add("/c");
                 startInfo.ArgumentList.Add($"echo %{OverrideEnvironmentVariable}%& if defined {CallerOnlyEnvironmentVariable} (echo present) else (echo absent)& cd");
