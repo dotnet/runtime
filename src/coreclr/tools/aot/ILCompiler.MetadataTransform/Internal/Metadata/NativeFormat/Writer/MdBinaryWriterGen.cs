@@ -134,50 +134,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, ArraySignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<ArraySignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (ArraySignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ByReferenceSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<ByReferenceSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (ByReferenceSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, Constant record)
         {
             if (record != null)
@@ -332,28 +288,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, FunctionPointerSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<FunctionPointerSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (FunctionPointerSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, GenericParameter record)
         {
             if (record != null)
@@ -486,50 +420,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, MethodTypeVariableSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<MethodTypeVariableSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (MethodTypeVariableSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ModifiedType record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<ModifiedType> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (ModifiedType value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, NamespaceDefinition record)
         {
             if (record != null)
@@ -591,28 +481,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count);
             foreach (Parameter value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, PointerSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<PointerSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (PointerSignature value in values)
             {
                 writer.Write(value);
             }
@@ -706,28 +574,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, SZArraySignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<SZArraySignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (SZArraySignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, ScopeDefinition record)
         {
             if (record != null)
@@ -816,28 +662,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, TypeInstantiationSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<TypeInstantiationSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (TypeInstantiationSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, TypeReference record)
         {
             if (record != null)
@@ -877,28 +701,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count);
             foreach (TypeSpecification value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, TypeVariableSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<TypeVariableSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (TypeVariableSignature value in values)
             {
                 writer.Write(value);
             }

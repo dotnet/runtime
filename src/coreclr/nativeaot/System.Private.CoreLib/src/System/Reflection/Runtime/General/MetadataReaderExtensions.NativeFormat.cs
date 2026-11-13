@@ -14,7 +14,6 @@ using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 
 using NativeFormatAssemblyFlags = global::Internal.Metadata.NativeFormat.AssemblyFlags;
-using NativeFormatModifiedType = global::Internal.Metadata.NativeFormat.ModifiedType;
 
 namespace System.Reflection.Runtime.General
 {
@@ -44,47 +43,26 @@ namespace System.Reflection.Runtime.General
         // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
         // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
         // safe for returning to api callers.
-        internal static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
+        internal static Type[] GetCustomModifiers(this TypeSignature signature, TypeContext typeContext, bool optional)
         {
-            HandleType handleType = handle.HandleType;
-            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
-            if (handleType != HandleType.ModifiedType)
+            if (signature.IsHandle)
                 return Array.Empty<Type>();
 
             ArrayBuilder<Type> customModifiers = default;
-            do
+            SignatureReader reader = signature.GetReader();
+            while (reader.TypeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
             {
-                NativeFormatModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
-                if (optional == modifiedType.IsOptional)
+                bool isOptional = (SignatureTypeCode)reader.ReadByte() == SignatureTypeCode.OptionalModifier;
+                Handle modifierType = reader.ReadTypeHandle();
+                if (optional == isOptional)
                 {
-                    Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext).ToType();
+                    Type customModifier = modifierType.Resolve(signature.Reader, typeContext).ToType();
                     customModifiers.Add(customModifier);
                 }
-
-                handle = modifiedType.Type;
-                handleType = handle.HandleType;
             }
-            while (handleType == HandleType.ModifiedType);
+            // Match CoreCLR's reverse metadata order for custom modifiers.
             customModifiers.AsSpan().Reverse();
             return customModifiers.ToArray();
-        }
-
-        public static Handle SkipCustomModifiers(this Handle handle, MetadataReader reader)
-        {
-            HandleType handleType = handle.HandleType;
-            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
-            if (handleType != HandleType.ModifiedType)
-                return handle;
-
-            do
-            {
-                NativeFormatModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
-                handle = modifiedType.Type;
-                handleType = handle.HandleType;
-            }
-            while (handleType == HandleType.ModifiedType);
-
-            return handle;
         }
 
         public static MethodSignature ParseMethodSignature(this Handle handle, MetadataReader reader)

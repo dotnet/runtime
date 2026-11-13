@@ -38,6 +38,27 @@ internal ref struct BlobReader(ReadOnlySpan<byte> blob)
     public float ReadSingle() => BinaryPrimitives.ReadSingleLittleEndian(ReadBytes(sizeof(float)));
     public double ReadDouble() => BinaryPrimitives.ReadDoubleLittleEndian(ReadBytes(sizeof(double)));
 
+    // ECMA-335 II.23.2. Signature integers are distinct from NativeFormat handles.
+    public int ReadCompressedInteger()
+    {
+        byte first = ReadByte();
+        if ((first & 0x80) == 0)
+            return first;
+        if ((first & 0x40) == 0)
+            return ((first & 0x3f) << 8) | ReadByte();
+
+        Debug.Assert((first & 0xe0) == 0xc0);
+        return ((first & 0x1f) << 24) | (ReadByte() << 16) | (ReadByte() << 8) | ReadByte();
+    }
+
+    public int ReadCompressedSignedInteger()
+    {
+        int start = Offset;
+        int value = ReadCompressedInteger();
+        int bits = Offset - start switch { 1 => 7, 2 => 14, _ => 29 };
+        return (value >> 1) | ((value & 1) == 0 ? 0 : -1 << (bits - 1));
+    }
+
     private uint ReadUnsigned()
     {
         byte first = ReadByte();

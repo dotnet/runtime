@@ -376,6 +376,7 @@
     <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatSignatures.cs" />
   </ItemGroup>
   <!-- Reflection.Core -->
   <ItemGroup>
