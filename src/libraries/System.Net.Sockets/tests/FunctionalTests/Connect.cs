@@ -206,7 +206,6 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop("Connection failure takes long on Windows.")]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task Connect_WithoutListener_ThrowSocketExceptionWithAppropriateInfo()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>

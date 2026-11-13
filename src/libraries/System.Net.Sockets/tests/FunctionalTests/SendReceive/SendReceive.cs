@@ -914,8 +914,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "CreateConnectedSocketPair uses synchronous Connect and Accept, which are not supported on single-threaded WASI")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
         {
             if (UsesSync) return;
@@ -953,8 +952,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "CreateConnectedSocketPair uses synchronous Connect and Accept, which are not supported on single-threaded WASI")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReceiveAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
         {
             if (UsesSync) return;
@@ -1085,7 +1083,7 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "CreateConnectedSocketPair uses synchronous Connect and Accept, which are not supported on single-threaded WASI")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI can't abort a connection (no SO_LINGER), so the peer sees a graceful close instead of ConnectionReset")]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient, bool owning)
         {
             // Aborting sync operations for non-owning handles is not supported on Unix.
@@ -1262,7 +1260,6 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
             await RemoteExecutor.Invoke(() =>
