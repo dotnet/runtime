@@ -76,10 +76,10 @@
     </ItemGroup>
   </Target>
 
-  <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,
+  <!-- For local Mono builds, only one of the 2 required runtime packs might be available. In that case,
        build the other nugets with the *same runtime* but different names.
   -->
-  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(NuGetsToBuildForWorkloadTesting)">
+  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(RuntimeFlavor)' == 'Mono' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(NuGetsToBuildForWorkloadTesting)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <PropertyGroup>
       <_IsMTNugetMissing Condition="'$(WasmEnableThreads)' != 'true'">true</_IsMTNugetMissing>
@@ -106,19 +106,6 @@
                       Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(_IsMTNugetMissing)"
                       Descriptor="$(_Descriptor)"/>
     </ItemGroup>
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-      <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.$(RIDForWorkload).*$(PackageVersionForWorkloadManifests).nupkg" />
-      <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
-      
-      <!-- We need nugets for all wasm runtime flavors. The one corresponding the current
-      property values is already built, the others need to be added to NuGetsToBuildForWorkloadTesting -->
-      <NuGetsToBuildForWorkloadTesting Include="$(_DefaultRuntimePackNuGetPath)"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
-                      Dependencies="$(_DefaultRuntimePackNuGetPath)"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(_IsMTNugetMissing);RuntimeFlavor=CoreCLR"
-                      Descriptor="$(_Descriptor)"/>
-    </ItemGroup>
-
     <Error Condition="@(_RuntimePackNugetAvailable -> Count()) != 2 and @(_RuntimePackNugetAvailable -> Count()) != 1"
            Text="Expected to find either one or two in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
 

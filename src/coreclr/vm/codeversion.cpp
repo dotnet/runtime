@@ -2198,8 +2198,8 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     {
         it.Start(pAppDomainToSearch, pModuleContainingMethodDef, methodDef, assemFlags);
     }
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
-    while (it.Next(pAssembly.This()))
+    CollectibleAssemblyHolder pAssembly;
+    while (it.Next(&pAssembly))
     {
         MethodDesc * pLoadedMD = it.Current();
         if (pLoadedMD == NULL)

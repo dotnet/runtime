@@ -468,77 +468,6 @@ enum AssemblyIterationFlags
 
 //---------------------------------------------------------------------------------------
 //
-// Base class for holder code:CollectibleAssemblyHolder (see code:HolderBase).
-// Manages AddRef/Release for collectible assemblies. It is no-op for 'normal' non-collectible assemblies.
-//
-// Each type of type parameter needs 2 methods implemented:
-//  code:CollectibleAssemblyHolderBase::GetLoaderAllocator
-//  code:CollectibleAssemblyHolderBase::IsCollectible
-//
-template<typename _Type>
-class CollectibleAssemblyHolderBase
-{
-protected:
-    _Type m_value;
-public:
-    CollectibleAssemblyHolderBase(const _Type & value = NULL)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_value = value;
-    }
-    void DoAcquire()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        // We don't need to keep the assembly alive in DAC - see code:#CAH_DAC
-#ifndef DACCESS_COMPILE
-        if (this->IsCollectible(m_value))
-        {
-            LoaderAllocator * pLoaderAllocator = GetLoaderAllocator(m_value);
-            pLoaderAllocator->AddReference();
-        }
-#endif //!DACCESS_COMPILE
-    }
-    void DoRelease()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-        if (this->IsCollectible(m_value))
-        {
-            LoaderAllocator * pLoaderAllocator = GetLoaderAllocator(m_value);
-            pLoaderAllocator->Release();
-        }
-#endif //!DACCESS_COMPILE
-    }
-
-private:
-    LoaderAllocator * GetLoaderAllocator(Assembly * pAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pAssembly->GetLoaderAllocator();
-    }
-    BOOL IsCollectible(Assembly * pAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pAssembly->IsCollectible();
-    }
-};  // class CollectibleAssemblyHolderBase<>
-
-//---------------------------------------------------------------------------------------
-//
 // Holder of assembly reference which keeps collectible assembly alive while the holder is valid.
 //
 // Collectible assembly can be collected at any point when GC happens. Almost instantly all native data
@@ -546,39 +475,79 @@ private:
 // Therefore any usage of (collectible) assembly data structures from native world, has to prevent the
 // deallocation by increasing ref-count on the assembly / associated loader allocator.
 //
-// #CAH_DAC
-// In DAC we don't AddRef/Release as the assembly doesn't have to be kept alive: The process is stopped when
-// DAC is used and therefore the assembly cannot just disappear.
-//
-template<typename _Type>
-class CollectibleAssemblyHolder : public BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >
+class CollectibleAssemblyHolder final
 {
-public:
-    FORCEINLINE
-    CollectibleAssemblyHolder(const _Type & value = NULL, BOOL fTake = TRUE)
-        : BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >(value, fTake)
+    struct ReferenceTraits final
     {
-        STATIC_CONTRACT_WRAPPER;
-    }
+        using Type = LoaderAllocator*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+            }
+            CONTRACTL_END;
 
-    FORCEINLINE
-    CollectibleAssemblyHolder &
-    operator=(const _Type & value)
+#ifndef DACCESS_COMPILE
+            if (value != NULL)
+            {
+                _ASSERTE(value->IsCollectible());
+                value->Release();
+            }
+#endif // !DACCESS_COMPILE
+        }
+    };
+
+    Assembly* m_assembly = NULL;
+    LifetimeHolder<ReferenceTraits> m_reference;
+
+public:
+    CollectibleAssemblyHolder() = default;
+    CollectibleAssemblyHolder(const CollectibleAssemblyHolder&) = delete;
+    CollectibleAssemblyHolder& operator=(const CollectibleAssemblyHolder&) = delete;
+
+    CollectibleAssemblyHolder& operator=(Assembly* value)
     {
-        STATIC_CONTRACT_WRAPPER;
-        BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >::operator=(value);
+        WRAPPER_NO_CONTRACT;
+
+        LoaderAllocator* allocator = NULL;
+#ifndef DACCESS_COMPILE
+        // Acquire before replacing the old reference in case both assemblies share an allocator.
+        if (value != NULL && value->IsCollectible())
+        {
+            allocator = value->GetLoaderAllocator();
+            allocator->AddReference();
+        }
+#endif // !DACCESS_COMPILE
+
+        m_reference = allocator;
+        m_assembly = value;
         return *this;
     }
 
-    // Operator & is overloaded in parent, therefore we have to get to 'this' pointer explicitly.
-    FORCEINLINE
-    CollectibleAssemblyHolder<_Type> *
-    This()
+    void AssignBorrowed(Assembly* value)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        m_reference.Free();
+        m_assembly = value;
+    }
+
+    operator Assembly*() const
     {
         LIMITED_METHOD_CONTRACT;
-        return this;
+        return m_assembly;
     }
-};  // class CollectibleAssemblyHolder<>
+
+    Assembly* operator->() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return static_cast<Assembly*>(*this);
+    }
+};
 
 //---------------------------------------------------------------------------------------
 //
@@ -859,7 +828,7 @@ protected:
             return m_array.GetCount();
         }
 
-        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder* pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -872,7 +841,7 @@ protected:
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             Get_Unlocked(index, pAssemblyHolder);
         }
-        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder* pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -965,9 +934,9 @@ public:
         AssemblyIterationFlags m_assemblyIterationFlags;
 
     public:
-        BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        BOOL Next(CollectibleAssemblyHolder* pAssemblyHolder);
         // Note: Does not lock the assembly list, but AddRefs collectible assemblies' loader allocator.
-        BOOL Next_Unlocked(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        BOOL Next_Unlocked(CollectibleAssemblyHolder* pAssemblyHolder);
 
     private:
         inline DWORD GetIndex()

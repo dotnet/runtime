@@ -350,39 +350,30 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
 // Handle holders/wrappers
 
 #ifndef FEATURE_NATIVEAOT
-struct OBJECTHANDLEHolderTraits final
+template<void (*RELEASE)(OBJECTHANDLE)>
+struct ObjectHandleHolderTraits final
 {
     using Type = OBJECTHANDLE;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type handle)
+    static void Free(Type handle) noexcept
     {
         WRAPPER_NO_CONTRACT;
         if (handle != NULL)
-            DestroyHandle(handle);
+            RELEASE(handle);
     }
 };
 
-using OBJECTHANDLEHolder = LifetimeHolder<OBJECTHANDLEHolderTraits>;
+using OBJECTHANDLEHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyHandle>>;
+using PinningHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyPinningHandle>>;
+using LongWeakHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyLongWeakHandle>>;
+using GlobalStrongHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyGlobalStrongHandle>>;
+using GlobalShortWeakHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyGlobalShortWeakHandle>>;
+using WeakInteriorHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyWeakInteriorHandle>>;
+using StrongHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyStrongHandle>>;
+using RefcountedHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<DestroyRefcountedHandle>>;
 
-struct PinningHandleHolderTraits final
-{
-    using Type = OBJECTHANDLE;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type handle)
-    {
-        WRAPPER_NO_CONTRACT;
-        if (handle != NULL)
-            DestroyPinningHandle(handle);
-    }
-};
-
-using PinningHandleHolder = LifetimeHolder<PinningHandleHolderTraits>;
-
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalStrongHandle>        GlobalStrongHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalShortWeakHandle>     GlobalShortWeakHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyWeakInteriorHandle>        WeakInteriorHandleHolder;
-typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, ResetOBJECTHANDLE>                ObjectInHandleHolder;
+// Clears the object without destroying the handle.
+using ObjectInHandleHolder = LifetimeHolder<ObjectHandleHolderTraits<ResetOBJECTHANDLE>>;
 
 #endif // !FEATURE_NATIVEAOT
 

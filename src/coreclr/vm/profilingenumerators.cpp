@@ -301,9 +301,9 @@ HRESULT IterateModules(AppDomain * pAppDomain,
     AppDomain::AssemblyIterator assemblyIterator =
         pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags) (kIncludeAvailableToProfilers | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
 
-    while (assemblyIterator.Next(pAssembly.This()))
+    while (assemblyIterator.Next(&pAssembly))
     {
         _ASSERTE(pAssembly != NULL);
 

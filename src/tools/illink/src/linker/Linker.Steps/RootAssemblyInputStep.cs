@@ -91,6 +91,12 @@ namespace Mono.Linker.Steps
                         CodeOptimizations.OptimizeTypeHierarchyAnnotations |
                         CodeOptimizations.SubstituteFeatureGuards, assembly.Name.Name);
 
+                    Context.HasLibraryRootAssembly = true;
+
+                    // Keep references pointing at the assemblies the library was compiled against, rather than
+                    // retargeting them to whichever assembly defines the type in the trimming closure
+                    Context.UpdateReferenceScopes = false;
+
                     // Enable EventSource special handling
                     Context.DisableEventSourceSpecialHandling = false;
 
