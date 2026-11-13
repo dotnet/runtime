@@ -11,96 +11,6 @@ namespace System.Diagnostics
     {
         private static NullableBool _procMatchesPidNamespace;
 
-        /// <summary>Gets process infos for each process on the local machine.</summary>
-        /// <param name="builder">The builder to add found process infos to.</param>
-        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
-        {
-            // Iterate through all process IDs to load information about each process
-            IEnumerable<int> pids = EnumerateProcessIds();
-            foreach (int pid in pids)
-            {
-                ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);
-                if (pi != null)
-                {
-                    builder.Add(pi);
-                }
-            }
-        }
-
-        internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
-        {
-            if (processInfo is not null)
-            {
-                return processInfo.ProcessName;
-            }
-
-            if (TryGetProcPid(processId, out Interop.procfs.ProcPid procPid) &&
-                Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
-            {
-                return Process.GetUntruncatedProcessName(procPid, ref stat);
-            }
-
-            return null;
-        }
-
-        /// <summary>Gets an array of module infos for the specified process.</summary>
-        /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
-        /// <returns>The array of modules.</returns>
-        internal static ProcessModuleCollection GetModules(int processId)
-        {
-            ProcessModuleCollection? modules = null;
-            if (TryGetProcPid(processId, out Interop.procfs.ProcPid procPid))
-            {
-                modules = Interop.procfs.ParseMapsModules(procPid);
-
-                // Move the main executable module to be the first in the list if it's not already
-                if (modules is not null && Process.GetExePath(procPid) is string exePath)
-                {
-                    for (int i = 0; i < modules.Count; i++)
-                    {
-                        ProcessModule module = modules[i];
-                        if (module.FileName == exePath)
-                        {
-                            if (i > 0)
-                            {
-                                modules.RemoveAt(i);
-                                modules.Insert(0, module);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return modules ?? new(capacity: 0);
-        }
-
-        /// <summary>
-        /// Creates a ProcessInfo from the specified process ID.
-        /// </summary>
-        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
-        {
-            if (!TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) ||
-                !Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
-            {
-                return null;
-            }
-
-            string? processName = null;
-            if (processNameFilter != null)
-            {
-                processName = Process.GetUntruncatedProcessName(procPid, ref stat);
-                if (!processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return null;
-                }
-            }
-
-            Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus status);
-            return CreateProcessInfo(procPid, ref stat, ref status, processName: processName);
-        }
-
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
@@ -161,35 +71,6 @@ namespace System.Diagnostics
 
             // Finally return what we've built up
             return pi;
-        }
-
-        // ----------------------------------
-        // ---- Unix PAL layer ends here ----
-        // ----------------------------------
-
-        /// <summary>Enumerates the IDs of all processes on the current machine.</summary>
-        internal static IEnumerable<int> EnumerateProcessIds()
-        {
-            if (ProcMatchesPidNamespace)
-            {
-                // Parse /proc for any directory that's named with a number.  Each such
-                // directory represents a process.
-                foreach (string procDir in Directory.EnumerateDirectories(Interop.procfs.RootPath))
-                {
-                    string dirName = Path.GetFileName(procDir);
-                    int pid;
-                    if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid))
-                    {
-                        Debug.Assert(pid >= 0);
-                        yield return pid;
-                    }
-                }
-            }
-            else
-            {
-                // Limit to our own process. For other processes, the pids from /proc don't match with those in the process namespace.
-                yield return Environment.ProcessId;
-            }
         }
 
         /// <summary>Gets a ThreadState to represent the value returned from the status field of /proc/pid/stat.</summary>

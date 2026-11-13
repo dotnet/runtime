@@ -13,18 +13,10 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class Process
+    internal static partial class OpenBSDProcess
     {
         private const ulong SecondsToNanoseconds = 1000000000;
         private const ulong MicroSecondsToNanoSeconds = 1000;
-
-        internal struct proc_stats
-        {
-            internal long startTime;
-            internal int nice;
-            internal ulong userTime;        /* in ticks */
-            internal ulong systemTime;      /* in ticks */
-        }
 
         /// <summary>
         /// Queries the OS for the list of all running processes and returns the PID for each
@@ -148,6 +140,26 @@ internal static partial class Interop
             }
         }
 
+        /// <summary>Gets the parent process ID of a given process</summary>
+        /// <param name="pid">The PID (process ID) of the process</param>
+        public static unsafe int GetParentPid(int pid)
+        {
+            kinfo_proc* processInfo = GetProcInfo(pid, false, out int count);
+            try
+            {
+                if (count <= 0)
+                {
+                    throw new Win32Exception(SR.ProcessInformationUnavailable);
+                }
+
+                return processInfo->p_ppid;
+            }
+            finally
+            {
+                NativeMemory.Free(processInfo);
+            }
+        }
+
         /// <summary>
         /// Gets the process information for a given process
         /// </summary>
@@ -241,9 +253,9 @@ internal static partial class Interop
         /// Returns basic info about thread. If tid is 0, it will return
         /// info for process e.g. main thread.
         /// </returns>
-        public static unsafe proc_stats GetThreadInfo(int pid, int tid)
+        public static unsafe Process.proc_stats GetThreadInfo(int pid, int tid)
         {
-            proc_stats ret = default;
+            Process.proc_stats ret = default;
             int count;
 
             kinfo_proc* info = GetProcInfo(pid, (tid != 0), out count);

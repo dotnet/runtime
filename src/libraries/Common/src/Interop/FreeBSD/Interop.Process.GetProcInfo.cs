@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Process
+    internal static partial class FreeBSDProcess
     {
         // Constants from sys/user.h
         private const int TDNAMLEN = 16;

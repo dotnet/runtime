@@ -9,25 +9,9 @@ namespace System.Diagnostics
     public partial class Process
     {
         /// <summary>
-        /// Gets or sets which processors the threads in this process can be scheduled to run on.
-        /// </summary>
-        private static IntPtr ProcessorAffinityCore
-        {
-            get
-            {
-                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
-            }
-            set
-            {
-                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
-            }
-        }
-
-
-        /// <summary>
         /// Make sure we have obtained the min and max working set limits.
         /// </summary>
-        private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
+        private void GetWorkingSetLimitsBsd(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             EnsureState(State.HaveNonExitedId);
 
@@ -58,7 +42,7 @@ namespace System.Diagnostics
         /// <param name="newMax">The new maximum working set limit, or null not to change it.</param>
         /// <param name="resultingMin">The resulting minimum working set limit after any changes applied.</param>
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
-        private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
+        private void SetWorkingSetLimitsCoreBsd(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             EnsureState(State.HaveNonExitedId);
 
