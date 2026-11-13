@@ -17,13 +17,13 @@ namespace System.Runtime
         InvalidCast = 6,
         Overflow = 7,
         NullReference = 8,
-#if !NATIVEAOT || !TARGET_WASM
+#if !TARGET_WASM
         AccessViolation = 9,
         DataMisaligned = 10,
 #endif
         EntrypointNotFound = 11,
         AmbiguousImplementation = 12,
-#if !NATIVEAOT || !TARGET_WASM
+#if !TARGET_WASM
         IllegalInstruction = 13,
         PrivilegedInstruction = 14,
         InPageError = 15,

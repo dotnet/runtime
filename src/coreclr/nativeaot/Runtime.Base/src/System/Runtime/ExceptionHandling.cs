@@ -316,10 +316,14 @@ namespace System.Runtime
 #else
             Exception? e = id switch
             {
+#if !TARGET_WASM
                 ExceptionIDs.AccessViolation => new AccessViolationException(),
+#endif
                 ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
                 ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
+#if !TARGET_WASM
                 ExceptionIDs.DataMisaligned => new DataMisalignedException(),
+#endif
                 ExceptionIDs.DivideByZero => new DivideByZeroException(),
                 ExceptionIDs.EntrypointNotFound => new EntryPointNotFoundException(),
                 ExceptionIDs.IndexOutOfRange => new IndexOutOfRangeException(),
@@ -327,11 +331,13 @@ namespace System.Runtime
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
                 ExceptionIDs.Overflow => new OverflowException(),
+#if !TARGET_WASM
 #pragma warning disable CS0618 // ExecutionEngineException is obsolete
                 ExceptionIDs.IllegalInstruction => new ExecutionEngineException("Illegal instruction: Attempted to execute an instruction code not defined by the processor."),
                 ExceptionIDs.PrivilegedInstruction => new ExecutionEngineException("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode."),
                 ExceptionIDs.InPageError => new ExecutionEngineException("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network."),
 #pragma warning restore CS0618
+#endif
                 _ => null
             };
 #endif
@@ -446,7 +452,7 @@ namespace System.Runtime
 #endif
 #endif // NATIVEAOT
 
-#if !NATIVEAOT || !TARGET_WASM
+#if !TARGET_WASM
         private enum HwExceptionCode : uint
         {
             STATUS_NATIVEAOT_NULL_REFERENCE = 0x00000000u,
@@ -588,7 +594,7 @@ namespace System.Runtime
             return pExInfo != null ? pExInfo->ThrownException : null;
         }
 
-#if !NATIVEAOT || !TARGET_WASM
+#if !TARGET_WASM
         //
         // Called by RhpThrowHwEx
         //
