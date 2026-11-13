@@ -2781,10 +2781,8 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
             continue;
         }
 
-        // TODO-CQ: Float -> !float extractions are not supported
-        // TODO-CQ: Float -> float extractions with non-zero offset is not supported
-        if (genIsValidFloatReg(segment.GetRegister()) &&
-            (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
+        if (!Compiler::gtCanExtractRegisterField(genIsValidFloatReg(segment.GetRegister()), fld->TypeGet(),
+                                                 fld->GetLclOffs() - segment.Offset))
         {
             continue;
         }
@@ -2865,84 +2863,8 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
         remappedLclNum = existingMapping->LclNum;
     }
 
-    GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
-
-#ifdef TARGET_WASM
-    if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
-    {
-        // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
-        const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
-        const unsigned scalarSize = genTypeSize(fld);
-        assert((laneOffset % scalarSize) == 0);
-
-        const unsigned laneIndex = laneOffset / scalarSize;
-        value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
-                                                                       m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
-                                                                       fld->TypeGet(), genTypeSize(value));
-    }
-    else if (varTypeUsesFloatReg(value))
-#else
-    if (varTypeUsesFloatReg(value))
-#endif // TARGET_WASM
-    {
-        assert(fld->GetLclOffs() == regSegment->Offset);
-
-        value->gtType = fld->TypeGet();
-
-#ifdef FEATURE_SIMD
-        // SIMD12s should be widened. We cannot do that with
-        // WidenSIMD12IfNecessary as it does not expect to see SIMD12
-        // accesses of SIMD16 locals here.
-        if (value->TypeIs(TYP_SIMD12))
-        {
-            value->gtType = TYP_SIMD16;
-        }
-#endif
-    }
-    else
-    {
-        var_types registerType = value->TypeGet();
-
-        if (fld->GetLclOffs() > regSegment->Offset)
-        {
-            assert(value->TypeIs(TYP_INT, TYP_LONG));
-            GenTree* shiftAmount = m_compiler->gtNewIconNode((fld->GetLclOffs() - regSegment->Offset) * 8, TYP_INT);
-            value = m_compiler->gtNewOperNode(varTypeIsSmall(fld) && varTypeIsSigned(fld) ? GT_RSH : GT_RSZ,
-                                              value->TypeGet(), value, shiftAmount);
-        }
-
-        // Insert explicit normalization for small types (the LCL_FLD we
-        // are replacing comes with this normalization). This is only required
-        // if we didn't get the normalization via a right shift.
-        if (varTypeIsSmall(fld) &&
-            (fld->GetLclOffs() - regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
-        {
-            value = m_compiler->gtNewCastNode(TYP_INT, value, false, fld->TypeGet());
-        }
-
-        // If the node is still too large then get it to the right size
-        if (genTypeSize(value) != genTypeSize(genActualType((fld))))
-        {
-            assert(genTypeSize(value) == 8);
-            assert(genTypeSize(genActualType(fld)) == 4);
-
-            if (value->OperIsScalarLocal())
-            {
-                // We can use lower bits directly
-                value->gtType = TYP_INT;
-            }
-            else
-            {
-                value = m_compiler->gtNewCastNode(TYP_INT, value, false, TYP_INT);
-            }
-        }
-
-        // Finally insert a bitcast if necessary
-        if (value->TypeGet() != genActualType(fld))
-        {
-            value = m_compiler->gtNewBitCastNode(genActualType(fld), value);
-        }
-    }
+    GenTree* value = m_compiler->gtNewRegisterFieldExtraction(remappedLclNum, fld->TypeGet(),
+                                                              fld->GetLclOffs() - regSegment->Offset);
 
     // Now replace the LCL_FLD.
     LIR::AsRange(block).InsertAfter(fld, LIR::SeqTree(m_compiler, value));

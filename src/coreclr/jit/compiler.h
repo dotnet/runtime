@@ -3438,6 +3438,9 @@ public:
     GenTreeStoreLclVars* gtNewStoreLclVarsNode(GenTree* source, unsigned count);
     void gtSetStoreLclVarsDestination(GenTreeStoreLclVars* store, unsigned index, unsigned lclNum, unsigned offset);
 
+    static bool gtCanExtractRegisterField(bool fromFloatReg, var_types fieldType, unsigned offset);
+    GenTree*    gtNewRegisterFieldExtraction(unsigned regLclNum, var_types fieldType, unsigned offset);
+
     GenTreeLclFld* gtNewStoreLclFldNode(
         unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* value);
 

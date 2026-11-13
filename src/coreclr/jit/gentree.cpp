@@ -10324,6 +10324,119 @@ void Compiler::gtSetStoreLclVarsDestination(GenTreeStoreLclVars* store,
 }
 
 //------------------------------------------------------------------------
+// gtCanExtractRegisterField: Check whether gtNewRegisterFieldExtraction
+// supports extracting a field from a register-sized local.
+//
+// Arguments:
+//    fromFloatReg - Whether the register is a floating-point register
+//    fieldType    - Type of the field to extract
+//    offset       - Byte offset of the field relative to the start of the register
+//
+// Return Value:
+//    True if the extraction is supported.
+//
+bool Compiler::gtCanExtractRegisterField(bool fromFloatReg, var_types fieldType, unsigned offset)
+{
+    // TODO-CQ: Float -> !float extractions are not supported
+    // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+    return !fromFloatReg || (varTypeUsesFloatReg(fieldType) && (offset == 0));
+}
+
+//------------------------------------------------------------------------
+// gtNewRegisterFieldExtraction: Create a tree that extracts a field from a
+// local holding the contents of a register.
+//
+// Arguments:
+//    regLclNum - Local holding the register's value
+//    fieldType - Type of the field to extract
+//    offset    - Byte offset of the field relative to the start of the register
+//
+// Return Value:
+//    A tree of type genActualType(fieldType) producing the field's value, with
+//    small types normalized.
+//
+// Remarks:
+//    The caller must have checked gtCanExtractRegisterField.
+//
+GenTree* Compiler::gtNewRegisterFieldExtraction(unsigned regLclNum, var_types fieldType, unsigned offset)
+{
+    GenTree* value = gtNewLclVarNode(regLclNum);
+
+#ifdef TARGET_WASM
+    if (varTypeIsSIMD(value) && !varTypeIsSIMD(fieldType))
+    {
+        // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+        const unsigned scalarSize = genTypeSize(fieldType);
+        assert((offset % scalarSize) == 0);
+
+        const unsigned laneIndex = offset / scalarSize;
+        return gtNewSimdGetElementNode(fieldType, value, gtNewIconNode(static_cast<ssize_t>(laneIndex)), fieldType,
+                                       genTypeSize(value));
+    }
+#endif // TARGET_WASM
+
+    if (varTypeUsesFloatReg(value))
+    {
+        assert(offset == 0);
+
+        value->gtType = fieldType;
+
+#ifdef FEATURE_SIMD
+        // SIMD12s should be widened. We cannot do that with
+        // WidenSIMD12IfNecessary as it does not expect to see SIMD12
+        // accesses of SIMD16 locals here.
+        if (value->TypeIs(TYP_SIMD12))
+        {
+            value->gtType = TYP_SIMD16;
+        }
+#endif
+        return value;
+    }
+
+    var_types registerType = value->TypeGet();
+
+    if (offset > 0)
+    {
+        assert(value->TypeIs(TYP_INT, TYP_LONG));
+        GenTree* shiftAmount = gtNewIconNode(offset * 8, TYP_INT);
+        value                = gtNewOperNode(varTypeIsSmall(fieldType) && varTypeIsSigned(fieldType) ? GT_RSH : GT_RSZ,
+                              value->TypeGet(), value, shiftAmount);
+    }
+
+    // Insert explicit normalization for small types. This is only required
+    // if we didn't get the normalization via a right shift.
+    if (varTypeIsSmall(fieldType) && (offset + genTypeSize(fieldType) != genTypeSize(registerType)))
+    {
+        value = gtNewCastNode(TYP_INT, value, false, fieldType);
+    }
+
+    // If the node is still too large then get it to the right size
+    if (genTypeSize(value) != genTypeSize(genActualType(fieldType)))
+    {
+        assert(genTypeSize(value) == 8);
+        assert(genTypeSize(genActualType(fieldType)) == 4);
+
+        if (value->OperIsScalarLocal())
+        {
+            // We can use lower bits directly
+            value->gtType = TYP_INT;
+        }
+        else
+        {
+            value = gtNewCastNode(TYP_INT, value, false, TYP_INT);
+        }
+    }
+
+    // Finally insert a bitcast if necessary
+    if (value->TypeGet() != genActualType(fieldType))
+    {
+        value = gtNewBitCastNode(genActualType(fieldType), value);
+    }
+
+    return value;
+}
+
+//------------------------------------------------------------------------
 // gtNewStoreLclVarNode: Create a store of value to lclNum.
 //
 GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
