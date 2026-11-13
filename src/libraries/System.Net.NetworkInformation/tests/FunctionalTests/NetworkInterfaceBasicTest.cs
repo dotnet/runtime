@@ -106,11 +106,6 @@ namespace System.Net.NetworkInformation.Tests
             // CI machines do not have one, so this is a hardware-only regression test.
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
-                if (nic.Speed <= 0)
-                {
-                    continue;
-                }
-
                 string speedFilePath = $"/sys/class/net/{nic.Name}/speed";
                 string speedText;
                 try
@@ -126,7 +121,15 @@ namespace System.Net.NetworkInformation.Tests
                     continue;
                 }
 
+                // Read sysfs first: a truncated value can surface as nic.Speed == 0,
+                // which must fail the assertion rather than be skipped. Negative
+                // values still mean the API does not support reporting speed here.
                 if (!long.TryParse(speedText, out long speedMbps) || speedMbps <= ushort.MaxValue)
+                {
+                    continue;
+                }
+
+                if (nic.Speed < 0)
                 {
                     continue;
                 }
