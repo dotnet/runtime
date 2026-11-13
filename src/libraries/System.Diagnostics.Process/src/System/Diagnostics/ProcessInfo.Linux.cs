@@ -13,5 +13,11 @@ namespace System.Diagnostics
 
         /// <summary>The procfs ID that was used to read this process's information, which is needed to read its threads later.</summary>
         internal Interop.procfs.ProcPid ProcPid { get; set; }
+
+        /// <summary>
+        /// The start time (in clock ticks since boot) of the process when its information was read. Together with the process ID
+        /// it identifies the process, which is used to detect that the ID was reused before the threads were read.
+        /// </summary>
+        internal ulong ProcStartTime { get; set; }
     }
 }

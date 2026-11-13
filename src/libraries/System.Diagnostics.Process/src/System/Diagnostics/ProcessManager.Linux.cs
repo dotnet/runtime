@@ -130,6 +130,7 @@ namespace System.Diagnostics
                 // creating a ProcessInfo, so it is deferred until Process.Threads is used.
                 ThreadsPopulated = false,
                 ProcPid = procPid,
+                ProcStartTime = procFsStat.starttime,
             };
 
             return pi;
@@ -141,6 +142,13 @@ namespace System.Diagnostics
         internal static unsafe void PopulateThreads(Interop.procfs.ProcPid procPid, ProcessInfo pi)
         {
             int pid = pi.ProcessId;
+
+            // The process may have exited, and its ID been reused by another process, since the ProcessInfo was created.
+            // Don't report the threads of a different process.
+            if (!IsSameProcess(procPid, pi))
+            {
+                return;
+            }
 
             // Read through /proc/pid/task/ to find each thread in the process...
             string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(procPid);
@@ -173,7 +181,17 @@ namespace System.Diagnostics
                 // Between the time that we get an ID and the time that we try to read the associated
                 // directories and files in procfs, the process could be gone.
             }
+
+            // The process could also have exited, and its ID been reused, while its threads were being read.
+            if (!IsSameProcess(procPid, pi))
+            {
+                pi._threadInfoList.Clear();
+            }
         }
+
+        /// <summary>Gets whether the process with the specified ID is still the one the ProcessInfo was created for.</summary>
+        private static bool IsSameProcess(Interop.procfs.ProcPid procPid, ProcessInfo pi) =>
+            Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat) && stat.starttime == pi.ProcStartTime;
 
         // ----------------------------------
         // ---- Unix PAL layer ends here ----

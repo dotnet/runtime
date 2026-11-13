@@ -131,7 +131,10 @@ namespace System.Diagnostics
             {
                 if (!processInfo.ThreadsPopulated)
                 {
-                    // Don't get information for a PID that exited and has possibly been recycled.
+                    // Skip reading the threads of a process that is already known to have exited, as its PID may have been
+                    // recycled. This only detects an exit that has already been observed (such as for a child process),
+                    // so it is just a cheap shortcut: PopulateThreads validates the identity of the process (its PID and
+                    // start time) itself, which is what guards against reading the threads of a different process.
                     if (_haveProcessId && !GetHasExited(refresh: false))
                     {
                         ProcessManager.PopulateThreads(processInfo.ProcPid, processInfo);
