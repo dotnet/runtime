@@ -12,6 +12,9 @@ namespace System.Diagnostics.Tests
 {
     partial class ProcessStartInfoTests : ProcessTestBase
     {
+        private const string CallerOnlyEnvironmentVariable = "DOTNET_PROCESS_TEST_CALLER_ONLY_73E761B1";
+        private const string CallerOnlyEnvironmentValue = "caller-only";
+
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles
             => IsAdmin_IsNotNano_RemoteExecutorIsSupported && WindowsTestFileShare.CanShareFiles;
 
@@ -77,25 +80,77 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Requires admin privileges")]
         public void Environment_UserNameSet_ReturnsEnvironmentOfThatUser()
         {
-            using WindowsTestAccount account = new WindowsTestAccount("dEUNSREOTU");
-            string[] domainAndUserName = account.AccountName.Split('\\');
+            const string OverrideEnvironmentVariable = "DOTNET_PROCESS_TEST_USER_OVERRIDE_73E761B1";
+            const string OverrideEnvironmentValue = "explicit-override";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            RemoteExecutor.Invoke(static () =>
             {
-                Domain = domainAndUserName[0],
-                UserName = domainAndUserName[1],
-                PasswordInClearText = account.Password
-            };
+                Environment.SetEnvironmentVariable(CallerOnlyEnvironmentVariable, CallerOnlyEnvironmentValue);
+                Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
 
-            Assert.Equal(domainAndUserName[1], startInfo.Environment["USERNAME"]);
+                using WindowsTestAccount account = new($"d{Guid.NewGuid():N}".Substring(0, 20));
+                string[] domainAndUserName = account.AccountName.Split('\\');
 
-            startInfo.UserName = domainAndUserName[1];
-            startInfo.Domain = domainAndUserName[0];
-            startInfo.UseCredentialsForNetworkingOnly = false;
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe"),
+                    WorkingDirectory = Environment.SystemDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    Domain = domainAndUserName[0],
+                    UserName = domainAndUserName[1],
+                    PasswordInClearText = account.Password
+                };
 
-            Assert.Throws<InvalidOperationException>(() => startInfo.UserName = "another-user");
-            Assert.Throws<InvalidOperationException>(() => startInfo.Domain = "another-domain");
-            Assert.Throws<InvalidOperationException>(() => startInfo.UseCredentialsForNetworkingOnly = true);
+                IDictionary<string, string?> environment = startInfo.Environment;
+                Assert.Equal(domainAndUserName[1], environment["USERNAME"]);
+                Assert.False(environment.ContainsKey(CallerOnlyEnvironmentVariable));
+                environment[OverrideEnvironmentVariable] = OverrideEnvironmentValue;
+
+                startInfo.ArgumentList.Add("/d");
+                startInfo.ArgumentList.Add("/c");
+                startInfo.ArgumentList.Add($"echo %{OverrideEnvironmentVariable}%& if defined {CallerOnlyEnvironmentVariable} (echo present) else (echo absent)& cd");
+
+                using Process process = Process.Start(startInfo)!;
+                Assert.Collection(process.ReadAllLines(TimeSpan.FromMilliseconds(WaitInMS)),
+                    line =>
+                    {
+                        Assert.False(line.StandardError);
+                        Assert.Equal(OverrideEnvironmentValue, line.Content);
+                    },
+                    line =>
+                    {
+                        Assert.False(line.StandardError);
+                        Assert.Equal("absent", line.Content);
+                    },
+                    line =>
+                    {
+                        Assert.False(line.StandardError);
+                        Assert.Equal(startInfo.WorkingDirectory, line.Content, ignoreCase: true);
+                    });
+                Assert.True(process.WaitForExit(WaitInMS));
+                Assert.Equal(0, process.ExitCode);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Environment_WithNetworkOnlyCredentials_IncludesCallerVariables()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Environment.SetEnvironmentVariable(CallerOnlyEnvironmentVariable, CallerOnlyEnvironmentValue);
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    Domain = "unused-domain",
+                    UserName = "unused-user",
+                    PasswordInClearText = "PLACEHOLDER",
+                    UseCredentialsForNetworkingOnly = true
+                };
+
+                Assert.Equal(CallerOnlyEnvironmentValue, startInfo.Environment[CallerOnlyEnvironmentVariable]);
+            }).Dispose();
         }
 
         [Fact]
