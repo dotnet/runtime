@@ -514,7 +514,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
 
             // Allocate the StringLiteralEntry.
             StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
-            pStrObj.SuppressRelease();
+            pStrObj.Detach();
             // Insert the handle to the string into the hash table.
             m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
             pRet = pEntry.Detach();
@@ -556,7 +556,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
         EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
 
         StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(&StringData, (STRINGREF*)pStrObj[0]));
-        pStrObj.SuppressRelease();
+        pStrObj.Detach();
 
         // Insert the handle to the string into the hash table.
         m_StringToEntryHashTable->InsertValue(&StringData, (LPVOID)pEntry, FALSE);
