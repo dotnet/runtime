@@ -772,6 +772,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdIsSharedConst  = false;
             hashDsc->csdMixedExcSets   = false;
             hashDsc->csdLiveAcrossCall = false;
+            hashDsc->csdCallPressure   = 0;
             hashDsc->csdDefCount       = 0;
             hashDsc->csdUseCount       = 0;
             hashDsc->csdDefWtCnt       = 0;
@@ -864,6 +865,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 //
 bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
 {
+    // A method without locals has no competing register demand to measure
+    // (and a zero-size allocation is not allowed).
+    optCSEusedLocals = nullptr;
+    if (heuristic->ConsumesCallPressure() && (lvaCount != 0))
+    {
+        optCSEusedLocals = new (this, CMK_CSE) bool[lvaCount]();
+    }
+
     for (BasicBlock* const block : Blocks())
     {
         /* Make the block publicly available */
@@ -878,6 +887,11 @@ bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
             bool stmtHasArrLenCandidate = false;
             for (GenTree* const tree : stmt->TreeList())
             {
+                if ((optCSEusedLocals != nullptr) && tree->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                {
+                    optCSEusedLocals[tree->AsLclVarCommon()->GetLclNum()] = true;
+                }
+
                 if (!heuristic->ConsiderTree(tree, isReturn))
                 {
                     continue;
@@ -1614,6 +1628,385 @@ ValueNum Compiler::optValnumCSE_ImpliedExcSet(GenTree* tree)
     return visitor.m_excSet;
 }
 
+//------------------------------------------------------------------------
+// CSE_CallPressure: measures, for each CSE candidate, the competing
+// register demand at the calls its value is live across
+// (CSEdsc::csdCallPressure). Runs once, after the availability walk has
+// classified every occurrence as a definition or a use.
+//
+// Candidate liveness is ordinary backward dataflow over that
+// classification: a use makes the candidate's value live, an unconditional
+// definition kills it, and successor sets (including EH successors)
+// propagate it across branches and loops. A definition under
+// GTF_COLON_COND may not execute, so it does not kill. Because the final
+// classification is in hand, there are no layout-order blind spots to
+// patch afterwards.
+//
+// The demand at a call is the register count of the live enregisterable
+// locals in the candidate's register class (a pair for 32-bit longs and
+// arm32 doubles), reconstructed backwards per block from the liveness
+// sets.
+//
+// Everything here is a screening estimate, not an allocation outcome:
+// - Locals whose reads were all removed since liveness ran do not
+//   compete, and neither do locals rematerializable from a unique
+//   constant definition.
+//
+class CSE_CallPressure
+{
+    Compiler*    m_comp;
+    uint64_t*    m_liveIn;  // per block, candidates whose value is live at entry
+    uint64_t*    m_ue;      // per block, candidates with an upward-exposed use
+    uint64_t*    m_kill;    // per block, candidates with an unconditional definition
+    bool*        m_measure; // per block, has a call to measure
+    uint64_t     m_blockUe; // masks being collected for the current block
+    uint64_t     m_blockKill;
+    bool         m_blockMeasure;
+    bool         m_anyMeasure;
+    BYTE*        m_localKind; // 0: unclassified, 1-3: register class + 1, 4: does not compete
+    BitVecTraits m_lclTraits;
+    BitVec       m_live;
+
+    //------------------------------------------------------------------------
+    // LocalKind: classify a local's participation in call pressure, cached.
+    //
+    unsigned LocalKind(unsigned lclNum)
+    {
+        BYTE& kind = m_localKind[lclNum];
+        if (kind == 0)
+        {
+            LclVarDsc* varDsc = m_comp->lvaGetDesc(lclNum);
+            kind              = 4;
+            if (varDsc->lvTracked && !varDsc->lvDoNotEnregister && m_comp->optCSEusedLocals[lclNum])
+            {
+                // A local whose only real definition stores a constant can be
+                // rematerialized and does not hold a register across calls.
+                // Definitions without a node (the implicit entry state) do not
+                // disturb that.
+                GenTreeLclVarCommon* onlyDef    = nullptr;
+                bool                 oneRealDef = varDsc->lvPerSsaData.GetCount() > 0;
+                for (unsigned i = 0; oneRealDef && (i < varDsc->lvPerSsaData.GetCount()); i++)
+                {
+                    GenTreeLclVarCommon* defNode = varDsc->lvPerSsaData.GetSsaDefByIndex(i)->GetDefNode();
+                    if (defNode != nullptr)
+                    {
+                        oneRealDef = (onlyDef == nullptr);
+                        onlyDef    = defNode;
+                    }
+                }
+                bool rematerializable = false;
+                if (oneRealDef && (onlyDef != nullptr) && onlyDef->OperIs(GT_STORE_LCL_VAR) &&
+                    ((onlyDef->gtFlags & GTF_COLON_COND) == 0))
+                {
+                    GenTree* value = onlyDef->AsLclVar()->Data();
+                    rematerializable =
+                        value->IsCnsIntOrI() ||
+                        (value->OperIs(GT_ADD) && value->gtGetOp1()->IsCnsIntOrI() && value->gtGetOp2()->IsCnsIntOrI());
+                }
+                if (!rematerializable)
+                {
+                    var_types type = varDsc->TypeGet();
+                    kind           = varTypeUsesIntReg(type) ? 1 : (varTypeUsesFloatReg(type) ? 2 : 3);
+                }
+            }
+        }
+        return kind;
+    }
+
+    //------------------------------------------------------------------------
+    // RegUnits: how many registers of its class a value of this type occupies.
+    //
+    static unsigned RegUnits(var_types type)
+    {
+#ifndef TARGET_64BIT
+        if (type == TYP_LONG)
+        {
+            return 2; // register pair
+        }
+#endif
+#ifdef TARGET_ARM
+        if (type == TYP_DOUBLE)
+        {
+            return 2; // two float registers
+        }
+#endif
+        return 1;
+    }
+
+    static unsigned ClassIndex(var_types type)
+    {
+        return varTypeUsesIntReg(type) ? 0 : (varTypeUsesFloatReg(type) ? 1 : 2);
+    }
+
+    static uint64_t CandidateBit(unsigned cseNum)
+    {
+        return uint64_t(1) << (cseNum - 1);
+    }
+
+    //------------------------------------------------------------------------
+    // MeasuredCall: a call the measurement must account for. A call that is
+    // itself a CSE use is assumed replaced by the temp, matching the
+    // availability walk's treatment.
+    //
+    static bool MeasuredCall(GenTree* tree)
+    {
+        return tree->OperIs(GT_CALL) && !(IS_CSE_INDEX(tree->gtCSEnum) && IS_CSE_USE(tree->gtCSEnum));
+    }
+
+    uint64_t BlockLiveOut(BasicBlock* block)
+    {
+        uint64_t out = 0;
+        block->VisitAllSuccs(m_comp, [&](BasicBlock* succ) {
+            out |= m_liveIn[succ->bbNum];
+            return BasicBlockVisit::Continue;
+        });
+        return out;
+    }
+
+    void Solve()
+    {
+        bool changed = true;
+        while (changed)
+        {
+            m_comp->Metrics.CsePressureSolvePasses++;
+            changed = false;
+            for (BasicBlock* block = m_comp->fgLastBB; block != nullptr; block = block->Prev())
+            {
+                uint64_t in = m_ue[block->bbNum] | (BlockLiveOut(block) & ~m_kill[block->bbNum]);
+                if (in != m_liveIn[block->bbNum])
+                {
+                    m_liveIn[block->bbNum] = in;
+                    changed                = true;
+                }
+            }
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // MeasureBlock: walk the block backwards, tracking the live
+    // enregisterable locals per class and the live candidates, and record
+    // the demand each measured call presents to the candidates whose value
+    // is live across it.
+    //
+    void MeasureBlock(BasicBlock* block)
+    {
+        m_comp->Metrics.CsePressureBlocksMeasured++;
+        if (m_localKind == nullptr)
+        {
+            assert(m_comp->optCSEusedLocals != nullptr); // collected while locating candidates
+            m_localKind = new (m_comp, CMK_CSE) BYTE[m_comp->lvaCount]();
+            m_live      = BitVecOps::MakeEmpty(&m_lclTraits);
+        }
+        BitVecOps::ClearD(&m_lclTraits, m_live);
+        unsigned counts[3] = {};
+
+        VarSetOps::Iter iter(m_comp, block->bbLiveOut);
+        unsigned        varIndex = 0;
+        while (iter.NextElem(&varIndex))
+        {
+            unsigned lclNum = m_comp->lvaTrackedIndexToLclNum(varIndex);
+            unsigned kind   = LocalKind(lclNum);
+            if (kind != 4)
+            {
+                BitVecOps::AddElemD(&m_lclTraits, m_live, lclNum);
+                counts[kind - 1] += LocalRegUnits(lclNum);
+            }
+        }
+
+        uint64_t candLive = BlockLiveOut(block);
+
+        for (Statement* stmt = block->lastStmt(); stmt != nullptr; stmt = stmt->GetPrevStmt())
+        {
+            if (!stmt->IsPhiDefnStmt())
+            {
+                for (GenTree* tree = stmt->GetRootNode(); tree != nullptr; tree = tree->gtPrev)
+                {
+                    m_comp->Metrics.CsePressureNodesWalked++;
+                    if (MeasuredCall(tree))
+                    {
+                        // The candidates whose value is live below the call
+                        // cross it, except one the call itself defines: that
+                        // value is born at the call's return.
+                        uint64_t crossing = candLive;
+                        if (IS_CSE_INDEX(tree->gtCSEnum))
+                        {
+                            crossing &= ~CandidateBit(GET_CSE_INDEX(tree->gtCSEnum));
+                        }
+                        AtCall(block, tree, crossing, counts);
+                    }
+
+                    if (IS_CSE_INDEX(tree->gtCSEnum))
+                    {
+                        uint64_t bit = CandidateBit(GET_CSE_INDEX(tree->gtCSEnum));
+                        if (IS_CSE_USE(tree->gtCSEnum))
+                        {
+                            candLive |= bit;
+                        }
+                        else if ((tree->gtFlags & GTF_COLON_COND) == 0)
+                        {
+                            candLive &= ~bit;
+                        }
+                    }
+                    else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
+                    {
+                        unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+                        unsigned kind   = LocalKind(lclNum);
+                        if (kind == 4)
+                        {
+                            continue;
+                        }
+                        // An unconditional full store ends the lifetime above it;
+                        // reads, partial stores and conditionally executed stores
+                        // keep or make the local live.
+                        if (tree->OperIs(GT_STORE_LCL_VAR) && ((tree->gtFlags & GTF_COLON_COND) == 0))
+                        {
+                            if (BitVecOps::IsMember(&m_lclTraits, m_live, lclNum))
+                            {
+                                BitVecOps::RemoveElemD(&m_lclTraits, m_live, lclNum);
+                                counts[kind - 1] -= LocalRegUnits(lclNum);
+                            }
+                        }
+                        else if (!BitVecOps::IsMember(&m_lclTraits, m_live, lclNum))
+                        {
+                            BitVecOps::AddElemD(&m_lclTraits, m_live, lclNum);
+                            counts[kind - 1] += LocalRegUnits(lclNum);
+                        }
+                    }
+                }
+            }
+            if (stmt == block->firstStmt())
+            {
+                break;
+            }
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // AtCall: record the register demand this call presents to every
+    // candidate whose value is live across it.
+    //
+    void AtCall(BasicBlock* block, GenTree* call, uint64_t crossing, const unsigned* counts)
+    {
+        while (crossing != 0)
+        {
+            unsigned cseNum = BitOperations::TrailingZeroCount(crossing) + 1;
+            crossing &= (crossing - 1);
+
+            CSEdsc*   dsc      = m_comp->optCSEfindDsc(cseNum);
+            var_types type     = dsc->csdTreeList.tslTree->TypeGet();
+            unsigned  classIdx = ClassIndex(type);
+            unsigned  demand   = counts[classIdx];
+#ifdef DEBUG
+            if (m_comp->verbose && (demand > dsc->csdCallPressure))
+            {
+                printf(FMT_CSE " call pressure %u at call [%06u] in " FMT_BB "\n", cseNum, demand, call->gtTreeID,
+                       block->bbNum);
+            }
+#endif
+            dsc->csdCallPressure = max(dsc->csdCallPressure, demand);
+        }
+    }
+
+    unsigned LocalRegUnits(unsigned lclNum)
+    {
+        return RegUnits(m_comp->lvaGetDesc(lclNum)->TypeGet());
+    }
+
+public:
+    CSE_CallPressure(Compiler* comp)
+        : m_comp(comp)
+        , m_blockUe(0)
+        , m_blockKill(0)
+        , m_blockMeasure(false)
+        , m_anyMeasure(false)
+        , m_localKind(nullptr)
+        , m_lclTraits(comp->lvaCount, comp)
+        , m_live(nullptr)
+    {
+        assert(comp->optCSECandidateCount <= 64);
+
+        // One allocation for the per-block sides: three mask lanes and the
+        // measure flags.
+        unsigned  numBlocks = comp->fgBBNumMax + 1;
+        uint64_t* masks     = new (comp, CMK_CSE) uint64_t[3 * numBlocks]();
+        m_liveIn            = masks;
+        m_ue                = masks + numBlocks;
+        m_kill              = masks + 2 * numBlocks;
+        m_measure           = new (comp, CMK_CSE) bool[numBlocks]();
+    }
+
+    // The availability walk reports each block's occurrences as it
+    // classifies them, so the masks need no walk of their own.
+
+    void NoteUse(unsigned cseNum)
+    {
+        uint64_t bit = CandidateBit(cseNum);
+        if ((m_blockKill & bit) == 0)
+        {
+            m_blockUe |= bit;
+        }
+    }
+
+    void NoteDef(GenTree* tree, unsigned cseNum)
+    {
+        if ((tree->gtFlags & GTF_COLON_COND) == 0)
+        {
+            m_blockKill |= CandidateBit(cseNum);
+        }
+    }
+
+    void NoteCall()
+    {
+        m_blockMeasure = true;
+    }
+
+    void EndBlock(BasicBlock* block)
+    {
+        m_ue[block->bbNum]      = m_blockUe;
+        m_kill[block->bbNum]    = m_blockKill;
+        m_measure[block->bbNum] = m_blockMeasure;
+        m_anyMeasure |= m_blockMeasure;
+        m_blockUe      = 0;
+        m_blockKill    = 0;
+        m_blockMeasure = false;
+    }
+
+    void Finish()
+    {
+        if (!m_anyMeasure)
+        {
+            return;
+        }
+        // The results only matter for candidates whose value crosses a
+        // call; most methods with candidates have none.
+        bool anyCross = false;
+        for (unsigned cseNum = 1; cseNum <= m_comp->optCSECandidateCount; cseNum++)
+        {
+            if (m_comp->optCSEfindDsc(cseNum)->csdLiveAcrossCall)
+            {
+                anyCross = true;
+                break;
+            }
+        }
+        if (!anyCross)
+        {
+            return;
+        }
+        Solve();
+        for (BasicBlock* const block : m_comp->Blocks())
+        {
+            // Only blocks that can have a candidate's value at a call need
+            // measuring: one flowing in from below, upward exposed, or made
+            // by a definition in the block (kill covers a def whose use
+            // follows a call in the same block).
+            if (m_measure[block->bbNum] && ((BlockLiveOut(block) | m_ue[block->bbNum] | m_kill[block->bbNum]) != 0))
+            {
+                MeasureBlock(block);
+            }
+        }
+    }
+};
+
 //---------------------------------------------------------------------------
 // optValnumCSE_Availability:
 //
@@ -1665,6 +2058,15 @@ void Compiler::optValnumCSE_Availability()
 #endif
     EXPSET_TP available_cses = BitVecOps::MakeEmpty(cseLivenessTraits);
 
+    // While labeling, collect each block's candidate uses, kills and calls
+    // for the register pressure measurement that runs afterwards (see
+    // CSE_CallPressure).
+    CSE_CallPressure* pressure = nullptr;
+    if ((optCSECandidateCount > 0) && (optCSEusedLocals != nullptr))
+    {
+        pressure = new (this, CMK_CSE) CSE_CallPressure(this);
+    }
+
     for (BasicBlock* const block : Blocks())
     {
         // Make the block publicly available
@@ -1702,11 +2104,13 @@ void Compiler::optValnumCSE_Availability()
                     // if the above is true then we will mark this the CSE as live across a call
                     //
                     bool madeLiveAcrossCall = false;
-                    if (isUse && !desc->csdLiveAcrossCall &&
-                        !BitVecOps::IsMember(cseLivenessTraits, available_cses, cseAvailCrossCallBit))
+                    if (isUse && !BitVecOps::IsMember(cseLivenessTraits, available_cses, cseAvailCrossCallBit))
                     {
-                        desc->csdLiveAcrossCall = true;
-                        madeLiveAcrossCall      = true;
+                        if (!desc->csdLiveAcrossCall)
+                        {
+                            desc->csdLiveAcrossCall = true;
+                            madeLiveAcrossCall      = true;
+                        }
                     }
 
 #ifdef DEBUG
@@ -1839,6 +2243,11 @@ void Compiler::optValnumCSE_Availability()
                         // This CSE becomes available after this def
                         BitVecOps::AddElemD(cseLivenessTraits, available_cses, cseAvailBit);
                         BitVecOps::AddElemD(cseLivenessTraits, available_cses, cseAvailCrossCallBit);
+
+                        if (pressure != nullptr)
+                        {
+                            pressure->NoteDef(tree, CSEnum);
+                        }
                     }
                     else // We are visiting a CSE use
                     {
@@ -1903,6 +2312,11 @@ void Compiler::optValnumCSE_Availability()
 
                         desc->csdUseCount += 1;
                         desc->csdUseWtCnt += stmw;
+
+                        if (pressure != nullptr)
+                        {
+                            pressure->NoteUse(CSEnum);
+                        }
                     }
                 }
 
@@ -1924,6 +2338,11 @@ void Compiler::optValnumCSE_Availability()
                         }
                         else
                         {
+                            if (pressure != nullptr)
+                            {
+                                pressure->NoteCall();
+                            }
+
                             // partially kill any cse's that are currently alive (using the cseCallKillsMask set)
                             //
                             BitVecOps::IntersectionD(cseLivenessTraits, available_cses, cseCallKillsMask);
@@ -1953,6 +2372,19 @@ void Compiler::optValnumCSE_Availability()
                 }
             }
         }
+
+        if (pressure != nullptr)
+        {
+            pressure->EndBlock(block);
+        }
+    }
+
+    // With every occurrence now classified, measure the register demand at
+    // the calls each candidate's value is live across, for the heuristic's
+    // pressure-based pricing.
+    if (pressure != nullptr)
+    {
+        pressure->Finish();
     }
 }
 
@@ -4640,7 +5072,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
 
     weight_t no_cse_cost    = 0;
     weight_t yes_cse_cost   = 0;
-    unsigned extra_yes_cost = 0;
+    weight_t extra_yes_cost = 0;
     unsigned extra_no_cost  = 0;
 
     // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
@@ -5002,7 +5434,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         printf("cseRefCnt=%f, aggressiveRefCnt=%f, moderateRefCnt=%f\n", cseRefCnt, aggressiveRefCnt, moderateRefCnt);
         printf("defCnt=%f, useCnt=%f, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
                candidate->Cost(), candidate->Size(), candidate->LiveAcrossCall() ? ", LiveAcrossCall" : "");
-        printf("def_cost=%d, use_cost=%d, extra_no_cost=%d, extra_yes_cost=%d\n", cse_def_cost, cse_use_cost,
+        printf("def_cost=%d, use_cost=%d, extra_no_cost=%d, extra_yes_cost=%f\n", cse_def_cost, cse_use_cost,
                extra_no_cost, extra_yes_cost);
 
         printf("CSE cost savings check (%f >= %f) %s\n", no_cse_cost, yes_cse_cost,

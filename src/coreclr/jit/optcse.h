@@ -105,6 +105,13 @@ public:
         return codeOptKind;
     }
 
+    // Does this heuristic read csdCallPressure? The availability pass only
+    // measures call pressure when it does.
+    virtual bool ConsumesCallPressure()
+    {
+        return false;
+    }
+
     bool IsCompatibleType(var_types cseLclVarTyp, var_types expTyp);
 
 #ifdef DEBUG
@@ -352,6 +359,13 @@ public:
     void AdjustHeuristic(CSE_Candidate* candidate);
     bool ConsiderTree(GenTree* tree, bool isReturn);
 
+    virtual bool ConsumesCallPressure()
+    {
+        // The SMALL_CODE costs are size based; only the execution cost model
+        // prices callee-saved residency against measured call pressure.
+        return CodeOptKind() != Compiler::SMALL_CODE;
+    }
+
     const char* Name() const
     {
         return "Standard CSE Heuristic";
@@ -409,6 +423,11 @@ struct CSEdsc
 
     // true if this CSE is live across a call
     bool csdLiveAcrossCall;
+
+    // Largest register demand of this candidate's register class (in
+    // registers; pairs count twice) observed live at a call the candidate's
+    // value is live across.
+    unsigned csdCallPressure;
 
     // We may form candidates that we can't use.
     // Is this a viable cse?
