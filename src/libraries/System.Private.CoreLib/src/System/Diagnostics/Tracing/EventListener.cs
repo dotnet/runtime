@@ -578,9 +578,29 @@ public abstract class EventListener : IDisposable
                             WeakReference<EventSource> eventSourceRef = eventSourcesSnapshot[i];
                             if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
                             {
-                                EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
-                                args.EventSource = eventSource;
-                                callback(this, args);
+                                bool callbackEntered = eventSource.TryEnterCallback();
+                                if (!callbackEntered)
+                                {
+                                    EventSource.EnterCallbackScope();
+                                }
+
+                                try
+                                {
+                                    EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
+                                    args.EventSource = eventSource;
+                                    callback(this, args);
+                                }
+                                finally
+                                {
+                                    if (callbackEntered)
+                                    {
+                                        eventSource.ExitCallback();
+                                    }
+                                    else
+                                    {
+                                        EventSource.ExitCallbackScope();
+                                    }
+                                }
                             }
                         }
 #if DEBUG
