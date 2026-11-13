@@ -46,6 +46,11 @@
     <_PublishReadyToRunCrossgen2ExtraArgs>--opt-cross-module:*</_PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <!-- Managed native-flavor closures are SDK-selected package data, not NuGet compile assets. -->
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
+  </PropertyGroup>
+
   <!-- Use the Mach-O format for Apple mobile platforms as we can't load native code from PE files on these platforms -->
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
     <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>
@@ -69,7 +74,20 @@
           BeforeTargets="_GenerateFrameworkList"
           DependsOnTargets="BuildBrowserHost"
           Condition="'$(TargetOS)' == 'browser'">
+    <PropertyGroup>
+      <_BrowserManagedFlavorRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'sfx-finish', '$(LibrariesConfiguration)', '$(NetCoreAppCurrent)-browser'))</_BrowserManagedFlavorRoot>
+    </PropertyGroup>
     <ItemGroup>
+      <FilesToPackage Include="$(_BrowserManagedFlavorRoot)illink-wasm-production\*.dll"
+                      TargetPath="data/native-flavors/production/managed"
+                      ExcludeFromDataFiles="true"
+                      ExcludeFromValidation="true"
+                      PackOnly="true" />
+      <FilesToPackage Include="$(_BrowserManagedFlavorRoot)illink-wasm-diagnostics\*.dll"
+                      TargetPath="data/native-flavors/diagnostics/managed"
+                      ExcludeFromDataFiles="true"
+                      ExcludeFromValidation="true"
+                      PackOnly="true" />
       <FilesToPackage Include="$(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js"
                       TargetPath="data/native-flavors/diagnostics/dotnet.native.js" />
       <FilesToPackage Include="$(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js.symbols"

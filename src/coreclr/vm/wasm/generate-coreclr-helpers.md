@@ -25,6 +25,8 @@ By default the scripts generate **both** WebAssembly variations; pass `--target-
 | Target OS | Output directory                | Default scan path (testhost) |
 |-----------|---------------------------------|------------------------------|
 | `browser` | `src/coreclr/vm/wasm/browser/`  | `artifacts/bin/testhost/net12.0-browser-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
+| `browser-production` | `src/coreclr/vm/wasm/browser/production/` | `artifacts/obj/sfx-finish/<config>/net12.0-browser/illink-wasm-production/` |
+| `browser-diagnostics` | `src/coreclr/vm/wasm/browser/diagnostics/` | `artifacts/obj/sfx-finish/<config>/net12.0-browser/illink-wasm-diagnostics/` |
 | `wasi`    | `src/coreclr/vm/wasm/wasi/`     | `artifacts/bin/testhost/net12.0-wasi-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
 
 Each run emits three files into the output directory:
@@ -68,16 +70,19 @@ provisions the Emscripten SDK (emsdk) automatically.
 
 From the repository root:
 
+The browser build also produces the trimmed production and diagnostics managed closures consumed
+by the two browser flavor tables.
+
 **Windows:**
 ```cmd
-.\build.cmd clr+libs -os browser -c Release
-.\build.cmd clr+libs -os wasi    -c Release
+.\build.cmd clr+libs+host -os browser -c Release
+.\build.cmd clr+libs+host -os wasi    -c Release
 ```
 
 **Linux/macOS:**
 ```bash
-./build.sh clr+libs -os browser -c Release
-./build.sh clr+libs -os wasi    -c Release
+./build.sh clr+libs+host -os browser -c Release
+./build.sh clr+libs+host -os wasi    -c Release
 ```
 
 Notes:

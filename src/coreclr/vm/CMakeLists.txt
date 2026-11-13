@@ -985,11 +985,29 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-interp-to-managed.cpp
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-reverse.cpp
     )
+    if(CLR_CMAKE_TARGET_BROWSER)
+        set(VM_SOURCES_WKS_GEN_PRODUCTION
+            ${ARCH_SOURCES_DIR}/browser/production/callhelpers-interp-to-managed.cpp
+            ${ARCH_SOURCES_DIR}/browser/production/callhelpers-reverse.cpp
+        )
+        set(VM_SOURCES_WKS_GEN_DIAGNOSTICS
+            ${ARCH_SOURCES_DIR}/browser/diagnostics/callhelpers-interp-to-managed.cpp
+            ${ARCH_SOURCES_DIR}/browser/diagnostics/callhelpers-reverse.cpp
+        )
+    endif()
     if (GEN_PINVOKE)
         add_compile_definitions(GEN_PINVOKE=1)
         list(APPEND VM_SOURCES_WKS_GEN
             ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-pinvoke.cpp
         )
+        if(CLR_CMAKE_TARGET_BROWSER)
+            list(APPEND VM_SOURCES_WKS_GEN_PRODUCTION
+                ${ARCH_SOURCES_DIR}/browser/production/callhelpers-pinvoke.cpp
+            )
+            list(APPEND VM_SOURCES_WKS_GEN_DIAGNOSTICS
+                ${ARCH_SOURCES_DIR}/browser/diagnostics/callhelpers-pinvoke.cpp
+            )
+        endif()
     endif(GEN_PINVOKE)
 endif()
 
@@ -1069,6 +1087,8 @@ endif()
 
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
 convert_to_absolute_path(VM_SOURCES_WKS_GEN ${VM_SOURCES_WKS_GEN})
+convert_to_absolute_path(VM_SOURCES_WKS_GEN_PRODUCTION ${VM_SOURCES_WKS_GEN_PRODUCTION})
+convert_to_absolute_path(VM_SOURCES_WKS_GEN_DIAGNOSTICS ${VM_SOURCES_WKS_GEN_DIAGNOSTICS})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})

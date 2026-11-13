@@ -104,13 +104,23 @@
 
   <Target Name="GetTrimSharedFrameworkAssembliesInputs" DependsOnTargets="ResolveProjectReferences">
     <PropertyGroup>
-      <SharedFrameworkAssembliesTrimDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'illink-$(TargetArchitecture)'))</SharedFrameworkAssembliesTrimDir>
-      <SharedFrameworkAssembliesTrimMarkerFile>$(SharedFrameworkAssembliesTrimDir)linker-marker.txt</SharedFrameworkAssembliesTrimMarkerFile>
+      <_SharedFrameworkTrimFlavorSuffix Condition="'$(SharedFrameworkTrimFlavor)' != ''">-$(SharedFrameworkTrimFlavor)</_SharedFrameworkTrimFlavorSuffix>
+      <SharedFrameworkAssembliesTrimDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'illink-$(TargetArchitecture)$(_SharedFrameworkTrimFlavorSuffix)'))</SharedFrameworkAssembliesTrimDir>
+      <_SharedFrameworkTrimRootModeSuffix Condition="'$(SharedFrameworkTrimRootMode)' != ''">-$(SharedFrameworkTrimRootMode)</_SharedFrameworkTrimRootModeSuffix>
+      <SharedFrameworkAssembliesTrimMarkerFile>$(SharedFrameworkAssembliesTrimDir)linker-marker$(_SharedFrameworkTrimRootModeSuffix).txt</SharedFrameworkAssembliesTrimMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
       <SharedFrameworkSuppressionsXml Include="@(SharedFrameworkAssembly->Metadata('ILLinkSuppressionsXmls'))" />
       <SharedFrameworkSuppressionsXml Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+      <SharedFrameworkFeatureSetting Include="System.Diagnostics.Tracing.EventSource.IsSupported"
+                                     Condition="'$(EventSourceSupport)' != ''"
+                                     Value="$(EventSourceSupport)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(SharedFrameworkTrimInputDir)' != ''">
+      <SharedFrameworkAssembly Remove="@(SharedFrameworkAssembly)" />
+      <SharedFrameworkAssembly Include="$(SharedFrameworkTrimInputDir)*.dll" />
+      <SharedFrameworkAssembly Include="$(SharedFrameworkTrimCoreLibPath)" />
     </ItemGroup>
   </Target>
 
@@ -118,19 +128,21 @@
           AfterTargets="Build"
           Condition="'$(RunILLinkInBuild)' == 'true'"
           DependsOnTargets="ResolveProjectReferences;GetTrimSharedFrameworkAssembliesInputs;PrepareForAssembliesTrim"
-          Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
+          Inputs="$(MSBuildProjectFullPath);@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
           Outputs="$(SharedFrameworkAssembliesTrimMarkerFile)">
     <Message Text="$(MSBuildProjectName) -> Trimming $(TargetRid) shared framework assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
       <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes "@(SharedFrameworkSuppressionsXml, '" --link-attributes "')"</SharedFrameworkILLinkArgs>
+      <SharedFrameworkILLinkNoWarn Condition="'$(SharedFrameworkTrimFlavor)' != ''">IL2121</SharedFrameworkILLinkNoWarn>
     </PropertyGroup>
 
     <ItemGroup>
       <SharedFrameworkAssembly RootMode="library" />
       <_SharedFrameworkRootAssemblyName Include="@(SharedFrameworkAssembly->'%(Filename)')">
-        <RootMode>library</RootMode>
+        <RootMode Condition="'$(SharedFrameworkTrimRootMode)' == ''">library</RootMode>
+        <RootMode Condition="'$(SharedFrameworkTrimRootMode)' != ''">$(SharedFrameworkTrimRootMode)</RootMode>
       </_SharedFrameworkRootAssemblyName>
     </ItemGroup>
 
@@ -138,7 +150,9 @@
     <ILLink AssemblyPaths="@(SharedFrameworkAssembly)"
         RootAssemblyNames="@(_SharedFrameworkRootAssemblyName)"
         OutputDirectory="$(SharedFrameworkAssembliesTrimDir)"
+        FeatureSettings="@(SharedFrameworkFeatureSetting)"
         ExtraArgs="$(SharedFrameworkILLinkArgs)"
+        NoWarn="$(SharedFrameworkILLinkNoWarn)"
         RemoveSymbols="false"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />

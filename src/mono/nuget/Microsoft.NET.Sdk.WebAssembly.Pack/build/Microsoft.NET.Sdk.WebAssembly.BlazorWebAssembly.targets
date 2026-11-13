@@ -1,0 +1,17 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.BlazorWebAssembly.targets
+
+Captures user-specified feature settings before the Blazor WebAssembly SDK applies its defaults.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>
+  <PropertyGroup>
+    <_WasmCoreClrEnableDiagnosticsSpecified Condition="'$(EnableDiagnostics)' != ''">true</_WasmCoreClrEnableDiagnosticsSpecified>
+    <_WasmCoreClrEventSourceSupportSpecified Condition="'$(EventSourceSupport)' != ''">true</_WasmCoreClrEventSourceSupportSpecified>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildSDKsPath)/Microsoft.NET.Sdk.BlazorWebAssembly/targets/Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets" />
+</Project>

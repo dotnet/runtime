@@ -56,22 +56,52 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmCoreClrNativeFlavorUnderPublish Condition="'$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or
                                                        '$(WasmBuildOnlyAfterPublish)' == 'true' or '$(DeployOnBuild)' == 'true'">true</_WasmCoreClrNativeFlavorUnderPublish>
-      <_WasmCoreClrEffectiveEnableDiagnostics>$(EnableDiagnostics)</_WasmCoreClrEffectiveEnableDiagnostics>
+      <_WasmCoreClrEffectiveEnableDiagnostics Condition="('$(_WasmCoreClrEnableDiagnosticsSpecified)' == 'true' and '$(EnableDiagnostics)' == 'true') or
+                                                         ('$(_WasmCoreClrEventSourceSupportSpecified)' == 'true' and '$(EventSourceSupport)' == 'true')">true</_WasmCoreClrEffectiveEnableDiagnostics>
+      <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == '' and
+                                                         ('$(_WasmCoreClrEnableDiagnosticsSpecified)' == 'true' or '$(_WasmCoreClrEventSourceSupportSpecified)' == 'true')">false</_WasmCoreClrEffectiveEnableDiagnostics>
       <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == '' and '$(_WasmCoreClrNativeFlavorUnderPublish)' == 'true'">false</_WasmCoreClrEffectiveEnableDiagnostics>
       <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == ''">true</_WasmCoreClrEffectiveEnableDiagnostics>
-      <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">$(_WasmCoreClrEffectiveEnableDiagnostics)</EnableDiagnostics>
+      <EnableDiagnostics>$(_WasmCoreClrEffectiveEnableDiagnostics)</EnableDiagnostics>
+      <EventSourceSupport>$(_WasmCoreClrEffectiveEnableDiagnostics)</EventSourceSupport>
       <_WasmCoreClrNativeFlavor Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == 'true'">diagnostics</_WasmCoreClrNativeFlavor>
       <_WasmCoreClrNativeFlavor Condition="'$(_WasmCoreClrNativeFlavor)' == ''">production</_WasmCoreClrNativeFlavor>
       <_WasmCoreClrNativeFlavorRoot>$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'data', 'native-flavors'))</_WasmCoreClrNativeFlavorRoot>
       <_WasmCoreClrSelectedNativeFlavorDir Condition="'$(_WasmCoreClrNativeFlavor)' == 'diagnostics'">$([MSBuild]::NormalizeDirectory('$(_WasmCoreClrNativeFlavorRoot)', 'diagnostics'))</_WasmCoreClrSelectedNativeFlavorDir>
       <_WasmCoreClrSelectedNativeFlavorDir Condition="'$(_WasmCoreClrNativeFlavor)' == 'production'">$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'runtimes', '$(RuntimeIdentifier)', 'native'))</_WasmCoreClrSelectedNativeFlavorDir>
+      <_WasmCoreClrSelectedManagedFlavorDir>$([MSBuild]::NormalizeDirectory('$(_WasmCoreClrNativeFlavorRoot)', '$(_WasmCoreClrNativeFlavor)', 'managed'))</_WasmCoreClrSelectedManagedFlavorDir>
     </PropertyGroup>
 
-    <Error Condition="'$(WasmBuildNative)' != 'true' and
-                      (!Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm') or
-                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js') or
-                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols'))"
-           Text="The CoreCLR browser native flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its complete dotnet.native.wasm, dotnet.native.js, and dotnet.native.js.symbols asset set. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
+  </Target>
+
+  <Target Name="_WasmCoreClrConfigureManagedFlavor"
+          DependsOnTargets="_WasmCoreClrResolveNativeFlavor"
+          BeforeTargets="_WasmCoreClrSelectR2RDirectories">
+    <PropertyGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true' and '$(_WasmCoreClrNativeFlavor)' == 'production'">
+      <_WasmUsePrebuiltReadyToRun>false</_WasmUsePrebuiltReadyToRun>
+      <_WasmBuildPrebuiltR2RDirectory></_WasmBuildPrebuiltR2RDirectory>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmCoreClrSelectManagedFlavor"
+          DependsOnTargets="_WasmCoreClrConfigureManagedFlavor"
+          BeforeTargets="_ComputeWasmBuildCandidates">
+    <Error Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true' and !Exists('$(_WasmCoreClrSelectedManagedFlavorDir)System.Private.CoreLib.dll')"
+           Text="The CoreCLR browser managed flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its managed framework closure." />
+    <ItemGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true'">
+      <_WasmCoreClrManagedFlavorAssembly Include="$(_WasmCoreClrSelectedManagedFlavorDir)*.dll" />
+      <_WasmCoreClrManagedFlavorAssemblyName Include="@(_WasmCoreClrManagedFlavorAssembly->';%(FileName)%(Extension);')" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true'">
+      <_WasmCoreClrManagedFlavorAssemblyNames>@(_WasmCoreClrManagedFlavorAssemblyName)</_WasmCoreClrManagedFlavorAssemblyNames>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_WasmCoreClrNativeFlavorUnderPublish)' != 'true'">
+      <_WasmCoreClrManagedFrameworkOriginal Include="@(ReferenceCopyLocalPaths)"
+                                             Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dll' and
+                                                        $([System.String]::Copy('$(_WasmCoreClrManagedFlavorAssemblyNames)').Contains(';%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension);'))" />
+      <ReferenceCopyLocalPaths Remove="@(_WasmCoreClrManagedFrameworkOriginal)" />
+      <ReferenceCopyLocalPaths Include="@(_WasmCoreClrManagedFrameworkOriginal->'$(_WasmCoreClrSelectedManagedFlavorDir)%(FileName)%(Extension)')" />
+    </ItemGroup>
   </Target>
 
   <!-- Prelinked flavors are the no-workload path. When native workload targets set
@@ -79,6 +109,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrSelectNativeFlavor"
           DependsOnTargets="_WasmCoreClrResolveNativeFlavor"
           BeforeTargets="_ComputeWasmBuildCandidates;_HandleFileConflictsForPublish;ProcessPublishFilesForWasm">
+    <Error Condition="'$(WasmBuildNative)' != 'true' and
+                      (!Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols'))"
+           Text="The CoreCLR browser native flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its complete dotnet.native.wasm, dotnet.native.js, and dotnet.native.js.symbols asset set. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
     <ItemGroup Condition="'$(WasmBuildNative)' != 'true'">
       <WasmNativeAsset Remove="@(WasmNativeAsset)"
                        Condition="'%(FileName)%(Extension)' == 'dotnet.native.wasm' or
