@@ -56,7 +56,8 @@ namespace JIT.HardwareIntrinsics.Arm._AdvSimd
             Vector64<TWide> expectedWide = Vector64<TWide>.Zero;
             for (int i = 0; i < Vector64<TWide>.Count; i++)
             {
-                TWide x = TWide.CreateTruncating((i + 1) * 1000);
+                // Exercise the upper 32 bits in the ulong/long cases.
+                TWide x = TWide.CreateTruncating((1L << 32) + ((i + 1) * 1000));
                 TWide y = TWide.CreateTruncating(right.GetElement(i));
                 wideLeft = wideLeft.WithElement(i, x);
                 expectedWide = expectedWide.WithElement(i, subtract ? x - y : x + y);
