@@ -1223,10 +1223,7 @@ namespace ILLink.Tasks.Tests
 
             string sidecar = Path.Combine(directory, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(sidecar));
-            if (relativePath.EndsWith(".dll", StringComparison.Ordinal))
-                WriteTestAssembly(sidecar);
-            else
-                File.WriteAllText(sidecar, "contents");
+            File.WriteAllText(sidecar, "contents");
             Assert.True(test.Task.TryGetCacheKey(host, out string added));
             Assert.NotEqual(original, added);
             File.AppendAllText(sidecar, "changed");
@@ -1506,10 +1503,7 @@ namespace ILLink.Tasks.Tests
 
             string file = Path.Combine(test.Root, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(file));
-            if (relativePath.EndsWith(".dll", StringComparison.Ordinal))
-                WriteTestAssembly(file);
-            else
-                File.WriteAllText(file, "sidecar");
+            File.WriteAllText(file, "sidecar");
             Assert.True(test.Task.TryGetCacheKey(host, out string added));
             Assert.NotEqual(original, added);
 
@@ -1732,6 +1726,27 @@ namespace ILLink.Tasks.Tests
             Assert.True(test.Task.TryGetCacheKey(host, out string restored));
             Assert.Equal(original, restored);
         }
+
+        [Theory]
+        [MemberData(nameof(HostPathNames))]
+        public void CacheKeyTracksHostPathsWithoutArgumentEscaping(string name)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            string selectedHost = Path.Combine(test.Root, name);
+            File.Copy(host, selectedHost);
+
+            Assert.True(test.Task.TryGetCacheKey(selectedHost, out string original));
+            Assert.Contains(selectedHost, test.Task.CacheDescription.Inputs.Files);
+            File.AppendAllText(selectedHost, "changed");
+            Assert.True(test.Task.TryGetCacheKey(selectedHost, out string changed));
+            Assert.NotEqual(original, changed);
+        }
+
+        public static IEnumerable<object[]> HostPathNames() =>
+            new[] { "host with spaces", "host\"name", "host\\name" }
+                .Where(name => name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0)
+                .Select(name => new object[] { name });
 
         [Theory]
         [InlineData(false)]
@@ -2092,11 +2107,11 @@ namespace ILLink.Tasks.Tests
         [InlineData(false, true, "/_/src/Input.cs", true)]
         [InlineData(false, false, "/_/src/Input.cs", false)]
         [InlineData(true, true, "src/Input.cs", true)]
-        [InlineData(false, true, "/physical/root/Input.cs", false)]
-        [InlineData(false, true, "C:\\physical\\root\\Input.cs", false)]
-        [InlineData(false, true, "../Input.cs", false)]
-        [InlineData(false, true, "/_/../Input.cs", false)]
-        public void CacheKeyRequiresShareablePortableSymbols(bool removeSymbols, bool preserveSymbols, string document, bool eligible)
+        [InlineData(false, true, "/physical/root/Input.cs", true)]
+        [InlineData(false, true, "C:\\physical\\root\\Input.cs", true)]
+        [InlineData(false, true, "../Input.cs", true)]
+        [InlineData(false, true, "/_/../Input.cs", true)]
+        public void CacheKeyRequiresPreservedSymbolEmission(bool removeSymbols, bool preserveSymbols, string document, bool eligible)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -2108,14 +2123,20 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData("pdb")]
-        [InlineData("mdb")]
-        [InlineData("physical-codeview")]
-        [InlineData("physical-document")]
-        public void CacheKeyRejectsNonShareableInputPaths(string kind)
+        [InlineData("pdb", true)]
+        [InlineData("pdb", false)]
+        [InlineData("mdb", true)]
+        [InlineData("mdb", false)]
+        [InlineData("physical-codeview", true)]
+        [InlineData("physical-codeview", false)]
+        [InlineData("physical-document", true)]
+        [InlineData("physical-document", false)]
+        public void CacheKeyChecksSymbolFormatsOnlyForEmission(string kind, bool removeSymbols)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
+            test.Task.RemoveSymbols = removeSymbols;
+            test.Task.PreserveSymbolPaths = true;
             string input = test.Task.AssemblyPaths[0].ItemSpec;
             switch (kind)
             {
@@ -2132,14 +2153,29 @@ namespace ILLink.Tasks.Tests
                     WriteSymbolAssembly(input, test.Root + "/src/Input.cs");
                     break;
             }
-            Assert.False(test.Task.TryGetCacheKey(host, out string key));
-            Assert.Empty(key);
+            bool eligible = removeSymbols || kind is not ("pdb" or "mdb");
+            Assert.Equal(eligible, test.Task.TryGetCacheKey(host, out string key));
+            Assert.Equal(eligible ? 64 : 0, key.Length);
+        }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void CacheKeyRequiresPreservationForEmbeddedSymbolEmission(bool removeSymbols, bool preserveSymbols)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            WriteSymbolAssembly(test.Task.AssemblyPaths[0].ItemSpec, "/_/src/Input.cs", embeddedSymbols: true);
+            test.Task.RemoveSymbols = removeSymbols;
+            test.Task.PreserveSymbolPaths = preserveSymbols;
+            Assert.Equal(removeSymbols || preserveSymbols, test.Task.TryGetCacheKey(host, out _));
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void TaskRunsUncachedForPhysicalSymbolPaths(bool cacheEnabled)
+        public void TaskCachesCopiedAssembliesWithPhysicalSymbolPaths(bool cacheEnabled)
         {
             RemoteExecutor.Invoke(static value =>
             {
@@ -2148,6 +2184,7 @@ namespace ILLink.Tasks.Tests
                 WriteSymbolAssembly(input, test.Root + "/src/Input.cs", physicalCodeView: true);
                 test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
                 test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
+                test.Task.RemoveSymbols = true;
                 test.Task.ExtraArgs = null;
                 string cacheDirectory = Path.Combine(test.Root, "cache");
                 bool cacheEnabled = bool.Parse(value);
@@ -2155,10 +2192,14 @@ namespace ILLink.Tasks.Tests
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
 
                 Assert.True(test.Task.Execute());
-                Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
-                Assert.False(Directory.Exists(cacheDirectory));
                 if (cacheEnabled)
-                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
+                {
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                    Assert.True(test.Task.Execute());
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                }
+                Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
+                Assert.Equal(cacheEnabled, Directory.Exists(cacheDirectory));
                 Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
                 Assert.Contains($"\"{input}\"", Assert.Single(test.Task.ResponseFiles));
             }, cacheEnabled.ToString()).Dispose();
@@ -2269,22 +2310,27 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void TaskSharesCacheAcrossRootsAndMatchesUncachedLink(bool symbols)
+        [InlineData(false, false, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public void TaskSharesCacheAcrossRootsAndMatchesUncachedLink(bool symbols, bool physicalPaths, bool embeddedSymbols)
         {
-            RemoteExecutor.Invoke(static value =>
+            RemoteExecutor.Invoke(static (value, physical, embedded) =>
             {
                 bool symbols = bool.Parse(value);
+                bool physicalPaths = bool.Parse(physical);
+                bool embeddedSymbols = bool.Parse(embedded);
                 using var first = new OutputDirectoryTest();
                 using var second = new OutputDirectoryTest();
                 using var packageStorage = new OutputDirectoryTest();
                 string input = Path.Combine(first.Root, "Fixture.dll");
-                WriteSymbolAssembly(input, "/_/src/Fixture.cs");
+                WriteSymbolAssembly(input, physicalPaths ? first.Root + "/src/Fixture.cs" : "/_/src/Fixture.cs",
+                    physicalCodeView: physicalPaths, embeddedSymbols: embeddedSymbols);
                 if (!symbols)
                     File.Delete(Path.ChangeExtension(input, ".pdb"));
                 File.Copy(input, Path.Combine(second.Root, "Fixture.dll"));
-                if (symbols)
+                if (symbols && !embeddedSymbols)
                     File.Copy(Path.ChangeExtension(input, ".pdb"), Path.Combine(second.Root, "Fixture.pdb"));
                 string cacheDirectory = Path.Combine(first.Root, "cache");
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
@@ -2328,7 +2374,7 @@ namespace ILLink.Tasks.Tests
                     Assert.Contains(second.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
                     Assert.Single(Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")));
                     string[] outputs = Directory.GetFiles(second.Output).Select(Path.GetFileName).OrderBy(name => name).ToArray();
-                    Assert.Equal(symbols ? new[] { "Fixture.dll", "Fixture.pdb" } : new[] { "Fixture.dll" }, outputs);
+                    Assert.Equal(symbols && !embeddedSymbols ? new[] { "Fixture.dll", "Fixture.pdb" } : new[] { "Fixture.dll" }, outputs);
                     var restored = outputs.ToDictionary(name => name, name => File.ReadAllBytes(Path.Combine(second.Output, name)));
                     Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "false");
                     Assert.True(second.Task.Execute());
@@ -2346,7 +2392,7 @@ namespace ILLink.Tasks.Tests
                 {
                     Environment.CurrentDirectory = originalDirectory;
                 }
-            }, symbols.ToString()).Dispose();
+            }, symbols.ToString(), physicalPaths.ToString(), embeddedSymbols.ToString()).Dispose();
         }
 
         [Fact]
@@ -2536,6 +2582,38 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
+        [MemberData(nameof(InvocationDirectoryNames))]
+        public void CacheInvocationTracksMultilinePaths(string name)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            string directory = Path.Combine(test.Root, name);
+            Directory.CreateDirectory(directory);
+            string input = Path.Combine(directory, "Input.dll");
+            File.Copy(test.Task.AssemblyPaths[0].ItemSpec, input);
+            test.Task.AssemblyPaths[0].ItemSpec = input;
+            test.Task.OutputDirectory = new TaskItem(Path.Combine(directory, "output"));
+            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
+            Assert.True(test.Task.TryGetCacheKey(host, out string original));
+            var arguments = new Queue<string>();
+            using var response = new StringReader(test.Task.CacheInvocation.Value.ResponseFile);
+            Driver.ParseResponseFile(response, arguments);
+            Assert.Contains(input, arguments);
+            Assert.Contains(directory, arguments);
+            Assert.Contains(test.Task.OutputDirectory.ItemSpec, arguments);
+
+            Assert.Contains(input, test.Task.CacheDescription.Inputs.Files);
+            File.AppendAllText(input, "changed");
+            Assert.True(test.Task.TryGetCacheKey(host, out string changed));
+            Assert.NotEqual(original, changed);
+        }
+
+        public static IEnumerable<object[]> InvocationDirectoryNames() =>
+            new[] { "directory with spaces", "line\nbreak", "line\rbreak" }
+                .Where(name => name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0)
+                .Select(name => new object[] { name });
+
+        [Theory]
         [InlineData(nameof(ILLink.SingleWarn), true)]
         [InlineData(nameof(ILLink.TrimMode), "copy")]
         [InlineData(nameof(ILLink.DefaultAction), "skip")]
@@ -2605,7 +2683,7 @@ namespace ILLink.Tasks.Tests
             }
         }
 
-        private static void WriteSymbolAssembly(string path, string document, bool physicalCodeView = false)
+        private static void WriteSymbolAssembly(string path, string document, bool physicalCodeView = false, bool embeddedSymbols = false)
         {
             using var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
                 new Mono.Cecil.AssemblyNameDefinition(Path.GetFileNameWithoutExtension(path), new Version(1, 0)),
@@ -2628,10 +2706,12 @@ namespace ILLink.Tasks.Tests
             assembly.Write(path, new Mono.Cecil.WriterParameters
             {
                 WriteSymbols = true,
-                SymbolWriterProvider = new Mono.Cecil.Cil.PortablePdbWriterProvider(),
-                SymbolStream = physicalCodeView ? null : symbols
+                SymbolWriterProvider = embeddedSymbols
+                    ? new Mono.Cecil.Cil.EmbeddedPortablePdbWriterProvider()
+                    : new Mono.Cecil.Cil.PortablePdbWriterProvider(),
+                SymbolStream = physicalCodeView || embeddedSymbols ? null : symbols
             });
-            if (!physicalCodeView)
+            if (!physicalCodeView && !embeddedSymbols)
                 File.WriteAllBytes(Path.ChangeExtension(path, ".pdb"), symbols.ToArray());
         }
 

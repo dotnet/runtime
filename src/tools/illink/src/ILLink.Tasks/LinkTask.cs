@@ -380,7 +380,7 @@ namespace ILLink.Tasks
                 string taskAssemblyPath = typeof(ILLink).Assembly.Location;
 #pragma warning restore IL3000
                 files.Add(taskAssemblyPath);
-                files.Add(GetCachePath(pathToTool));
+                files.Add(Path.GetFullPath(pathToTool));
                 files.Add(toolPath);
                 foreach (string file in files)
                 {
@@ -390,12 +390,12 @@ namespace ILLink.Tasks
 
                 return new InvocationDescription(new InvocationInputs(files, orderedPaths),
                     context,
-                    new InvocationOutputs(OutputDirectory is null ? null : GetCachePath(OutputDirectory.ItemSpec), Array.Empty<string>()),
+                    new InvocationOutputs(OutputDirectory is null ? null : GetFullInvocationPath(OutputDirectory.ItemSpec), Array.Empty<string>()),
                     pathMap: paths);
 
                 string AddPath(string parameterName, string path)
                 {
-                    path = GetCachePath(path);
+                    path = GetFullInvocationPath(path);
                     context.Add(parameterName);
                     orderedPaths.Add(path);
                     return path;
@@ -419,11 +419,7 @@ namespace ILLink.Tasks
                     string directory = Path.GetDirectoryName(path);
                     string satelliteName = Path.GetFileNameWithoutExtension(path) + ".resources.dll";
                     foreach (string satelliteDirectory in Directory.EnumerateDirectories(directory))
-                    {
-                        string satellite = Path.Combine(satelliteDirectory, satelliteName);
-                        if (File.Exists(satellite) && !AddAssembly(satellite, checkOutputSymbols))
-                            return false;
-                    }
+                        AddOptionalFile(Path.Combine(satelliteDirectory, satelliteName));
 
                     using var stream = File.OpenRead(path);
                     using var pe = new PEReader(stream);
@@ -455,14 +451,15 @@ namespace ILLink.Tasks
 
         private static bool HasPathSyntax(string name) => name.AsSpan().IndexOfAny('/', '\\', ':') >= 0;
 
-        private static string GetCachePath(string path)
+        private static string GetFullInvocationPath(string path)
         {
             path = Path.GetFullPath(path);
             if (path.Length > Path.GetPathRoot(path).Length)
                 path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
+            // Argument parsing can change these spellings, leaving a different file uninventoried.
+            if (path.AsSpan().IndexOf('"') >= 0 ||
                 (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
-                throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
+                throw new NotSupportedException("Invocation paths containing quotes or Unix backslashes are not supported by the cache.");
             return path;
         }
 
@@ -525,7 +522,7 @@ namespace ILLink.Tasks
                     return false;
                 }
 
-                path = GetCachePath(path);
+                path = GetFullInvocationPath(path);
                 context.Add(option);
                 orderedPaths.Add(path);
                 if (option == "-d")
@@ -578,54 +575,27 @@ namespace ILLink.Tasks
 
         private void CheckCacheableSymbols(string assemblyPath, PEReader pe)
         {
+            if (_removeSymbols != false)
+                return;
+
             if (File.Exists(assemblyPath + ".mdb"))
                 throw new NotSupportedException("MDB symbols are not supported by the shared cache.");
 
-            foreach (DebugDirectoryEntry entry in pe.ReadDebugDirectory())
-            {
-                switch (entry.Type)
-                {
-                    case DebugDirectoryEntryType.CodeView:
-                        if (!entry.IsPortableCodeView)
-                            throw new NotSupportedException("Native PDB symbols are not supported by the shared cache.");
-                        CheckSymbolPath(pe.ReadCodeViewDebugDirectoryData(entry).Path);
-                        break;
-                    case DebugDirectoryEntryType.EmbeddedPortablePdb:
-                        using (MetadataReaderProvider provider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(entry))
-                            CheckDocuments(provider.GetMetadataReader());
-                        break;
-                    case DebugDirectoryEntryType.Reproducible:
-                    case DebugDirectoryEntryType.PdbChecksum:
-                        break;
-                    default:
-                        throw new NotSupportedException($"Debug directory type '{entry.Type}' is not supported by the shared cache.");
-                }
-            }
-
             string pdbPath = Path.ChangeExtension(assemblyPath, ".pdb");
-            if (File.Exists(pdbPath))
+            bool hasSidecar = File.Exists(pdbPath);
+            bool hasEmbedded = pe.ReadDebugDirectory().Any(entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            if (!hasSidecar && !hasEmbedded)
+                return;
+
+            if (!PreserveSymbolPaths)
+                throw new NotSupportedException("Portable PDB emission requires explicit PreserveSymbolPaths for the shared cache.");
+
+            if (hasSidecar)
             {
-                if (_removeSymbols == false && !PreserveSymbolPaths)
-                    throw new NotSupportedException("Portable PDB emission requires explicit PreserveSymbolPaths for the shared cache.");
                 using var input = File.OpenRead(pdbPath);
                 using var provider = MetadataReaderProvider.FromPortablePdbStream(input);
-                CheckDocuments(provider.GetMetadataReader());
+                provider.GetMetadataReader();
             }
-
-            static void CheckDocuments(MetadataReader metadata)
-            {
-                foreach (DocumentHandle handle in metadata.Documents)
-                    CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
-            }
-        }
-
-        private static void CheckSymbolPath(string path)
-        {
-            if (SourceRootPathMap.IsLogicalPath(path))
-                return;
-            if ((path.Length > 0 && path[0] is '/' or '\\') ||
-                (path.Length > 1 && path[1] == ':') || path.Split('/', '\\').Any(part => part == ".."))
-                throw new NotSupportedException($"Physical or escaping symbol path '{path}' is not supported by the shared cache.");
         }
 
         private string _illinkPath = "";

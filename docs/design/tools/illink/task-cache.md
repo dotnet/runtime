@@ -91,12 +91,14 @@ Linked resources with stored hashes do not introduce an external file read durin
 Dependency tracking for the unusual missing-hash case, where Cecil can read the resource file to
 compute an output hash, is deferred; such inputs are outside the cache's supported dependency model.
 
-Inspect CodeView paths, portable-PDB document paths, and embedded portable PDBs.
-Accept relative non-escaping paths and conventional synthetic `/_N/` paths; reject physical symbol
-paths, native PDBs, MDBs, malformed symbols, and unsupported debug-directory kinds. External portable
-PDB emission requires explicit `PreserveSymbolPaths=true` with already-normalized inputs. Copy
-actions also require shareable input bytes. Explicit skipped references are metadata-inspected and
-fully hashed, without output-symbol restrictions because their symbols are not emitted.
+Check symbol eligibility only when symbols are enabled. Portable PDB emission, including embedded
+PDBs, requires explicit `PreserveSymbolPaths=true` so newly written CodeView paths do not depend on
+the physical output location. Native PDB and MDB emission is not supported by the shared cache.
+Do not inspect existing CodeView or document paths: they already participate in input content hashes,
+and preserving identical physical-path-bearing bytes is safe. Automatically discovered satellite
+assemblies are copied as bytes, so inventory only their DLLs without inspecting metadata or sidecars.
+Explicit skipped references are metadata-inspected and fully hashed, without output-symbol
+restrictions because their symbols are not emitted.
 
 Do not scan input contents for physical source-root prefixes. Embedded checkout paths, including
 `CallerFilePath` strings and custom-debug blobs, participate in full-content hashes: changing them

@@ -99,15 +99,17 @@ fall back to normal linking.
 
 Cache-enabled invocations that cannot meet the supported path-independence contract run
 uncached and store nothing, rather than create path-specific entries. Missing/invalid root
-mappings, physical symbol paths, and unsupported symbol formats bypass caching.
+mappings and unsupported symbol emission bypass caching.
 Additional modules are left to ILLink's existing failure behavior, and ordinary linked resources
 are covered by their stored metadata hashes. The unusual missing-resource-hash case is outside
 the supported dependency model. Path-shaped metadata assembly references also bypass caching because they
 can escape the declared search-directory inventory. Root and XML assembly-name strings are left to
 ILLink's existing unresolved-name handling.
-Portable PDB emission requires already-normalized input paths and
-explicit `PreserveSymbolPaths=true`. Neither symbol preservation nor deterministic compiler
-paths are enabled automatically. Copy actions also require shareable input paths.
+Portable PDB emission, including embedded PDBs, requires explicit `PreserveSymbolPaths=true`
+to avoid generating output-location-dependent CodeView paths. Existing physical symbol paths
+are covered by input content hashes, not rejected. Symbols-disabled inputs are not subject to
+symbol-format checks. Neither symbol preservation nor deterministic compiler paths are enabled
+automatically.
 SDK and runtime library targets initialize and forward the compiler's existing `@(SourceRoot)`
 items. Caching additionally requires stable logical `MappedPath` prefixes, normally supplied when
 `DeterministicSourcePaths=true`, such as deterministic CI builds; ordinary local SDK builds
