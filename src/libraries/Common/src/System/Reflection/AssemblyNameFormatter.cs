@@ -99,7 +99,6 @@ namespace System.Reflection
 
         private static void AppendQuoted(this ref ValueStringBuilder vsb, string s)
         {
-            // App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
             // You can use double or single quotes to quote a name. We use double quotes consistently.
             const char quoteChar = '\"';
             ReadOnlySpan<char> span = s.AsSpan();
