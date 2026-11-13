@@ -105,6 +105,43 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Android)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void Process_Start_InheritedHandles_AreRespected(bool inheritable, bool inheritHandle)
+        {
+            string path = Path.GetTempFileName();
+            try
+            {
+                using SafeFileHandle handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read,
+                    FileShare.ReadWrite | (inheritable ? FileShare.Inheritable : FileShare.None));
+
+                ProcessStartInfo psi = new("sh")
+                {
+                    InheritedHandles = inheritHandle ? [handle] : [],
+                    ArgumentList =
+                    {
+                        "-c",
+                        $"test /proc/self/fd/{handle.DangerousGetHandle()} -ef \"$1\"",
+                        "sh",
+                        path
+                    }
+                };
+
+                using Process process = Process.Start(psi);
+                Assert.NotNull(process);
+                Assert.True(process.WaitForExit(WaitInMS));
+                Assert.Equal(inheritHandle ? 0 : 1, process.ExitCode);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void Process_Start_WithStandardHandles_CanRedirectIO(bool restrictHandles)

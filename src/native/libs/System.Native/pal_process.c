@@ -23,8 +23,13 @@
 #endif
 #include <fcntl.h>
 
+#if defined(TARGET_ANDROID)
+#include <dirent.h>
+#include <stddef.h>
+#endif
+
 #if defined(__linux__)
-#if !HAVE_CLOSE_RANGE
+#if !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID)
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
 // close_range was added in Linux 5.9. The syscall number is 436 for all
@@ -37,9 +42,9 @@
 #  define __NR_close_range 436
 # endif
 #endif // !defined(__NR_close_range)
-#endif // !HAVE_CLOSE_RANGE
+#endif // !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID)
 #endif // defined(__linux__)
-#if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
+#if !defined(TARGET_ANDROID) && (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
@@ -246,11 +251,80 @@ static int SetCloexecForFd(void* context, int fd)
 }
 #endif
 
+#if defined(TARGET_ANDROID)
+static int SetCloexecForOpenFds(void)
+{
+    // Android's app seccomp policy can kill the child on close_range(), rather than returning ENOSYS.
+    // Enumerate only open descriptors. Use getdents64 directly to avoid opendir/readdir allocations
+    // and locks between fork and exec. Android's dirent64 matches the kernel's linux_dirent64 layout:
+    // https://man7.org/linux/man-pages/man2/getdents.2.html
+    static_assert(offsetof(struct dirent64, d_name) == 19, "dirent64 must match linux_dirent64");
+
+    int directoryFd;
+    while (CheckInterrupted(directoryFd = open("/proc/self/fd", O_RDONLY | O_DIRECTORY | O_CLOEXEC)));
+    if (directoryFd == -1)
+    {
+        return -1;
+    }
+
+    int result = 0;
+    struct dirent64 buffer[4];
+    while (true)
+    {
+        ssize_t bytesRead;
+        while (CheckInterrupted(bytesRead = syscall(__NR_getdents64, directoryFd, buffer, sizeof(buffer))));
+        if (bytesRead <= 0)
+        {
+            result = (int)bytesRead;
+            break;
+        }
+
+        for (ssize_t offset = 0; offset < bytesRead;)
+        {
+            struct dirent64* entry = (struct dirent64*)((char*)buffer + offset);
+            offset += entry->d_reclen;
+            if (entry->d_name[0] == '.')
+            {
+                continue;
+            }
+
+            // /proc/self/fd names are decimal file descriptors, bounded by INT_MAX.
+            int fd = 0;
+            for (const char* digit = entry->d_name; *digit != '\0'; digit++)
+            {
+                fd = fd * 10 + (*digit - '0');
+            }
+
+            if (fd >= 3)
+            {
+                int flags;
+                while (CheckInterrupted(flags = fcntl(fd, F_GETFD)));
+                if (flags == -1)
+                {
+                    result = -1;
+                    goto done;
+                }
+
+                while (CheckInterrupted(result = fcntl(fd, F_SETFD, flags | FD_CLOEXEC)));
+                if (result == -1)
+                {
+                    goto done;
+                }
+            }
+        }
+    }
+
+done:
+    close(directoryFd);
+    return result;
+}
+#endif // defined(TARGET_ANDROID)
+
 // Returns 0 on success, or -1 (with errno set to ENOTSUP) if this platform/kernel doesn't provide
-// a performant native way (close_range()/fdwalk()) to restrict which fds a child process inherits.
+// a performant native way (close_range()/fdwalk()/procfs) to restrict which fds a child process inherits.
 //
 // We intentionally do NOT fall back to manually scanning every possible fd via fcntl() in that
-// case: without close_range()/fdwalk(), there is no reliable way to learn only the fds that are
+// case: without close_range()/fdwalk()/procfs, there is no reliable way to learn only the fds that are
 // actually open, so such a scan would need to cover the entire valid fd range (up to INT_MAX) to
 // be correct -- something that has been measured to take multiple minutes of CPU time per
 // Process.Start call. That's not an acceptable cost, so we report failure instead and let the
@@ -264,7 +338,9 @@ static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inherite
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
     int result;
-#if HAVE_CLOSE_RANGE
+#if defined(TARGET_ANDROID)
+    result = SetCloexecForOpenFds();
+#elif HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
     result = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif defined(__NR_close_range)
