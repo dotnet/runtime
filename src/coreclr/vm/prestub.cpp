@@ -3681,8 +3681,10 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
     PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
+    PTR_BYTE pGCRefMap = nullptr;
     if ((pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) != ReadyToRunImportSectionFlags::None)
     {
+        pGCRefMap = dac_cast<PTR_BYTE>(pBlob);
         pBlob = GCRefMapDecoder::Skip(pBlob);
     }
     PCCOR_SIGNATURE pBlobStart = pBlob;
@@ -3749,7 +3751,21 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case READYTORUN_FIXUP_DelegateCtor:
         {
             pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            if (kind == READYTORUN_FIXUP_DelegateCtor && pGCRefMap != nullptr && !pMD->RequiresInstArg())
+            {
+                // The map describes the target's own call frame, so signature layouts need not be loaded.
+                pMD->PrepareForUseAsACallTargetOfANativeImage(pGCRefMap);
+#ifdef _DEBUG
+                if (!pMD->IsWrapperStub())
+                {
+                    _ASSERTE(CheckGCRefMapEqual(pGCRefMap, pMD, false));
+                }
+#endif // _DEBUG
+            }
+            else
+            {
+                pMD->PrepareForUseAsADependencyOfANativeImage();
+            }
             if (pMD->RequiresInstArg())
             {
                 pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,

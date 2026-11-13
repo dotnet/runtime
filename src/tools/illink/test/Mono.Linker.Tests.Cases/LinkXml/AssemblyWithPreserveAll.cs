@@ -31,6 +31,10 @@ namespace Mono.Linker.Tests.Cases.LinkXml
             [KeptMember(".ctor()")]
             class UnusedNestedType
             {
+                [Kept]
+                static class Empty
+                {
+                }
             }
         }
     }

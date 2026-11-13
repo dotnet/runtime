@@ -13,12 +13,6 @@ namespace System.Security.Cryptography
             OperatingSystem.IsIOSVersionAtLeast(14) ||
             OperatingSystem.IsTvOSVersionAtLeast(14);
 
-        private static readonly bool s_hasSha3Hkdf =
-            OperatingSystem.IsMacOSVersionAtLeast(26) ||
-            OperatingSystem.IsMacCatalystVersionAtLeast(26) ||
-            OperatingSystem.IsIOSVersionAtLeast(26) ||
-            OperatingSystem.IsTvOSVersionAtLeast(26);
-
         private static void ExtractCore(
             HashAlgorithmName hashAlgorithmName,
             ReadOnlySpan<byte> ikm,
@@ -78,8 +72,8 @@ namespace System.Security.Cryptography
 
         private static void ThrowForUnsupportedHashAlgorithm(HashAlgorithmName hashAlgorithmName)
         {
-            if (!s_hasSha3Hkdf && (hashAlgorithmName == HashAlgorithmName.SHA3_256 ||
-                hashAlgorithmName == HashAlgorithmName.SHA3_384 || hashAlgorithmName == HashAlgorithmName.SHA3_512))
+            if (hashAlgorithmName == HashAlgorithmName.SHA3_256 || hashAlgorithmName == HashAlgorithmName.SHA3_384 ||
+                hashAlgorithmName == HashAlgorithmName.SHA3_512)
             {
                 throw new PlatformNotSupportedException();
             }

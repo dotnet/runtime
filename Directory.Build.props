@@ -91,13 +91,12 @@
     <!-- TODO: Replace NetCoreAppMinimum with NetMinimum in this repo -->
     <NetMinimum>$(NetCoreAppMinimum)</NetMinimum>
 
-    <NetCoreAppToolCurrentVersion>11.0</NetCoreAppToolCurrentVersion>
-    <NetCoreAppToolCurrentVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$([MSBuild]::GetTargetFrameworkVersion('$(BundledNETCoreAppTargetFramework)'))</NetCoreAppToolCurrentVersion>
-    <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
+    <NetCoreAppToolCurrentVersion>$([MSBuild]::GetTargetFrameworkVersion('$(BundledNETCoreAppTargetFramework)'))</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrent>$(BundledNETCoreAppTargetFramework)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <!-- TODO: Replace NetCoreAppToolCurrent with BundledNETCoreAppTargetFramework in this repo -->
 
-    <AspNetCoreAppCurrentVersion>11.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>$([MSBuild]::GetTargetFrameworkVersion('$(BundledNETCoreAppTargetFramework)'))</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <!-- Don't build for NETFramework during source-build. -->
