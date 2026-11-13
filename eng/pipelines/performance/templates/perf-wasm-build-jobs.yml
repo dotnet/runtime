@@ -1,29 +1,4 @@
-parameters:
-  runMono: false
-
 jobs:
-# Build Mono only for explicitly selected performance builds.
-- ${{ if eq(parameters.runMono, true) }}:
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      runtimeFlavor: mono
-      platforms:
-      - browser_wasm
-      jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-        nameSuffix: wasm
-        isOfficialBuild: false
-        # The wasm-tools workload manifest includes CoreCLR packs that the Mono build doesn't produce.
-        dependsOn:
-        - build_browser_wasm_linux_Release_wasm_coreclr
-        postBuildSteps:
-          - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
-            parameters:
-              configForBuild: Release
-              downloadCoreClrWorkloadPackages: true
-
 # Build CoreCLR runtime for browser-wasm (used by --wasm-coreclr benchmarks)
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -44,4 +19,3 @@ jobs:
             sdkDirName: dotnet-none
             includeRefPack: false
             includeCoreClrToolchainPacks: true
-            publishCoreClrWorkloadPackages: ${{ parameters.runMono }}

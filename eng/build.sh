@@ -45,7 +45,6 @@ usage()
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
-  echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
   echo "  --dynamiccodecompiled           Enable or disable dynamic code compilation support. Accepts true or false."
   echo "                                  Also enables the interpreter when dynamic code compilation is disabled."
@@ -387,11 +386,6 @@ while [[ $# -gt 0 ]]; do
       esac
       arguments+=("/p:RuntimeFlavor=$val")
       shift 2
-      ;;
-
-     -usemonoruntime)
-      arguments+=("/p:PrimaryRuntimeFlavor=Mono")
-      shift 1
       ;;
 
      -clrinterpreter)
