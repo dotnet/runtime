@@ -88,8 +88,20 @@ namespace System.Security.Cryptography.X509Certificates
 
 #if NET
             return certificate.GetMLKemPrivateKey();
-#else
+#elif NETSTANDARD
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+#else
+            if (!Helpers.IsOSPlatformWindows)
+                throw new PlatformNotSupportedException();
+
+            return CertificateHelpers.GetPrivateKey<MLKem>(
+                certificate,
+                _ =>
+                {
+                    Debug.Fail("CryptoApi does not support ML-KEM.");
+                    throw new PlatformNotSupportedException();
+                },
+                cngKey => new MLKemCng(cngKey, transferOwnership: true));
 #endif
         }
 
@@ -126,8 +138,45 @@ namespace System.Security.Cryptography.X509Certificates
 
 #if NET
             return certificate.CopyWithPrivateKey(privateKey);
-#else
+#elif NETSTANDARD
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+#else
+            if (!Helpers.IsOSPlatformWindows)
+                throw new PlatformNotSupportedException();
+
+            if (certificate.HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (MLKem? publicKey = GetMLKemPublicKey(certificate))
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (publicKey.Algorithm != privateKey.Algorithm)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(
+                    publicKey.Algorithm.EncapsulationKeySizeInBytes,
+                    skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(
+                    publicKey.Algorithm.EncapsulationKeySizeInBytes,
+                    skipClear: true))
+                {
+                    publicKey.ExportEncapsulationKey(pk1.Span);
+                    privateKey.ExportEncapsulationKey(pk2.Span);
+
+                    if (!pk1.Span.SequenceEqual(pk2.Span))
+                    {
+                        throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    }
+                }
+            }
+
+            return CertificateHelpers.CopyWithPrivateKey(certificate, privateKey);
 #endif
         }
 
