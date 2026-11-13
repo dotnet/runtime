@@ -3596,6 +3596,19 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
+    auto emitHelperCellLoad = [this, &helperFunction]() {
+        if (m_compiler->opts.compReloc && !m_compiler->IsNativeAot())
+        {
+            GetEmitter()->emitImageBase();
+            GetEmitter()->emitIns_MemargAddress(INS_I_load, EA_PTRSIZE, helperFunction.addr);
+        }
+        else
+        {
+            GetEmitter()->emitAddressConstant(helperFunction.addr);
+            GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        }
+    };
+
     if (helperUsesPep)
     {
         if (helperFunction.accessType == IAT_VALUE)
@@ -3608,8 +3621,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
             // The helper function address is the address of an indirection cell, so load the PEP address from the cell.
             assert(helperFunction.accessType == IAT_PVALUE);
-            GetEmitter()->emitAddressConstant(helperFunction.addr);
-            GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+            emitHelperCellLoad();
         }
     }
 
@@ -3618,8 +3630,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
         // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        emitHelperCellLoad();
         GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
