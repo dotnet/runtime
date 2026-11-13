@@ -2353,9 +2353,6 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeThreadHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeThreadHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\EnvironmentBlockParser.Windows.cs">
-      <Link>Common\System\EnvironmentBlockParser.Windows.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs">
       <Link>Common\System\IO\FileSystem.Attributes.Windows.cs</Link>
     </Compile>
@@ -2468,6 +2465,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\EnvironmentBlockParser.Windows.cs">
+      <Link>Common\System\EnvironmentBlockParser.Windows.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Windows.cs" />
   </ItemGroup>
