@@ -103,10 +103,12 @@ namespace System.Reflection
             const char quoteChar = '\"';
 
             // App-compat: You can use double or single quotes to quote a name, and Fusion (or rather the IdentityAuthority) picks one
-            // by some algorithm. Rather than guess at it, we use double quotes consistently.
+            // You can use double or single quotes to quote a name. We use double quotes consistently.
+            const char quoteChar = '\"';
             ReadOnlySpan<char> span = s.AsSpan();
             // Only whitespace recognized by the assembly name parser needs quoting.
-            if ((!span.IsEmpty && (IsWhiteSpace(span[0]) || IsWhiteSpace(span[span.Length - 1]))) ||
+            Debug.Assert(!span.IsEmpty);
+            bool needsQuoting = IsWhiteSpace(span[0]) || IsWhiteSpace(span[span.Length - 1]) || span.IndexOfAny('\"', '\'') >= 0;
                 span.IndexOfAny('\"', '\'') >= 0)
                 needsQuoting = true;
 
