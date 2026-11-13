@@ -62,6 +62,9 @@ namespace ILCompiler.ObjectWriter
         private readonly WasmFunctionBodyDeduplicator _functionBodyDeduplicator = new();
         private readonly Dictionary<Utf8String, int> _tableSlotIndices = [];
         private readonly List<Utf8String> _tableSlotFunctions = [];
+#if READYTORUN
+        private int? _runtimeFunctionTableStart;
+#endif
         private readonly List<FoldedFunctionAlias> _foldedFunctionAliases = [];
         /// <summary>
         /// Maps symbol names to their location in the object file. These definitions do not encode
@@ -132,6 +135,12 @@ namespace ILCompiler.ObjectWriter
                 _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip);
             }
             base.EmitObject(outputFileStream, nodes, dumper, logger);
+#if READYTORUN
+            if (_nodeFactory.RuntimeFunctionsTable is { } runtimeFunctions)
+            {
+                logger.LogMessage($"Wasm runtime functions: {runtimeFunctions.WasmRuntimeFunctionCount} slots, {runtimeFunctions.WasmSkipCount - runtimeFunctions.WasmAlignmentSkipCount} skips, {runtimeFunctions.WasmAlignmentSkipCount} final alignment skips.");
+            }
+#endif
 
             bool ShouldSkip(ObjectNode node)
             {
@@ -250,6 +259,7 @@ namespace ILCompiler.ObjectWriter
                 // diagnostic output, but engine-level samples necessarily use the canonical name.
                 _wasmSymbolManager.AddAlias(methodName, canonicalName);
                 RegisterTableSlot(methodName, canonicalName);
+                RecordRuntimeFunctionPadding((ObjectNode)node, 0, canonicalName);
 
                 if (!alternateName.IsNull)
                 {
@@ -263,6 +273,7 @@ namespace ILCompiler.ObjectWriter
             WriteSignatureIndexForFunction(node);
             RegisterFunctionSymbol(methodName);
             RegisterTableSlot(methodName, methodName);
+            RecordRuntimeFunctionPadding((ObjectNode)node, 0, methodName);
 
             if (!alternateName.IsNull)
             {
@@ -346,8 +357,25 @@ namespace ILCompiler.ObjectWriter
                 Utf8String funcletName = GetFuncletName(new Utf8String(mangledNodeName), i);
                 RegisterFunctionSymbol(funcletName);
                 RegisterTableSlot(funcletName, funcletName);
+                RecordRuntimeFunctionPadding((ObjectNode)nodeWithFunclets, i + 1, funcletName);
                 RegisterStubIndexAndSignature(funcletSignature);
             }
+        }
+
+        private void RecordRuntimeFunctionPadding(ObjectNode node, int frameIndex, Utf8String functionName)
+        {
+#if READYTORUN
+            if (node is DependencyAnalysis.ReadyToRun.MethodWithGCInfo method)
+            {
+                int count = _nodeFactory.RuntimeFunctionsTable.GetWasmPaddingAfter(method, frameIndex, out int ordinal);
+                _runtimeFunctionTableStart ??= _tableSlotFunctions.Count - 1;
+                Debug.Assert(_tableSlotFunctions.Count - 1 - _runtimeFunctionTableStart.Value == ordinal);
+                for (int i = 0; i < count; i++)
+                {
+                    _tableSlotFunctions.Add(functionName);
+                }
+            }
+#endif
         }
 
         private protected static Utf8String GetFuncletName(Utf8String methodName, int index) =>

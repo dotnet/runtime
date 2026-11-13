@@ -1201,12 +1201,12 @@ void IJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize)
+PTR_VOID GetUnwindDataBlob(TADDR unwindInfoBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize)
 {
     LIMITED_METHOD_CONTRACT;
 
 #if defined(TARGET_AMD64)
-    PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(moduleBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pRuntimeFunction)));
+    PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(unwindInfoBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pRuntimeFunction)));
 
     *pSize = ALIGN_UP(offsetof(UNWIND_INFO, UnwindCode) +
         sizeof(UNWIND_CODE) * pUnwindInfo->CountOfUnwindCodes +
@@ -1216,7 +1216,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     return pUnwindInfo;
 
 #elif defined(TARGET_X86)
-    PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(moduleBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pRuntimeFunction)));
+    PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(unwindInfoBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pRuntimeFunction)));
 
     *pSize = sizeof(UNWIND_INFO);
 
@@ -1229,7 +1229,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     _ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
 
     // compute the size of the unwind info
-    PTR_DWORD xdata = dac_cast<PTR_DWORD>(pRuntimeFunction->UnwindData + moduleBase);
+    PTR_DWORD xdata = dac_cast<PTR_DWORD>(pRuntimeFunction->UnwindData + unwindInfoBase);
     int size = 4;
 
 #if defined(TARGET_ARM)
@@ -1268,7 +1268,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     _ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
 
     // compute the size of the unwind info
-    PTR_ULONG xdata    = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
+    PTR_ULONG xdata    = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + unwindInfoBase);
     ULONG epilogScopes = 0;
     ULONG unwindWords  = 0;
     ULONG size = 0;
@@ -1301,7 +1301,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     return xdata;
 
 #elif defined(TARGET_WASM)
-    PTR_BYTE pUnwindInfo(dac_cast<PTR_BYTE>(moduleBase + pRuntimeFunction->UnwindData));
+    PTR_BYTE pUnwindInfo(dac_cast<PTR_BYTE>(unwindInfoBase + RUNTIME_FUNCTION__GetUnwindDataOffset(pRuntimeFunction)));
     PTR_BYTE pUnwindData = pUnwindInfo;
     DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
     DecodeULEB128AsU32(&pUnwindData); // Read the function length in virtual IP units
@@ -5096,6 +5096,10 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
+#ifdef TARGET_WASM
+    _ASSERTE(!"Native JIT function lookup is not supported on Wasm");
+    return PTR_NULL;
+#else // TARGET_WASM
     if (!pCodeInfo->IsValid())
     {
         return NULL;
@@ -5121,6 +5125,7 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
     }
 
     return NULL;
+#endif // TARGET_WASM
 }
 
 DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
@@ -5995,10 +6000,14 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
     ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
 
     DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
+    if (RUNTIME_FUNCTION__Skip(pR2RInfo->GetRuntimeFunctions() + localIndex))
+    {
+        return 0;
+    }
     do
     {
         PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
-        if (RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction))
+        if (RUNTIME_FUNCTION__Skip(pRuntimeFunction) || RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction))
         {
             // Funclets are handled specially. Their RUNTIME_FUNCTION BeginAddress field describes the virtual IP of the funclet, but
             // function local virtual ips are relative to the virtual IP of the controlling function, and so the logical VirtualIPFromFunctionTableIndex
@@ -6027,6 +6036,7 @@ TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD fu
     _ASSERTE(pR2RInfo->GetMinVirtualIP() == WasmInitialVirtualIP);
     _ASSERTE(functionIndex < pR2RInfo->GetRuntimeFunctionCount());
     PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + functionIndex;
+    _ASSERTE(!RUNTIME_FUNCTION__Skip(pRuntimeFunction));
     _ASSERTE(!RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction));
     return GetWasmVirtualIPFromRuntimeFunction(pR2RInfo, pRuntimeFunction, pHasSingleVirtualIP);
 }
@@ -6069,29 +6079,14 @@ TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
     DWORD localVirtualIP32 = (DWORD)localVirtualIP;
     PTR_RUNTIME_FUNCTION pRuntimeFunctions = pR2RInfo->GetRuntimeFunctions();
 
-    // Find the function entry with the greatest BeginAddress <= localVirtualIP.
-    DWORD low = 0;
-    DWORD high = runtimeFunctionCount;
-    while (low + 1 < high)
-    {
-        DWORD mid = low + ((high - low) / 2);
-        DWORD beginAddress = RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + mid);
-        if (beginAddress <= localVirtualIP32)
-        {
-            low = mid;
-        }
-        else
-        {
-            high = mid;
-        }
-    }
-
-    if (RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + low) > localVirtualIP32)
+    int index = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(
+        localVirtualIP32, pRuntimeFunctions, 0, runtimeFunctionCount - 1);
+    if (index < 0)
     {
         return 0;
     }
 
-    return pR2RInfo->GetMinFunctionTableIndex() + low;
+    return pR2RInfo->GetMinFunctionTableIndex() + index;
 }
 #endif // TARGET_WASM
 
@@ -6567,6 +6562,11 @@ static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T o
 //
 static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR_RUNTIME_FUNCTION pFirstFunctionEntry, UINT32 numFunctionEntries)
 {
+#ifdef TARGET_WASM
+    // Group decoding and backward skip scans need more than the logical entry's four bytes.
+    DacEnumMemoryRegion(dac_cast<TADDR>(pFirstFunctionEntry), numFunctionEntries * sizeof(T_RUNTIME_FUNCTION));
+    return;
+#else // TARGET_WASM
     pRtf.EnumMem();
 
     if (pFirstFunctionEntry == NULL || numFunctionEntries == 0)
@@ -6607,6 +6607,7 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
         mid = (low + high) / 2;
         _ASSERTE(low <= mid && mid <= high);
     }
+#endif // TARGET_WASM
 }
 #endif // DACCESS_COMPILE
 
@@ -6683,6 +6684,36 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
+#ifdef TARGET_WASM
+    int first = Low;
+    int end = High + 1;
+    while (Low < end)
+    {
+        int middle = Low + (end - Low) / 2;
+        int candidate = middle;
+        while (candidate >= first && RUNTIME_FUNCTION__Skip(pRuntimeFunctionTable + candidate))
+        {
+            candidate--;
+        }
+
+        if (candidate >= first && RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctionTable + candidate) <= RelativePc)
+        {
+            Low = middle + 1;
+        }
+        else
+        {
+            end = middle;
+        }
+    }
+
+    int result = Low - 1;
+    while (result >= first && RUNTIME_FUNCTION__Skip(pRuntimeFunctionTable + result))
+    {
+        result--;
+    }
+
+    return result;
+#else // TARGET_WASM
 
 #ifdef TARGET_ARM
     RelativePc |= THUMB_CODE;
@@ -6728,6 +6759,7 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
     }
 
     return -1;
+#endif // TARGET_WASM
 }
 
 #ifdef FEATURE_COLD_R2R_CODE
@@ -6880,7 +6912,11 @@ GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
     } CONTRACTL_END;
 
     PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(MethodToken);
+#ifdef TARGET_WASM
+    TADDR baseAddress = JitTokenToReadyToRunInfo(MethodToken)->GetGCInfoBase();
+#else // TARGET_WASM
     TADDR baseAddress = JitTokenToModuleRVABase(MethodToken);
+#endif // TARGET_WASM
 
     SIZE_T nUnwindDataSize;
     PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
@@ -7268,7 +7304,11 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 #endif // FEATURE_COLD_R2R_CODE
 
     MethodDesc *pMethodDesc;
-    while ((pMethodDesc = pInfo->GetMethodDescForEntryPoint(ImageBase + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + MethodIndex))) == NULL)
+    while (
+#ifdef TARGET_WASM
+        RUNTIME_FUNCTION__Skip(pRuntimeFunctions + MethodIndex) ||
+#endif // TARGET_WASM
+        (pMethodDesc = pInfo->GetMethodDescForEntryPoint(ImageBase + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + MethodIndex))) == NULL)
     {
         // No preceding entry has been registered yet (for example, GC stress is inspecting
         // a call to a method whose entry point has not been published).
@@ -7348,6 +7388,31 @@ TADDR ReadyToRunJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 
 DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
 {
+#ifdef TARGET_WASM
+    LIMITED_METHOD_DAC_CONTRACT;
+    ReadyToRunInfo* info = JitTokenToReadyToRunInfo(MethodToken);
+    PTR_RUNTIME_FUNCTION main = JitTokenToRuntimeFunction(MethodToken);
+    PTR_RUNTIME_FUNCTION end = info->GetRuntimeFunctions() + info->GetRuntimeFunctionCount();
+    DWORD count = 0;
+    for (PTR_RUNTIME_FUNCTION entry = main + 1; entry < end; entry++)
+    {
+        if (RUNTIME_FUNCTION__Skip(entry))
+        {
+            continue;
+        }
+        if (!RUNTIME_FUNCTION__IsFunclet(entry))
+        {
+            break;
+        }
+        if (count < dwLength)
+        {
+            pStartFuncletOffsets[count] = RUNTIME_FUNCTION__BeginAddress(entry) - RUNTIME_FUNCTION__BeginAddress(main);
+        }
+        count++;
+    }
+
+    return count;
+#else // TARGET_WASM
     PTR_RUNTIME_FUNCTION pFirstFuncletFunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader) + 1;
 
     TADDR moduleBase = JitTokenToModuleFunctionsBase(MethodToken);
@@ -7386,6 +7451,7 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
     }
 
     return nFunclets;
+#endif // TARGET_WASM
 }
 
 BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
@@ -7410,7 +7476,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
     {
         // This maps to a hot entry in the lookup table, so check its unwind info
         SIZE_T unwindSize;
-        PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &unwindSize);
+        PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetUnwindInfoBase(), pCodeInfo->GetFunctionEntry(), &unwindSize);
         _ASSERTE(pUnwindData != NULL);
 
 #ifdef TARGET_AMD64
@@ -7451,7 +7517,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
 #else
     // Get address of the personality routine for the function being queried.
     SIZE_T size;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
+    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetUnwindInfoBase(), pCodeInfo->GetFunctionEntry(), &size);
     _ASSERTE(pUnwindData != NULL);
 
     // Personality routine is always the last element of the unwind data
@@ -7462,7 +7528,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (pInfo->m_nRuntimeFunctions == 0)
         return FALSE;
 
-    PTR_VOID pFirstUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pInfo->m_pRuntimeFunctions, &size);
+    PTR_VOID pFirstUnwindData = GetUnwindDataBlob(pCodeInfo->GetUnwindInfoBase(), pInfo->m_pRuntimeFunctions, &size);
     _ASSERTE(pFirstUnwindData != NULL);
     DWORD rvaFirstPersonalityRoutine = *(dac_cast<PTR_DWORD>(dac_cast<TADDR>(pFirstUnwindData) + size) - 1);
 
@@ -7571,7 +7637,7 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemor
     EnumRuntimeFunctionEntriesToFindEntry(pRtf, pReadyToRunInfo->m_pRuntimeFunctions, pReadyToRunInfo->m_nRuntimeFunctions);
 
     SIZE_T size;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pRtf, &size);
+    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetUnwindInfoBase(), pRtf, &size);
     if (pUnwindData != NULL)
         DacEnumMemoryRegion(PTR_TO_TADDR(pUnwindData), size);
 }

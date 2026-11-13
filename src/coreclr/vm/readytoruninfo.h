@@ -157,6 +157,7 @@ class ReadyToRunInfo
     DWORD                           m_nRuntimeFunctions;
 
 #ifdef TARGET_WASM
+    TADDR                           m_gcInfoBase;
     DWORD                           m_minFunctionTableIndex;
     TADDR                           m_minVirtualIP = 0;
 #endif // TARGET_WASM
@@ -234,6 +235,12 @@ public:
     DWORD GetRuntimeFunctionCount() const { return m_nRuntimeFunctions; }
 
 #ifdef TARGET_WASM
+    TADDR GetGCInfoBase() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(m_gcInfoBase != 0);
+        return m_gcInfoBase;
+    }
     DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
     TADDR GetMinVirtualIP() const
     {

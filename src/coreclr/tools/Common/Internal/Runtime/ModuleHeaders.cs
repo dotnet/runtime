@@ -85,6 +85,7 @@ namespace Internal.Runtime
         ProxyTypeMaps               = 125, // Added to CoreCLR in V18.3
         TypeMapAssemblyTargets      = 126, // Added in V18.3
         WasmAsyncResumeInfo         = 127, // Added in V29
+        WasmGCInfo                  = 128,
 
         //
         // NativeAOT ReadyToRun sections

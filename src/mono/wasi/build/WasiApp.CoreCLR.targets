@@ -143,7 +143,7 @@
     <WriteLinesToFile File="$(_WasiR2RImageBufferSource)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true"
-                      Lines="#include &lt;cstdint&gt;&#xD;&#xA;namespace wasi_r2r {&#xD;&#xA;extern &quot;C&quot; {&#xD;&#xA;alignas(16) uint8_t g_wasi_r2r_image[$(_WasiR2RPayloadSize)] = {}%3B&#xD;&#xA;uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image)%3B&#xD;&#xA;}&#xD;&#xA;}&#xD;&#xA;extern &quot;C&quot; __attribute__((export_name(&quot;wasi_r2r_image_cap&quot;))) uint32_t wasi_r2r_image_cap() { return sizeof(wasi_r2r::g_wasi_r2r_image)%3B }" />
+                      Lines="#include &lt;cstdint&gt;&#xD;&#xA;namespace wasi_r2r {&#xD;&#xA;extern &quot;C&quot; {&#xD;&#xA;alignas(128) uint8_t g_wasi_r2r_image[$(_WasiR2RPayloadSize)] = {}%3B&#xD;&#xA;uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image)%3B&#xD;&#xA;}&#xD;&#xA;}&#xD;&#xA;extern &quot;C&quot; __attribute__((export_name(&quot;wasi_r2r_image_cap&quot;))) uint32_t wasi_r2r_image_cap() { return sizeof(wasi_r2r::g_wasi_r2r_image)%3B }" />
     <ItemGroup>
       <FileWrites Include="$(_WasiR2RImageBufferSource)" />
     </ItemGroup>

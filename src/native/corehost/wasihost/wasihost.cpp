@@ -30,7 +30,7 @@ namespace wasi_r2r
 // working with a minimal placeholder.
 extern "C"
 {
-    alignas(16) __attribute__((weak)) uint8_t g_wasi_r2r_image[64] = {};
+    alignas(128) __attribute__((weak)) uint8_t g_wasi_r2r_image[64] = {};
     __attribute__((weak)) uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image);
 }
 }

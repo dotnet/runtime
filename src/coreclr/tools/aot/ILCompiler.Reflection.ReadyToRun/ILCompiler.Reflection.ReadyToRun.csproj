@@ -32,4 +32,8 @@
     <Compile Include="..\..\Common\Wasm\Webcil.cs" Link="Webcil\Webcil.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ILCompiler.ReadyToRun.Tests" />
+  </ItemGroup>
+
 </Project>

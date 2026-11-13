@@ -90,13 +90,13 @@ async function checkWebcilResponse(webcilPromise: Promise<Response>, virtualPath
     return res;
 }
 
-// Allocates a 16-byte-aligned buffer for the Webcil payload. The pointer is heap memory that
+// Allocates a 128-byte-aligned buffer for grouped R2R runtime functions. The pointer is heap memory that
 // outlives the stack frame, so it can be passed as the __memory_base import.
 function allocWebcilPayload(payloadSize: number): number {
     const sp = _ems_.stackSave();
     try {
         const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
-        if (_ems_._posix_memalign(ptrPtr as any, 16, payloadSize)) {
+        if (_ems_._posix_memalign(ptrPtr as any, 128, payloadSize)) {
             throw new Error("posix_memalign failed for Webcil payload");
         }
         return _ems_.HEAPU32[ptrPtr as any >>> 2];
