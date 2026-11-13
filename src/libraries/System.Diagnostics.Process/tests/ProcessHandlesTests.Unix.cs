@@ -13,29 +13,11 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessHandlesTests
     {
-        // RLIMIT_NOFILE's numeric value is Linux-specific (7); other Unix platforms use different values.
-        private const int RLIMIT_NOFILE = 7;
-        private static readonly nuint RLIM_INFINITY = nuint.MaxValue;
-
-        // struct rlimit uses native rlim_t fields, which are pointer-sized (32-bit on 32-bit Linux).
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RLimit
-        {
-            public nuint rlim_cur;
-            public nuint rlim_max;
-        }
-
         [DllImport("libc", SetLastError = true)]
         private static extern int dup2(int oldfd, int newfd);
 
         [DllImport("libc", SetLastError = true)]
         private static extern int close(int fd);
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int getrlimit(int resource, out RLimit rlim);
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int setrlimit(int resource, ref RLimit rlim);
 
         // Regression test for a bug where SetCloexecForAllFdsFallback() (the fallback used when
         // close_range()/fdwalk() are unavailable, in pal_process.c) bounded its cleanup loop by the
@@ -52,12 +34,18 @@ namespace System.Diagnostics.Tests
             // in this test process.
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
             {
-                Assert.Equal(0, getrlimit(RLIMIT_NOFILE, out RLimit limit));
+                // Use System.Native rather than P/Invoking getrlimit/setrlimit directly: the width of rlim_t
+                // differs between C libraries on 32-bit platforms (musl's is 64 bits on every architecture),
+                // and System.Native converts to and from the platform's struct rlimit.
+                if (Interop.Sys.GetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, out Interop.Sys.RLimit limit) != 0)
+                {
+                    throw new Win32Exception(Marshal.GetLastPInvokeError());
+                }
 
                 // Need enough headroom to safely carve out a high fd and then lower the limit below it,
                 // while leaving plenty of room for fds this process (and Process.Start machinery) still need.
-                const nuint MinRequiredLimit = 512;
-                if (limit.rlim_cur == RLIM_INFINITY || limit.rlim_cur < MinRequiredLimit)
+                const ulong MinRequiredLimit = 512;
+                if (limit.CurrentLimit == Interop.Sys.RLIM_INFINITY || limit.CurrentLimit < MinRequiredLimit)
                 {
                     return; // Cannot safely construct the scenario on this machine; skip.
                 }
@@ -71,7 +59,7 @@ namespace System.Diagnostics.Tests
                     // Duplicate the handle to a high fd number, just below the current soft limit.
                     // dup2() always clears FD_CLOEXEC on the new fd, so it starts out inheritable,
                     // exactly like a raw fd a user opened and wants to keep alive across the limit change.
-                    int highFd = (int)(limit.rlim_cur - 10);
+                    int highFd = (int)(limit.CurrentLimit - 10);
                     if (dup2((int)fileHandle.DangerousGetHandle(), highFd) < 0)
                     {
                         throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -81,9 +69,12 @@ namespace System.Diagnostics.Tests
                     {
                         // Lower RLIMIT_NOFILE below highFd. This does not close the already-open highFd,
                         // it only restricts future opens above the new limit.
-                        RLimit newLimit = limit;
-                        newLimit.rlim_cur = (nuint)highFd - 5;
-                        Assert.Equal(0, setrlimit(RLIMIT_NOFILE, ref newLimit));
+                        Interop.Sys.RLimit newLimit = limit;
+                        newLimit.CurrentLimit = (ulong)highFd - 5;
+                        if (Interop.Sys.SetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, ref newLimit) != 0)
+                        {
+                            throw new Win32Exception(Marshal.GetLastPInvokeError());
+                        }
 
                         RemoteInvokeOptions options = new() { CheckExitCode = true };
                         options.StartInfo.InheritedHandles = []; // restrict all handle inheritance
