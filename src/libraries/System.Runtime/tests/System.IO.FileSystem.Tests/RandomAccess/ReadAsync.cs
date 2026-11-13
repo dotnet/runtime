@@ -99,5 +99,22 @@ namespace System.IO.Tests
                 Assert.Equal(expected, actual.Take(total).ToArray());
             }
         }
+
+        [Fact]
+        public async Task GettingResultOfTheSameValueTaskTwiceThrowsInvalidOperationException()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                await RandomAccess.WriteAsync(writeHandle, new byte[1], fileOffset: 0);
+
+                ValueTask<int> readTask = RandomAccess.ReadAsync(readHandle, new byte[1], fileOffset: 0);
+                Assert.Equal(1, await readTask);
+
+                Assert.Throws<InvalidOperationException>(() => readTask.Result);
+            }
+        }
     }
 }

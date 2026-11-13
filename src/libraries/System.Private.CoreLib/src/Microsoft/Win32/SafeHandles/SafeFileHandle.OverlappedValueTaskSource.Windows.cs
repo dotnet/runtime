@@ -151,9 +151,9 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 finally
                 {
-                    // The instance is ready to be reused
-                    Debug.Assert(_fileHandle is not null);
-                    _fileHandle.TryToReuse(this);
+                    // The instance is ready to be reused. _fileHandle is null when the instance has already been
+                    // returned to the cache (the same ValueTask awaited twice).
+                    _fileHandle?.TryToReuse(this);
                 }
             }
 
