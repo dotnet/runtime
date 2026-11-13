@@ -864,8 +864,20 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 //
 bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
 {
+    // Use the solver's reachable blocks so dead occurrences cannot consume
+    // candidate slots or alter exception promises.
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
     for (BasicBlock* const block : Blocks())
     {
+        if (!m_dfsTree->Contains(block))
+        {
+            continue;
+        }
+
         /* Make the block publicly available */
         compCurBB = block;
 
@@ -1278,6 +1290,13 @@ void Compiler::optValnumCSE_SetUpAsyncByrefKills()
 
     for (BasicBlock* block : Blocks())
     {
+        // The solver never updates unreachable blocks. Keep their out sets full
+        // so they cannot kill availability in reachable successors.
+        if (!m_dfsTree->Contains(block))
+        {
+            continue;
+        }
+
         Statement* asyncCallStmt = nullptr;
         GenTree*   asyncCall     = nullptr;
         // Find last async call in block
