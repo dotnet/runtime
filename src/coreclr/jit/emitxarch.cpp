@@ -20454,6 +20454,27 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_pop:
+        case INS_pop_hide:
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_2X;
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
+            {
+                // A pop into a register reads the stack even though its
+                // format names no memory operand. Carry the stack read's
+                // latency so it prices like the equivalent stack load.
+                insLatency = PERFSCORE_LATENCY_RD_STACK;
+            }
+            else
+            {
+                // A pop into memory performs the stack load and that store.
+                // Charge both, the format prices only the store side.
+                insLatency    = PERFSCORE_LATENCY_ZERO;
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+        }
+
         case INS_jmp:
         {
             if (emitInstHasNoCode(id))
