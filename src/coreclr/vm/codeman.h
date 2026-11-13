@@ -2599,8 +2599,8 @@ public:
     // Given a function table index, look up the corresponding Module and RUNTIME_FUNCTION,
     // then compute and return the virtual IP for that the entrypoint for that function
     // (which may require a walk back to find the main function if functionIndex represents a funclet)
-    static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
-    static TADDR          GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex);
+    static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex, bool* pHasSingleVirtualIP = nullptr);
+    static TADDR          GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex, bool* pHasSingleVirtualIP = nullptr);
     static TADDR          GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP);
 #endif // TARGET_WASM
 

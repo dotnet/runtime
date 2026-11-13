@@ -996,6 +996,7 @@ DEFINE_METHOD(DEBUGGER,             INVOKE_FUNCTION,        InvokeFunction,     
 DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
 #if defined(DEBUGGING_SUPPORTED)
+BEGIN_ILLINK_FEATURE_SWITCH(System.Diagnostics.Debugger.IsSupported, true, true)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+Context, DebuggerFuncEvalContext)
 DEFINE_FIELD_U(Evaluation,        DebuggerFuncEvalContext, pEval)
 DEFINE_FIELD_U(Arguments,         DebuggerFuncEvalContext, pArguments)
@@ -1017,6 +1018,7 @@ DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArgument, Debugger
 DEFINE_FIELD_U(Literal,         DebuggerFuncEvalArgument, pLiteral)
 DEFINE_FIELD_U(ElementType,     DebuggerFuncEvalArgument, elementType)
 DEFINE_FIELD_U(Flags,           DebuggerFuncEvalArgument, flags)
+END_ILLINK_FEATURE_SWITCH()
 #endif // DEBUGGING_SUPPORTED
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
