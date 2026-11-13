@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Access to the x64 extended processor state saved in a Linux signal context, shared by the CoreCLR PAL and NativeAOT.
+// Access to the x64 extended processor state saved in a Linux signal context.
 // The including file must provide the platform config (HAVE_PUBLIC_XSTATE_STRUCT, HAVE__FPX_SW_BYTES_WITH_XSTATE_BV,
 // HAVE_FPSTATE_GLIBC_RESERVED1) and _ASSERTE.
 
@@ -156,48 +156,6 @@ inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *featur
     return (FPREG_Xstate_ExtendedStateArea(uc) + extendedFeature->offset);
 }
 
-inline bool Xstate_IsApxSupported()
-{
-    static int Xstate_ApxSupported = -1;
-
-    if (Xstate_ApxSupported == -1)
-    {
-        int cpuidInfo[4];
-
-        const int CPUID_EAX = 0;
-        const int CPUID_EBX = 1;
-        const int CPUID_ECX = 2;
-        const int CPUID_EDX = 3;
-
-#ifdef _DEBUG
-        // We should only be calling this function if we know the extended feature exists
-        __cpuid(cpuidInfo, 0x00000000);
-        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) >= 0x0D);
-#endif // _DEBUG
-
-        __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
-
-        if ((cpuidInfo[CPUID_EAX] & XFEATURE_MASK_APX) == XFEATURE_MASK_APX)
-        {
-            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-
-            const int requiredApxFlags = (1 << 21);
-
-            if ((cpuidInfo[CPUID_EDX] & requiredApxFlags) == requiredApxFlags)
-            {
-                Xstate_ApxSupported = 1;
-            }
-        }
-
-        if (Xstate_ApxSupported == -1)
-        {
-            Xstate_ApxSupported = 0;
-        }
-    }
-
-    return Xstate_ApxSupported == 1;
-}
-
 inline bool FPREG_HasApxRegisters(const ucontext_t *uc)
 {
     if (!FPREG_HasExtendedState(uc))
@@ -205,12 +163,8 @@ inline bool FPREG_HasApxRegisters(const ucontext_t *uc)
         return false;
     }
 
-    if ((FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_APX) != XFEATURE_MASK_APX)
-    {
-        return false;
-    }
-
-    return Xstate_IsApxSupported();
+    // The kernel saves the APX state only when the processor supports it and the OS has enabled it.
+    return (FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_APX) == XFEATURE_MASK_APX;
 }
 
 inline void *FPREG_Xstate_Egpr(const ucontext_t *uc, uint32_t *featureSize)

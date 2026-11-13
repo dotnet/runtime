@@ -53,6 +53,13 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
     {
         uintptr_t faultCode = GetExceptionCodeForSignal(siginfo, context);
 
+#ifdef SI_KERNEL
+        if (faultCode == EXCEPTION_SIGSEGV_SI_KERNEL)
+        {
+            faultCode = EXCEPTION_ACCESS_VIOLATION;
+        }
+#endif // SI_KERNEL
+
 #ifdef HOST_AMD64
         // It is possible that an overflow was mapped to a divide-by-zero exception.
         // This happens when we try to divide the maximum negative value of a

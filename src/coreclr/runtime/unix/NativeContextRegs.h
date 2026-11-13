@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Unix machine-context register accessors shared by the CoreCLR PAL and NativeAOT.
+// Unix machine-context register accessors.
 // The including file must provide the platform config (HAVE_GREGSET_T, HAVE___GREGSET_T, ...).
 
 #ifndef _NATIVE_CONTEXT_REGS_H_

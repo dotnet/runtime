@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Translation of hardware exception signals to Win32 exception codes, shared by the CoreCLR PAL and NativeAOT.
+// Translation of hardware exception signals to Win32 exception codes.
 
 #ifndef _EXCEPTION_CODE_FOR_SIGNAL_H_
 #define _EXCEPTION_CODE_FOR_SIGNAL_H_
@@ -11,12 +11,14 @@
 
 #include "ExceptionCodes.h"
 
-// Returns the exception code for a SIGSEGV with SI_KERNEL code, or 0 to report an access violation.
-typedef uint32_t (*SiKernelSegvExceptionCodeCallback)(const void* context);
+#ifdef SI_KERNEL
+// Returned for SIGSEGV with SI_KERNEL code. The kernel reports some privileged instructions this way too,
+// so callers that can identify them remap this code; otherwise it is an access violation.
+#define EXCEPTION_SIGSEGV_SI_KERNEL         0xE0000005u
+#endif
 
 // Translates signal and context information to a Win32 exception code.
-inline uint32_t GetExceptionCodeForSignal(const siginfo_t *siginfo, const void *context,
-                                          SiKernelSegvExceptionCodeCallback getSiKernelSegvExceptionCode = nullptr)
+inline uint32_t GetExceptionCodeForSignal(const siginfo_t *siginfo, const void *context)
 {
     // IMPORTANT NOTE: This function must not call any signal unsafe functions
     // since it is called from signal handlers.
@@ -76,18 +78,7 @@ inline uint32_t GetExceptionCodeForSignal(const siginfo_t *siginfo, const void *
 
 #ifdef SI_KERNEL
                 case SI_KERNEL:
-                {
-                    // Identify privileged instructions that are not identified as such by the system
-                    if (getSiKernelSegvExceptionCode != nullptr)
-                    {
-                        uint32_t exceptionCode = getSiKernelSegvExceptionCode(context);
-                        if (exceptionCode != 0)
-                        {
-                            return exceptionCode;
-                        }
-                    }
-                    return EXCEPTION_ACCESS_VIOLATION;
-                }
+                    return EXCEPTION_SIGSEGV_SI_KERNEL;
 #endif
                 default:
                     break;

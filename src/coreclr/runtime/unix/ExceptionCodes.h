@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Win32 exception codes for hardware exceptions, shared by the CoreCLR PAL and NativeAOT.
+// Win32 exception codes for hardware exceptions.
 
 #ifndef _EXCEPTION_CODES_H_
 #define _EXCEPTION_CODES_H_

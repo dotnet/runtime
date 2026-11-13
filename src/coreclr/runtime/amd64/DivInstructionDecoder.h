@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Decoding of a faulting x64 DIV / IDIV instruction, shared by CoreCLR and NativeAOT.
+// Decoding of a faulting x64 DIV / IDIV instruction.
 // The including file must provide _ASSERTE.
 
 #ifndef _DIV_INSTRUCTION_DECODER_H_

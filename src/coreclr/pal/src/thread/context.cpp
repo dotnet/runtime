@@ -1321,19 +1321,29 @@ Return value :
     information.
 
 --*/
-static uint32_t GetGcMarkerExceptionCodeForSignal(const void *context)
-{
-    if (g_getGcMarkerExceptionCode == nullptr)
-    {
-        return 0;
-    }
-    return g_getGcMarkerExceptionCode(GetNativeContextPC((const native_context_t *)context));
-}
-
 DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context)
 {
-    return GetExceptionCodeForSignal(siginfo, context, GetGcMarkerExceptionCodeForSignal);
+    DWORD exceptionCode = GetExceptionCodeForSignal(siginfo, context);
+
+#ifdef SI_KERNEL
+    if (exceptionCode == EXCEPTION_SIGSEGV_SI_KERNEL)
+    {
+        exceptionCode = EXCEPTION_ACCESS_VIOLATION;
+
+        // Identify privileged instructions that are not identified as such by the system
+        if (g_getGcMarkerExceptionCode != nullptr)
+        {
+            DWORD gcMarkerExceptionCode = g_getGcMarkerExceptionCode(GetNativeContextPC(context));
+            if (gcMarkerExceptionCode != 0)
+            {
+                exceptionCode = gcMarkerExceptionCode;
+            }
+        }
+    }
+#endif // SI_KERNEL
+
+    return exceptionCode;
 }
 
 #else // !HAVE_MACH_EXCEPTIONS
