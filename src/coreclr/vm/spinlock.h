@@ -80,8 +80,17 @@ private:
         m_value = 0;
     }
 
-    inline static void AcquireLock(DangerousNonHostedSpinLock *pLock) { WRAPPER_NO_CONTRACT; pLock->Acquire(); }
-    inline static void ReleaseLock(DangerousNonHostedSpinLock *pLock) { WRAPPER_NO_CONTRACT; pLock->Release(); }
+    struct LockHolderTraits final
+    {
+        using Type = DangerousNonHostedSpinLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (value != NULL)
+                value->Release();
+        }
+    };
 
     Volatile<LONG> m_value;
 
@@ -92,7 +101,14 @@ public:
         return (BOOL)m_value;
     }
 
-    typedef Holder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::AcquireLock, DangerousNonHostedSpinLock::ReleaseLock> LockHolder;
+    using LockHolder = LifetimeHolder<LockHolderTraits>;
+
+    LockHolder TakeLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        Acquire();
+        return LockHolder(this);
+    }
 };
 
 typedef DangerousNonHostedSpinLock::LockHolder DangerousNonHostedSpinLockHolder;

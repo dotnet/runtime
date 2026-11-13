@@ -116,7 +116,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
     g_pGCHeap = gcHeap;
 
     {
-        DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+        DangerousNonHostedSpinLockHolder lockHolder = g_eventStashLock.TakeLock();
 
         // Ultimately, g_eventStashLock ensures that no two threads call ControlEvents at any
         // point in time.
@@ -136,7 +136,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
 
 void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
 {
-    DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+    DangerousNonHostedSpinLockHolder lockHolder = g_eventStashLock.TakeLock();
     if (!g_gcEventTracingInitialized)
     {
         if (isPublicProvider)
