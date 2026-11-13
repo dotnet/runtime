@@ -305,16 +305,11 @@ namespace ILLink.Tasks
                 Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: custom steps/data, dependency dumps, and task environment overrides are not supported.");
                 return null;
             }
-            if (!TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths))
-            {
-                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
-                return null;
-            }
             try
             {
                 var paths = new SourceRootPathMap(SourceRoots);
                 var files = new HashSet<string>(StringComparer.Ordinal);
-                var directories = new SortedSet<string>(StringComparer.Ordinal);
+                var directories = new HashSet<string>(StringComparer.Ordinal);
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
                 var assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var orderedPaths = new List<string>();
@@ -325,14 +320,22 @@ namespace ILLink.Tasks
                     _beforeFieldInit.ToString(), _overrideRemoval.ToString(),
                     _unreachableBodies.ToString(), _unusedInterfaces.ToString(),
                     _iPConstProp.ToString(), _sealer.ToString(),
-                    (_removeSymbols == false).ToString(), PreserveSymbolPaths.ToString(),
-                    (!string.IsNullOrWhiteSpace(ExtraArgs)).ToString()
+                    (_removeSymbols == false).ToString(), PreserveSymbolPaths.ToString()
                 };
+                if (!TryAddCacheableExtraArgsInputs(files, directories, context, orderedPaths))
+                {
+                    Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
+                    return null;
+                }
                 string toolPath = AddPath(nameof(ILLinkPath), ILLinkPath);
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
                     files.Add(AddPath(nameof(RootDescriptorFiles), descriptor.ItemSpec));
                 foreach (ITaskItem root in RootAssemblyNames)
-                    context.AddRange(new[] { nameof(RootAssemblyNames), root.ItemSpec, root.GetMetadata("RootMode") });
+                {
+                    context.Add(nameof(RootAssemblyNames));
+                    context.Add(root.ItemSpec);
+                    context.Add(root.GetMetadata("RootMode"));
+                }
                 foreach (ITaskItem assembly in AssemblyPaths)
                 {
                     if (!assemblyNames.Add(Path.GetFileNameWithoutExtension(assembly.ItemSpec)))
@@ -353,18 +356,16 @@ namespace ILLink.Tasks
                         return null;
                 }
                 foreach (ITaskItem feature in FeatureSettings ?? Array.Empty<ITaskItem>())
-                    context.AddRange(new[] { nameof(FeatureSettings), feature.ItemSpec, feature.GetMetadata("Value") });
-                foreach (ITaskItem metadata in KeepMetadata ?? Array.Empty<ITaskItem>())
-                    context.AddRange(new[] { nameof(KeepMetadata), metadata.ItemSpec });
-                foreach (var argument in extraPaths)
                 {
-                    string path = AddPath(argument.Option, argument.Path);
-                    if (argument.Option == "-d")
-                        directories.Add(path);
-                    else
-                        files.Add(path);
+                    context.Add(nameof(FeatureSettings));
+                    context.Add(feature.ItemSpec);
+                    context.Add(feature.GetMetadata("Value"));
                 }
-
+                foreach (ITaskItem metadata in KeepMetadata ?? Array.Empty<ITaskItem>())
+                {
+                    context.Add(nameof(KeepMetadata));
+                    context.Add(metadata.ItemSpec);
+                }
                 // Keep search-directory ordering in the arguments; hash even shadowed candidates.
                 foreach (string directory in directories)
                 {
@@ -385,7 +386,7 @@ namespace ILLink.Tasks
                 string taskAssemblyPath = typeof(ILLink).Assembly.Location;
 #pragma warning restore IL3000
                 files.Add(taskAssemblyPath);
-                files.Add(GetFullPath(pathToTool));
+                files.Add(GetCachePath(pathToTool));
                 files.Add(toolPath);
                 foreach (string file in files)
                 {
@@ -393,14 +394,14 @@ namespace ILLink.Tasks
                     using var input = File.OpenRead(file);
                 }
 
-                return new InvocationDescription(new InvocationInputs(files, orderedPaths.ToArray()),
-                    context.ToArray(),
-                    new InvocationOutputs(OutputDirectory is null ? null : GetFullPath(OutputDirectory.ItemSpec), Array.Empty<string>()),
+                return new InvocationDescription(new InvocationInputs(files, orderedPaths),
+                    context,
+                    new InvocationOutputs(OutputDirectory is null ? null : GetCachePath(OutputDirectory.ItemSpec), Array.Empty<string>()),
                     pathMap: paths);
 
                 string AddPath(string parameterName, string path)
                 {
-                    path = GetFullPath(path);
+                    path = GetCachePath(path);
                     context.Add(parameterName);
                     orderedPaths.Add(path);
                     return path;
@@ -448,16 +449,6 @@ namespace ILLink.Tasks
                     return true;
                 }
 
-                static string GetFullPath(string path)
-                {
-                    path = Path.GetFullPath(path);
-                    if (path.Length > Path.GetPathRoot(path).Length)
-                        path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                    if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
-                        (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
-                        throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
-                    return path;
-                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException)
             {
@@ -468,9 +459,20 @@ namespace ILLink.Tasks
 
         private static bool HasPathSyntax(string name) => name.AsSpan().IndexOfAny('/', '\\', ':') >= 0;
 
-        private bool TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths)
+        private static string GetCachePath(string path)
         {
-            extraPaths = new();
+            path = Path.GetFullPath(path);
+            if (path.Length > Path.GetPathRoot(path).Length)
+                path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
+                (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
+                throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
+            return path;
+        }
+
+        private bool TryAddCacheableExtraArgsInputs(HashSet<string> files, HashSet<string> directories,
+            List<string> context, List<string> orderedPaths)
+        {
             ReadOnlySpan<char> arguments = ExtraArgs.AsSpan().Trim();
             if (arguments.IsEmpty)
                 return true;
@@ -480,7 +482,7 @@ namespace ILLink.Tasks
                 return false;
 
             // The runtime library builds pass this policy through ExtraArgs. Keep the
-            // supported shape narrow so arbitrary linker arguments retain their original invocation.
+            // supported shape narrow so arbitrary linker arguments continue to bypass caching.
             if (!TryReadArgument(ref arguments, out string option) ||
                 option != "--ignore-link-attributes" ||
                 !TryReadArgument(ref arguments, out string value) ||
@@ -488,18 +490,52 @@ namespace ILLink.Tasks
             {
                 return false;
             }
+            context.Add(option);
+            context.Add(value);
 
             while (!arguments.TrimStart().IsEmpty)
             {
-                if (!TryReadArgument(ref arguments, out option) ||
-                    option is not ("--link-attributes" or "--substitutions" or "-d") ||
+                if (!TryReadArgument(ref arguments, out option))
+                    return false;
+
+                if (option == "--ignore-substitutions")
+                {
+                    if (!TryReadArgument(ref arguments, out value) || value is not ("true" or "false"))
+                        return false;
+                    context.Add(option);
+                    context.Add(value);
+                    continue;
+                }
+
+                if (option == "--feature")
+                {
+                    if (!TryReadArgument(ref arguments, out string feature) ||
+                        string.IsNullOrEmpty(feature) ||
+                        !TryReadArgument(ref arguments, out value) ||
+                        value is not ("true" or "false"))
+                    {
+                        return false;
+                    }
+                    context.Add(option);
+                    context.Add(feature);
+                    context.Add(value);
+                    continue;
+                }
+
+                if (option is not ("--link-attributes" or "--substitutions" or "-d") ||
                     !TryReadArgument(ref arguments, out string path) ||
                     string.IsNullOrEmpty(path))
                 {
                     return false;
                 }
 
-                extraPaths.Add((option, path));
+                path = GetCachePath(path);
+                context.Add(option);
+                orderedPaths.Add(path);
+                if (option == "-d")
+                    directories.Add(path);
+                else
+                    files.Add(path);
             }
 
             return true;

@@ -125,7 +125,10 @@ Bypass arbitrary `ExtraArgs`, custom steps/data, dependency-dump options, and ex
 effects.
 
 For runtime library builds, support `--ignore-link-attributes true` followed by zero or more
-`--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Require the XML files to be
+`--link-attributes FILE`, `--substitutions FILE`, `-d DIRECTORY`, `--ignore-substitutions true|false`,
+or `--feature NAME true|false` options. Parse directly into the cache description without rewriting
+the tool's arguments. Record non-file option values and option/path roles in order, including repeated
+feature assignments. Require the XML files to be
 readable. Inventory every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory,
 including supported sidecars. Preserve directory order and leave linker resolution
 unchanged; adding, changing, or removing even a shadowed candidate invalidates identity. Other SDK

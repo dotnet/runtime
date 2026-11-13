@@ -58,7 +58,8 @@ items with stable `MappedPath` metadata. Only key construction maps physical pat
 `InvocationInputs.Files` is an unordered read-only collection. Key construction
 maps paths for the key, sorts the input inventory by mapped identity, and hashes
 each identity together with the contents read from its physical path.
-`InvocationInputs.OrderedPaths` retains ordered path-valued task inputs, including search directories,
+`InvocationInputs.OrderedPaths` and `Context` expose read-only lists and retain the supplied
+collections without copying. `OrderedPaths` retains ordered path-valued task inputs, including search directories,
 independently of the file inventory's ordering. These values remain physical full paths until key
 construction maps them, preserving their order. `Context` contains non-path task settings and item
 roles/metadata; it distinguishes null from empty values. It need not contain rendered arguments:

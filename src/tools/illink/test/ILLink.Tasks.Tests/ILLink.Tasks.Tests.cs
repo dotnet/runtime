@@ -1282,15 +1282,38 @@ namespace ILLink.Tasks.Tests
                 message.Message.StartsWith("ILLink cache bypassed: input identity could not be computed:"));
         }
 
-        [Fact]
-        public void CacheKeyAllowsRuntimeIgnoreLinkAttributesArgument()
+        [Theory]
+        [InlineData("--ignore-link-attributes true")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions true")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions false")]
+        [InlineData("--ignore-link-attributes true --feature TestFeature true")]
+        [InlineData("--ignore-link-attributes true --feature TestFeature false")]
+        public void CacheKeyAllowsRuntimeExtraArguments(string extraArgs)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
-            test.Task.ExtraArgs = "--ignore-link-attributes true";
+            test.Task.ExtraArgs = extraArgs;
 
             Assert.True(test.Task.TryGetCacheKey(host, out string key));
             Assert.Matches("^[0-9a-f]{64}$", key);
+            Assert.Contains(extraArgs, test.Task.CacheInvocation.Value.ResponseFile);
+        }
+
+        [Theory]
+        [InlineData("--ignore-substitutions true", "--ignore-substitutions false")]
+        [InlineData("--feature TestFeature true", "--feature TestFeature false")]
+        [InlineData("--feature First true", "--feature Second true")]
+        [InlineData("--feature TestFeature true --feature TestFeature false",
+                    "--feature TestFeature false --feature TestFeature true")]
+        public void CacheKeyTracksExtraArgumentSettingsAndOrder(string first, string second)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            test.Task.ExtraArgs = "--ignore-link-attributes true " + first;
+            Assert.True(test.Task.TryGetCacheKey(host, out string before));
+            test.Task.ExtraArgs = "--ignore-link-attributes true " + second;
+            Assert.True(test.Task.TryGetCacheKey(host, out string after));
+            Assert.NotEqual(before, after);
         }
 
         [Theory]
@@ -1312,10 +1335,6 @@ namespace ILLink.Tasks.Tests
             Directory.CreateDirectory(directory);
             test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
             string originalResponse = test.Task.GetResponseFileCommands();
-            MethodInfo parse = typeof(ILLink).GetMethod("TryGetExtraArgsPaths", BindingFlags.Instance | BindingFlags.NonPublic);
-            object[] arguments = { null };
-
-            Assert.False((bool)parse.Invoke(test.Task, arguments));
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
             Assert.Empty(key);
             Assert.Null(test.Task.CacheInvocation);
@@ -1380,6 +1399,12 @@ namespace ILLink.Tasks.Tests
         [InlineData("--ignore-link-attributes true -d")]
         [InlineData("--ignore-link-attributes true -d \"\"")]
         [InlineData("--ignore-link-attributes true -d \"unterminated")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions maybe")]
+        [InlineData("--ignore-link-attributes true --feature")]
+        [InlineData("--ignore-link-attributes true --feature \"\" true")]
+        [InlineData("--ignore-link-attributes true --feature TestFeature")]
+        [InlineData("--ignore-link-attributes true --feature TestFeature maybe")]
         public void CacheKeyBypassesUnsupportedExtraArgs(string extraArgs)
         {
             using var test = new OutputDirectoryTest();
@@ -1857,7 +1882,7 @@ namespace ILLink.Tasks.Tests
                 }
                 Directory.CreateDirectory(Path.Combine(searchRoot, "first search"));
                 Directory.CreateDirectory(Path.Combine(searchRoot, "second search"));
-                test.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{test.Root}/roots.xml\" -d \"{searchRoot}/first search\" -d \"{searchRoot}/second search\"";
+                test.Task.ExtraArgs = $"--ignore-link-attributes true --feature TestFeature true --substitutions \"{test.Root}/roots.xml\" -d \"{searchRoot}/first search\" --ignore-substitutions false -d \"{searchRoot}/second search\" --feature TestFeature false";
             }
             Assert.NotEqual(first.Task.GetResponseFileCommands(), second.Task.GetResponseFileCommands());
             Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstKey));
@@ -1867,7 +1892,7 @@ namespace ILLink.Tasks.Tests
             Assert.NotNull(second.Task.CacheInvocation);
 
             string secondSearchRoot = disjointRoots ? secondSearch.Root : second.Root;
-            second.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{second.Root}/roots.xml\" -d \"{secondSearchRoot}/second search\" -d \"{secondSearchRoot}/first search\"";
+            second.Task.ExtraArgs = $"--ignore-link-attributes true --feature TestFeature true --substitutions \"{second.Root}/roots.xml\" -d \"{secondSearchRoot}/second search\" --ignore-substitutions false -d \"{secondSearchRoot}/first search\" --feature TestFeature false";
             Assert.True(second.Task.TryGetCacheKey(secondHost, out string reordered));
             Assert.NotEqual(firstKey, reordered);
         }
@@ -2489,7 +2514,7 @@ namespace ILLink.Tasks.Tests
                 Assert.Contains("copy", description.Context);
                 Assert.Contains(nameof(ILLink.AssemblyPaths), description.Context);
                 Assert.DoesNotContain(input, description.Context);
-                Assert.Equal(new[] { tool, xml, input, reference, xml }, description.Inputs.OrderedPaths);
+                Assert.Equal(new[] { xml, tool, xml, input, reference }, description.Inputs.OrderedPaths);
                 Assert.Contains(input, description.Inputs.Files);
                 Assert.Contains(reference, description.Inputs.Files);
                 Assert.Equal(output, description.Outputs.DirectoryPath);

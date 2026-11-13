@@ -86,7 +86,9 @@ without changing the cache key, so a cached warning can fail a build under `-war
 Caching is bypassed with a diagnostic for arbitrary `ExtraArgs`, custom steps/data,
 dependency-dump options, and explicit task environment overrides. The only supported
 `ExtraArgs` shape is `--ignore-link-attributes true` followed by zero or more
-`--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Referenced files
+`--link-attributes FILE`, `--substitutions FILE`, `-d DIRECTORY`, `--ignore-substitutions true|false`,
+or `--feature NAME true|false` options. Non-file option values and their ordering contribute to the key.
+Referenced files
 and search-directory assembly candidates are content-hashed, including shadowed candidates.
 Other options still run the linker normally, uncached.
 Arguments containing backslashes immediately before quotes also bypass caching because

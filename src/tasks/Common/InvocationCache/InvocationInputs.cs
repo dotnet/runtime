@@ -12,9 +12,9 @@ namespace Microsoft.NET.Build.Tasks;
 internal sealed class InvocationInputs
 {
     internal IReadOnlyCollection<string> Files { get; }
-    internal string[] OrderedPaths { get; }
+    internal IReadOnlyList<string> OrderedPaths { get; }
 
-    internal InvocationInputs(IReadOnlyCollection<string> files, string[]? orderedPaths = null)
+    internal InvocationInputs(IReadOnlyCollection<string> files, IReadOnlyList<string>? orderedPaths = null)
     {
         Files = files;
         OrderedPaths = orderedPaths ?? Array.Empty<string>();

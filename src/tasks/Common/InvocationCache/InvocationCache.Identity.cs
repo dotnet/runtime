@@ -41,14 +41,14 @@ internal sealed partial class InvocationCache
         writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
         writer.Write(CultureInfo.CurrentCulture.Name);
         writer.Write(CultureInfo.CurrentUICulture.Name);
-        writer.Write(invocation.Context.Length);
+        writer.Write(invocation.Context.Count);
         foreach (string? value in invocation.Context)
         {
             writer.Write(value is not null);
             if (value is not null)
                 writer.Write(value);
         }
-        writer.Write(invocation.Inputs.OrderedPaths.Length);
+        writer.Write(invocation.Inputs.OrderedPaths.Count);
         foreach (string path in invocation.Inputs.OrderedPaths)
             writer.Write(invocation.MapPath(path));
         writer.Write(invocation.Outputs.DirectoryPath is not null);

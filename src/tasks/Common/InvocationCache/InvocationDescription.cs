@@ -3,6 +3,8 @@
 
 #nullable enable
 
+using System.Collections.Generic;
+
 namespace Microsoft.NET.Build.Tasks;
 
 internal sealed class InvocationDescription
@@ -11,9 +13,9 @@ internal sealed class InvocationDescription
 
     internal InvocationInputs Inputs { get; }
     internal InvocationOutputs Outputs { get; }
-    internal string?[] Context { get; }
+    internal IReadOnlyList<string?> Context { get; }
 
-    internal InvocationDescription(InvocationInputs inputs, string?[] context, InvocationOutputs outputs,
+    internal InvocationDescription(InvocationInputs inputs, IReadOnlyList<string?> context, InvocationOutputs outputs,
         SourceRootPathMap? pathMap = null)
     {
         _pathMap = pathMap;
