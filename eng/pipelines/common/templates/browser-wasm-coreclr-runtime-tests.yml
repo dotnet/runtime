@@ -1,0 +1,54 @@
+parameters:
+  nameSuffix: AllSubsets_CoreCLR_RuntimeTests
+  condition: true
+  preTestSteps: []
+  isExtraPlatformsBuild: false
+  platforms: []
+  useHelixMonitor: false
+
+jobs:
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueueGroup: pr
+    buildConfig: checked
+    runtimeFlavor: coreclr
+    platforms: ${{ parameters.platforms }}
+    jobParameters:
+      testGroup: innerloop
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+      timeoutInMinutes: 180
+      condition: ${{ parameters.condition }}
+      postBuildSteps:
+        - ${{ parameters.preTestSteps }}
+        # Runtime tests use Checked tasks, while the product build produces Release tasks.
+        - template: /eng/pipelines/common/templates/global-build-step.yml
+          parameters:
+            buildArgs: -s provision.emsdk+tasks -c $(buildConfigUpper)
+            displayName: Provision Emscripten SDK and build tasks
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: -os browser /p:HostConfiguration=Release
+            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
+        # CrossgenFramework skips wasm, so regenerate CORE_ROOT from the same BCL
+        # bits and enable Crossgen2 only for test assemblies on Helix.
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            readyToRun: true
+            testBuildArgs: generatelayoutonly crossgen2 -os browser /p:HostConfiguration=Release
+            testRunNamePrefixSuffix: CoreCLR_R2R_CG2_$(_BuildConfig)
+            timeoutPerTestInMinutes: 30
+            timeoutPerTestCollectionInMinutes: 90
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: innerloop
+            liveLibrariesBuildConfig: Release
