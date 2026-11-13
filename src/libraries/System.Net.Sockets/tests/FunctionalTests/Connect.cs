@@ -246,7 +246,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI doesn't support the socket options or dual-mode sockets this test uses")]
         public Task MultiConnect_KeepAliveOptionsPreserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
             c =>
             {
@@ -271,7 +271,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI doesn't support the socket options or dual-mode sockets this test uses")]
         public Task MultiConnect_LingerState_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
             c =>
             {
@@ -286,7 +286,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI doesn't support the socket options or dual-mode sockets this test uses")]
         public Task MultiConnect_MiscProperties_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
             c =>
             {
@@ -304,7 +304,6 @@ namespace System.Net.Sockets.Tests
         [InlineData("single")]
         [InlineData("multi")]
         [InlineData("dns")]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task Connect_ExposeHandle_FirstAttemptSucceeds(string connectMode)
         {
             if (UsesEap && connectMode is "multi")
@@ -341,7 +340,6 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task MultiConnect_ExposeHandle_TerminatesAtFirstFailure(bool dnsConnect)
         {
             if (UsesEap && !dnsConnect)
@@ -386,7 +384,6 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task SingleConnect_ExposeHandle_SecondAttemptThrowsPNSEOnUnix()
         {
             int port = -1;
@@ -417,7 +414,6 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task MultiConnect_DualMode_Preserved()
         {
             if (UsesEap) throw new SkipTestException("EAP does not support IPAddress[] connect");

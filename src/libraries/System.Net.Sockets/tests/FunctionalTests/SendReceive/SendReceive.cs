@@ -915,7 +915,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "CreateConnectedSocketPair uses synchronous Connect and Accept, which are not supported on single-threaded WASI")]
         public async Task SendAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
         {
             if (UsesSync) return;
@@ -954,7 +954,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "CreateConnectedSocketPair uses synchronous Connect and Accept, which are not supported on single-threaded WASI")]
         public async Task ReceiveAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
         {
             if (UsesSync) return;
@@ -1085,7 +1085,7 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "CreateConnectedSocketPair uses synchronous Connect and Accept, which are not supported on single-threaded WASI")]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient, bool owning)
         {
             // Aborting sync operations for non-owning handles is not supported on Unix.
@@ -1218,7 +1218,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Hangs on WASI: disposing a socket with a large pending send stalls the event loop")]
         public async Task TcpPeerReceivesFinOnShutdownWithPendingData()
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
@@ -1228,7 +1228,7 @@ namespace System.Net.Sockets.Tests
             byte[] receiveBuffer = new byte[1024];
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = await SocketTestExtensions.CreateConnectedSocketPairAsync();
                 using (socket1)
                 using (socket2)
                 {
@@ -1510,14 +1510,13 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task SendAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
             const int CancelAfter = 200; // ms
             const int NumOfSends = 100;
             const int SendBufferSize = 1024;
 
-            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            (Socket client, Socket server) = await SocketTestExtensions.CreateConnectedSocketPairAsync(ipv6);
             byte[] buffer = new byte[1024 * 64];
             using (client)
             using (server)
@@ -1545,10 +1544,9 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task ReceiveAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
-            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            (Socket client, Socket server) = await SocketTestExtensions.CreateConnectedSocketPairAsync(ipv6);
             using (client)
             using (server)
             {

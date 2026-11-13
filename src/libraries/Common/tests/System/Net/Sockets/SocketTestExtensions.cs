@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Sockets.Tests
 {
@@ -40,29 +41,52 @@ namespace System.Net.Sockets.Tests
 
         public static (Socket client, Socket server) CreateConnectedSocketPair(bool ipv6 = false, bool dualModeClient = false)
         {
+            using PortBlocker portBlocker = CreateListenerPortBlocker(ipv6);
+            Socket listener = portBlocker.MainSocket; // PortBlocker shall dispose this
+            Socket client = CreateClientForListener(listener, dualModeClient, out IPEndPoint connectTo);
+            client.Connect(connectTo);
+            Socket server = listener.Accept();
+
+            return (client, server);
+        }
+
+        public static async Task<(Socket client, Socket server)> CreateConnectedSocketPairAsync(bool ipv6 = false, bool dualModeClient = false)
+        {
+            using PortBlocker portBlocker = CreateListenerPortBlocker(ipv6);
+            Socket listener = portBlocker.MainSocket; // PortBlocker shall dispose this
+            Socket client = CreateClientForListener(listener, dualModeClient, out IPEndPoint connectTo);
+            Task<Socket> acceptTask = listener.AcceptAsync();
+            await client.ConnectAsync(connectTo);
+            Socket server = await acceptTask;
+
+            return (client, server);
+        }
+
+        private static PortBlocker CreateListenerPortBlocker(bool ipv6)
+        {
             IPAddress serverAddress = ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
 
             // PortBlocker creates a temporary socket of the opposite AddressFamily in the background, so parallel tests won't attempt
             // to create their listener sockets on the same port, regardless of address family.
             // This should prevent 'listener' from accepting DualMode connections of unrelated tests.
-            using PortBlocker portBlocker = new PortBlocker(() =>
+            return new PortBlocker(() =>
             {
                 Socket l = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 l.BindToAnonymousPort(serverAddress);
                 return l;
             });
-            Socket listener = portBlocker.MainSocket; // PortBlocker shall dispose this
+        }
+
+        private static Socket CreateClientForListener(Socket listener, bool dualModeClient, out IPEndPoint connectTo)
+        {
             listener.Listen(1);
 
-            IPEndPoint connectTo = (IPEndPoint)listener.LocalEndPoint;
+            connectTo = (IPEndPoint)listener.LocalEndPoint;
             if (dualModeClient) connectTo = new IPEndPoint(connectTo.Address.MapToIPv6(), connectTo.Port);
 
             Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             if (dualModeClient) client.DualMode = true;
-            client.Connect(connectTo);
-            Socket server = listener.Accept();
-
-            return (client, server);
+            return client;
         }
 
         // Tries to connect within the provided timeout interval
@@ -158,7 +182,8 @@ namespace System.Net.Sockets.Tests
         // This method is doing a custom P/Invoke to bind() on Unix to achieve that.
         private static unsafe bool TryBindWithoutReuseAddress(Socket socket, IPEndPoint endPoint, out int port)
         {
-            if (PlatformDetection.IsWindows)
+            // WASI emulates SO_REUSEADDR as a no-op, so Socket.Bind() already has the desired behavior there.
+            if (PlatformDetection.IsWindows || PlatformDetection.IsWasi)
             {
                 try
                 {
