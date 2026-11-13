@@ -51,6 +51,54 @@ Copyright (c) .NET Foundation. All rights reserved.
                                     Trim="true" />
   </ItemGroup>
 
+  <Target Name="_WasmCoreClrResolveNativeFlavor"
+          DependsOnTargets="_ResolveWasmConfiguration">
+    <PropertyGroup>
+      <_WasmCoreClrNativeFlavorUnderPublish Condition="'$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or
+                                                       '$(WasmBuildOnlyAfterPublish)' == 'true' or '$(DeployOnBuild)' == 'true'">true</_WasmCoreClrNativeFlavorUnderPublish>
+      <_WasmCoreClrEffectiveEnableDiagnostics>$(EnableDiagnostics)</_WasmCoreClrEffectiveEnableDiagnostics>
+      <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == '' and '$(_WasmCoreClrNativeFlavorUnderPublish)' == 'true'">false</_WasmCoreClrEffectiveEnableDiagnostics>
+      <_WasmCoreClrEffectiveEnableDiagnostics Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == ''">true</_WasmCoreClrEffectiveEnableDiagnostics>
+      <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">$(_WasmCoreClrEffectiveEnableDiagnostics)</EnableDiagnostics>
+      <_WasmCoreClrNativeFlavor Condition="'$(_WasmCoreClrEffectiveEnableDiagnostics)' == 'true'">diagnostics</_WasmCoreClrNativeFlavor>
+      <_WasmCoreClrNativeFlavor Condition="'$(_WasmCoreClrNativeFlavor)' == ''">production</_WasmCoreClrNativeFlavor>
+      <_WasmCoreClrNativeFlavorRoot>$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'data', 'native-flavors'))</_WasmCoreClrNativeFlavorRoot>
+      <_WasmCoreClrSelectedNativeFlavorDir Condition="'$(_WasmCoreClrNativeFlavor)' == 'diagnostics'">$([MSBuild]::NormalizeDirectory('$(_WasmCoreClrNativeFlavorRoot)', 'diagnostics'))</_WasmCoreClrSelectedNativeFlavorDir>
+      <_WasmCoreClrSelectedNativeFlavorDir Condition="'$(_WasmCoreClrNativeFlavor)' == 'production'">$([MSBuild]::NormalizeDirectory('$(_RuntimePackDir)', 'runtimes', '$(RuntimeIdentifier)', 'native'))</_WasmCoreClrSelectedNativeFlavorDir>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmBuildNative)' != 'true' and
+                      (!Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js') or
+                       !Exists('$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols'))"
+           Text="The CoreCLR browser native flavor '$(_WasmCoreClrNativeFlavor)' was requested, but the runtime pack does not contain its complete dotnet.native.wasm, dotnet.native.js, and dotnet.native.js.symbols asset set. Install wasm-tools and set WasmBuildNative=true, or use a runtime pack that contains this flavor." />
+  </Target>
+
+  <!-- Prelinked flavors are the no-workload path. When native workload targets set
+       WasmBuildNative=true, their existing relink policy remains authoritative. -->
+  <Target Name="_WasmCoreClrSelectNativeFlavor"
+          DependsOnTargets="_WasmCoreClrResolveNativeFlavor"
+          BeforeTargets="_ComputeWasmBuildCandidates;_HandleFileConflictsForPublish;ProcessPublishFilesForWasm">
+    <ItemGroup Condition="'$(WasmBuildNative)' != 'true'">
+      <WasmNativeAsset Remove="@(WasmNativeAsset)"
+                       Condition="'%(FileName)%(Extension)' == 'dotnet.native.wasm' or
+                                  '%(FileName)%(Extension)' == 'dotnet.native.js' or
+                                  '%(FileName)%(Extension)' == 'dotnet.native.js.symbols'" />
+      <WasmNativeAsset Include="$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.wasm">
+        <NativeFlavor>$(_WasmCoreClrNativeFlavor)</NativeFlavor>
+        <PrelinkedNativeAsset>true</PrelinkedNativeAsset>
+      </WasmNativeAsset>
+      <WasmNativeAsset Include="$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js">
+        <NativeFlavor>$(_WasmCoreClrNativeFlavor)</NativeFlavor>
+        <PrelinkedNativeAsset>true</PrelinkedNativeAsset>
+      </WasmNativeAsset>
+      <WasmNativeAsset Include="$(_WasmCoreClrSelectedNativeFlavorDir)dotnet.native.js.symbols">
+        <NativeFlavor>$(_WasmCoreClrNativeFlavor)</NativeFlavor>
+        <PrelinkedNativeAsset>true</PrelinkedNativeAsset>
+      </WasmNativeAsset>
+    </ItemGroup>
+  </Target>
+
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:
        publish always crossgens the whole closure, so framework and app R2R both come from obj/R2R. Only the
        dev-loop build differs - it never crossgens, so its BCL comes from the runtime pack's R2R images.

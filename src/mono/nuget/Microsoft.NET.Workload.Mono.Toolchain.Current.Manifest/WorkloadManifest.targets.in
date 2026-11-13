@@ -63,7 +63,7 @@
         '$(WasmNativeStrip)' == 'false' or
         '$(WasmNativeDebugSymbols)' == 'true' or
         '$(WasmSingleFileBundle)' == 'false' or
-        '$(EnableDiagnostics)' == 'true' or
+        ('$(EnableDiagnostics)' == 'true' and '$(UseMonoRuntime)' != 'false') or
         '$(WasmProfilers)' != '' or
         '$(RunAOTCompilation)' == 'true' or
         '$(WasmBuildNative)' == 'true' or

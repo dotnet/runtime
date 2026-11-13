@@ -23,6 +23,8 @@
   <ItemGroup>
     <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
     <ProjectReference Include="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+                      BuildReference="false"
+                      ReferenceOutputAssembly="false"
                       Condition="'$(TargetOS)' == 'browser' and '$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
@@ -57,7 +59,24 @@
           Condition="'$(TargetOS)' == 'browser'">
     <MSBuild Projects="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
              Targets="Build"
-             Properties="Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration)" />
+             Properties="Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);BrowserHostNativeFlavor=production" />
+    <MSBuild Projects="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+             Targets="Build"
+             Properties="Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);BrowserHostNativeFlavor=diagnostics" />
+  </Target>
+
+  <Target Name="AddBrowserHostNativeFlavorsToPackage"
+          BeforeTargets="_GenerateFrameworkList"
+          DependsOnTargets="BuildBrowserHost"
+          Condition="'$(TargetOS)' == 'browser'">
+    <ItemGroup>
+      <FilesToPackage Include="$(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js"
+                      TargetPath="data/native-flavors/diagnostics/dotnet.native.js" />
+      <FilesToPackage Include="$(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js.symbols"
+                      TargetPath="data/native-flavors/diagnostics/dotnet.native.js.symbols" />
+      <FilesToPackage Include="$(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.wasm"
+                      TargetPath="data/native-flavors/diagnostics/dotnet.native.wasm" />
+    </ItemGroup>
   </Target>
 
   <PropertyGroup>

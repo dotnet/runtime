@@ -522,6 +522,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return match.Success && match.Groups.Count == 2 ? match.Groups[1].Value : null;
     }
 
+    protected static string GetPrelinkedNativeAssetDir(MSBuildOptions buildOptions, string? runtimePackDir = null)
+    {
+        runtimePackDir ??= BuildTestBase.s_buildEnv.GetRuntimePackDir(buildOptions.TargetFramework, buildOptions.RuntimeType);
+
+        if (BuildTestBase.IsCoreClrRuntime && (buildOptions.EnableDiagnostics || !buildOptions.IsPublish))
+            return Path.Combine(runtimePackDir, "data", "native-flavors", "diagnostics");
+
+        return Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native");
+    }
+
     public static void AssertDotNetJsSymbols(AssertBundleOptions assertOptions)
     {
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir, new[] { "dotnet.native.js.symbols" }, expectToExist: assertOptions.ExpectSymbolsFile);
@@ -529,7 +539,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.BuildOptions.ExpectedFileType == NativeFilesType.FromRuntimePack)
         {
             TestUtils.AssertFile(
-                    Path.Combine(BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType), "dotnet.native.js.symbols"),
+                    Path.Combine(GetPrelinkedNativeAssetDir(assertOptions.BuildOptions, assertOptions.RuntimePackDir), "dotnet.native.js.symbols"),
                     Path.Combine(assertOptions.BinFrameworkDir, "dotnet.native.js.symbols"),
                     same: true);
         }

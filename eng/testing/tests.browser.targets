@@ -54,6 +54,7 @@
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
+    <EnableDiagnostics Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EnableDiagnostics)' == ''">$(EventSourceSupport)</EnableDiagnostics>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
 
     <!-- Library tests run directly from bin/ without the static web assets middleware,

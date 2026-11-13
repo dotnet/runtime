@@ -323,7 +323,11 @@ Copyright (c) .NET Foundation. All rights reserved.
                                     Condition="'$(UseMonoRuntime)' == 'false' and '@(_DebugSymbolsIntermediatePath)' != '' and Exists('%(_WasmProjectAssemblyBuild.RootDir)%(_WasmProjectAssemblyBuild.Directory)%(_WasmProjectAssemblyBuild.FileName).pdb')" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
-      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" WasmNativeBuildOutput="true" />
+      <_WasmPrelinkedNativeAsset Include="@(WasmNativeAsset->WithMetadataValue('PrelinkedNativeAsset', 'true'))" />
+      <_WasmBuildAssetCandidates Include="@(_WasmPrelinkedNativeAsset)" />
+      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)"
+                                 Exclude="@(_WasmPrelinkedNativeAsset)"
+                                 WasmNativeBuildOutput="true" />
       <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
       <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
 
