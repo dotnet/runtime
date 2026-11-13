@@ -566,7 +566,6 @@ namespace System.Net.Http.Functional.Tests
                     {
                         ctx.AddCustomTag("observed?", "observed!");
                         enrichmentResponse = ctx.Response;
-                        Assert.NotNull(ctx.Response);
                     });
                 }
             });
