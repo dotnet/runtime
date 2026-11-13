@@ -245,7 +245,7 @@ done:
     return ret;
 }
 
-static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
+static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, int pssSaltLength, const EVP_MD* digest)
 {
 
 #pragma clang diagnostic push
@@ -268,7 +268,7 @@ static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const 
         assert(padding == RsaPaddingOaepOrPss);
 
         if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0 ||
-            EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
+            EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, pssSaltLength) <= 0)
         {
             return false;
         }
@@ -280,6 +280,7 @@ static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const 
 int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
                                  void* extraHandle,
                                  RsaPaddingMode padding,
+                                 int pssSaltLength,
                                  const EVP_MD* digest,
                                  const uint8_t* hash,
                                  int32_t hashLen,
@@ -304,7 +305,7 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
         goto done;
     }
 
-    if (!ConfigureSignature(ctx, padding, digest))
+    if (!ConfigureSignature(ctx, padding, pssSaltLength, digest))
     {
         goto done;
     }
@@ -343,6 +344,7 @@ done:
 int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
                                    void* extraHandle,
                                    RsaPaddingMode padding,
+                                   int pssSaltLength,
                                    const EVP_MD* digest,
                                    const uint8_t* hash,
                                    int32_t hashLen,
@@ -365,7 +367,7 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
         goto done;
     }
 
-    if (!ConfigureSignature(ctx, padding, digest))
+    if (!ConfigureSignature(ctx, padding, pssSaltLength, digest))
     {
         goto done;
     }
