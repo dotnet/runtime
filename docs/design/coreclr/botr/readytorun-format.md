@@ -198,6 +198,7 @@ The following section types are defined and described later in this document:
 | ExternalTypeMaps          |   124 | Assembly (added in V18.3, extended in V28)
 | ProxyTypeMaps             |   125 | Assembly (added in V18.3, extended in V28)
 | TypeMapAssemblyTargets    |   126 | Assembly (added in V18.3)
+| AuxiliaryModuleMetadata   |   128 | Image (added in V34.1, browser-wasm only)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -923,6 +924,30 @@ TargetModuleFixup[TargetModuleCount]
 ```
 
 Each type or module fixup is encoded as an import section index followed by a fixup row index.
+
+## ReadyToRunSectionType.AuxiliaryModuleMetadata (v34.1+)
+
+This optional browser-wasm section describes the auxiliary modules that hold part of the image's compiled code. Crossgen2 emits it only when `--auxiliary-modules` is passed. The section starts with a header of six 32-bit fields:
+
+| Field | Meaning |
+|---|---|
+| `EntryPointsFilenameRVA` | RVA of the auxiliary EntryPoints module's name. |
+| `InstanceMethodEntryPointsRVA` | RVA of the auxiliary `InstanceMethodEntryPoints` section. |
+| `MethodDefEntryPointsInfoRVA` | RVA of an array of `(IMAGE_DATA_DIRECTORY CorHeader, IMAGE_DATA_DIRECTORY MethodDefEntryPoints)` tuples, in `ComponentAssemblies` order. |
+| `EntryPointsModuleActivationStatus` | Nonzero when the auxiliary EntryPoints tables are valid to read. |
+| `PrimaryModuleMethodCount` | Number of `RuntimeFunctions` entries (including funclets) belonging to the primary module, excluding the trailing entry used for virtual IP calculations. |
+| `AuxiliaryModuleCount` | Number of entries that follow the header. |
+
+Each of the `AuxiliaryModuleCount` entries that follow has four 32-bit fields:
+
+| Field | Meaning |
+|---|---|
+| `FilenameRVA` | RVA of the auxiliary module's name. |
+| `RelativeTableBase` | Index of the auxiliary module's first function-table slot, relative to the primary module. |
+| `MethodCount` | Number of function-table slots (including funclets) assigned to the auxiliary module. |
+| `ActivationStatus` | Nonzero once the auxiliary module has been activated and its code can execute. |
+
+The primary module's methods come first in `RuntimeFunctions`, and each auxiliary module occupies a contiguous range after them. Crossgen2 currently places every method in the primary module, so it emits only the header, with `AuxiliaryModuleCount` set to zero, zero RVAs, and `EntryPointsModuleActivationStatus` set to 1.
 
 # Native Format
 

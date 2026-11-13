@@ -29,25 +29,22 @@ internal static class WasmR2RAssert
         Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.AuxiliaryModuleMetadata));
         ReadyToRunSection metadataSection =
             reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.AuxiliaryModuleMetadata];
-        Assert.Equal(sizeof(uint) * 6, metadataSection.Size);
+        Assert.Equal(AuxiliaryModuleMetadataSection.HeaderSize, metadataSection.Size);
 
-        ReadOnlySpan<byte> image = reader.CompositeReader.GetEntireImage().AsSpan();
-        int metadataOffset = reader.CompositeReader.GetOffset(metadataSection.RelativeVirtualAddress);
-        int offset = metadataOffset;
-        Assert.Equal(0u, ReadUInt32(image, ref offset));
-        Assert.Equal(0u, ReadUInt32(image, ref offset));
-        Assert.Equal(0u, ReadUInt32(image, ref offset));
-        Assert.Equal(1u, ReadUInt32(image, ref offset));
+        int metadataOffset = reader.GetOffset(metadataSection.RelativeVirtualAddress);
+        AuxiliaryModuleMetadataSection metadata =
+            new AuxiliaryModuleMetadataSection(reader, metadataOffset, metadataOffset + metadataSection.Size);
+        Assert.Equal(0, metadata.EntryPointsFilenameRva);
+        Assert.Equal(0, metadata.InstanceMethodEntryPointsRva);
+        Assert.Equal(0, metadata.MethodDefEntryPointsInfoRva);
+        Assert.Equal(1u, metadata.EntryPointsModuleActivationStatus);
+        Assert.Empty(metadata.Entries);
 
         Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.RuntimeFunctions));
         ReadyToRunSection runtimeFunctionsSection =
             reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
         Assert.Equal(0, runtimeFunctionsSection.Size % RuntimeFunctionEntrySize);
-        Assert.Equal(
-            checked((uint)(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize)),
-            ReadUInt32(image, ref offset));
-        Assert.Equal(0u, ReadUInt32(image, ref offset));
-        Assert.Equal(metadataSection.Size, offset - metadataOffset);
+        Assert.Equal(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize, metadata.PrimaryModuleMethodCount);
     }
 
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
@@ -171,13 +168,6 @@ internal static class WasmR2RAssert
         Assert.Equal(payloadSize, payloadLength);
         Assert.Equal(0, offset % WebCilObjectWriter.WebcilSectionAlignment);
         Assert.Equal((long)end, offset + (long)payloadLength);
-    }
-
-    private static uint ReadUInt32(ReadOnlySpan<byte> image, ref int offset)
-    {
-        uint value = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset, sizeof(uint)));
-        offset += sizeof(uint);
-        return value;
     }
 
     private static void AssertGlobalGetOffset(

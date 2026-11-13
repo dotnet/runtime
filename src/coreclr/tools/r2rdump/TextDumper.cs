@@ -744,6 +744,13 @@ namespace R2RDump
                     }
                     break;
                 }
+                case ReadyToRunSectionType.AuxiliaryModuleMetadata:
+                {
+                    int auxOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    AuxiliaryModuleMetadataSection auxiliaryModuleMetadata = new AuxiliaryModuleMetadataSection(_r2r, auxOffset, auxOffset + section.Size);
+                    _writer.Write(auxiliaryModuleMetadata.ToString());
+                    break;
+                }
 
                 default:
                     _writer.WriteLine("Unsupported section type {0}", section.Type);
