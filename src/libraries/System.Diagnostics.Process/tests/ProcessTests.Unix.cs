@@ -1311,6 +1311,9 @@ namespace System.Diagnostics.Tests
 
                 // Enumerating /proc/self/fd opens one additional descriptor (the directory stream) that is listed
                 // in its own results, so it is subtracted here. HandleCount excludes the descriptor it opens itself.
+                // Directory.GetFiles() is deliberately not used here, unlike in the test for another process, as it
+                // does not return entries that refer to directories (including the one held open above and the
+                // one for the enumeration itself), and HandleCount now counts them, like handles on Windows.
                 int expected = Directory.GetFileSystemEntries("/proc/self/fd").Length - 1;
                 int actual = p.HandleCount;
 
