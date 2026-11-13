@@ -70,6 +70,33 @@ namespace System.Net.Http.Functional.Tests
 
         public static readonly bool[] BoolValues = new[] { true, false };
 
+        public static bool SupportsAutomaticDecompression
+        {
+            get
+            {
+                using var handler = CreateHttpClientHandler();
+                return handler.SupportsAutomaticDecompression;
+            }
+        }
+
+        public static bool SupportsProxy
+        {
+            get
+            {
+                using var handler = CreateHttpClientHandler();
+                return handler.SupportsProxy;
+            }
+        }
+
+        public static bool SupportsRedirectConfiguration
+        {
+            get
+            {
+                using var handler = CreateHttpClientHandler();
+                return handler.SupportsRedirectConfiguration;
+            }
+        }
+
         // For use by remote server tests
         public static readonly IEnumerable<object[]> RemoteServersMemberData = Configuration.Http.RemoteServersMemberData;
 
