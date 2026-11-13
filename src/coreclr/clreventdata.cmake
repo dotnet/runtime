@@ -16,7 +16,8 @@ if(NOT CLR_DOTNET_HOST_PATH)
 endif()
 
 function(_get_event_data_command FLAVOR OUTPUT_DIR INCLUSION_LIST COMMAND_VAR)
-  if(CLR_CMAKE_TARGET_WIN32)
+  # eventtracebase.h picks the ETW implementation by host, which includes the Windows-hosted cross-OS DAC.
+  if(CLR_CMAKE_HOST_WIN32)
     set(provider etw)
   elseif(FEATURE_EVENTSOURCE_XPLAT AND FLAVOR STREQUAL "coreclr")
     set(provider lttng)
@@ -24,7 +25,9 @@ function(_get_event_data_command FLAVOR OUTPUT_DIR INCLUSION_LIST COMMAND_VAR)
     set(provider none)
   endif()
 
-  set(command "${CLR_DOTNET_HOST_PATH}" run --file "${EVENT_DATA_GENERATOR}" -c Release --
+  # The Visual Studio environment sets Platform to the target architecture, which MSBuild would build the tool for.
+  set(command "${CMAKE_COMMAND}" -E env --unset=Platform
+    "${CLR_DOTNET_HOST_PATH}" run --file "${EVENT_DATA_GENERATOR}" -c Release --
     --flavor ${FLAVOR} --provider ${provider}
     --manifest "${EVENT_MANIFEST}" --exclusion-list "${EVENT_EXCLUSIONS}" --output "${OUTPUT_DIR}")
   if(INCLUSION_LIST)

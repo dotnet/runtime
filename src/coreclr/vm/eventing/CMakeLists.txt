@@ -5,6 +5,6 @@ add_event_data_target(eventing_headers
 
 add_subdirectory(eventpipe)
 
-if(FEATURE_EVENTSOURCE_XPLAT)
+if(CLR_CMAKE_HOST_UNIX AND FEATURE_EVENTSOURCE_XPLAT)
   add_subdirectory(lttng)
 endif()

@@ -5,6 +5,7 @@
 // providers) for CoreCLR and NativeAOT from ClrEtwAll.man.
 
 #:package System.CommandLine@$(SystemCommandLineVersion)
+#:property PublishAot=false
 
 using System.CommandLine;
 using System.Diagnostics;
