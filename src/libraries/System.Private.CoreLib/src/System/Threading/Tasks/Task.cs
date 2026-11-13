@@ -3675,7 +3675,6 @@ namespace System.Threading.Tasks
         /// of the task's flags, which is cheaper than checking for each type separately.
         /// </summary>
         /// <returns>true if the continuation was handled; otherwise, false.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryRunAsyncTaskContinuation(object continuation, bool canInline)
         {
             if (continuation is Task task)

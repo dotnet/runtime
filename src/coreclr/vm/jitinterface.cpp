@@ -6455,12 +6455,6 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         // keeps the JIT from asking for the stub's IL (see code:CEEInfo::canInline).
         result |= CORINFO_FLG_DONT_INLINE;
     }
-    else if (pMD->IsAsyncThunkMethod() && !pMD->IsAsyncVariantMethod())
-    {
-        // Keep the exception handler in the diagnostics-hidden thunk. Inlining it would
-        // record the caller both when capturing and when rethrowing synchronous exceptions.
-        result |= CORINFO_FLG_DONT_INLINE;
-    }
     // AggressiveInlining only makes sense for IL methods.
     else if (pMD->IsIL() && IsMiAggressiveInlining(ilMethodImplAttribs))
     {
@@ -7802,14 +7796,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
         {
             COR_ILMETHOD* pILHeader;
-            if (pCallee->IsAsyncThunkMethod())
-            {
-                // Thunk IL is generated and always has EH.
-                result = INLINE_FAIL;
-                szFailReason = "Inlinee and root method have different wrapped exception behavior";
-                goto exit;
-            }
-            else if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
+            if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
             {
                 COR_ILMETHOD_DECODER header(pILHeader, pCallee->GetMDImport(), NULL);
                 if (header.EHCount() > 0)

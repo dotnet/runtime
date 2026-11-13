@@ -26,8 +26,11 @@ public class RuntimeAsyncDiagnosticIPStackTrace
         int firstFrame = stackTrace.IndexOf(callerFrame, StringComparison.Ordinal);
         Assert.True(firstFrame >= 0, stackTrace);
         Assert.Equal(-1, stackTrace.IndexOf(callerFrame, firstFrame + callerFrame.Length, StringComparison.Ordinal));
-        // NativeAOT does not suppress EDI boundaries after async frames.
-        Assert.Equal(Utilities.IsNativeAot, stackTrace.Contains("--- End of stack trace from previous location ---", StringComparison.Ordinal));
+        // NativeAOT's extra EDI boundaries are tracked by https://github.com/dotnet/runtime/issues/129155.
+        if (!Utilities.IsNativeAot)
+        {
+            Assert.False(stackTrace.Contains("--- End of stack trace from previous location ---", StringComparison.Ordinal), stackTrace);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]

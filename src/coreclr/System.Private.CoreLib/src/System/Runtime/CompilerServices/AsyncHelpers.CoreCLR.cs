@@ -323,7 +323,6 @@ namespace System.Runtime.CompilerServices
             // callers' contexts without raising AsyncLocal change notifications, so this must happen before the
             // contexts saved at the start of the chain are restored with notifications. It also lets a notifier
             // observe the leaf's contexts.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void RestoreLeafContexts()
             {
                 Thread? curThread = CurrentThread;
@@ -463,7 +462,6 @@ namespace System.Runtime.CompilerServices
             return default!;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void SetAwaitedTask(RuntimeAsyncStackState* stackState, Task task, ConfigureAwaitOptions options)
         {
             object? encodedContext;
@@ -697,7 +695,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         private static void TransparentAwait(ValueTask task)
         {
             object? obj = task._obj;
@@ -746,7 +744,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         private static T TransparentAwait<T>(ValueTask<T> task)
         {
             object? obj = task._obj;
@@ -853,7 +851,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void ExecuteRuntimeAsyncAwaitContinuationCore(Task completedTask, bool canInline)
             {
                 object? continuationContext = m_action;
@@ -916,7 +913,6 @@ namespace System.Runtime.CompilerServices
                 return (flags & (ContinuationFlags.ContinueOnCapturedSynchronizationContext | ContinuationFlags.ContinueOnCapturedTaskScheduler)) == 0;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool QueueAwaitContinuationIfNecessary(object continuationContext, bool canInline)
             {
                 // Fast path for the common case of continuing on the thread pool (including a successful
@@ -1015,7 +1011,6 @@ namespace System.Runtime.CompilerServices
 
             // Takes the awaited Task or ValueTaskSourceContinuation (if this dispatch is resuming from
             // such an await), clearing the field so that it isn't retained.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private object? MoveAwaitedState()
             {
                 object? awaitedState = m_action;
@@ -1070,7 +1065,6 @@ namespace System.Runtime.CompilerServices
             // continuation that awaited it. If the awaited task didn't complete successfully, returns the
             // exception the await must propagate (or throws it, if it can't be propagated without throwing).
             [StackTraceHidden]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static unsafe Exception? GetAwaitedTaskResult(Task awaitedTask, Continuation awaitingContinuation)
             {
                 ref byte resultStorage = ref awaitingContinuation.GetResultStorageOrNull();
@@ -1160,7 +1154,6 @@ namespace System.Runtime.CompilerServices
 
             // Handles the common suspension on a Task without the cost of a call to HandleSuspended, when this task isn't
             // holding other awaited state. Returns false, having changed nothing, if HandleSuspended is needed instead.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal unsafe bool TryHandleSuspendedOnTask(ref RuntimeAsyncAwaitState state, RuntimeAsyncStackState* stackState)
             {
                 if (stackState->NotifierKind != SuspensionNotifierKind.AwaitedTask || m_action is not null)
@@ -1195,7 +1188,6 @@ namespace System.Runtime.CompilerServices
 
             // Handles suspension on an ICriticalNotifyCompletion once this task's continuation Action has been cached,
             // without the cost of HandleSuspended. Returns false, having changed nothing, if HandleSuspended is needed instead.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal unsafe bool TryHandleSuspendedOnCriticalNotifier(ref RuntimeAsyncAwaitState state, RuntimeAsyncStackState* stackState)
             {
                 if (stackState->NotifierKind != SuspensionNotifierKind.CriticalNotifier || m_action is not Action action)
@@ -1250,7 +1242,6 @@ namespace System.Runtime.CompilerServices
             // already specify where to continue, move that onto its continuation, as for an await the JIT
             // recognized. The dispatcher then checks it on the thread it's already running on, rather than
             // the awaited task's completion separately checking it beforehand.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static object? GetAwaitedTaskContinuationContext(Continuation headContinuation, object? awaitedContinuationContext)
             {
                 // When the head continuation has no continuation flags of its own, record continuing on the thread pool
@@ -1419,7 +1410,6 @@ namespace System.Runtime.CompilerServices
 
             // Initializes the ValueTaskSourceContinuation for awaiting the source and registers this task's dispatch
             // as the source's continuation, telling the source whether the awaiting frame prefers to continue on a context.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private unsafe bool RegisterWithValueTaskSource(ref RuntimeAsyncAwaitState state, ValueTaskSourceContinuation valueTaskSourceCont, object source, ContinuationFlags continuationFlags)
             {
                 short token = state.ValueTaskSourceToken;
@@ -1446,7 +1436,6 @@ namespace System.Runtime.CompilerServices
             // this task already holds a ValueTaskSourceContinuation from a previous source await, the suspending frame
             // didn't change the thread's contexts, and the awaiting continuation is the head of the chain. Returns false,
             // having changed nothing, if HandleSuspended is needed instead.
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private unsafe bool TryHandleSuspendedOnValueTaskSource(ref RuntimeAsyncAwaitState state, RuntimeAsyncStackState* stackState)
             {
                 if (stackState->NotifierKind != SuspensionNotifierKind.ValueTaskSource ||
@@ -1880,7 +1869,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool QueueContinuationFollowUpActionIfNecessary(Continuation continuation, Thread currentThread)
             {
                 ContinuationFlags flags = continuation.Flags;
@@ -2023,7 +2011,7 @@ namespace System.Runtime.CompilerServices
 #pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
-        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the cold suspended path out of thunk bodies
         private static Task<T?> CreateRuntimeAsyncTask<T>(ref RuntimeAsyncAwaitState state)
         {
             RuntimeAsyncTask<T?> result = new();
@@ -2031,7 +2019,7 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the cold suspended path out of thunk bodies
         private static Task CreateRuntimeAsyncTask(ref RuntimeAsyncAwaitState state)
         {
             RuntimeAsyncTask<VoidTaskResult> result = new();
@@ -2039,7 +2027,7 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the cold suspended path out of thunk bodies
         private static ValueTask<T?> CreateRuntimeAsyncValueTask<T>(ref RuntimeAsyncAwaitState state)
         {
             // We only come to these methods in the expensive case (already
@@ -2049,7 +2037,7 @@ namespace System.Runtime.CompilerServices
             return new ValueTask<T?>(result);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the cold suspended path out of thunk bodies
         private static ValueTask CreateRuntimeAsyncValueTask(ref RuntimeAsyncAwaitState state)
         {
             RuntimeAsyncTask<VoidTaskResult> result = new();
@@ -2472,7 +2460,6 @@ namespace System.Runtime.CompilerServices
         // FinishSuspension{No,With}ContinuationContext would have done for the resumed frame;
         // the frame returned straight to the dispatcher, so the thread's contexts are still the
         // ones it suspended with.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void FinishSuspensionInDispatcher(Continuation continuation, Thread thread)
         {
             Debug.Assert((continuation.Flags & ContinuationFlags.FinishSuspensionInDispatcher) != 0);
