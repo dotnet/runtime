@@ -20436,6 +20436,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_push:
+        case INS_push_hide:
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = PERFSCORE_LATENCY_ZERO;
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
+            {
+                // A push with a memory operand performs that load and the
+                // stack store. Charge both, as the equivalent load into a
+                // register plus push of that register would be charged. The
+                // load otherwise rides free: the read's latency amortizes
+                // into the store and the table throughput already covers a
+                // plain push.
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+        }
+
         case INS_jmp:
         {
             if (emitInstHasNoCode(id))
