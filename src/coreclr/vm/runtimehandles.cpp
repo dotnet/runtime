@@ -176,7 +176,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtT
 }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE)
+FCIMPL1(MethodDesc *, RuntimeTypeHandle_GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE)
 {
     CONTRACTL
     {
@@ -202,7 +202,7 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
 FCIMPLEND
 
 #include <optsmallperfcritical.h>
-FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod) {
+FCIMPL1(void, RuntimeTypeHandle_GetNextIntroducedMethod, MethodDesc ** ppMethod) {
     CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(ppMethod));
@@ -220,7 +220,7 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
 FCIMPLEND
 #include <optdefault.h>
 
-FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
+FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle_GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -249,7 +249,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetAssemblySlow(QCall::ObjectHandleO
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pField)
+FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle_AcquiresContextFromThis, FieldDesc* pField)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -262,7 +262,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pFi
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocatorInternal, FieldDesc* pField)
+FCIMPL1(Object*, RuntimeFieldHandle_GetLoaderAllocatorInternal, FieldDesc* pField)
 {
     CONTRACTL
     {
@@ -277,7 +277,7 @@ FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocatorInternal, FieldDesc* pFie
 }
 FCIMPLEND
 
-FCIMPL1(ReflectModuleBaseObject*, RuntimeTypeHandle::GetModuleIfExists, ReflectClassBaseObject *pTypeUNSAFE)
+FCIMPL1(ReflectModuleBaseObject*, RuntimeTypeHandle_GetModuleIfExists, ReflectClassBaseObject *pTypeUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -303,7 +303,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-FCIMPL1(EnregisteredTypeHandle, RuntimeTypeHandle::GetElementTypeHandle, EnregisteredTypeHandle th)
+FCIMPL1(EnregisteredTypeHandle, RuntimeTypeHandle_GetElementTypeHandle, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 
@@ -331,7 +331,7 @@ FCIMPL1(EnregisteredTypeHandle, RuntimeTypeHandle::GetElementTypeHandle, Enregis
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNSAFE) {
+FCIMPL1(INT32, RuntimeTypeHandle_GetArrayRank, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pTypeUNSAFE));
@@ -345,7 +345,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNS
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject* pTypeUNSAFE) {
+FCIMPL1(INT32, RuntimeTypeHandle_GetNumVirtuals, ReflectClassBaseObject* pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
     }
@@ -624,7 +624,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTy
     return;
 }
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUNSAFE)
+FCIMPL1(INT32, RuntimeTypeHandle_GetAttributes, ReflectClassBaseObject *pTypeUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -687,7 +687,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer(
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle_IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -731,7 +731,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHan
     return fIsExternallyVisible;
 }
 
-FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, MethodTable* pMT)
+FCIMPL1(LPCUTF8, RuntimeTypeHandle_GetUtf8NameInternal, MethodTable* pMT)
 {
     CONTRACTL
     {
@@ -751,7 +751,7 @@ FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, MethodTable* pMT)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetToken, ReflectClassBaseObject *pTypeUNSAFE)
+FCIMPL1(INT32, RuntimeTypeHandle_GetToken, ReflectClassBaseObject *pTypeUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -1148,7 +1148,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::Type
     return;
 }
 
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CompareCanonicalHandles, ReflectClassBaseObject *pLeftUNSAFE, ReflectClassBaseObject *pRightUNSAFE)
+FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle_CompareCanonicalHandles, ReflectClassBaseObject *pLeftUNSAFE, ReflectClassBaseObject *pRightUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -1158,7 +1158,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CompareCanonicalHandles, ReflectClassBas
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable* pMT)
+FCIMPL1(Object*, RuntimeTypeHandle_InternalAllocNoChecks_FastPath, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
@@ -1197,7 +1197,7 @@ FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable*
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsGenericVariable, PTR_ReflectClassBaseObject pTypeUNSAFE)
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle_IsGenericVariable, PTR_ReflectClassBaseObject pTypeUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -1206,7 +1206,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsGenericVariable, PTR_ReflectClassBaseO
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetGenericVariableIndex, PTR_ReflectClassBaseObject pTypeUNSAFE)
+FCIMPL1(INT32, RuntimeTypeHandle_GetGenericVariableIndex, PTR_ReflectClassBaseObject pTypeUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -1215,7 +1215,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetGenericVariableIndex, PTR_ReflectClassBaseO
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::ContainsGenericVariables, PTR_ReflectClassBaseObject pTypeUNSAFE)
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle_ContainsGenericVariables, PTR_ReflectClassBaseObject pTypeUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -1352,7 +1352,7 @@ extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(
     return result;
 }
 
-FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
+FCIMPL1(LPCUTF8, RuntimeMethodHandle_GetUtf8NameInternal, MethodDesc* pMethod)
 {
     CONTRACTL
     {
@@ -1365,7 +1365,7 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsCollectible, MethodDesc *pMethod)
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle_IsCollectible, MethodDesc *pMethod)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMethod != NULL);
@@ -1373,7 +1373,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsCollectible, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetAttributes, MethodDesc *pMethod)
+FCIMPL1(INT32, RuntimeMethodHandle_GetAttributes, MethodDesc *pMethod)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMethod != NULL);
@@ -1381,7 +1381,7 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetAttributes, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetImplAttributes, ReflectMethodObject *pMethodUNSAFE)
+FCIMPL1(INT32, RuntimeMethodHandle_GetImplAttributes, ReflectMethodObject *pMethodUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -1395,7 +1395,7 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetImplAttributes, ReflectMethodObject *pMet
 }
 FCIMPLEND
 
-FCIMPL1(MethodTable*, RuntimeMethodHandle::GetMethodTable, MethodDesc *pMethod)
+FCIMPL1(MethodTable*, RuntimeMethodHandle_GetMethodTable, MethodDesc *pMethod)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMethod != NULL);
@@ -1403,7 +1403,7 @@ FCIMPL1(MethodTable*, RuntimeMethodHandle::GetMethodTable, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod)
+FCIMPL1(INT32, RuntimeMethodHandle_GetSlot, MethodDesc *pMethod)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMethod != NULL);
@@ -1411,7 +1411,7 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL3(INT32, SignatureNative::GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex)
+FCIMPL3(INT32, Signature_GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex)
 {
     FCALL_CONTRACT;
 
@@ -1447,7 +1447,7 @@ FCIMPL3(INT32, SignatureNative::GetParameterOffsetInternal, PCCOR_SIGNATURE sig,
 }
 FCIMPLEND
 
-FCIMPL4(INT32, SignatureNative::GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index)
+FCIMPL4(INT32, Signature_GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index)
 {
     FCALL_CONTRACT;
     _ASSERTE(offset >= 0);
@@ -1493,7 +1493,7 @@ FCIMPL4(INT32, SignatureNative::GetTypeParameterOffsetInternal, PCCOR_SIGNATURE 
 }
 FCIMPLEND
 
-FCIMPL3(INT32, SignatureNative::GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset)
+FCIMPL3(INT32, Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset)
 {
     FCALL_CONTRACT;
     _ASSERTE(offset >= 0);
@@ -1629,7 +1629,7 @@ extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
     END_QCALL;
 }
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetMethodDef, MethodDesc* pMethod)
+FCIMPL1(INT32, RuntimeMethodHandle_GetMethodDef, MethodDesc* pMethod)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMethod != NULL);
@@ -1776,7 +1776,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc 
     return;
 }
 
-FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::HasMethodInstantiation, MethodDesc * pMethod)
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle_HasMethodInstantiation, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
 
@@ -1784,7 +1784,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::HasMethodInstantiation, MethodDesc * p
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsGenericMethodDefinition, MethodDesc * pMethod)
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle_IsGenericMethodDefinition, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
 
@@ -1792,7 +1792,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsGenericMethodDefinition, MethodDesc 
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetGenericParameterCount, MethodDesc * pMethod)
+FCIMPL1(INT32, RuntimeMethodHandle_GetGenericParameterCount, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
 
@@ -1800,7 +1800,7 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetGenericParameterCount, MethodDesc * pMeth
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsDynamicMethod, MethodDesc * pMethod)
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle_IsDynamicMethod, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
 
@@ -1808,7 +1808,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsDynamicMethod, MethodDesc * pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeMethodHandle::GetResolver, MethodDesc * pMethod)
+FCIMPL1(Object*, RuntimeMethodHandle_GetResolver, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMethod != NULL);
@@ -1858,7 +1858,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod, QCal
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsTypicalMethodDefinition, ReflectMethodObject *pMethodUNSAFE)
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle_IsTypicalMethodDefinition, ReflectMethodObject *pMethodUNSAFE)
 {
     FCALL_CONTRACT;
     MethodDesc* pMethod = pMethodUNSAFE->GetMethod();
@@ -1945,7 +1945,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 // 3. create an UnboxingStub for a method in a value type. In this case instArray will be null.
 // For case 2 and 3, an instantiating stub or unboxing stub might not be needed in which case the original
 // MethodDesc is returned.
-FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetStubIfNeededInternal,
+FCIMPL2(MethodDesc*, RuntimeMethodHandle_GetStubIfNeededInternal,
     MethodDesc *pMethod,
     ReflectClassBaseObject *pTypeUNSAFE)
 {
@@ -1972,7 +1972,7 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetStubIfNeededInternal,
 }
 FCIMPLEND
 
-// See RuntimeMethodHandle::GetStubIfNeededInternal for more details.
+// See RuntimeMethodHandle_GetStubIfNeededInternal for more details.
 extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -2022,7 +2022,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
     return pNewMethod;
 }
 
-FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pMethod, ReflectClassBaseObject *pTypeUNSAFE)
+FCIMPL2(MethodDesc*, RuntimeMethodHandle_GetMethodFromCanonical, MethodDesc *pMethod, ReflectClassBaseObject *pTypeUNSAFE)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -2232,7 +2232,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle_IsConstructor, MethodDesc *pMethod)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -2244,7 +2244,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsAsyncMethod, MethodDesc *pMethod)
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle_IsAsyncMethod, MethodDesc *pMethod)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -2256,7 +2256,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsAsyncMethod, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeMethodHandle::GetLoaderAllocatorInternal, MethodDesc *pMethod)
+FCIMPL1(Object*, RuntimeMethodHandle_GetLoaderAllocatorInternal, MethodDesc *pMethod)
 {
     CONTRACTL
     {
@@ -2275,7 +2275,7 @@ FCIMPLEND
 //*********************************************************************************************
 //*********************************************************************************************
 
-FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
+FCIMPL1(LPCUTF8, RuntimeFieldHandle_GetUtf8NameInternal, FieldDesc *pField)
 {
     CONTRACTL
     {
@@ -2292,7 +2292,7 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetAttributes, FieldDesc *pField)
+FCIMPL1(INT32, RuntimeFieldHandle_GetAttributes, FieldDesc *pField)
 {
     FCALL_CONTRACT;
     _ASSERTE(pField != NULL);
@@ -2300,7 +2300,7 @@ FCIMPL1(INT32, RuntimeFieldHandle::GetAttributes, FieldDesc *pField)
 }
 FCIMPLEND
 
-FCIMPL1(MethodTable*, RuntimeFieldHandle::GetApproxDeclaringMethodTable, FieldDesc *pField)
+FCIMPL1(MethodTable*, RuntimeFieldHandle_GetApproxDeclaringMethodTable, FieldDesc *pField)
 {
     CONTRACTL
     {
@@ -2313,7 +2313,7 @@ FCIMPL1(MethodTable*, RuntimeFieldHandle::GetApproxDeclaringMethodTable, FieldDe
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetToken, FieldDesc* pField)
+FCIMPL1(INT32, RuntimeFieldHandle_GetToken, FieldDesc* pField)
 {
     CONTRACTL
     {
@@ -2328,7 +2328,7 @@ FCIMPL1(INT32, RuntimeFieldHandle::GetToken, FieldDesc* pField)
 }
 FCIMPLEND
 
-FCIMPL2(FieldDesc*, RuntimeFieldHandle::GetStaticFieldForGenericType, FieldDesc* pField, MethodTable* pMT)
+FCIMPL2(FieldDesc*, RuntimeFieldHandle_GetStaticFieldForGenericType, FieldDesc* pField, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
@@ -2343,7 +2343,7 @@ FCIMPL2(FieldDesc*, RuntimeFieldHandle::GetStaticFieldForGenericType, FieldDesc*
 }
 FCIMPLEND
 
-FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBaseObject* pAssemblyUNSAFE)
+FCIMPL1(ReflectModuleBaseObject*, RuntimeAssembly_GetManifestModule, AssemblyBaseObject* pAssemblyUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -2356,7 +2356,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
 }
 FCIMPLEND
 
-FCIMPL1(INT32, AssemblyHandle::GetTokenInternal, AssemblyBaseObject* pAssemblyUNSAFE)
+FCIMPL1(INT32, RuntimeAssembly_GetTokenInternal, AssemblyBaseObject* pAssemblyUNSAFE)
 {
     FCALL_CONTRACT;
 
