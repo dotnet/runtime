@@ -317,7 +317,6 @@ namespace System.Runtime
             Exception? e = id switch
             {
                 ExceptionIDs.AccessViolation => new AccessViolationException(),
-                ExceptionIDs.Arithmetic => new ArithmeticException(),
                 ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
                 ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
                 ExceptionIDs.DataMisaligned => new DataMisalignedException(),
@@ -447,6 +446,7 @@ namespace System.Runtime
 #endif
 #endif // NATIVEAOT
 
+#if !NATIVEAOT || !TARGET_WASM
         private enum HwExceptionCode : uint
         {
             STATUS_NATIVEAOT_NULL_REFERENCE = 0x00000000u,
@@ -460,6 +460,7 @@ namespace System.Runtime
             STATUS_INTEGER_OVERFLOW = 0xC0000095u,
             STATUS_PRIVILEGED_INSTRUCTION = 0xC0000096u,
         }
+#endif
         [StructLayout(LayoutKind.Explicit, Size = AsmOffsets.SIZEOF__PAL_LIMITED_CONTEXT)]
         public struct PAL_LIMITED_CONTEXT
         {
@@ -587,6 +588,7 @@ namespace System.Runtime
             return pExInfo != null ? pExInfo->ThrownException : null;
         }
 
+#if !NATIVEAOT || !TARGET_WASM
         //
         // Called by RhpThrowHwEx
         //
@@ -674,6 +676,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif
         }
+#endif
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
