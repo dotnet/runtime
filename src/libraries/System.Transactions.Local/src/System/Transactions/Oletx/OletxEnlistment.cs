@@ -81,7 +81,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
     internal OletxEnlistment(
         IEnlistmentNotificationInternal enlistmentNotification,
-        OletxTransactionStatus xactStatus,
+        Interop.Xolehlp.OletxTransactionStatus xactStatus,
         byte[] prepareInfoByteArray,
         OletxResourceManager oletxResourceManager)
         : base(oletxResourceManager, null)
@@ -112,7 +112,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
         // outcome, then tell the application.
         switch (xactStatus)
         {
-            case OletxTransactionStatus.OLETX_TRANSACTION_STATUS_ABORTED:
+            case Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_ABORTED:
                 {
                     State = OletxEnlistmentState.Aborting;
                     if (etwLog.IsEnabled())
@@ -124,7 +124,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
                     break;
                 }
 
-            case OletxTransactionStatus.OLETX_TRANSACTION_STATUS_COMMITTED:
+            case Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_COMMITTED:
                 {
                     State = OletxEnlistmentState.Committing;
                     // We are going to send the notification to the RM.  We need to put the
@@ -147,7 +147,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
                     break;
                 }
 
-            case OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED:
+            case Interop.Xolehlp.OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED:
                 {
                     State = OletxEnlistmentState.Prepared;
                     lock (oletxResourceManager.ReenlistList)
@@ -315,7 +315,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
             // We must have done our prepare work during Phase0 so just vote Yes.
             try
             {
-                localEnlistmentShim!.PrepareRequestDone(OletxPrepareVoteType.Prepared);
+                localEnlistmentShim!.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.Prepared);
                 enlistmentDone = false;
             }
             catch (COMException comException)
@@ -331,7 +331,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
                 // This was an early vote.  Respond ReadOnly
                 try
                 {
-                    localEnlistmentShim!.PrepareRequestDone(OletxPrepareVoteType.ReadOnly);
+                    localEnlistmentShim!.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.ReadOnly);
                     enlistmentDone = true;
                 }
                 finally
@@ -350,7 +350,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
             // Any other state means we should vote NO to the proxy.
             try
             {
-                localEnlistmentShim!.PrepareRequestDone(OletxPrepareVoteType.Failed);
+                localEnlistmentShim!.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.Failed);
             }
             catch (COMException ex)
             {
@@ -762,7 +762,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
             {
                 if (OletxEnlistmentState.Preparing == localState)
                 {
-                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.ReadOnly);
+                    localEnlistmentShim.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.ReadOnly);
                 }
                 else if (OletxEnlistmentState.Committing == localState)
                 {
@@ -780,7 +780,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
                 }
                 else if (OletxEnlistmentState.SinglePhaseCommitting == localState)
                 {
-                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
+                    localEnlistmentShim.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.SinglePhase);
                 }
                 else
                 {
@@ -889,7 +889,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
         {
             if (localEnlistmentShim != null)
             {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Prepared);
+                localEnlistmentShim.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.Prepared);
             }
             else if (localPhase0Shim != null)
             {
@@ -993,7 +993,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.Failed);
+            localEnlistmentShim?.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.Failed);
         }
         catch (COMException ex)
         {
@@ -1048,7 +1048,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
         {
             // This may be the result of a reenlist, which means we don't have a
             // reference to the proxy.
-            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
+            localEnlistmentShim?.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.SinglePhase);
         }
         catch (COMException ex)
         {
@@ -1107,7 +1107,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.Failed);
+            localEnlistmentShim?.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.Failed);
         }
         // If the TM went down during our call, there is nothing special we have to do because
         // the App doesn't expect any more notifications.
@@ -1157,7 +1157,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.InDoubt);
+            localEnlistmentShim?.PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType.InDoubt);
         }
         // If the TM went down during our call, there is nothing special we have to do because
         // the App doesn't expect any more notifications.

@@ -620,7 +620,7 @@ namespace System.Transactions.Oletx
             TransactionShim? transactionShim,
             OutcomeEnlistment? outcomeEnlistment,
             Guid identifier,
-            OletxTransactionIsolationLevel oletxIsoLevel)
+            Interop.Xolehlp.OletxTransactionIsolationLevel oletxIsoLevel)
         {
             bool successful = false;
 
