@@ -10,16 +10,13 @@ namespace Microsoft.NET.Build.Tasks;
 
 internal sealed class InvocationOutputs
 {
-    private readonly SourceRootPathMap? _pathMap;
-
     internal string? DirectoryPath { get; }
     internal string[] Files { get; }
 
-    internal InvocationOutputs(string? directoryPath, string[] files, SourceRootPathMap? pathMap = null)
+    internal InvocationOutputs(string? directoryPath, string[] files)
     {
         DirectoryPath = directoryPath;
         Files = files;
-        _pathMap = pathMap;
     }
 
     internal static InvocationOutputs FromDirectory(string path) =>
@@ -27,6 +24,4 @@ internal sealed class InvocationOutputs
 
     internal static InvocationOutputs FromFiles(params string[] files) =>
         new InvocationOutputs(null, Array.ConvertAll(files, Path.GetFullPath));
-
-    internal string ResolvePath(string identity) => _pathMap is null ? identity : _pathMap.Resolve(identity);
 }

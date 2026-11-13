@@ -117,7 +117,7 @@ namespace ILLink.Tasks.Tests
             {
                 var context = driver.Context;
 
-                var expectedReferences = assemblyPaths.Select(p => p.ItemSpec)
+                var expectedReferences = assemblyPaths.Select(p => Path.GetFullPath(p.ItemSpec))
                     .GroupBy(p => Path.GetFileNameWithoutExtension(p))
                     .Select(g => g.First());
                 var actualReferences = driver.GetReferenceAssemblies();
@@ -166,7 +166,7 @@ namespace ILLink.Tasks.Tests
             };
             using (var driver = task.CreateDriver())
             {
-                var expectedReferences = referenceAssemblyPaths;
+                var expectedReferences = referenceAssemblyPaths.Select(Path.GetFullPath);
                 var actualReferences = driver.GetReferenceAssemblies();
                 Assert.Equal(expectedReferences.OrderBy(a => a), actualReferences.OrderBy(a => a));
                 foreach (var reference in expectedReferences)
@@ -208,7 +208,7 @@ namespace ILLink.Tasks.Tests
             using (var driver = task.CreateDriver())
             {
                 var actualOutputDirectory = driver.Context.OutputDirectory;
-                Assert.Equal(outputDirectory, actualOutputDirectory);
+                Assert.Equal(Path.GetFullPath(outputDirectory), actualOutputDirectory);
             }
         }
 
@@ -242,7 +242,7 @@ namespace ILLink.Tasks.Tests
             using (var driver = task.CreateDriver())
             {
                 var actualDescriptors = driver.GetRootDescriptors();
-                Assert.Equal(rootDescriptorFiles.OrderBy(f => f), actualDescriptors.OrderBy(f => f));
+                Assert.Equal(rootDescriptorFiles.Select(Path.GetFullPath).OrderBy(f => f), actualDescriptors.OrderBy(f => f));
             }
         }
 
@@ -1859,12 +1859,12 @@ namespace ILLink.Tasks.Tests
                 Directory.CreateDirectory(Path.Combine(searchRoot, "second search"));
                 test.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{test.Root}/roots.xml\" -d \"{searchRoot}/first search\" -d \"{searchRoot}/second search\"";
             }
-            Assert.Equal(!disjointRoots, first.Task.GetResponseFileCommands() == second.Task.GetResponseFileCommands());
+            Assert.NotEqual(first.Task.GetResponseFileCommands(), second.Task.GetResponseFileCommands());
             Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstKey));
             Assert.True(second.Task.TryGetCacheKey(secondHost, out string secondKey));
             Assert.Equal(firstKey, secondKey);
-            Assert.Equal(disjointRoots, first.Task.CacheInvocation is null);
-            Assert.Equal(disjointRoots, second.Task.CacheInvocation is null);
+            Assert.NotNull(first.Task.CacheInvocation);
+            Assert.NotNull(second.Task.CacheInvocation);
 
             string secondSearchRoot = disjointRoots ? secondSearch.Root : second.Root;
             second.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{second.Root}/roots.xml\" -d \"{secondSearchRoot}/second search\" -d \"{secondSearchRoot}/first search\"";
@@ -1877,7 +1877,7 @@ namespace ILLink.Tasks.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void CacheInvocationUsesResolvedRelativePaths(bool relativeInputs, bool externalReference)
+        public void CacheInvocationUsesFullPathsAndCallerWorkingDirectory(bool relativeInputs, bool externalReference)
         {
             RemoteExecutor.Invoke(static (relative, external) =>
             {
@@ -1912,17 +1912,16 @@ namespace ILLink.Tasks.Tests
                     Assert.True(test.Task.TryGetCacheKey(host, out string key));
                     Assert.NotNull(test.Task.CacheInvocation);
                     var invocation = test.Task.CacheInvocation.Value;
-                    Assert.Equal(test.Root, invocation.WorkingDirectory);
-                    Assert.Equal($" \"{Path.Combine("tools", "illink.dll")}\"", invocation.CommandLine);
+                    Assert.Equal(caller, invocation.WorkingDirectory);
+                    Assert.Equal($" \"{Path.Combine(test.Root, "tools", "illink.dll")}\"", invocation.CommandLine);
                     var arguments = new Queue<string>();
                     using var response = new StringReader(invocation.ResponseFile);
                     Mono.Linker.Driver.ParseResponseFile(response, arguments);
-                    Assert.Contains(Path.Combine("inputs", "Input.dll"), arguments);
-                    Assert.Contains(bool.Parse(external) ? Path.Combine(outside.Root, "Reference.dll") : Path.Combine("inputs", "Reference.dll"), arguments);
-                    Assert.Equal(2, arguments.Count(argument => argument == "roots.xml"));
-                    Assert.Contains(".", arguments);
-                    Assert.Equal("linked output", arguments.Last());
-                    Assert.DoesNotContain(test.Root, invocation.ResponseFile);
+                    Assert.Contains(Path.Combine(test.Root, "inputs", "Input.dll"), arguments);
+                    Assert.Contains(bool.Parse(external) ? Path.Combine(outside.Root, "Reference.dll") : Path.Combine(test.Root, "inputs", "Reference.dll"), arguments);
+                    Assert.Equal(2, arguments.Count(argument => argument == Path.Combine(test.Root, "roots.xml")));
+                    Assert.Contains(test.Root, arguments);
+                    Assert.Equal(test.Output, arguments.Last());
                     Assert.Equal(originalResponse, test.Task.GetResponseFileCommands());
                     Assert.Equal(caller, test.Task.WorkingDirectory);
 
@@ -1952,18 +1951,20 @@ namespace ILLink.Tasks.Tests
                 new TaskItem(second.Root, new Dictionary<string, string> { { "MappedPath", "/_1/" } })
             };
             Assert.True(test.Task.TryGetCacheKey(host, out _));
-            Assert.Null(test.Task.CacheInvocation);
+            Assert.NotNull(test.Task.CacheInvocation);
+            Assert.Equal(Environment.CurrentDirectory, test.Task.CacheInvocation.Value.WorkingDirectory);
+            Assert.Contains(test.Root, test.Task.CacheInvocation.Value.ResponseFile);
         }
 
         [Theory]
         [InlineData("missing")]
         [InlineData("relative")]
-        [InlineData("missing-directory")]
         [InlineData("physical-mapped-path")]
         [InlineData("missing-mapped-path")]
         [InlineData("escaping-mapped-path")]
         [InlineData("duplicate-physical")]
         [InlineData("duplicate-logical")]
+        [InlineData("overlapping-logical")]
         [InlineData("inconsistent-nested")]
         public void CacheKeyRejectsInvalidSourceRoots(string reason)
         {
@@ -1977,9 +1978,6 @@ namespace ILLink.Tasks.Tests
                     break;
                 case "relative":
                     root.ItemSpec = "relative";
-                    break;
-                case "missing-directory":
-                    root.ItemSpec = Path.Combine(test.Root, "missing");
                     break;
                 case "physical-mapped-path":
                     root.SetMetadata("MappedPath", test.Root + "/");
@@ -1995,6 +1993,9 @@ namespace ILLink.Tasks.Tests
                     break;
                 case "duplicate-logical":
                     test.Task.SourceRoots = new[] { root, new TaskItem(test.Root + "-other", new Dictionary<string, string> { { "MappedPath", "/_/" } }) };
+                    break;
+                case "overlapping-logical":
+                    test.Task.SourceRoots = new[] { root, new TaskItem(test.Root + "-other", new Dictionary<string, string> { { "MappedPath", "/_/inputs/" } }) };
                     break;
                 case "inconsistent-nested":
                     test.Task.SourceRoots = new[] { root, new TaskItem(Path.Combine(test.Root, "inputs"), new Dictionary<string, string> { { "MappedPath", "/_1/" } }) };
@@ -2023,7 +2024,7 @@ namespace ILLink.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void SourceRootIdentitiesResolvePhysicalPaths(bool nested)
+        public void SourceRootIdentitiesPreserveNestedAndDisjointLayouts(bool nested)
         {
             using var first = new OutputDirectoryTest();
             using var second = new OutputDirectoryTest();
@@ -2033,24 +2034,17 @@ namespace ILLink.Tasks.Tests
                 new TaskItem(first.Root, new Dictionary<string, string> { { "MappedPath", "/_/" } }),
                 new TaskItem(otherRoot, new Dictionary<string, string> { { "MappedPath", nested ? "/_/nested/" : "/_1/" } })
             });
-            paths.ValidateMappings();
-            foreach (string path in new[]
+            foreach (var (path, identity) in new[]
             {
-                first.Root, Path.Combine(first.Root, "inputs", "a file.dll"),
-                otherRoot, Path.Combine(otherRoot, "output", "a file.dll"),
-                Path.Combine(first.Root + "-outside", "external.dll")
+                (first.Root, "mapped:/_/"),
+                (Path.Combine(first.Root, "inputs", "a file.dll"), "mapped:/_/inputs/a file.dll"),
+                (otherRoot, nested ? "mapped:/_/nested/" : "mapped:/_1/"),
+                (Path.Combine(otherRoot, "output", "a file.dll"), nested ? "mapped:/_/nested/output/a file.dll" : "mapped:/_1/output/a file.dll"),
+                (Path.Combine(first.Root + "-outside", "external.dll"), "absolute:" + Path.Combine(first.Root + "-outside", "external.dll"))
             })
             {
-                string normalized = paths.Map(path);
-                Assert.Equal(path, paths.Resolve(normalized));
-                string executionPath = nested && (path == first.Root || path.StartsWith(first.Root + Path.DirectorySeparatorChar))
-                    ? Path.GetRelativePath(first.Root, path) : path;
-                Assert.Equal(executionPath, paths.MapForExecution(normalized));
+                Assert.Equal(identity, paths.Map(path));
             }
-
-            Assert.Throws<ArgumentException>(() => paths.Resolve("mapped:/_/../outside.dll"));
-            Assert.Throws<ArgumentException>(() => paths.Resolve("mapped:/_99/unknown.dll"));
-            Assert.Throws<ArgumentException>(() => paths.Resolve("absolute:relative.dll"));
         }
 
         [Theory]
@@ -2146,9 +2140,8 @@ namespace ILLink.Tasks.Tests
                 Assert.False(Directory.Exists(cacheDirectory));
                 if (cacheEnabled)
                     Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
-                Assert.Equal(test.Root, test.Task.WorkingDirectories.Last());
-                Assert.Contains("\"Input.dll\"", Assert.Single(test.Task.ResponseFiles));
-                Assert.DoesNotContain(test.Root, test.Task.ResponseFiles[0]);
+                Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
+                Assert.Contains($"\"{input}\"", Assert.Single(test.Task.ResponseFiles));
             }, cacheEnabled.ToString()).Dispose();
         }
 
@@ -2161,7 +2154,7 @@ namespace ILLink.Tasks.Tests
         [InlineData(true, "missing")]
         [InlineData(true, "duplicate")]
         [InlineData(true, "nested")]
-        public void TaskUsesRelativePathsWithoutDeterministicSourceMappings(bool cacheEnabled, string mapping)
+        public void TaskUsesFullPathsWithoutDeterministicSourceMappings(bool cacheEnabled, string mapping)
         {
             RemoteExecutor.Invoke(static (enabled, mapping) =>
             {
@@ -2194,21 +2187,25 @@ namespace ILLink.Tasks.Tests
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
 
                 Assert.True(test.Task.Execute());
-                Assert.Equal(test.Root, test.Task.WorkingDirectories.Last());
-                Assert.DoesNotContain(test.Root, Assert.Single(test.Task.ResponseFiles));
-                Assert.Contains($"\"{Path.Combine("inputs", "Input.dll")}\"", test.Task.ResponseFiles[0]);
+                Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
+                Assert.Contains($"\"{input}\"", Assert.Single(test.Task.ResponseFiles));
                 Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
                 Assert.False(Directory.Exists(cacheDirectory));
             }, cacheEnabled.ToString(), mapping).Dispose();
         }
 
         [Theory]
-        [InlineData("missing")]
-        [InlineData("missing-directory")]
-        [InlineData("disjoint")]
-        public void TaskKeepsOriginalInvocationWithoutUsableExecutionRoot(string reason)
+        [InlineData("valid", false)]
+        [InlineData("valid", true)]
+        [InlineData("missing", false)]
+        [InlineData("missing", true)]
+        [InlineData("missing-directory", false)]
+        [InlineData("missing-directory", true)]
+        [InlineData("disjoint", false)]
+        [InlineData("disjoint", true)]
+        public void TaskInvocationDoesNotDependOnSourceRootsOrCaching(string reason, bool relativeInputs)
         {
-            RemoteExecutor.Invoke(static reason =>
+            RemoteExecutor.Invoke(static (reason, relativeInputs) =>
             {
                 using var test = new OutputDirectoryTest();
                 using var other = new OutputDirectoryTest();
@@ -2230,6 +2227,12 @@ namespace ILLink.Tasks.Tests
                             new TaskItem(other.Root, new Dictionary<string, string> { { "MappedPath", "/_1/" } })).ToArray();
                         break;
                 }
+                if (bool.Parse(relativeInputs))
+                {
+                    test.Task.AssemblyPaths[0].ItemSpec = Path.GetRelativePath(Environment.CurrentDirectory, input);
+                    test.Task.OutputDirectory.ItemSpec = Path.GetRelativePath(Environment.CurrentDirectory, test.Output);
+                    test.Task.ILLinkPath = Path.GetRelativePath(Environment.CurrentDirectory, test.Task.ILLinkPath);
+                }
                 Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", Path.Combine(test.Root, "cache"));
                 foreach (bool enabled in new[] { false, true })
                 {
@@ -2237,10 +2240,13 @@ namespace ILLink.Tasks.Tests
                     Assert.True(test.Task.Execute());
                     Assert.Equal(Environment.CurrentDirectory, test.Task.WorkingDirectories.Last());
                     Assert.Contains(input, test.Task.ResponseFiles.Last());
+                    Assert.Contains($"\"{test.Output}\"", test.Task.ResponseFiles.Last());
                     Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
                 }
                 Assert.Equal(test.Task.ResponseFiles[0], test.Task.ResponseFiles[1]);
-            }, reason).Dispose();
+                if (reason != "missing")
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+            }, reason, relativeInputs.ToString()).Dispose();
         }
 
         [Theory]
@@ -2253,6 +2259,7 @@ namespace ILLink.Tasks.Tests
                 bool symbols = bool.Parse(value);
                 using var first = new OutputDirectoryTest();
                 using var second = new OutputDirectoryTest();
+                using var packageStorage = new OutputDirectoryTest();
                 string input = Path.Combine(first.Root, "Fixture.dll");
                 WriteSymbolAssembly(input, "/_/src/Fixture.cs");
                 if (!symbols)
@@ -2266,11 +2273,20 @@ namespace ILLink.Tasks.Tests
                 string originalDirectory = Environment.CurrentDirectory;
                 try
                 {
-                    foreach (var test in new[] { first, second })
+                    foreach (var (test, packageDirectory) in new[]
                     {
+                        (first, Path.Combine(packageStorage.Root, "first")),
+                        (second, Path.Combine(packageStorage.Root, "second", "different", "depth"))
+                    })
+                    {
+                        Directory.CreateDirectory(packageDirectory);
+                        string reference = Path.Combine(packageDirectory, Path.GetFileName(typeof(object).Assembly.Location));
+                        File.Copy(typeof(object).Assembly.Location, reference);
+                        test.Task.SourceRoots = test.Task.SourceRoots.Append(
+                            new TaskItem(packageDirectory, new Dictionary<string, string> { { "MappedPath", "/_1/" } })).ToArray();
                         test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(Path.Combine(test.Root, "Fixture.dll"), new Dictionary<string, string> { { "TrimMode", "link" } }) };
                         test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Fixture", new Dictionary<string, string> { { "RootMode", "library" } }) };
-                        test.Task.ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem(typeof(object).Assembly.Location) };
+                        test.Task.ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem(reference) };
                         test.Task.TrimMode = "skip";
                         test.Task.DefaultAction = "skip";
                         test.Task.RemoveSymbols = !symbols;
@@ -2285,11 +2301,10 @@ namespace ILLink.Tasks.Tests
                         Assert.Equal(caller, test.Task.WorkingDirectory);
                     }
                     string executedResponse = Assert.Single(first.Task.ResponseFiles);
-                    Assert.Contains("\"Fixture.dll\"", executedResponse);
-                    Assert.Contains("\"linked output\"", executedResponse);
-                    Assert.DoesNotContain(first.Root, executedResponse);
+                    Assert.Contains($"\"{Path.Combine(first.Root, "Fixture.dll")}\"", executedResponse);
+                    Assert.Contains($"\"{first.Output}\"", executedResponse);
                     Assert.Empty(second.Task.ResponseFiles);
-                    Assert.Contains(first.Task.WorkingDirectories, directory => directory == first.Root);
+                    Assert.Contains(first.Task.WorkingDirectories, directory => directory == Path.Combine(first.Root, "caller"));
                     Assert.Contains(first.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
                     Assert.Contains(second.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
                     Assert.Single(Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")));
@@ -2298,8 +2313,10 @@ namespace ILLink.Tasks.Tests
                     var restored = outputs.ToDictionary(name => name, name => File.ReadAllBytes(Path.Combine(second.Output, name)));
                     Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "false");
                     Assert.True(second.Task.Execute());
-                    Assert.Equal(second.Root, second.Task.WorkingDirectories.Last());
-                    Assert.Equal(executedResponse, Assert.Single(second.Task.ResponseFiles));
+                    Assert.Equal(Path.Combine(second.Root, "caller"), second.Task.WorkingDirectories.Last());
+                    string uncachedResponse = Assert.Single(second.Task.ResponseFiles);
+                    Assert.NotEqual(executedResponse, uncachedResponse);
+                    Assert.Contains($"\"{Path.Combine(second.Root, "Fixture.dll")}\"", uncachedResponse);
                     foreach (string name in outputs)
                     {
                         Assert.Equal(File.ReadAllBytes(Path.Combine(first.Output, name)), restored[name]);
@@ -2426,36 +2443,29 @@ namespace ILLink.Tasks.Tests
             builder.Append("-reference ").AppendAssembly(input).AppendLine();
             builder.AppendExtraArgs(extraArgs);
             builder.Append("-out ").AppendOutputDirectory(output).AppendLine();
+            string expectedResponse = $"-x \"{xml}\"{Environment.NewLine}-reference \"{input}\"{Environment.NewLine}" +
+                $"--ignore-link-attributes true{Environment.NewLine}--substitutions \"{xml}\"{Environment.NewLine}-out \"{output}\"{Environment.NewLine}";
+            Assert.Equal($"\"{tool}\"", builder.CommandLine);
+            Assert.Equal(expectedResponse, builder.ToString());
 
             if (invalidOutputPath is not null)
             {
-                string original = $"-x \"{xml}\"{Environment.NewLine}-reference \"{input}\"{Environment.NewLine}{extraArgs}{Environment.NewLine}-out \"{output}\"{Environment.NewLine}";
                 Assert.Null(builder.Paths);
-                Assert.Equal($"\"{tool}\"", builder.CommandLine);
-                Assert.Equal(builder.CommandLine, builder.CommandIdentity);
-                Assert.Equal(original, builder.ToString());
-                Assert.Equal(original, builder.ResponseIdentity);
             }
             else
             {
                 Assert.Same(paths, builder.Paths);
-                Assert.Equal("mapped:/_/illink.dll", builder.ToolPath);
-                Assert.Equal("mapped:/_/roots.xml", Assert.Single(builder.Files));
-                Assert.Equal(("mapped:/_/Input.dll", true), Assert.Single(builder.Assemblies));
-                Assert.Equal(("--substitutions", "mapped:/_/roots.xml"), Assert.Single(builder.ExtraPaths));
-                Assert.Equal("mapped:/_/output", builder.OutputDirectory);
-                Assert.Equal("\"illink.dll\"", builder.CommandLine);
-                Assert.Equal("\"mapped:/_/illink.dll\"", builder.CommandIdentity);
-                Assert.Equal("-x \"roots.xml\"" + Environment.NewLine +
-                    "-reference \"Input.dll\"" + Environment.NewLine +
-                    "--ignore-link-attributes true" + Environment.NewLine +
-                    "--substitutions \"roots.xml\"" + Environment.NewLine +
-                    "-out \"output\"" + Environment.NewLine, builder.ToString());
+                Assert.Equal(tool, builder.ToolPath);
+                Assert.Equal(xml, Assert.Single(builder.Files));
+                Assert.Equal((input, true), Assert.Single(builder.Assemblies));
+                Assert.Equal(("--substitutions", xml), Assert.Single(builder.ExtraPaths));
+                Assert.Equal(output, builder.OutputDirectory);
+                Assert.Equal("\"mapped:/_/illink.dll\"", builder.GetCommandIdentity(paths.Map));
                 Assert.Equal("-x \"mapped:/_/roots.xml\"" + Environment.NewLine +
                     "-reference \"mapped:/_/Input.dll\"" + Environment.NewLine +
                     "--ignore-link-attributes true" + Environment.NewLine +
                     "--substitutions \"mapped:/_/roots.xml\"" + Environment.NewLine +
-                    "-out \"mapped:/_/output\"" + Environment.NewLine, builder.ResponseIdentity);
+                    "-out \"mapped:/_/output\"" + Environment.NewLine, builder.GetResponseIdentity(paths.Map));
             }
         }
 

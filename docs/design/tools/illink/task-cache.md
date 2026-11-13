@@ -22,19 +22,18 @@ maintenance commands.
 `ILLink` derives from the shared `CachedToolTask`, supplying `CacheConfiguration`, `DescribeInvocation`,
 and `ExecuteToolCore`. The base class checks whether caching is enabled before describing the invocation.
 Argument construction records input roles and one structured argument list in a single walk over
-the task inputs. Registering a path normalizes it once against the captured caller's working
-directory. Argument records and input/output inventories share that normalized value, which is
-used directly for logical cache context and translated for execution. Original spelling is retained
-in the argument records for fallback and disjoint-root execution, without a separate fallback buffer.
+the task inputs. Registering a path resolves it once against the captured caller's working
+directory. Argument records and input/output inventories share that physical full path.
+Known path arguments are passed to ILLink as full paths, without changing its working directory.
 The command-line and response-file hooks reuse that construction;
 execution does not reconstruct or compare arguments.
 The description callback expands the recorded inputs through `DescribeInvocation`, normalizes
 newly discovered dependencies at registration, supplies the effective working directory, and declares
 one owned output directory; it runs only when caching is enabled.
-Description construction consumes prepared paths without remapping them.
-The description stores logical path identities without parallel physical
-path inventories; its reversible source-root map resolves identities for file reads, output
-validation, and restoration. Normal execution uses
+Description construction retains prepared physical paths and a source-root map. Only key construction
+maps paths to portable identities, including known paths in the structured arguments. It maps each
+distinct physical path once per key and orders the inventory by mapped identity. File reads, output
+validation, and restoration use the stored physical paths directly. Normal execution uses
 the already-generated arguments regardless of cache eligibility. ILLink owns metadata inspection
 and path-independence checks; the shared layer owns key serialization, full-content hashing,
 publication, restoration, and writer coordination.
@@ -50,19 +49,18 @@ the execution result and logged errors. Bypassed invocations execute directly wi
 
 Share eligible results across clones/worktrees with equivalent relative layouts. Accept physical
 `SourceRoots` with stable logical `MappedPath` metadata (`/_/`, `/_1/`, etc.). Map known paths to
-tagged logical-root/relative-path identities; retain absolute external paths. Require distinct roots
-and consistent nested mappings. Missing or invalid mappings run uncached.
+tagged logical-root/relative-path identities during key construction; retain absolute external paths.
+Require distinct roots and consistent nested mappings. Missing or invalid mappings run uncached.
+Independent roots, such as a checkout and a NuGet package directory, need not retain their physical
+placement relative to each other.
 
-For one enclosing physical root, run ILLink from that root with known in-root paths rendered
-relative to it, whether caching is enabled, disabled, or bypassed by input eligibility checks.
-Relative execution does not require stable logical `MappedPath` metadata. Resolve original
-relative inputs against the caller's cwd first. Do not change process-wide cwd or task inputs.
-Disjoint-root invocations retain their original execution with logical key mapping only.
-Missing execution roots and unsupported argument shapes retain the original invocation in both
-cache modes.
+Resolve original relative inputs against the caller's cwd and pass known paths as full paths,
+whether caching is enabled, disabled, or bypassed. Do not select an execution root, change the
+working directory, or mutate task inputs. Source-root directories need not exist unless the invocation
+actually reads files from them. Unsupported opaque extra arguments retain their original spelling.
 
 Use the shared SHA-256 key builder over a length-delimited description with ILLink-specific context. Include
-execution mode, effective working directory, exact generated arguments, logical output identity,
+mapped working directory, generated arguments with mapped path tokens, logical output identity,
 platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
 replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
 sidecar associations, and ordered search directories. The model describes the task's built-in
@@ -72,8 +70,8 @@ Runtime per-library, shared-framework, out-of-band, and SDK publish targets forw
 existing `@(SourceRoot)` items after `InitializeSourceRootMappedPaths`. Aggregate runtime projects
 import the managed compiler's mapping target explicitly because their SDK does not compile sources.
 Initialization uses the existing `DeterministicSourcePaths` setting: deterministic builds normally
-receive stable logical prefixes; other builds receive physical mappings and run uncached, still
-using relative execution when supported. Root forwarding does not normalize upstream assemblies or
+receive stable logical prefixes; other builds receive physical mappings and run uncached.
+Root forwarding does not normalize upstream assemblies or
 enable symbol preservation or compiler path mapping.
 
 ## Input discovery and eligibility

@@ -14,16 +14,13 @@ namespace Microsoft.NET.Build.Tasks;
 internal sealed class SourceRootPathMap
 {
     private readonly List<(string Physical, string Logical)> _roots = new();
-    private readonly string? _mappingError;
-    internal string WorkingDirectory { get; } = Environment.CurrentDirectory;
-    internal string? ExecutionRoot { get; }
     private static StringComparison PathComparison => Path.DirectorySeparatorChar == '\\'
         ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
     internal SourceRootPathMap(ITaskItem[]? sourceRoots)
     {
         if (sourceRoots is null || sourceRoots.Length == 0)
-            throw new NotSupportedException("SourceRoots are required for relative execution.");
+            throw new NotSupportedException("SourceRoots are required for shared cache identity.");
         foreach (ITaskItem root in sourceRoots)
         {
             if (!Path.IsPathRooted(root.ItemSpec))
@@ -37,26 +34,7 @@ internal sealed class SourceRootPathMap
             _roots.Add((physical, logical));
         }
         _roots.Sort((left, right) => right.Physical.Length.CompareTo(left.Physical.Length));
-        string outerRoot = _roots[_roots.Count - 1].Physical;
-        if (_roots.All(root => root.Physical.Equals(outerRoot, PathComparison) ||
-            root.Physical.StartsWith(outerRoot + Path.DirectorySeparatorChar, PathComparison)))
-            ExecutionRoot = outerRoot;
-
-        try
-        {
-            CheckMappings();
-        }
-        catch (NotSupportedException ex)
-        {
-            // Relative execution remains usable without deterministic logical mappings.
-            _mappingError = ex.Message;
-        }
-    }
-
-    internal void ValidateMappings()
-    {
-        if (_mappingError is not null)
-            throw new NotSupportedException(_mappingError);
+        CheckMappings();
     }
 
     private void CheckMappings()
@@ -78,71 +56,29 @@ internal sealed class SourceRootPathMap
 
         static void CheckNested(string child, string childLogical, string parent, string parentLogical)
         {
-            if (child.StartsWith(parent + Path.DirectorySeparatorChar, PathComparison) &&
-                childLogical != parentLogical + child.Substring(parent.Length + 1).Replace('\\', '/') + "/")
+            bool nested = child.StartsWith(parent + Path.DirectorySeparatorChar, PathComparison);
+            if (nested
+                ? childLogical != parentLogical + child.Substring(parent.Length + 1).Replace('\\', '/') + "/"
+                : childLogical.StartsWith(parentLogical, StringComparison.Ordinal))
                 throw new NotSupportedException("Nested SourceRoots must preserve their relative layout.");
         }
     }
 
-    internal string Map(string path) => MapFullPath(GetValidatedFullPath(path));
-
-    private string MapFullPath(string path)
+    internal string Map(string path)
     {
-        if (_mappingError is null)
+        foreach (var root in _roots)
         {
-            foreach (var root in _roots)
-            {
-                if (path.Equals(root.Physical, PathComparison))
-                    return "mapped:" + root.Logical;
-                if (path.StartsWith(root.Physical + Path.DirectorySeparatorChar, PathComparison))
-                    return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
-            }
+            if (path.Equals(root.Physical, PathComparison))
+                return "mapped:" + root.Logical;
+            if (path.StartsWith(root.Physical + Path.DirectorySeparatorChar, PathComparison))
+                return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
         }
         return "absolute:" + path;
     }
 
-    internal string Resolve(string identity)
+    internal static string GetFullPath(string path, string workingDirectory)
     {
-        string path = GetPhysicalPath(identity);
-        if (Path.IsPathRooted(path) && GetValidatedFullPath(path) == path &&
-            (identity.StartsWith("absolute:", StringComparison.Ordinal) || MapFullPath(path) == identity))
-            return path;
-        throw new ArgumentException($"Unknown or noncanonical invocation path identity '{identity}'.", nameof(identity));
-    }
-
-    private string GetPhysicalPath(string identity)
-    {
-        const string AbsolutePrefix = "absolute:";
-        const string MappedPrefix = "mapped:";
-        if (identity.StartsWith(AbsolutePrefix, StringComparison.Ordinal))
-            return identity.Substring(AbsolutePrefix.Length);
-        if (identity.StartsWith(MappedPrefix, StringComparison.Ordinal) && _mappingError is null)
-        {
-            foreach (var root in _roots)
-            {
-                string prefix = MappedPrefix + root.Logical;
-                if (identity.StartsWith(prefix, StringComparison.Ordinal))
-                    return Path.Combine(root.Physical, identity.Substring(prefix.Length).Replace('/', Path.DirectorySeparatorChar));
-            }
-        }
-        throw new ArgumentException($"Unknown invocation path identity '{identity}'.", nameof(identity));
-    }
-
-    internal string MapForExecution(string identity)
-    {
-        string path = GetPhysicalPath(identity);
-        if (ExecutionRoot is null)
-            return path;
-        if (path.Equals(ExecutionRoot, PathComparison))
-            return ".";
-        if (path.StartsWith(ExecutionRoot + Path.DirectorySeparatorChar, PathComparison))
-            return path.Substring(ExecutionRoot.Length + 1);
-        return path;
-    }
-
-    private string GetValidatedFullPath(string path)
-    {
-        path = Path.GetFullPath(string.IsNullOrEmpty(path) ? path : Path.Combine(WorkingDirectory, path));
+        path = Path.GetFullPath(string.IsNullOrEmpty(path) ? path : Path.Combine(workingDirectory, path));
         if (path.Length > Path.GetPathRoot(path)!.Length)
             path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||

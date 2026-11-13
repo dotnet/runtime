@@ -10,7 +10,7 @@ Derive from `CachedToolTask` and compile the shared sources into the task assemb
 - `CacheConfiguration` with an `InvocationCacheConfiguration` naming the tool and its enable/path
   environment variables. Only `true` enables caching; a path alone does not. Without an override,
   storage uses the platform's user cache directory.
-- `DescribeInvocation` to return ordered input paths, effective arguments/context, and an owned
+- `DescribeInvocation` to return input paths, effective arguments/context, and an owned
   directory or file set through `InvocationDescription`. Return null for unsupported invocations.
 - `ExecuteToolCore` when the task needs tool-specific output preparation before calling the base
   implementation. It runs only on misses and bypasses.
@@ -47,22 +47,25 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
-Prepare paths once through a shared `SourceRootPathMap` constructed from MSBuild `SourceRoot` items
-with `MappedPath` metadata. It captures the caller's working directory for interpreting relative
-inputs. Supply already-normalized paths to the `InvocationInputs`, `InvocationOutputs`, and
-`InvocationDescription` constructors, including the effective working directory; these containers
-do not map paths again. The `FromFiles` and `FromDirectory` factories remain available for unmapped
-physical declarations.
-The description stores only logical identities for input files, output locations, and that working
-directory. Hashing serializes those identities directly; file access, output validation, and
-restoration resolve them to physical absolute paths through the same mapping. Without a mapping,
-identities are absolute paths.
-Consumers must preserve complete relative layouts and distinguish external paths rather than
-mapping unrelated files to the same identity. Mappings must remain stable and reversible throughout
-discovery, hashing, execution, and restoration. The same concrete mapping renders root-relative
-execution paths from prepared identities without normalizing the original inputs again;
-tool-specific eligibility checks remain with the consumer. Invalid logical mappings still permit
-relative execution using absolute identities internally, but must be rejected for caching.
+Resolve relative paths against the caller's working directory once during registration. Supply
+canonical physical full paths to `InvocationInputs`, `InvocationOutputs`, and `InvocationDescription`,
+including the effective working directory. These containers retain physical paths for file reads,
+output validation, and restoration. The `FromFiles` and `FromDirectory` factories canonicalize
+physical declarations for consumers that do not prepare paths themselves.
+
+For cross-worktree sharing, attach a shared `SourceRootPathMap` constructed from MSBuild `SourceRoot`
+items with stable `MappedPath` metadata. Only key construction maps physical paths to cache identities.
+It maps each distinct path once per key, sorts the input inventory by mapped identity, and hashes
+each identity together with the contents read from its physical path. Argument and search order
+belong in context, independently of inventory ordering.
+Consumers with path-bearing context provide a context factory that receives the same mapping
+function; render known structured path arguments through it rather than replacing raw substrings.
+Without a root map, identities remain physical absolute paths.
+
+Consumers must preserve complete within-root layouts and distinguish external paths rather than
+mapping unrelated files to the same identity. Root mappings are captured and validated at construction;
+tool-specific eligibility checks remain with the consumer. Physical path storage also leaves file
+access independent of cache identity, including any future metadata-based file-hash optimization.
 
 Prepare any execution-path normalization independently of the cache callbacks so disabling or
 bypassing caching does not change the invocation.

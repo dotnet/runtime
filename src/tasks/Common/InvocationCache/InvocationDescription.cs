@@ -10,21 +10,29 @@ namespace Microsoft.NET.Build.Tasks;
 internal sealed class InvocationDescription
 {
     private readonly SourceRootPathMap? _pathMap;
+    private readonly Func<Func<string, string>, string[]> _getContext;
 
     internal InvocationInputs Inputs { get; }
-    internal string[] Context { get; }
     internal InvocationOutputs Outputs { get; }
     internal string WorkingDirectory { get; }
 
     internal InvocationDescription(InvocationInputs inputs, string[] context, InvocationOutputs outputs,
         string? workingDirectory = null, SourceRootPathMap? pathMap = null)
+        : this(inputs, _ => context, outputs, workingDirectory, pathMap)
+    {
+    }
+
+    internal InvocationDescription(InvocationInputs inputs, Func<Func<string, string>, string[]> getContext,
+        InvocationOutputs outputs, string? workingDirectory = null, SourceRootPathMap? pathMap = null)
     {
         _pathMap = pathMap;
+        _getContext = getContext;
         Inputs = inputs;
-        Context = context;
         Outputs = outputs;
         WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory;
     }
 
-    internal string ResolvePath(string identity) => _pathMap is null ? identity : _pathMap.Resolve(identity);
+    internal string MapPath(string path) => _pathMap is null ? path : _pathMap.Map(path);
+
+    internal string[] GetContext(Func<string, string> mapPath) => _getContext(mapPath);
 }

@@ -64,8 +64,8 @@ namespace ILLink.Tasks
         public ITaskItem OutputDirectory { get; set; }
 
         /// <summary>
-        /// Gets or sets physical source roots for root-relative execution paths.
-        /// Stable MappedPath metadata is additionally required for cache identity.
+        /// Gets or sets physical source roots with stable MappedPath metadata for cache identity.
+        /// These mappings do not change the tool's arguments or working directory.
         /// These mappings do not normalize paths embedded in inputs or outputs.
         /// </summary>
         public ITaskItem[] SourceRoots { get; set; }
@@ -274,11 +274,8 @@ namespace ILLink.Tasks
 
         protected override string GenerateFullPathToTool() => DotNetPath;
 
-        private string _executionWorkingDirectory;
         private InvocationBuilder _invocation;
         private string _pendingResponseFile;
-
-        protected override string GetWorkingDirectory() => _executionWorkingDirectory ?? base.GetWorkingDirectory();
 
         private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
 
@@ -286,9 +283,7 @@ namespace ILLink.Tasks
         {
             try
             {
-                string outputDirectory = _invocation?.Paths is { } paths
-                    ? paths.Resolve(_invocation.OutputDirectory)
-                    : Path.GetFullPath(OutputDirectory.ItemSpec);
+                string outputDirectory = _invocation?.OutputDirectory ?? Path.GetFullPath(OutputDirectory.ItemSpec);
                 if (Directory.Exists(outputDirectory))
                     Directory.Delete(outputDirectory, recursive: true);
 
@@ -300,45 +295,29 @@ namespace ILLink.Tasks
                 return -1;
             }
 
-            int exitCode;
-            string previousWorkingDirectory = _executionWorkingDirectory;
-            try
-            {
-                if (_invocation?.Paths?.ExecutionRoot is { } executionRoot)
-                {
-                    _executionWorkingDirectory = executionRoot;
-                    pathToTool = Path.GetFullPath(pathToTool);
-                }
-                exitCode = base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
-            }
-            finally
-            {
-                _executionWorkingDirectory = previousWorkingDirectory;
-            }
-            return exitCode;
+            return base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
         }
 
         private InvocationBuilder CreateInvocationBuilder()
         {
+            bool supportedExtraArgs = TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths);
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
             {
-                return new InvocationBuilder(ILLinkPath, null, null,
+                return new InvocationBuilder(ILLinkPath, null, supportedExtraArgs ? extraPaths : null,
                     "custom steps/data, dependency dumps, and task environment overrides are not supported.");
             }
             try
             {
-                if (!TryGetExtraArgsPaths(out List<(string Option, string Path)> extraPaths))
+                if (!supportedExtraArgs)
                     return new InvocationBuilder(ILLinkPath, null, null, "extra arguments are not supported.");
 
                 var paths = new SourceRootPathMap(SourceRoots);
-                if (paths.ExecutionRoot is not null && !Directory.Exists(paths.ExecutionRoot))
-                    return new InvocationBuilder(ILLinkPath, null, null, "the execution SourceRoot directory does not exist.");
                 return new InvocationBuilder(ILLinkPath, paths, extraPaths);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
-                return new InvocationBuilder(ILLinkPath, null, null, ex.Message);
+                return new InvocationBuilder(ILLinkPath, null, extraPaths, ex.Message);
             }
         }
 
@@ -354,8 +333,7 @@ namespace ILLink.Tasks
             try
             {
                 SourceRootPathMap paths = invocation.Paths;
-                paths.ValidateMappings();
-                var files = new SortedSet<string>(StringComparer.Ordinal);
+                var files = new HashSet<string>(StringComparer.Ordinal);
                 var directories = new SortedSet<string>(StringComparer.Ordinal);
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var assembly in invocation.Assemblies)
@@ -375,14 +353,14 @@ namespace ILLink.Tasks
                 // Keep search-directory ordering in the arguments; hash even shadowed candidates.
                 foreach (string directory in directories)
                 {
-                    foreach (string file in Directory.EnumerateFiles(paths.Resolve(directory)))
+                    foreach (string file in Directory.EnumerateFiles(directory))
                     {
                         string extension = Path.GetExtension(file);
                         if (extension.Equals(".dll", StringComparison.OrdinalIgnoreCase) ||
                             extension.Equals(".exe", StringComparison.OrdinalIgnoreCase) ||
                             extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (!AddAssembly(paths.Map(file)))
+                            if (!AddAssembly(file))
                                 return null;
                         }
                     }
@@ -391,35 +369,34 @@ namespace ILLink.Tasks
 #pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
                 string taskAssemblyPath = typeof(ILLink).Assembly.Location;
 #pragma warning restore IL3000
-                files.Add(paths.Map(taskAssemblyPath));
-                files.Add(paths.Map(pathToTool));
+                files.Add(SourceRootPathMap.GetFullPath(taskAssemblyPath, invocation.WorkingDirectory));
+                files.Add(SourceRootPathMap.GetFullPath(pathToTool, invocation.WorkingDirectory));
                 files.Add(invocation.ToolPath);
                 foreach (string file in files)
                 {
                     // Required inputs must be readable, not represented as absent by shared hashing.
-                    using var input = File.OpenRead(paths.Resolve(file));
+                    using var input = File.OpenRead(file);
                 }
 
                 return new InvocationDescription(new InvocationInputs(files.ToArray()),
-                    new[] { "ILLink", paths.ExecutionRoot is not null ? "relative" : "original",
-                        AdjustCommandsForOperatingSystem(" " + invocation.CommandIdentity),
-                        AdjustCommandsForOperatingSystem(invocation.ResponseIdentity) },
-                    new InvocationOutputs(invocation.OutputDirectory, Array.Empty<string>(), paths),
+                    mapPath => new[] { "ILLink",
+                        AdjustCommandsForOperatingSystem(" " + invocation.GetCommandIdentity(mapPath)),
+                        AdjustCommandsForOperatingSystem(invocation.GetResponseIdentity(mapPath)) },
+                    new InvocationOutputs(invocation.OutputDirectory, Array.Empty<string>()),
                     workingDirectory: invocation.WorkingDirectory, pathMap: paths);
 
                 void AddOptionalFile(string path)
                 {
                     if (File.Exists(path))
-                        files.Add(paths.Map(path));
+                        files.Add(SourceRootPathMap.GetFullPath(path, invocation.WorkingDirectory));
                 }
 
-                bool AddAssembly(string input, bool checkOutputSymbols = true)
+                bool AddAssembly(string path, bool checkOutputSymbols = true)
                 {
-                    if (!assemblies.Add(input))
+                    if (!assemblies.Add(path))
                         return true;
 
-                    files.Add(input);
-                    string path = paths.Resolve(input);
+                    files.Add(path);
                     AddOptionalFile(path + ".config");
                     AddOptionalFile(path + ".mdb");
                     AddOptionalFile(Path.ChangeExtension(path, ".pdb"));
@@ -428,7 +405,7 @@ namespace ILLink.Tasks
                     foreach (string satelliteDirectory in Directory.EnumerateDirectories(directory))
                     {
                         string satellite = Path.Combine(satelliteDirectory, satelliteName);
-                        if (File.Exists(satellite) && !AddAssembly(paths.Map(satellite), checkOutputSymbols))
+                        if (File.Exists(satellite) && !AddAssembly(SourceRootPathMap.GetFullPath(satellite, invocation.WorkingDirectory), checkOutputSymbols))
                             return false;
                     }
 

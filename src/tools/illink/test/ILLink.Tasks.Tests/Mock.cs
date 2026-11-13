@@ -31,13 +31,12 @@ namespace ILLink.Tasks.Tests
             string commandLine = GenerateCommandLineCommands();
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
             string responseFile = AdjustCommandsForOperatingSystem(GenerateResponseFileCommands());
-            var invocation = (InvocationBuilder)typeof(ILLink).GetField("_invocation", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(this);
             MethodInfo method = typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
             var description = (InvocationDescription)method.Invoke(this, new object[] { pathToTool, responseFile, commandLine });
             key = string.Empty;
             bool result = description is not null && InvocationCache.TryComputeKey(Log, "ILLink", description, out key);
-            CacheInvocation = result && invocation.Paths.ExecutionRoot is { } root
-                ? (root, AdjustCommandsForOperatingSystem(commandLine), responseFile) : null;
+            CacheInvocation = result
+                ? (description.WorkingDirectory, AdjustCommandsForOperatingSystem(commandLine), responseFile) : null;
             return result;
         }
 

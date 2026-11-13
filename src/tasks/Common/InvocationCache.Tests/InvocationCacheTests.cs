@@ -1027,7 +1027,7 @@ public class InvocationCacheTests
     [InlineData("absence")]
     [InlineData("context")]
     [InlineData("output")]
-    [InlineData("input-order")]
+    [InlineData("input-path")]
     public void SharedFingerprintIncludesDeclaredInputsContextAndOutputs(string change)
     {
         using var test = new CacheTestDirectory();
@@ -1047,7 +1047,11 @@ public class InvocationCacheTests
             case "absence": File.WriteAllText(missing, "now present"); break;
             case "context": context = new[] { "changed arguments" }; break;
             case "output": outputs = InvocationOutputs.FromFiles(Path.Combine(test.Output, "other.dll")); break;
-            case "input-order": inputs = new[] { second, first, missing }; break;
+            case "input-path":
+                string renamed = Path.Combine(test.Source, "renamed.dll");
+                File.Copy(first, renamed);
+                inputs = new[] { renamed, second, missing };
+                break;
         }
 
         Assert.NotEqual(before, InvocationCache.ComputeKey(new InvocationDescription(InvocationInputs.FromFiles(inputs), context, outputs)));
@@ -1074,12 +1078,12 @@ public class InvocationCacheTests
         second.WriteSource("image.dll", "image");
         InvocationDescription firstInvocation = Describe(first);
         InvocationDescription secondInvocation = Describe(second);
-        Assert.Equal(new[] { "mapped:/_/source/image.dll" }, firstInvocation.Inputs.Files);
-        Assert.Equal("mapped:/_/", firstInvocation.WorkingDirectory);
+        Assert.Equal(new[] { Path.Combine(first.Source, "image.dll") }, firstInvocation.Inputs.Files);
+        Assert.Equal(first.Root, firstInvocation.WorkingDirectory);
         if (ownedDirectory)
-            Assert.Equal("mapped:/_/output", firstInvocation.Outputs.DirectoryPath);
+            Assert.Equal(first.Output, firstInvocation.Outputs.DirectoryPath);
         else
-            Assert.Equal(new[] { "mapped:/_/output/image.dll", "mapped:/_/output/image.pdb" }, firstInvocation.Outputs.Files);
+            Assert.Equal(new[] { Path.Combine(first.Output, "image.dll"), Path.Combine(first.Output, "image.pdb") }, firstInvocation.Outputs.Files);
         string key = InvocationCache.ComputeKey(firstInvocation);
         Assert.Equal(key, InvocationCache.ComputeKey(secondInvocation));
 
@@ -1112,19 +1116,19 @@ public class InvocationCacheTests
             pathMap ??= CreatePathMap(test.Root);
             string directory = outputDirectory ?? test.Output;
             InvocationOutputs outputs = ownedDirectory
-                ? new InvocationOutputs(pathMap.Map(directory), Array.Empty<string>(), pathMap)
+                ? new InvocationOutputs(directory, Array.Empty<string>())
                 : new InvocationOutputs(null, new[]
                 {
-                    pathMap.Map(Path.Combine(directory, "image.dll")),
-                    pathMap.Map(Path.Combine(directory, "image.pdb"))
-                }, pathMap);
-            return new InvocationDescription(new InvocationInputs(new[] { pathMap.Map(Path.Combine(test.Source, "image.dll")) }),
-                new[] { "arguments" }, outputs, pathMap.Map(workingDirectory ?? test.Root), pathMap);
+                    Path.Combine(directory, "image.dll"),
+                    Path.Combine(directory, "image.pdb")
+                });
+            return new InvocationDescription(new InvocationInputs(new[] { Path.Combine(test.Source, "image.dll") }),
+                new[] { "arguments" }, outputs, workingDirectory ?? test.Root, pathMap);
         }
     }
 
     [Fact]
-    public void SharedDescriptionCapturesLogicalPathsBeforeHashing()
+    public void SharedDescriptionKeepsPhysicalPathsAndCapturesRootMappings()
     {
         using var test = new CacheTestDirectory();
         test.WriteSource("image.dll", "image");
@@ -1132,11 +1136,11 @@ public class InvocationCacheTests
         root.SetMetadata("MappedPath", "/_1/");
         var pathMap = new SourceRootPathMap(new[] { root });
         var invocation = new InvocationDescription(
-            new InvocationInputs(new[] { pathMap.Map(Path.Combine(test.Source, "image.dll")) }),
-            Array.Empty<string>(), new InvocationOutputs(pathMap.Map(test.Output), Array.Empty<string>(), pathMap),
-            workingDirectory: pathMap.Map(test.Root),
+            new InvocationInputs(new[] { Path.Combine(test.Source, "image.dll") }),
+            Array.Empty<string>(), new InvocationOutputs(test.Output, Array.Empty<string>()),
+            workingDirectory: test.Root,
             pathMap: pathMap);
-        Assert.Equal(new[] { "mapped:/_1/source/image.dll" }, invocation.Inputs.Files);
+        Assert.Equal(new[] { Path.Combine(test.Source, "image.dll") }, invocation.Inputs.Files);
         root.ItemSpec = Path.Combine(test.Root, "other");
         root.SetMetadata("MappedPath", "/_2/");
         string original = InvocationCache.ComputeKey(invocation);
@@ -1144,13 +1148,46 @@ public class InvocationCacheTests
         Assert.Equal(original, InvocationCache.ComputeKey(invocation));
         var changedMap = CreatePathMap(test.Root, "/_2/");
         var changed = new InvocationDescription(
-            new InvocationInputs(new[] { changedMap.Map(Path.Combine(test.Source, "image.dll")) }),
-            invocation.Context, new InvocationOutputs(changedMap.Map(test.Output), Array.Empty<string>(), changedMap),
-            workingDirectory: changedMap.Map(test.Root), pathMap: changedMap);
+            invocation.Inputs, Array.Empty<string>(), invocation.Outputs,
+            workingDirectory: test.Root, pathMap: changedMap);
         Assert.NotEqual(original, InvocationCache.ComputeKey(changed));
 
         test.WriteSource("image.dll", "changed");
         Assert.NotEqual(original, InvocationCache.ComputeKey(invocation));
+    }
+
+    [Fact]
+    public void SharedFingerprintMapsIndependentRootsAndOrdersInputsByIdentity()
+    {
+        using var test = new CacheTestDirectory();
+        InvocationDescription first = Describe("first/z-repo", "first/a-packages");
+        InvocationDescription second = Describe("second/a-repo", "second/z-packages/deeper", reverseInputs: true);
+        string key = InvocationCache.ComputeKey(first);
+        Assert.Equal(key, InvocationCache.ComputeKey(second));
+
+        File.WriteAllText(second.Inputs.Files[0], "changed package contents");
+        Assert.NotEqual(key, InvocationCache.ComputeKey(second));
+
+        InvocationDescription Describe(string repo, string packages, bool reverseInputs = false)
+        {
+            repo = Path.Combine(test.Root, repo);
+            packages = Path.Combine(test.Root, packages);
+            Directory.CreateDirectory(repo);
+            Directory.CreateDirectory(packages);
+            string input = Path.Combine(repo, "input.dll");
+            string reference = Path.Combine(packages, "reference.dll");
+            File.WriteAllText(input, "input");
+            File.WriteAllText(reference, "reference");
+            var roots = new SourceRootPathMap(new[]
+            {
+                new TaskItem(repo, new Dictionary<string, string> { { "MappedPath", "/_/" } }),
+                new TaskItem(packages, new Dictionary<string, string> { { "MappedPath", "/_1/" } })
+            });
+            string[] inputs = reverseInputs ? new[] { reference, input } : new[] { input, reference };
+            return new InvocationDescription(new InvocationInputs(inputs),
+                mapPath => new[] { mapPath(input), mapPath(reference) },
+                InvocationOutputs.FromDirectory(Path.Combine(repo, "output")), repo, roots);
+        }
     }
 
     [Fact]

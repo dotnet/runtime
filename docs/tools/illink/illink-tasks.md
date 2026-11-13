@@ -64,14 +64,13 @@ the module version ID (MVID), file length, and timestamp are unchanged.
 `SourceRoots` with stable `MappedPath` metadata allow equivalent relative layouts in different
 clones/worktrees to share a key. Only known path arguments and input identities are mapped;
 external paths remain absolute and argument/search-directory order is preserved.
-For supported invocations with one enclosing physical root, the task runs ILLink from that root
-with known in-root paths rendered relative to it, independently of whether caching is enabled.
-Original relative inputs are resolved against the caller's working directory first.
-External paths remain absolute. This does not change process-wide cwd, mutate task inputs,
-or normalize bytes embedded in inputs or outputs. Cache eligibility failures, including missing
-logical mappings or unsuitable symbols, do not change this prepared invocation. Disjoint or missing
-execution roots and unsupported argument or working-directory overrides retain the original
-invocation in both cache modes.
+Known path arguments are resolved against the caller's working directory and passed to ILLink as
+full paths, independently of whether caching is enabled. Cache descriptions retain physical paths;
+only key construction maps them to portable identities. Multiple roots, such as a checkout and a
+NuGet package directory, can be mapped independently. This does not change the working directory,
+mutate task inputs, or normalize bytes embedded in inputs or outputs. Missing logical mappings or
+unsuitable symbols bypass caching without changing execution. Unsupported opaque extra arguments
+retain their original spelling.
 Bundled dependencies and configuration are not fingerprinted. Changes to those files require
 a cleared/isolated cache or disabled caching unless the linker binary also changes.
 
@@ -220,16 +219,14 @@ A list of XML [descriptors](data-formats.md#descriptor-format) files specifying 
 
 ### SourceRoots
 
-Physical absolute roots for relative execution and experimental cache identity. Pass
+Physical absolute roots for experimental cache identity. Pass
 `SourceRoots="@(SourceRoot)"` after running `InitializeSourceRootMappedPaths` to reuse the
 compiler's initialized source roots.
 
-Supported invocations with one enclosing physical root execute from it using relative in-root
-paths, even when caching is disabled or `MappedPath` metadata contains physical paths.
-Caching additionally requires conventional `/_/`, `/_1/`, etc. logical prefixes and
-consistent nested mappings. Without those mappings the same prepared invocation runs uncached.
-This parameter does not enable caching, change compiler settings, or remap embedded paths
-in linker outputs.
+Caching requires conventional `/_/`, `/_1/`, etc. logical prefixes and consistent nested mappings.
+Without those mappings the same prepared invocation runs uncached.
+This parameter does not enable caching, change the tool's arguments or working directory,
+change compiler settings, or remap embedded paths in linker outputs.
 
 ## ILLink Task Customization
 
