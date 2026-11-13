@@ -20500,11 +20500,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             switch (insFmt)
             {
                 case IF_LABEL:
-                    insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    break;
-
                 case IF_METHOD:
-                    insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    // A call is a taken branch plus the return-address
+                    // store. A bare jmp already costs 2C, so a call can not
+                    // price below it.
+                    insThroughput = PERFSCORE_THROUGHPUT_2C;
                     break;
 
                 case IF_METHPTR:
@@ -20525,17 +20525,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_ret:
         {
-            insLatency = PERFSCORE_LATENCY_ZERO;
-
-            if (insFmt == IF_CNS)
-            {
-                insThroughput = PERFSCORE_THROUGHPUT_2C;
-            }
-            else
-            {
-                assert(insFmt == IF_NONE);
-                insThroughput = PERFSCORE_THROUGHPUT_1C;
-            }
+            // A return is a taken branch plus the return-address load. Price
+            // it like the unconditional jmp it is at minimum, which is also
+            // what the immediate form already costs.
+            insLatency    = PERFSCORE_LATENCY_ZERO;
+            insThroughput = PERFSCORE_THROUGHPUT_2C;
+            assert((insFmt == IF_CNS) || (insFmt == IF_NONE));
             break;
         }
 
