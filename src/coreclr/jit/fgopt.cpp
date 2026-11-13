@@ -6030,7 +6030,10 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
     }
     if ((tree2Flags & GTF_ORDER_SIDEEFF) != 0)
     {
-        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0)
+        // A non-faulting head can depend on a check in the terminator. Invariant
+        // loads can perform that check without GTF_GLOB_REF. Moving ahead of it
+        // can also change which exception is raised first.
+        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF | GTF_EXCEPT)) != 0)
         {
             JITDUMP("  cannot reorder ordering side effect\n");
             return false;

@@ -84,7 +84,7 @@
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">Zadaný parametr musí být zařazený ze spravovaného do nespravovaného a z nespravovaného do spravovaného, ale zařazovací typ {0} to nepodporuje.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
@@ -179,7 +179,7 @@
       </trans-unit>
       <trans-unit id="ComObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
+        <target state="translated"> Rozhraní '{0}' neurčuje ComInterfaceOptions.ComObjectWrapper, takže se nevygeneruje obálka objektu COM (RCW). Zařazení tohoto rozhraní z nespravovaného kódu do spravovaného kódu nebude fungovat.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -809,12 +809,12 @@
       </trans-unit>
       <trans-unit id="ManagedObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</target>
+        <target state="translated"> Rozhraní '{0}' neurčuje ComInterfaceOptions.ManagedObjectWrapper, takže se nevygeneruje obálka objektu COM (CCW). Zařazení tohoto rozhraní ze spravovaného kódu do nespravovaného kódu nebude fungovat.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">Určený parametr musí být zařazený ze spravovaného do nespravovaného, ale zařazovací typ {0} to nepodporuje.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -1361,7 +1361,7 @@
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">Určený parametr musí být zařazený z nespravovaného do spravovaného, ale zařazovací typ {0} to nepodporuje.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">

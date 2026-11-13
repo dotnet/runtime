@@ -36,6 +36,10 @@ namespace System.Reflection
 
             switch (handle.HandleType)
             {
+                case HandleType.TypeVariableSignature:
+                case HandleType.MethodTypeVariableSignature:
+                    // Substitution does not provide a signature for nested types.
+                    return Create(unmodifiedType);
                 case HandleType.SZArraySignature:
                     Debug.Assert(index == 0);
                     return Create(unmodifiedType, new TypeSignature(reader, reader.GetSZArraySignature(handle.ToSZArraySignatureHandle(reader)).ElementType));

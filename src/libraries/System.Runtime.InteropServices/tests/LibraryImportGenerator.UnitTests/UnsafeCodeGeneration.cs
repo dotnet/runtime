@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -419,13 +418,12 @@ namespace LibraryImportGenerator.UnitTests
                 _verifyCompilation = verifyCompilation;
             }
 
-            protected override ParseOptions CreateParseOptions()
+            protected override CompilationOptions CreateCompilationOptions()
             {
-                // Roslyn does not expose the memory safety rules version through a public API yet, so opt in
-                // through the same feature flag the compiler uses.
-                var parseOptions = (CSharpParseOptions)base.CreateParseOptions();
-                return parseOptions.WithFeatures(
-                    [.. parseOptions.Features, new KeyValuePair<string, string>(MemorySafetyRules.UpdatedMemorySafetyRulesFeature, "")]);
+#pragma warning disable RSEXPERIMENTAL006
+                return ((CSharpCompilationOptions)base.CreateCompilationOptions())
+                    .WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2);
+#pragma warning restore RSEXPERIMENTAL006
             }
 
             protected override void VerifyFinalCompilation(Compilation compilation) => _verifyCompilation?.Invoke(compilation);
@@ -445,11 +443,12 @@ namespace LibraryImportGenerator.UnitTests
             {
             }
 
-            protected override ParseOptions CreateParseOptions()
+            protected override CompilationOptions CreateCompilationOptions()
             {
-                var parseOptions = (CSharpParseOptions)base.CreateParseOptions();
-                return parseOptions.WithFeatures(
-                    [.. parseOptions.Features, new KeyValuePair<string, string>(MemorySafetyRules.UpdatedMemorySafetyRulesFeature, "")]);
+#pragma warning disable RSEXPERIMENTAL006
+                return ((CSharpCompilationOptions)base.CreateCompilationOptions())
+                    .WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2);
+#pragma warning restore RSEXPERIMENTAL006
             }
         }
     }

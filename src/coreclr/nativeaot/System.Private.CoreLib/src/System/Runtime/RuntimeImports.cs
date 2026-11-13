@@ -27,9 +27,9 @@ namespace System.Runtime
         internal const string RuntimeLibrary = "*";
 
 #if TARGET_X86 || TARGET_WASM
-        private const string MathImportPrefix = "Rhp_";
+        private const bool UseMathHelpers = true;
 #else
-        private const string MathImportPrefix = "";
+        private const bool UseMathHelpers = false;
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -649,211 +649,211 @@ namespace System.Runtime
         internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "acos")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Acos" : "acos")]
         internal static extern double acos(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "acosf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Acos" : "acosf")]
         internal static extern float acosf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "acosh")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Acosh" : "acosh")]
         internal static extern double acosh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "acoshf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Acosh" : "acoshf")]
         internal static extern float acoshf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "asin")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Asin" : "asin")]
         internal static extern double asin(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "asinf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Asin" : "asinf")]
         internal static extern float asinf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "asinh")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Asinh" : "asinh")]
         internal static extern double asinh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "asinhf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Asinh" : "asinhf")]
         internal static extern float asinhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "atan")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Atan" : "atan")]
         internal static extern double atan(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "atanf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Atan" : "atanf")]
         internal static extern float atanf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "atan2")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Atan2" : "atan2")]
         internal static extern double atan2(double y, double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "atan2f")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Atan2" : "atan2f")]
         internal static extern float atan2f(float y, float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "atanh")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Atanh" : "atanh")]
         internal static extern double atanh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "atanhf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Atanh" : "atanhf")]
         internal static extern float atanhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "cbrt")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Cbrt" : "cbrt")]
         internal static extern double cbrt(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "cbrtf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Cbrt" : "cbrtf")]
         internal static extern float cbrtf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "ceil")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Ceiling" : "ceil")]
         internal static extern double ceil(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "ceilf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Ceiling" : "ceilf")]
         internal static extern float ceilf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "cos")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Cos" : "cos")]
         internal static extern double cos(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "cosf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Cos" : "cosf")]
         internal static extern float cosf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "cosh")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Cosh" : "cosh")]
         internal static extern double cosh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "coshf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Cosh" : "coshf")]
         internal static extern float coshf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "exp")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Exp" : "exp")]
         internal static extern double exp(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "expf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Exp" : "expf")]
         internal static extern float expf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "floor")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Floor" : "floor")]
         internal static extern double floor(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "floorf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Floor" : "floorf")]
         internal static extern float floorf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "log")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Log" : "log")]
         internal static extern double log(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "logf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Log" : "logf")]
         internal static extern float logf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "log2")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Log2" : "log2")]
         internal static extern double log2(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "log2f")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Log2" : "log2f")]
         internal static extern float log2f(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "log10")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Log10" : "log10")]
         internal static extern double log10(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "log10f")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Log10" : "log10f")]
         internal static extern float log10f(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "pow")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Pow" : "pow")]
         internal static extern double pow(double x, double y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "powf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Pow" : "powf")]
         internal static extern float powf(float x, float y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "sin")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Sin" : "sin")]
         internal static extern double sin(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "sinf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Sin" : "sinf")]
         internal static extern float sinf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "sinh")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Sinh" : "sinh")]
         internal static extern double sinh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "sinhf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Sinh" : "sinhf")]
         internal static extern float sinhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "sqrt")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Sqrt" : "sqrt")]
         internal static extern double sqrt(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "sqrtf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Sqrt" : "sqrtf")]
         internal static extern float sqrtf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "tan")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Tan" : "tan")]
         internal static extern double tan(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "tanf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Tan" : "tanf")]
         internal static extern float tanf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "tanh")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_Tanh" : "tanh")]
         internal static extern double tanh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "tanhf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_Tanh" : "tanhf")]
         internal static extern float tanhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "fmod")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_FMod" : "fmod")]
         internal static extern double fmod(double x, double y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "fmodf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_FMod" : "fmodf")]
         internal static extern float fmodf(float x, float y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "fma")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_FusedMultiplyAdd" : "fma")]
         internal static extern double fma(double x, double y, double z);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "fmaf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_FusedMultiplyAdd" : "fmaf")]
         internal static extern float fmaf(float x, float y, float z);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "modf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_ModF" : "modf")]
         internal static extern unsafe double modf(double x, double* intptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "modff")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_ModF" : "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "Rhp_sincos")]
+        [RuntimeImport(RuntimeLibrary, "Math_SinCos")]
         internal static extern unsafe void sincos(double x, double* sin, double* cos);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "Rhp_sincosf")]
+        [RuntimeImport(RuntimeLibrary, "MathF_SinCos")]
         internal static extern unsafe void sincosf(float x, float* sin, float* cos);
 
 #if TARGET_WINDOWS
