@@ -301,6 +301,11 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
             }
 
+            if (PlatformDetection.IsWindows)
+            {
+                SkipTestException.ThrowUnless(PlatformDetection.IsWindows10Version22000OrGreater);
+            }
+
             ECParameters parameters = explicitCurve ?
                 EccTestData.GetNistP256ReferenceKeyExplicit() :
                 EccTestData.GetNistP256ReferenceKey();
