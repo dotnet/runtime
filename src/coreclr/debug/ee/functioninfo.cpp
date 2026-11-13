@@ -894,7 +894,7 @@ void DebuggerJitInfo::LazyInitBounds()
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=%p GetBoundariesAndVars success=%s\n",
             this, (fSuccess ? "true" : "false")));
 
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
         if (!m_fAttemptInit)
         {
@@ -1645,7 +1645,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
     //<TODO>@TODO : _ASSERTE(EnC);</TODO>
     //
     {
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+        Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
         // We need to ensure that another thread didn't go in and add this exact same DJI?
         {
@@ -1716,7 +1716,7 @@ void DebuggerMethodInfo::DeleteJitInfo(DebuggerJitInfo *dji)
     }
     CONTRACTL_END;
 
-    Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+    Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     LOG((LF_CORDB,LL_INFO10000,"DMI:DJI: dji:0x%p\n", dji));
 
@@ -1770,7 +1770,7 @@ void DebuggerMethodInfo::DeleteJitInfoList(void)
     }
     CONTRACTL_END;
 
-    Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
+    Debugger::DebuggerDataLockHolder debuggerDataLockHolder = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     while(m_latestJitInfo != NULL)
     {

@@ -4165,7 +4165,7 @@ void DebuggerController::EnableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     // Both JMC + Traditional steppers may use MethodEnter.
     // For JMC, it's a core part of functionality. For Traditional steppers, we use it as a backstop
@@ -4197,7 +4197,7 @@ void DebuggerController::DisableMethodEnter()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-    Debugger::DebuggerDataLockHolder chInfo(g_pDebugger);
+    Debugger::DebuggerDataLockHolder chInfo = Debugger::TakeDebuggerDataLock(g_pDebugger);
 
     if (m_fEnableMethodEnter)
     {
