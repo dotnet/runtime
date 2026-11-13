@@ -136,6 +136,12 @@ namespace System.CodeDom.Compiler
             _writer.Write(buffer, index, count);
         }
 
+        public override void Write(ReadOnlySpan<char> buffer)
+        {
+            OutputTabs();
+            _writer.Write(buffer);
+        }
+
         public override void Write(double value)
         {
             OutputTabs();
@@ -337,6 +343,13 @@ namespace System.CodeDom.Compiler
         {
             OutputTabs();
             _writer.WriteLine(buffer, index, count);
+            _tabsPending = true;
+        }
+
+        public override void WriteLine(ReadOnlySpan<char> buffer)
+        {
+            OutputTabs();
+            _writer.WriteLine(buffer);
             _tabsPending = true;
         }
 
