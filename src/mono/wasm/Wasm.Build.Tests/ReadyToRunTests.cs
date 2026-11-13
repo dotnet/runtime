@@ -32,19 +32,23 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData(Configuration.Debug)]
-        [InlineData(Configuration.Release)]
+        [InlineData(Configuration.Debug, false)]
+        [InlineData(Configuration.Release, false)]
+        [InlineData(Configuration.Release, true)]
         [TestCategory("no-workload")]
-        public async Task BuildRunAllPages(Configuration config)
+        public async Task BuildRunAllPages(Configuration config, bool enableReadyToRun)
         {
-            // A build stages the prebuilt framework R2R images from the runtime pack (no per-app crossgen2).
+            // Builds may stage framework R2R, but must not run per-app crossgen2.
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_build",
-                extraProperties: config == Configuration.Release ? "<PublishReadyToRun>true</PublishReadyToRun>" : "");
+                extraProperties: enableReadyToRun ? "<PublishReadyToRun>true</PublishReadyToRun>" : "");
             (_, string output) = BlazorBuild(info, config,
                 new BuildOptions(ExtraMSBuildArgs: config == Configuration.Debug ? "-p:WasmEnableHotReload=true" : ""));
 
             string webcilDir = GetBuildWebcilDir(config);
-            AssertPrebuiltFrameworkReadyToRun(webcilDir, output);
+            if (config == Configuration.Debug || enableReadyToRun)
+                AssertPrebuiltFrameworkReadyToRun(webcilDir, output);
+            else
+                AssertCoreLibReadyToRun(webcilDir, expectReadyToRun: false);
             AssertNoDuplicateAssemblies(webcilDir);
             AssertPerAppCrossgenRan(config, expected: false);
 
@@ -62,6 +66,7 @@ namespace Wasm.Build.Tests
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: false, composite: false);
 
         [Theory]
+        [InlineData(Configuration.Debug, /*trimmed*/ false, /*nativeRelink*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ false, /*nativeRelink*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ true)]
@@ -144,7 +149,6 @@ namespace Wasm.Build.Tests
         public async Task PublishRunAllPagesCompositeWithWorkload(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_pub_composite_workload",
-                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite>",
                 extraItems: """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />""");
             LogR2RSuffixLibraryMarker();
 
@@ -171,7 +175,7 @@ namespace Wasm.Build.Tests
                 : string.Empty;
             string compositeProperty = composite ? string.Empty : "<PublishReadyToRunComposite>false</PublishReadyToRunComposite>";
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
-                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun>{compositeProperty}<PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
+                extraProperties: $"{compositeProperty}<PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
                 extraItems: extraItems);
             if (composite)
                 LogR2RSuffixLibraryMarker();
@@ -218,16 +222,22 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData(Configuration.Debug)]
-        [InlineData(Configuration.Release)]
+        [InlineData(Configuration.Debug, false)]
+        [InlineData(Configuration.Release, false)]
+        [InlineData(Configuration.Debug, true)]
+        [InlineData(Configuration.Release, true)]
         [TestCategory("no-workload")]
-        public void FrameworkAssembliesAreNotReadyToRunWhenDisabled(Configuration config)
+        public void FrameworkAssembliesAreNotReadyToRunWhenDisabled(Configuration config, bool publish)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_off",
                 extraProperties: "<PublishReadyToRun>false</PublishReadyToRun>");
-            BlazorBuild(info, config);
+            if (publish)
+                BlazorPublish(info, config);
+            else
+                BlazorBuild(info, config);
 
-            AssertCoreLibReadyToRun(GetBuildWebcilDir(config), expectReadyToRun: false);
+            string frameworkDir = publish ? GetBlazorBinFrameworkDir(config, forPublish: true) : GetBuildWebcilDir(config);
+            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: false);
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
@@ -356,7 +366,7 @@ namespace Wasm.Build.Tests
         public void CompositeRequiresWebcil(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_composite_no_webcil",
-                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite><WasmEnableWebcil>false</WasmEnableWebcil>");
+                extraProperties: "<WasmEnableWebcil>false</WasmEnableWebcil>");
             (string _, string output) = BlazorPublish(info, config,
                 new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
             Assert.Contains("PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies", output);

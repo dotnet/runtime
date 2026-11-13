@@ -20,10 +20,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_WasmUsePrebuiltReadyToRun Condition="'$(_WasmUsePrebuiltReadyToRun)' == ''">false</_WasmUsePrebuiltReadyToRun>
   </PropertyGroup>
 
-  <!-- ReadyToRun publishing defaults OFF for now. Flipping the publish default to true is tracked by dotnet/runtime#132466.
-       Consumers opt in to publishing with -p:PublishReadyToRun=true. -->
   <PropertyGroup>
-    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
@@ -78,11 +76,11 @@ Copyright (c) .NET Foundation. All rights reserved.
              Text="WasmPerformanceInstrumentation during build provides incomplete sampling coverage because prebuilt framework ReadyToRun images are not instrumented. Publish the application for complete instrumentation coverage." />
   </Target>
 
-  <!-- Fail comprehensibly instead of emitting PE images the runtime cannot load. The config checks
-       run on both build and publish; the crossgen2 requirement is publish-only, since a dev-loop build stages
-       the pack R2R and never invokes crossgen2. -->
+  <!-- Normal IL builds must ignore the R2R publish default. -->
   <Target Name="_WasmCoreClrValidateReadyToRun"
-          Condition="'$(PublishReadyToRun)' == 'true'"
+          Condition="'$(PublishReadyToRun)' == 'true' and
+                     ('$(_WasmUsePrebuiltReadyToRun)' == 'true' or '$(_IsPublishing)' == 'true' or
+                      '$(WasmBuildingForNestedPublish)' == 'true' or '$(WasmBuildOnlyAfterPublish)' == 'true')"
           BeforeTargets="_WasmCoreClrSelectR2RDirectories;_ResolveWasmOutputs">
     <ItemGroup>
       <_WasmMissingReadyToRunPgoFile Include="@(PublishReadyToRunPgoFiles)"
