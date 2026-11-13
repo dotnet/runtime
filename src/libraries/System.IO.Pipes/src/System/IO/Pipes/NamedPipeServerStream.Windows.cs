@@ -320,6 +320,7 @@ namespace System.IO.Pipes
             Debug.Assert(IsAsync);
 
             ConnectionValueTaskSource? vts = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null) ?? new ConnectionValueTaskSource(this);
+            vts._pipeStream = this;
             try
             {
                 vts.PrepareForOperation();
