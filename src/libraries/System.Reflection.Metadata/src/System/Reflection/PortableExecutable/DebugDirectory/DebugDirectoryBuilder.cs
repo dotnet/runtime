@@ -20,10 +20,24 @@ namespace System.Reflection.PortableExecutable
         private readonly List<Entry> _entries;
         private readonly BlobBuilder _dataBuilder;
 
-        public DebugDirectoryBuilder()
+        /// <summary>
+        /// Creates a <see cref="DebugDirectoryBuilder"/> instance.
+        /// </summary>
+        public DebugDirectoryBuilder() : this(new BlobBuilder()) { }
+
+        /// <summary>
+        /// Creates a <see cref="DebugDirectoryBuilder"/> instance.
+        /// </summary>
+        /// <param name="blobBuilder">User-provided <see cref="BlobBuilder"/> instance to use.</param>
+        public DebugDirectoryBuilder(BlobBuilder blobBuilder)
         {
+            if (blobBuilder is null)
+            {
+                Throw.ArgumentNull(nameof(blobBuilder));
+            }
+
             _entries = new List<Entry>(3);
-            _dataBuilder = new BlobBuilder();
+            _dataBuilder = blobBuilder;
         }
 
         internal void AddEntry(DebugDirectoryEntryType type, uint version, uint stamp, int dataSize)
