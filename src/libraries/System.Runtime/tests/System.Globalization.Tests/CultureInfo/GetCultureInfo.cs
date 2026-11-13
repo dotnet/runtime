@@ -14,6 +14,11 @@ namespace System.Globalization.Tests
         public static bool PlatformSupportsFakeCulture => (!PlatformDetection.IsWindows || PlatformDetection.WindowsVersion >= 10) && PlatformDetection.IsNotBrowser;
         public static bool PlatformSupportsFakeCultureAndRemoteExecutor => PlatformSupportsFakeCulture && RemoteExecutor.IsSupported;
 
+        // "root" is only rejected when a real globalization backend (ICU/NLS) is used. In invariant
+        // globalization mode any well-formed name is fabricated into a custom culture instead.
+        public static bool PlatformRejectsRootCulture => PlatformSupportsFakeCulture && PlatformDetection.IsNotInvariantGlobalization;
+        public static bool PlatformRejectsRootCultureAndRemoteExecutor => PlatformRejectsRootCulture && RemoteExecutor.IsSupported;
+
         public static IEnumerable<object[]> GetCultureInfoTestData()
         {
             yield return new object[] { "en" };
@@ -68,6 +73,42 @@ namespace System.Globalization.Tests
                 yield return new object[] { "zh-Hant-MO", "zh-MO" };
                 yield return new object[] { "zh-Hant-TW", "zh-TW" };
             }
+        }
+
+        [ConditionalTheory(typeof(GetCultureInfoTests), nameof(PlatformRejectsRootCulture))]
+        [InlineData("root")]
+        [InlineData("ROOT")]
+        [InlineData("Root")]
+        public void GetCultureInfo_RootCultureName_Throws(string name)
+        {
+            // "root" is the CLDR moniker for the invariant/root locale, but it is not a valid culture name.
+            // On desktop ICU it normalizes to an empty name, which previously produced an incomplete culture
+            // whose Name was "" (raising NullReferenceException on internals and poisoning the invariant cache
+            // slot). Some other ICU builds return "root" unchanged. It is rejected consistently in all cases.
+            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name));
+            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: false));
+            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: true));
+            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, "en-US"));
+            Assert.Throws<CultureNotFoundException>(() => new CultureInfo(name));
+            Assert.Throws<CultureNotFoundException>(() => new CultureInfo(name, useUserOverride: false));
+        }
+
+        [ConditionalFact(typeof(GetCultureInfoTests), nameof(PlatformRejectsRootCultureAndRemoteExecutor))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
+        public void GetCultureInfo_RootCultureName_DoesNotPoisonInvariantCache()
+        {
+            // Resolving "root" before the invariant culture must not corrupt the "" cache slot.
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("root"));
+
+                CultureInfo invariant = CultureInfo.GetCultureInfo("");
+                Assert.Equal("", invariant.Name);
+                Assert.Equal("-", invariant.NumberFormat.NegativeSign);
+
+                // "und" continues to map to the invariant culture.
+                Assert.Equal("", CultureInfo.GetCultureInfo("und").Name);
+            }).Dispose();
         }
 
         [Theory]
