@@ -131,7 +131,7 @@ namespace System.Diagnostics
             IntPtr dir = Interop.Sys.OpenDir(path);
             if (dir == IntPtr.Zero)
             {
-                return HandleDirectoryError(Interop.Sys.GetLastErrorInfo());
+                return HandleDirectoryError(Interop.Sys.GetLastErrorInfo(), path);
             }
 
             try
@@ -158,7 +158,7 @@ namespace System.Diagnostics
                 // Don't report a partial count in the latter case.
                 if (result != -1)
                 {
-                    return HandleDirectoryError(new Interop.ErrorInfo(result));
+                    return HandleDirectoryError(new Interop.ErrorInfo(result), path);
                 }
 
                 return excludeOwnDescriptor ? count - 1 : count;
@@ -169,7 +169,7 @@ namespace System.Diagnostics
             }
 
             // Returns -1 if the directory no longer exists (for example, because the process exited), otherwise throws.
-            static int HandleDirectoryError(Interop.ErrorInfo error)
+            static int HandleDirectoryError(Interop.ErrorInfo error, string path)
             {
                 if (error.Error is Interop.Error.ENOENT or Interop.Error.ESRCH)
                 {
@@ -177,12 +177,12 @@ namespace System.Diagnostics
                 }
 
                 // Directory.GetFiles threw UnauthorizedAccessException when the directory could not be read.
-                if (error.Error is Interop.Error.EACCES or Interop.Error.EPERM)
+                if (error.Error is Interop.Error.EACCES or Interop.Error.EBADF or Interop.Error.EPERM)
                 {
                     throw new UnauthorizedAccessException(error.GetErrorMessage(), new Win32Exception(error.RawErrno));
                 }
 
-                throw new Win32Exception(error.RawErrno);
+                throw new IOException($"{error.GetErrorMessage()} : '{path}'", error.RawErrno);
             }
         }
 

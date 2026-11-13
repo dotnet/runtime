@@ -1239,7 +1239,7 @@ namespace System.Diagnostics.Tests
             {
                 AssertRemoteProcessStandardOutputLine(handle, ChildReadyMessage, WaitInMS);
 
-                int expected = Directory.GetFileSystemEntries($"/proc/{handle.Process.Id}/fd").Length;
+                int expected = Directory.GetFiles($"/proc/{handle.Process.Id}/fd", "*", SearchOption.TopDirectoryOnly).Length;
                 Assert.Equal(expected, handle.Process.HandleCount);
             }
             finally
@@ -1255,45 +1255,36 @@ namespace System.Diagnostics.Tests
             // Run in a separate process as other tests open and close files in the test process.
             RemoteExecutor.Invoke(static () =>
             {
-                string path = Path.GetTempFileName();
+                using Process p = Process.GetCurrentProcess();
 
-                try
+                // Warm up the code paths so that nothing is lazily initialized between the measurements.
+                OpenAndCloseTwoHandles();
+                p.Refresh();
+                _ = p.HandleCount;
+
+                p.Refresh();
+                int before = p.HandleCount;
+                int during;
+
+                using (SafeFileHandle one = File.OpenNullHandle())
+                using (SafeFileHandle two = File.OpenNullHandle())
                 {
-                    using Process p = Process.GetCurrentProcess();
-
-                    // Warm up the code paths so that nothing is lazily initialized between the measurements.
-                    OpenAndCloseTwoFiles(path);
                     p.Refresh();
-                    _ = p.HandleCount;
-
-                    p.Refresh();
-                    int before = p.HandleCount;
-                    int during;
-
-                    using (var one = new FileStream(path, FileMode.Open, FileAccess.Read))
-                    using (var two = new FileStream(path, FileMode.Open, FileAccess.Read))
-                    {
-                        p.Refresh();
-                        during = p.HandleCount;
-                    }
-
-                    p.Refresh();
-                    int after = p.HandleCount;
-
-                    // Assert only once all of the measurements have been taken. The first call to an assertion
-                    // method can load assemblies, and each assembly that is loaded holds file descriptors open.
-                    Assert.Equal(before + 2, during);
-                    Assert.Equal(before, after);
-                }
-                finally
-                {
-                    File.Delete(path);
+                    during = p.HandleCount;
                 }
 
-                static void OpenAndCloseTwoFiles(string path)
+                p.Refresh();
+                int after = p.HandleCount;
+
+                // Assert only once all of the measurements have been taken. The first call to an assertion
+                // method can load assemblies, and each assembly that is loaded holds file descriptors open.
+                Assert.Equal(before + 2, during);
+                Assert.Equal(before, after);
+
+                static void OpenAndCloseTwoHandles()
                 {
-                    using var one = new FileStream(path, FileMode.Open, FileAccess.Read);
-                    using var two = new FileStream(path, FileMode.Open, FileAccess.Read);
+                    using SafeFileHandle one = File.OpenNullHandle();
+                    using SafeFileHandle two = File.OpenNullHandle();
                 }
             }).Dispose();
         }
@@ -1308,8 +1299,10 @@ namespace System.Diagnostics.Tests
                 using Process p = Process.GetCurrentProcess();
 
                 // Hold a directory descriptor open, which a count that filtered out directories would miss.
-                // The directory stream is opened by the first call to MoveNext() and kept open until disposed.
-                using IEnumerator<string> directory = Directory.EnumerateFileSystemEntries(Path.GetTempPath()).GetEnumerator();
+                // The directory stream is opened by the first call to MoveNext() and kept open until disposed, but
+                // only if there are more entries to read. Use a directory that always contains files, rather than
+                // one that could be empty (such as the temporary directory), so that the descriptor is held open.
+                using IEnumerator<string> directory = Directory.EnumerateFileSystemEntries(AppContext.BaseDirectory).GetEnumerator();
                 Assert.True(directory.MoveNext());
 
                 // Warm up the code paths so that nothing is lazily initialized between the measurements.
