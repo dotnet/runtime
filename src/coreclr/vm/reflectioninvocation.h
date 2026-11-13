@@ -42,11 +42,10 @@
 #define BINDER_DefaultLookup        (BINDER_Instance | BINDER_Static | BINDER_Public)
 #define BINDER_AllLookup            (BINDER_Instance | BINDER_Static | BINDER_Public | BINDER_Instance)
 
-class ReflectionInvocation
+extern "C"
 {
-public:
-    FCDECL0(static FC_BOOL_RET, TryEnsureSufficientExecutionStack);
-};
+    FCDECL0(FC_BOOL_RET, RuntimeHelpers_TryEnsureSufficientExecutionStack);
+}
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD, QCallExceptionStatus* qcallError);
 

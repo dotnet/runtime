@@ -235,6 +235,19 @@ namespace ILCompiler.PortableCallHelpers
 
         private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)
         {
+            var identities = new Dictionary<string, PInvokeInfo>(StringComparer.Ordinal);
+            foreach (PInvokeInfo entry in qcallImports)
+            {
+                if (identities.TryGetValue(entry.EntryPoint, out PInvokeInfo previous)
+                    && (entry.Method.IsInternalCall || previous.Method.IsInternalCall)
+                    && entry.Method != previous.Method)
+                {
+                    throw new LogAsErrorException(
+                        $"Native entrypoint '{entry.EntryPoint}' conflicts between '{previous.Method}' and '{entry.Method}'.");
+                }
+                identities[entry.EntryPoint] = entry;
+            }
+
             var qcalls = qcallImports
                 .OrderBy(p => p.EntryPoint, StringComparer.Ordinal)
                 .DistinctBy(p => p.EntryPoint, StringComparer.Ordinal)
@@ -244,7 +257,7 @@ namespace ILCompiler.PortableCallHelpers
             {
                 w.WriteLine(
                     """
-                    const void* QCallResolveDllImport(const char* name)
+                    const void* ResolveRuntimeHelperEntrypoint(const char* name)
                     {
                         return nullptr;
                     }
@@ -261,35 +274,35 @@ namespace ILCompiler.PortableCallHelpers
                     if (target.OperatingSystem == TargetOS.Browser)
                     {
                         w.WriteLine(qcall.EntryPoint == "memmove"
-                            ? "    void* QCall_memmove(void* dest, const void* src, size_t len);"
-                            : "    void* QCall_memset(void* dest, int value, size_t len);");
+                            ? "    void* RuntimeHelper_memmove(void* dest, const void* src, size_t len) __asm__(\"QCall_memmove\");"
+                            : "    void* RuntimeHelper_memset(void* dest, int value, size_t len) __asm__(\"QCall_memset\");");
                     }
                     continue;
                 }
 
-                // common.h can already declare QCalls with VM types. Use a separate C identifier
+                // common.h can already declare runtime helpers with VM types. Use a separate C identifier
                 // with the same linker symbol for the metadata-derived ABI declaration.
-                w.WriteLine(GenPInvokeDecl(qcall, $"QCall_{CEntryPoint(qcall)}"));
+                w.WriteLine(GenPInvokeDecl(qcall, $"RuntimeHelper_{CEntryPoint(qcall)}"));
             }
             w.WriteLine("} // extern \"C\"");
             w.WriteLine();
-            w.WriteLine("static const Entry s_QCall[] = {");
+            w.WriteLine("static const Entry s_RuntimeHelpers[] = {");
             foreach (PInvokeInfo qcall in qcalls)
             {
                 if (target.OperatingSystem == TargetOS.Browser && qcall.EntryPoint is "memmove" or "memset")
-                    w.WriteLine($"    {{ \"{qcall.EntryPoint}\", (void*)&QCall_{qcall.EntryPoint} }},");
+                    w.WriteLine($"    {{ \"{qcall.EntryPoint}\", (void*)&RuntimeHelper_{qcall.EntryPoint} }},");
                 else if (qcall.EntryPoint is "memmove" or "memset")
                     w.WriteLine($"    DllImportEntry({qcall.EntryPoint})");
                 else
-                    w.WriteLine($"    {{ \"{EscapeLiteral(qcall.EntryPoint)}\", (void*)&QCall_{CEntryPoint(qcall)} }},");
+                    w.WriteLine($"    {{ \"{EscapeLiteral(qcall.EntryPoint)}\", (void*)&RuntimeHelper_{CEntryPoint(qcall)} }},");
             }
             w.WriteLine(
                 """
                 };
 
-                const void* QCallResolveDllImport(const char* name)
+                const void* ResolveRuntimeHelperEntrypoint(const char* name)
                 {
-                    return minipal_resolve_dllimport(s_QCall, sizeof(s_QCall) / sizeof(s_QCall[0]), name);
+                    return minipal_resolve_dllimport(s_RuntimeHelpers, sizeof(s_RuntimeHelpers) / sizeof(s_RuntimeHelpers[0]), name);
                 }
                 """);
         }
@@ -530,6 +543,14 @@ namespace ILCompiler.PortableCallHelpers
             List<string> parameterTypes = [];
             foreach (TypeDesc parameter in ParameterTypes(signature))
                 parameterTypes.Add(MapType(parameter));
+
+            if (pinvoke.Method.IsInternalCall)
+            {
+                if (!signature.IsStatic)
+                    parameterTypes.Insert(0, "void *");
+                parameterTypes.Insert(0, "uintptr_t");
+                parameterTypes.Add("uintptr_t");
+            }
 
             if (IsPassedByReference(returnType))
             {

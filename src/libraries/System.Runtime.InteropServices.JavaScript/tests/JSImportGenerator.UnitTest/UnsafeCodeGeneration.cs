@@ -32,16 +32,13 @@ namespace JSImportGenerator.Unit.Tests
 
             Compilation comp = TestUtils.CreateCompilation(source, allowUnsafe: true);
 
-            // Roslyn does not expose the memory safety rules version through a public API yet, so opt in through
-            // the same feature flag the compiler uses. It lives on the parse options, so every tree is re-parsed.
-            var parseOptions = ((CSharpParseOptions)comp.SyntaxTrees.First().Options)
-                .WithFeatures([new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
-            comp = comp.RemoveAllSyntaxTrees().AddSyntaxTrees(
-                comp.SyntaxTrees.Select(t => CSharpSyntaxTree.ParseText(t.GetText(), parseOptions, t.FilePath)));
-
             // CS9377 ("the 'unsafe' modifier does not have any effect here") sits above the default warning
             // level, so it has to be raised or the assertion below could never observe it.
-            comp = comp.WithOptions(((CSharpCompilationOptions)comp.Options).WithWarningLevel(9999));
+#pragma warning disable RSEXPERIMENTAL006
+            comp = comp.WithOptions(((CSharpCompilationOptions)comp.Options)
+                .WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2)
+                .WithWarningLevel(9999));
+#pragma warning restore RSEXPERIMENTAL006
 
             Compilation newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
                 new Microsoft.Interop.JavaScript.JSImportGenerator(),

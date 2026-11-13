@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+.assembly extern System.Collections { }
 .assembly extern mscorlib { }
 .assembly modifiersdata { }
 
@@ -162,6 +163,24 @@
     .locals init (valuetype GenericStruct`1<int32 modreq (BarModifier)*[]>)
     ldloc 0
     box valuetype GenericStruct`1<int32 modreq (BarModifier)*[]>
+    ret
+  }
+}
+
+.class public GenericModifiers
+{
+  .method public static hidebysig void ModOptOnGenericParameter<T>(!!0 modopt (FooModifier) arg)
+  {
+    ret
+  }
+
+  .method public static hidebysig void ModOptInGenericArgument<T>(class [System.Collections]System.Collections.Generic.List`1<!!0 modopt (FooModifier)> arg)
+  {
+    ret
+  }
+
+  .method public static hidebysig void ModReqOnByRefGenericParameter<T>(!!0 modreq (BarModifier)& arg)
+  {
     ret
   }
 }

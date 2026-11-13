@@ -26,8 +26,11 @@ namespace System.Collections.Specialized
                 Validate(nameof(value), value);
 
                 _contents[key] = value;
+                WasMutated = true;
             }
         }
+
+        internal bool WasMutated { get; private set; }
 
         public object? this[object key]
         {
@@ -54,7 +57,11 @@ namespace System.Collections.Specialized
 
         public void Add(object key, object? value) => Add((string)key, (string?)value);
 
-        public void Clear() => _contents.Clear();
+        public void Clear()
+        {
+            _contents.Clear();
+            WasMutated = true;
+        }
 
         public bool Contains(KeyValuePair<string, string?> item)
         {
@@ -72,7 +79,16 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array array, int index) => ((IDictionary)_contents).CopyTo(array, index);
 
-        public bool Remove(string key) => _contents.Remove(key);
+        public bool Remove(string key)
+        {
+            if (_contents.Remove(key))
+            {
+                WasMutated = true;
+                return true;
+            }
+
+            return false;
+        }
         public void Remove(object key) => Remove((string)key);
 
         public bool Remove(KeyValuePair<string, string?> item)
