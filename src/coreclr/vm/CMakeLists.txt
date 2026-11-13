@@ -376,10 +376,10 @@ set(VM_SOURCES_WKS
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
-    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
+    runtimehelpers.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp

@@ -14,6 +14,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <GenerateInstallers>true</GenerateInstallers>
+    <MacOSMinimumVersion>$(macOSVersionMin)</MacOSMinimumVersion>
     <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildDebPackage>
     <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildRpmPackage>
     <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>

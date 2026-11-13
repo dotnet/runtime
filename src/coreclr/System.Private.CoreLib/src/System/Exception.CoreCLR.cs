@@ -46,14 +46,14 @@ namespace System
 
         private IDictionary CreateDataContainer()
         {
-            if (IsImmutableAgileException(this))
+            if (IsImmutableException(this))
                 return new EmptyReadOnlyDictionaryInternal();
             else
                 return new ListDictionaryInternal();
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsImmutableAgileException(Exception e);
+        private static extern bool IsImmutableException(Exception e);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMethodFromStackTrace")]
@@ -139,7 +139,7 @@ namespace System
         internal void RestoreDispatchState(in DispatchState dispatchState)
         {
             // Restore only for non-preallocated exceptions
-            if (!IsImmutableAgileException(this))
+            if (!IsImmutableException(this))
             {
                 // When restoring back the fields, we again create a copy and set reference to them
                 // in the exception object. This will ensure that when this exception is thrown and these
@@ -259,7 +259,7 @@ namespace System
         {
             // If this is a preallocated singleton exception, silently skip the operation,
             // regardless of the value of throwIfHasExistingStack.
-            if (IsImmutableAgileException(this))
+            if (IsImmutableException(this))
             {
                 return false;
             }
