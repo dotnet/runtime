@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 namespace JitTest_Directed_intrinsic_interlocked_compareexchange;
@@ -221,7 +222,7 @@ public class CompareExchangeTests
         Assert.Null(locations[0]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void Contention()
     {
         const int Iterations = 2000;
