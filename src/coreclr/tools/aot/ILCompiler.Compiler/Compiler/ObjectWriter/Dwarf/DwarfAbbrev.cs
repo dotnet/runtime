@@ -297,8 +297,18 @@ namespace ILCompiler.ObjectWriter
             DW_AT_low_pc, DW_FORM_addr,
             DW_AT_high_pc, DW_FORM_size]);
 
+        public static readonly DwarfAbbrev TryBlockWithChildren = new([
+            DW_TAG_try_block, DW_CHILDREN_yes,
+            DW_AT_low_pc, DW_FORM_addr,
+            DW_AT_high_pc, DW_FORM_size]);
+
         public static readonly DwarfAbbrev CatchBlock = new([
             DW_TAG_catch_block, DW_CHILDREN_no,
+            DW_AT_low_pc, DW_FORM_addr,
+            DW_AT_high_pc, DW_FORM_size]);
+
+        public static readonly DwarfAbbrev CatchBlockWithChildren = new([
+            DW_TAG_catch_block, DW_CHILDREN_yes,
             DW_AT_low_pc, DW_FORM_addr,
             DW_AT_high_pc, DW_FORM_size]);
 

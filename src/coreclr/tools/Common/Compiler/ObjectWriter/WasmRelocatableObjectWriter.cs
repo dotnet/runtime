@@ -594,7 +594,7 @@ namespace ILCompiler.ObjectWriter
                 _functionOffsets[functionIndex] = checked(methodSymbol.Value + bodyStart);
                 _dwarfBuilder.EmitSectionInfo(functionName, (ulong)bodySize);
                 // Wasm variable locations are not described yet.
-                _dwarfBuilder.EmitSubprogramInfo(methodName, functionName, 0, bodySize, methodTypeIndex, [], []);
+                _dwarfBuilder.EmitSubprogramInfo(methodName, functionName, 0, bodySize, methodTypeIndex, [], [], []);
 
                 List<NativeSequencePoint> functionPoints = new();
                 while (sequencePointIndex < sequencePoints.Count && sequencePoints[sequencePointIndex].NativeOffset < bodyEnd)

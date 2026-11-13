@@ -55,9 +55,6 @@ public class Program
             RedirectStandardError = true
         });
 
-        // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-        const int MinWarnings = 15;
-        const int MaxWarnings = 150;
         int count = 0;
         bool foundIlCpp = false;
         bool insideIlCpp = false;
@@ -90,7 +87,7 @@ public class Program
 
         if (count == 0)
         {
-            // something is off, lets check the StandardError stream
+            // Make sure the verifier didn't fail before reporting anything
             int errorCount = 0;
             string[] firstFiveErrors = new string[5];
             foreach (string rawLine in result.StandardError.Split('\n'))
@@ -111,9 +108,8 @@ public class Program
         }
 
         Console.WriteLine($"Found {count} warnings and errors");
-        if (count is not (>= MinWarnings and <= MaxWarnings))
+        if (count != 0)
         {
-            Console.WriteLine($"Found {count} warnings and errors, expected between {MinWarnings} and {MaxWarnings}");
             Console.WriteLine("This is likely a result of debug info changes. To see the new output, run the following command:");
             Console.WriteLine("\tllvm-dwarfdump --verify " + Environment.ProcessPath);
             return 10;
