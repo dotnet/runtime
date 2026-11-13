@@ -20,7 +20,7 @@ internal sealed partial class InvocationCache
         string cachePrefix = CacheDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         if (outputs.DirectoryPath is not null)
         {
-            string outputPrefix = Path.GetFullPath(outputs.DirectoryPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            string outputPrefix = outputs.DirectoryPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
             if (cachePrefix.StartsWith(outputPrefix, comparison) || outputPrefix.StartsWith(cachePrefix, comparison))
                 throw new ArgumentException("The cache and output directories must not contain each other.", nameof(outputs));
         }
@@ -28,9 +28,8 @@ internal sealed partial class InvocationCache
         {
             var paths = new HashSet<string>(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-            foreach (string path in outputs.Files)
+            foreach (string file in outputs.Files)
             {
-                string file = Path.GetFullPath(path);
                 string filePrefix = file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
                 foreach (string existing in paths)
                 {

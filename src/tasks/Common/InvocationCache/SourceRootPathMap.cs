@@ -49,18 +49,18 @@ internal sealed class SourceRootPathMap
                 var previous = _roots[j];
                 if (logical.Equals(previous.Logical, StringComparison.Ordinal))
                     throw new NotSupportedException("Duplicate logical SourceRoots are not supported.");
-                CheckNested(physical, logical, previous.Physical, previous.Logical);
-                CheckNested(previous.Physical, previous.Logical, physical, logical);
+                CheckOverlap(physical, logical, previous.Physical, previous.Logical);
+                CheckOverlap(previous.Physical, previous.Logical, physical, logical);
             }
         }
 
-        static void CheckNested(string child, string childLogical, string parent, string parentLogical)
+        static void CheckOverlap(string child, string childLogical, string parent, string parentLogical)
         {
-            bool nested = child.StartsWith(parent + Path.DirectorySeparatorChar, PathComparison);
-            if (nested
-                ? childLogical != parentLogical + child.Substring(parent.Length + 1).Replace('\\', '/') + "/"
-                : childLogical.StartsWith(parentLogical, StringComparison.Ordinal))
-                throw new NotSupportedException("Nested SourceRoots must preserve their relative layout.");
+            if (!childLogical.StartsWith(parentLogical, StringComparison.Ordinal))
+                return;
+            string relative = childLogical.Substring(parentLogical.Length).TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
+            if (!child.Equals(Path.Combine(parent, relative), PathComparison))
+                throw new NotSupportedException("Overlapping logical SourceRoots must preserve their physical layout.");
         }
     }
 
@@ -74,17 +74,6 @@ internal sealed class SourceRootPathMap
                 return "mapped:" + root.Logical + path.Substring(root.Physical.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
         }
         return "absolute:" + path;
-    }
-
-    internal static string GetFullPath(string path, string workingDirectory)
-    {
-        path = Path.GetFullPath(string.IsNullOrEmpty(path) ? path : Path.Combine(workingDirectory, path));
-        if (path.Length > Path.GetPathRoot(path)!.Length)
-            path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
-            (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
-            throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
-        return path;
     }
 
     internal static bool IsLogicalPath(string path)

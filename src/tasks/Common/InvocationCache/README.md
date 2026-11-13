@@ -48,23 +48,26 @@ dependencies. Inputs must remain stable through discovery, hashing, and executio
 environment settings and installed runtime trees are not automatically fingerprinted.
 
 Resolve relative paths against the caller's working directory once during registration. Supply
-canonical physical full paths to `InvocationInputs`, `InvocationOutputs`, and `InvocationDescription`,
-including the effective working directory. These containers retain physical paths for file reads,
-output validation, and restoration. The `FromFiles` and `FromDirectory` factories canonicalize
+canonical physical full paths to `InvocationInputs`, `InvocationOutputs`, and `InvocationDescription`.
+These containers retain physical paths for file reads, output validation, and restoration.
+The `FromFiles` and `FromDirectory` factories canonicalize
 physical declarations for consumers that do not prepare paths themselves.
 
 For cross-worktree sharing, attach a shared `SourceRootPathMap` constructed from MSBuild `SourceRoot`
 items with stable `MappedPath` metadata. Only key construction maps physical paths to cache identities.
-It maps each distinct path once per key, sorts the input inventory by mapped identity, and hashes
+It maps paths for the key, sorts the input inventory by mapped identity, and hashes
 each identity together with the contents read from its physical path. Argument and search order
 belong in context, independently of inventory ordering.
-Consumers with path-bearing context provide a context factory that receives the same mapping
-function; render known structured path arguments through it rather than replacing raw substrings.
+Path-bearing context uses `InvocationArgument` records marked with `IsPath`. The description stores
+their full physical values, without callbacks or rendering logic; key construction maps only those
+records, rather than replacing substrings in raw text.
 Without a root map, identities remain physical absolute paths.
 
 Consumers must preserve complete within-root layouts and distinguish external paths rather than
-mapping unrelated files to the same identity. Root mappings are captured and validated at construction;
-tool-specific eligibility checks remain with the consumer. Physical path storage also leaves file
+mapping unrelated files to the same identity. Root mappings are captured and validated at construction.
+Physical roots can nest while using independent logical prefixes. Overlapping logical prefixes must
+describe the same physical layout, so distinct files cannot acquire the same identity.
+Tool-specific eligibility checks remain with the consumer. Physical path storage also leaves file
 access independent of cache identity, including any future metadata-based file-hash optimization.
 
 Prepare any execution-path normalization independently of the cache callbacks so disabling or

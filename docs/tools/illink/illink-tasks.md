@@ -223,7 +223,8 @@ Physical absolute roots for experimental cache identity. Pass
 `SourceRoots="@(SourceRoot)"` after running `InitializeSourceRootMappedPaths` to reuse the
 compiler's initialized source roots.
 
-Caching requires conventional `/_/`, `/_1/`, etc. logical prefixes and consistent nested mappings.
+Caching requires conventional `/_/`, `/_1/`, etc. logical prefixes that do not alias distinct files.
+Physically nested roots may use independent logical prefixes.
 Without those mappings the same prepared invocation runs uncached.
 This parameter does not enable caching, change the tool's arguments or working directory,
 change compiler settings, or remap embedded paths in linker outputs.

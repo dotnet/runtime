@@ -22,6 +22,7 @@ namespace ILLink.Tasks.Tests
         public List<string> ResponseFiles { get; } = new();
         public string WorkingDirectory => GetWorkingDirectory() ?? Environment.CurrentDirectory;
         public (string WorkingDirectory, string CommandLine, string ResponseFile)? CacheInvocation { get; private set; }
+        internal InvocationDescription CacheDescription { get; private set; }
 
         public string GetResponseFileCommands() => GenerateResponseFileCommands();
 
@@ -32,11 +33,11 @@ namespace ILLink.Tasks.Tests
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
             string responseFile = AdjustCommandsForOperatingSystem(GenerateResponseFileCommands());
             MethodInfo method = typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic);
-            var description = (InvocationDescription)method.Invoke(this, new object[] { pathToTool, responseFile, commandLine });
+            CacheDescription = (InvocationDescription)method.Invoke(this, new object[] { pathToTool, responseFile, commandLine });
             key = string.Empty;
-            bool result = description is not null && InvocationCache.TryComputeKey(Log, "ILLink", description, out key);
+            bool result = CacheDescription is not null && InvocationCache.TryComputeKey(Log, "ILLink", CacheDescription, out key);
             CacheInvocation = result
-                ? (description.WorkingDirectory, AdjustCommandsForOperatingSystem(commandLine), responseFile) : null;
+                ? (WorkingDirectory, AdjustCommandsForOperatingSystem(commandLine), responseFile) : null;
             return result;
         }
 
