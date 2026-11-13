@@ -181,20 +181,12 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
-        // We also need to ensure that any GC refs are not stored in wasm locals unless they are pre-identified as
-        // candidates (identified as never gc-exposed).
-        // TODO-WASM: Add support for spilling GC ref locals in order to relax this second restriction and enregister
-        // more GC ref locals.
-        if (varTypeIsGC(varDsc->lvType))
+        // GC-exposed candidates also need an up-to-date pinned shadow-stack home.
+        if (varIsRegCandidate && varTypeIsGC(varDsc->lvType))
         {
-            bool isRefCandidate =
-                varDsc->lvTracked &&
-                VarSetOps::IsMember(m_compiler, *m_compiler->m_wasmGCRefCandidates, varDsc->lvVarIndex);
-            if (!isRefCandidate)
-            {
-                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-                varIsRegCandidate = false;
-            }
+            varDsc->lvWasmGCWriteThru =
+                !VarSetOps::IsMember(m_compiler, *m_compiler->m_wasmGCRefCandidates, varDsc->lvVarIndex);
+            anyFrameLocals |= varDsc->lvWasmGCWriteThru;
         }
         if (varIsRegCandidate)
         {
@@ -455,6 +447,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             {
                 assert(node->OperIs(GT_STORE_LCL_VAR));
                 CollectReference(node->AsLclVarCommon());
+                if (varDsc->lvWasmGCWriteThru)
+                {
+                    RewriteLocalStackStore(node->AsLclVarCommon());
+                }
             }
             else
             {
@@ -784,7 +780,8 @@ void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* nod
 }
 
 //------------------------------------------------------------------------
-// RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
+// RewriteLocalStackStore: rewrite a stack store to STOREIND(LCL_ADDR, ...),
+//   retaining the local definition for a write-through candidate.
 //
 // This is needed to obey WASM stack ordering constraints: as in IR, the
 // address operands comes first and we can't insert that into the middle
@@ -815,23 +812,42 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     bool         isStruct = storeType == TYP_STRUCT;
     uint16_t     offset   = lclNode->GetLclOffs();
     ClassLayout* layout   = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
-    lclNode->SetOper(GT_LCL_ADDR);
-    lclNode->ChangeType(TYP_I_IMPL);
-    lclNode->AsLclFld()->SetLclOffs(offset);
+    GenTree*     addr;
+    GenTree*     storeAfter;
+    if (m_compiler->lvaGetDesc(lclNode)->lvWasmGCWriteThru)
+    {
+        assert(lclNode->OperIs(GT_STORE_LCL_VAR) && varTypeIsGC(storeType));
+        // The adjacent local.set/get folds to local.tee, preserving both homes.
+        addr  = m_compiler->gtNewLclAddrNode(lclNode->GetLclNum(), 0);
+        value = m_compiler->gtNewLclVarNode(lclNode->GetLclNum(), storeType);
+        CurrentRange().InsertAfter(lclNode, value);
+        storeAfter = value;
+    }
+    else
+    {
+        lclNode->SetOper(GT_LCL_ADDR);
+        lclNode->ChangeType(TYP_I_IMPL);
+        lclNode->AsLclFld()->SetLclOffs(offset);
+        addr       = lclNode;
+        storeAfter = lclNode;
+    }
 
     GenTree*     store;
     GenTreeFlags indFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
     if (isStruct)
     {
-        store = m_compiler->gtNewStoreBlkNode(layout, lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreBlkNode(layout, addr, value, indFlags);
     }
     else
     {
-        store = m_compiler->gtNewStoreIndNode(storeType, lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreIndNode(storeType, addr, value, indFlags);
     }
-    CurrentRange().InsertAfter(lclNode, store);
-    CurrentRange().Remove(lclNode);
-    CurrentRange().InsertBefore(insertionPoint, lclNode);
+    CurrentRange().InsertAfter(storeAfter, store);
+    if (addr == lclNode)
+    {
+        CurrentRange().Remove(lclNode);
+    }
+    CurrentRange().InsertBefore(insertionPoint, addr);
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
@@ -1333,8 +1349,8 @@ void WasmRegAlloc::ResolveReferences()
             // While register allocations are fixed per-funclet, they are unlikely
             // to agree across all funclets.
             //
-            varDsc->lvRegister = (m_compiler->compFuncCount() == 1);
-            varDsc->lvOnFrame  = false;
+            varDsc->lvRegister = !varDsc->lvWasmGCWriteThru && (m_compiler->compFuncCount() == 1);
+            varDsc->lvOnFrame  = varDsc->lvWasmGCWriteThru;
 
             if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
             {

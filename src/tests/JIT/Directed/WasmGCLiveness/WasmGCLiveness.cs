@@ -20,6 +20,12 @@ public class WasmGCLiveness
         public Box Next;
     }
 
+    private struct Pair
+    {
+        public Box First;
+        public Box Second;
+    }
+
     public enum Scenario
     {
         Call,
@@ -31,7 +37,14 @@ public class WasmGCLiveness
         Redefined,
         Finally,
         Allocation,
-        WriteBarrier
+        WriteBarrier,
+        NestedLocal,
+        NestedRefTemporary,
+        NestedByrefTemporary,
+        ReferenceParameter,
+        ByrefParameter,
+        PromotedFields,
+        NestedExposedLocal
     }
 
     [Theory]
@@ -45,6 +58,13 @@ public class WasmGCLiveness
     [InlineData(Scenario.Finally, 901)]
     [InlineData(Scenario.Allocation, 1457)]
     [InlineData(Scenario.WriteBarrier, 1301)]
+    [InlineData(Scenario.NestedLocal, 1502)]
+    [InlineData(Scenario.NestedRefTemporary, 1602)]
+    [InlineData(Scenario.NestedByrefTemporary, 1702)]
+    [InlineData(Scenario.ReferenceParameter, 1901)]
+    [InlineData(Scenario.ByrefParameter, 2002)]
+    [InlineData(Scenario.PromotedFields, 4203)]
+    [InlineData(Scenario.NestedExposedLocal, 4403)]
     public static void CheckScenario(Scenario scenario, int expected)
     {
         int actual = scenario switch
@@ -59,6 +79,13 @@ public class WasmGCLiveness
             Scenario.Finally => AcrossFinally(),
             Scenario.Allocation => AcrossAllocation(),
             Scenario.WriteBarrier => AcrossWriteBarrier(),
+            Scenario.NestedLocal => NestedLocal(),
+            Scenario.NestedRefTemporary => NestedRefTemporary(),
+            Scenario.NestedByrefTemporary => NestedByrefTemporary(),
+            Scenario.ReferenceParameter => ReferenceParameter(),
+            Scenario.ByrefParameter => ByrefParameter(),
+            Scenario.PromotedFields => PromotedFields(),
+            Scenario.NestedExposedLocal => NestedExposedLocal(),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario))
         };
         Assert.Equal(expected, actual);
@@ -71,6 +98,14 @@ public class WasmGCLiveness
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Box MakeTracked(int value, out WeakReference<Box> weak)
+    {
+        Box box = Make(value);
+        weak = new WeakReference<Box>(box);
+        return box;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Collect()
     {
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
@@ -79,19 +114,28 @@ public class WasmGCLiveness
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CollectAndVerifyAlive(WeakReference<Box> weak)
+    {
+        Collect();
+        Assert.True(weak.TryGetTarget(out _), "Object was collected while its reference was live.");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static int AcrossCall()
     {
-        Box x = Make(101);
-        Collect();
-        return x.Value;
+        Box x = MakeTracked(101, out WeakReference<Box> weak);
+        CollectAndVerifyAlive(weak);
+        int result = x.Value;
+        GC.KeepAlive(x);
+        return result;
     }
 
     // The interior byref survives collection even though the source local need not.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int InteriorByrefAcrossCall()
     {
-        ref int p = ref Make(201).Value;
-        Collect();
+        ref int p = ref MakeTracked(201, out WeakReference<Box> weak).Value;
+        CollectAndVerifyAlive(weak);
         p++;
         return p;
     }
@@ -209,6 +253,124 @@ public class WasmGCLiveness
         int value = x.Value;
         Collect();
         return destination.Next.Value == value ? value : -1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadPair(Box first, Box second)
+    {
+        Collect();
+        return first.Value + second.Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadByrefPair(ref int first, Box second)
+    {
+        Collect();
+        return first + second.Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NestedLocal()
+    {
+        Box x = Make(1501);
+        Collect();
+        return ReadPair(x, CollectAndReturn(Make(0)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NestedRefTemporary()
+    {
+        return ReadPair(Make(1601), CollectAndReturn(Make(0)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NestedByrefTemporary()
+    {
+        return ReadByrefPair(ref Make(1701).Value, CollectAndReturn(Make(0)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReferenceParameter()
+    {
+        Box value = MakeTracked(1901, out WeakReference<Box> weak);
+        return ReadReferenceParameter(value, weak);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadReferenceParameter(Box value, WeakReference<Box> weak)
+    {
+        CollectAndVerifyAlive(weak);
+        int result = value.Value;
+        GC.KeepAlive(value);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ByrefParameter()
+    {
+        return ReadByrefParameter(ref MakeTracked(2001, out WeakReference<Box> weak).Value, weak);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadByrefParameter(ref int value, WeakReference<Box> weak)
+    {
+        CollectAndVerifyAlive(weak);
+        value++;
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int PromotedFields()
+    {
+        Pair pair;
+        pair.First = MakeTracked(2101, out WeakReference<Box> first);
+        pair.Second = MakeTracked(2102, out WeakReference<Box> second);
+        CollectAndVerifyAlive(first);
+        CollectAndVerifyAlive(second);
+        int result = pair.First.Value + pair.Second.Value;
+        GC.KeepAlive(pair.First);
+        GC.KeepAlive(pair.Second);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NestedExposedLocal()
+    {
+        Box value = MakeTracked(2201, out WeakReference<Box> weak);
+        return ReadPair(value, ReplaceAndCollect(ref value, weak));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Box ReplaceAndCollect(ref Box value, WeakReference<Box> original)
+    {
+        value = Make(2202);
+        CollectAndVerifyAlive(original);
+        return value;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void AcrossRedefinitions(bool replace)
+    {
+        Box x = MakeTracked(1801, out WeakReference<Box> weak);
+        for (int i = 0; i < 3; i++)
+        {
+            CollectAndVerifyAlive(weak);
+            if (replace)
+            {
+                x = MakeTracked(x.Value + 1, out weak);
+            }
+            else
+            {
+                x.Value++;
+            }
+        }
+
+        CollectAndVerifyAlive(weak);
+        Assert.Equal(1804, x.Value);
+        GC.KeepAlive(x);
     }
 
     [Theory]
