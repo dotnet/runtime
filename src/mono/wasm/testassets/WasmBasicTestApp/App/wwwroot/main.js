@@ -387,7 +387,8 @@ try {
                         try {
                             add(0, 0);
                         } catch (error) {
-                            if (!error.message.includes("cannot be bound recursively")) throw error;
+                            if (error.message !== "A JavaScript export cannot be bound recursively." &&
+                                error.message !== "JSExportReentrantBinding") throw error;
                             rejected++;
                         }
                     }
