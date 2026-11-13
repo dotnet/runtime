@@ -80,6 +80,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 add_definitions(-DFEATURE_CORECLR)
+add_compile_definitions(FEATURE_HOST_TRACE)
 if(FEATURE_DBGIPC)
   add_definitions(-DFEATURE_DBGIPC_TRANSPORT_DI)
   add_definitions(-DFEATURE_DBGIPC_TRANSPORT_VM)
