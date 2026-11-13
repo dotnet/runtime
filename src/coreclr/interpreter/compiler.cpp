@@ -51,6 +51,9 @@ bool InterpCompiler::s_samplingProfilerEnabled = false;
 bool InterpCompiler::s_browserProfilerEnabled = false;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
+#if !defined(TARGET_WASM) || !defined(TARGET_BROWSER) || defined(FEATURE_MULTITHREADING)
+bool InterpCompiler::s_interpPgoEnabled = false;
+#endif // !TARGET_WASM || !TARGET_BROWSER || FEATURE_MULTITHREADING
 
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
@@ -2246,8 +2249,14 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
     m_emitMethodEntryPGO = !InterpConfig.WasmPgoInstrumentation().isEmpty()
         && InterpConfig.WasmPgoInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+#else
+    m_emitInterpPGO = s_interpPgoEnabled
+        && (InterpConfig.InterpPGOMethods().isEmpty()
+            || InterpConfig.InterpPGOMethods().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args));
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -2351,8 +2360,13 @@ bool InterpCompiler::CompileMethod()
     }
 #endif
 
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
     if (m_emitMethodEntryPGO)
         InstrumentMethodEntry();
+#else
+    if (m_emitInterpPGO)
+        InstrumentBlockCounts();
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
     AllocOffsets();
     PatchInitLocals(m_methodInfo);
@@ -5119,6 +5133,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     ContinuationContextHandling continuationContextHandling = ContinuationContextHandling::None;
     bool isValueTaskAdaptedToTask = false;
+    bool isVoidAwait = false;
+    bool discardAwaitResult = false;
 
     if (isCalli)
     {
@@ -5166,6 +5182,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             continuationContextHandling = m_currentContinuationContextHandling;
             isValueTaskAdaptedToTask = m_isValueTaskAdaptedToTask;
             m_isValueTaskAdaptedToTask = false;
+            isVoidAwait = m_isVoidAwait;
+            m_isVoidAwait = false;
         }
         else
         {
@@ -5186,6 +5204,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        discardAwaitResult = isVoidAwait && (callInfo.sig.retType != CORINFO_TYPE_VOID);
 
         if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
         {
@@ -5907,6 +5927,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
     {
         EmitSuspend(callInfo.sig.retType, continuationContextHandling, isValueTaskAdaptedToTask);
+    }
+
+    if (discardAwaitResult)
+    {
+        INTERP_DUMP("Discarding unused result after folded task await\n");
+        m_pStackPointer--;
     }
 }
 
@@ -7556,10 +7582,24 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     return -1;
 }
 
-bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
+bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip, const CORINFO_RESOLVED_TOKEN* awaitToken)
 {
     ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    return m_resolvedAsyncCallToken.hMethod != NULL;
+    if (m_resolvedAsyncCallToken.hMethod == NULL)
+    {
+        return false;
+    }
+
+    // In normal cases a Task<T>-returning function is followed by 'T AsyncHelpers.Await(Task<T>)'.
+    // However, it is also legal IL to follow it up with 'void AsyncHelpers.Await(Task)'. Such IL may occur
+    // in C# code like `await (Task)Foo()`.
+    // In the latter case, the IL does not expect a pushed IL entry, but we are going to push one as part
+    // of handling the call.
+    // To differentiate the cases we can look for a MethodSpec token since that unequivocally means
+    // 'T AsyncHelpers.Await(Task<T>)'; if not seen then this is the void overload and we know to discard
+    // the additional IL entry.
+    m_isVoidAwait = (awaitToken != NULL) && (TypeFromToken(awaitToken->token) != mdtMethodSpec);
+    return true;
 }
 
 bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7572,7 +7612,7 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
         return false;
     }
 
-    if (!ResolveAsyncCallToken(ip))
+    if (!ResolveAsyncCallToken(ip, &awaitResolvedToken))
     {
         return false;
     }
@@ -7616,7 +7656,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7694,7 +7734,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const u
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7765,7 +7805,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -8726,6 +8766,7 @@ void InterpCompiler::CreateSynchronizedRetValVar()
     INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
 }
 
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
 void InterpCompiler::InstrumentMethodEntry()
 {
     ICorJitInfo::PgoInstrumentationSchema schema = {};
@@ -8742,10 +8783,55 @@ void InterpCompiler::InstrumentMethodEntry()
         NO_WAY("Failed to allocate method-entry profile counter");
 
     // The synthetic prologue is not revisited by IL backedges to offset zero.
-    InterpInst* probe = InsertInsBB(m_pEntryBB, nullptr, INTOP_PGO_COUNT);
+    InterpInst* probe = InsertInsBB(m_pEntryBB, nullptr, INTOP_PGO_COUNT_I8);
     probe->ilOffset = -1;
     probe->data[0] = GetDataItemIndex(data + schema.Offset);
 }
+#else
+void InterpCompiler::InstrumentBlockCounts()
+{
+    // Probe IL offset zero and loop heads, retaining one counter per original IL block.
+    // Cloned and optimized-away blocks cannot provide unique IL offsets.
+    TArray<InterpBasicBlock*, MemPoolAllocator> blocks(GetMemPoolAllocator(IMK_DataItem));
+    for (InterpBasicBlock* bb = m_pEntryBB; bb != nullptr; bb = bb->pNextBB)
+    {
+        if (bb->ilOffset < 0 || bb->ilOffset >= m_ILCodeSizeFromILHeader || m_ppOffsetToBB[bb->ilOffset] != bb)
+            continue;
+        if (bb->ilOffset == 0 || bb->isBackwardBranchTarget)
+            blocks.Add(bb);
+    }
+
+    int32_t numBlocks = blocks.GetSize();
+    if (numBlocks == 0)
+        return;
+
+    TArray<ICorJitInfo::PgoInstrumentationSchema, MemPoolAllocator> schema(GetMemPoolAllocator(IMK_DataItem));
+    for (int32_t i = 0; i < numBlocks; i++)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+        schemaElem.ILOffset = blocks.Get(i)->ilOffset;
+        schemaElem.Count = 1;
+        schema.Add(schemaElem);
+    }
+
+    ICorJitInfo::PgoInstrumentationSchema* pSchema = schema.GetUnderlyingArray();
+    uint8_t* pInstrumentationData = nullptr;
+    HRESULT hr = m_compHnd->allocPgoInstrumentationBySchema(m_methodHnd, pSchema, static_cast<uint32_t>(numBlocks), &pInstrumentationData);
+    if (FAILED(hr) || pInstrumentationData == nullptr)
+    {
+        INTERP_DUMP("InstrumentBlockCounts: allocPgoInstrumentationBySchema failed (hr=0x%08x)\n", hr);
+        return;
+    }
+
+    for (int32_t i = 0; i < numBlocks; i++)
+    {
+        InterpInst* ins = InsertInsBB(blocks.Get(i), nullptr, INTOP_PGO_COUNT);
+        ins->ilOffset = -1;
+        ins->data[0] = GetDataItemIndex(pInstrumentationData + pSchema[i].Offset);
+    }
+}
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {

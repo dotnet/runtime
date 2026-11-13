@@ -491,16 +491,18 @@ needed by the profile tool. To arm the startup trace before managed execution, u
 Ordinary compiled bodies produce `BasicBlockLongCount` schemas covering their IL
 basic blocks, not just invocation counts. Expanded intrinsic callees do not execute
 their IL bodies: their `MethodEntryLongCount` data describes invocations only.
-Interpreted methods use the same invocation-only tag as a coarse fallback.
+Interpreted methods in a single-threaded Browser/Wasm producer publish use the same
+invocation-only tag as a coarse fallback.
 Invocation-only profiles do not claim measured internal branch or loop frequencies.
 Instrumentation preserves application exception behavior; there is no guarantee of
 precise counts for failed argument evaluation or throwing intrinsic operations.
 
 The publish property forwards the same filter to crossgen2 and to the runtime as
-`DOTNET_WasmPgoInstrumentation`. For an interpreter-only development experiment,
-set that environment variable directly with a `WasmEnvironmentVariable` item.
-Empty disables it, and `*` selects all methods; the removed `DOTNET_InterpPGO`
-and `DOTNET_InterpPGOMethods` settings are not used.
+`DOTNET_WasmPgoInstrumentation`, covering both compiled methods and interpreter
+fallbacks in the published application. Empty disables it, and `*` selects all
+methods. Other interpreter configurations, including WASI, retain their separate
+`DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` settings and sparse 32-bit block
+counters; those settings do not configure this Browser publishing workflow.
 
 Convert the downloaded `xxx.nettrace` into an `.mibc` with `dotnet-pgo` (installed via
 `dotnet tool install --global dotnet-pgo`, or from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`

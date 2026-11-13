@@ -2092,10 +2092,10 @@ public:
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
-        schemaElem.InstrumentationKind = compiler->opts.compCollect64BitCounts
-                                             ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
-                                             : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
-        schemaElem.ILOffset            = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
+                                                               ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
+                                                               : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+        schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
         m_schema.push_back(schemaElem);
         m_schemaCount++;
 
@@ -2602,7 +2602,8 @@ bool Compiler::compWasmPgoInstrumentation() const
 Statement* Compiler::impNewMethodEntryMarker(CORINFO_METHOD_HANDLE method)
 {
     assert(compWasmPgoInstrumentation());
-    GenTree* marker = new (this, GT_PGO_INVOKE) GenTreeVal(GT_PGO_INVOKE, TYP_VOID, reinterpret_cast<ssize_t>(method));
+    GenTree* marker = new (this, GT_PGO_COUNT_INVOCATION)
+        GenTreeVal(GT_PGO_COUNT_INVOCATION, TYP_VOID, reinterpret_cast<ssize_t>(method));
     marker->gtFlags |= GTF_ORDER_SIDEEFF;
     Statement* stmt = fgNewStmtFromTree(marker);
     // Use the importer list, not the block list that import will replace.
@@ -2878,7 +2879,7 @@ PhaseStatus Compiler::fgInstrumentMethodEntryMarkers()
         {
             Statement* next   = stmt->GetNextStmt();
             GenTree*   marker = stmt->GetRootNode();
-            if (marker->OperIs(GT_PGO_INVOKE))
+            if (marker->OperIs(GT_PGO_COUNT_INVOCATION))
             {
                 assert(compWasmPgoInstrumentation());
                 ICorJitInfo::PgoInstrumentationSchema schema = {};
@@ -3336,7 +3337,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 //   and derive block weights and uniquely determined edge likelihoods
 //
 // Returns:
-//   True if data is in good shape
+//   True; block weights are retained even when edge flow cannot be inferred
 //
 // Notes:
 //   Since we are now running before the importer, we do not know which
@@ -3363,14 +3364,30 @@ bool Compiler::fgIncorporateBlockCounts()
         }
     }
 
-    // Block counts constrain edge flow. Establish any uniquely determined
-    // likelihoods before synthesis can replace measured weights using heuristics.
-    if (fgPgoBlockCounts > 0)
+#ifdef TARGET_WASM
+    // Residual flow requires complete measurements and no implicit exceptional flow.
+    if ((fgPgoBlockCounts > 0) && (compHndBBtabCount == 0) && !opts.IsOSR())
     {
+        JitHashTable<IL_OFFSET, JitSmallPrimitiveKeyFuncs<IL_OFFSET>, bool> measuredBlocks(getAllocator(CMK_Pgo));
+        for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
+        {
+            if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
+                (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount))
+            {
+                measuredBlocks.Set(fgPgoSchema[i].ILOffset, true);
+            }
+        }
+
         JitHashTable<FlowEdge*, JitPtrKeyFuncs<FlowEdge>, weight_t> edgeWeights(getAllocator(CMK_Pgo));
         ArrayStack<BasicBlock*>                                     worklist(getAllocator(CMK_Pgo));
+        bool                                                        consistent = true;
         for (BasicBlock* const block : Blocks())
         {
+            if (!measuredBlocks.Lookup(block->bbCodeOffs))
+            {
+                consistent = false;
+                break;
+            }
             worklist.Push(block);
         }
 
@@ -3405,59 +3422,72 @@ bool Compiler::fgIncorporateBlockCounts()
                 }
             }
 
-            if ((unknownCount == 1) && (knownWeight <= block->bbWeight))
+            if (knownWeight > block->bbWeight)
+            {
+                consistent = false;
+            }
+            else if (unknownCount == 1)
             {
                 edgeWeights.Set(unknownEdge, block->bbWeight - knownWeight);
                 worklist.Push(unknownEdge->getSourceBlock());
                 worklist.Push(unknownEdge->getDestinationBlock());
             }
+            else if ((unknownCount == 0) && (knownWeight != block->bbWeight))
+            {
+                consistent = false;
+            }
         };
 
-        while (worklist.Height() > 0)
+        while (consistent && (worklist.Height() > 0))
         {
             BasicBlock* const block = worklist.Pop();
-            if (!block->hasProfileWeight())
-            {
-                continue;
-            }
 
-            // These entries have implicit incoming flow that is not a CFG edge.
-            if ((block != fgFirstBB) && !bbIsHandlerBeg(block) && (!opts.IsOSR() || (block != fgOSREntryBB)))
+            if (block != fgFirstBB)
             {
                 inferEdge(block, true);
             }
-            inferEdge(block, false);
+            if (block->NumSucc() > 0)
+            {
+                inferEdge(block, false);
+            }
         }
 
         for (BasicBlock* const block : Blocks())
         {
-            bool     allKnown       = true;
-            weight_t outgoingWeight = 0;
             for (FlowEdge* const edge : block->SuccEdges())
             {
-                weight_t weight;
-                if (!edgeWeights.Lookup(edge, &weight))
+                if (!edgeWeights.Lookup(edge))
                 {
-                    allKnown = false;
+                    consistent = false;
                     break;
                 }
-                outgoingWeight += weight;
             }
+        }
 
-            if (allKnown && (outgoingWeight > 0))
+        // Commit only after every measured flow equation has been satisfied.
+        if (consistent)
+        {
+            for (BasicBlock* const block : Blocks())
             {
+                if (block->bbWeight == 0)
+                {
+                    continue;
+                }
                 for (FlowEdge* const edge : block->SuccEdges())
                 {
                     weight_t* const weight = edgeWeights.LookupPointer(edge);
                     assert(weight != nullptr);
-                    edge->setLikelihood(*weight / outgoingWeight);
+                    edge->setLikelihood(*weight / block->bbWeight);
                 }
             }
         }
+        else
+        {
+            JITDUMP("Block profile flow is incomplete or inconsistent; using heuristic likelihoods\n");
+        }
     }
+#endif // TARGET_WASM
 
-    // For now assume data is always good.
-    //
     return true;
 }
 

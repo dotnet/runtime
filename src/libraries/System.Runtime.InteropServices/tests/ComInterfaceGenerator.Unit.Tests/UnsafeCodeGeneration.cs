@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -224,15 +223,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 SolutionTransforms.Add(static (solution, projectId) =>
                 {
                     var options = (CSharpCompilationOptions)solution.GetProject(projectId)!.CompilationOptions!;
+#pragma warning disable RSEXPERIMENTAL006
+                    options = options.WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2);
+#pragma warning restore RSEXPERIMENTAL006
                     return solution.WithProjectCompilationOptions(projectId, options.WithWarningLevel(9999));
                 });
-            }
-
-            protected override ParseOptions CreateParseOptions()
-            {
-                var options = (CSharpParseOptions)base.CreateParseOptions();
-                return options.WithFeatures(
-                    [.. options.Features, new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
             }
         }
     }

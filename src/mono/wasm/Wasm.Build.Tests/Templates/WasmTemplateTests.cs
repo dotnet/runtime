@@ -55,6 +55,21 @@ namespace Wasm.Build.Tests
             }
         }
 
+        [ConditionalFact(nameof(IsCoreClrRuntime)), TestCategory("coreclr")]
+        public void ReferencedBrowserLibraryUsesCoreClr()
+        {
+            CopyTestAsset(Configuration.Debug, aot: false, TestAsset.WasmBasicTestApp, "coreclr_library");
+            string libraryProject = Path.Combine(_projectDir, "..", "LazyLibrary", "LazyLibrary.csproj");
+            List<string?> output = new();
+            using DotNetCommand command = new(s_buildEnv, _testOutput);
+            command.WithWorkingDirectory(_projectDir)
+                .WithOutputDataReceived(output.Add)
+                .ExecuteWithCapturedOutput($"msbuild \"{libraryProject}\" -t:_CheckForInvalidConfigurationAndPlatform -getProperty:UseMonoRuntime")
+                .EnsureSuccessful();
+
+            Assert.Equal(new[] { "false" }, output);
+        }
+
         [Theory, TestCategory("no-fingerprinting"), TestCategory("workload")]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]

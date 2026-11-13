@@ -9519,6 +9519,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
+                if (((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0) &&
+                    impIsCovariantAwait(callInfo.sig.retType, opcodeOffs))
+                {
+                    JITDUMP("\nDiscarding unused result after folded task await\n");
+                    impDiscardTopOfStack();
+                }
+
                 // For tail awaits we also import the ret right after.
                 // Also, we may have covariant cases like Task<int> return from a Task method,
                 // and in those cases we end up with an extra IL stack entry here.
@@ -9527,16 +9534,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if ((info.compRetType == TYP_VOID) && (stackState.esStackDepth > 0))
                     {
                         JITDUMP("\nHave extra IL stack entry after tail await\n");
-                        GenTree* val = impPopStack().val;
-                        if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
-                        {
-                            if (varTypeIsStruct(val))
-                            {
-                                val = impNormStructVal(val, CHECK_SPILL_ALL);
-                            }
-
-                            impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
-                        }
+                        impDiscardTopOfStack();
                     }
 
                     prefixFlags &= ~PREFIX_TAILCALL;
@@ -11429,6 +11427,37 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// impIsCovariantAwait:
+//   Check for a Task<T>-returning call followed by AsyncHelpers.Await(Task),
+//   whose folded async call result must be discarded.
+//
+// Arguments:
+//   asyncVariantRetType - Return type of the async variant of the awaited call
+//   awaitOffset         - IL offset of the call to the AsyncHelpers.Await method
+//
+// Returns:
+//   True if the async variant returns a value but Await returns void.
+//
+bool Compiler::impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET awaitOffset)
+{
+    if (asyncVariantRetType == CORINFO_TYPE_VOID)
+    {
+        return false;
+    }
+
+    const BYTE* awaitTokenAddr = info.compCode + awaitOffset + 1;
+    // In normal cases a Task<T>-returning function is followed by 'T AsyncHelpers.Await(Task<T>)'.
+    // However, it is also legal IL to follow it up with 'void AsyncHelpers.Await(Task)'. Such IL may occur
+    // in C# code like `await (Task)Foo()`.
+    // In the latter case, the IL does not expect a pushed IL entry, but we are going to push one as part
+    // of handling the call.
+    // To differentiate the cases we can look for a MethodSpec token since that unequivocally means
+    // 'T AsyncHelpers.Await(Task<T>)'; if not seen then this is the void overload and we know to discard
+    // the additional IL entry.
+    return TypeFromToken(getU4LittleEndian(awaitTokenAddr)) != mdtMethodSpec;
+}
+
+//------------------------------------------------------------------------
 // impCheckOptimizeAwait:
 //   Check if an await at a specified offset should be optimized.
 //
@@ -11988,6 +12017,24 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     impNoteLastILoffs();
 #endif
     return true;
+}
+
+//------------------------------------------------------------------------
+// impDiscardTopOfStack:
+//   Discard the top IL stack value while preserving its side effects.
+//
+void Compiler::impDiscardTopOfStack()
+{
+    GenTree* val = impPopStack().val;
+    if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        if (varTypeIsStruct(val))
+        {
+            val = impNormStructVal(val, CHECK_SPILL_ALL);
+        }
+
+        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+    }
 }
 
 //------------------------------------------------------------------------

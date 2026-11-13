@@ -143,13 +143,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, false)]
     public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot)
     {
-        // Interpreter-only collection uses the runtime MethodSet directly; the publish property
-        // additionally instruments the ReadyToRun closure and is intentionally publish-only.
+        // Publishing without ReadyToRun isolates ordinary interpreter fallback from compiled bodies.
+        // The SDK instrumentation property remains reserved for ReadyToRun producer publishes.
         string extraProperties = @"
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
+                <WasmEnableThreads>false</WasmEnableThreads>
                 <PublishReadyToRun>false</PublishReadyToRun>
-                <WBTDevServer>true</WBTDevServer>
+                <PublishTrimmed>false</PublishTrimmed>
             ";
         string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_WasmPgoInstrumentation"" Value=""*Counter:IncrementCount"" />";
 
@@ -157,24 +158,26 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         UpdateCounterPage();
 
-        BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+        BlazorPublish(info, config, new PublishOptions(
+            UseCache: false,
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: "-p:UsingBrowserRuntimeWorkload=false"));
 
         async Task CollectInterpPgoTest(IPage page)
         {
-            await SetupCounterPage(page, "pgo.nettrace", "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0, skipDownload: true })");
-            await ClickAndCollect(page);
+            Assert.Equal("*Counter:IncrementCount",
+                await page.EvaluateAsync<string>("globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation"));
+            await SetupCounterPage(page, "pgo.nettrace",
+                "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0 })", uploadTrace: false);
+            await ClickAndCollect(page, Path.Combine(info.LogPath, "pgo.nettrace"));
+            Assert.Equal("Current count: 5", await page.Locator("p[role='status']").InnerHTMLAsync());
         }
 
-        await RunForBuildWithDotnetRun(new BlazorRunOptions(
+        await RunForPublishWithWebServer(new BlazorRunOptions(
             Configuration: config,
             Test: CollectInterpPgoTest,
             TimeoutSeconds: 60,
-            CheckCounter: false,
-            ServerEnvironment: new Dictionary<string, string>
-            {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
-                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
-            }
+            CheckCounter: false
         ));
 
         ValidateInterpPgoTrace(info, config, "pgo.nettrace", "IncrementCount");
@@ -867,14 +870,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         string dumpText = File.ReadAllText(dumpPath);
         Assert.Contains(expectedMethod, dumpText);
         using JsonDocument dump = JsonDocument.Parse(dumpText);
-        JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray(),
-            candidate => candidate.GetProperty("Method").GetString()!.Contains("." + expectedMethod + "(", StringComparison.Ordinal));
+        JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray());
+        Assert.Contains("." + expectedMethod + "(", method.GetProperty("Method").GetString(), StringComparison.Ordinal);
         JsonElement entry = Assert.Single(method.GetProperty("InstrumentationData").EnumerateArray()
             .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")));
         Assert.Equal("MethodEntryLongCount", entry.GetProperty("InstrumentationKind").GetString());
         Assert.Equal(0, entry.GetProperty("ILOffset").GetInt32());
         Assert.Equal(5, entry.GetProperty("Data").GetInt64());
         Assert.DoesNotContain("BasicBlockIntCount", dumpText);
+        Assert.DoesNotContain("BasicBlockLongCount", dumpText);
     }
 
     private string ConvertTrace(ProjectInfo info, string fileName)

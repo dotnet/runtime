@@ -37,7 +37,12 @@ RELEASE_CONFIG_INTEGER(InterpMode, "InterpMode", 0); // Interpreter mode, one of
 
 RELEASE_CONFIG_INTEGER(DisplayMemStats, "JitMemStats", 0); // Display interpreter memory usage statistics (0=off, 1=summary, 2=detailed per-method)
 RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation") // Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
 RELEASE_CONFIG_METHODSET(WasmPgoInstrumentation, "WasmPgoInstrumentation") // Empty disables method-entry counters.
+#else
+RELEASE_CONFIG_INTEGER(InterpPGO, "InterpPGO", 0); // Instrument interpreted methods with block counters and make the profile available for offline PGO (e.g. dotnet-pgo).
+RELEASE_CONFIG_METHODSET(InterpPGOMethods, "InterpPGOMethods") // Optional method filter scoping InterpPGO instrumentation (empty = all methods). Uses standard MethodSet pattern format.
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 #undef CONFIG_STRING
 #undef RELEASE_CONFIG_STRING

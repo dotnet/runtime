@@ -11609,7 +11609,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_MDARR_LENGTH,
                                                  GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
                                                  GT_BITCAST,           // Needs to encode the target type.
-                                                 GT_NOP, GT_PGO_INVOKE,
+                                                 GT_NOP, GT_PGO_COUNT_INVOCATION,
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_RETURN_SUSPEND, GT_PATCHPOINT,
@@ -14949,6 +14949,14 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
                 }
             }
         }
+        if ((vnf == VNF_ReadyToRunGenericHandle) &&
+            !s_helperCallProperties.NoThrow(call->GetHelperNum(), IsNativeAot()))
+        {
+            // A lookup that failed to build throws the same way wherever it is evaluated.
+            ValueNumPair lookupExc = vnStore->VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc, call->gtVNPair);
+            vnpExc                 = vnStore->VNPExcSetUnion(vnpExc, vnStore->VNPExcSetSingleton(lookupExc));
+        }
+
         // Add the accumulated exceptions.
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
@@ -15580,7 +15588,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
     bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc) || mayRunCctor; // a cctor may modify the heap
-    bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
+    bool noThrow     = s_helperCallProperties.NoThrow(helpFunc, IsNativeAot());
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
 
@@ -15708,6 +15716,10 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
                 vnpExc = fgValueNumberIndirNullCheckExceptions(call->gtArgs.GetUserArgByIndex(0)->GetNode());
+                break;
+
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                // fgValueNumberHelperCallFunc adds an exception determined by the lookup itself.
                 break;
 
             default:

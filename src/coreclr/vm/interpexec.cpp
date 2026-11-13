@@ -1421,6 +1421,9 @@ static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpB
 // Returns the interpreter code pointer, or NULL if the method cannot be interpreted.
 static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
 {
+    // Preserve last error, same way as normal JIT entry does in PreStubWorker
+    PreserveLastErrorHolder preserveLastError;
+
     _ASSERTE(targetMethod != NULL);
 
     // This is an optimization to ensure that the stack walk will not have to search
@@ -2135,9 +2138,16 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_PGO_COUNT)
                     // Interlocked so concurrent executions of an instrumented method don't lose counts.
+                    InterlockedIncrement(static_cast<LONG*>(pMethod->pDataItems[ip[1]]));
+                    ip += 2;
+                    INTOP_NEXT;
+
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+                INTOP_CASE(INTOP_PGO_COUNT_I8)
                     InterlockedIncrement64(static_cast<LONG64*>(pMethod->pDataItems[ip[1]]));
                     ip += 2;
                     INTOP_NEXT;
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
                 INTOP_CASE(INTOP_BR)
                     ip += ip[1];

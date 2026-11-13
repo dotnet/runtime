@@ -105,7 +105,7 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -113,7 +113,7 @@ FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -121,7 +121,7 @@ FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -9090,7 +9090,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
@@ -12603,13 +12611,13 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 }
 
 /*********************************************************************/
-#if defined(FEATURE_PGO) && (!defined(TARGET_WASM) || defined(FEATURE_MULTITHREADING))
+#if defined(FEATURE_PGO) && (!defined(TARGET_WASM) || !defined(TARGET_BROWSER) || defined(FEATURE_MULTITHREADING))
 static bool InterpreterPgoInstrumentationEnabled()
 {
     static ConfigDWORD s_interpPgo;
     return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
 }
-#endif // FEATURE_PGO && (!TARGET_WASM || FEATURE_MULTITHREADING)
+#endif // FEATURE_PGO && (!TARGET_WASM || !TARGET_BROWSER || FEATURE_MULTITHREADING)
 
 HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
@@ -12628,7 +12636,7 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
 #ifdef FEATURE_PGO
 
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
     if (pMD->IsDynamicMethod() || pMD->IsILStub() || !pMD->IsIL() || pMD->GetILHeader() == nullptr)
     {
         hr = E_NOTIMPL;
@@ -12649,7 +12657,7 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
     {
         hr = E_NOTIMPL;
     }
-#endif // TARGET_WASM && !FEATURE_MULTITHREADING
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
@@ -14009,7 +14017,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_PgoInstrumentationData:
         {
-#if defined(FEATURE_PGO) && defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+#if defined(FEATURE_PGO) && defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
             SigTypeContext typeContext;
             ZapSig::Context context(pInfoModule, currentModule, ZapSig::NormalTokens);
             PCCOR_SIGNATURE afterMethod;
