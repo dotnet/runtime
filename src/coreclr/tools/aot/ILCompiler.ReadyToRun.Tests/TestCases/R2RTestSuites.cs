@@ -38,6 +38,47 @@ public class R2RTestSuites
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     [InlineData(false)]
     [InlineData(true)]
+    public void WasmSingleVirtualIPNeedsNoFrameStore(bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmSingleVirtualIPNeedsNoFrameStore),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSingleVirtualIPNeedsNoFrameStore),
+            [
+                new(nameof(WasmSingleVirtualIPNeedsNoFrameStore), [new CrossgenAssembly(input)])
+                {
+                    Options = optimize ? [Crossgen2Option.Optimize] : [],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            WebcilImageReader webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach ((string name, bool hasEH) in new[] { ("Sum", false), ("SumWithFinally", true) })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($"HelperCalls.{name}(", StringComparison.Ordinal));
+                RuntimeFunction root = method.RuntimeFunctions[0];
+                ILCompiler.Reflection.ReadyToRun.Wasm32.UnwindInfo unwind =
+                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Wasm32.UnwindInfo>(root.UnwindInfo);
+                Assert.Equal(!hasEH, unwind.VirtualIPCount == 4);
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+                ReadOnlySpan<byte> code = body.Image.AsSpan(body.InstructionOffset, body.InstructionLength);
+                // i32.store with alignment 1 and frame-header offset 4.
+                Assert.Equal(hasEH, code.IndexOf(new byte[] { 0x36, 0x00, 0x04 }) >= 0);
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OptionalPInvokeTargetsAreNotEager(bool directModule)
     {
         List<string> additionalArgs =

@@ -10,13 +10,17 @@ being generated.
     manifests for `wasm-tools*`, but does not have the workload installed.
     Typically installed in `artifacts/bin/dotnet-none`.
 
-- On CI, both workload, and no-workload cases are tested, for both the Mono and
-  the CoreCLR runtime flavor. The `wasm-tools` workload supports both flavors, so
-  the two flavors run the same two lanes; only the set of test classes differs.
-  That set is discovered from the built test assembly (see the `GenerateHelixJobsList`
-  target in `Wasm.Build.Tests.csproj`), and classes or test methods marked
-  `[TestCategory("mono")]` or `[TestCategory("coreclr")]` are left out of the other
-  flavor's runs.
+- On CI, workload and no-workload cases run against CoreCLR on Linux and Windows.
+  The manual `runtime-wasm` and `runtime-wasm-non-libtests` entry points also run
+  these jobs.
+
+  The current-band browser test workloads install WebAssembly build tooling,
+  Emscripten, and templates. The .NET SDK resolves runtime and Crossgen2 packages
+  separately from the local package feed.
+
+  Test classes are discovered from the built test assembly (see the
+  `GenerateHelixJobsList` target in `Wasm.Build.Tests.csproj`). Test categories
+  control which classes and methods are included in each run.
 
 - Running:
 
