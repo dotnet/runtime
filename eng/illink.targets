@@ -367,8 +367,18 @@
     <ItemGroup>
       <_ILLinkReference Include="@(_ILLinkReferencedImplementation)"
                         ReferenceSourceTarget="ProjectReference" />
+      <!-- Project references take precedence over framework assemblies with the same name. -->
       <_ILLinkReference Include="@(ReferencePathWithRefAssemblies)"
-                        Condition="'$(_ILLinkUseImplementationReferences)' != 'true' or '%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
+                        Condition="'$(_ILLinkUseImplementationReferences)' != 'true' and '%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' == 'ProjectReference'" />
+      <_ILLinkReference Include="@(ReferencePathWithRefAssemblies)"
+                        Condition="'%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
+      <ILLinkTrimInputAssembly Include="$(TargetName)">
+        <RootMode>library</RootMode>
+      </ILLinkTrimInputAssembly>
+    </ItemGroup>
+
+    <!-- Custom arguments retain directory resolution rather than explicit-reference precedence. -->
+    <ItemGroup Condition="'$(_ILLinkHasCustomArgs)' == 'true'">
       <_DependencyDirectoriesTemp Include="@(_ILLinkReference->'%(RootDir)%(Directory)')" />
       <!-- Remove duplicate directories by batching over them -->
       <!-- Add project references first to give precedence to project-specific files -->
@@ -383,9 +393,7 @@
       </_DependencyDirectoriesNoSlash>
       <_DependencyDirectories Remove="@(_DependencyDirectories)" />
       <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
-      <ILLinkTrimInputAssembly Include="$(TargetName)">
-        <RootMode>library</RootMode>
-      </ILLinkTrimInputAssembly>
+      <_ILLinkReference Remove="@(_ILLinkReference)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -399,6 +407,7 @@
     </PropertyGroup>
 
     <ILLink AssemblyPaths="@(_ILLinkAssemblyToTrim)"
+            ReferenceAssemblyPaths="@(_ILLinkReference)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             RootDescriptorFiles="@(_ILLinkRootDescriptors)"
             TrimMode="$(_ILLinkTrimMode)"

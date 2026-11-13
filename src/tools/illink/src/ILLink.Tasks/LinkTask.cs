@@ -301,8 +301,7 @@ namespace ILLink.Tasks
             try
             {
                 var files = new SortedSet<string>(StringComparer.Ordinal);
-                var directories = new SortedSet<string>(StringComparer.Ordinal);
-                if (!TryAddCacheableExtraArgsInputs(files, directories))
+                if (!TryAddCacheableExtraArgsInputs(files))
                 {
                     Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
                     return null;
@@ -315,22 +314,6 @@ namespace ILLink.Tasks
                     AddAssembly(assembly.ItemSpec);
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
                     AddFile(descriptor.ItemSpec);
-
-                // Preserve AssemblyResolver's search behavior instead of replacing -d with
-                // explicit references. Include every candidate so additions and shadowing invalidate.
-                foreach (string directory in directories)
-                {
-                    foreach (string file in Directory.EnumerateFiles(directory))
-                    {
-                        string extension = Path.GetExtension(file);
-                        if (extension.Equals(".dll", StringComparison.OrdinalIgnoreCase) ||
-                            extension.Equals(".exe", StringComparison.OrdinalIgnoreCase) ||
-                            extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
-                        {
-                            AddAssembly(file);
-                        }
-                    }
-                }
 
 #pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
                 AddFile(typeof(ILLink).Assembly.Location);
@@ -392,7 +375,7 @@ namespace ILLink.Tasks
 
 #nullable restore annotations
 
-        private bool TryAddCacheableExtraArgsInputs(SortedSet<string> files, SortedSet<string> directories)
+        private bool TryAddCacheableExtraArgsInputs(SortedSet<string> files)
         {
             ReadOnlySpan<char> arguments = ExtraArgs.AsSpan().Trim();
             if (arguments.IsEmpty)
@@ -437,7 +420,7 @@ namespace ILLink.Tasks
                     continue;
                 }
 
-                if (option is not ("--link-attributes" or "--substitutions" or "-d") ||
+                if (option is not ("--link-attributes" or "--substitutions") ||
                     !TryReadArgument(ref arguments, out string path) ||
                     string.IsNullOrEmpty(path))
                 {
@@ -445,14 +428,9 @@ namespace ILLink.Tasks
                 }
 
                 string fullPath = Path.GetFullPath(path);
-                if (option == "-d")
-                    directories.Add(fullPath);
-                else
-                {
-                    // Explicit XML arguments must be readable, not merely recorded as absent.
-                    using FileStream input = File.OpenRead(fullPath);
-                    files.Add(fullPath);
-                }
+                // Explicit XML arguments must be readable, not merely recorded as absent.
+                using FileStream input = File.OpenRead(fullPath);
+                files.Add(fullPath);
             }
 
             return true;

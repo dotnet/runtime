@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
@@ -1169,41 +1171,128 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(".dll")]
-        [InlineData(".exe")]
-        [InlineData(".winmd")]
-        public void CacheKeyTracksRuntimeSearchDirectoryCandidates(string extension)
+        [InlineData(true, false, "")]
+        [InlineData(false, false, "")]
+        [InlineData(true, true, "")]
+        [InlineData(false, true, "")]
+        [InlineData(false, false, "windows")]
+        [InlineData(false, true, "windows")]
+        public void RuntimeTrimmingSelectsReferencesAndCachesOnlyDeclaredInputs(bool useImplementations, bool customArguments, string targetPlatform)
         {
             using var test = new OutputDirectoryTest();
-            string host = PrepareCacheKeyTest(test);
-            string first = Path.Combine(test.Root, "first search directory");
-            string second = Path.Combine(test.Root, "second search directory");
-            Directory.CreateDirectory(first);
-            Directory.CreateDirectory(second);
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{first}\" -d \"{second}\"";
-            Assert.True(test.Task.TryGetCacheKey(host, out string empty));
+            string framework = Path.Combine(test.Root, "framework");
+            string projectReference = Path.Combine(test.Root, "project reference");
+            string implementation = Path.Combine(test.Root, "implementation");
+            foreach (string directory in new[] { framework, projectReference, implementation })
+                Directory.CreateDirectory(directory);
+            string frameworkAssembly = Path.Combine(framework, "Dependency.dll");
+            string projectAssembly = Path.Combine(projectReference, "Dependency.dll");
+            string implementationAssembly = Path.Combine(implementation, "Dependency.dll");
+            WriteConstantAssembly(frameworkAssembly, 3);
+            WriteConstantAssembly(projectAssembly, 2);
+            WriteConstantAssembly(implementationAssembly, 1);
+            string inputDirectory = Path.Combine(test.Root, "pretrim");
+            Directory.CreateDirectory(inputDirectory);
+            string input = Path.Combine(inputDirectory, "Input.dll");
+            WriteConstantAssembly(input, 0, implementationAssembly);
+            string output = Path.Combine(test.Root, "Input.dll");
+            string cache = Path.Combine(test.Root, "cache");
+            string project = Path.Combine(test.Root, "trim.proj");
+            string tasks = Path.Combine(test.Root, "tasks", "net");
+            Directory.CreateDirectory(tasks);
+            foreach (string file in Directory.GetFiles(AppContext.BaseDirectory))
+                if (Path.GetExtension(file) is ".dll" or ".json")
+                    File.Copy(file, Path.Combine(tasks, Path.GetFileName(file)));
+            new XDocument(new XElement("Project",
+                new XElement("PropertyGroup",
+                    new XElement("ILLinkTrimAssembly", "true"),
+                    new XElement("IsNETCoreAppSrc", "true"),
+                    new XElement("IsPackable", (!useImplementations && targetPlatform.Length == 0).ToString()),
+                    new XElement("TargetOS", "linux"),
+                    new XElement("TargetPlatformIdentifier", targetPlatform),
+                    new XElement("TargetName", "Input"),
+                    new XElement("TargetExt", ".dll"),
+                    new XElement("IntermediateOutputPath", test.Root + Path.DirectorySeparatorChar),
+                    new XElement("ILLinkTasksAssembly", Path.Combine(tasks, "ILLink.Tasks.dll")),
+                    new XElement("ILLinkArgs", customArguments ? "--skip-unresolved true" : "")),
+                new XElement("Import", new XAttribute("Project", Path.Combine(AppContext.BaseDirectory, "runtime-illink.targets"))),
+                new XElement("PropertyGroup",
+                    new XElement("ILLinkTrimInputPath", inputDirectory + Path.DirectorySeparatorChar),
+                    new XElement("ILLinkTrimInputAssembly", input)),
+                new XElement("ItemGroup",
+                    new XElement("ReferencePathWithRefAssemblies", new XAttribute("Include", frameworkAssembly)),
+                    new XElement("ReferencePathWithRefAssemblies", new XAttribute("Include", typeof(object).Assembly.Location),
+                        new XAttribute("ReferenceSourceTarget", "ProjectReference")),
+                    new XElement("ReferencePathWithRefAssemblies", new XAttribute("Include", projectAssembly),
+                        new XAttribute("ReferenceSourceTarget", "ProjectReference")),
+                    new XElement("Implementation", new XAttribute("Include", implementationAssembly)),
+                    new XElement("Implementation", new XAttribute("Include", typeof(object).Assembly.Location))),
+                new XElement("Target", new XAttribute("Name", "_GetILLinkReferencedImplementations"),
+                    new XAttribute("Returns", "@(Implementation)")))).Save(project);
 
-            string candidate = Path.Combine(second, "Dependency" + extension);
-            WriteTestAssembly(candidate);
-            Assert.True(test.Task.TryGetCacheKey(host, out string added));
-            Assert.NotEqual(empty, added);
-            WriteTestAssembly(candidate, "changed");
-            Assert.True(test.Task.TryGetCacheKey(host, out string changed));
-            Assert.NotEqual(added, changed);
+            string first = RunTrim();
+            if (customArguments)
+                Assert.Contains("ILLink cache bypassed: extra arguments are not supported.", first);
+            else
+                Assert.Contains("ILLink cache stored:", first);
+            using (var linked = Mono.Cecil.AssemblyDefinition.ReadAssembly(output))
+            {
+                var method = linked.MainModule.Types.Single(type => type.Name == "Constants").Methods.Single();
+                Assert.Equal(Mono.Cecil.Cil.Code.Ldc_I4, method.Body.Instructions[0].OpCode.Code);
+                Assert.Equal(useImplementations ? 1 : 2, method.Body.Instructions[0].Operand);
+                Assert.DoesNotContain(method.Body.Instructions, instruction => instruction.OpCode.Code == Mono.Cecil.Cil.Code.Call);
+            }
 
-            string earlierCandidate = Path.Combine(first, Path.GetFileName(candidate));
-            File.Copy(candidate, earlierCandidate);
-            Assert.True(test.Task.TryGetCacheKey(host, out string shadowed));
-            Assert.NotEqual(changed, shadowed);
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{second}\" -d \"{first}\"";
-            Assert.True(test.Task.TryGetCacheKey(host, out string reordered));
-            Assert.NotEqual(shadowed, reordered);
+            // An unrelated assembly beside a selected reference is not a linker input.
+            WriteTestAssembly(Path.Combine(useImplementations ? implementation : projectReference, "Unrelated.dll"));
+            File.Delete(output);
+            string second = RunTrim();
+            if (customArguments)
+            {
+                Assert.Contains("ILLink cache bypassed: extra arguments are not supported.", second);
+                Assert.False(Directory.Exists(cache));
+            }
+            else
+                Assert.Contains("ILLink cache hit:", second);
+            Assert.True(File.Exists(output));
+            Assert.False(File.Exists(Path.Combine(test.Root, "Dependency.dll")));
+            if (!customArguments)
+            {
+                WriteConstantAssembly(useImplementations ? implementationAssembly : projectAssembly, 4);
+                File.Delete(output);
+                Assert.Contains("ILLink cache miss:", RunTrim());
+                using var linked = Mono.Cecil.AssemblyDefinition.ReadAssembly(output);
+                var method = linked.MainModule.Types.Single(type => type.Name == "Constants").Methods.Single();
+                Assert.Equal(4, method.Body.Instructions[0].Operand);
+            }
 
-            File.Delete(candidate);
-            File.Delete(earlierCandidate);
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{first}\" -d \"{second}\"";
-            Assert.True(test.Task.TryGetCacheKey(host, out string removed));
-            Assert.Equal(empty, removed);
+            string RunTrim()
+            {
+                var start = new ProcessStartInfo(Path.Combine(test.Task.ToolPath, test.Task.ToolExe))
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+                foreach (string argument in new[] { "msbuild", project, "-t:ILLinkTrimAssembly", "-v:diag",
+                    "-m:4", "-nr:false", "-p:BuildInParallel=true", "-p:UseSharedCompilation=false" })
+                    start.ArgumentList.Add(argument);
+                start.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
+                start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+                start.Environment["ILLINK_EXPERIMENTAL_CACHE"] = "true";
+                start.Environment["ILLINK_EXPERIMENTAL_CACHE_PATH"] = cache;
+                using var process = Process.Start(start);
+                var stdout = process.StandardOutput.ReadToEndAsync();
+                var stderr = process.StandardError.ReadToEndAsync();
+                if (!process.WaitForExit(60000))
+                {
+                    process.Kill(entireProcessTree: true);
+                    Assert.Fail("Runtime trimming timed out.");
+                }
+                string log = stdout.GetAwaiter().GetResult() + stderr.GetAwaiter().GetResult();
+                Assert.True(process.ExitCode == 0, log);
+                return log;
+            }
         }
 
         [Theory]
@@ -1211,14 +1300,15 @@ namespace ILLink.Tasks.Tests
         [InlineData("Dependency.dll.mdb")]
         [InlineData("Dependency.dll.config")]
         [InlineData("fr/Dependency.resources.dll")]
-        public void CacheKeyTracksRuntimeSearchDirectorySidecars(string relativePath)
+        public void CacheKeyTracksReferenceAssemblySidecars(string relativePath)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
             string directory = Path.Combine(test.Root, "search");
             Directory.CreateDirectory(directory);
             WriteTestAssembly(Path.Combine(directory, "Dependency.dll"));
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
+            test.Task.ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem(Path.Combine(directory, "Dependency.dll")) };
+            test.Task.ExtraArgs = "--ignore-link-attributes true";
             Assert.True(test.Task.TryGetCacheKey(host, out string original));
 
             string sidecar = Path.Combine(directory, relativePath);
@@ -1236,9 +1326,11 @@ namespace ILLink.Tasks.Tests
 
         [Theory]
         [InlineData("missing-directory")]
+        [InlineData("empty-directory")]
+        [InlineData("valid-candidate")]
         [InlineData("invalid-candidate")]
         [InlineData("metadata-less-candidate")]
-        public void CacheKeyBypassesUnmodeledSearchDirectoryInputs(string reason)
+        public void CacheKeyBypassesSearchDirectoryArguments(string reason)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -1249,15 +1341,17 @@ namespace ILLink.Tasks.Tests
                 string candidate = Path.Combine(directory, "Dependency.dll");
                 if (reason == "invalid-candidate")
                     File.WriteAllText(candidate, "invalid");
-                else
+                else if (reason == "metadata-less-candidate")
                     WriteMetadataLessPE(candidate);
+                else if (reason == "valid-candidate")
+                    WriteTestAssembly(candidate);
             }
             test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
 
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
             Assert.Empty(key);
             Assert.Contains(test.BuildEngine.Messages, message =>
-                message.Message.StartsWith("ILLink cache bypassed: invocation could not be described:"));
+                message.Message.StartsWith("ILLink cache bypassed: extra arguments are not supported."));
         }
 
         [Fact]
@@ -2132,6 +2226,32 @@ namespace ILLink.Tasks.Tests
                 attribute.ConstructorArguments.Add(new Mono.Cecil.CustomAttributeArgument(assembly.MainModule.TypeSystem.String, informationalVersion));
                 assembly.CustomAttributes.Add(attribute);
             }
+            assembly.Write(path);
+        }
+
+        private static void WriteConstantAssembly(string path, int value, string dependency = null)
+        {
+            using var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
+                new Mono.Cecil.AssemblyNameDefinition(Path.GetFileNameWithoutExtension(path), new Version(1, 0)),
+                Path.GetFileName(path), Mono.Cecil.ModuleKind.Dll);
+            var module = assembly.MainModule;
+            var type = new Mono.Cecil.TypeDefinition("", "Constants",
+                Mono.Cecil.TypeAttributes.Public | Mono.Cecil.TypeAttributes.BeforeFieldInit,
+                module.ImportReference(typeof(object)));
+            module.Types.Add(type);
+            var method = new Mono.Cecil.MethodDefinition("GetValue",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.ImportReference(typeof(int)));
+            type.Methods.Add(method);
+            if (dependency is not null)
+            {
+                using var referenced = Mono.Cecil.AssemblyDefinition.ReadAssembly(dependency);
+                var target = referenced.MainModule.Types.Single(type => type.Name == "Constants").Methods.Single();
+                method.Body.Instructions.Add(Mono.Cecil.Cil.Instruction.Create(
+                    Mono.Cecil.Cil.OpCodes.Call, module.ImportReference(target)));
+            }
+            else
+                method.Body.Instructions.Add(Mono.Cecil.Cil.Instruction.Create(Mono.Cecil.Cil.OpCodes.Ldc_I4, value));
+            method.Body.Instructions.Add(Mono.Cecil.Cil.Instruction.Create(Mono.Cecil.Cil.OpCodes.Ret));
             assembly.Write(path);
         }
 
