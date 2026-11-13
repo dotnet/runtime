@@ -850,6 +850,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             PrintOutput($"# Methods: {methods.Count}");
             PrintOutput($"# Methods with any profile data: {profiledMethods.Count(spd => spd.SchemaData.Length > 0)}");
             PrintOutput($"# Methods with 32-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount))}");
+            PrintOutput($"# Methods with invocation-only counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.MethodEntryLongCount))}");
             PrintOutput($"# Methods with 64-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount))}");
             PrintOutput($"# Methods with 32-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount))}");
             PrintOutput($"# Methods with 64-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount))}");
@@ -1642,15 +1643,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 foreach (var e in p.EventsInProcess.ByEventType<JitInstrumentationDataVerboseTraceData>())
                 {
-                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data);
+                    int parametersStart = e.MethodSignature.IndexOf('(');
+                    string parameters = parametersStart >= 0 ? e.MethodSignature.Substring(parametersStart) : e.MethodSignature;
+                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data,
+                        (int)e.EventIndex, e.TimeStampRelativeMSec, e.MethodNamespace + "." + e.MethodName + parameters);
                 }
                 foreach (var e in p.EventsInProcess.ByEventType<JitInstrumentationDataTraceData>())
                 {
-                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data);
+                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data,
+                        (int)e.EventIndex, e.TimeStampRelativeMSec, null);
                 }
 
                 // Local function used with the above two loops as the behavior is supposed to be identical
-                void AddToInstrumentationData(int eventClrInstanceId, long methodID, int methodFlags, byte[] data)
+                void AddToInstrumentationData(int eventClrInstanceId, long methodID, int methodFlags, byte[] data,
+                    long eventIndex, double timestamp, string methodName)
                 {
                     if (eventClrInstanceId != clrInstanceId)
                     {
@@ -1683,7 +1689,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         perMethodChunks.LastChunk = perMethodChunks.InstrumentationData.Count;
                         perMethodChunks.InstrumentationData.Add(data);
                         if ((methodFlags & FinalChunkFlag) == FinalChunkFlag)
+                        {
                             perMethodChunks.Done = true;
+                            if (timestamp >= excludeEventsBefore && timestamp <= excludeEventsAfter &&
+                                PassesMethodFilter(includeMethods, excludeMethods, methodName ?? method.ToString()))
+                            {
+                                methodsToAttemptToPrepare.TryAdd(eventIndex,
+                                    new ProcessedMethodData(timestamp, method, "InstrumentationData"));
+                            }
+                        }
                     }
                 }
 

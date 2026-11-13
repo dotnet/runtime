@@ -54,7 +54,8 @@ namespace Internal.Pgo
         // Values are recorded as 32-bit ints on all targets (wider values are truncated).
         ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
         ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
-        ValueHistogram = (DescriptorMin * 9) | FourByte, // Was EightByte before MIBC format version 1.1
+        ValueHistogram = (DescriptorMin * 9) | FourByte,
+        MethodEntryLongCount = (DescriptorMin * 10) | EightByte, // Was EightByte before MIBC format version 1.1
     }
 
     public interface IPgoSchemaDataLoader<TType, TMethod>
@@ -597,6 +598,7 @@ namespace Internal.Pgo
                     {
                         case PgoInstrumentationKind.BasicBlockIntCount:
                         case PgoInstrumentationKind.BasicBlockLongCount:
+                        case PgoInstrumentationKind.MethodEntryLongCount:
                         case PgoInstrumentationKind.EdgeIntCount:
                         case PgoInstrumentationKind.EdgeLongCount:
                         case PgoInstrumentationKind.HandleHistogramIntCount:

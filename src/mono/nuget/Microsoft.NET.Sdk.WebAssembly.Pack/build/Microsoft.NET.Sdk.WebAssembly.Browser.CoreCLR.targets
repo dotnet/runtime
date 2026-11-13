@@ -16,7 +16,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <_WasmUsePrebuiltReadyToRun>$(PublishReadyToRun)</_WasmUsePrebuiltReadyToRun>
     <_WasmUsePrebuiltReadyToRun Condition="'$(_WasmUsePrebuiltReadyToRun)' == '' and '$(Configuration)' == 'Debug' and
-                                          '$(WasmEnableWebcil)' != 'false' and '$(WasmPerformanceInstrumentation)' == ''">true</_WasmUsePrebuiltReadyToRun>
+                                          '$(WasmEnableWebcil)' != 'false' and '$(WasmPerformanceInstrumentation)' == '' and '$(WasmPgoInstrumentation)' == ''">true</_WasmUsePrebuiltReadyToRun>
     <_WasmUsePrebuiltReadyToRun Condition="'$(_WasmUsePrebuiltReadyToRun)' == ''">false</_WasmUsePrebuiltReadyToRun>
   </PropertyGroup>
 
@@ -71,7 +71,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
     <PropertyGroup Condition="'$(_WasmUsePrebuiltReadyToRun)' == 'true' and '$(_WasmCoreClrUnderPublish)' != 'true' and
-                              '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == ''">
+                              '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == '' and '$(WasmPgoInstrumentation)' == ''">
       <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
     <Warning Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(_WasmCoreClrUnderPublish)' != 'true'"
@@ -117,6 +117,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup>
     <_WasmWebcilStampProperty Include="PublishTrimmed" />
     <_WasmWebcilStampProperty Include="PublishReadyToRunComposite" />
+    <_WasmWebcilStampProperty Include="WasmPgoInstrumentation" />
   </ItemGroup>
 
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
@@ -291,10 +292,10 @@ Copyright (c) .NET Foundation. All rights reserved.
        so _CreateR2RImages reruns even when its per-assembly outputs are otherwise up-to-date. -->
   <Target Name="_WasmCoreClrConservativeR2RInputs"
           Condition="'$(PublishReadyToRun)' == 'true'"
-          DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo;_WasmCoreClrAddPgoInstrumentationToReadyToRun"
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
-      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|PgoInstrumentation=$(WasmPgoInstrumentation)|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
       <!-- The workload targets record settings for steps that rewrite the images in place after crossgen2
            (wasm-opt), so changing them recompiles every image. -->
       <_WasmReadyToRunState Condition="'$(_WasmReadyToRunPostProcessState)' != ''">$(_WasmReadyToRunState)|PostProcess=$(_WasmReadyToRunPostProcessState)</_WasmReadyToRunState>

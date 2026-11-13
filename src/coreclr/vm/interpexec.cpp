@@ -2135,7 +2135,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_PGO_COUNT)
                     // Interlocked so concurrent executions of an instrumented method don't lose counts.
-                    InterlockedIncrement((LONG*)pMethod->pDataItems[ip[1]]);
+                    InterlockedIncrement64(static_cast<LONG64*>(pMethod->pDataItems[ip[1]]));
                     ip += 2;
                     INTOP_NEXT;
 

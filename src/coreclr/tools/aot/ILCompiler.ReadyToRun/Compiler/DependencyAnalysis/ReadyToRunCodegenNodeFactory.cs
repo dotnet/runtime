@@ -616,6 +616,7 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionsTableNode ImportSectionsTable;
 
         public InstrumentationDataTableNode InstrumentationDataTable;
+        public PgoInstrumentationSchemaTableNode PgoInstrumentationSchemas { get; private set; }
         public InliningInfoNode CrossModuleInlningInfo;
         public ImportReferenceProvider ImportReferenceProvider;
 
@@ -1219,6 +1220,11 @@ namespace ILCompiler.DependencyAnalysis
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);
+            if (Target.IsWasm && !string.IsNullOrEmpty(JitConfigProvider.Instance.GetStringConfigValue("WasmPgoInstrumentation")))
+            {
+                PgoInstrumentationSchemas = new PgoInstrumentationSchemaTableNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationSchemas, PgoInstrumentationSchemas);
+            }
 
             if (!OptimizationFlags.StripDebugInfo)
             {

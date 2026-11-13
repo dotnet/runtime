@@ -26,6 +26,9 @@ public:
 
     static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, BYTE **pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
     static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+#if defined(FEATURE_PGO) && defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    static BYTE* allocPgoInstrumentationFromR2RSchema(Module* imageModule, MethodDesc* method, UINT32 schemaIndex);
+#endif
     static HRESULT getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                              Module* pModule,
                                                              ReadyToRunLoadedImage* pNativeImage,
@@ -107,7 +110,7 @@ public:
             return hashpair.Hash();
         }
 
-        void Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned countsOffset);
+        void Init(MethodDesc *pMD, unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset);
         void HashInit(unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset)
         {
             method = NULL;

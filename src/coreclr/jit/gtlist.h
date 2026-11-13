@@ -40,6 +40,7 @@ GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place
 GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
 GTNODE(FTN_ENTRY        , GenTree            ,0,0,GTK_LEAF)             // Address of this function's entry point
+GTNODE(PGO_INVOKE       , GenTreeVal         ,0,1,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR) // Imported invocation; consumed by profiling
 
 // Offset into continuation, starting after the MethodTable*, of a special
 // member. GenTreeVal::gtVal1 is an index into Compiler::m_asyncContinuationMembers.

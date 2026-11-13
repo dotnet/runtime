@@ -4,9 +4,14 @@
 extern alias crossgen2;
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Text.RegularExpressions;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -19,8 +24,12 @@ using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using crossgen2::ILCompiler.PortableCallHelpers;
 using crossgen2::Internal.CallingConvention;
 using crossgen2::Internal.JitInterface;
+using CompilerPgo = crossgen2::Internal.Pgo;
+using TypeSystemMetadataEmitter = crossgen2::Internal.TypeSystem.TypeSystemMetadataEmitter;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
+using ReadyToRunReader = ILCompiler.Reflection.ReadyToRun.ReadyToRunReader;
+using SignatureFormattingOptions = ILCompiler.Reflection.ReadyToRun.SignatureFormattingOptions;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -54,6 +63,402 @@ public class WasmArgumentLayoutTests
     public WasmArgumentLayoutTests(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InstrumentationSchemaTableDeduplicatesAndOrdersLayouts(bool reverse)
+    {
+        PgoInstrumentationSchema[] blocks =
+        [
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = 1 },
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, ILOffset = 12, Count = 1 },
+        ];
+        PgoInstrumentationSchema[] invocation =
+        [
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount, Count = 1 },
+        ];
+        int blockSize = PgoInstrumentationSchemaTableNode.Layout(blocks);
+        int invocationSize = PgoInstrumentationSchemaTableNode.Layout(invocation);
+        PgoInstrumentationSchemaTableNode table = new();
+        if (reverse)
+            table.Add(invocation, invocationSize);
+        var blockEntry = table.Add(blocks, blockSize);
+        table.Add(invocation, invocationSize);
+        Assert.Same(blockEntry, table.Add(blocks, blockSize));
+
+        PgoInstrumentationSchemaTableNode comparison = new();
+        comparison.Add(invocation, invocationSize);
+        comparison.Add(blocks, blockSize);
+        byte[] data = table.Encode();
+        Assert.Equal(comparison.Encode(), data);
+        Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(4)));
+        int blobOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(8 + table.GetIndex(blockEntry) * 4));
+        Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset)));
+        Assert.Equal(16, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 4)));
+        Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 24)));
+        Assert.Equal(12, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 32)));
+        Assert.Equal(8, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(blobOffset + 44)));
+        Assert.Equal(data.Length, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(16)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MaxValue)]
+    public void InstrumentationSchemaLayoutRejectsInvalidCounterCounts(int count)
+    {
+        PgoInstrumentationSchema[] schema =
+        [
+            new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount, Count = count },
+        ];
+        if (count == int.MaxValue)
+            Assert.Throws<OverflowException>(() => PgoInstrumentationSchemaTableNode.Layout(schema));
+        else
+            Assert.Throws<InvalidOperationException>(() => PgoInstrumentationSchemaTableNode.Layout(schema));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RecursiveIntrinsicBodyHasOneBlockProbe(bool instrument)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string listingPath = Path.Combine(directory, "intrinsic.jit.txt");
+            List<string> args =
+            [
+                TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--singlemethodtypename", "System.Runtime.Intrinsics.Wasm.PackedSimd",
+                "--singlemethodname", "PopCount",
+                "--codegenopt:JitDisasm=*",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "intrinsic.wasm"),
+            ];
+            if (instrument)
+                args.Add("--codegenopt:WasmPgoInstrumentation=*");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Equal(1, Regex.Matches(listing, @"\bi8x16\.popcnt\b").Count);
+            Assert.Equal(instrument ? 1 : 0, Regex.Matches(listing, @"\bi64\.add\b").Count);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NullableListSetterProfilesOnlyIlBlocks(bool instrument)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "il-block-profiling", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string listingPath = Path.Combine(directory, "setter.jit.txt");
+            List<string> args =
+            [
+                TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--strip-debug-info",
+                "--strip-inlining-info",
+                "--singlemethodtypename", "System.Collections.Generic.List`1[System.Nullable`1[System.Decimal]]",
+                "--singlemethodname", "System.Collections.IList.set_Item",
+                "--codegenopt:JitDisasm=*",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "setter.wasm"),
+            ];
+            if (instrument)
+                args.Add("--codegenopt:WasmPgoInstrumentation=*");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Equal(instrument, Regex.IsMatch(listing, @"\bi64\.add\b"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("", 0)]
+    [InlineData("*", 2)]
+    [InlineData("Callbacks:Inlinee", 1)]
+    public void InlineeProfilingPreservesInlining(string filter, int expectedProbeCount)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "inlinee-profiling", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Source = """
+                using System.Runtime.CompilerServices;
+                public static class Callbacks
+                {
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public static int Caller(int value) => Inlinee(value) + 1;
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    public static int Inlinee(int value) => value * 7;
+                }
+                """;
+            string input = CompileCallbackAssembly(Source, Path.Combine(directory, "InlineProfile.dll"), optimize: true);
+            string listingPath = Path.Combine(directory, "caller.jit.txt");
+            List<string> args =
+            [
+                input,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--singlemethodtypename", "Callbacks, InlineProfile",
+                "--singlemethodname", "Caller",
+                $"--codegenopt:WasmPgoInstrumentation={filter}",
+                "--codegenopt:JitDisasm=Callbacks:Caller",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "caller.wasm"),
+            ];
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Contains("; Assembly listing for method Callbacks:Caller", listing);
+            Assert.DoesNotMatch(@"\b(?:deferred\.call|call_indirect|call)\b[^\r\n]*Callbacks:Inlinee", listing);
+            Assert.Equal(expectedProbeCount, Regex.Matches(listing, @"\bi64\.add\b").Count);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(7L, 1L, 0L)]
+    [InlineData(21L, 3L, 0L)]
+    [InlineData(7L, 1L, 4L)]
+    public void BlockProfileSeparatesEntryFromIlZeroBackedge(long loopCount, long exitCount, long invocationCount)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "block-profile-flow", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            const string Source = """
+                using System.Runtime.CompilerServices;
+                public static class Callbacks
+                {
+                    public static int Value = 7;
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public static void Loop()
+                    {
+                    Start:
+                        Value--;
+                        if (Value > 0) goto Start;
+                    }
+                }
+                """;
+            string input = CompileCallbackAssembly(Source, Path.Combine(directory, "EntryFlow.dll"), optimize: true);
+            ReadyToRunCompilerContext context = CreateWasmContext(input);
+            var module = context.ResolveAssembly(new AssemblyNameInfo("EntryFlow"), throwIfNotFound: true);
+            var method = (EcmaMethod)module.GetType(""u8, "Callbacks"u8).GetMethod("Loop"u8, null);
+            byte[] ilBytes = Internal.IL.EcmaMethodIL.Create(method).GetILBytes();
+            Assert.Equal((byte)ILOpCode.Ldsfld, ilBytes[0]);
+            Assert.Equal((byte)ILOpCode.Ret, ilBytes[^1]);
+            List<CompilerPgo.PgoSchemaElem> schema =
+            [
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
+                    ILOffset = 0, Count = 1, DataLong = loopCount },
+                new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.BasicBlockLongCount,
+                    ILOffset = ilBytes.Length - 1, Count = 1, DataLong = exitCount },
+            ];
+            if (invocationCount != 0)
+                schema.Add(new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryLongCount,
+                    Count = 1, DataLong = invocationCount });
+
+            TypeSystemMetadataEmitter metadata = new(new AssemblyNameInfo("profile.mibc"), context);
+            metadata.AllowUseOfAddGlobalMethod();
+            InstructionEncoder group = new(new BlobBuilder());
+            group.OpCode(ILOpCode.Ldtoken);
+            group.Token(metadata.GetMethodRef(method));
+            group.LoadString(metadata.GetUserStringHandle("InstrumentationDataStart"));
+            CompilerPgo.PgoProcessor.EncodePgoData<object, object>(schema,
+                new CountProfileEmitter(metadata, group), emitAllElementsUnconditionally: true);
+            group.OpCode(ILOpCode.Pop);
+            MethodDefinitionHandle groupHandle = metadata.AddGlobalMethod("Assemblies_EntryFlow", group, 8);
+            InstructionEncoder dictionary = new(new BlobBuilder());
+            dictionary.LoadString(metadata.GetUserStringHandle("EntryFlow;"));
+            dictionary.OpCode(ILOpCode.Ldtoken);
+            dictionary.Token(groupHandle);
+            dictionary.OpCode(ILOpCode.Pop);
+            metadata.AddGlobalMethod("AssemblyDictionary", dictionary, 8);
+            string profile = Path.Combine(directory, "profile.mibc");
+            using (FileStream stream = File.Create(profile))
+                metadata.SerializeToStream(stream);
+
+            string listingPath = Path.Combine(directory, "loop.jit.txt");
+            R2RCompilationResult result = new R2RDriver(_output).Compile(
+            [
+                input,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--singlemethodtypename", "Callbacks, EntryFlow",
+                "--singlemethodname", "Loop",
+                "-m", profile,
+                "--codegenopt:JitDisasm=Callbacks:Loop",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(directory, "loop.wasm"),
+            ]);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Match count = Regex.Match(listing, @"with Static PGO: fgCalledCount is ([\d.eE+-]+)");
+            Assert.True(count.Success, listing);
+            Assert.Equal((double)(exitCount + invocationCount),
+                double.Parse(count.Groups[1].Value, CultureInfo.InvariantCulture));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private sealed class CountProfileEmitter : CompilerPgo.IPgoEncodedValueEmitter<object, object>
+    {
+        private readonly TypeSystemMetadataEmitter _metadata;
+        private readonly InstructionEncoder _il;
+
+        public CountProfileEmitter(TypeSystemMetadataEmitter metadata, InstructionEncoder il)
+        {
+            _metadata = metadata;
+            _il = il;
+        }
+
+        public void EmitLong(long value, long previousValue)
+        {
+            if (value is >= int.MinValue and <= int.MaxValue)
+                _il.LoadConstantI4((int)value);
+            else
+                _il.LoadConstantI8(value);
+        }
+
+        public void EmitType(object type, object previousValue) => throw new InvalidOperationException(nameof(EmitType));
+        public void EmitMethod(object method, object previousValue) => throw new InvalidOperationException(nameof(EmitMethod));
+
+        public bool EmitDone()
+        {
+            _il.LoadString(_metadata.GetUserStringHandle("InstrumentationDataEnd"));
+            return true;
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DirectCallActivationUsesCanonicalBody(bool useDirectCall)
+    {
+        string directory = Path.GetFullPath(Path.Combine("artifacts", "tmp", "canonical-ready-entry", Path.GetRandomFileName()));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string source = $$"""
+                using System;
+                using System.Runtime.CompilerServices;
+
+                public sealed class Marker { }
+                public struct Enumerator<T> : IDisposable
+                {
+                    public T Value;
+                    public T Current => Value;
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    public bool MoveNext() => false;
+                    {{(!useDirectCall ? "[MethodImpl(MethodImplOptions.NoInlining)]" : "")}}
+                    public void Dispose() { }
+                }
+                public sealed class Sequence
+                {
+                    public Enumerator<Marker> GetEnumerator() => default;
+                }
+                public static class Callbacks
+                {
+                    public static void Main()
+                    {
+                        foreach (Marker item in new Sequence()) { }
+                    }
+                }
+                """;
+            string input = CompileCallbackAssembly(source, Path.Combine(directory, "CanonicalActivation.dll"),
+                optimize: true, outputKind: OutputKind.ConsoleApplication);
+            string output = Path.Combine(directory, "CanonicalActivation.r2r.wasm");
+            List<string> args =
+            [
+                input,
+                "--composite",
+                "--inputbubble",
+                "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--codegenopt:JitNoInline=1",
+                "--codegenopt:WasmPgoInstrumentation=*",
+                "--out", output,
+            ];
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+
+            var resolver = new SimpleAssemblyResolver([input, .. Directory.GetFiles(TestPaths.LibrariesDir, "*.dll")]);
+            var reader = new ReadyToRunReader(resolver, output);
+            var formatting = new SignatureFormattingOptions();
+            string[] allSignatures = reader.ImportSections.SelectMany(section => section.Entries)
+                .Select(entry => entry.Signature.ToString(formatting))
+                .ToArray();
+            string[] signatures = allSignatures.Where(signature => signature.StartsWith("void Enumerator`1<", StringComparison.Ordinal) &&
+                signature.Contains(".Dispose(", StringComparison.Ordinal)).ToArray();
+            Assert.NotEmpty(signatures);
+            _output.WriteLine(string.Join(Environment.NewLine, signatures));
+            if (useDirectCall)
+            {
+                string[] activations = signatures.Where(signature => signature.Contains("METHOD_ENTRY_READYTORUN", StringComparison.Ordinal)).ToArray();
+                Assert.NotEmpty(activations);
+                foreach (string activation in activations)
+                {
+                    Assert.Contains("__Canon", activation);
+                    Assert.DoesNotContain("Marker", activation);
+                    Assert.DoesNotContain(" @ ", activation);
+                }
+            }
+            else
+            {
+                Assert.Contains(signatures, signature => signature.Contains("Marker", StringComparison.Ordinal) &&
+                    signature.Contains("METHOD_ENTRY", StringComparison.Ordinal) &&
+                    !signature.Contains("METHOD_ENTRY_READYTORUN", StringComparison.Ordinal));
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Theory]
@@ -1477,13 +1882,15 @@ public class WasmArgumentLayoutTests
     /// Builds an input assembly for the generator to scan, referencing the context's CoreLib
     /// unless the source defines its own.
     /// </summary>
-    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false, bool useCoreLibReference = true)
+    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false, bool useCoreLibReference = true,
+        bool optimize = false, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
     {
         CSharpCompilation compilation = CSharpCompilation.Create(
             Path.GetFileNameWithoutExtension(outputPath),
             [CSharpSyntaxTree.ParseText(source)],
             useCoreLibReference ? [MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath)] : [],
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
+            new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe,
+                optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug));
 
         EmitResult result = compilation.Emit(outputPath);
         Assert.True(result.Success,

@@ -12603,13 +12603,13 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 }
 
 /*********************************************************************/
-#ifdef FEATURE_PGO
+#if defined(FEATURE_PGO) && (!defined(TARGET_WASM) || defined(FEATURE_MULTITHREADING))
 static bool InterpreterPgoInstrumentationEnabled()
 {
     static ConfigDWORD s_interpPgo;
     return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
 }
-#endif // FEATURE_PGO
+#endif // FEATURE_PGO && (!TARGET_WASM || FEATURE_MULTITHREADING)
 
 HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
@@ -12621,14 +12621,26 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
     STANDARD_VM_CONTRACT;
 
     HRESULT hr = E_FAIL;
+    *pInstrumentationData = nullptr;
 
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
 
-    // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
-    // which case we instrument every method for offline profile collection.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    if (pMD->IsDynamicMethod() || pMD->IsILStub() || !pMD->IsIL() || pMD->GetILHeader() == nullptr)
+    {
+        hr = E_NOTIMPL;
+    }
+    else
+    {
+        pMD = pMD->GetOrdinaryVariant();
+        COR_ILMETHOD_DECODER header(pMD->GetILHeader());
+        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, &header, pSchema, countSchemaItems, pInstrumentationData);
+    }
+#else
+    // Interpreter PGO collects offline data independently of tiering eligibility.
     if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
     {
         hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
@@ -12637,6 +12649,7 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
     {
         hr = E_NOTIMPL;
     }
+#endif // TARGET_WASM && !FEATURE_MULTITHREADING
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
@@ -13991,6 +14004,34 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             result = (size_t)pMD;
+        }
+        break;
+
+    case READYTORUN_FIXUP_PgoInstrumentationData:
+        {
+#if defined(FEATURE_PGO) && defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+            SigTypeContext typeContext;
+            ZapSig::Context context(pInfoModule, currentModule, ZapSig::NormalTokens);
+            PCCOR_SIGNATURE afterMethod;
+            MethodDesc* method = ZapSig::DecodeMethod(pInfoModule, pBlob, &typeContext, &context,
+                nullptr, nullptr, nullptr, &afterMethod);
+            ReadyToRunLoadedImage* image = currentModule->GetReadyToRunInfo()->GetImage();
+            TADDR indexAddress = reinterpret_cast<TADDR>(afterMethod);
+            if (indexAddress < image->GetBase() || indexAddress - image->GetBase() >= image->GetVirtualSize())
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            UINT32 schemaIndex;
+            SigPointer signature(afterMethod, static_cast<DWORD>(image->GetVirtualSize() - (indexAddress - image->GetBase())));
+            if (FAILED(signature.GetData(&schemaIndex)))
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            if (method->IsDynamicMethod() || method->IsILStub() || !method->IsIL() || method->GetILHeader() == nullptr)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            if (g_fEEStarted)
+                method->EnsureActive();
+            method = method->GetOrdinaryVariant();
+            result = reinterpret_cast<size_t>(PgoManager::allocPgoInstrumentationFromR2RSchema(currentModule, method, schemaIndex));
+#else
+            COMPlusThrowHR(COR_E_PLATFORMNOTSUPPORTED);
+#endif
         }
         break;
 

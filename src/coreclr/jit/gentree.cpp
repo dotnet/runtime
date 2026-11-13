@@ -2890,6 +2890,7 @@ AGAIN:
 
             case GT_ASYNC_RESUME_INFO:
             case GT_CONTINUATION_MEMBER_OFFSET:
+            case GT_PGO_INVOKE:
                 return op1->AsVal()->gtVal1 == op2->AsVal()->gtVal1;
 
             case GT_NOP:
@@ -9109,6 +9110,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
 
     switch (OperGet())
     {
+        case GT_PGO_INVOKE:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
@@ -9312,6 +9314,13 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
 
         // Handle the special cases.
         // The following opers are in GTSTRUCT_N but no other place (namely, no subtypes).
+        case GT_PGO_INVOKE:
+        {
+            GenTreeVal gt;
+            res = *reinterpret_cast<VtablePtr*>(&gt);
+        }
+        break;
+
         case GT_STORE_BLK:
         case GT_BLK:
         {
@@ -11511,6 +11520,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_RECORD_ASYNC_RESUME:
             case GT_ASYNC_RESUME_INFO:
             case GT_CONTINUATION_MEMBER_OFFSET:
+            case GT_PGO_INVOKE:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
@@ -12265,6 +12275,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_ASYNC_CONTINUATION:
         case GT_ASYNC_RESUME_INFO:
         case GT_CONTINUATION_MEMBER_OFFSET:
+        case GT_PGO_INVOKE:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_FTN_ENTRY:
@@ -14456,6 +14467,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_JMP:
+        case GT_PGO_INVOKE:
         {
             printf(" %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)tree->AsVal()->gtVal1, true, true, buffer,
                                               sizeof(buffer)));

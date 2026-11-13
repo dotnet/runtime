@@ -3,14 +3,21 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.NET.Sdk.WebAssembly;
+using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
@@ -136,16 +143,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, false)]
     public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot)
     {
-        // Interpreter block-count PGO: instrumentation is armed from startup by DOTNET_InterpPGO, the
-        // counters are collected into an EventPipe trace while the app runs, and dotnet-pgo turns that
-        // trace into an .mibc. R2R is forced off until https://github.com/dotnet/runtime/issues/130521.
+        // Interpreter-only collection uses the runtime MethodSet directly; the publish property
+        // additionally instruments the ReadyToRun closure and is intentionally publish-only.
         string extraProperties = @"
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
                 <PublishReadyToRun>false</PublishReadyToRun>
                 <WBTDevServer>true</WBTDevServer>
             ";
-        string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_InterpPGO"" Value=""1"" />";
+        string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_WasmPgoInstrumentation"" Value=""*Counter:IncrementCount"" />";
 
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_interp_pgo", extraProperties: extraProperties, extraItems: extraItems);
 
@@ -172,6 +178,545 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         ));
 
         ValidateInterpPgoTrace(info, config, "pgo.nettrace", "IncrementCount");
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug, false, "all")]
+    [InlineData(Configuration.Release, false, "all")]
+    [InlineData(Configuration.Release, true, "*WasmPgoScenarios*:*")]
+    [TestCategory("no-workload"), TestCategory("coreclr")]
+    public async Task BlazorEventPipeTestWithBasicBlockPgoReadyToRun(Configuration config, bool cpuSampling, string pgoFilter)
+    {
+        // Optimize crossgen2, not Csc: both publishes must retain the same configuration-specific IL.
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blazor_basic_block_pgo",
+            extraProperties: $"""
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmDebugLevel>0</WasmDebugLevel>
+                <WasmEnableThreads>false</WasmEnableThreads>
+                <PublishReadyToRun>true</PublishReadyToRun>
+                <PublishTrimmed>false</PublishTrimmed>
+                <WasmPgoInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{pgoFilter}</WasmPgoInstrumentation>
+                <WasmPerformanceInstrumentation Condition="'$(WasmBuildTestConsumePgo)' != 'true'">{(cpuSampling ? "all" : "")}</WasmPerformanceInstrumentation>
+                <_WasmBuildTestCompilerLogPath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(WasmBuildTestCompilerLog)'))</_WasmBuildTestCompilerLogPath>
+                <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--optimize;--parallelism:1;--codegenopt:JitDisasm=*WasmPgoScenarios:*;--codegenopt:JitStdOutFile=&quot;$(_WasmBuildTestCompilerLogPath)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
+                """,
+            extraItems: """
+                <PublishReadyToRunPgoFiles Include="$(WasmBuildTestReadyToRunProfile)" Condition="'$(WasmBuildTestReadyToRunProfile)' != ''" />
+                <WasmEnvironmentVariable Include="DOTNET_EventPipeThreadSamplingRate" Value="2147483647" />
+                """);
+
+        AddBasicBlockPgoScenarios();
+        string buildArgs = GetPgoBuildArgs(config);
+        (_, string buildOutput) = BlazorPublish(info, config, new PublishOptions(
+            UseCache: false, AssertAppBundle: false,
+            ExtraMSBuildArgs: $"{buildArgs} -p:WasmBuildTestCompilerLog=pgo-instrumented.jit.txt"));
+        SaveCompilerLog(info, "pgo-instrumented.jit.txt");
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+        AssetsData producerAssets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+        string unlistedArtifact = Path.Combine(frameworkDir, "unlisted-compiler-artifact.wasm");
+        File.Copy(Path.Combine(frameworkDir, producerAssets.assembly[0].name), unlistedArtifact);
+        Dictionary<string, Guid> producerMvids;
+        try
+        {
+            producerMvids = GetPublishedModuleMvids(config);
+        }
+        finally
+        {
+            File.Delete(unlistedArtifact);
+        }
+
+        if (config == Configuration.Release)
+        {
+            AssertCompilerInlines("pgo-instrumented.jit.txt", "DirectCalls", 2);
+            AssertCompilerInlines("pgo-instrumented.jit.txt", "GenericCalls", 3);
+            AssertCompilerInlines("pgo-instrumented.jit.txt", "FoldedCalls", 1);
+        }
+
+        string tracePath = Path.Combine(info.LogPath, "basic-block.nettrace");
+        await RunForPublishWithWebServer(new BlazorRunOptions(config, CheckCounter: false, TimeoutSeconds: 60,
+            Test: async page =>
+            {
+                Assert.Equal(pgoFilter == "all" ? "*" : pgoFilter,
+                    await page.EvaluateAsync<string>("globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation"));
+                Assert.Equal(cpuSampling ? "*" : "", await page.EvaluateAsync<string>(
+                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPerformanceInstrumentation ?? ''"));
+                await SetupCounterPage(page, "basic-block.nettrace",
+                    "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0 })", uploadTrace: false);
+                await ClickAndCollect(page, tracePath);
+                Assert.Equal("Current count: 159", await page.Locator("p[role='status']").InnerHTMLAsync());
+            }));
+
+        string mibcPath = CreateBasicBlockPgoProfile(info, config, buildOutput, tracePath, producerMvids,
+            assertIntrinsics: pgoFilter == "all");
+        if (cpuSampling)
+        {
+            string cpuTrace = Path.Combine(info.LogPath, "basic-block-cpu.nettrace");
+            await RunForPublishWithWebServer(new BlazorRunOptions(config, CheckCounter: false, TimeoutSeconds: 60,
+                Test: async page =>
+                {
+                    await SetupCounterPage(page, "basic-block-cpu.nettrace",
+                        "globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0 })", uploadTrace: false);
+                    await ClickAndCollect(page, cpuTrace);
+                }));
+            using var source = TraceLog.OpenOrConvert(ConvertTrace(info, "basic-block-cpu.nettrace"));
+            Assert.Contains(source.CallStacks, stack =>
+                stack.CodeAddress.FullMethodName.StartsWith("BlazorBasicTestApp.WasmPgoScenarios.CpuSamplingTarget(", StringComparison.Ordinal) &&
+                (stack.CodeAddress.Address & 0x80000000UL) != 0);
+        }
+
+        // Fingerprinted producer assets must not mask an incremental consumer publish.
+        Directory.Delete(GetBlazorBinFrameworkDir(config, forPublish: true), recursive: true);
+        BlazorPublish(info, config, new PublishOptions(
+            UseCache: false, AssertAppBundle: false, Label: "consume-basic-block",
+            ExtraMSBuildArgs: $"{buildArgs} -p:WasmBuildTestConsumePgo=true -p:WasmBuildTestCompilerLog=pgo-consumed.jit.txt -p:WasmBuildTestReadyToRunProfile=\"{mibcPath}\""));
+        SaveCompilerLog(info, "pgo-consumed.jit.txt");
+        Dictionary<string, Guid> consumerMvids = GetPublishedModuleMvids(config);
+        Assert.Equal(
+            producerMvids.OrderBy(module => module.Key, StringComparer.Ordinal).ToArray(),
+            consumerMvids.OrderBy(module => module.Key, StringComparer.Ordinal).ToArray());
+        AssertMeasuredPgoCount("Helper", 15);
+        AssertMeasuredPgoCount("EntryAndBackedge", 2);
+        AssertMeasuredPgoCount("IlZeroBackedge", 1);
+        AssertCompilerInlines("pgo-consumed.jit.txt", "GenericCalls", 3, withPgo: 3);
+        AssertCompilerInlines("pgo-consumed.jit.txt", "DirectCalls", 2, withPgo: 2);
+        AssertCompilerInlines("pgo-consumed.jit.txt", "FoldedCalls", 1, withPgo: 1);
+        await RunForPublishWithWebServer(new BlazorRunOptions(config, CheckCounter: false, TimeoutSeconds: 60,
+            Test: async page =>
+            {
+                Assert.Equal("", await page.EvaluateAsync<string>(
+                    "globalThis.getDotnetRuntime(0).getConfig().environmentVariables.DOTNET_WasmPgoInstrumentation ?? ''"));
+                await page.Locator("text=Counter").ClickAsync();
+                for (int i = 0; i < 5; i++)
+                    await page.Locator("text=\"Click me\"").ClickAsync();
+                Assert.Equal("Current count: 159", await page.Locator("p[role='status']").InnerHTMLAsync());
+                await page.EvaluateAsync("console.log('WASM EXIT 0')");
+            }));
+    }
+
+    private string GetPgoBuildArgs(Configuration appConfiguration)
+    {
+        Configuration compilerConfiguration = appConfiguration;
+        if (EnvironmentVariables.BuiltNuGetsPath is string packagesPath)
+        {
+            string? configurationName = new DirectoryInfo(packagesPath).Parent?.Name;
+            if (Enum.TryParse(configurationName, out Configuration packageConfiguration) &&
+                packageConfiguration is Configuration.Debug or Configuration.Release)
+                compilerConfiguration = packageConfiguration;
+        }
+
+        string compilerArgs = GetR2RBuildArgs(compilerConfiguration);
+        // Helix deploys compiler NuGets; only local runs can use an in-build compiler.
+        if (!EnvironmentVariables.IsRunningOnCI)
+            Assert.Contains("-p:Crossgen2InBuildDir=", compilerArgs);
+        _testOutput.WriteLine($"PGO compiler configuration: {compilerConfiguration}; " +
+            (string.IsNullOrEmpty(compilerArgs) ? "SDK-resolved crossgen2 package" : compilerArgs));
+
+        return $"{compilerArgs} -p:UsingBrowserRuntimeWorkload=false";
+    }
+
+    private void SaveCompilerLog(ProjectInfo info, string fileName)
+    {
+        string path = Path.Combine(_projectDir, fileName);
+        Assert.True(File.Exists(path),
+            $"Crossgen2 did not emit {path}; expected JitDisasm=*WasmPgoScenarios:* to match the test methods.");
+        File.Copy(path, Path.Combine(info.LogPath, fileName));
+    }
+
+    private string GetCompilerMethodListing(string fileName, string method)
+    {
+        string path = Path.Combine(_projectDir, fileName);
+        Assert.True(File.Exists(path), $"Missing compiler evidence: {path}");
+        Match listing = Regex.Match(File.ReadAllText(path),
+            $@"(?ms)^; Assembly listing for method [^\r\n]*WasmPgoScenarios:{Regex.Escape(method)}\([^\r\n]*\r?\n(?<body>.*?)(?=^; Assembly listing for method |\z)");
+        Assert.True(listing.Success, $"Missing R2R compiler listing for WasmPgoScenarios:{method} in {path}");
+
+        return listing.Groups["body"].Value;
+    }
+
+    private void AssertMeasuredPgoCount(string method, long count)
+    {
+        string listing = GetCompilerMethodListing("pgo-consumed.jit.txt", method);
+        Assert.Contains("; ReadyToRun compilation", listing);
+        Match hotness = Regex.Match(listing, @"; with Static PGO: fgCalledCount is ([0-9]+(?:\.[0-9]+)?)");
+        Assert.True(hotness.Success, $"No measured block profile for {method}:{Environment.NewLine}{listing}");
+        Assert.Equal((double)count, double.Parse(hotness.Groups[1].Value, CultureInfo.InvariantCulture));
+    }
+
+    private void AssertCompilerInlines(string fileName, string method, int total, int? withPgo = null)
+    {
+        string listing = GetCompilerMethodListing(fileName, method);
+        Assert.Contains("; ReadyToRun compilation", listing);
+        Match inlines = Regex.Match(listing,
+            @"; (\d+) inlinees with PGO data; (\d+) single block inlinees; (\d+) inlinees without PGO data");
+        Assert.True(inlines.Success, $"Missing inline evidence for {method}:{Environment.NewLine}{listing}");
+        Assert.Equal(total, Enumerable.Range(1, 3).Sum(i => int.Parse(inlines.Groups[i].Value, CultureInfo.InvariantCulture)));
+        if (withPgo is int expected)
+            Assert.Equal(expected, int.Parse(inlines.Groups[1].Value, CultureInfo.InvariantCulture));
+    }
+
+    private Dictionary<string, Guid> GetPublishedModuleMvids(Configuration config)
+    {
+        var modules = new Dictionary<string, Guid>(StringComparer.Ordinal);
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+        AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+        // Composite owners and unlisted compiler artifacts are not original IL assemblies.
+        foreach (WebcilAsset asset in assets.coreAssembly.Concat(assets.assembly).Where(asset => asset.isCompositeImage != true))
+        {
+            using var stream = File.OpenRead(Path.Combine(frameworkDir, asset.name));
+            using var reader = new WebcilReader(stream);
+            MetadataReader metadata = reader.GetMetadataReader();
+            modules.Add(metadata.GetString(metadata.GetAssemblyDefinition().Name),
+                metadata.GetGuid(metadata.GetModuleDefinition().Mvid));
+        }
+
+        return modules;
+    }
+
+    private string CreateBasicBlockPgoProfile(ProjectInfo info, Configuration config, string buildOutput, string tracePath,
+        IReadOnlyDictionary<string, Guid> publishedMvids, bool assertIntrinsics)
+    {
+        Assert.True(File.Exists(tracePath), $"Missing trace: {tracePath}");
+        string? runtimePack = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput);
+        Assert.NotNull(runtimePack);
+        string referenceDir = Path.Combine(info.LogPath, "basic-block-references");
+        Directory.CreateDirectory(referenceDir);
+
+        // The SDK's app TFM and the local runtime pack TFM may differ. Resolve references by the
+        // MVIDs from boot-listed assets, not by the TFM or an arbitrary bin directory.
+        var candidates = new Dictionary<Guid, string>();
+        foreach (string directory in new[] {
+            Path.Combine(_projectDir, "bin", config.ToString()),
+            Path.Combine(runtimePack!, "runtimes", "browser-wasm", "lib") })
+        {
+            foreach (string path in Directory.EnumerateFiles(directory, "*.dll", SearchOption.AllDirectories))
+            {
+                using var stream = File.OpenRead(path);
+                if (stream.ReadByte() != 'M' || stream.ReadByte() != 'Z')
+                    continue;
+                stream.Position = 0;
+                using var reader = new PEReader(stream);
+                if (!reader.HasMetadata)
+                    continue;
+                MetadataReader metadata = reader.GetMetadataReader();
+                candidates.TryAdd(metadata.GetGuid(metadata.GetModuleDefinition().Mvid), path);
+            }
+        }
+
+        foreach ((string name, Guid mvid) in publishedMvids)
+        {
+            Assert.True(candidates.TryGetValue(mvid, out string? reference),
+                $"No matching IL reference for published {name}, MVID {mvid}");
+            File.Copy(reference!, Path.Combine(referenceDir, name + ".dll"), overwrite: true);
+        }
+        Assert.True(File.Exists(Path.Combine(referenceDir, "System.Private.CoreLib.dll")));
+        Assert.True(File.Exists(Path.Combine(referenceDir, "BlazorBasicTestApp.dll")));
+        if (config == Configuration.Release)
+        {
+            using var stream = File.OpenRead(Path.Combine(referenceDir, "BlazorBasicTestApp.dll"));
+            using var reader = new PEReader(stream);
+            MetadataReader metadata = reader.GetMetadataReader();
+            MethodDefinitionHandle handle = Assert.Single(metadata.MethodDefinitions,
+                methodHandle => metadata.GetString(metadata.GetMethodDefinition(methodHandle).Name) == "IlZeroBackedge");
+            byte[]? il = reader.GetMethodBody(metadata.GetMethodDefinition(handle).RelativeVirtualAddress).GetILBytes();
+            Assert.NotNull(il);
+            Assert.Equal((byte)OpCodes.Ldsfld.Value, il[0]);
+            Assert.Equal((byte)OpCodes.Ret.Value, il[^1]);
+            Assert.Equal((byte)OpCodes.Bgt_S.Value, il[^3]);
+            Assert.Equal(0, il.Length - 1 + (sbyte)il[^2]);
+        }
+
+        string tool = Path.Combine(AppContext.BaseDirectory, "dotnet-pgo", "dotnet-pgo.dll");
+        Assert.True(File.Exists(tool), $"Missing dotnet-pgo payload: {tool}");
+        string mibcPath = Path.Combine(info.LogPath, "basic-block.mibc");
+        string dumpPath = Path.Combine(info.LogPath, "basic-block.json");
+        using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+            command.ExecuteWithCapturedOutput($"exec \"{tool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{mibcPath}\"").EnsureSuccessful();
+        using (var command = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+            command.ExecuteWithCapturedOutput($"exec \"{tool}\" dump --input \"{mibcPath}\" --output \"{dumpPath}\"").EnsureSuccessful();
+
+        using JsonDocument dump = JsonDocument.Parse(File.ReadAllText(dumpPath));
+        JsonElement[] allMethods = dump.RootElement.GetProperty("Methods").EnumerateArray().ToArray();
+        JsonElement[] methods = allMethods
+            .Where(method => method.GetProperty("Method").GetString()!.Contains("BlazorBasicTestApp.WasmPgoScenarios.", StringComparison.Ordinal))
+            .ToArray();
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "Helper")), 15);
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "NestedInlinee")), 15);
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "DirectCalls")), 1, loopIterations: 10);
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "GenericCalls")), 1);
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "FoldedCalls")), 1);
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "ConstantInlinee")), 1);
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "EntryAndBackedge")), 2, loopIterations: 7);
+        AssertBlockCounts(Assert.Single(methods, method => IsMethod(method, "IlZeroBackedge")),
+            config == Configuration.Release ? 7 : 1);
+        Assert.DoesNotContain(methods, method => IsMethod(method, "NeverCalled"));
+        JsonElement[] generics = methods.Where(method => IsMethod(method, "GenericEntries")).ToArray();
+        Assert.Equal(2, generics.Length);
+        AssertBlockCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("__Canon", StringComparison.Ordinal)), 7);
+        AssertBlockCounts(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("<int32>", StringComparison.Ordinal)), 6);
+        JsonElement[] outOfFilter = allMethods.Where(method => method.GetProperty("Method").GetString()!.Contains(
+            "BlazorBasicTestApp.IntrinsicPgoCalls.DeferredFillCalls(", StringComparison.Ordinal) &&
+            method.TryGetProperty("InstrumentationData", out _)).ToArray();
+        if (assertIntrinsics)
+        {
+            AssertBlockCounts(Assert.Single(outOfFilter), 1);
+            // Successful expansion uses invocation-only data, not a fabricated callee CFG. The
+            // unique value type isolates this intrinsic from unrelated framework startup calls.
+            AssertInvocationCount(Assert.Single(allMethods, method =>
+                method.GetProperty("Method").GetString()!.Contains("System.Runtime.InteropServices.MemoryMarshal.GetArrayDataReference<", StringComparison.Ordinal) &&
+                method.GetProperty("Method").GetString()!.Contains("IntrinsicElement", StringComparison.Ordinal)), 1);
+            AssertInvocationCount(Assert.Single(allMethods, method =>
+                method.GetProperty("Method").GetString()!.Contains("System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<", StringComparison.Ordinal) &&
+                method.GetProperty("Method").GetString()!.Contains("IntrinsicElement", StringComparison.Ordinal)), 1);
+        }
+        else
+        {
+            Assert.Empty(outOfFilter);
+        }
+
+        return mibcPath;
+
+        static bool IsMethod(JsonElement method, string name)
+            => Regex.IsMatch(method.GetProperty("Method").GetString()!, $@"\.{Regex.Escape(name)}(?:<|\()");
+
+        static JsonElement[] GetCounters(JsonElement method)
+        {
+            Assert.False(method.TryGetProperty("ExclusiveWeight", out _), $"Counts must not become CPU sample weights: {method}");
+
+            return method.GetProperty("InstrumentationData").EnumerateArray()
+                .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")).ToArray();
+        }
+
+        static void AssertBlockCounts(JsonElement method, long entries, long? loopIterations = null)
+        {
+            JsonElement[] counters = GetCounters(method);
+            Assert.NotEmpty(counters);
+            Assert.All(counters, counter => Assert.Equal("BasicBlockLongCount", counter.GetProperty("InstrumentationKind").GetString()));
+            Assert.Equal(entries, Assert.Single(counters, counter => counter.GetProperty("ILOffset").GetInt32() == 0).GetProperty("Data").GetInt64());
+            if (loopIterations is long iterations)
+            {
+                Assert.True(counters.Length > 1, $"Expected a complete multi-block schema: {method}");
+                Assert.Contains(counters, counter => counter.GetProperty("ILOffset").GetInt32() != 0 &&
+                    counter.GetProperty("Data").GetInt64() == iterations);
+            }
+        }
+
+        static void AssertInvocationCount(JsonElement method, long invocations)
+        {
+            JsonElement[] counters = GetCounters(method);
+            JsonElement entry = Assert.Single(counters,
+                counter => counter.GetProperty("InstrumentationKind").GetString() == "MethodEntryLongCount");
+            Assert.Equal(0, entry.GetProperty("ILOffset").GetInt32());
+            Assert.Equal(invocations, entry.GetProperty("Data").GetInt64());
+            // A compiled but unexecuted fallback body may retain its zero-valued block schema.
+            Assert.All(counters.Where(counter => counter.GetProperty("InstrumentationKind").GetString() != "MethodEntryLongCount"),
+                counter =>
+                {
+                    Assert.Equal("BasicBlockLongCount", counter.GetProperty("InstrumentationKind").GetString());
+                    Assert.Equal(0, counter.GetProperty("Data").GetInt64());
+                });
+        }
+    }
+
+    private void AddBasicBlockPgoScenarios()
+    {
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
+        {
+            ["currentCount++;"] = """
+                currentCount = BlazorBasicTestApp.WasmPgoScenarios.RunOnce();
+                BlazorBasicTestApp.WasmPgoScenarios.CpuSamplingTarget(currentCount);
+                """
+        });
+        File.WriteAllText(Path.Combine(_projectDir, "WasmPgoScenarios.cs"), """
+            // Licensed to the .NET Foundation under one or more agreements.
+            // The .NET Foundation licenses this file to you under the MIT license.
+
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            namespace BlazorBasicTestApp;
+
+            public static class WasmPgoScenarios
+            {
+                private static bool s_ran;
+                private static int s_result;
+                private static int s_backedgeRemaining = 7;
+
+                public static int RunOnce()
+                {
+                    if (s_ran)
+                        return s_result;
+                    s_ran = true;
+                    int result = DirectCalls();
+                    var helper = typeof(WasmPgoScenarios).GetMethod(nameof(Helper))!;
+                    for (int i = 0; i < 5; i++)
+                        result += (int)helper.Invoke(null, new object[] { i })!;
+                    result += EntryAndBackedge(0) + EntryAndBackedge(7) + GenericCalls();
+                    IlZeroBackedge();
+                    if (s_backedgeRemaining != 0)
+                        throw new Exception("The IL-zero backedge did not complete");
+                    if (FoldedCalls() != 8)
+                        throw new Exception("Constant-folded inlinee returned an unexpected result");
+                    IntrinsicPgoCalls.ValidateCalls();
+                    IntrinsicPgoCalls.DeferredFillCalls();
+                    if (result != 159)
+                        throw new Exception($"Unexpected PGO scenario result: {result}");
+                    s_result = result;
+
+                    return result;
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int DirectCalls()
+                {
+                    int result = 0;
+                    for (int i = 0; i < 10; i++)
+                        result += Helper(i);
+
+                    return result;
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public static int Helper(int value) => NestedInlinee(value) + 1;
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public static int NestedInlinee(int value) => value * 2;
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public static int GenericEntries<T>(T value) => value is not null ? 1 : 0;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int GenericCalls()
+                {
+                    int result = 0;
+                    for (int i = 0; i < 3; i++)
+                        result += GenericEntries<string>("value");
+                    for (int i = 0; i < 4; i++)
+                        result += GenericEntries<object>("value");
+                    for (int i = 0; i < 6; i++)
+                        result += GenericEntries<int>(i);
+
+                    return result;
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int FoldedCalls() => ConstantInlinee(7);
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public static int ConstantInlinee(int value) => value + 1;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int EntryAndBackedge(int iterations)
+                {
+                    int result = 0;
+                    for (int i = 0; i < iterations; i++)
+                        result += i;
+
+                    return result;
+                }
+
+                public static int NeverCalled(int value) => value + 1;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static void IlZeroBackedge()
+                {
+                Repeat:
+                    s_backedgeRemaining--;
+                    if (s_backedgeRemaining > 0)
+                        goto Repeat;
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static int CpuSamplingTarget(int value)
+                {
+                    for (int i = 0; i < 100_000; i++)
+                        value = unchecked(value * 31 + i);
+
+                    return value;
+                }
+            }
+
+            public static class IntrinsicPgoCalls
+            {
+                public enum DeferredFillValue : int { First = 11, Last = 29 }
+                public struct IntrinsicElement { public object? Reference; }
+                public struct ExceptionalElement { public object? Reference; }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static void ValidateCalls()
+                {
+                    var values = new IntrinsicElement[1];
+                    ref IntrinsicElement first = ref MemoryMarshal.GetArrayDataReference(values);
+                    first.Reference = values;
+                    if (!ReferenceEquals(values[0].Reference, values))
+                        throw new Exception("Expanded intrinsic returned an unexpected reference");
+                    if (!RuntimeHelpers.IsReferenceOrContainsReferences<IntrinsicElement>())
+                        throw new Exception("Constant-folded intrinsic did not detect a reference field");
+                    try
+                    {
+                        BodyThrow();
+                        throw new Exception("The intrinsic body did not throw");
+                    }
+                    catch (NullReferenceException)
+                    {
+                    }
+                    try
+                    {
+                        FailedArgument();
+                        throw new Exception("Argument evaluation did not throw");
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static void DeferredFillCalls()
+                {
+                    Span<DeferredFillValue> values = stackalloc DeferredFillValue[1];
+                    values.Fill(DeferredFillValue.First);
+                    values.Fill(DeferredFillValue.Last);
+                    if (values[0] != DeferredFillValue.Last)
+                        throw new Exception("Deferred Fill produced an unexpected value");
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static ref ExceptionalElement BodyThrow()
+                    => ref MemoryMarshal.GetArrayDataReference<ExceptionalElement>(null!);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                public static ref ExceptionalElement FailedArgument()
+                    => ref MemoryMarshal.GetArrayDataReference(ThrowArrayArgument());
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static ExceptionalElement[] ThrowArrayArgument()
+                    => throw new InvalidOperationException();
+            }
+            """);
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData("-p:PublishReadyToRun=false", "WasmPgoInstrumentation requires PublishReadyToRun=true", true)]
+    [InlineData("-p:EnableDiagnostics=false", "WasmPgoInstrumentation requires EnableDiagnostics=true", true)]
+    [InlineData("-p:WasmEnableThreads=true", "WasmPgoInstrumentation supports only single-threaded", true)]
+    [InlineData("", "WasmPgoInstrumentation is supported only when publishing", false)]
+    [TestCategory("no-workload"), TestCategory("coreclr")]
+    public void BlazorPgoRejectsUnsupportedConfiguration(string extraArgs, string expectedError, bool publish)
+    {
+        ProjectInfo info = CopyTestAsset(Configuration.Debug, aot: false, TestAsset.BlazorBasicTestApp, "blazor_invalid_pgo",
+            extraProperties: """
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmEnableThreads>false</WasmEnableThreads>
+                <PublishReadyToRun>true</PublishReadyToRun>
+                <WasmPgoInstrumentation>all</WasmPgoInstrumentation>
+                """);
+        string args = $"{GetPgoBuildArgs(Configuration.Debug)} {extraArgs}";
+        (_, string output) = publish
+            ? BlazorPublish(info, Configuration.Debug,
+                new PublishOptions(ExpectSuccess: false, AssertAppBundle: false, ExtraMSBuildArgs: args))
+            : BlazorBuild(info, Configuration.Debug,
+                new BuildOptions(ExpectSuccess: false, AssertAppBundle: false, ExtraMSBuildArgs: args));
+        Assert.Contains(expectedError, output);
     }
 
     [Fact]
@@ -296,7 +841,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         Assert.True(File.Exists(tracePath), $"PGO trace {tracePath} was not created");
 
         // The untrimmed IL assemblies next to the app (bin/<Config>/<TFM>) share the MVID of the served
-        // webcil, so dotnet-pgo can resolve the block-count events against them.
+        // webcil, so dotnet-pgo can resolve the invocation-only events against them.
         string referenceDir = Path.Combine(_projectDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor);
         Assert.True(Directory.Exists(referenceDir), $"Reference assembly directory {referenceDir} was not found");
 
@@ -321,9 +866,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
         string dumpText = File.ReadAllText(dumpPath);
         Assert.Contains(expectedMethod, dumpText);
-        // The method list alone can be populated by Jit method-start events; require actual block-count
-        // instrumentation so the test fails if no INTOP_PGO_COUNT probe ran or the counters weren't flushed.
-        Assert.Contains("BasicBlockIntCount", dumpText);
+        using JsonDocument dump = JsonDocument.Parse(dumpText);
+        JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray(),
+            candidate => candidate.GetProperty("Method").GetString()!.Contains("." + expectedMethod + "(", StringComparison.Ordinal));
+        JsonElement entry = Assert.Single(method.GetProperty("InstrumentationData").EnumerateArray()
+            .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")));
+        Assert.Equal("MethodEntryLongCount", entry.GetProperty("InstrumentationKind").GetString());
+        Assert.Equal(0, entry.GetProperty("ILOffset").GetInt32());
+        Assert.Equal(5, entry.GetProperty("Data").GetInt64());
+        Assert.DoesNotContain("BasicBlockIntCount", dumpText);
     }
 
     private string ConvertTrace(ProjectInfo info, string fileName)

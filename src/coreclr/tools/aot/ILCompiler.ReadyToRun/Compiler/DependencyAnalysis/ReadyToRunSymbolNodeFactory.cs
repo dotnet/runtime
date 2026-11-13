@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
             // their runtime lookup.
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, Import>(CreateReadyToRunHelper);
 
-            _eagerReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
+            _eagerReadyToRunMethodEntries = new NodeCache<MethodDesc, Import>(method =>
             {
                 // These fixups must be sorted last: running one permanently commits the
                 // target method to using R2R code. Every other eager fixup in the module must
@@ -84,18 +84,18 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.EagerMethodImports,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.MethodEntry_ReadyToRun,
-                        method,
+                        ReadyToRunBodyToken(method),
                         isInstantiatingStub: false),
                     sortLast: true);
             });
 
-            _precodeReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
+            _precodeReadyToRunMethodEntries = new NodeCache<MethodDesc, Import>(method =>
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.MethodEntry_ReadyToRun,
-                        method,
+                        ReadyToRunBodyToken(method),
                         isInstantiatingStub: false));
             });
 
@@ -343,19 +343,31 @@ namespace ILCompiler.DependencyAnalysis
             return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
-        private NodeCache<MethodWithToken, Import> _eagerReadyToRunMethodEntries;
-        private NodeCache<MethodWithToken, Import> _precodeReadyToRunMethodEntries;
+        private NodeCache<MethodDesc, Import> _eagerReadyToRunMethodEntries;
+        private NodeCache<MethodDesc, Import> _precodeReadyToRunMethodEntries;
         private NodeCache<string, Import> _instructionSetSupportFixups;
         private NodeCache<MethodWithGCInfo, Import> _resumptionStubEntryPointFixups;
 
         public Import EagerReadyToRunMethodEntry(MethodWithToken method)
         {
-            return _eagerReadyToRunMethodEntries.GetOrAdd(method);
+            return _eagerReadyToRunMethodEntries.GetOrAdd(method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
 
         public Import PrecodeReadyToRunMethodEntry(MethodWithToken method)
         {
-            return _precodeReadyToRunMethodEntries.GetOrAdd(method);
+            return _precodeReadyToRunMethodEntries.GetOrAdd(method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+        }
+
+        private MethodWithToken ReadyToRunBodyToken(MethodDesc method)
+        {
+            // Code preparation identifies the shared body, not an invocation's exact constrained
+            // owner. Resolving that owner can bind application assemblies during CoreLib eager fixups.
+            return new MethodWithToken(
+                method,
+                _codegenNodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true),
+                constrainedType: null,
+                unboxing: false,
+                genericContextObject: null);
         }
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)

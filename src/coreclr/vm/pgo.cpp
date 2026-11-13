@@ -8,8 +8,36 @@
 #include "typestring.h"
 #include "pgo_formatprocessing.h"
 #include "dn-stdio.h"
+#include "readytoruninfo.h"
 
 #ifdef FEATURE_PGO
+
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+static void LayoutWasmPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema& previous,
+    ICorJitInfo::PgoInstrumentationSchema* item)
+{
+    size_t offset = previous.Offset + InstrumentationKindToSize(previous.InstrumentationKind) * previous.Count;
+    UINT alignment = InstrumentationKindToAlignment(item->InstrumentationKind);
+    item->Offset = alignment == 0 ? offset : AlignUp(offset, alignment);
+}
+#endif // TARGET_WASM && !FEATURE_MULTITHREADING
+
+template<class Handler>
+static bool ReadLivePgoInstrumentationSchema(const BYTE* data, size_t schemaBytes, size_t initialOffset, Handler handler)
+{
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    ICorJitInfo::PgoInstrumentationSchema previous = {};
+    previous.Offset = initialOffset;
+    return ReadInstrumentationSchema(data, schemaBytes, [&](ICorJitInfo::PgoInstrumentationSchema item)
+    {
+        LayoutWasmPgoInstrumentationSchema(previous, &item);
+        previous = item;
+        return handler(item);
+    });
+#else
+    return ReadInstrumentationSchemaWithLayout(data, schemaBytes, initialOffset, handler);
+#endif // TARGET_WASM && !FEATURE_MULTITHREADING
+}
 
 // Data structure for holding pgo data
 // Need to be walkable at process shutdown without taking meaningful locks
@@ -105,15 +133,17 @@ public:
     StackSArray<TypeHandle> typeHandlesEncountered;
     StackSArray<MethodDesc*> methodsEncountered;
 private:
-    const PgoManager::HeaderList *pgoData;
     SArrayByteWriterFunctor byteWriter;
 public:
     SchemaAndDataWriter<SArrayByteWriterFunctor> writer;
 
     SchemaWriterFunctor(PgoManager::HeaderList *pgoData) :
-        pgoData(pgoData),
+        SchemaWriterFunctor(pgoData->header.GetData())
+    {}
+
+    SchemaWriterFunctor(BYTE* instrumentationData) :
         byteWriter(byteData),
-        writer(byteWriter, pgoData->header.GetData())
+        writer(byteWriter, instrumentationData)
     {}
 
     bool operator()(const ICorJitInfo::PgoInstrumentationSchema &schema)
@@ -161,10 +191,139 @@ void CallFClose(FILE* file)
 
 typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
 
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+static void ThrowIncompatiblePgoSchemas(MethodDesc* method)
+{
+    STANDARD_VM_CONTRACT;
+    // The session-stop callback catches exceptions; keep rejected profiles visible to the collector.
+    minipal_log_print_error("Cannot export incompatible PGO instrumentation schemas for method token 0x%08x.\n",
+        method->GetMemberDef());
+    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+}
+#endif // TARGET_WASM && !FEATURE_MULTITHREADING
+
 void PgoManager::LogInstrumentationData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
     {
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+        StackSArray<HeaderList*> headers;
+        EnumeratePGOHeaders([&headers](HeaderList* header)
+        {
+            headers.Append(header);
+            return true;
+        });
+        // Method details can load types. Do not emit events while holding the leaf PGO-manager lock.
+        MapSHash<MethodDesc*, COUNT_T> groups;
+        StackSArray<COUNT_T> next;
+        for (COUNT_T i = 0; i < headers.GetCount(); i++)
+        {
+            next.Append(UINT32_MAX);
+            COUNT_T first;
+            if (groups.Lookup(headers[i]->header.method, &first))
+            {
+                next[i] = next[first];
+                next[first] = i;
+            }
+            else
+            {
+                groups.Add(headers[i]->header.method, i);
+            }
+        }
+        for (COUNT_T i = 0; i < headers.GetCount(); i++)
+        {
+            HeaderList* primary = headers[i];
+            COUNT_T first = UINT32_MAX;
+            groups.Lookup(primary->header.method, &first);
+            if (first != i)
+                continue;
+
+            StackSArray<ICorJitInfo::PgoInstrumentationSchema> merged;
+            StackSArray<UINT64> counters;
+            bool nonzero = false;
+            for (COUNT_T j = i; j != UINT32_MAX; j = next[j])
+            {
+                HeaderList* source = headers[j];
+                if (source->header.codehash != primary->header.codehash || source->header.ilSize != primary->header.ilSize)
+                    ThrowIncompatiblePgoSchemas(primary->header.method);
+
+                StackSArray<ICorJitInfo::PgoInstrumentationSchema> schema;
+                if (!ReadLivePgoInstrumentationSchema(source->header.GetData(),
+                    source->header.countsOffset, source->header.countsOffset,
+                    [&schema](const ICorJitInfo::PgoInstrumentationSchema& item)
+                    {
+                        schema.Append(item);
+                        return true;
+                    }))
+                    ThrowIncompatiblePgoSchemas(primary->header.method);
+                for (COUNT_T k = 0; k < schema.GetCount(); k++)
+                {
+                    ICorJitInfo::PgoInstrumentationSchema item = schema[k];
+                    bool counter = item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount ||
+                        item.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount;
+                    if ((!counter && item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::NumRuns &&
+                        item.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::Version) || item.Count < 0 ||
+                        (counter && item.Count == 0))
+                        ThrowIncompatiblePgoSchemas(primary->header.method);
+
+                    COUNT_T match = 0;
+                    for (; match < merged.GetCount(); match++)
+                    {
+                        const ICorJitInfo::PgoInstrumentationSchema& existing = merged[match];
+                        if (existing.InstrumentationKind == item.InstrumentationKind && existing.ILOffset == item.ILOffset)
+                        {
+                            if (existing.Count != item.Count || existing.Other != item.Other)
+                                ThrowIncompatiblePgoSchemas(primary->header.method);
+                            break;
+                        }
+                    }
+                    // Duplicate record identities within one allocation cannot describe a complete CFG.
+                    for (COUNT_T previous = 0; previous < k; previous++)
+                    {
+                        if (schema[previous].InstrumentationKind == item.InstrumentationKind && schema[previous].ILOffset == item.ILOffset)
+                            ThrowIncompatiblePgoSchemas(primary->header.method);
+                    }
+
+                    if (match == merged.GetCount())
+                    {
+                        // Every imported original-IL block is instrumented. Inlining can omit unreachable
+                        // blocks, so differing offset sets contribute zero for the missing records.
+                        item.Offset = counters.GetCount() * sizeof(UINT64);
+                        for (INT32 count = 0; count < (counter ? item.Count : 0); count++)
+                            counters.Append(0);
+                        merged.Append(item);
+                    }
+                    if (counter)
+                    {
+                        for (INT32 count = 0; count < item.Count; count++)
+                        {
+                            UINT64 value = *reinterpret_cast<const UINT64*>(source->header.GetData() +
+                                schema[k].Offset + static_cast<size_t>(count) * sizeof(UINT64));
+                            nonzero |= value != 0;
+                            // Saturation preserves evidence of execution if cumulative allocations exceed 64 bits.
+                            UINT64& accumulated = counters[static_cast<COUNT_T>(merged[match].Offset / sizeof(UINT64)) + count];
+                            accumulated = value > UINT64_MAX - accumulated ? UINT64_MAX : accumulated + value;
+                        }
+                    }
+                }
+            }
+            if (!nonzero)
+                continue;
+            SchemaWriterFunctor writer(reinterpret_cast<BYTE*>(counters.OpenRawBuffer()));
+            for (COUNT_T j = 0; j < merged.GetCount(); j++)
+            {
+                if (!writer(merged[j]))
+                    ThrowIncompatiblePgoSchemas(primary->header.method);
+            }
+            if (!writer.writer.Finish())
+                ThrowIncompatiblePgoSchemas(primary->header.method);
+            counters.CloseRawBuffer();
+            ETW::MethodLog::LogMethodInstrumentationData(primary->header.method,
+                writer.byteData.GetCount(), writer.byteData.GetElements(),
+                writer.typeHandlesEncountered.GetElements(), writer.typeHandlesEncountered.GetCount(),
+                writer.methodsEncountered.GetElements(), writer.methodsEncountered.GetCount());
+        }
+#else
         EnumeratePGOHeaders([](HeaderList *pgoData)
         {
             SchemaWriterFunctor schemaWriter(pgoData);
@@ -181,6 +340,7 @@ void PgoManager::LogInstrumentationData()
 
             return true;
         });
+#endif // TARGET_WASM && !FEATURE_MULTITHREADING
     }
 }
 
@@ -328,7 +488,7 @@ void PgoManager::WritePgoData()
             return true;
         };
 
-        if (!ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, lambda))
+        if (!ReadLivePgoInstrumentationSchema(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, lambda))
         {
             return true;;
         }
@@ -453,7 +613,11 @@ void PgoManager::ReadPgoData()
                 break;
             }
 
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+            LayoutWasmPgoInstrumentationSchema(lastSchema, &schema);
+#else
             LayoutPgoInstrumentationSchema(lastSchema, &schema);
+#endif
             schemaElements[i] = schema;
             COUNT_T entrySize = InstrumentationKindToSize(schema.InstrumentationKind);
             COUNT_T maxSize = entrySize * schema.Count + (COUNT_T)schema.Offset;
@@ -647,14 +811,127 @@ void PgoManager::CreatePgoManager(PgoManager* volatile* ppMgr, bool loaderAlloca
     VolatileStore((PgoManager**)ppMgr, newManager);
 }
 
-void PgoManager::Header::Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned countsOffset)
+void PgoManager::Header::Init(MethodDesc *pMD, unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset)
 {
     this->codehash = codehash;
-    this->methodhash = pMD->GetStableHash();
+    this->methodhash = methodhash;
     this->ilSize = ilSize;
     this->method = pMD;
     this->countsOffset = countsOffset;
 }
+
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+static UINT32 ReadPgoSchemaUInt32(const BYTE* data)
+{
+    return static_cast<UINT32>(data[0]) |
+        (static_cast<UINT32>(data[1]) << 8) |
+        (static_cast<UINT32>(data[2]) << 16) |
+        (static_cast<UINT32>(data[3]) << 24);
+}
+
+BYTE* PgoManager::allocPgoInstrumentationFromR2RSchema(Module* imageModule, MethodDesc* method, UINT32 schemaIndex)
+{
+    STANDARD_VM_CONTRACT;
+
+    ReadyToRunInfo* info = imageModule->GetReadyToRunInfo();
+    IMAGE_DATA_DIRECTORY* directory = info->FindSection(ReadyToRunSectionType::PgoInstrumentationSchemas);
+    ReadyToRunLoadedImage* image = info->GetImage();
+    if (directory == nullptr || directory->VirtualAddress > image->GetVirtualSize() ||
+        directory->Size > image->GetVirtualSize() - directory->VirtualAddress || directory->Size < 12)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    // V34.1 schema table offsets are relative to this owning image's section, not the method's module.
+    const BYTE* section = reinterpret_cast<const BYTE*>(image->GetDirectoryData(directory));
+    UINT32 schemaCount = ReadPgoSchemaUInt32(section + 4);
+    if (ReadPgoSchemaUInt32(section) != 1 || schemaCount > (directory->Size - 12) / 4 || schemaIndex >= schemaCount)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    UINT32 tableEnd = 12 + schemaCount * 4;
+    UINT32 previousOffset = tableEnd;
+    for (UINT32 i = 0; i <= schemaCount; i++)
+    {
+        UINT32 offset = ReadPgoSchemaUInt32(section + 8 + i * 4);
+        if (offset > directory->Size || (i == 0 ? offset != tableEnd : offset < previousOffset || offset - previousOffset < 8))
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        previousOffset = offset;
+    }
+    if (previousOffset != directory->Size)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    UINT32 start = ReadPgoSchemaUInt32(section + 8 + schemaIndex * 4);
+    UINT32 end = ReadPgoSchemaUInt32(section + 12 + schemaIndex * 4);
+    UINT32 recordCount = ReadPgoSchemaUInt32(section + start);
+    UINT32 dataBytes = ReadPgoSchemaUInt32(section + start + 4);
+    if (recordCount == 0 || recordCount > (end - start - 8) / 20 || end - start - 8 != recordCount * 20)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    StackSArray<ICorJitInfo::PgoInstrumentationSchema> schema;
+    StackSArray<UINT32> offsets;
+    ICorJitInfo::PgoInstrumentationSchema previous = {};
+    UINT32 storageEnd = 0;
+    COR_ILMETHOD_DECODER ilHeader(method->GetILHeader());
+    for (UINT32 i = 0; i < recordCount; i++)
+    {
+        const BYTE* record = section + start + 8 + i * 20;
+        ICorJitInfo::PgoInstrumentationSchema item = {};
+        item.InstrumentationKind = static_cast<ICorJitInfo::PgoInstrumentationKind>(ReadPgoSchemaUInt32(record));
+        item.ILOffset = static_cast<INT32>(ReadPgoSchemaUInt32(record + 4));
+        item.Count = static_cast<INT32>(ReadPgoSchemaUInt32(record + 8));
+        item.Other = static_cast<INT32>(ReadPgoSchemaUInt32(record + 12));
+        UINT32 offset = ReadPgoSchemaUInt32(record + 16);
+        switch (item.InstrumentationKind)
+        {
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
+                if (item.Count < 1 || item.Other != 0 || item.ILOffset < 0 ||
+                    static_cast<UINT32>(item.ILOffset) >= ilHeader.GetCodeSize())
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                break;
+            case ICorJitInfo::PgoInstrumentationKind::MethodEntryLongCount:
+                if (item.Count < 1 || item.ILOffset != 0 || item.Other != 0)
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                break;
+            case ICorJitInfo::PgoInstrumentationKind::NumRuns:
+            case ICorJitInfo::PgoInstrumentationKind::Version:
+                if (item.Count < 0 || item.ILOffset != 0 || item.Other < 0)
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                break;
+            default:
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        UINT32 size = InstrumentationKindToSize(item.InstrumentationKind);
+        S_SIZE_T previousEnd = S_SIZE_T(previous.Offset) +
+            S_SIZE_T(InstrumentationKindToSize(previous.InstrumentationKind)) * S_SIZE_T(previous.Count);
+        S_SIZE_T recordBytes = S_SIZE_T(size) * S_SIZE_T(item.Count);
+        if (previousEnd.IsOverflow() || previousEnd.Value() > UINT32_MAX - 7 || recordBytes.IsOverflow() ||
+            recordBytes.Value() > UINT32_MAX)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        LayoutWasmPgoInstrumentationSchema(previous, &item);
+        if (item.Offset != offset || offset > UINT32_MAX - recordBytes.Value() || offset != storageEnd)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        for (UINT32 j = 0; j < i; j++)
+        {
+            if (schema[j].InstrumentationKind == item.InstrumentationKind && schema[j].ILOffset == item.ILOffset)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        storageEnd = offset + static_cast<UINT32>(recordBytes.Value());
+        previous = item;
+        schema.Append(item);
+        offsets.Append(offset);
+    }
+    if (storageEnd > UINT32_MAX - 7 || dataBytes != ((storageEnd + 7) & ~7u) || dataBytes == 0)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    BYTE* data;
+    IfFailThrow(allocPgoInstrumentationBySchema(method, &ilHeader, schema.OpenRawBuffer(), recordCount, &data));
+    schema.CloseRawBuffer();
+    for (UINT32 i = 0; i < recordCount; i++)
+    {
+        if (schema[i].Offset != offsets[i])
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+    return data;
+}
+#endif // TARGET_WASM && !FEATURE_MULTITHREADING
 
 HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
 {
@@ -694,8 +971,13 @@ HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::
         return E_NOTIMPL;
     }
 
-    // Align all instrumentation at size_t alignment, as the copy routine will copy in size_t units
-    *offsetOfActualInstrumentationData = (UINT)AlignUp(headerSize, sizeof(size_t));
+    UINT alignment = sizeof(size_t);
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    alignment = 8;
+#endif
+    if (headerSize > UINT32_MAX - (alignment - 1))
+        return E_OUTOFMEMORY;
+    *offsetOfActualInstrumentationData = static_cast<UINT>(AlignUp(headerSize, alignment));
     return S_OK;
 }
 
@@ -707,6 +989,8 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
 {
     // Initialize our out param
     *pInstrumentationData = NULL;
+    if (countSchemaItems == 0)
+        return E_INVALIDARG;
     int codehash;
     unsigned ilSize;
 
@@ -722,6 +1006,8 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     {
         return hr;
     }
+    // Stable hashing can load enclosing types and must precede CrstPgoData.
+    unsigned methodhash = pMD->GetStableHash();
 
     // Compute offsets for each instrumentation entry
     ICorJitInfo::PgoInstrumentationSchema prevSchema;
@@ -730,12 +1016,37 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
     {
         // The data region is only size_t aligned, and readers re-derive this layout from offset 0.
+#if !defined(TARGET_WASM) || defined(FEATURE_MULTITHREADING)
         _ASSERTE(InstrumentationKindToAlignment(pSchema[iSchema].InstrumentationKind) <= sizeof(size_t));
+#else
+        if (pSchema[iSchema].Count < 0)
+            return E_INVALIDARG;
+        S_SIZE_T previousEnd = S_SIZE_T(prevSchema.Offset) +
+            S_SIZE_T(InstrumentationKindToSize(prevSchema.InstrumentationKind)) * S_SIZE_T(prevSchema.Count);
+        if (previousEnd.IsOverflow() || previousEnd.Value() > UINT32_MAX - 7)
+            return E_OUTOFMEMORY;
+#endif
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+        LayoutWasmPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
+#else
         LayoutPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
+#endif
         prevSchema = pSchema[iSchema];
     }
 
     S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset) + S_SIZE_T(pSchema[countSchemaItems - 1].Count) * S_SIZE_T(InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    size_t dataEnd = offsetOfInstrumentationDataFromStartOfDataRegion;
+    for (UINT32 i = 0; i < countSchemaItems; i++)
+    {
+        S_SIZE_T end = S_SIZE_T(pSchema[i].Offset) +
+            S_SIZE_T(pSchema[i].Count) * S_SIZE_T(InstrumentationKindToSize(pSchema[i].InstrumentationKind));
+        if (end.IsOverflow() || end.Value() > UINT32_MAX - 7)
+            return E_OUTOFMEMORY;
+        dataEnd = max(dataEnd, end.Value());
+    }
+    allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(AlignUp(dataEnd, 8));
+#endif
 
     if (allocationSize.IsOverflow())
     {
@@ -774,7 +1085,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         pHeaderList = (HeaderList*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(unsafeAllocationSize);
 
         memset(pHeaderList, 0, unsafeAllocationSize);
-        pHeaderList->header.Init(pMD, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
+        pHeaderList->header.Init(pMD, methodhash, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
         *pInstrumentationData = pHeaderList->header.GetData();
         if (!WriteInstrumentationSchema(pSchema, countSchemaItems, *pInstrumentationData, pHeaderList->header.countsOffset))
         {
@@ -790,6 +1101,35 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         CrstHolder lock(&laPgoManagerThis->m_lock);
 
         HeaderList* existingData = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+        for (HeaderList* candidate = m_pgoHeaders; candidate != nullptr; candidate = candidate->next)
+        {
+            if (candidate->header.method != pMD)
+                continue;
+            UINT32 matched = 0;
+            auto matches = [&](const ICorJitInfo::PgoInstrumentationSchema& item)
+            {
+                if (matched >= countSchemaItems)
+                    return false;
+                const ICorJitInfo::PgoInstrumentationSchema& requested = pSchema[matched];
+                if (item.InstrumentationKind != requested.InstrumentationKind ||
+                    item.ILOffset != requested.ILOffset || item.Count != requested.Count || item.Other != requested.Other ||
+                    item.Offset - candidate->header.countsOffset != requested.Offset - offsetOfInstrumentationDataFromStartOfDataRegion)
+                    return false;
+                matched++;
+                return true;
+            };
+            bool exact = ReadLivePgoInstrumentationSchema(candidate->header.GetData(),
+                candidate->header.countsOffset, candidate->header.countsOffset, matches);
+            if (exact && matched == countSchemaItems)
+            {
+                for (UINT32 i = 0; i < countSchemaItems; i++)
+                    pSchema[i].Offset -= offsetOfInstrumentationDataFromStartOfDataRegion;
+                *pInstrumentationData = candidate->header.GetData() + candidate->header.countsOffset;
+                return S_OK;
+            }
+        }
+#else
         if (existingData != NULL)
         {
             size_t matchedCount = CheckIfPgoSchemaIsCompatibleAndSetOffsets(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems);
@@ -816,11 +1156,16 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
                 return S_OK;
             }
         }
+#endif // TARGET_WASM && !FEATURE_MULTITHREADING
 
         AllocMemTracker loaderHeapAllocation;
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+        pHeaderList = static_cast<HeaderList*>(loaderHeapAllocation.Track(pMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocAlignedMem(allocationSize.Value(), 8)));
+#else
         pHeaderList = (HeaderList*)loaderHeapAllocation.Track(pMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(allocationSize));
+#endif
         memset(pHeaderList, 0, unsafeAllocationSize);
-        pHeaderList->header.Init(pMD, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
+        pHeaderList->header.Init(pMD, methodhash, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
         pHeaderList->next = m_pgoHeaders;
         *pInstrumentationData = pHeaderList->header.GetData();
         if (!WriteInstrumentationSchema(pSchema, countSchemaItems, *pInstrumentationData, pHeaderList->header.countsOffset))
@@ -828,9 +1173,17 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
             _ASSERTE(!"Unable to write schema");
             return E_NOTIMPL;
         }
-        laPgoManagerThis->m_pgoDataLookup.Add(pHeaderList);
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+        if (existingData == nullptr)
+#endif
+            laPgoManagerThis->m_pgoDataLookup.Add(pHeaderList);
         loaderHeapAllocation.SuppressRelease();
         m_pgoHeaders = pHeaderList;
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+        *pInstrumentationData += pHeaderList->header.countsOffset;
+        for (UINT32 i = 0; i < countSchemaItems; i++)
+            pSchema[i].Offset -= pHeaderList->header.countsOffset;
+#endif
         return S_OK;
     }
 }
@@ -894,7 +1247,12 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromText(MethodDesc* pMD, const 
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
 
-    if (!ReadInstrumentationSchemaWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, &schemaArray))
+    if (!ReadLivePgoInstrumentationSchema(found->GetData(), found->countsOffset, found->countsOffset,
+        [&schemaArray](const ICorJitInfo::PgoInstrumentationSchema& item)
+        {
+            schemaArray.Append(item);
+            return true;
+        }))
     {
         _ASSERTE(!"Unable to parse schema data");
         return E_NOTIMPL;
@@ -1191,19 +1549,37 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     }
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
-    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, 0, &schemaArray))
+    if (ReadLivePgoInstrumentationSchema(found->header.GetData(), found->header.countsOffset, 0,
+        [&schemaArray](const ICorJitInfo::PgoInstrumentationSchema& item)
+        {
+            schemaArray.Append(item);
+            return true;
+        }))
     {
         size_t schemaDataSize = AlignUp(schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema), sizeof(size_t));
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+        schemaDataSize = AlignUp(schemaDataSize, 8);
+#endif
         size_t instrumentationDataSize = 0;
         if (schemaArray.GetCount() > 0)
         {
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+            for (COUNT_T i = 0; i < schemaArray.GetCount(); i++)
+            {
+                const ICorJitInfo::PgoInstrumentationSchema& item = schemaArray[i];
+                instrumentationDataSize = max(instrumentationDataSize,
+                    item.Offset + item.Count * InstrumentationKindToSize(item.InstrumentationKind));
+            }
+            instrumentationDataSize = AlignUp(instrumentationDataSize, 8);
+#else
             auto lastSchema = schemaArray[schemaArray.GetCount() - 1];
             instrumentationDataSize = AlignUp(lastSchema.Offset + lastSchema.Count * InstrumentationKindToSize(lastSchema.InstrumentationKind), sizeof(size_t));
+#endif
         }
         *pAllocatedData = new BYTE[schemaDataSize + instrumentationDataSize];
         *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)*pAllocatedData;
         *pCountSchemaItems = schemaArray.GetCount();
-        memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaDataSize);
+        memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema));
         schemaArray.CloseRawBuffer();
 
         size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);

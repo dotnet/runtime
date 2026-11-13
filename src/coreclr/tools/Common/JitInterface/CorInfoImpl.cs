@@ -795,6 +795,8 @@ namespace Internal.JitInterface
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
+            _wasmPgoCells.Clear();
+            _pgoTokenMissing = false;
             _synthesizedPgoDependencies = null;
 #endif
 
@@ -4868,7 +4870,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                     case BlockType.BBCounts:
-                        relocTarget = null;
+                        relocTarget = FindWasmPgoCell(target);
                         break;
 #endif
 
@@ -5021,6 +5023,11 @@ namespace Internal.JitInterface
             // Read the user-defined configuration options.
             foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
+
+#if READYTORUN
+            if (_compilation.NodeFactory.PgoInstrumentationSchemas is not null)
+                flags.Set(CorJitFlag.CORJIT_FLAG_BBINSTR);
+#endif
 
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
@@ -5206,6 +5213,13 @@ namespace Internal.JitInterface
             {
 #if READYTORUN
                 PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc, out bool isSynthesized)?.SchemaData;
+                if (pgoResultsSchemas is null)
+                {
+                    MethodDesc canonical = methodDesc.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    pgoResultsSchemas = _compilation.ProfileData[canonical]?.SchemaData;
+                    if (pgoResultsSchemas is not null)
+                        isSynthesized = false;
+                }
 
                 if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
                 {

@@ -139,11 +139,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       ResolveWasmOutputs;
       _AddWasmDiagnosticPortsEnvironmentVariable;
       _AddWasmPerformanceInstrumentationEnvironmentVariables;
+      _AddWasmPgoInstrumentationEnvironmentVariables;
     </GenerateBuildWasmBootJsonDependsOn>
     <GeneratePublishWasmBootJsonDependsOn>
       $(GeneratePublishWasmBootJsonDependsOn);
       _AddWasmDiagnosticPortsEnvironmentVariable;
       _AddWasmPerformanceInstrumentationEnvironmentVariables;
+      _AddWasmPgoInstrumentationEnvironmentVariables;
     </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
@@ -662,6 +664,34 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_ValidateWasmPerformanceInstrumentation" BeforeTargets="PrepareForBuild">
     <Error Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))"
            Text="The interval option is no longer supported in WasmPerformanceInstrumentation. Set DOTNET_EventPipeThreadSamplingRate using a WasmEnvironmentVariable item instead." />
+  </Target>
+
+  <Target Name="_ValidateWasmPgoInstrumentation"
+          Condition="'$(WasmPgoInstrumentation)' != ''"
+          BeforeTargets="PrepareForBuild;_ResolveWasmConfiguration;_PrepareForReadyToRunCompilation">
+    <Error Condition="'$(UseMonoRuntime)' != 'false' or '$(RuntimeIdentifier)' != 'browser-wasm'"
+           Text="WasmPgoInstrumentation requires CoreCLR browser-wasm. Set UseMonoRuntime=false and RuntimeIdentifier=browser-wasm; Mono and other targets are not supported." />
+    <Error Condition="'$(_IsPublishing)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(DeployOnBuild)' != 'true'"
+           Text="WasmPgoInstrumentation is supported only when publishing. Use dotnet publish with PublishReadyToRun=true to instrument the application and framework assemblies, or clear WasmPgoInstrumentation for a development build." />
+    <Error Condition="'$(PublishReadyToRun)' != 'true'"
+           Text="WasmPgoInstrumentation requires PublishReadyToRun=true. Enable ReadyToRun publishing or clear WasmPgoInstrumentation." />
+    <Error Condition="'$(EnableDiagnostics)' != 'true'"
+           Text="WasmPgoInstrumentation requires EnableDiagnostics=true so collectPgoTrace() can export the collected counts." />
+    <Error Condition="'$(WasmEnableThreads)' == 'true'"
+           Text="WasmPgoInstrumentation supports only single-threaded applications. Set WasmEnableThreads=false or clear WasmPgoInstrumentation." />
+  </Target>
+
+  <Target Name="_AddWasmPgoInstrumentationEnvironmentVariables"
+          Condition="'$(WasmPgoInstrumentation)' != ''"
+          DependsOnTargets="_ValidateWasmPgoInstrumentation">
+    <PropertyGroup>
+      <_WasmPgoInstFilter>$(WasmPgoInstrumentation)</_WasmPgoInstFilter>
+      <_WasmPgoInstFilter Condition="'$(_WasmPgoInstFilter)' == 'all'">*</_WasmPgoInstFilter>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmEnvironmentVariable Remove="DOTNET_WasmPgoInstrumentation" />
+      <WasmEnvironmentVariable Include="DOTNET_WasmPgoInstrumentation" Value="$(_WasmPgoInstFilter)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable"
