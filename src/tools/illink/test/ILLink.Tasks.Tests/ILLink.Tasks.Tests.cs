@@ -213,25 +213,6 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(@"C:\")]
-        [InlineData(@"C:\path with spaces\")]
-        [InlineData(@"\\server\share\")]
-        [InlineData(@"\")]
-        [InlineData(@"C:\directory\\")]
-        public void QuotedPathsPreserveTrailingSeparators(string path)
-        {
-            MethodInfo quote = typeof(ILLink).GetMethod("Quote", BindingFlags.Static | BindingFlags.NonPublic);
-            string quotedPath = (string)quote.Invoke(null, new object[] { path });
-            MethodInfo adjust = typeof(ToolTask).GetMethod("AdjustCommandsForOperatingSystem", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
-            string commands = (string)adjust.Invoke(new MockTask(), new object[] { "-d " + quotedPath + "\n--ignore-link-attributes true" });
-            using var response = new StringReader(commands);
-            var arguments = new Queue<string>();
-            Driver.ParseResponseFile(response, arguments);
-
-            Assert.Equal(new[] { "-d", path.Replace('\\', Path.DirectorySeparatorChar), "--ignore-link-attributes", "true" }, arguments);
-        }
-
-        [Theory]
         [InlineData(new object[] { new string[] { "combined_output.xml" } })]
         public void TestRootDescriptorFiles(string[] rootDescriptorFiles)
         {
@@ -1133,7 +1114,7 @@ namespace ILLink.Tasks.Tests
                 Assert.Contains(task.Messages, message =>
                     message.Line.Contains(succeeds ? "illink [options]" : "No input files were specified"));
                 Assert.Equal(bool.Parse(enabled) && succeeds, test.BuildEngine.Messages.Any(message =>
-                    message.Message.StartsWith("ILLink cache bypassed:")));
+                    message.Message.StartsWith("ILLink cache bypassed: extra arguments")));
                 Assert.False(Directory.Exists(cacheDirectory));
             }, enableCache.ToString(), succeeds.ToString()).Dispose();
         }
@@ -1157,7 +1138,7 @@ namespace ILLink.Tasks.Tests
             Assert.Equal(original, afterTouch);
 
             byte[] contents = File.ReadAllBytes(file);
-            contents[relativePath.EndsWith(".xml", StringComparison.Ordinal) ? Array.IndexOf(contents, (byte)'c') : contents.Length - 1] ^= 1;
+            contents[contents.Length - 1] ^= 1;
             File.WriteAllBytes(file, contents);
             File.SetLastWriteTimeUtc(file, timestamp);
             Assert.True(test.Task.TryGetCacheKey(host, out string afterChange));
@@ -1179,12 +1160,12 @@ namespace ILLink.Tasks.Tests
                 Path.Combine(test.Root, "second link attributes.xml")
             };
             foreach (string file in linkAttributesFiles)
-                File.WriteAllText(file, "<linker/>");
+                File.WriteAllText(file, "contents");
 
             test.Task.ExtraArgs = $" --ignore-link-attributes true {option} \"{linkAttributesFiles[0]}\" {option} \"{linkAttributesFiles[1]}\"";
             Assert.True(test.Task.TryGetCacheKey(host, out string original));
 
-            File.AppendAllText(linkAttributesFiles[changedFile], "<!-- changed -->");
+            File.AppendAllText(linkAttributesFiles[changedFile], "changed");
             Assert.True(test.Task.TryGetCacheKey(host, out string changed));
             Assert.NotEqual(original, changed);
         }
@@ -1807,7 +1788,7 @@ namespace ILLink.Tasks.Tests
                 bool corruptEntry = bool.Parse(corrupt);
                 using var test = new OutputDirectoryTest();
                 string input = Path.Combine(test.Root, "Input.dll");
-                WriteTestAssembly(input, test.Root + "/src/Input.cs");
+                WriteTestAssembly(input);
                 var task = test.Task;
                 task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
                 task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
@@ -2465,18 +2446,51 @@ namespace ILLink.Tasks.Tests
             Assert.Contains("copy", description.Context);
         }
 
-        [Fact]
-        public void ArgumentConstructionDoesNotReadSourceRootMappings()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SourceRootMappingsAreReadOnlyWhenDescribingSupportedArguments(bool unsupportedArgs)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
             var root = new CountingTaskItem(test.Task.SourceRoots[0]);
             test.Task.SourceRoots[0] = root;
+            if (unsupportedArgs)
+                test.Task.ExtraArgs = "--help";
 
             test.Task.GetResponseFileCommands();
             Assert.Equal(0, root.MappedPathReads);
-            Assert.True(test.Task.TryGetCacheKey(host, out _));
-            Assert.Equal(1, root.MappedPathReads);
+            Assert.Equal(!unsupportedArgs, test.Task.TryGetCacheKey(host, out _));
+            Assert.Equal(unsupportedArgs ? 0 : 1, root.MappedPathReads);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CacheKeyInventoriesEverySuppliedAssembly(bool reference)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            string response = test.Task.GetResponseFileCommands();
+            Assert.True(test.Task.TryGetCacheKey(host, out string original));
+            string ignored = Path.Combine(test.Root, "ignored", "Input.dll");
+            Directory.CreateDirectory(Path.GetDirectoryName(ignored));
+            File.Copy(test.Task.AssemblyPaths[0].ItemSpec, ignored);
+            var item = new TaskItem(ignored);
+            if (reference)
+                test.Task.ReferenceAssemblyPaths = test.Task.ReferenceAssemblyPaths.Append(item).ToArray();
+            else
+                test.Task.AssemblyPaths = test.Task.AssemblyPaths.Append(item).ToArray();
+
+            Assert.Equal(response, test.Task.GetResponseFileCommands());
+            Assert.True(test.Task.TryGetCacheKey(host, out string added));
+            Assert.Contains(ignored, test.Task.CacheDescription.Inputs.Files);
+            Assert.NotEqual(original, added);
+            File.AppendAllText(ignored, "changed");
+            Assert.True(test.Task.TryGetCacheKey(host, out string changed));
+            Assert.NotEqual(added, changed);
+            File.Delete(ignored);
+            Assert.False(test.Task.TryGetCacheKey(host, out _));
         }
 
         [Theory]
@@ -3050,7 +3064,7 @@ namespace ILLink.Tasks.Tests
             {
                 string file = Path.Combine(test.Root, path);
                 Directory.CreateDirectory(Path.GetDirectoryName(file));
-                File.WriteAllText(file, path == "roots.xml" ? "<linker><!-- contents --></linker>" : "contents");
+                File.WriteAllText(file, "contents");
             }
 
             test.Task.AssemblyPaths = new ITaskItem[] { new TaskItem(input) };

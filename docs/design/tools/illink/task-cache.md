@@ -78,8 +78,9 @@ enable symbol preservation or compiler path mapping.
 
 ## Input discovery and eligibility
 
-Hash effective assemblies, reference assemblies, and root descriptors recorded during argument
-construction. Include adjacent PDBs,
+Hash all supplied assemblies, reference assemblies, and root descriptors. Record their paths and
+relevant task metadata separately from argument construction, conservatively including inputs
+ignored by argument construction's filename filtering. Include adjacent PDBs,
 configuration files, and satellite assemblies even when symbols are disabled. Adding or removing a
 sidecar changes identity. Leave assembly filename/name mismatches and unsupported additional modules
 to ILLink rather than preflight-rejecting them. Reject path-shaped metadata assembly references.
@@ -128,8 +129,8 @@ For runtime library builds, support `--ignore-link-attributes true` followed by 
 `--link-attributes FILE`, `--substitutions FILE`, `-d DIRECTORY`, `--ignore-substitutions true|false`,
 or `--feature NAME true|false` options. Parse directly into the cache description without rewriting
 the tool's arguments. Record non-file option values and option/path roles in order, including repeated
-feature assignments. Require the XML files to be
-readable. Inventory every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory,
+feature assignments. Require the XML files to be readable.
+Inventory every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory,
 including supported sidecars. Preserve directory order and leave linker resolution
 unchanged; adding, changing, or removing even a shadowed candidate invalidates identity. Other SDK
 options supplied through `ExtraArgs` remain unsupported.

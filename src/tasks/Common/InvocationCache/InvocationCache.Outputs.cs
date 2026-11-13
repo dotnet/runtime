@@ -73,9 +73,7 @@ internal sealed partial class InvocationCache
     }
 
     private static string GetOutputPath(InvocationOutputs outputs, string name, int index) =>
-        outputs.DirectoryPath is not null
-            ? Path.Combine(outputs.DirectoryPath, name)
-            : outputs.Files[index];
+        outputs.DirectoryPath is not null ? Path.Combine(outputs.DirectoryPath, name) : outputs.Files[index];
 
     private static void DeleteOutputFile(string path)
     {

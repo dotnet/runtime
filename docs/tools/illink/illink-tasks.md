@@ -62,7 +62,7 @@ assembly, the selected dotnet host executable, and the entire ILLink assembly.
 File contents are hashed on every invocation. Linker changes invalidate the cache even when
 the module version ID (MVID), file length, and timestamp are unchanged.
 `SourceRoots` with stable `MappedPath` metadata allow equivalent relative layouts in different
-clones/worktrees to share a key. Only known path arguments and input identities are mapped;
+clones/worktrees to share a key. Only known path-valued inputs and input/output identities are mapped for the key;
 external paths remain absolute and argument/search-directory order is preserved.
 Tool arguments retain the task's original path values, independently of whether caching is enabled.
 Cache descriptions resolve relative paths against the caller's working directory and retain physical
@@ -88,8 +88,7 @@ dependency-dump options, and explicit task environment overrides. The only suppo
 `ExtraArgs` shape is `--ignore-link-attributes true` followed by zero or more
 `--link-attributes FILE`, `--substitutions FILE`, `-d DIRECTORY`, `--ignore-substitutions true|false`,
 or `--feature NAME true|false` options. Non-file option values and their ordering contribute to the key.
-Referenced files
-and search-directory assembly candidates are content-hashed, including shadowed candidates.
+Referenced files and search-directory assembly candidates are content-hashed, including shadowed candidates.
 Other options still run the linker normally, uncached.
 Arguments containing backslashes immediately before quotes also bypass caching because
 the supported tokenizer does not model the linker's escape rules.
@@ -100,8 +99,10 @@ fall back to normal linking.
 
 Cache-enabled invocations that cannot meet the supported path-independence contract run
 uncached and store nothing, rather than create path-specific entries. Missing/invalid root
-mappings, physical symbol paths, unsupported symbol formats, additional modules, and linked
-resources bypass caching. Path-shaped metadata assembly references also bypass caching because they
+mappings, physical symbol paths, and unsupported symbol formats bypass caching.
+Additional modules are left to ILLink's existing failure behavior, and ordinary linked resources
+are covered by their stored metadata hashes. The unusual missing-resource-hash case is outside
+the supported dependency model. Path-shaped metadata assembly references also bypass caching because they
 can escape the declared search-directory inventory. Root and XML assembly-name strings are left to
 ILLink's existing unresolved-name handling.
 Portable PDB emission requires already-normalized input paths and

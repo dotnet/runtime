@@ -284,7 +284,6 @@ namespace ILLink.Tasks
                 string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
                 if (Directory.Exists(outputDirectory))
                     Directory.Delete(outputDirectory, recursive: true);
-
                 Directory.CreateDirectory(outputDirectory);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -296,8 +295,8 @@ namespace ILLink.Tasks
             return base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
         }
 
-        private protected override InvocationDescription DescribeInvocation(
-            string pathToTool, string responseFileCommands, string commandLineCommands)
+#nullable enable annotations
+        private protected override InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
@@ -307,11 +306,8 @@ namespace ILLink.Tasks
             }
             try
             {
-                var paths = new SourceRootPathMap(SourceRoots);
                 var files = new HashSet<string>(StringComparer.Ordinal);
                 var directories = new HashSet<string>(StringComparer.Ordinal);
-                var assemblies = new HashSet<string>(StringComparer.Ordinal);
-                var assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var orderedPaths = new List<string>();
                 var context = new List<string> {
                     "ILLink", _singleWarn.ToString(), TrimMode, DefaultAction,
@@ -327,6 +323,8 @@ namespace ILLink.Tasks
                     Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
                     return null;
                 }
+                var paths = new SourceRootPathMap(SourceRoots);
+                var assemblies = new HashSet<string>(StringComparer.Ordinal);
                 string toolPath = AddPath(nameof(ILLinkPath), ILLinkPath);
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
                     files.Add(AddPath(nameof(RootDescriptorFiles), descriptor.ItemSpec));
@@ -338,8 +336,6 @@ namespace ILLink.Tasks
                 }
                 foreach (ITaskItem assembly in AssemblyPaths)
                 {
-                    if (!assemblyNames.Add(Path.GetFileNameWithoutExtension(assembly.ItemSpec)))
-                        continue;
                     if (!AddAssembly(AddPath(nameof(AssemblyPaths), assembly.ItemSpec)))
                         return null;
                     context.Add(assembly.GetMetadata("TrimMode"));
@@ -350,8 +346,6 @@ namespace ILLink.Tasks
                 }
                 foreach (ITaskItem reference in ReferenceAssemblyPaths ?? Array.Empty<ITaskItem>())
                 {
-                    if (assemblyNames.Contains(Path.GetFileNameWithoutExtension(reference.ItemSpec)))
-                        continue;
                     if (!AddAssembly(AddPath(nameof(ReferenceAssemblyPaths), reference.ItemSpec), checkOutputSymbols: false))
                         return null;
                 }
@@ -456,6 +450,8 @@ namespace ILLink.Tasks
                 return null;
             }
         }
+
+#nullable restore annotations
 
         private static bool HasPathSyntax(string name) => name.AsSpan().IndexOfAny('/', '\\', ':') >= 0;
 
@@ -655,13 +651,7 @@ namespace ILLink.Tasks
 
         private static string Quote(string path)
         {
-            int trailingBackslashes = path.Length - path.TrimEnd('\\').Length;
-            // ToolTask's Unix normalization preserves the last backslash before a quote as an escape.
-            if (Path.DirectorySeparatorChar == '/')
-                return $"\"{path.TrimEnd('\\')}{new string('/', trailingBackslashes)}\"";
-
-            // Double trailing backslashes so they do not escape the closing quote on Windows.
-            return $"\"{path}{new string('\\', trailingBackslashes)}\"";
+            return $"\"{path.TrimEnd('\\')}\"";
         }
 
         protected override string GenerateCommandLineCommands()
