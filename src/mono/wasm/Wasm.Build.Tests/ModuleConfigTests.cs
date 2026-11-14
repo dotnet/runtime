@@ -182,7 +182,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [Theory]
+    [Theory, TestCategory("no-workload")]
     [InlineData(true, null, false)]
     [InlineData(true, false, true)]
     [InlineData(true, true, false)]
