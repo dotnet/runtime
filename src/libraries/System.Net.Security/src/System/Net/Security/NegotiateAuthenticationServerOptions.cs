@@ -56,6 +56,15 @@ namespace System.Net.Security
         /// <summary>
         /// Indicates extended security and validation policies.
         /// </summary>
+        /// <remarks>
+        /// On Linux, setting <see cref="ExtendedProtectionPolicy.PolicyEnforcement" /> to
+        /// <see cref="PolicyEnforcement.Always" /> with a non-null <see cref="Binding" /> requires
+        /// the GSSAPI provider to report <c>GSS_C_CHANNEL_BOUND_FLAG</c> after authentication.
+        /// MIT Kerberos supports this flag starting with version 1.19; other providers must also
+        /// support reporting it. Authentication fails with <see cref="NegotiateAuthenticationStatusCode.BadBinding" />
+        /// when matching channel bindings cannot be confirmed, including when an older provider
+        /// does not report the flag even for matching bindings.
+        /// </remarks>
         public ExtendedProtectionPolicy? Policy { get; set; }
 
         /// <summary>

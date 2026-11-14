@@ -13,6 +13,7 @@
 #include "excep.h"
 #include "vars.hpp"
 #include "comutilnative.h"
+#include "callhelpers.h"
 
 #include "utilcode.h"
 #include "frames.h"
@@ -44,7 +45,7 @@
 // EXCEPTION NATIVE
 //
 //
-FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExceptionUNSAFE)
+FCIMPL1(FC_BOOL_RET, Exception_IsImmutableException, Object* pExceptionUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -61,7 +62,7 @@ FCIMPLEND
 // that we have restored a foreign exception dispatch details.
 //
 // Refer to the respective methods for details on how they use this flag.
-FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
+FCIMPL0(VOID, Exception_PrepareForForeignExceptionRaise)
 {
     FCALL_CONTRACT;
 
@@ -250,7 +251,7 @@ GUID SimpleComCallWrapper::IErrorInfo_guid()
 
 #endif // FEATURE_COMINTEROP
 
-FCIMPL0(EXCEPTION_POINTERS*, ExceptionNative::GetExceptionPointers)
+FCIMPL0(EXCEPTION_POINTERS*, Marshal_GetExceptionPointers)
 {
     FCALL_CONTRACT;
 
@@ -266,7 +267,7 @@ FCIMPL0(EXCEPTION_POINTERS*, ExceptionNative::GetExceptionPointers)
 }
 FCIMPLEND
 
-FCIMPL0(INT32, ExceptionNative::GetExceptionCode)
+FCIMPL0(INT32, Marshal_GetExceptionCode)
 {
     FCALL_CONTRACT;
 
@@ -283,7 +284,7 @@ FCIMPL0(INT32, ExceptionNative::GetExceptionCode)
 FCIMPLEND
 
 extern uint32_t g_exceptionCount;
-FCIMPL0(UINT32, ExceptionNative::GetExceptionCount)
+FCIMPL0(UINT32, Exception_GetExceptionCount)
 {
     FCALL_CONTRACT;
     return g_exceptionCount;
@@ -461,7 +462,7 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
     END_QCALL;
 }
 
-FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
+FCIMPL3(VOID, Buffer_BulkMoveWithWriteBarrierInternal, void *dst, void *src, size_t byteCount)
 {
     FCALL_CONTRACT;
 
@@ -473,15 +474,39 @@ FCIMPLEND
 //
 // GCInterface
 //
-INT32    GCInterface::m_gc_counts[3] = {0,0,0};
-UINT64   GCInterface::m_addPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure additions
-UINT64   GCInterface::m_remPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
+FCIMPL0(INT64, GC_GetCurrentObjSize)
+{
+    FCALL_CONTRACT;
 
-// incremented after a gen2 GC has been detected,
-// (m_iteration % MEM_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
-UINT     GCInterface::m_iteration = 0;
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetCurrentObjSize());
+}
+FCIMPLEND
 
-FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
+FCIMPL0(INT64, GC_GetGCNow)
+{
+    FCALL_CONTRACT;
+
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetNow());
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GC_GetLastGCStartTime)
+{
+    FCALL_CONTRACT;
+
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetLastGCStartTime(2));
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GC_GetLastGCDuration)
+{
+    FCALL_CONTRACT;
+
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetLastGCDuration(2));
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GC__GetTotalPauseDuration)
 {
     FCALL_CONTRACT;
 
@@ -489,7 +514,7 @@ FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 }
 FCIMPLEND
 
-FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
+FCIMPL2(void, GC_GetMemoryInfo, Object* objUNSAFE, int kind)
 {
     FCALL_CONTRACT;
 
@@ -519,7 +544,7 @@ FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 }
 FCIMPLEND
 
-FCIMPL0(int, GCInterface::GetGcLatencyMode)
+FCIMPL0(int, GCSettings_GetGCLatencyMode)
 {
     FCALL_CONTRACT;
 
@@ -528,7 +553,7 @@ FCIMPL0(int, GCInterface::GetGcLatencyMode)
 }
 FCIMPLEND
 
-FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
+FCIMPL1(int, GCSettings_SetGCLatencyMode, int newLatencyMode)
 {
     FCALL_CONTRACT;
 
@@ -536,7 +561,7 @@ FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
 }
 FCIMPLEND
 
-FCIMPL0(int, GCInterface::GetLOHCompactionMode)
+FCIMPL0(int, GCSettings_GetLOHCompactionMode)
 {
     FCALL_CONTRACT;
 
@@ -545,7 +570,7 @@ FCIMPL0(int, GCInterface::GetLOHCompactionMode)
 }
 FCIMPLEND
 
-FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
+FCIMPL1(void, GCSettings_SetLOHCompactionMode, int newLOHCompactionyMode)
 {
     FCALL_CONTRACT;
 
@@ -554,7 +579,7 @@ FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
 FCIMPLEND
 
 
-FCIMPL2(FC_BOOL_RET, GCInterface::RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage)
+FCIMPL2(FC_BOOL_RET, GC__RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage)
 {
     FCALL_CONTRACT;
 
@@ -562,7 +587,7 @@ FCIMPL2(FC_BOOL_RET, GCInterface::RegisterForFullGCNotification, UINT32 gen2Perc
 }
 FCIMPLEND
 
-FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
+FCIMPL0(FC_BOOL_RET, GC__CancelFullGCNotification)
 {
     FCALL_CONTRACT;
 
@@ -611,7 +636,7 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
 **Returns: The generation in which args->obj is found.
 **Arguments: args->obj -- The object to locate.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
+FCIMPL1(int, GC_GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
     _ASSERTE(objUNSAFE != NULL);
@@ -623,7 +648,7 @@ FCIMPLEND
 **Action: Returns the maximum GC heap segment size
 **Returns: The maximum segment size of either the normal heap or the large object heap, whichever is bigger
 ==============================================================================*/
-FCIMPL0(UINT64, GCInterface::GetSegmentSize)
+FCIMPL0(UINT64, GC_GetSegmentSize)
 {
     FCALL_CONTRACT;
 
@@ -643,7 +668,7 @@ FCIMPLEND
 **Arguments: args->generation -- The generation
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCCount)
+FCIMPL2(int, GC__CollectionCount, INT32 generation, INT32 getSpecialGCCount)
 {
     FCALL_CONTRACT;
 
@@ -690,7 +715,7 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion(QCallExceptionStatus* qcallEr
     return retVal;
 }
 
-FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
+FCIMPL0(int, GC_GetLastGCPercentTimeInGC)
 {
     FCALL_CONTRACT;
 
@@ -698,7 +723,7 @@ FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
 }
 FCIMPLEND
 
-FCIMPL1(UINT64, GCInterface::GetGenerationSize, int gen)
+FCIMPL1(UINT64, GC_GetGenerationSize, int gen)
 {
     FCALL_CONTRACT;
 
@@ -811,7 +836,7 @@ extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers(QCallExceptionSta
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-FCIMPL0(int, GCInterface::GetMaxGeneration)
+FCIMPL0(int, GC_GetMaxGeneration)
 {
     FCALL_CONTRACT;
 
@@ -825,7 +850,7 @@ FCIMPLEND
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-FCIMPL0(FC_BOOL_RET, GCInterface::IsServerGC)
+FCIMPL0(FC_BOOL_RET, GCSettings_get_IsServerGC)
 {
     FCALL_CONTRACT;
 
@@ -839,7 +864,7 @@ FCIMPLEND
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
+FCIMPL0(INT64, GC_GetAllocatedBytesForCurrentThread)
 {
     FCALL_CONTRACT;
 
@@ -879,7 +904,7 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
     END_QCALL;
 }
 
-FCIMPL0(INT64, GCInterface::GetTotalAllocatedBytesApproximate)
+FCIMPL0(INT64, GC_GetTotalAllocatedBytesApproximate)
 {
     FCALL_CONTRACT;
 
@@ -1002,7 +1027,7 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment, QCa
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-FCIMPL1(void, GCInterface::SuppressFinalize, Object *obj)
+FCIMPL1(void, GC_SuppressFinalizeInternal, Object *obj)
 {
     FCALL_CONTRACT;
 
@@ -1033,35 +1058,6 @@ extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleO
     {
         ThrowOutOfMemory();
     }
-    END_QCALL;
-}
-
-FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) {
-    WRAPPER_NO_CONTRACT;
-
-    UINT64 oldMemValue;
-    UINT64 newMemValue;
-
-    do {
-        oldMemValue = *pAugend;
-        newMemValue = oldMemValue + addend;
-
-        // check for overflow
-        if (newMemValue < oldMemValue)
-        {
-            newMemValue = UINT64_MAX;
-        }
-    } while (InterlockedCompareExchange64((LONGLONG*) pAugend, (LONGLONG) newMemValue, (LONGLONG) oldMemValue) != (LONGLONG) oldMemValue);
-
-    return newMemValue;
-}
-
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCInterface::AddMemoryPressure(bytesAllocated);
     END_QCALL;
 }
 
@@ -1151,211 +1147,6 @@ uint64_t GCInterface::GetGenerationBudget(int generation)
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
 
-#ifdef HOST_64BIT
-const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
-#else // HOST_64BIT
-const unsigned MIN_MEMORYPRESSURE_BUDGET = 3 * 1024 * 1024;        // 3 MB
-#endif // HOST_64BIT
-
-const unsigned MAX_MEMORYPRESSURE_RATIO = 10;                      // 40 MB or 30 MB
-
-
-// Resets pressure accounting after a gen2 GC has occurred.
-void GCInterface::CheckCollectionCount()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
-
-    if (m_gc_counts[2] != pHeap->CollectionCount(2))
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            m_gc_counts[i] = pHeap->CollectionCount(i);
-        }
-
-        m_iteration++;
-
-        UINT p = m_iteration % MEM_PRESSURE_COUNT;
-
-        m_addPressure[p] = 0;   // new pressure will be accumulated here
-        m_remPressure[p] = 0;
-    }
-}
-
-// AddMemoryPressure implementation
-//
-//   1. Start budget - MIN_MEMORYPRESSURE_BUDGET
-//   2. Focuses more on newly added memory pressure
-//   3. Budget adjusted by effectiveness of last 3 triggered GC (add / remove ratio, max 10x)
-//   4. Budget maxed with 30% of current managed GC size
-//   5. If Gen2 GC is happening naturally, ignore past pressure
-//
-// Here's a brief description of the ideal algorithm for Add/Remove memory pressure:
-// Do a GC when (HeapStart < X * MemPressureGrowth) where
-// - HeapStart is GC Heap size after doing the last GC
-// - MemPressureGrowth is the net of Add and Remove since the last GC
-// - X is proportional to our guess of the ummanaged memory death rate per GC interval,
-//   and would be calculated based on historic data using standard exponential approximation:
-//   Xnew = UMDeath/UMTotal * 0.5 + Xprev
-//
-void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CheckCollectionCount();
-
-    UINT p = m_iteration % MEM_PRESSURE_COUNT;
-
-    UINT64 newMemValue = InterlockedAdd(&m_addPressure[p], bytesAllocated);
-
-    static_assert(MEM_PRESSURE_COUNT == 4, "AddMemoryPressure contains unrolled loops which depend on MEM_PRESSURE_COUNT");
-
-    UINT64 add = m_addPressure[0] + m_addPressure[1] + m_addPressure[2] + m_addPressure[3] - m_addPressure[p];
-    UINT64 rem = m_remPressure[0] + m_remPressure[1] + m_remPressure[2] + m_remPressure[3] - m_remPressure[p];
-
-    STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %llu => added=%llu total_added=%llu total_removed=%llu",
-        (unsigned long long)bytesAllocated, (unsigned long long)newMemValue, (unsigned long long)add, (unsigned long long)rem);
-
-    SendEtwAddMemoryPressureEvent(bytesAllocated);
-
-    if (newMemValue >= MIN_MEMORYPRESSURE_BUDGET)
-    {
-        UINT64 budget = MIN_MEMORYPRESSURE_BUDGET;
-
-        if (m_iteration >= MEM_PRESSURE_COUNT) // wait until we have enough data points
-        {
-            // Adjust according to effectiveness of GC
-            // Scale budget according to past m_addPressure / m_remPressure ratio
-            if (add >= rem * MAX_MEMORYPRESSURE_RATIO)
-            {
-                budget = MIN_MEMORYPRESSURE_BUDGET * MAX_MEMORYPRESSURE_RATIO;
-            }
-            else if (add > rem)
-            {
-                CONSISTENCY_CHECK(rem != 0);
-
-                // Avoid overflow by calculating addPressure / remPressure as fixed point (1 = 1024)
-                budget = (add * 1024 / rem) * budget / 1024;
-            }
-        }
-
-        // If still over budget, check current managed heap size
-        if (newMemValue >= budget)
-        {
-            IGCHeap *pGCHeap = GCHeapUtilities::GetGCHeap();
-            UINT64 heapOver3 = pGCHeap->GetCurrentObjSize() / 3;
-
-            if (budget < heapOver3) // Max
-            {
-                budget = heapOver3;
-            }
-
-            if (newMemValue >= budget)
-            {
-                // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
-                if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
-                {
-                    STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%llu ? budget=%llu (total_added=%llu, total_removed=%llu, mng_heap=%llu) pos=%d",
-                        (unsigned long long)newMemValue, (unsigned long long)budget, (unsigned long long)add, (unsigned long long)rem,
-                        (unsigned long long)(heapOver3 * 3), m_iteration);
-
-                    GarbageCollectModeAny(2);
-
-                    CheckCollectionCount();
-                }
-            }
-        }
-    }
-}
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCInterface::RemoveMemoryPressure(bytesAllocated);
-    END_QCALL;
-}
-
-void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CheckCollectionCount();
-
-    UINT p = m_iteration % MEM_PRESSURE_COUNT;
-
-    SendEtwRemoveMemoryPressureEvent(bytesAllocated);
-
-    InterlockedAdd(&m_remPressure[p], bytesAllocated);
-
-    STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu => removed=%llu",
-        (unsigned long long)bytesAllocated, (unsigned long long)m_remPressure[p]);
-}
-
-inline void GCInterface::SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    FireEtwIncreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-}
-
-// Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        FireEtwDecreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-    }
-    EX_CATCH
-    {
-        // Ignore failures
-    }
-    EX_END_CATCH
-}
-
-// Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, collection_non_blocking);
-}
-
 //
 // EnvironmentNative
 //
@@ -1376,7 +1167,7 @@ extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode, QCallExceptionStatus*
     END_QCALL;
 }
 
-FCIMPL1(VOID,EnvironmentNative::SetExitCode,INT32 exitcode)
+FCIMPL1(VOID,Environment_set_ExitCode,INT32 exitcode)
 {
     FCALL_CONTRACT;
 
@@ -1388,7 +1179,7 @@ FCIMPL1(VOID,EnvironmentNative::SetExitCode,INT32 exitcode)
 }
 FCIMPLEND
 
-FCIMPL0(INT32, EnvironmentNative::GetExitCode)
+FCIMPL0(INT32, Environment_get_ExitCode)
 {
     FCALL_CONTRACT;
 
@@ -1539,7 +1330,7 @@ extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnSta
     return idx;
 }
 
-FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
+FCIMPL1(INT32, RuntimeHelpers_TryGetHashCode, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -1551,7 +1342,7 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
+FCIMPL2(FC_BOOL_RET, RuntimeHelpers_ContentEquals, Object *pThisRef, Object *pCompareRef)
 {
     FCALL_CONTRACT;
 
@@ -1608,7 +1399,7 @@ extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectH
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
+FCIMPL2(INT32,Interlocked_Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
 
@@ -1616,7 +1407,7 @@ FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 }
 FCIMPLEND
 
-FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
+FCIMPL2_IV(INT64,Interlocked_Exchange64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
 
@@ -1624,7 +1415,7 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
 }
 FCIMPLEND
 
-FCIMPL3(INT32, COMInterlocked::CompareExchange32, INT32* location, INT32 value, INT32 comparand)
+FCIMPL3(INT32, Interlocked_CompareExchange32, INT32* location, INT32 value, INT32 comparand)
 {
     FCALL_CONTRACT;
 
@@ -1632,7 +1423,12 @@ FCIMPL3(INT32, COMInterlocked::CompareExchange32, INT32* location, INT32 value, 
 }
 FCIMPLEND
 
-FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 value, INT64 comparand)
+#ifdef TARGET_WASM
+extern "C" decltype(Interlocked_CompareExchange32) Interlocked_CompareExchange32Pointer
+    __attribute__((alias("Interlocked_CompareExchange32")));
+#endif // TARGET_WASM
+
+FCIMPL3_IVV(INT64, Interlocked_CompareExchange64, INT64* location, INT64 value, INT64 comparand)
 {
     FCALL_CONTRACT;
 
@@ -1640,7 +1436,7 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
 }
 FCIMPLEND
 
-FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
+FCIMPL2(LPVOID,Interlocked_ExchangeObject, LPVOID*location, LPVOID value)
 {
     FCALL_CONTRACT;
 
@@ -1653,7 +1449,7 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 }
 FCIMPLEND
 
-FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
+FCIMPL3(LPVOID,Interlocked_CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
 {
     FCALL_CONTRACT;
 
@@ -1669,7 +1465,7 @@ FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID v
 }
 FCIMPLEND
 
-FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
+FCIMPL2(INT32,Interlocked_ExchangeAdd32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
 
@@ -1677,7 +1473,7 @@ FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
 }
 FCIMPLEND
 
-FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
+FCIMPL2_IV(INT64,Interlocked_ExchangeAdd64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
 
@@ -1921,14 +1717,14 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall:
     return ret;
 }
 
-FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
+FCIMPL1(UINT32, MethodTable_GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
     return mt->GetNumInstanceFieldBytes();
 }
 FCIMPLEND
 
-FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTable* mt)
+FCIMPL1(CorElementType, MethodTable_GetPrimitiveCorElementType, MethodTable* mt)
 {
     FCALL_CONTRACT;
 
@@ -1940,7 +1736,7 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 }
 FCIMPLEND
 
-FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, MethodTable *mt, MethodTable* parent)
+FCIMPL2(MethodTable*, MethodTable_GetMethodTableMatchingParentClass, MethodTable *mt, MethodTable* parent)
 {
     FCALL_CONTRACT;
 
@@ -1948,7 +1744,7 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
-FCIMPL1(OBJECTHANDLE, MethodTableNative::GetLoaderAllocatorHandle, MethodTable *mt)
+FCIMPL1(OBJECTHANDLE, MethodTable_GetLoaderAllocatorHandle, MethodTable *mt)
 {
     FCALL_CONTRACT;
 

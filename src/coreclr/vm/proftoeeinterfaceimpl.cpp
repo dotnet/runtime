@@ -4930,6 +4930,8 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
                     pCodeStart = iter->GetNativeCode();
                     if (pCodeStart != (PCODE)NULL)
                     {
+                        // Interpreted code is identified by its byte code, not by its precode entry point.
+                        pCodeStart = (PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)pCodeStart);
                         break;
                     }
                 }
@@ -6447,7 +6449,8 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
                 if (codeStart != (PCODE)NULL)
                 {
-                    addresses.Append(codeStart);
+                    // Interpreted code is identified by its byte code, not by its precode entry point.
+                    addresses.Append((PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)codeStart));
                     ++trueLen;
                 }
             }
@@ -8602,8 +8605,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
 
     // We must make sure no other thread tries to hijack the thread we're about to walk
     // Hijacking means Thread::HijackThread, i.e. bashing return addresses which would break the stack walk
-    Thread::HijackLockHolder hijackLockHolder(pThreadToSnapshot);
-    if (!hijackLockHolder.Acquired())
+    Thread::HijackLockHolder hijackLockHolder;
+    if (!pThreadToSnapshot->TryAcquireHijackLock(hijackLockHolder))
     {
         // Returning directly as there is nothing to cleanup yet, and can't skip gcholder ctor
         return CORPROF_E_STACKSNAPSHOT_UNSAFE;

@@ -500,11 +500,11 @@ namespace ComInterfaceGenerator.Unit.Tests
             GeneratedSourceResult firstSource = Assert.Single(Assert.Single(driver.GetRunResult().Results).GeneratedSources);
             Assert.Contains("public unsafe partial interface I", firstSource.SourceText.ToString());
 
-            SyntaxTree tree = Assert.Single(compilation.SyntaxTrees);
-            var parseOptions = ((CSharpParseOptions)tree.Options).WithFeatures(
-                [new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
-            compilation = compilation.ReplaceSyntaxTree(tree, CSharpSyntaxTree.ParseText(source, parseOptions));
-            driver = driver.WithUpdatedParseOptions(parseOptions).RunGeneratorsAndUpdateCompilation(compilation, out Compilation secondCompilation, out diagnostics);
+            var options = (CSharpCompilationOptions)compilation.Options;
+#pragma warning disable RSEXPERIMENTAL006
+            compilation = compilation.WithOptions(options.WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2));
+#pragma warning restore RSEXPERIMENTAL006
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation secondCompilation, out diagnostics);
             Assert.Empty(diagnostics);
             TestUtils.AssertPostSourceGeneratorCompilation(secondCompilation);
             GeneratedSourceResult secondSource = Assert.Single(Assert.Single(driver.GetRunResult().Results).GeneratedSources);

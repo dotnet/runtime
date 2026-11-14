@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-openbsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
@@ -31,7 +31,7 @@
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformationCollection.cs" />
     <Compile Include="System\Net\NetworkInformation\NetBiosNodeType.cs" />
     <Compile Include="System\Net\NetworkInformation\NetEventSource.NetworkInformation.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.cs" Condition="'$(TargetPlatformIdentifier)' != 'illumos' and '$(TargetPlatformIdentifier)' != 'solaris' and '$(TargetPlatformIdentifier)' != 'haiku'" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAvailabilityEventArgs.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkChangeDelegates.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterface.cs" />
@@ -126,20 +126,26 @@
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs" Link="Common\System\IO\RowConfigReader.cs" />
   </ItemGroup>
 
-  <!-- Linux (other than Android) -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
+  <!-- Linux, FreeBSD, OpenBSD and other Unix flavors (other than Android and Apple platforms) -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Unix.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Unix.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
+  </ItemGroup>
+
+  <!-- Linux implementation, selected at runtime in the unix flavor -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NetworkInformation\ExceptionHelper.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV4Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV6Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxTcpStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxUdpStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPGlobalProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPGlobalStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPInterfaceStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxNetworkInterface.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv4InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv4InterfaceStatistics.cs" />
@@ -166,10 +172,14 @@
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Android.cs" />
   </ItemGroup>
 
-  <!-- OSX/FreeBSD/OpenBSD -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'openbsd'">
+  <!-- OSX -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Bsd.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Bsd.cs" />
+  </ItemGroup>
+
+  <!-- BSD implementation, used by Apple platforms and selected at runtime in the unix flavor -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NetworkInformation\BsdIcmpV4Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\BsdIcmpV6Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\BsdIPGlobalProperties.cs" />
@@ -195,22 +205,6 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.RunLoop.cs" Link="Common\Interop\OSX\Interop.RunLoop.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.SystemConfiguration.cs" Link="Common\Interop\OSX\Interop.SystemConfiguration.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'freebsd'">
-    <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'openbsd'">
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
-  </ItemGroup>
-
-  <!-- Unknown Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris' or '$(TargetPlatformIdentifier)' == 'haiku'">
-    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.UnknownUnix.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.UnknownUnix.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
   </ItemGroup>
 
   <ItemGroup>

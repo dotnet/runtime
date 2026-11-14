@@ -4,10 +4,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1630,14 +1632,50 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public async Task IReadOnlyDictionary_PrePopulated_SeedsNewInstance()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task IReadOnlyDictionary_PrePopulated_PreservesContents(bool useReadOnlyDictionary)
         {
             string json = """{"MyIntMissing":2, "KeyToOverwrite":"NewValue", "MyInt":1}""";
-            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryAlreadyInstantiated>(json);
+            var instance = new ClassWithIReadOnlyDictionaryAlreadyInstantiated();
+            if (useReadOnlyDictionary)
+            {
+                instance.MyOverflow = new ReadOnlyDictionary<string, object>((IDictionary<string, object>)instance.MyOverflow);
+            }
+
+            IReadOnlyDictionary<string, object> original = instance.MyOverflow;
+            int assignments = 0;
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(ClassWithIReadOnlyDictionaryAlreadyInstantiated))
+                {
+                    typeInfo.CreateObject = () => instance;
+                    JsonPropertyInfo property = typeInfo.Properties.Single(p => p.IsExtensionData);
+                    Action<object, object> setter = property.Set;
+                    property.Set = (obj, value) =>
+                    {
+                        assignments++;
+                        setter(obj, value);
+                    };
+                }
+            });
+
+            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryAlreadyInstantiated>(json, options);
 
             Assert.NotNull(obj.MyOverflow);
             Assert.Equal(1, obj.MyInt);
+            Assert.Equal(useReadOnlyDictionary ? 1 : 0, assignments);
+            if (useReadOnlyDictionary)
+            {
+                Assert.NotSame(original, obj.MyOverflow);
+                Assert.Equal(2, original.Count);
+                Assert.Equal("OldValue", ((JsonElement)original["KeyToOverwrite"]).GetString());
+            }
+            else
+            {
+                Assert.Same(original, obj.MyOverflow);
+            }
 
             // Should have the existing key from the initializer
             Assert.True(obj.MyOverflow.ContainsKey("ExistingKey"));
@@ -1652,14 +1690,50 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("NewValue", ((JsonElement)obj.MyOverflow["KeyToOverwrite"]).GetString());
         }
 
-        [Fact]
-        public async Task IReadOnlyDictionary_PrePopulated_JsonElement_SeedsNewInstance()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task IReadOnlyDictionary_PrePopulated_JsonElement_PreservesContents(bool useReadOnlyDictionary)
         {
             string json = """{"MyIntMissing":2, "KeyToOverwrite":"NewValue", "MyInt":1}""";
-            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated>(json);
+            var instance = new ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated();
+            if (useReadOnlyDictionary)
+            {
+                instance.MyOverflow = new ReadOnlyDictionary<string, JsonElement>((IDictionary<string, JsonElement>)instance.MyOverflow);
+            }
+
+            IReadOnlyDictionary<string, JsonElement> original = instance.MyOverflow;
+            int assignments = 0;
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated))
+                {
+                    typeInfo.CreateObject = () => instance;
+                    JsonPropertyInfo property = typeInfo.Properties.Single(p => p.IsExtensionData);
+                    Action<object, object> setter = property.Set;
+                    property.Set = (obj, value) =>
+                    {
+                        assignments++;
+                        setter(obj, value);
+                    };
+                }
+            });
+
+            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated>(json, options);
 
             Assert.NotNull(obj.MyOverflow);
             Assert.Equal(1, obj.MyInt);
+            Assert.Equal(useReadOnlyDictionary ? 1 : 0, assignments);
+            if (useReadOnlyDictionary)
+            {
+                Assert.NotSame(original, obj.MyOverflow);
+                Assert.Equal(2, original.Count);
+                Assert.Equal("OldValue", original["KeyToOverwrite"].GetString());
+            }
+            else
+            {
+                Assert.Same(original, obj.MyOverflow);
+            }
 
             // Should have the existing key from the initializer
             Assert.True(obj.MyOverflow.ContainsKey("ExistingKey"));

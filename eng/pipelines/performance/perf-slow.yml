@@ -54,7 +54,6 @@ extends:
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - template: /eng/pipelines/runtime-slow-perf-jobs.yml@performance
           parameters:
-            runMono: false
             ${{ if or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs) }}:
               runPrivateJobs: true
             runtimeRepoAlias: self

@@ -105,7 +105,7 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -113,7 +113,7 @@ FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -121,7 +121,7 @@ FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
+FCIMPL1(INT64, JitInfo_GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
@@ -9090,7 +9090,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
@@ -15519,6 +15527,7 @@ EECodeInfo::EECodeInfo()
 
     m_pFunctionEntry = NULL;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15544,6 +15553,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
 
     m_codeAddress = codeAddress;
     m_isFuncletCache = IsFuncletCache::NotSet;
+    m_gcInfoToken = { NULL, 0 };
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15564,6 +15574,7 @@ Invalid:
     m_pMD = NULL;
     m_relOffset = 0;
     m_pFunctionEntry = NULL;
+    m_gcInfoToken = { NULL, 0 };
 }
 
 TADDR EECodeInfo::GetSavedMethodCode()
@@ -15620,6 +15631,15 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
     {
         return NativeCodeVersion();
     }
+
+#if defined(HAVE_GCCOVER) && defined(FEATURE_READYTORUN)
+    // R2R code is the default version, even when its entry point was registered
+    // by a different instantiation or by diagnostic enumeration before publication.
+    if (m_pJM == ExecutionManager::GetReadyToRunJitManager())
+    {
+        return NativeCodeVersion(pMD);
+    }
+#endif // HAVE_GCCOVER && FEATURE_READYTORUN
 
 #ifdef FEATURE_CODE_VERSIONING
     if (pMD->IsVersionable())

@@ -18,7 +18,7 @@
 #include "arraynative.inl"
 
 // Returns a bool to indicate if the array is of primitive types or not.
-FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE)
+FCIMPL1(INT32, Array_GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE)
 {
     FCALL_CONTRACT;
 

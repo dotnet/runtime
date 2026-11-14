@@ -11,3 +11,13 @@
         PREPARE_EXTERNAL_VAR_INDIRECT g_pPollGC, r2
         EPILOG_BRANCH_REG r2
 .endm
+
+// CallEHFunclet and CallEHFilterFunclet load the preserved registers of the parent frame from the CONTEXT.
+// reg and index are the register numbers; the CONTEXT holds the integer and floating point registers in order.
+.macro LOAD_FUNCLET_REGISTER base, reg, scratch
+        ldr     r\reg, [\base, #(OFFSETOF__CONTEXT__R4 + (\reg - 4) * 4)]
+.endm
+
+.macro LOAD_FUNCLET_FP_REGISTER base, index
+        vldr    d\index, [\base, #(OFFSETOF__CONTEXT__D + \index * 8)]
+.endm
