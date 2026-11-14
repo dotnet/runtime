@@ -135,7 +135,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         {
             int rootDirLength = rootDir.Length;
 
-            return filePath.StartsWith(rootDir, _comparisonType) &&
+            return filePath.Length > rootDirLength &&
+                filePath.StartsWith(rootDir, _comparisonType) &&
                 (rootDir[rootDirLength - 1] == Path.DirectorySeparatorChar ||
                 filePath.IndexOf(Path.DirectorySeparatorChar, rootDirLength) == rootDirLength);
         }

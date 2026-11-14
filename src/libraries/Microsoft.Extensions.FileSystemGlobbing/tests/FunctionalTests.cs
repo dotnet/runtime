@@ -685,6 +685,62 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void RootDir_IsSameAsFile_WithInMemory(bool isPathRoot, bool trailingSeparator)
+        {
+            string rootDir = isPathRoot ? Path.GetPathRoot(_context.RootPath)! : _context.RootPath;
+            if (trailingSeparator)
+            {
+                rootDir += Path.DirectorySeparatorChar;
+            }
+
+            foreach (string pattern in new[] { "MyFile.txt", "*", "**/*" })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+
+                foreach (string file in new[] { rootDir, ".", "" })
+                {
+                    PatternMatchingResult result = matcher.Match(rootDir, file);
+
+                    Assert.False(result.HasMatches);
+                    Assert.Empty(result.Files);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void RootDir_IsIncludedWithFiles_WithInMemory(bool isPathRoot, bool trailingSeparator)
+        {
+            string rootDir = isPathRoot ? Path.GetPathRoot(_context.RootPath)! : _context.RootPath;
+            if (trailingSeparator)
+            {
+                rootDir += Path.DirectorySeparatorChar;
+            }
+
+            var matcher = new Matcher();
+            matcher.AddInclude("**/*");
+
+            string[] files =
+            [
+                rootDir,
+                ".",
+                "",
+                Path.Combine(rootDir, "a"),
+                Path.Combine(rootDir, "b", "MyFile.txt")
+            ];
+            PatternMatchingResult result = matcher.Match(rootDir, files);
+
+            Assert.True(result.HasMatches);
+            Assert.Equal(new[] { "a", "b/MyFile.txt" }, result.Files.Select(file => file.Path).OrderBy(path => path, StringComparer.Ordinal));
+        }
+
+        [Theory]
         [InlineData("/src/project", '/')]
         [InlineData("/src/project/", '/')]
         public void RootDir_IsAbsolutePath_WithInMemory_AllOS(string rootDir, char separator)
