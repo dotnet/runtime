@@ -16,7 +16,7 @@ namespace System.Collections.Frozen
     /// </summary>
     public static class FrozenDictionary
     {
-        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs. If the same key appears multiple times in the input, the latter one in the sequence takes precedence.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
         /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
@@ -29,7 +29,7 @@ namespace System.Collections.Frozen
             where TKey : notnull =>
             Create(null, source);
 
-        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs. If the same key appears multiple times in the input, the latter one in the sequence takes precedence.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <param name="comparer">The comparer implementation to use to compare keys for equality. If <see langword="null"/>, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
         /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
@@ -60,7 +60,7 @@ namespace System.Collections.Frozen
             return CreateFromDictionary(d);
         }
 
-        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs. If the same key appears multiple times in the input, the latter one in the sequence takes precedence.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <param name="comparer">The comparer implementation to use to compare keys for equality. If null, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
         /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
@@ -75,7 +75,7 @@ namespace System.Collections.Frozen
             GetExistingFrozenOrNewDictionary(source, comparer, out Dictionary<TKey, TValue>? uniqueValues) ??
             CreateFromDictionary(uniqueValues!);
 
-        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TSource}"/> from an <see cref="IEnumerable{TSource}"/> according to specified key selector function.</summary>
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TSource}"/> from an <see cref="IEnumerable{TSource}"/> according to specified key selector function. Unlike the key/value pair-based overloads, this overload throws an <see cref="ArgumentException"/> if <paramref name="keySelector"/> produces duplicate keys.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <param name="source">An <see cref="IEnumerable{TSource}"/> from which to create a <see cref="FrozenDictionary{TKey, TSource}"/>.</param>
@@ -87,7 +87,7 @@ namespace System.Collections.Frozen
             where TKey : notnull =>
             source.ToDictionary(keySelector, comparer).ToFrozenDictionary(comparer);
 
-        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TElement}"/> from an <see cref="IEnumerable{TSource}"/> according to specified key selector and element selector functions.</summary>
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TElement}"/> from an <see cref="IEnumerable{TSource}"/> according to specified key selector and element selector functions. Unlike the key/value pair-based overloads, this overload throws an <see cref="ArgumentException"/> if <paramref name="keySelector"/> produces duplicate keys.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <typeparam name="TElement">The type of the value returned by <paramref name="elementSelector"/>.</typeparam>
