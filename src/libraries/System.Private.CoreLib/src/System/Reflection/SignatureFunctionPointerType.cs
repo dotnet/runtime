@@ -62,6 +62,7 @@ namespace System.Reflection
         internal override SignatureType? ElementType => null;
         public override string Name => string.Empty;
         public override string? Namespace => null;
+        protected override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
         protected override bool HasElementTypeImpl() => false;
         protected override bool IsArrayImpl() => false;
         protected override bool IsByRefImpl() => false;
