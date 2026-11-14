@@ -20093,6 +20093,13 @@ emitter::insFormat emitter::getMemoryOperation(instrDesc* id) const
         return IF_NONE;
     }
 
+    if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
+    {
+        // a call or tail jmp through a register carries an addressing mode
+        // format but doesn't actually read memory
+        return IF_NONE;
+    }
+
     return ExtractMemoryFormat(insFmt);
 }
 
@@ -20436,6 +20443,45 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_push:
+        case INS_push_hide:
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = PERFSCORE_LATENCY_ZERO;
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
+            {
+                // A push with a memory operand performs that load and the
+                // stack store. Charge both, as the equivalent load into a
+                // register plus push of that register would be charged. The
+                // load otherwise rides free: the read's latency amortizes
+                // into the store and the table throughput already covers a
+                // plain push.
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+        }
+
+        case INS_pop:
+        case INS_pop_hide:
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_2X;
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
+            {
+                // A pop into a register reads the stack even though its
+                // format names no memory operand. Carry the stack read's
+                // latency so it prices like the equivalent stack load.
+                insLatency = PERFSCORE_LATENCY_RD_STACK;
+            }
+            else
+            {
+                // A pop into memory performs the stack load and that store.
+                // Charge both, the format prices only the store side.
+                insLatency    = PERFSCORE_LATENCY_ZERO;
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+        }
+
         case INS_jmp:
         {
             if (emitInstHasNoCode(id))
@@ -20461,11 +20507,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             switch (insFmt)
             {
                 case IF_LABEL:
-                    insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    break;
-
                 case IF_METHOD:
-                    insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    // A call is a taken branch plus the return-address
+                    // store. A bare jmp already costs 2C, so a call can not
+                    // price below it.
+                    insThroughput = PERFSCORE_THROUGHPUT_2C;
                     break;
 
                 case IF_METHPTR:
@@ -20475,7 +20521,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case IF_SRD:
                 case IF_ARD:
                 case IF_MRD:
-                    insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    // A call through a register reads no memory (its phantom
+                    // access is dropped in getMemoryOperation) and prices as
+                    // a taken indirect branch. A call through memory also
+                    // pays its load.
+                    insThroughput = id->idIsCallRegPtr() ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_3C;
                     break;
 
                 default:
@@ -20486,17 +20536,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_ret:
         {
-            insLatency = PERFSCORE_LATENCY_ZERO;
-
-            if (insFmt == IF_CNS)
-            {
-                insThroughput = PERFSCORE_THROUGHPUT_2C;
-            }
-            else
-            {
-                assert(insFmt == IF_NONE);
-                insThroughput = PERFSCORE_THROUGHPUT_1C;
-            }
+            // A return is a taken branch plus the return-address load. Price
+            // it like the unconditional jmp it is at minimum, which is also
+            // what the immediate form already costs.
+            insLatency    = PERFSCORE_LATENCY_ZERO;
+            insThroughput = PERFSCORE_THROUGHPUT_2C;
+            assert((insFmt == IF_CNS) || (insFmt == IF_NONE));
             break;
         }
 
