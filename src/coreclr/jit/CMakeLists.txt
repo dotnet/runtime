@@ -402,6 +402,7 @@ set( JIT_HEADERS
   phase.h
   priorityqueue.h
   promotion.h
+  modularrange.h
   rangecheck.h
   rangecheckcloning.h
   rationalize.h
