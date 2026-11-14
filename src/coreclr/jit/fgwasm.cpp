@@ -3840,7 +3840,21 @@ PhaseStatus Compiler::fgWasmForwardLocalCopies()
                         tmpDsc->setLvRefCnt(0);
                         tmpDsc->setLvRefCntWtd(0);
 
+                        const unsigned srcLclNum = copy.SrcLclNum;
                         removePending(i);
+
+                        // This is now the latest read of "src" for other pending copies of it.
+                        if (node->HasLastUse())
+                        {
+                            for (int j = 0; j < pending.Height(); j++)
+                            {
+                                if (pending.Bottom(j).SrcLclNum == srcLclNum)
+                                {
+                                    pending.BottomRef(j).SrcLastUse = node;
+                                }
+                            }
+                        }
+
                         modified = true;
                         break;
                     }
