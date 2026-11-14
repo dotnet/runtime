@@ -25,19 +25,19 @@ jobs:
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
-      - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:b1220e64d4b94596deb9d861aacd2ad3d40c41b175d2bffd0c9d06ffeee6ba1d
+      - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:f7d83180733d5291b9386f6e0e2085c1d0b05821b4a57c4cf98ccd734b5691ff
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
-      - (Ubuntu.2604.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:ac976cd2d9a101808649e58d1b0c685d407dd5ee726921fcf3562487862fe329
+      - (Ubuntu.2604.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:16ddcffcded58b622095c9529f6770dab88b5361adc01483af49fe3d2549cc91
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
-      - (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:2b0735aa217ba6ee9429e1cdbe6c1a0ae791bd7b82c27b14476d95900ecd480d
+      - (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:09277d0f64e4617351b29dd8e9231e7276e94c29957f8a2877abcaf07ebe504d
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
-      - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:a2819d524b79735ea358ba2ac288caadaa52d50ad032631e21ea92aaf825b1a8
+      - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:f5bdef79f14700d391972cf9adce3c0fd08977dc03e5afae63fcf57f574192d6
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
