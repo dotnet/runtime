@@ -226,6 +226,27 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { 1 }, builder);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(8)]
+        [InlineData(20)]
+        public void ExceptWithSelf(int count)
+        {
+            var builder = ImmutableSortedSet.CreateBuilder<int>();
+
+            for (int i = 0; i < count; i++)
+            {
+                builder.Add(i);
+            }
+
+            builder.ExceptWith(builder);
+
+            Assert.Equal(0, builder.Count);
+            Assert.Empty(builder);
+        }
+
         [Fact]
         public void SymmetricExceptWith()
         {
