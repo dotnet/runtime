@@ -1169,56 +1169,19 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(".dll")]
-        [InlineData(".exe")]
-        [InlineData(".winmd")]
-        public void CacheKeyTracksRuntimeSearchDirectoryCandidates(string extension)
-        {
-            using var test = new OutputDirectoryTest();
-            string host = PrepareCacheKeyTest(test);
-            string first = Path.Combine(test.Root, "first search directory");
-            string second = Path.Combine(test.Root, "second search directory");
-            Directory.CreateDirectory(first);
-            Directory.CreateDirectory(second);
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{first}\" -d \"{second}\"";
-            Assert.True(test.Task.TryGetCacheKey(host, out string empty));
-
-            string candidate = Path.Combine(second, "Dependency" + extension);
-            WriteTestAssembly(candidate);
-            Assert.True(test.Task.TryGetCacheKey(host, out string added));
-            Assert.NotEqual(empty, added);
-            WriteTestAssembly(candidate, "changed");
-            Assert.True(test.Task.TryGetCacheKey(host, out string changed));
-            Assert.NotEqual(added, changed);
-
-            string earlierCandidate = Path.Combine(first, Path.GetFileName(candidate));
-            File.Copy(candidate, earlierCandidate);
-            Assert.True(test.Task.TryGetCacheKey(host, out string shadowed));
-            Assert.NotEqual(changed, shadowed);
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{second}\" -d \"{first}\"";
-            Assert.True(test.Task.TryGetCacheKey(host, out string reordered));
-            Assert.NotEqual(shadowed, reordered);
-
-            File.Delete(candidate);
-            File.Delete(earlierCandidate);
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{first}\" -d \"{second}\"";
-            Assert.True(test.Task.TryGetCacheKey(host, out string removed));
-            Assert.Equal(empty, removed);
-        }
-
-        [Theory]
         [InlineData("Dependency.pdb")]
         [InlineData("Dependency.dll.mdb")]
         [InlineData("Dependency.dll.config")]
         [InlineData("fr/Dependency.resources.dll")]
-        public void CacheKeyTracksRuntimeSearchDirectorySidecars(string relativePath)
+        public void CacheKeyTracksReferenceAssemblySidecars(string relativePath)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
             string directory = Path.Combine(test.Root, "search");
             Directory.CreateDirectory(directory);
             WriteTestAssembly(Path.Combine(directory, "Dependency.dll"));
-            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
+            test.Task.ReferenceAssemblyPaths = new ITaskItem[] { new TaskItem(Path.Combine(directory, "Dependency.dll")) };
+            test.Task.ExtraArgs = "--ignore-link-attributes true";
             Assert.True(test.Task.TryGetCacheKey(host, out string original));
 
             string sidecar = Path.Combine(directory, relativePath);
@@ -1236,9 +1199,11 @@ namespace ILLink.Tasks.Tests
 
         [Theory]
         [InlineData("missing-directory")]
+        [InlineData("empty-directory")]
+        [InlineData("valid-candidate")]
         [InlineData("invalid-candidate")]
         [InlineData("metadata-less-candidate")]
-        public void CacheKeyBypassesUnmodeledSearchDirectoryInputs(string reason)
+        public void CacheKeyBypassesSearchDirectoryArguments(string reason)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -1249,15 +1214,17 @@ namespace ILLink.Tasks.Tests
                 string candidate = Path.Combine(directory, "Dependency.dll");
                 if (reason == "invalid-candidate")
                     File.WriteAllText(candidate, "invalid");
-                else
+                else if (reason == "metadata-less-candidate")
                     WriteMetadataLessPE(candidate);
+                else if (reason == "valid-candidate")
+                    WriteTestAssembly(candidate);
             }
             test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
 
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
             Assert.Empty(key);
             Assert.Contains(test.BuildEngine.Messages, message =>
-                message.Message.StartsWith("ILLink cache bypassed: invocation could not be described:"));
+                message.Message.StartsWith("ILLink cache bypassed: extra arguments are not supported."));
         }
 
         [Fact]

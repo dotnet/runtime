@@ -69,13 +69,13 @@ Bypass arbitrary `ExtraArgs`, custom steps/data, dependency-dump options, and ex
 effects.
 
 For runtime library builds, support `--ignore-link-attributes true` followed by zero or more
-`--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Require the XML files to be
-readable. Inventory every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory,
-including sidecars, modules, and resources. Preserve directory order and leave linker resolution
-unchanged; adding, changing, or removing even a shadowed candidate invalidates identity. Other SDK
-options supplied through `ExtraArgs` remain unsupported.
+`--link-attributes FILE`, `--substitutions FILE`, `--ignore-substitutions true|false`, or
+`--feature NAME true|false` options. Require the XML files to be readable. Runtime library builds
+pass their selected references through `ReferenceAssemblyPaths` rather than search directories, so
+unrelated assemblies beside those files are not inputs. `-d DIRECTORY` and other options outside
+this whitelist bypass caching without changing linker execution.
 
-Unreadable directories, uninspectable assemblies (including PE images without managed metadata), and
+Uninspectable assemblies (including PE images without managed metadata) and
 other input-read failures bypass caching with diagnostics. Missing declared files have explicit
 absence markers; normal linking decides whether an invocation can succeed. Inputs must remain stable
 throughout discovery, hashing, and linking.

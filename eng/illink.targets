@@ -367,29 +367,17 @@
     <ItemGroup>
       <_ILLinkReference Include="@(_ILLinkReferencedImplementation)"
                         ReferenceSourceTarget="ProjectReference" />
+      <!-- Project references take precedence over framework assemblies with the same name. -->
       <_ILLinkReference Include="@(ReferencePathWithRefAssemblies)"
-                        Condition="'$(_ILLinkUseImplementationReferences)' != 'true' or '%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
-      <_DependencyDirectoriesTemp Include="@(_ILLinkReference->'%(RootDir)%(Directory)')" />
-      <!-- Remove duplicate directories by batching over them -->
-      <!-- Add project references first to give precedence to project-specific files -->
-      <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'=='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
-      <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'!='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
-      <!-- Remove trailing slash to work around response file parsing behavior -->
-      <_DependencyDirectoriesSlash Include="@(_DependencyDirectories)">
-        <PathWithSlash>$([MSBuild]::EnsureTrailingSlash('%(Identity)'))</PathWithSlash>
-      </_DependencyDirectoriesSlash>
-      <_DependencyDirectoriesNoSlash Include="@(_DependencyDirectoriesSlash)">
-        <PathWithoutSlash>$([System.String]::new('%(PathWithSlash)').TrimEnd($([System.IO.Path]::DirectorySeparatorChar)))</PathWithoutSlash>
-      </_DependencyDirectoriesNoSlash>
-      <_DependencyDirectories Remove="@(_DependencyDirectories)" />
-      <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
+                        Condition="'$(_ILLinkUseImplementationReferences)' != 'true' and '%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' == 'ProjectReference'" />
+      <_ILLinkReference Include="@(ReferencePathWithRefAssemblies)"
+                        Condition="'%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
       <ILLinkTrimInputAssembly Include="$(TargetName)">
         <RootMode>library</RootMode>
       </ILLinkTrimInputAssembly>
     </ItemGroup>
 
     <PropertyGroup>
-      <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
       <ILLinkArgs Condition="'$(_ILLinkUseImplementationReferences)' == 'true'">$(ILLinkArgs) --ignore-substitutions true</ILLinkArgs>
       <!-- Feature switches without a value aren't decided on behalf of the app. Single-threaded flavors can't be
            made multithreaded at publish time though, so decide that one for them. -->
@@ -399,6 +387,7 @@
     </PropertyGroup>
 
     <ILLink AssemblyPaths="@(_ILLinkAssemblyToTrim)"
+            ReferenceAssemblyPaths="@(_ILLinkReference)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             RootDescriptorFiles="@(_ILLinkRootDescriptors)"
             TrimMode="$(_ILLinkTrimMode)"
