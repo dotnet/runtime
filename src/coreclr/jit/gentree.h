@@ -512,6 +512,9 @@ enum GenTreeFlags : unsigned
 
     GTF_QMARK_EARLY_EXPAND      = 0x01000000, // GT_QMARK -- early expansion of the QMARK node is required
 
+    GTF_SELECT_COND_LOAD        = 0x80000000, // GT_SELECT, GT_SELECTCC -- op1 is a load that may only be performed
+                                              //                           when the condition is true (APX CFCMOV)
+
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
 #define HANDLE_KIND_INDEX_SHIFT 24

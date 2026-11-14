@@ -1635,6 +1635,7 @@ public:
     static instruction JumpKindToCmov(emitJumpKind condition);
 #ifdef TARGET_AMD64
     static instruction JumpKindToCcmp(emitJumpKind condition);
+    static instruction JumpKindToCfcmov(emitJumpKind condition);
     static insOpts     OptsFromCFlags(insCflags flags);
 #endif // TARGET_AMD64
 #endif // TARGET_XARCH

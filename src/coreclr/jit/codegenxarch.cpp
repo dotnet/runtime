@@ -1555,6 +1555,47 @@ instruction CodeGen::JumpKindToCcmp(emitJumpKind condition)
     assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
     return s_table[condition];
 }
+
+//------------------------------------------------------------------------
+// JumpKindToCfcmov:
+//   Convert an emitJumpKind to the corresponding cfcmov instruction.
+//
+// Arguments:
+//    condition - the condition
+//
+// Returns:
+//    A cfcmov instruction.
+//
+instruction CodeGen::JumpKindToCfcmov(emitJumpKind condition)
+{
+    static constexpr instruction s_table[EJ_COUNT] = {
+        INS_none,    INS_none,     INS_cfcmovo,  INS_cfcmovno, INS_cfcmovb,  INS_cfcmovae,
+        INS_cfcmove, INS_cfcmovne, INS_cfcmovbe, INS_cfcmova,  INS_cfcmovs,  INS_cfcmovns,
+        INS_cfcmovp, INS_cfcmovnp, INS_cfcmovl,  INS_cfcmovge, INS_cfcmovle, INS_cfcmovg,
+    };
+
+    static_assert(s_table[EJ_NONE] == INS_none);
+    static_assert(s_table[EJ_jmp] == INS_none);
+    static_assert(s_table[EJ_jo] == INS_cfcmovo);
+    static_assert(s_table[EJ_jno] == INS_cfcmovno);
+    static_assert(s_table[EJ_jb] == INS_cfcmovb);
+    static_assert(s_table[EJ_jae] == INS_cfcmovae);
+    static_assert(s_table[EJ_je] == INS_cfcmove);
+    static_assert(s_table[EJ_jne] == INS_cfcmovne);
+    static_assert(s_table[EJ_jbe] == INS_cfcmovbe);
+    static_assert(s_table[EJ_ja] == INS_cfcmova);
+    static_assert(s_table[EJ_js] == INS_cfcmovs);
+    static_assert(s_table[EJ_jns] == INS_cfcmovns);
+    static_assert(s_table[EJ_jp] == INS_cfcmovp);
+    static_assert(s_table[EJ_jnp] == INS_cfcmovnp);
+    static_assert(s_table[EJ_jl] == INS_cfcmovl);
+    static_assert(s_table[EJ_jge] == INS_cfcmovge);
+    static_assert(s_table[EJ_jle] == INS_cfcmovle);
+    static_assert(s_table[EJ_jg] == INS_cfcmovg);
+
+    assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
+    return s_table[condition];
+}
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
@@ -1591,6 +1632,48 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     {
         cc = select->AsOpCC()->gtCondition;
     }
+
+#ifdef TARGET_AMD64
+    if ((select->gtFlags & GTF_SELECT_COND_LOAD) != 0)
+    {
+        // trueVal is a load that may only be performed when the condition is true:
+        //
+        // cfcmovcc targetReg, falseReg, [trueValue]
+        //
+        // The NDD form writes targetReg only after reading both sources, so neither
+        // the operands nor the condition need to be swapped.
+        GenConditionDesc desc = GenConditionDesc::Get(cc);
+        assert(desc.oper == GT_NONE);
+        assert(trueVal->isContained() && falseVal->isUsedFromReg());
+
+        instruction   ins     = JumpKindToCfcmov(desc.jumpKind1);
+        emitAttr      size    = emitTypeSize(select);
+        const insOpts opts    = (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf);
+        OperandDesc   memDesc = genOperandDesc(ins, trueVal);
+
+        switch (memDesc.GetKind())
+        {
+            case OperandKind::Indir:
+            {
+                GenTreeIndir  indirForm;
+                GenTreeIndir* indir = memDesc.GetIndirForm(&indirForm);
+                GetEmitter()->emitIns_R_R_A(ins, size, dstReg, falseVal->GetRegNum(), indir, opts);
+                break;
+            }
+
+            case OperandKind::Local:
+                GetEmitter()->emitIns_R_R_S(ins, size, dstReg, falseVal->GetRegNum(), memDesc.GetVarNum(),
+                                            memDesc.GetLclOffset(), opts);
+                break;
+
+            default:
+                unreached();
+        }
+
+        genProduceReg(select);
+        return;
+    }
+#endif // TARGET_AMD64
 
     // The usual codegen will be
     // mov targetReg, falseValue
@@ -8935,6 +9018,16 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_S(INS_tzcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_lzcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_popcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_tzcnt_apx, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_lzcnt_apx, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_popcnt_apx, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_AR(INS_tzcnt_apx, EA_8BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_lzcnt_apx, EA_8BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_popcnt_apx, EA_8BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_tzcnt_apx, EA_4BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_lzcnt_apx, EA_4BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_popcnt_apx, EA_4BYTE, REG_R12, REG_R16, 0x14);
 
     theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11,
                               (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
@@ -8980,6 +9073,20 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R(INS_crc32_apx, EA_8BYTE, REG_R16, REG_R17);
     theEmitter->emitIns_R_A(INS_crc32_apx, EA_8BYTE, REG_R18, &loadGPR);
     theEmitter->emitIns_R_S(INS_crc32_apx, EA_8BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_S(INS_crc32_apx, EA_4BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_S(INS_crc32_apx, EA_2BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_S(INS_crc32_apx, EA_1BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_AR(INS_crc32_apx, EA_8BYTE, REG_R18, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_crc32_apx, EA_2BYTE, REG_R18, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_crc32_apx, EA_1BYTE, REG_R18, REG_R16, 0x14);
+
+    // MOVBE needs the EVEX encoding when the address uses an extended GPR.
+    theEmitter->emitIns_R_AR(INS_movbe_apx, EA_8BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_movbe_apx, EA_4BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_movbe_apx, EA_2BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_AR_R(INS_movbe_apx, EA_8BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_AR_R(INS_movbe_apx, EA_4BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_AR_R(INS_movbe_apx, EA_2BYTE, REG_R17, REG_R16, 0x14);
 
     // Note that BZHI has a reversed src operands due to special handling at import.
     theEmitter->emitIns_R_R_R(INS_bzhi, EA_4BYTE, REG_R16, REG_R18, REG_R17);
@@ -9327,6 +9434,25 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     theEmitter->emitIns_R_I(INS_ccmpe, EA_1BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
 
     // ============
+    // Test RA form
+    // ============
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_8BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_2BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_1BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_4BYTE, REG_R17, REG_R16, 0x14);
+
+    // ============
+    // Test MI form (test small and large sizes and constants)
+    // ============
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_4BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_4BYTE, 270, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_8BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_8BYTE, 270, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_2BYTE, 270, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_1BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+
+    // ============
     // Test RC form
     // ============
 
@@ -9407,6 +9533,15 @@ void CodeGen::genAmd64EmitterUnitTestsCTEST()
     theEmitter->emitIns_I_AR(INS_cteste, EA_2BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
     theEmitter->emitIns_I_AR(INS_cteste, EA_4BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
     theEmitter->emitIns_I_AR(INS_cteste, EA_8BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+
+    // ============
+    // Test SR form
+    // ============
+
+    theEmitter->emitIns_S_R(INS_cteste, EA_1BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_S_R(INS_cteste, EA_2BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_S_R(INS_cteste, EA_4BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_S_R(INS_cteste, EA_8BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
 }
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
 
