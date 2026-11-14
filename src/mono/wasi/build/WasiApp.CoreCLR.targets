@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</WasmPInvokeModulesPropsPath>
+    <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
+  </PropertyGroup>
   <Import Project="$(WasmPInvokeModulesPropsPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
@@ -55,8 +59,7 @@
   </PropertyGroup>
 
   <!-- Reuse the shared WASI bundling; the Mono-only clang-link targets stay inert (gated on
-       WasmBuildNative). Imported first so the CoreCLR overrides below win over its
-       WasmAppRuntimeFlavor=Mono default. -->
+       WasmBuildNative). Imported first so the CoreCLR overrides below win. -->
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
@@ -66,7 +69,7 @@
 
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
-    <UseMonoRuntime>false</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">false</UseMonoRuntime>
     <RequiresCrossgen2Pack Condition="'$(RequiresCrossgen2Pack)' == ''">true</RequiresCrossgen2Pack>
     <!-- The Mono per-app clang relink (WasmBuildNative) is not used; CoreCLR links the
          wasihost corehost (libWasiHost.a) per-app through its own targets below. -->

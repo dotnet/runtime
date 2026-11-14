@@ -1,6 +1,6 @@
-<Project>
+<Project TreatAsLocalProperty="WasmAppRuntimeFlavor">
   <PropertyGroup>
-    <WasmAppRuntimeFlavor>Mono</WasmAppRuntimeFlavor>
+    <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -48,17 +48,6 @@
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
-
-    <!-- The packaged WASI SDK ships the substitution XMLs next to this targets file
-         (see Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.pkgproj). For in-tree builds
-         the files only exist under $(BrowserProjectRoot)build\, so fall back to that. -->
-    <_WasiIntrinsicsSubstitutionsDir Condition="Exists('$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml')">$(MSBuildThisFileDirectory)</_WasiIntrinsicsSubstitutionsDir>
-    <_WasiIntrinsicsSubstitutionsDir Condition="'$(_WasiIntrinsicsSubstitutionsDir)' == '' and '$(BrowserProjectRoot)' != ''">$(BrowserProjectRoot)build\</_WasiIntrinsicsSubstitutionsDir>
-
-    <!-- CoreCLR determines intrinsic support in its own CoreLib/JIT and does not pass CoreLib
-         through this linker invocation, so these Mono substitutions do not apply. -->
-    <_ExtraTrimmerArgs Condition="'$(RuntimeFlavor)' != 'CoreCLR' and '$(WasmEnableSIMD)' != 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(RuntimeFlavor)' != 'CoreCLR' and '$(WasmEnableSIMD)' == 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
