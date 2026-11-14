@@ -4,7 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using SdtEventSources;
 using Xunit;
 
@@ -12,6 +16,55 @@ namespace BasicEventSourceTests
 {
     public partial class TestsWriteEventToListener
     {
+        public static bool IsCoreClrRemoteExecutorSupported => PlatformDetection.IsCoreCLR && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(nameof(IsCoreClrRemoteExecutorSupported))]
+        public void Test_DisposeReleasesListenerLockBeforeStoppingEventPipe()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                using DisposalListener listener = new();
+                EventSource source = EventSource.GetSources().Single(source => source.Name == "Microsoft-Windows-DotNETRuntime");
+                listener.EnableEvents(source, EventLevel.Informational, (EventKeywords)1);
+                Type dispatcherType = typeof(EventListener).Assembly.GetType("System.Diagnostics.Tracing.EventPipeEventDispatcher", throwOnError: true)!;
+                object dispatcher = dispatcherType.GetField("Instance", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+                object controlLock = dispatcherType.GetField("m_dispatchControlLock", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(dispatcher)!;
+                object listenersLock = typeof(EventListener).GetProperty("EventListenersLock", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+                using ManualResetEventSlim disabled = new();
+                EventHandler<EventCommandEventArgs> onCommand = (_, command) =>
+                {
+                    if (command.Command == EventCommand.Disable)
+                    {
+                        disabled.Set();
+                    }
+                };
+                source.EventCommandExecuted += onCommand;
+
+                Task disposal;
+                bool disableObserved;
+                bool listenerLockReleased = false;
+                lock (controlLock)
+                {
+                    disposal = Task.Factory.StartNew(listener.Dispose, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                    disableObserved = disabled.Wait(TimeSpan.FromSeconds(30));
+                    if (disableObserved)
+                    {
+                        listenerLockReleased = Monitor.TryEnter(listenersLock, TimeSpan.FromSeconds(5));
+                        if (listenerLockReleased)
+                        {
+                            Monitor.Exit(listenersLock);
+                        }
+                    }
+                }
+                Assert.True(disposal.Wait(TimeSpan.FromSeconds(30)));
+                source.EventCommandExecuted -= onCommand;
+                Assert.True(disableObserved);
+                Assert.True(listenerLockReleased, "EventListener disposal held EventListenersLock while waiting for the EventPipe dispatcher.");
+            }).Dispose();
+        }
+
+        private sealed class DisposalListener : EventListener { }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
         public unsafe void Test_WriteEvent_ArgsBasicTypes()

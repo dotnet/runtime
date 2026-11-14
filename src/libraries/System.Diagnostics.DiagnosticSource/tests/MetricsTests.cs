@@ -5,6 +5,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.Diagnostics.Tests;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,6 +17,95 @@ namespace System.Diagnostics.Metrics.Tests
         // We increase the timeout for remote execution to allow for longer-running tests.
         // Ensure RemoteExecutor.IsSupported, otherwise the execution can throw PlatformNotSupportedException.
         private static readonly RemoteInvokeOptions? s_remoteExecutionOptions = RemoteExecutor.IsSupported ? new RemoteInvokeOptions { TimeOut = 600_000 } : null;
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MeasurementStateCallback(bool enableBeforeRegistration)
+        {
+            using Meter meter = new("MeasurementStateCallback");
+            Histogram<int> histogram = meter.CreateHistogram<int>("tracked");
+            Histogram<int> untracked = meter.CreateHistogram<int>("untracked");
+            using MeterListener first = new();
+            using MeterListener second = new();
+            object syncObject = typeof(Instrument).GetProperty("SyncObject", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+            PropertyInfo epochProperty = typeof(Instrument).GetProperty("MeasurementEpoch", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            KeyValuePair<bool, long>? lastState = null;
+
+            if (enableBeforeRegistration)
+            {
+                first.EnableMeasurementEvents(histogram);
+            }
+
+            Action<Instrument, bool, long> callback = (instrument, enabled, epoch) =>
+            {
+                Assert.Same(histogram, instrument);
+                Assert.False(Monitor.IsEntered(syncObject));
+                lastState = new(enabled, epoch);
+            };
+            typeof(Instrument).GetMethod("SetMeasurementStateCallback", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(histogram, new object[] { callback });
+            Assert.Equal(new KeyValuePair<bool, long>(enableBeforeRegistration, 0), lastState);
+
+            long enabledEpoch = enableBeforeRegistration ? 0 : 1;
+            first.EnableMeasurementEvents(histogram);
+            second.EnableMeasurementEvents(histogram);
+            first.DisableMeasurementEvents(histogram);
+            Assert.Equal(new KeyValuePair<bool, long>(true, enabledEpoch), lastState);
+
+            first.EnableMeasurementEvents(untracked);
+            first.DisableMeasurementEvents(untracked);
+            Assert.Equal(0L, epochProperty.GetValue(untracked));
+
+            second.Dispose();
+            Assert.Equal(new KeyValuePair<bool, long>(false, enabledEpoch + 1), lastState);
+            first.EnableMeasurementEvents(histogram);
+            Assert.Equal(new KeyValuePair<bool, long>(true, enabledEpoch + 2), lastState);
+            meter.Dispose();
+            Assert.Equal(new KeyValuePair<bool, long>(false, enabledEpoch + 3), lastState);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void MeasurementStateCallbackKeepsCapturedState()
+        {
+            using Meter meter = new("MeasurementStateCallbackKeepsCapturedState");
+            Histogram<int> histogram = meter.CreateHistogram<int>("tracked");
+            using MeterListener listener = new();
+            using ManualResetEventSlim entered = new();
+            using ManualResetEventSlim release = new();
+            KeyValuePair<bool, long>? delayedState = null;
+            KeyValuePair<bool, long>? latestState = null;
+            Action<Instrument, bool, long> callback = (_, enabled, epoch) =>
+            {
+                if (epoch == 1)
+                {
+                    entered.Set();
+                    Assert.True(release.Wait(TimeSpan.FromSeconds(30)));
+                    delayedState = new(enabled, epoch);
+                }
+                else
+                {
+                    latestState = new(enabled, epoch);
+                }
+            };
+            typeof(Instrument).GetMethod("SetMeasurementStateCallback", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(histogram, new object[] { callback });
+
+            Task enable = Task.Run(() => listener.EnableMeasurementEvents(histogram));
+            try
+            {
+                Assert.True(entered.Wait(TimeSpan.FromSeconds(30)));
+                listener.DisableMeasurementEvents(histogram);
+                listener.EnableMeasurementEvents(histogram);
+                Assert.Equal(new KeyValuePair<bool, long>(true, 3), latestState);
+            }
+            finally
+            {
+                release.Set();
+                Assert.True(enable.Wait(TimeSpan.FromSeconds(30)));
+            }
+            Assert.Equal(new KeyValuePair<bool, long>(true, 1), delayedState);
+        }
 
         [Fact]
         public void MeasurementConstructionTest()
