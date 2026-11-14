@@ -4,7 +4,11 @@
 #define GCS EA_GCREF
 #define BRS EA_BYREF
 #define EPS EA_PTRSIZE
+#ifdef TARGET_ARM64
+#define EAU EA_SCALABLE
+#else
 #define EAU EA_UNKNOWN
+#endif
 #define SZU SIZE_UNKNOWN
 #define PS  TARGET_POINTER_SIZE
 #define PST (TARGET_POINTER_SIZE / sizeof(int))
