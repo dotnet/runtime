@@ -115,6 +115,14 @@ namespace ILCompiler
             new(CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS, "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass"u8),
         ];
 
+        // Managed helpers the runtime looks up by name (to build dynamic dictionary lookup helpers)
+        // without a corresponding CorInfoHelpFunc.
+        private static readonly ManagedHelperInfo[] s_runtimeManagedHelpers =
+        [
+            new(CorInfoHelpFunc.CORINFO_HELP_UNDEF, "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8, "MethodWithSlotAndModule"u8),
+            new(CorInfoHelpFunc.CORINFO_HELP_UNDEF, "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8, "ClassWithSlotAndModule"u8),
+        ];
+
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             if (context.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
@@ -140,6 +148,15 @@ namespace ILCompiler
                     continue;
                 }
 
+                MethodDesc method = GetManagedHelper(context, helper);
+                if (method is not null && rootedMethods.Add(method))
+                {
+                    RootMethod(rootProvider, method);
+                }
+            }
+
+            foreach (ManagedHelperInfo helper in s_runtimeManagedHelpers)
+            {
                 MethodDesc method = GetManagedHelper(context, helper);
                 if (method is not null && rootedMethods.Add(method))
                 {
