@@ -209,6 +209,8 @@ public class ModuleConfigTests : WasmTemplateTestsBase
 
         var fetches = result.TestOutput.Where(m => m.StartsWith("Fetch integrity:", StringComparison.Ordinal)).ToArray();
         Assert.Contains(fetches, m => m.Contains("dotnet.native", StringComparison.Ordinal));
+        // Mono keeps checking integrity for fingerprinted assets unless explicitly disabled.
+        expectIntegrity |= !s_buildEnv.IsCoreClrRuntime && disableIntegrityCheck is null;
         string expected = expectIntegrity ? "Fetch integrity: yes " : "Fetch integrity: no ";
         Assert.All(fetches, m => Assert.StartsWith(expected, m, StringComparison.Ordinal));
     }

@@ -143,10 +143,7 @@ export type MonoConfig = {
     debugLevel?: number,
 
     /**
-     * Configures use of the `integrity` directive for fetching assets.
-     * When not set, assets with fingerprinted (content-hashed) file names are fetched without `integrity`,
-     * and other assets with a hash are fetched with it.
-     * Set to `false` to use `integrity` for all assets with a hash, or `true` to never use it.
+     * Configures use of the `integrity` directive for fetching assets
      */
     disableIntegrityCheck?: boolean,
     /**
