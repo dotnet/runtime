@@ -14,7 +14,7 @@
 extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
 
-FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
+FCIMPL0(void*, RuntimeHelpers_GetTailCallArgBuffer)
 {
     FCALL_CONTRACT;
     return GetThread()->GetTailCallTls()->GetArgBuffer();
@@ -36,7 +36,7 @@ extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size,
     return retVal;
 }
 
-FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr)
+FCIMPL2(void*, RuntimeHelpers_GetTailCallInfo, void** retAddrSlot, void** retAddr)
 {
     FCALL_CONTRACT;
 

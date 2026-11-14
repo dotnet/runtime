@@ -14,6 +14,22 @@ public static class WasmWebcilModule
 {
     public static string FixupLeaf() => "transitive-precode-string";
 
+    public static void StoreReference(ref object location, object value)
+    {
+        location = value;
+    }
+
+    public struct ReferencePair
+    {
+        public object First;
+        public object Second;
+    }
+
+    public static void CopyReferences(ref ReferencePair destination, ref ReferencePair source)
+    {
+        destination = source;
+    }
+
     public static int DeferredCallArgumentOrder(DeferredCallReceiver receiver, int value)
     {
         return receiver.Read(AddIntegers(value, value), AddIntegers(value + 1, value)) + 1;
