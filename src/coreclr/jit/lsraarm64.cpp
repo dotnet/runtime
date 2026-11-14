@@ -158,13 +158,16 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
     {
         nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
         regToAssign     = getNextFPRegWraparound(regToAssign);
+        // Restore entries do not consume a register in the consecutive operand group.
+        // Advance to the actual operand even when regToAssign is free.
+        if (nextRefPosition->refType == RefTypeUpperVectorRestore)
+        {
+            nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
+        }
+
+        assert((nextRefPosition->refType == RefTypeUse) || (nextRefPosition->refType == RefTypeDef));
         if (!isFree(getRegisterRecord(regToAssign)))
         {
-            if (nextRefPosition->refType == RefTypeUpperVectorRestore)
-            {
-                nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
-            }
-
             Interval* interval = nextRefPosition->getInterval();
 
             // If regToAssign is not free, make sure it is not in use at current location.
@@ -480,6 +483,14 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
 
             for (unsigned int i = 1; i < registersNeeded; i++)
             {
+                // Inspect the operand's allocation, not its upper-vector restore temporary.
+                if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
+                {
+                    consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+                }
+
+                assert((consecutiveRefPosition->refType == RefTypeUse) ||
+                       (consecutiveRefPosition->refType == RefTypeDef));
                 Interval* interval     = consecutiveRefPosition->getInterval();
                 consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
 
