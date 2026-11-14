@@ -168,7 +168,6 @@ class ObjectAllocator final : public Phase
     // Data members
     bool         m_IsObjectStackAllocationEnabled;
     bool         m_AnalysisDone;
-    bool         m_isR2R;
     unsigned     m_bvCount;
     BitVecTraits m_bitVecTraits;
     unsigned     m_unknownSourceIndex;
