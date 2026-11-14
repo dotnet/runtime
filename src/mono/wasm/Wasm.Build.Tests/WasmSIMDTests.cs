@@ -74,7 +74,9 @@ namespace Wasm.Build.Tests
         {
             Configuration config = Configuration.Debug;
             string relaxedSimdValue = relaxedSimd.ToString().ToLowerInvariant();
-            string extraProperties = $"<WasmEnableRelaxedSimd>{relaxedSimdValue}</WasmEnableRelaxedSimd><PublishReadyToRun>true</PublishReadyToRun>";
+            string extraProperties = "<PublishReadyToRun>true</PublishReadyToRun>";
+            if (relaxedSimd)
+                extraProperties += "<PublishReadyToRunInstructionSet>relaxed-simd</PublishReadyToRunInstructionSet>";
             ProjectInfo info = CopyTestAsset(
                 config,
                 aot: false,
@@ -86,7 +88,7 @@ namespace Wasm.Build.Tests
                 s_coreClrRelaxedSimdProgramText);
             ReplaceMainJsWithMinimalRunMain();
 
-            PublishProject(info, config, isNativeBuild: relaxedSimd);
+            PublishProject(info, config, isNativeBuild: false);
 
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
