@@ -227,10 +227,12 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
-// Filter to ignore SEH exceptions representing C++ exceptions.
-LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+// Filter to ignore SEH exceptions representing C++ exceptions and unhandled managed exceptions
+// that are being propagated to the host or external native code.
+LONG IgnoreExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
-    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
+    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC) ||
+           (GetThread()->HasThreadStateNC(Thread::TSNC_PropagatingUnhandledException)) 
         ? EXCEPTION_CONTINUE_SEARCH
         : EXCEPTION_EXECUTE_HANDLER;
 }
@@ -248,7 +250,7 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     {
         pParam->result = pParam->function();
     }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    PAL_EXCEPT_FILTER(IgnoreExceptionFilter)
     {
         // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
         // from the called method's call chain.
@@ -265,18 +267,9 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     return local.result;
 }
 
-// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
-NOINLINE
-void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+FORCEINLINE
+void InvokeUnmanagedMethodWithTransitionInner(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
-    InlinedCallFrame inlinedCallFrame;
-    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
-    inlinedCallFrame.m_pCallSiteSP = pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-    inlinedCallFrame.m_pThread = GetThread();
-    inlinedCallFrame.m_Datum = NULL;
-    inlinedCallFrame.Push();
-
     struct Param
     {
         MethodDesc *targetMethod;
@@ -293,7 +286,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
         InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
         GCX_PREEMP_NO_DTOR_END();
     }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    PAL_EXCEPT_FILTER(IgnoreExceptionFilter)
     {
         // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
         // from the native method (QCALL) call chain.
@@ -306,6 +299,21 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
         DispatchManagedException(ohThrowable);
     }
     PAL_ENDTRY
+}
+
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+NOINLINE
+void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+{
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    InvokeUnmanagedMethodWithTransitionInner(targetMethod, stack, pFrame, pArgs, pRet, callTarget);
 
     inlinedCallFrame.Pop();
 }
@@ -594,7 +602,12 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
         pContinuationRet = &continuationUnused;
     }
 
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+    // The target may still be a prestub, whose compilation can raise a managed SEH exception.
+    CallWithSEHWrapper(
+        [&]() {
+            pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+            return 0;
+        });
 }
 
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)

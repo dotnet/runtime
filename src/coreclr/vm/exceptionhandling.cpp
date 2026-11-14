@@ -468,7 +468,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     // Also skip all frames when processing unhandled exceptions. That allows them to reach the host app
     // level and let 3rd party the chance to handle them.
-    if (pThread->HasThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine))
+    if (pThread->HasThreadStateNC(Thread::TSNC_PropagatingUnhandledException))
     {
         if (pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING)
         {
@@ -3721,7 +3721,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
 
     if (pExInfo->m_passNumber == 1)
     {
-        pThread->ResetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
+        pThread->ResetThreadStateNC(Thread::TSNC_PropagatingUnhandledException);
     }
 
     // we already fixed the context in HijackHandler, so let's
@@ -3839,7 +3839,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
         // There are no managed frames on the stack
         EH_LOG((LL_INFO100, "SfiInit: No more managed frames found on stack\n"));
 #ifdef HOST_WINDOWS
-        GetThread()->SetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
+        GetThread()->SetThreadStateNC(Thread::TSNC_PropagatingUnhandledException);
         RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
         LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
@@ -4014,7 +4014,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 else
                 {
 #ifdef HOST_WINDOWS
-                    GetThread()->SetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
+                    GetThread()->SetThreadStateNC(Thread::TSNC_PropagatingUnhandledException);
                     GCX_PREEMP_NO_DTOR();
                     RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
