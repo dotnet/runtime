@@ -440,10 +440,9 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 fgRedirectEdge(block->FalseEdgeRef(), newTarget);
             }
 
-            if (block->TrueEdgeIs(block->GetFalseEdge()))
+            // Before import, leave degenerate conditionals for the importer to simplify.
+            if (fgImportDone && block->TrueEdgeIs(block->GetFalseEdge()))
             {
-                // Block became degenerate, simplify
-                //
                 fgRemoveConditionalJump(block);
                 assert(block->KindIs(BBJ_ALWAYS));
                 assert(block->TargetIs(newTarget));
