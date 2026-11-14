@@ -28,6 +28,16 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(RuntimeAsyncTask != null);
 
+            const ContinuationFlags CapturedContextFlags =
+                ContinuationFlags.ContinueOnCapturedSynchronizationContext |
+                ContinuationFlags.ContinueOnCapturedTaskScheduler;
+            if (!canInline && (Flags & CapturedContextFlags) != 0 &&
+                !RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            {
+                ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
+                return;
+            }
+
             if (((Flags & ContinuationFlags.AllContinuationFlags) == 0) || !QueueIfNecessary(canInline))
             {
                 if (canInline)
