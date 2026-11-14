@@ -771,7 +771,7 @@ namespace System.Runtime
             {
                 throw elementType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
             }
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
+            ref object rawData = ref Unsafe.As<byte, object>(ref array.GetArrayData().Data);
             ref object element = ref Unsafe.Add(ref rawData, index);
 #endif
             MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
