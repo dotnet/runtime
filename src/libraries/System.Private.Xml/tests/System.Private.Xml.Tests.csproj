@@ -455,6 +455,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="XPath\SiblingAxesTests.cs" />
     <Compile Include="XPath\XPathDocument\CreateNavigatorFromXmlReader.cs" />
     <Compile Include="$(CommonTestPath)\System\Xml\XPath\XmlDocument\CreateNavigatorFromXmlDocument.cs" Link="Common\System\Xml\XPath\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
     <Compile Include="$(CommonTestPath)\System\Xml\XPath\XDocument\CreateNavigatorComparer.cs" Link="Common\System\Xml\XPath\XDocument\CreateNavigatorComparer.cs" />
