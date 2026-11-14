@@ -39,6 +39,7 @@
 #include "pal_crypto_config.h"
 #include "pal_compiler.h"
 #define OPENSSL_VERSION_4_0_RTM 0x40000000L
+#define OPENSSL_VERSION_3_0_6_RTM 0x30000060L
 #define OPENSSL_VERSION_3_0_2_RTM 0x3000002FL
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
@@ -851,6 +852,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_STORE_add_crl) \
     REQUIRED_FUNCTION(X509_STORE_CTX_cleanup) \
     REQUIRED_FUNCTION(X509_STORE_CTX_free) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_get_check_issued) \
     REQUIRED_FUNCTION(X509_STORE_CTX_get_current_cert) \
     REQUIRED_FUNCTION(X509_STORE_CTX_get_error) \
     REQUIRED_FUNCTION(X509_STORE_CTX_get_error_depth) \
@@ -871,6 +873,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_STORE_free) \
     REQUIRED_FUNCTION(X509_STORE_get0_param) \
     REQUIRED_FUNCTION(X509_STORE_new) \
+    REQUIRED_FUNCTION(X509_STORE_set_check_issued) \
     REQUIRED_FUNCTION(X509_STORE_set_flags) \
     REQUIRED_FUNCTION(X509V3_EXT_print) \
     REQUIRED_FUNCTION(X509_up_ref) \
@@ -1462,6 +1465,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_STORE_add_crl X509_STORE_add_crl_ptr
 #define X509_STORE_CTX_cleanup X509_STORE_CTX_cleanup_ptr
 #define X509_STORE_CTX_free X509_STORE_CTX_free_ptr
+#define X509_STORE_CTX_get_check_issued X509_STORE_CTX_get_check_issued_ptr
 #define X509_STORE_CTX_get_current_cert X509_STORE_CTX_get_current_cert_ptr
 #define X509_STORE_CTX_get0_cert X509_STORE_CTX_get0_cert_ptr
 #define X509_STORE_CTX_get0_chain X509_STORE_CTX_get0_chain_ptr
@@ -1482,6 +1486,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_STORE_free X509_STORE_free_ptr
 #define X509_STORE_get0_param X509_STORE_get0_param_ptr
 #define X509_STORE_new X509_STORE_new_ptr
+#define X509_STORE_set_check_issued X509_STORE_set_check_issued_ptr
 #define X509_STORE_set_flags X509_STORE_set_flags_ptr
 #define X509V3_EXT_print X509V3_EXT_print_ptr
 #define X509_up_ref X509_up_ref_ptr
