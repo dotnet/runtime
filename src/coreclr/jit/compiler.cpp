@@ -4832,6 +4832,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
             }
 
+            // Record what the SSA based phases proved about locals on their descriptors, which outlive them
+            //
+            DoPhase(this, PHASE_RECORD_FACTS_ON_LOCALS, &Compiler::fgRecordFactsOnLocals);
+
             // Conservatively mark all VNs as stale
             vnStore = nullptr;
 

@@ -6867,6 +6867,7 @@ public:
     bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgVNBasedIntrinsicExpansion();
+    PhaseStatus fgRecordFactsOnLocals();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 

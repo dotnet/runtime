@@ -14,6 +14,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
+#include "modularrange.h"
 
 /*****************************************************************************/
 
@@ -429,97 +430,8 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 }
 
 //------------------------------------------------------------------------------
-// GetIntersection: Given two ranges, return true if they intersect and form a closed range.
-//    Examples:
-//      >10 and <=20 -> [11,20]
-//      >10 and >100 -> false
-//      <10 and >10  -> false
-//
-// Arguments:
-//    type        - The type of the compare nodes.
-//    cmp1        - The first compare node.
-//    cmp2        - The second compare node.
-//    cns1        - The constant value of the first compare node (always RHS).
-//    cns2        - The constant value of the second compare node (always RHS).
-//    pRangeStart - [OUT] The start of the intersection range (inclusive).
-//    pRangeEnd   - [OUT] The end of the intersection range (inclusive).
-//
-// Returns:
-//    true if the ranges intersect and form a closed range.
-//
-static bool GetIntersection(var_types  type,
-                            genTreeOps cmp1,
-                            genTreeOps cmp2,
-                            ssize_t    cns1,
-                            ssize_t    cns2,
-                            ssize_t*   pRangeStart,
-                            ssize_t*   pRangeEnd)
-{
-    if ((cns1 < 0) || (cns2 < 0))
-    {
-        // We don't yet support negative ranges.
-        return false;
-    }
-
-    // Convert to a canonical form with GT_GE or GT_LE (inclusive).
-    auto normalize = [](genTreeOps* cmp, ssize_t* cns) -> bool {
-        if (*cmp == GT_GT)
-        {
-            // "X > cns" -> "X >= cns + 1"
-            if (*cns == SSIZE_T_MAX)
-            {
-                return false;
-            }
-            *cns = *cns + 1;
-            *cmp = GT_GE;
-        }
-        if (*cmp == GT_LT)
-        {
-            // "X < cns" -> "X <= cns - 1"
-            // cns is non-negative (checked above), so cns - 1 >= -1 and cannot underflow.
-            *cns = *cns - 1;
-            *cmp = GT_LE;
-        }
-        return true;
-    };
-    if (!normalize(&cmp1, &cns1) || !normalize(&cmp2, &cns2))
-    {
-        return false;
-    }
-
-    if (cmp1 == cmp2)
-    {
-        // Ranges have the same direction (we don't yet support that yet).
-        return false;
-    }
-
-    if (cmp1 == GT_GE)
-    {
-        *pRangeStart = cns1;
-        *pRangeEnd   = cns2;
-    }
-    else
-    {
-        assert(cmp1 == GT_LE);
-        *pRangeStart = cns2;
-        *pRangeEnd   = cns1;
-    }
-
-    if ((*pRangeStart >= *pRangeEnd) || (*pRangeStart < 0) || (*pRangeEnd < 0) || !FitsIn(type, *pRangeStart) ||
-        !FitsIn(type, *pRangeEnd))
-    {
-        // TODO: If ranges don't intersect we might be able to fold the condition to true/false.
-        // Also, check again if any of the ranges are negative (in case of overflow after normalization)
-        // and fits into the given type.
-        return false;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
 // IsConstantRangeTest: Does the given compare node represent a constant range test? E.g.
-//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=]
+//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=, ==, !=]
 //
 // Arguments:
 //    tree - compare node
@@ -533,11 +445,14 @@ static bool GetIntersection(var_types  type,
 //
 bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
 {
-    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
+    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT, GT_EQ, GT_NE))
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
-        if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->TypeIs(op2->TypeGet()))
+        // A small-typed value is compared at int width, where its type bounds it.
+        if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) &&
+            (op1->TypeIs(op2->TypeGet()) || (varTypeIsSmall(op1) && op2->TypeIs(TYP_INT)) ||
+             (varTypeIsSmall(op2) && op1->TypeIs(TYP_INT))))
         {
             if (op2->IsCnsIntOrI())
             {
@@ -563,187 +478,434 @@ bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cns
 }
 
 //------------------------------------------------------------------------------
-// FoldRangeTests: Given two compare nodes (cmp1 && cmp2) where cmp1 is X >= 0
-//    and cmp2 is X < NN (NeverNegative), try to fold the range test into a single
-//    X u< NN (unsigned) compare node.
+// GetComparisonBase: Match a local, optionally behind an unchecked constant offset.
+//    COMMAs of the first comparison are skipped. The caller retains their effects.
 //
-// Arguments:
-//    compiler       - compiler instance
-//    cmp1           - first compare node
-//    cmp1IsReversed - true if cmp1 is in fact reversed
-//    cmp2           - second compare node
-//    cmp2IsReversed - true if cmp2 is in fact reversed
-//
-// Returns:
-//    true if cmp1 now represents the folded range check and cmp2 can be removed.
-//
-bool FoldNeverNegativeRangeTest(
-    Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+static bool GetComparisonBase(GenTree* value, GenTree** base, target_size_t* offset)
 {
-    GenTree*       var1Node;
-    GenTreeIntCon* cns1Node;
-    genTreeOps     cmp1Op;
-
-    // First cmp has to be signed "X >= 0" (or "0 <= X")
-    // TODO: handle "X < NN && X >= 0" (where the 2nd comparison is the lower bound)
-    // It seems to be a rare case, so we don't handle it for now.
-    if (cmp1->IsUnsigned() || !IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
+    *offset       = 0;
+    GenTree* node = value->gtEffectiveVal();
+    if (node->OperIs(GT_ADD, GT_SUB))
+    {
+        GenTree* constant = node->gtGetOp2();
+        if (node->gtOverflow() || !constant->IsCnsIntOrI() || constant->IsIconHandle() ||
+            !node->gtGetOp1()->TypeIs(value->TypeGet()) || !constant->TypeIs(value->TypeGet()))
+        {
+            return false;
+        }
+        *offset = static_cast<target_size_t>(constant->AsIntCon()->IconValue());
+        if (node->OperIs(GT_SUB))
+        {
+            *offset = 0 - *offset;
+        }
+        node = node->gtGetOp1();
+    }
+    *base = node;
+    if (!node->TypeIs(value->TypeGet()))
     {
         return false;
     }
-
-    // Now, reverse the comparison if necessary depending on cmp1IsReversed and cmp2IsReversed
-    // so we'll get a canonical form of "X >= 0 && X </<= NN"
-    cmp1Op            = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
-    genTreeOps cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
-
-    if ((cmp1Op != GT_GE) || (!cns1Node->IsIntegralConst(0)))
+    if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
-        // Lower bound check has to be "X >= 0".
-        // We already re-ordered the comparison so that the constant is always on the right side.
-        return false;
+        *base = node;
+        return true;
     }
 
-    // Upper bound check has to be "X relop NN" or "NN relop X" (NN = NeverNegative)
-    // We allow var1Node to be a GT_COMMA node, so we need to call gtEffectiveVal() to get the actual variable
-    // since it's guaranteed to be evaluated first.
-    GenTree* upperBound;
-    if (cmp2->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-        GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp1()))
+    // A load the two tests share. The first test evaluates it; the second would only read the same
+    // location again, with nothing in between that could store to it. It must not sit under effects
+    // that would have to be kept apart from it, and a volatile load is a read that must happen.
+    if (node->OperIs(GT_IND, GT_ARR_LENGTH) && (node == value) &&
+        ((node->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) &&
+        !(node->OperIs(GT_IND) && node->AsIndir()->IsVolatile()))
     {
-        // "X relop NN"
-        upperBound = cmp2->gtGetOp2();
+        *base = node;
+        return true;
     }
-    else if (cmp2->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-             GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp2()))
-    {
-        // "NN relop X"
-        upperBound = cmp2->gtGetOp1();
-        // Normalize to "X relop NN"
-        cmp2Op = GenTree::SwapRelop(cmp2Op);
-    }
-    else
-    {
-        return false;
-    }
+    return false;
+}
 
-    // Check that our upper bound is known to be never negative (e.g. GT_ARR_LENGTH or Span.Length, etc.)
-    if (!upperBound->IsNeverNegative(comp) || !upperBound->TypeIs(var1Node->TypeGet()))
-    {
-        return false;
-    }
-
-    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-    {
-        // The fold makes NN evaluate unconditionally, so it must be safe to speculate.
-        // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
-        return false;
-    }
-
-    if ((cmp2Op != GT_LT) && (cmp2Op != GT_LE))
-    {
-        // Upper bound check has to be "X < NN" or "X <= NN" (normalized form).
-        return false;
-    }
-
-    cmp1->gtOp1 = var1Node;
-    cmp1->gtOp2 = upperBound;
-    cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op);
-    cmp1->SetUnsigned();
-    return true;
+static GenTreeIntCon* NewRangeConstant(Compiler* comp, target_size_t bits, var_types type)
+{
+    ssize_t value = type == TYP_INT ? static_cast<int32_t>(bits) : static_cast<ssize_t>(bits);
+    return comp->gtNewIconNode(value, type);
 }
 
 //------------------------------------------------------------------------------
-// FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
-//    fold them into a single compare node if possible, e.g.:
-//      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
-//      2) "X >= 0 && X <= 100"  -> "X u<= 100"
-//    where 'u' stands for unsigned comparison. cmp1 is used as the target node for folding.
-//    It's also guaranteed to be first in the execution order (so can allow some side effects).
+// ConstantCost: The instructions a comparison constant costs beyond the instruction that consumes it.
 //
 // Arguments:
-//    compiler       - compiler instance
-//    cmp1           - first compare node
-//    cmp1IsReversed - true if cmp1 is in fact reversed
-//    cmp2           - second compare node
-//    cmp2IsReversed - true if cmp2 is in fact reversed
+//    constant - the constant node, with its costs set
+//    forCcmp  - whether a ccmp consumes it, which takes a five bit immediate, where cmp and sub take
+//               twelve bits
 //
-// Returns:
-//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+// Return Value:
+//    Zero when the instruction takes the constant as an immediate, the instructions that put it in a
+//    register otherwise.
 //
-bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+static unsigned ConstantCost(GenTree* constant, bool forCcmp)
 {
-    GenTree*       var1Node;
-    GenTree*       var2Node;
-    GenTreeIntCon* cns1Node;
-    GenTreeIntCon* cns2Node;
-    genTreeOps     cmp1Op;
-    genTreeOps     cmp2Op;
-
-    // Make sure both conditions are constant range checks with matching signedness, e.g. "X > CNS".
-    if ((cmp1->IsUnsigned() != cmp2->IsUnsigned()) || !IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
-        !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
+#ifdef TARGET_ARM64
+    if (constant->IsCnsIntOrI() && !constant->IsIconHandle())
     {
-        // Give FoldNeverNegativeRangeTest a try when the constant range fold does not apply.
-        return FoldNeverNegativeRangeTest(comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
+        INT64 const    value = constant->AsIntCon()->IconValue();
+        emitAttr const size  = emitActualTypeSize(constant);
+        if (forCcmp ? emitter::emitIns_valid_imm_for_ccmp(value) : emitter::emitIns_valid_imm_for_add(value, size))
+        {
+            return 0;
+        }
+        if (emitter::emitIns_valid_imm_for_mov(value, size))
+        {
+            return 1;
+        }
+
+        // One movz or movn and a movk per further halfword that differs from what it filled
+        unsigned movzCount = 0;
+        unsigned movnCount = 0;
+        for (unsigned shift = 0; shift < ((size == EA_8BYTE) ? 64u : 32u); shift += 16)
+        {
+            unsigned const halfword = static_cast<unsigned>(value >> shift) & 0xFFFF;
+            movzCount += (halfword != 0);
+            movnCount += (halfword != 0xFFFF);
+        }
+        return min(movzCount, movnCount);
+    }
+#endif
+    return constant->GetCostEx();
+}
+
+//------------------------------------------------------------------------------
+// SameBase: Are the two comparison bases the same value?
+//    The second test's load is the first's again, so it is marked non-faulting once the first has
+//    taken the null check; that difference does not make it another load.
+//
+static bool SameBase(GenTree* base1, GenTree* base2)
+{
+    if (GenTree::Compare(base1, base2))
+    {
+        return true;
+    }
+    if (base1->OperIs(GT_IND) && base2->OperIs(GT_IND) && base1->TypeIs(base2->TypeGet()) &&
+        (((base1->gtFlags ^ base2->gtFlags) & GTF_IND_FLAGS & ~GTF_IND_NONFAULTING) == 0))
+    {
+        return GenTree::Compare(base1->AsIndir()->Addr(), base2->AsIndir()->Addr());
+    }
+    if (base1->OperIs(GT_ARR_LENGTH) && base2->OperIs(GT_ARR_LENGTH) &&
+        (base1->AsArrLen()->ArrLenOffset() == base2->AsArrLen()->ArrLenOffset()))
+    {
+        return GenTree::Compare(base1->AsArrLen()->ArrRef(), base2->AsArrLen()->ArrRef());
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// FoldComparisons: Fold two comparisons of the same local into one.
+//    Each comparison becomes the range of values that satisfy it. The ranges are intersected
+//    and the result is emitted as a constant or a single comparison when it has such a form.
+//    The effects of the first comparison are kept. The second must have none.
+//
+static GenTree* FoldComparisons(
+    Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    GenTree*       value1;
+    GenTree*       value2;
+    GenTreeIntCon* bound1;
+    GenTreeIntCon* bound2 = nullptr;
+    genTreeOps     op1;
+    genTreeOps     op2;
+    if (!IsConstantRangeTest(cmp1, &value1, &bound1, &op1) || !varTypeIsIntOrI(genActualType(value1)) ||
+        bound1->IsIconHandle())
+    {
+        return nullptr;
     }
 
-    // Reverse the comparisons if necessary so we'll get a canonical form "cond1 == true && cond2 == true" -> InRange.
-    cmp1Op = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
-    cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op;
-
-    // Make sure variables are the same:
-    if (!var2Node->OperIs(GT_LCL_VAR) || !GenTree::Compare(var1Node->gtEffectiveVal(), var2Node))
+    GenTree*      base1;
+    target_size_t offset1;
+    if (!GetComparisonBase(value1, &base1, &offset1))
     {
-        // Variables don't match in two conditions
-        // We use gtEffectiveVal() for the first block's variable to ignore COMMAs, e.g.
-        //
-        // m_b1:
-        //   *  JTRUE     void
-        //   \--*  LT        int
-        //      +--*  COMMA     int
-        //      |  +--*  STORE_LCL_VAR int    V03 cse0
-        //      |  |  \--*  CAST      int <- ushort <- int
-        //      |  |     \--*  LCL_VAR   int    V01 arg1
-        //      |  \--*  LCL_VAR   int    V03 cse0
-        //      \--*  CNS_INT   int    97
-        //
-        // m_b2:
-        //   *  JTRUE     void
-        //   \--*  GT        int
-        //      +--*  LCL_VAR   int    V03 cse0
-        //      \--*  CNS_INT   int    122
-        //
-        // For the m_b2 we require the variable to be just a local with no side-effects (hence, no statements)
-        return false;
+        return nullptr;
     }
 
-    ssize_t rangeStart;
-    ssize_t rangeEnd;
-    if (!GetIntersection(var1Node->TypeGet(), cmp1Op, cmp2Op, cns1Node->IconValue(), cns2Node->IconValue(), &rangeStart,
-                         &rangeEnd))
+    target_size_t mask = (genActualType(value1) == TYP_INT) ? UINT32_MAX : static_cast<target_size_t>(-1);
+    op1                = cmp1IsReversed ? GenTree::ReverseRelop(op1) : op1;
+    ModularRange first = ModularRange::FromComparison(op1, static_cast<target_size_t>(bound1->IconValue()),
+                                                      cmp1->IsUnsigned(), mask, offset1);
+    // The value's type and shape bound it, a byte to [0, 255], a cast or a shift to its result range.
+    // Narrowing the first test to that interval makes a pair fold that would otherwise straddle it.
     {
-        // The range we test via two conditions is not a closed range
-        // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
-        return false;
+        IntegralRange const typeRange = IntegralRange::ForNode(base1, comp);
+        IntegralRange const fullRange = IntegralRange::ForType(genActualType(value1));
+        if (!typeRange.Equals(fullRange))
+        {
+            target_size_t const lo =
+                static_cast<target_size_t>(IntegralRange::SymbolicToRealValue(typeRange.GetLowerBound())) & mask;
+            target_size_t const hi =
+                static_cast<target_size_t>(IntegralRange::SymbolicToRealValue(typeRange.GetUpperBound())) & mask;
+            ModularRange const               bounded(lo, hi);
+            ModularRange                     narrowed;
+            ModularRange::Intersection const kind = first.Intersect(bounded, mask, &narrowed);
+            if (kind == ModularRange::Intersection::Single)
+            {
+                first = narrowed;
+            }
+            else if (kind == ModularRange::Intersection::Empty)
+            {
+                first = ModularRange();
+            }
+        }
     }
-    assert(rangeStart < rangeEnd);
-
-    if (rangeStart == 0)
+    // A never-negative value takes only the nonnegative half of the ring. Narrowing the first test to
+    // it lets a pair whose result would otherwise straddle the sign boundary fold to one test with
+    // small constants.
+    if (base1->IsNeverNegative(comp))
     {
-        // We don't need to subtract anything, it's already 0-based
-        cmp1->gtOp1 = var1Node;
+        ModularRange const               nonNegative(0, mask >> 1);
+        ModularRange                     narrowed;
+        ModularRange::Intersection const kind = first.Intersect(nonNegative, mask, &narrowed);
+        if (kind == ModularRange::Intersection::Single)
+        {
+            first = narrowed;
+        }
+        else if (kind == ModularRange::Intersection::Empty)
+        {
+            first = ModularRange();
+        }
+    }
+
+    ModularRange second;
+    GenTree*     symbolicBound = nullptr;
+    if (IsConstantRangeTest(cmp2, &value2, &bound2, &op2))
+    {
+        GenTree*      base2;
+        target_size_t offset2;
+        // The second value is dropped, so it may carry no effect of its own; a load's exception is
+        // the one the first test's identical load already decided.
+        if (!value2->TypeIs(value1->TypeGet()) || bound2->IsIconHandle() ||
+            ((value2->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || !GetComparisonBase(value2, &base2, &offset2) ||
+            !SameBase(base1, base2))
+        {
+            return nullptr;
+        }
+        op2    = cmp2IsReversed ? GenTree::ReverseRelop(op2) : op2;
+        second = ModularRange::FromComparison(op2, static_cast<target_size_t>(bound2->IconValue()), cmp2->IsUnsigned(),
+                                              mask, offset2);
     }
     else
     {
-        // We need to subtract the rangeStartIncl from the variable to make the range start from 0
-        cmp1->gtOp1 = comp->gtNewOperNode(GT_SUB, var1Node->TypeGet(), var1Node,
-                                          comp->gtNewIconNode(rangeStart, var1Node->TypeGet()));
+        op2 = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
+        if (SameBase(base1, cmp2->gtGetOp1()))
+        {
+            symbolicBound = cmp2->gtGetOp2();
+        }
+        else if (SameBase(base1, cmp2->gtGetOp2()))
+        {
+            symbolicBound = cmp2->gtGetOp1();
+            op2           = GenTree::SwapRelop(op2);
+        }
+        else
+        {
+            return nullptr;
+        }
+
+        if (((op2 != GT_LT) && (op2 != GT_LE)) || !symbolicBound->TypeIs(value1->TypeGet()) ||
+            !symbolicBound->IsNeverNegative(comp) ||
+            ((symbolicBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0))
+        {
+            // The fold makes the bound evaluate unconditionally, so it must be safe to speculate.
+            // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
+            return nullptr;
+        }
     }
-    cmp1->gtOp2->BashToConst(rangeEnd - rangeStart, var1Node->TypeGet());
-    cmp1->SetOper(cmp2IsReversed ? GT_GT : GT_LE);
-    cmp1->SetUnsigned();
-    return true;
+
+    ModularRange range;
+    bool         boundedBySymbolic = false;
+    if (symbolicBound == nullptr)
+    {
+        ModularRange::Intersection intersection = first.Intersect(second, mask, &range);
+        if ((intersection == ModularRange::Intersection::Multiple) ||
+            (intersection == ModularRange::Intersection::Unknown))
+        {
+            return nullptr;
+        }
+    }
+    else
+    {
+        // The symbolic bound is nonnegative, so it only constrains the nonnegative half of the
+        // domain. Bounding [0, MAX] by it is an unsigned test against the bound, which keeps its
+        // strictness because the bound can be zero. Bounding [MIN, -1] excludes nothing for a
+        // signed test and everything for an unsigned one.
+        target_size_t signBit = (mask >> 1) + 1;
+        if (first.Equals(ModularRange(0, signBit - 1), mask))
+        {
+            boundedBySymbolic = true;
+        }
+        else if (first.Equals(ModularRange(signBit, mask), mask))
+        {
+            range = cmp2->IsUnsigned() ? ModularRange() : first;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    GenTree*   value = base1;
+    GenTree*   newBound;
+    genTreeOps oper;
+    bool       isUnsigned = false;
+    if (boundedBySymbolic)
+    {
+        oper       = op2;
+        newBound   = symbolicBound;
+        isUnsigned = true;
+    }
+    else if (range.IsEmpty() || range.IsFull(mask))
+    {
+        // Only the first expression is guaranteed to execute in the original chain.
+        bool result = range.IsFull(mask) != cmp2IsReversed;
+        return comp->gtWrapWithSideEffects(comp->gtNewIconNode(result ? 1 : 0), value1, GTF_OBS_EFFECT);
+    }
+    else
+    {
+        var_types     type = genActualType(value1);
+        target_size_t constant;
+        target_size_t lower   = range.Lower();
+        target_size_t upper   = range.Upper();
+        target_size_t signBit = (mask >> 1) + 1;
+        if (lower == upper)
+        {
+            oper     = GT_EQ;
+            constant = lower;
+        }
+        else if (range.Width(mask) == mask - 1)
+        {
+            oper     = GT_NE;
+            constant = (lower - 1) & mask;
+        }
+        else if (upper == signBit - 1)
+        {
+            oper     = GT_GE;
+            constant = lower;
+        }
+        else if (lower == signBit)
+        {
+            oper     = GT_LE;
+            constant = upper;
+        }
+        else if (lower == 0)
+        {
+            oper       = GT_LE;
+            constant   = upper;
+            isUnsigned = true;
+        }
+        else if (upper == mask)
+        {
+            oper       = GT_GE;
+            constant   = lower;
+            isUnsigned = true;
+        }
+        else
+        {
+            // Four tests describe the interval through "(X - offset) relop bound": the unsigned test of
+            // the interval or of its complement, and the signed test of either, which starts the interval
+            // at the minimum value. They differ only in their constants, so take the one whose constants
+            // cost least beyond the sub and cmp that take them; an interval of exactly half the ring is
+            // a sign test.
+            target_size_t const width      = range.Width(mask);
+            target_size_t const complLower = (upper + 1) & mask;
+            target_size_t const complWidth = mask - width - 1;
+
+            struct Encoding
+            {
+                target_size_t offset;
+                target_size_t bound;
+                genTreeOps    oper;
+                bool          isUnsigned;
+            };
+            Encoding encodings[] = {
+                {lower, width, GT_LE, true},
+                {complLower, complWidth, GT_GT, true},
+                {(lower + signBit) & mask, (width + 1 - signBit) & mask, GT_LT, false},
+                {(complLower + signBit) & mask, (complWidth + 1 - signBit) & mask, GT_GE, false},
+            };
+            if (width == signBit - 1)
+            {
+                encodings[0] = {lower, 0, GT_GE, false};
+            }
+            if (complWidth == signBit - 1)
+            {
+                encodings[1] = {complLower, 0, GT_LT, false};
+            }
+
+            // Among equally priced constants the smallest wins, since it fits the most immediate forms,
+            // such as the five bits of a ccmp that a later chain may need.
+            auto magnitude = [type](target_size_t bits) {
+                ssize_t const value = (type == TYP_INT) ? static_cast<int32_t>(bits) : static_cast<ssize_t>(bits);
+                return static_cast<target_size_t>((value < 0) ? -value : value);
+            };
+
+            Encoding*     best          = nullptr;
+            unsigned      bestCost      = UINT_MAX;
+            unsigned      bestSize      = UINT_MAX;
+            target_size_t bestMagnitude = ~static_cast<target_size_t>(0);
+            for (Encoding& encoding : encodings)
+            {
+                unsigned            cost = 0;
+                unsigned            size = 0;
+                target_size_t const mag  = max(magnitude(encoding.offset), magnitude(encoding.bound));
+                if (encoding.offset != 0)
+                {
+                    GenTree* const offsetNode = NewRangeConstant(comp, encoding.offset, type);
+                    comp->gtSetEvalOrder(offsetNode);
+                    cost += ConstantCost(offsetNode, false);
+                    size += offsetNode->GetCostSz();
+                }
+                GenTree* const boundNode = NewRangeConstant(comp, encoding.bound, type);
+                comp->gtSetEvalOrder(boundNode);
+                cost += ConstantCost(boundNode, false);
+                size += boundNode->GetCostSz();
+                if ((cost < bestCost) || ((cost == bestCost) && (size < bestSize)) ||
+                    ((cost == bestCost) && (size == bestSize) && (mag < bestMagnitude)))
+                {
+                    best          = &encoding;
+                    bestCost      = cost;
+                    bestSize      = size;
+                    bestMagnitude = mag;
+                }
+            }
+
+#ifdef TARGET_ARM64
+            // Left alone, a pair of compares on locals becomes a cmp and ccmp chain, as many arithmetic
+            // instructions as the fold's sub and cmp, so it competes on its constants like the encodings
+            // do: the first bound in the cmp and the second in the ccmp. A tie goes to the fold.
+            if ((symbolicBound == nullptr) && value1->gtEffectiveVal()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+                value2->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+                (bestCost > (ConstantCost(bound1, false) + ConstantCost(bound2, true))))
+            {
+                return nullptr;
+            }
+#endif
+
+            if (best->offset != 0)
+            {
+                value = comp->gtNewOperNode(GT_SUB, type, value, NewRangeConstant(comp, best->offset, type));
+            }
+            constant   = best->bound;
+            oper       = best->oper;
+            isUnsigned = best->isUnsigned;
+        }
+
+        newBound = NewRangeConstant(comp, constant, type);
+    }
+    // A load base is not wrapped: it is the first test's own load, kept in place.
+    cmp1->gtOp1 =
+        (value1 == value1->gtEffectiveVal()) ? value : comp->gtWrapWithSideEffects(value, value1, GTF_OBS_EFFECT);
+    cmp1->gtOp2 = newBound;
+    cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(oper) : oper);
+    if (isUnsigned)
+        cmp1->SetUnsigned();
+    else
+        cmp1->ClearUnsigned();
+    return cmp1;
 }
 
 //------------------------------------------------------------------------------
@@ -837,7 +999,12 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     // cmp2 can be either reversed or not
     const bool cmp2IsReversed = m_b2->TrueTargetIs(notInRangeBb);
 
-    if (!FoldRangeTests(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
+    GenTree* folded = FoldComparisons(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
+    if (folded != nullptr)
+    {
+        m_b1->lastStmt()->GetRootNode()->AsOp()->gtOp1 = folded;
+    }
+    else
     {
         return false;
     }
@@ -885,10 +1052,14 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         }
     }
 
+    m_compiler->fgFoldConditional(m_b1);
     Statement* const stmt = m_b1->lastStmt();
-    m_compiler->gtSetStmtInfo(stmt);
-    m_compiler->fgSetStmtSeq(stmt);
-    m_compiler->gtUpdateStmtSideEffects(stmt);
+    if (stmt != nullptr)
+    {
+        m_compiler->gtSetStmtInfo(stmt);
+        m_compiler->fgSetStmtSeq(stmt);
+        m_compiler->gtUpdateStmtSideEffects(stmt);
+    }
     return true;
 }
 
@@ -1000,11 +1171,14 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         return false;
     }
 
-    // Ensure there are no additional side effects.
-    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & GTF_OBS_EFFECT) != 0)
+    // The second condition will be evaluated unconditionally. The first already
+    // executes on every path, so its operands can be evaluated before the chain.
+    if ((cond2->gtFlags & GTF_OBS_EFFECT) != 0)
     {
         return false;
     }
+
+    bool splitFirst = (cond1->gtFlags & GTF_OBS_EFFECT) != 0;
 
     // Integer compares only for now (until support for Arm64 fccmp instruction is added)
     if (varTypeIsFloating(cond1->gtGetOp1()) || varTypeIsFloating(cond2->gtGetOp1()))
@@ -1034,13 +1208,45 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         int maxOp1Cost = op1IsCondChain ? 31 : 7;
         int maxOp2Cost = op2IsCondChain ? 31 : 7;
 
-        // Cost to allow for chain size of three.
-        if (op1Cost > maxOp1Cost || op2Cost > maxOp2Cost)
+        // Cost to allow for chain size of three. If we split the first condition,
+        // its operand work stays outside the chain and executes as before.
+        if ((!splitFirst && (op1Cost > maxOp1Cost)) || (op2Cost > maxOp2Cost))
         {
             JITDUMP("Skipping CompareChainCond that will evaluate conditions unconditionally at costs %d,%d\n", op1Cost,
                     op2Cost);
             return false;
         }
+    }
+
+#ifdef TARGET_ARM64
+    // The chain turns the second compare into a ccmp, whose immediate is five bits where cmp has
+    // twelve. The branch the chain removes pays for one instruction to materialize a constant that
+    // no longer fits, more is a loss.
+    GenTree* const cond2Constant = cond2->gtGetOp2();
+    if (cond2Constant->IsCnsIntOrI() && (ConstantCost(cond2Constant, true) > (ConstantCost(cond2Constant, false) + 1)))
+    {
+        JITDUMP("Skipping CompareChainCond whose constant costs more in a ccmp than the branch it saves\n");
+        return false;
+    }
+#endif
+
+    if (splitFirst)
+    {
+        // In particular, CSE can embed a definition in the first comparison.
+        // Split its operands in execution order, preserving their effects while
+        // leaving a pure comparison that can participate in the chain.
+        Statement* firstNewStmt;
+        GenTree**  splitUse;
+        m_compiler->gtSplitTree(m_b1, s1, cond1, &firstNewStmt, &splitUse);
+        m_compiler->gtUpdateStmtSideEffects(s1);
+        for (Statement* stmt = firstNewStmt; (stmt != nullptr) && (stmt != s1); stmt = stmt->GetNextStmt())
+        {
+            m_compiler->gtSetStmtInfo(stmt);
+            m_compiler->fgSetStmtSeq(stmt);
+        }
+        m_compiler->gtSetStmtInfo(s1);
+        m_compiler->fgSetStmtSeq(s1);
+        assert((cond1->gtFlags & GTF_OBS_EFFECT) == 0);
     }
 
     // Remove the first JTRUE statement.

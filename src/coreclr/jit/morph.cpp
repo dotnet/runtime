@@ -7920,25 +7920,7 @@ DONE_MORPHING_CHILDREN:
         case GT_UMOD:
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
         {
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if (!varTypeIsFloating(tree->gtType))
-            {
-                ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
-
-                if ((oper == GT_DIV) || (oper == GT_MOD))
-                {
-                    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) == ExceptionSetFlags::None)
-                    {
-                        tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
-                    }
-                }
-
-                if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) == ExceptionSetFlags::None)
-                {
-                    tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
-                }
-            }
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+            tree->SetDivModExceptionFlags(this);
 
             if (opts.OptimizationDisabled())
             {
