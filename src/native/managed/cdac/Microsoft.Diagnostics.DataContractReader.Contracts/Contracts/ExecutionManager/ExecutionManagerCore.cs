@@ -372,6 +372,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException("Unable to get runtime function address");
 
         JitManager? jitManager = GetJitManager(range);
+        if (jitManager is InterpreterJitManager)
+            return GetInterpreterFuncletStartAddress(codeInfoHandle);
+
         TargetPointer runtimeFunctionPtr = jitManager?.GetUnwindInfo(range, codeInfoHandle.Address.Value) ?? TargetPointer.Null;
 
         if (runtimeFunctionPtr == TargetPointer.Null)
@@ -502,12 +505,28 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
-        // Interpreter code has no native unwind info and therefore no funclets.
         TargetPointer startAddress = ((IExecutionManager)this).GetStartAddress(codeInfoHandle);
-        if (((IExecutionManager)this).GetCodeKind(new TargetCodePointer(startAddress.Value)) == CodeKind.Interpreter)
-            return false;
-
         return startAddress != ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+    }
+
+    // Mirrors InterpreterJitManager::GetFuncletStartAddress (codeman.cpp): interpreted funclets are not separate
+    // code regions, so the funclet containing an IP is the handler (or filter) range of the EH clause it falls in.
+    private TargetPointer GetInterpreterFuncletStartAddress(CodeBlockHandle codeInfoHandle)
+    {
+        IExecutionManager eman = this;
+        TargetPointer methodStart = eman.GetStartAddress(codeInfoHandle);
+        ulong relOffset = eman.GetRelativeOffset(codeInfoHandle).Value;
+        foreach (ExceptionClauseInfo clause in eman.GetExceptionClauses(codeInfoHandle))
+        {
+            if (clause.HandlerStartPC <= relOffset && relOffset < clause.HandlerEndPC)
+                return methodStart + clause.HandlerStartPC;
+
+            // A filter funclet is stored right before its handler funclet (ECMA-335).
+            if (clause.FilterOffset is uint filterOffset && filterOffset <= relOffset && relOffset < clause.HandlerStartPC)
+                return methodStart + filterOffset;
+        }
+
+        return methodStart;
     }
 
     bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)

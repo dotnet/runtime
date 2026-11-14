@@ -99,6 +99,11 @@ partial interface IRuntimeTypeSystem : IContract
     // (used to decide how a struct is passed in registers), or false if the type has no such
     // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI).
     public virtual bool TryGetSystemVAmd64EightByteClassification(ITypeHandle typeHandle, out SystemVAmd64EightByteClassification classification);
+    // Returns how a value type is passed by the RISC-V / LoongArch64 hardware floating-point calling
+    // convention: one or two flattened fields (IsFloatingPoint, Size, Offset), at least one of them
+    // floating-point, ordered by offset. Returns false if the type is passed by the integer calling
+    // convention (including on other targets).
+    public virtual bool TryGetFpStructInRegistersClassification(ITypeHandle typeHandle, out FpStructInRegistersClassification classification);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuationWithoutMetadata(ITypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
@@ -789,6 +794,37 @@ static class RuntimeTypeSystem_1_Helpers
         // and populate 'classification' with one SystemVAmd64EightByte per eightbyte (First is always
         // present; Second is present only when numEightBytes > 1). Return true.
     }
+
+    // Mirrors MethodTable::GetFpStructInRegistersInfo (managed layout) in src/coreclr/vm/methodtable.cpp.
+    // Pseudocode:
+    //
+    //   TryGetFpStructInRegistersClassification(th):
+    //       if targetArch is not RISCV64/LOONGARCH64:     return false
+    //       if !th.IsMethodTable() or NumInstanceFieldBytes(th) > 16: return false
+    //       fields = []
+    //       if !Flatten(th, 0, fields):                   return false
+    //       if no field in fields is floating-point:      return false
+    //       sort fields by offset; return (true, (fields[0], fields[1] if present))
+    //
+    //   Flatten(mt, structOffset, fields):
+    //       occupied = 0 (byte bitmap)
+    //       for each non-static field f of mt:
+    //           start = structOffset + GetFieldDescOffset(f); size = ValueType ? NumInstanceFieldBytes(f's type) : element size
+    //           if [start, start + size) overlaps occupied: return false    // union
+    //           occupied |= [start, start + size)
+    //           if f is ValueType:                    if !Flatten(f's type, start, fields): return false
+    //           else if size <= pointer size:         if fields.Count == 2: return false
+    //                                                 fields.Add((f is R4/R8, size, start))
+    //           else:                                 return false
+    //       if mt has implied repeated fields (IsInlineArray, or a single primitive/ValueType field at
+    //       offset 0 of a type with layout whose NumInstanceFieldBytes is a multiple of the field size):
+    //           n = NumInstanceFieldBytes(mt) / field size
+    //           if the element added no fields:       return !IsInlineArray(mt)
+    //           if n > 2:                             return false
+    //           if n == 2: if the element added 2 fields: return false
+    //                      duplicate the element field right after itself (fail if it overlaps occupied)
+    //       return true
+    public bool TryGetFpStructInRegistersClassification(ITypeHandle typeHandle, out FpStructInRegistersClassification classification) { ... }
 
     public bool IsFreeObjectMethodTable(ITypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
 

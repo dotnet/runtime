@@ -12,6 +12,17 @@ internal class RISCV64FrameHandler(Target target, ContextHolder<RISCV64Context> 
 {
     private readonly ContextHolder<RISCV64Context> _holder = contextHolder;
 
+    public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
+    {
+        base.HandleInlinedCallFrame(inlinedCallFrame);
+
+        Data.Frame? next = GetNextFrame(inlinedCallFrame.Address);
+        if (next is not null && _frameHelpers.GetFrameType(next.Identifier) == FrameType.InterpreterFrame)
+        {
+            _holder.Context.A0 = next.Address.Value;
+        }
+    }
+
     public void HandleHijackFrame(HijackFrame frame)
     {
         HijackArgs args = _target.ProcessedData.GetOrAdd<Data.HijackArgs>(frame.HijackArgsPtr);

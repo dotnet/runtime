@@ -48,7 +48,12 @@ internal class RISCV64Unwinder(Target target)
             return false;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
+        TargetPointer unwindInfoAddr = _eman.GetUnwindInfo(cbh);
+
+        if (unwindInfoAddr == TargetPointer.Null)
+            return false;
+
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfoAddr);
 
         ulong startingPc = context.Pc;
         ulong startingSp = context.Sp;

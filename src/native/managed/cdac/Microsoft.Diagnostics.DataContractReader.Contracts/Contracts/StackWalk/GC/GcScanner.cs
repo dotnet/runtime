@@ -43,7 +43,10 @@ internal class GcScanner
         TargetNUInt relativeOffset = _eman.GetRelativeOffset(cbh);
         _eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
 
-        IGCInfoHandle handle = _gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+        bool isInterpreted = _eman.GetCodeKind(context.InstructionPointer) == CodeKind.Interpreter;
+        IGCInfoHandle handle = isInterpreted
+            ? _gcInfo.DecodeInterpreterGCInfo(gcInfoAddr, gcVersion)
+            : _gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
 
         GCInfoHeader header = _gcInfo.GetHeader(handle);
         uint stackBaseRegister = header.StackBaseRegister;
@@ -67,6 +70,20 @@ internal class GcScanner
                     continue;
                 GcScanSlotLocation loc = new((int)slot.RegisterNumber, 0, false);
                 scanContext.GCEnumCallback(new TargetPointer(regValue.Value), scanFlags, loc);
+            }
+            else if (isInterpreted)
+            {
+                // Mirrors TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot (gcinfodecoder.cpp): interpreter
+                // slots are always frame-relative, where the frame pointer is the InterpMethodContextFrame's stack.
+                if (slot.SpBase != 2)
+                    continue;
+
+                TargetPointer addr = new(context.FramePointer.Value + (ulong)(long)slot.SpOffset);
+                if (IsInInterpreterCalleeFrame(context, addr))
+                    continue;
+
+                GcScanSlotLocation loc = new((int)stackBaseRegister, slot.SpOffset, true);
+                scanContext.GCEnumCallback(addr, scanFlags, loc);
             }
             else
             {
@@ -106,6 +123,18 @@ internal class GcScanner
                 scanContext.GCEnumCallback(addr, scanFlags, loc);
             }
         }
+    }
+
+    // A slot in the argument area of an active callee belongs to the callee's frame and is not reported
+    // by the caller. The stack pointer of an interpreted frame is its InterpMethodContextFrame.
+    private bool IsInInterpreterCalleeFrame(IPlatformAgnosticContext context, TargetPointer slotAddress)
+    {
+        Data.InterpMethodContextFrame frame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(context.StackPointer);
+        if (frame.NextPtr == TargetPointer.Null)
+            return false;
+
+        Data.InterpMethodContextFrame callee = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(frame.NextPtr);
+        return callee.Ip != TargetPointer.Null && callee.Stack <= slotAddress;
     }
 
     /// <summary>
@@ -173,6 +202,13 @@ internal class GcScanner
                     PromoteCallerStackUsingGCRefMap(frame.TransitionBlockPtr, gcRefMap, scanContext, frameAddress);
                 else
                     PromoteCallerStack(frameAddress, scanContext);
+                break;
+            }
+
+            case FrameType.InterpreterFrame:
+            {
+                Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frameAddress);
+                scanContext.GCReportCallback(interpreterFrame.ContinuationAddress, GcScanFlags.None);
                 break;
             }
 
