@@ -13,6 +13,7 @@
 # in https://github.com/dotnet/performance/tree/master/src/benchmarks/real-world
 
 import argparse
+import json
 import re
 import sys
 import stat
@@ -186,16 +187,18 @@ def build_and_run(coreclr_args, output_mch_name):
     os.environ["NUGET_HTTP_CACHE_PATH"] = os.path.join(performance_directory, "NUGET_HTTP_CACHE_PATH")
     os.environ["NUGET_SCRATCH"] = os.path.join(performance_directory, "NUGET_SCRATCH")
 
-    # Install the dotnet sdk using the script within the performance repo
+    # Use the performance repo's pinned SDK so its older-TFM reference packs are available.
     dotnet_script = os.path.join(performance_directory, "scripts", "dotnet.py")
+    with open(os.path.join(performance_directory, "global.json"), encoding="utf-8") as global_json:
+        sdk_version = json.load(global_json)["sdk"]["version"]
     run_command([python_path,
                 dotnet_script,
                 "install",
                 "--architecture",
                     arch,
-                "--channels",
-                "main",
-                "--verbose"])
+                "--dotnet-versions",
+                sdk_version,
+                "--verbose"], _exit_on_fail=True)
 
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
