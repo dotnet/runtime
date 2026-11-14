@@ -1420,10 +1420,7 @@ namespace System.Runtime.Serialization
             {
                 HashSet<string> baseMemberNames = baseContractCodeDomInfo.GetMemberNames();
                 HashSet<string> memberNames = contractCodeDomInfo.GetMemberNames();
-                foreach (string name in baseMemberNames)
-                {
-                    memberNames.Add(name);
-                }
+                memberNames.UnionWith(baseMemberNames);
             }
         }
 

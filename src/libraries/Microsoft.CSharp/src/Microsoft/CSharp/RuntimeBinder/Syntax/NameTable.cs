@@ -115,20 +115,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             Debug.Assert(candidate != null);
             Debug.Assert(key != null);
             Debug.Assert(length <= key.Length);
-            if (candidate.Length != length)
-            {
-                return false;
-            }
 
-            for (int i = 0; i < candidate.Length; i++)
-            {
-                if (candidate[i] != key[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return candidate.AsSpan().SequenceEqual(key.AsSpan(0, length));
         }
 
         private Name AddEntry(Name name, int hashCode)

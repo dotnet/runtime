@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -11,22 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         
         public bool Equals(byte[] a, byte[] b)
         {
-            if (a == b)
-            {
-                return true;
-            }
-            if (a.Length != b.Length)
-            {
-                return false;
-            }
-            for (int index = 0; index < a.Length; index++)
-            {
-                if (a[index] != b[index])
-                {
-                    return false;
-                }
-            }
-            return true;
+            return a.AsSpan().SequenceEqual(b);
         }
         
         public int GetHashCode(byte[] a)

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Speech.Internal.SrgsParser;
 using System.Speech.Recognition;
 using System.Text;
@@ -31,20 +32,13 @@ namespace System.Speech.Internal.GrammarBuilding
             }
 
             // Easy out if the number of elements do not match
-            if (refObj.Count != Count || refObj.Items.Count != Items.Count)
+            if (refObj.Count != Count)
             {
                 return false;
             }
 
             // Deep recursive search for equality
-            for (int i = 0; i < Items.Count; i++)
-            {
-                if (!Items[i].Equals(refObj.Items[i]))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return CollectionsMarshal.AsSpan(Items).SequenceEqual(CollectionsMarshal.AsSpan(refObj.Items));
         }
         public override int GetHashCode()
         {
@@ -132,10 +126,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal void Add(GrammarBuilder builder)
         {
-            foreach (GrammarBuilderBase item in builder.InternalBuilder.Items)
-            {
-                _items.Add(item);
-            }
+            _items.AddRange(builder.InternalBuilder.Items);
         }
 
         internal void Add(GrammarBuilderBase item)
@@ -145,10 +136,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal void CloneItems(BuilderElements builders)
         {
-            foreach (GrammarBuilderBase item in builders.Items)
-            {
-                _items.Add(item);
-            }
+            _items.AddRange(builders.Items);
         }
 
         internal void CreateChildrenElements(IElementFactory elementFactory, IRule parent, IdentifierCollection ruleIds)

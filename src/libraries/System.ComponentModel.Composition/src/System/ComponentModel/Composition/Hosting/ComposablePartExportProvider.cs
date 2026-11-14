@@ -325,10 +325,7 @@ namespace System.ComponentModel.Composition.Hosting
                 parts = _parts.ToList(); // this copies the list
             }
 
-            foreach (ComposablePart part in batch.PartsToAdd)
-            {
-                parts.Add(part);
-            }
+            parts.AddRange(batch.PartsToAdd);
 
             List<ComposablePart>? partsToRemove = null;
 

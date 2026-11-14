@@ -1292,10 +1292,7 @@ namespace System.Globalization
 
             foreach (char standardFormat in DateTimeFormat.AllStandardFormats)
             {
-                foreach (string pattern in GetAllDateTimePatterns(standardFormat))
-                {
-                    results.Add(pattern);
-                }
+                results.AddRange(GetAllDateTimePatterns(standardFormat));
             }
 
             return results.ToArray();

@@ -32,10 +32,7 @@ namespace System.Threading.RateLimiting
                     _metadataNames = [];
                     foreach (RateLimitLease lease in _leases)
                     {
-                        foreach (string metadataName in lease.MetadataNames)
-                        {
-                            _metadataNames.Add(metadataName);
-                        }
+                        _metadataNames.UnionWith(lease.MetadataNames);
                     }
                 }
 

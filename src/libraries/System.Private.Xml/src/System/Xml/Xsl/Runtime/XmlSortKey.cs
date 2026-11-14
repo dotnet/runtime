@@ -241,7 +241,7 @@ namespace System.Xml.Xsl.Runtime
         public override int CompareTo(object? obj)
         {
             XmlStringSortKey? that = obj as XmlStringSortKey;
-            int idx, cntCmp, result;
+            int result;
 
             if (that == null)
                 return CompareToEmpty(obj);
@@ -256,32 +256,9 @@ namespace System.Xml.Xsl.Runtime
             {
                 Debug.Assert(_sortKeyBytes != null && that._sortKeyBytes != null, "Both keys must have non-null sortKeyBytes field");
 
-                cntCmp = (_sortKeyBytes.Length < that._sortKeyBytes.Length) ? _sortKeyBytes.Length : that._sortKeyBytes.Length;
-                for (idx = 0; idx < cntCmp; idx++)
-                {
-                    if (_sortKeyBytes[idx] < that._sortKeyBytes[idx])
-                    {
-                        result = -1;
-                        goto Done;
-                    }
-
-                    if (_sortKeyBytes[idx] > that._sortKeyBytes[idx])
-                    {
-                        result = 1;
-                        goto Done;
-                    }
-                }
-
-                // So far, keys are equal, so now test length of each key
-                if (_sortKeyBytes.Length < that._sortKeyBytes.Length)
-                    result = -1;
-                else if (_sortKeyBytes.Length > that._sortKeyBytes.Length)
-                    result = 1;
-                else
-                    result = 0;
+                result = _sortKeyBytes.AsSpan().SequenceCompareTo(that._sortKeyBytes);
             }
 
-        Done:
             // Use document order to break sorting tie
             if (result == 0)
                 return BreakSortingTie(that);

@@ -55,18 +55,9 @@ namespace System.Text
                 }
             }
 
-            // We've reached the end of the input.  Eat all wildcards immediately after where we are
-            // in the pattern, as if they're at the end, they'll all just map to nothing (and if it
-            // turns out there's something after them, eating them won't matter).
-            while (patternPos < pattern.Length && pattern[patternPos] == '*')
-            {
-                patternPos++;
-            }
-
-            // If we are in fact at the end of the pattern, then we successfully matched.
-            // If there's anything left, it's not a wildcard, so it doesn't match.
+            // Any remaining pattern characters must be wildcards that match empty input.
             Debug.Assert(patternPos <= pattern.Length);
-            return patternPos == pattern.Length;
+            return !pattern.Slice(patternPos).ContainsAnyExcept('*');
         }
     }
 }
