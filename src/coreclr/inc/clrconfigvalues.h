@@ -722,6 +722,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbs,             W("EnableRiscV64Zbs"),          1, "Allows RiscV64 Zbs hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zicond,          W("EnableRiscV64Zicond"),       1, "Allows RiscV64 Zicond hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zacas,           W("EnableRiscV64Zacas"),        1, "Allows RiscV64 Zacas hardware intrinsics to be disabled")
 #endif
 
 ///

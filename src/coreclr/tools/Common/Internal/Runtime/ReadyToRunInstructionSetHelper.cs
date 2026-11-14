@@ -79,6 +79,7 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.RiscV64_Zbb: return ReadyToRunInstructionSet.Zbb;
                         case InstructionSet.RiscV64_Zbs: return ReadyToRunInstructionSet.Zbs;
                         case InstructionSet.RiscV64_Zicond: return ReadyToRunInstructionSet.Zicond;
+                        case InstructionSet.RiscV64_Zacas: return ReadyToRunInstructionSet.Zacas;
 
                         default: throw new Exception("Unknown instruction set");
                     }

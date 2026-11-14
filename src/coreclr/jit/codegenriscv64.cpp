@@ -2113,33 +2113,19 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     regNumber target            = treeNode->GetRegNum();
     regNumber loc               = locOp->GetRegNum();
     regNumber val               = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
-    regNumber comparand         = REG_ZERO;
+    regNumber comparand         = !comparandOp->isContained() ? comparandOp->GetRegNum() : REG_ZERO;
     regNumber comparandToExtend = REG_NA;
-    if (!comparandOp->isContained())
-    {
-        comparand = comparandOp->GetRegNum();
-        if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
-        {
-            comparandToExtend = comparand;
-            comparand         = internalRegisters.Extract(treeNode);
-        }
-    }
-    regNumber storeErr = internalRegisters.GetSingle(treeNode);
 
-    // Register allocator should have extended the lifetimes of all input and internal registers
-    // They should all be different
-    noway_assert(target != loc);
-    noway_assert(target != val);
-    noway_assert(target != comparand);
-    noway_assert(target != storeErr);
-    noway_assert(loc != val);
-    noway_assert(loc != comparand);
-    noway_assert(loc != storeErr);
-    noway_assert((val != comparand) || (val == REG_ZERO));
-    noway_assert(val != storeErr);
-    noway_assert(comparand != storeErr);
-    noway_assert(target != REG_NA);
-    noway_assert(storeErr != REG_NA);
+    emitter* e        = GetEmitter();
+    emitAttr size     = emitActualTypeSize(valOp);
+    bool     is4      = (size == EA_4BYTE);
+    bool     useZacas = m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zacas);
+
+    if (!useZacas && !comparandOp->isContained() && comparandOp->TypeIs(TYP_INT, TYP_UINT))
+    {
+        comparandToExtend = comparand;
+        comparand         = internalRegisters.Extract(treeNode);
+    }
 
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
@@ -2156,19 +2142,52 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     // so mark the location register as a GC pointer until code generation for this node is finished.
     gcInfo.gcMarkRegPtrVal(loc, locOp->TypeGet());
 
-    BasicBlock* retry = genCreateTempLabel();
-    BasicBlock* fail  = genCreateTempLabel();
+    if (useZacas)
+    {
+        // Initializing rd with the comparand must not overwrite the address or replacement value.
+        noway_assert(target != loc);
+        noway_assert(target != val);
 
-    emitter* e    = GetEmitter();
-    emitAttr size = emitActualTypeSize(valOp);
-    bool     is4  = (size == EA_4BYTE);
+        // AMOCAS reads the comparand from rd and returns the original memory value in rd.
+        // AMOCAS.W compares only the low 32 bits, so the move need not sign-extend them.
+        // Preserve GC tracking for reference comparands, including when the move is elided.
+        e->emitIns_Mov(INS_mov, is4 ? EA_8BYTE : size, target, comparand, /* canSkip */ true);
+        gcInfo.gcMarkRegPtrVal(target, comparandOp->TypeGet());
 
-    genDefineTempLabel(retry);
-    e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
-    e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn’t match
-    e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
-    e->emitIns_J_cond_la(INS_bnez, retry, storeErr);                        // retry if update failed
-    genDefineTempLabel(fail);
+        // A failed AMOCAS does not have release semantics, even with rl set.
+        // Order preceding accesses before its read.
+        // aq orders subsequent accesses on both success and failure.
+        instGen_MemoryBarrier();
+        e->emitIns_R_R_R(is4 ? INS_amocas_w : INS_amocas_d, size, target, loc, val);
+    }
+    else
+    {
+        regNumber storeErr = internalRegisters.GetSingle(treeNode);
+
+        // Register allocator should have extended the lifetimes of all input and internal registers
+        // Only the value and comparand may share a register, neither is modified by the loop.
+        noway_assert(target != loc);
+        noway_assert(target != val);
+        noway_assert(target != comparand);
+        noway_assert(target != storeErr);
+        noway_assert(loc != val);
+        noway_assert(loc != comparand);
+        noway_assert(loc != storeErr);
+        noway_assert(val != storeErr);
+        noway_assert(comparand != storeErr);
+        noway_assert(target != REG_NA);
+        noway_assert(storeErr != REG_NA);
+
+        BasicBlock* retry = genCreateTempLabel();
+        BasicBlock* fail  = genCreateTempLabel();
+
+        genDefineTempLabel(retry);
+        e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
+        e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn’t match
+        e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
+        e->emitIns_J_cond_la(INS_bnez, retry, storeErr);                        // retry if update failed
+        genDefineTempLabel(fail);
+    }
 
     gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
     genProduceReg(treeNode);
