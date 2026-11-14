@@ -204,9 +204,9 @@ namespace System.Text.RegularExpressions.Generator
                 SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
 
             var regexType = new RegexType(
-                typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
+                typeDec is RecordDeclarationSyntax rds && rds.ClassOrStructKeyword.RawKind != 0 ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword.ValueText}" : typeDec.Keyword.ValueText,
                 ns ?? string.Empty,
-                $"{typeDec.Identifier}{typeDec.TypeParameterList}");
+                GetTypeName(typeDec));
 
             var compilationData = compilation is CSharpCompilation { LanguageVersion: LanguageVersion langVersion, Options: CSharpCompilationOptions compilationOptions }
                 ? new CompilationData(compilationOptions.AllowUnsafe, compilationOptions.CheckOverflow, langVersion)
@@ -217,7 +217,7 @@ namespace System.Text.RegularExpressions.Generator
                 IsProperty: regexMemberSymbol is IPropertySymbol,
                 memberSyntax.GetLocation(),
                 regexMemberSymbol.Name,
-                memberSyntax.Modifiers.ToString(),
+                string.Join(" ", memberSyntax.Modifiers.Select(static m => m.Text)),
                 nullableRegex,
                 pattern,
                 regexOptions,
@@ -231,15 +231,30 @@ namespace System.Text.RegularExpressions.Generator
             while (parent is not null && IsAllowedKind(parent.Kind()))
             {
                 current.Parent = new RegexType(
-                    parent is RecordDeclarationSyntax rds2 ? $"{parent.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : parent.Keyword.ValueText,
+                    parent is RecordDeclarationSyntax rds2 && rds2.ClassOrStructKeyword.RawKind != 0 ? $"{parent.Keyword.ValueText} {rds2.ClassOrStructKeyword.ValueText}" : parent.Keyword.ValueText,
                     ns ?? string.Empty,
-                    $"{parent.Identifier}{parent.TypeParameterList}");
+                    GetTypeName(parent));
 
                 current = current.Parent;
                 parent = parent.Parent as TypeDeclarationSyntax;
             }
 
             return result;
+
+            static string GetTypeName(TypeDeclarationSyntax typeDec) =>
+                $"{typeDec.Identifier.Text}{GetTypeParameters(typeDec.TypeParameterList)}";
+
+            static string GetTypeParameters(TypeParameterListSyntax? typeParameters)
+            {
+                if (typeParameters is null)
+                {
+                    return string.Empty;
+                }
+
+                return "<" + string.Join(", ", typeParameters.Parameters.Select(static parameter =>
+                    (parameter.VarianceKeyword.RawKind == 0 ? "" : parameter.VarianceKeyword.Text + " ")
+                    + parameter.Identifier.Text)) + ">";
+            }
 
             static bool IsAllowedKind(SyntaxKind kind) => kind is
                 SyntaxKind.ClassDeclaration or
