@@ -56,21 +56,14 @@ namespace Wasm.Build.Tests
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, true })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, true })]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("no-workload")]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
         public async Task UnusedCoreLibEntryPointsAreTrimmed(Configuration config, bool aot, bool useEntryPoints, bool readyToRun)
         {
             string extraProperties = $"<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap><AllowUnsafeBlocks>true</AllowUnsafeBlocks><PublishTrimmed>true</PublishTrimmed><PublishReadyToRun>{readyToRun}</PublishReadyToRun>";
             if (useEntryPoints)
                 extraProperties += "<DefineConstants>$(DefineConstants);USE_ENTRYPOINTS</DefineConstants>";
 
-            string runtimeSdkImport = string.Empty;
-            if (!s_buildEnv.IsWorkload)
-            {
-                extraProperties += "<UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>";
-                runtimeSdkImport = $"<Import Project=\"Sdk.targets\" Sdk=\"Microsoft.NET.Runtime.WebAssembly.Sdk\" Version=\"{s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework)}\" />";
-            }
-
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"entrypoints_{useEntryPoints}_{readyToRun}", extraProperties: extraProperties, insertAtEnd: runtimeSdkImport);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"entrypoints_{useEntryPoints}_{readyToRun}", extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "CoreLibEntryPointTrimming.cs"));
             ReplaceMainJsWithMinimalRunMain();
             PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
