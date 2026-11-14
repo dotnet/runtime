@@ -703,6 +703,8 @@ struct HWIntrinsicInfo
     }
 
 #if defined(TARGET_XARCH)
+    static bool IsEmbRoundingEnabled(NamedIntrinsic id, size_t numArgs);
+
     static bool IsEmbRoundingCompatible(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
