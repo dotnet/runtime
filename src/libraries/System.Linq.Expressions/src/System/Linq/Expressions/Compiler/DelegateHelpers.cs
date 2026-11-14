@@ -14,6 +14,14 @@ namespace System.Linq.Expressions.Compiler
     internal static partial class DelegateHelpers
     {
         /// <summary>
+        /// When disabled, delegate types that cannot be represented by Func, Action, or the predefined
+        /// call-site delegates are not emitted, matching the delegate types available with Native AOT.
+        /// </summary>
+        [FeatureSwitchDefinition("System.Linq.Expressions.CanEmitCustomDelegateTypes")]
+        internal static bool CanEmitCustomDelegateTypes { get; } =
+            AppContext.TryGetSwitch("System.Linq.Expressions.CanEmitCustomDelegateTypes", out bool isEnabled) ? isEnabled : true;
+
+        /// <summary>
         /// Finds a delegate type for a CallSite using the types in the ReadOnlyCollection of Expression.
         ///
         /// We take the read-only collection of Expression explicitly to avoid allocating memory (an array
@@ -112,7 +120,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static System.Reflection.TypeInfo MakeNewCustomDelegate(Type[] types)
         {
-            if (RuntimeFeature.IsDynamicCodeSupported)
+            if (RuntimeFeature.IsDynamicCodeSupported && CanEmitCustomDelegateTypes)
             {
                 Type returnType = types[types.Length - 1];
                 Type[] parameters = types.RemoveLast();

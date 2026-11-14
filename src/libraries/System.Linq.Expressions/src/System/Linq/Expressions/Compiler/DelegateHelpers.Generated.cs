@@ -160,7 +160,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (needCustom)
             {
-                if (LambdaExpression.CanCompileToIL)
+                if (LambdaExpression.CanCompileToIL && CanEmitCustomDelegateTypes)
                 {
                     return MakeNewCustomDelegate(types);
                 }
