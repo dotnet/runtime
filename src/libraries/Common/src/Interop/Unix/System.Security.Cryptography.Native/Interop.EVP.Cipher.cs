@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -97,7 +98,7 @@ internal static partial class Interop
             SafeEvpCipherCtxHandle ctx,
             ref byte output,
             out int outl,
-            ref byte input,
+            ref readonly byte input,
             int inl);
 
         internal static bool EvpCipherUpdate(
@@ -108,10 +109,23 @@ internal static partial class Interop
         {
             return EvpCipherUpdate(
                 ctx,
-                ref MemoryMarshal.GetReference(output),
+                ref Helpers.GetNonNullPinnableReference(output),
                 out bytesWritten,
-                ref MemoryMarshal.GetReference(input),
+                in Helpers.GetNonNullPinnableReference(input),
                 input.Length);
+        }
+
+        internal static bool EvpCipherSetAad(
+            SafeEvpCipherCtxHandle ctx,
+            ReadOnlySpan<byte> aad)
+        {
+            // A null output distinguishes AAD from plaintext or ciphertext in EVP_CipherUpdate.
+            return EvpCipherUpdate(
+                ctx,
+                ref Unsafe.NullRef<byte>(),
+                out _,
+                in Helpers.GetNonNullPinnableReference(aad),
+                aad.Length);
         }
 
         internal static void EvpCipherSetInputLength(SafeEvpCipherCtxHandle ctx, int inputLength)
@@ -139,7 +153,7 @@ internal static partial class Interop
             Span<byte> output,
             out int bytesWritten)
         {
-            return EvpCipherFinalEx(ctx, ref MemoryMarshal.GetReference(output), out bytesWritten);
+            return EvpCipherFinalEx(ctx, ref Helpers.GetNonNullPinnableReference(output), out bytesWritten);
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherGetGcmTag")]
