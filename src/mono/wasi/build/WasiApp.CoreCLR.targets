@@ -487,7 +487,10 @@
     <WriteLinesToFile Lines="@(_WasiRelinkLinkFlags->Replace('\','/'))" File="$(_WasiRelinkLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <Message Text="Linking CoreCLR-WASI wasihost host with per-app callhelper thunks ..." Importance="High" />
-    <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkLinkRsp)&quot;"
+    <PropertyGroup>
+      <_WasiLinkResponseFileQuoting Condition="'$(OS)' == 'Windows_NT'">--rsp-quoting=windows</_WasiLinkResponseFileQuoting>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_WasiClangxx)&quot; $(_WasiLinkResponseFileQuoting) &quot;@$(_WasiRelinkLinkRsp)&quot;"
           WorkingDirectory="$(_WasiRelinkObjDir)" />
     <Copy Condition="'$(PublishReadyToRun)' != 'true'"
           SourceFiles="$(_WasiRelinkOutput)"

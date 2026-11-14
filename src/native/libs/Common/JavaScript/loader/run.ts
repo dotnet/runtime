@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
+import type { DotnetHostBuilder, JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
@@ -10,8 +10,9 @@ import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
 import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
 import { initPolyfillsLoader } from "./polyfills";
-import { validateEngineFeatures } from "./bootstrap";
+import { isNodeHosted, validateEngineFeatures } from "./bootstrap";
 import { loaderCallbacks } from "./callbacks";
+import { applyLaunchArguments } from "./launch";
 import { getAppSettingsAssets } from "../appsettings";
 import { fetchAppSettings } from "./assets";
 
@@ -72,6 +73,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
             modulesAfterConfigLoadedPromises = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
             await Promise.all(modulesAfterConfigLoadedPromises.map(([, p]) => p));
+            await applyLaunchArguments();
 
             // Wire user-provided out/err overrides to Emscripten's print/printErr.
             // This must happen before the native module loads so Emscripten picks them up.
@@ -198,6 +200,16 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 export function abortStartup(reason: any): void {
     if (runtimeState.creatingRuntime) {
         nativeModulePromiseController.reject(reason);
+    }
+}
+
+export async function selfHostNodeJS(dotnet: DotnetHostBuilder): Promise<void> {
+    try {
+        if (await isNodeHosted()) {
+            await dotnet.runMainAndExit();
+        }
+    } catch (error) {
+        exit(1, error);
     }
 }
 

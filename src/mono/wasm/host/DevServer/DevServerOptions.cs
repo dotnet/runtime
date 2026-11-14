@@ -10,5 +10,7 @@ internal sealed record DevServerOptions
     bool WebServerUseCors,
     bool WebServerUseCrossOriginPolicy,
     string[] Urls,
-    string DefaultFileName = "index.html"
+    string DefaultFileName = "index.html",
+    LaunchArguments? LaunchArguments = null,
+    string? LaunchConfigPath = null
 );

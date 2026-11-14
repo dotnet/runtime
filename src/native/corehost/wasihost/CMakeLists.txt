@@ -36,6 +36,7 @@ target_include_directories(WasiHost-Static PRIVATE
     ${WASIHOST_CORERUN_DIR}      # corerun.hpp (shared pal)
     ${CLR_SRC_NATIVE_DIR}        # minipal/*.h
 )
+target_include_directories(WasiHost-Static SYSTEM PRIVATE ${CLR_SRC_NATIVE_DIR}/external)
 
 # The runtime static libraries and the app-generated callhelpers are supplied at the per-app relink
 # by the CoreCLR-WASI app builder, which pulls this archive whole-archive for main().

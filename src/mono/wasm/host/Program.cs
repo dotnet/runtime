@@ -26,6 +26,8 @@ public class WasmAppHost
         Console.WriteLine($"WasmAppHost {string.Join(' ', args)}");
         RegisterHostHandler(WasmHost.Browser, BrowserHost.InvokeAsync);
         RegisterHostHandler(WasmHost.V8, JSEngineHost.InvokeAsync);
+        RegisterHostHandler(WasmHost.JavaScriptCore, JSEngineHost.InvokeAsync);
+        RegisterHostHandler(WasmHost.SpiderMonkey, JSEngineHost.InvokeAsync);
         RegisterHostHandler(WasmHost.NodeJS, JSEngineHost.InvokeAsync);
         RegisterHostHandler(WasmHost.Wasmtime, WasiEngineHost.InvokeAsync);
 
@@ -45,6 +47,11 @@ public class WasmAppHost
         try
         {
             CommonConfiguration commonConfig = CommonConfiguration.FromCommandLineArguments(args);
+            if (commonConfig.LaunchOptions.Help)
+            {
+                Console.WriteLine(LaunchArguments.Usage);
+                return 0;
+            }
             return !s_hostHandlers.TryGetValue(commonConfig.Host, out HostHandler? handler)
                 ? throw new CommandLineException($"Cannot find any handler for host type {commonConfig.Host}")
                 : await handler(commonConfig, loggerFactory, logger, cts.Token);
