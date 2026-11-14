@@ -7,6 +7,39 @@ namespace System.CodeDom
 {
     public class CodeTypeMemberCollection : CollectionBase
     {
+        private bool _trackMethodIdentity;
+        internal void TrackMethodIdentity() => _trackMethodIdentity = true;
+
+        private void InvalidateMethodIdentity()
+        {
+            if (_trackMethodIdentity)
+                CodeMemberMethod.InvalidateMethodIdentity();
+        }
+
+        protected override void OnClearComplete()
+        {
+            base.OnClearComplete();
+            InvalidateMethodIdentity();
+        }
+
+        protected override void OnInsertComplete(int index, object value)
+        {
+            base.OnInsertComplete(index, value);
+            InvalidateMethodIdentity();
+        }
+
+        protected override void OnRemoveComplete(int index, object value)
+        {
+            base.OnRemoveComplete(index, value);
+            InvalidateMethodIdentity();
+        }
+
+        protected override void OnSetComplete(int index, object oldValue, object newValue)
+        {
+            base.OnSetComplete(index, oldValue, newValue);
+            InvalidateMethodIdentity();
+        }
+
         public CodeTypeMemberCollection() { }
 
         public CodeTypeMemberCollection(CodeTypeMemberCollection value)
