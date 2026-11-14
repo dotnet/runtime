@@ -308,6 +308,9 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return type;
             }
+
+            // SortedDictionary has deterministic enumeration order, so Preserve roundtrips can be compared.
+            yield return typeof(SortedDictionary<string, TElement>);
         }
 
         private static IEnumerable<Type> ObjectNotationTypes<TElement>()
