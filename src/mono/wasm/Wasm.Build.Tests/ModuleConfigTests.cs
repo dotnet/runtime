@@ -182,6 +182,37 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+    [Theory]
+    [InlineData(true, null, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(false, null, true)]
+    public async Task FetchIntegrityFollowsFingerprinting(bool fingerprintAssets, bool? disableIntegrityCheck, bool expectIntegrity)
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(
+            config, aot: false, TestAsset.WasmBasicTestApp,
+            $"FetchIntegrity_{fingerprintAssets}_{disableIntegrityCheck?.ToString() ?? "default"}");
+        PublishProject(info, config, new PublishOptions(
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: $"-p:WasmFingerprintAssets={fingerprintAssets.ToString().ToLowerInvariant()}"));
+
+        var query = new NameValueCollection();
+        if (disableIntegrityCheck is bool disable)
+        {
+            query.Add("disableIntegrityCheck", disable.ToString().ToLowerInvariant());
+        }
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "FetchIntegrity",
+            BrowserQueryString: query));
+
+        var fetches = result.TestOutput.Where(m => m.StartsWith("Fetch integrity:", StringComparison.Ordinal)).ToArray();
+        Assert.Contains(fetches, m => m.Contains("dotnet.native", StringComparison.Ordinal));
+        string expected = expectIntegrity ? "Fetch integrity: yes " : "Fetch integrity: no ";
+        Assert.All(fetches, m => Assert.StartsWith(expected, m, StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task BufferedAssetsTest()
     {

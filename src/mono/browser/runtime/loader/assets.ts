@@ -699,14 +699,27 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
     } else {
-        // `disableIntegrityCheck` is to give developers an easy opt-out from the integrity check
-        if (!loaderHelpers.config.disableIntegrityCheck && asset.hash) {
-            // Any other resource than configuration should provide integrity check
-            fetchOptions.integrity = asset.hash;
+        if (shouldCheckIntegrity(asset.hash, asset.cache)) {
+            fetchOptions.integrity = asset.hash!;
         }
     }
 
     return loaderHelpers.fetch_like(url, fetchOptions);
+}
+
+// Integrity checks guard against mixing stale cached assets, not against tampering. Fingerprinted assets
+// ("force-cache", or "reload" when retrying) have content-addressed URLs, so by default they skip the check,
+// which otherwise blocks streaming compilation and hashes every byte on the main thread.
+// An explicit `disableIntegrityCheck` value applies to all assets.
+function shouldCheckIntegrity (hash: string | null | undefined, cache: RequestCache | undefined): boolean {
+    if (!hash) {
+        return false;
+    }
+    const disableIntegrityCheck = loaderHelpers.config.disableIntegrityCheck;
+    if (typeof disableIntegrityCheck === "boolean") {
+        return !disableIntegrityCheck;
+    }
+    return cache !== "force-cache" && cache !== "reload";
 }
 
 const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {

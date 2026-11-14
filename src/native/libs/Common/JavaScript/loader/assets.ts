@@ -579,10 +579,8 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
     } else {
-        // `disableIntegrityCheck` is to give developers an easy opt-out from the integrity check
-        if (!loaderConfig.disableIntegrityCheck && asset.hash) {
-            // Any other resource than configuration should provide integrity check
-            fetchOptions.integrity = asset.hash;
+        if (shouldCheckIntegrity(asset.hash, asset.cache)) {
+            fetchOptions.integrity = asset.hash!;
         }
     }
 
@@ -675,14 +673,14 @@ export async function prefetchAllResources(appsettings?: AppSettings[]): Promise
 
     const maxParallel = loaderConfig.maxParallelDownloads ?? 16;
     const pending: Promise<void>[] = [];
-    const queue: { url: string; hash?: string | null | ""; name: string; behavior: AssetBehaviors }[] = [];
+    const queue: { url: string; hash?: string | null | ""; cache?: RequestCache; name: string; behavior: AssetBehaviors }[] = [];
 
-    function enqueueAsset(asset: { name?: string; resolvedUrl?: string; hash?: string | null | "" }, behavior: AssetBehaviors): void {
+    function enqueueAsset(asset: { name?: string; resolvedUrl?: string; hash?: string | null | ""; cache?: RequestCache }, behavior: AssetBehaviors): void {
         if (!asset.resolvedUrl && asset.name) {
             asset.resolvedUrl = locateFile(asset.name);
         }
         if (asset.resolvedUrl && asset.name) {
-            queue.push({ url: asset.resolvedUrl, hash: asset.hash, name: asset.name, behavior });
+            queue.push({ url: asset.resolvedUrl, hash: asset.hash, cache: asset.cache, name: asset.name, behavior });
         }
     }
 
@@ -723,7 +721,7 @@ export async function prefetchAllResources(appsettings?: AppSettings[]): Promise
         while (index < queue.length) {
             const item = queue[index++];
             try {
-                await prefetchUrl(item.url, item.hash, item.name, item.behavior);
+                await prefetchUrl(item.url, item.hash, item.cache, item.name, item.behavior);
             } catch {
                 // Best-effort cache warming — individual failures are non-fatal.
                 // The subsequent create() call will handle retries and error reporting.
@@ -756,7 +754,22 @@ export function prefetchJSModuleLinks(modules: JsAsset[]): void {
     }
 }
 
-async function prefetchUrl(url: string, hash?: string | null | "", name?: string, behavior?: AssetBehaviors): Promise<void> {
+// Integrity checks guard against mixing stale cached assets, not against tampering. Fingerprinted assets
+// ("force-cache", or "reload" when retrying) have content-addressed URLs, so by default they skip the check,
+// which otherwise blocks streaming compilation and hashes every byte on the main thread.
+// An explicit `disableIntegrityCheck` value applies to all assets.
+function shouldCheckIntegrity(hash: string | null | undefined, cache: RequestCache | undefined): boolean {
+    if (!hash) {
+        return false;
+    }
+    const disableIntegrityCheck = loaderConfig.disableIntegrityCheck;
+    if (typeof disableIntegrityCheck === "boolean") {
+        return !disableIntegrityCheck;
+    }
+    return cache !== "force-cache" && cache !== "reload";
+}
+
+async function prefetchUrl(url: string, hash?: string | null | "", cache?: RequestCache, name?: string, behavior?: AssetBehaviors): Promise<void> {
     // Respect loadBootResourceCallback so prefetch goes through the same custom loader as create()
     if (typeof loadBootResourceCallback === "function" && behavior && name) {
         const blazorType = behaviorToBlazorAssetTypeMap[behavior];
@@ -782,8 +795,8 @@ async function prefetchUrl(url: string, hash?: string | null | "", name?: string
     if (!loaderConfig.disableNoCacheFetch) {
         fetchOptions.cache = "no-cache";
     }
-    if (!loaderConfig.disableIntegrityCheck && hash) {
-        fetchOptions.integrity = hash;
+    if (shouldCheckIntegrity(hash, cache)) {
+        fetchOptions.integrity = hash!;
     }
     const response = await fetchLike(url, fetchOptions);
     if (response.ok) {
