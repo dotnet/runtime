@@ -267,15 +267,41 @@ private:
     DWORD       GetNearestIndex(DWORD cbInitialSize);
 
 #ifdef _DEBUG
-    static void            Enter(HashMap *);        // check valid to enter
-    static void            Leave(HashMap *);        // check valid to leave
-
-    typedef Holder<HashMap *, HashMap::Enter, HashMap::Leave> SyncAccessHolder;
     BOOL            m_fInSyncCode; // test for non-synchronous access
-#else // !_DEBUG
-    // in non DEBUG mode use a no-op helper
-    typedef NoOpBaseHolder<HashMap *> SyncAccessHolder;
-#endif // !_DEBUG
+
+    class SyncAccessHolder final
+    {
+        HashMap* m_pMap;
+    public:
+        explicit SyncAccessHolder(HashMap* map)
+            : m_pMap(map)
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(!m_pMap->m_fInSyncCode);
+            m_pMap->m_fInSyncCode = true;
+        }
+
+        ~SyncAccessHolder()
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(m_pMap->m_fInSyncCode);
+            m_pMap->m_fInSyncCode = false;
+        }
+
+        SyncAccessHolder(const SyncAccessHolder&) = delete;
+        SyncAccessHolder& operator=(const SyncAccessHolder&) = delete;
+    };
+#else // _DEBUG
+    class SyncAccessHolder final
+    {
+    public:
+        explicit SyncAccessHolder(HashMap*) {}
+        ~SyncAccessHolder() = default;
+
+        SyncAccessHolder(const SyncAccessHolder&) = delete;
+        SyncAccessHolder& operator=(const SyncAccessHolder&) = delete;
+    };
+#endif // _DEBUG
 
     // compute the new size, based on the number of free slots
     // available, compact or expand

@@ -555,11 +555,18 @@ void ConvertedImageLayout::FreeImageParts()
     }
 }
 
-static void ReleaseImageParts(ConvertedImageLayout* layout)
+struct ImagePartsHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-    layout->FreeImageParts();
-}
+    using Type = ConvertedImageLayout*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type layout) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (layout != NULL)
+            layout->FreeImageParts();
+    }
+};
 
 ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disableMapping)
 {
@@ -574,7 +581,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
     m_pOwner = source->m_pOwner;
     m_pExceptionDir = NULL;
     memset(m_imageParts, 0, sizeof(m_imageParts));
-    Holder<ConvertedImageLayout*, DoNothing, ReleaseImageParts> imagePartsHolder(this);
+    LifetimeHolder<ImagePartsHolderTraits> imagePartsHolder(this);
 
     bool relocationMustWriteCopy = false;
     void* loadedImage = NULL;
@@ -632,7 +639,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         }
 #endif //TARGET_X86
     }
-    imagePartsHolder.SuppressRelease();
+    imagePartsHolder.Detach();
 }
 
 ConvertedImageLayout::~ConvertedImageLayout()

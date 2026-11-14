@@ -1654,7 +1654,7 @@ int GetRandomInt(int maxVal)
 {
     // In DAC builds we don't need the lock (DAC is single-threaded) and can't get it anyway (DNHSL isn't supported)
 #ifndef DACCESS_COMPILE
-    DangerousNonHostedSpinLockHolder lockHolder(&g_randomLock);
+    DangerousNonHostedSpinLockHolder lockHolder = g_randomLock.TakeLock();
 #endif
     // Use the thread-local Random instance
     if (!g_random.IsInitialized())

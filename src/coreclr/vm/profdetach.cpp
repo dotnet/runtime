@@ -176,7 +176,7 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
     }
 
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         EEToProfInterfaceImpl *pEEToProf = pProfilerInfo->pProfInterface;
 
@@ -321,7 +321,7 @@ void ProfilingAPIDetach::ExecuteEvacuationLoop()
         }
 
         {
-            CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+            CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
             while (s_profilerDetachInfos.Size() > 0)
             {
@@ -408,7 +408,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     ULONGLONG ui64ExpectedCompletionMilliseconds;
     ULONGLONG ui64DetachStartTime;
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
         ui64ExpectedCompletionMilliseconds = pDetachInfo->m_dwExpectedCompletionMilliseconds;
@@ -482,7 +482,7 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
     _ASSERTE(pDetachInfo->m_pProfilerInfo->curProfStatus.Get() == kProfStatusDetaching);
 
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         // Notify profiler it's about to be unloaded
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
@@ -605,7 +605,7 @@ HRESULT ProfilingAPIDetach::CreateDetachThread()
     }
 
     {
-        CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+        CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
         if (!s_profilerDetachThreadCreated)
         {
@@ -646,7 +646,7 @@ BOOL ProfilingAPIDetach::IsEEToProfPtrRegisteredForDetach(EEToProfInterfaceImpl 
 {
     LIMITED_METHOD_CONTRACT;
 
-    CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
+    CRITSEC_Holder csh = ClrTakeCriticalSection(ProfilingAPIUtility::GetStatusCrst());
 
     for (SIZE_T pos = 0; pos < s_profilerDetachInfos.Size(); ++pos)
     {

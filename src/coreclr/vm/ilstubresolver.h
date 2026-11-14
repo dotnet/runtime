@@ -103,6 +103,19 @@ protected:
     CORJIT_FLAGS            m_jitFlags;
 };
 
-typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
+struct ILStubGenHolderTraits final
+{
+    using Type = ILStubResolver*;
+    static constexpr Type Default() { return NULL; }
+
+    static void Free(Type resolver) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (resolver != NULL)
+            ILStubResolver::StubGenFailed(resolver);
+    }
+};
+
+using ILStubGenHolder = LifetimeHolder<ILStubGenHolderTraits>;
 
 #endif // __ILSTUBRESOLVER_H__
