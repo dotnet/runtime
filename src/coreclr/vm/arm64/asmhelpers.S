@@ -725,6 +725,9 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     mov x22, x0
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
+#ifdef TARGET_APPLE
+    mov x0, x22
+#endif
     cbz x20, LOCAL_LABEL(NoManagedThreadOrCallStub)
 
     ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
@@ -734,8 +737,6 @@ LOCAL_LABEL(NoManagedThreadOrCallStub):
 #ifdef TARGET_APPLE
     // GetInterpThreadContextWithPossiblyMissingThreadOrCallStub can destroy all argument registers, so we
     // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
-    // Restore x0 thrashed by the INLINE_GETTHREAD
-    mov x0, x22
     SAVE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 #endif
@@ -754,9 +755,6 @@ LOCAL_LABEL(HaveInterpThreadContext):
 
 #ifdef TARGET_APPLE
 LOCAL_LABEL(HaveInterpThreadContext):
-    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
-    // So we restore just the x0
-    mov x0, x22
 #endif // TARGET_APPLE
 
     ldr x9, [x19] // InterpMethod*
