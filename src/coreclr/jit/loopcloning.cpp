@@ -12,6 +12,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jitpch.h"
 #include "jitstd/algorithm.h"
+#include "sideeffects.h"
 
 #ifdef DEBUG
 
@@ -2472,6 +2473,219 @@ bool Compiler::optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lcl
     return true;
 }
 
+//------------------------------------------------------------------------
+// optAreJaggedArrayRefsInvariant: Check whether loop effects can invalidate
+//     references to the inner arrays of jagged accesses.
+//
+// Arguments:
+//     info - Loop cloning visitor state, including the cached result.
+//
+// Returns:
+//     True if no loop effect may invalidate inner-array reference invariance.
+//
+// Remarks:
+//     This is a loop-wide check, independent of any particular array access.
+//     The loop is scanned at most once per cloning attempt; subsequent queries
+//     reuse the cached result.
+//     For double[][] a with invariant a and i, a true result allows cloning to
+//     treat a[i] as invariant and guard accesses with a[i].Length.
+//
+bool Compiler::optAreJaggedArrayRefsInvariant(LoopCloneVisitorInfo* info)
+{
+    if (info->checkedArrayRefEffects)
+    {
+        return info->canHoistArrayRefs;
+    }
+
+    class ArrayRefVisitor final : public GenTreeVisitor<ArrayRefVisitor>
+    {
+        bool TypeCanBeArray(CORINFO_CLASS_HANDLE type)
+        {
+            // In particular, object[], Array[], and interface arrays can alias
+            // jagged arrays through covariance.
+            return (type == NO_CLASS_HANDLE) ||
+                   ((m_compiler->info.compCompHnd->getClassAttribs(type) & CORINFO_FLG_ARRAY) != 0) ||
+                   !m_compiler->info.compCompHnd->isExactType(type);
+        }
+
+        bool ArrayCanContainArrayRefs(GenTree* array)
+        {
+            return TypeCanBeArray(m_compiler->gtGetArrayElementClassHandle(array));
+        }
+
+        //------------------------------------------------------------------------
+        // MayStoreArrayIntoArray: Check whether an array-element store may store
+        //     an array reference, based on its destination element type.
+        //
+        // Arguments:
+        //     address - Full morphed store address, including the COMMA nodes
+        //               that evaluate array references and bounds checks.
+        //     array   - Array reference used in the final element address.
+        //
+        // Returns:
+        //     True if the destination element type may be an array or is unknown.
+        //     False only if the reconstructed element type cannot be an array.
+        //
+        bool MayStoreArrayIntoArray(GenTree* address, GenTree* array)
+        {
+            ArrIndex index(m_compiler->getAllocator(CMK_LoopClone));
+            if (!array->OperIs(GT_LCL_VAR) || !m_compiler->optReconstructArrIndex(address, &index))
+            {
+                return true;
+            }
+
+            // 'index' holds information derived from bounds checks. Verify the
+            // bounds check and the array access use the same array local so we
+            // can make inferences about the array store from the bounds check
+            // information.
+            GenTreeBoundsChk* check = index.bndsChks[index.rank - 1]->gtGetOp1()->AsBoundsChk();
+            if (check->GetArrayLength()->gtGetOp1()->AsLclVarCommon()->GetLclNum() != array->AsLclVar()->GetLclNum())
+            {
+                return true;
+            }
+
+            // Walk the destination array's parent-to-child type chain to depth
+            // index.rank to recover the destination element type. All earlier
+            // types must be arrays, but the type at index.rank need not be.
+            CORINFO_CLASS_HANDLE type = m_compiler->lvaGetDesc(index.arrLcl)->lvClassHnd;
+            for (unsigned dim = 0; dim < index.rank; dim++)
+            {
+                if ((type == NO_CLASS_HANDLE) ||
+                    ((m_compiler->info.compCompHnd->getClassAttribs(type) & CORINFO_FLG_ARRAY) == 0) ||
+                    (m_compiler->info.compCompHnd->getChildType(type, &type) != CORINFO_TYPE_CLASS))
+                {
+                    return true;
+                }
+            }
+            return TypeCanBeArray(type);
+        }
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ArrayRefVisitor(Compiler* compiler)
+            : GenTreeVisitor<ArrayRefVisitor>(compiler)
+        {
+        }
+
+        // Returns WALK_ABORT if this node may invalidate inner-array reference invariance.
+        //
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            // Ignore subtrees with no effects relevant to array-reference invariance.
+            //
+            if ((node->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF)) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            // Synchronization may make other-thread updates to array references observable.
+            //
+            if (node->OperIs(GT_MEMORYBARRIER) || (node->OperIsIndir() && node->AsIndir()->IsVolatile()))
+            {
+                return WALK_ABORT;
+            }
+
+#ifdef FEATURE_HW_INTRINSICS
+            // AliasSet does not model the ordering effects of hardware fences.
+            if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
+            {
+                return WALK_ABORT;
+            }
+#endif // FEATURE_HW_INTRINSICS
+
+            if (node->OperIs(GT_CALL))
+            {
+                // Allow the store helper when the destination element type cannot be an array.
+                //
+                GenTreeCall* call = node->AsCall();
+                if (call->IsHelperCallOrUserEquivalent(m_compiler, CORINFO_HELP_ARRADDR_ST) &&
+                    !ArrayCanContainArrayRefs(call->gtArgs.GetUserArgByIndex(0)->GetNode()))
+                {
+                    return WALK_CONTINUE;
+                }
+
+                // Bail unless the call's non-exception side effects are known to be safe.
+                //
+                return call->HasSideEffects(m_compiler, /* ignoreExceptions */ true) ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
+            {
+                // Allow non-GC scalar stores.
+                //
+                // This also covers scalar element addresses spilled to byref
+                // temps: a non-GC store cannot replace an array reference.
+                if (node->OperIs(GT_STOREIND) && !varTypeIsGC(node->TypeGet()))
+                {
+                    return WALK_CONTINUE;
+                }
+
+                GenTree*        addr    = node->AsIndir()->Addr()->gtEffectiveVal();
+                GenTreeArrAddr* arrAddr = nullptr;
+                if (addr->IsArrayAddr(&arrAddr))
+                {
+                    // Allow stores to primitive or struct array elements.
+                    //
+                    if (arrAddr->GetElemType() != TYP_REF)
+                    {
+                        return WALK_CONTINUE;
+                    }
+
+                    // Recognize the usual morphed array base + element offset,
+                    // so stores into arrays such as string[] remain eligible.
+                    GenTree* arrayAddr = arrAddr->Addr()->gtEffectiveVal();
+                    if (arrayAddr->OperIs(GT_ADD) && arrayAddr->gtGetOp1()->TypeIs(TYP_REF) &&
+                        (!ArrayCanContainArrayRefs(arrayAddr->gtGetOp1()) ||
+                         !MayStoreArrayIntoArray(node->AsIndir()->Addr(), arrayAddr->gtGetOp1())))
+                    {
+                        return WALK_CONTINUE;
+                    }
+                }
+
+                // A field store cannot overwrite an array reference stored in
+                // a jagged-array element.
+                //
+                GenTree*  baseAddr = nullptr;
+                FieldSeq* fldSeq   = nullptr;
+                ssize_t   offset   = 0;
+                if (addr->IsFieldAddr(m_compiler, &baseAddr, &fldSeq, &offset) &&
+                    ((baseAddr == nullptr) || baseAddr->TypeIs(TYP_REF)))
+                {
+                    return WALK_CONTINUE;
+                }
+            }
+
+            // Bail on remaining addressable writes, including reference stores and atomics.
+            //
+            return AliasSet::NodeInfo(m_compiler, node).WritesAddressableLocation() ? WALK_ABORT : WALK_CONTINUE;
+        }
+    };
+
+    ArrayRefVisitor visitor(this);
+    BasicBlock*     savedBlock   = compCurBB;
+    info->canHoistArrayRefs      = info->loop->VisitLoopBlocks([&](BasicBlock* block) {
+        compCurBB = block;
+        for (Statement* stmt : block->Statements())
+        {
+            if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == WALK_ABORT)
+            {
+                JITDUMP("Array references may change in " FMT_BB " " FMT_STMT "\n", block->bbNum, stmt->GetID());
+                return BasicBlockVisit::Abort;
+            }
+        }
+        return BasicBlockVisit::Continue;
+    }) == BasicBlockVisit::Continue;
+    compCurBB                    = savedBlock;
+    info->checkedArrayRefEffects = true;
+    return info->canHoistArrayRefs;
+}
+
 //---------------------------------------------------------------------------------------------------------------
 //  optExtractArrIndex: Try to extract the array index from "tree".
 //
@@ -2874,6 +3088,15 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                         return WALK_SKIP_SUBTREES;
                     }
                 }
+
+                // Invariant base and index locals do not imply that the array
+                // references loaded along a jagged access are invariant.
+                if ((dim > 0) && !optAreJaggedArrayRefsInvariant(info))
+                {
+                    JITDUMP("Not cloning jagged array dimension %u: array references may change\n", dim);
+                    continue;
+                }
+
 #ifdef DEBUG
                 if (verbose)
                 {
