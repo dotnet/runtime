@@ -124,6 +124,13 @@ internal static class Program
             Assert(events.Length == 1);
             Assert(events[0].Name == string.Empty);
 
+            // Members are matched by their metadata definition, which doesn't depend on their name
+            FieldInfo definitionField = Keep(typeof(GenericHolder<>)).GetFields(flags | BindingFlags.Static).Single();
+            Type constructed = Keep(typeof(GenericHolder<Marked>));
+            MemberInfo projected = constructed.GetMemberWithSameMetadataDefinitionAs(definitionField);
+            Assert(projected is FieldInfo { Name: "" } projectedField && projectedField.DeclaringType == constructed);
+            Assert(widget.GetMemberWithSameMetadataDefinitionAs(fields[0]) == fields[0]);
+
             Assert(widget.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Length == 1);
         }
     }
@@ -317,6 +324,7 @@ internal static class Program
 
             // The names are only available in the symbol files
             Assert(!string.IsNullOrEmpty(stackTrace));
+            Assert(stackTrace.Contains("+0x"));
             Assert(!stackTrace.Contains(Join("Unique", "Stripped")));
 
             // Methods that are reflectable have no stack trace data, but [StackTraceHidden] still applies

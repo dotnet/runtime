@@ -317,6 +317,11 @@ namespace System
             if (isOpenResolver)
             {
                 MethodInfo mi = ReflectionAugments.GetDelegateMethod(this);
+
+                // Methods and declaring types with a name that was stripped by the compiler have no information to report.
+                if (mi.Name.Length == 0 || mi.DeclaringType!.Name.Length == 0)
+                    return null;
+
                 Type? declaringType = mi.DeclaringType;
                 if (declaringType.IsConstructedGenericType)
                     declaringType = declaringType.GetGenericTypeDefinition();
