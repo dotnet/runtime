@@ -44,8 +44,7 @@ namespace ILCompiler.Metadata
 
         private bool StripsName(Cts.MethodDesc method)
         {
-            Cts.MetadataType owningType = (Cts.MetadataType)method.OwningType;
-            if (_policy.GeneratesNames(owningType.Module))
+            if (method.OwningType is not Cts.MetadataType owningType || _policy.GeneratesNames(owningType.Module))
                 return false;
 
             // The runtime finds constructors by name.

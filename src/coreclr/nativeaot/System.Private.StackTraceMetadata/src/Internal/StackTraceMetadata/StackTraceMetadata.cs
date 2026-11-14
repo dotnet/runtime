@@ -85,8 +85,7 @@ namespace Internal.StackTraceMetadata
             if (methodStartAddress != IntPtr.Zero && ReflectionExecution.TryGetMethodMetadataFromAddress(methodStartAddress, isFunctionPointer: false,
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
-                out MethodHandle methodHandle)
-                && !IsNameStripped(reader, typeHandle, methodHandle))
+                out MethodHandle methodHandle))
             {
                 if (StackTraceHiddenMetadataPresent())
                 {
@@ -107,6 +106,16 @@ namespace Internal.StackTraceMetadata
                             break;
                         }
                     }
+                }
+
+                // Methods with a name that was stripped by the compiler have no information to report.
+                if (IsNameStripped(reader, typeHandle, methodHandle))
+                {
+                    owningTypeName = null;
+                    genericArgs = null;
+                    methodSignature = null;
+                    hashCodeForLineInfo = 0;
+                    return null;
                 }
 
                 (owningTypeName, genericArgs, string methodName, methodSignature) = MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);

@@ -266,6 +266,12 @@ internal static class Program
             Assert(widget.GetProperty(Join("Co", "unt")) is null);
             Assert(widget.GetEvent(Join("Chan", "ged")) is null);
             Assert(widget.GetNestedType(Join("Nes", "ted")) is null);
+
+            // Interfaces are looked up by name without going through the member filters
+            Type converter = Keep(typeof(IntConverter));
+            Assert(converter.GetInterface(string.Empty) is null);
+            Assert(converter.GetInterface(string.Empty, ignoreCase: true) is null);
+            Assert(converter.GetInterface(Join("IConv", "erter`1")) is null);
         }
     }
 
@@ -312,6 +318,22 @@ internal static class Program
             // The names are only available in the symbol files
             Assert(!string.IsNullOrEmpty(stackTrace));
             Assert(!stackTrace.Contains(Join("Unique", "Stripped")));
+
+            // Methods that are reflectable have no stack trace data, but [StackTraceHidden] still applies
+            Keep(typeof(HiddenFrameHolder));
+            string hiddenStackTrace = null;
+            try
+            {
+                HiddenFrameHolder.ThrowFromHiddenFrame();
+            }
+            catch (InvalidOperationException ex)
+            {
+                hiddenStackTrace = ex.StackTrace;
+            }
+
+            Assert(hiddenStackTrace is not null);
+            Assert(!hiddenStackTrace.Contains(Join("Hidden", "FrameHolder")));
+            Assert(!hiddenStackTrace.Contains("+0x"));
         }
     }
 
