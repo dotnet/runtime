@@ -40,6 +40,7 @@ public static class Entrypoints
         delegate* unmanaged<uint, uint, byte*, void*, int> writeThreadContext,
         delegate* unmanaged<uint, ulong*, void*, int> allocVirtual,
         void* delegateContext,
+        IntPtr dataTarget,
         IntPtr* handle)
     {
         try
@@ -146,6 +147,12 @@ public static class Entrypoints
                 setThreadContextDelegate,
                 allocDelegate,
                 [Contracts.CoreCLRContracts.Register]);
+
+            if (dataTarget != IntPtr.Zero)
+            {
+                object debuggerTarget = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)dataTarget)!;
+                EntrypointHelpers.EnableMetadataRecovery(target, debuggerTarget);
+            }
 
             GCHandle gcHandle = GCHandle.Alloc(new CdacHandle(target, new Lock()));
             *handle = GCHandle.ToIntPtr(gcHandle);
@@ -385,7 +392,7 @@ public static class Entrypoints
             $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
         ICorDebugMutableDataTarget? mutableDataTarget = targetObject as ICorDebugMutableDataTarget;
 
-        return ContractDescriptorTarget.Create(
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -469,5 +476,8 @@ public static class Entrypoints
             },
             [Contracts.CoreCLRContracts.Register],
             runtimeBase);
+
+        EntrypointHelpers.EnableMetadataRecovery(target, targetObject);
+        return target;
     }
 }

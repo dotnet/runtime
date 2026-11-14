@@ -52,6 +52,27 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `mscordaccore_enummemory` | Dump enumerator entrypoint; produces `mscordaccore` |
 | `tests` | Unit tests with mock memory infrastructure |
 
+## Debugger-provided metadata recovery
+
+Debugger targets can optionally provide `ICLRMetadataLocator`, `IXCLRDataTarget3`, or
+`ICorDebugMetaDataLocator`. The activation helpers use these callbacks to recover missing
+metadata after a target memory read fails. Recovery is implemented underneath the target
+read APIs, so it also serves consumers that read metadata bytes directly instead of using
+the `EcmaMetadata` contract to create a metadata reader.
+
+The first failed read builds a sorted index of loaded image ranges from the `Loader`
+contract. Subsequent failures use a binary search. Only the matching image's metadata
+range is resolved, and recovered metadata is cached until a full target flush. Successful
+host reads always take precedence, and recursive reads made while discovering image
+information do not attempt recovery.
+
+Recovery is restricted to requests wholly contained in the original metadata range.
+Located metadata must have the same size as that range. IL, image headers, and separately
+allocated dynamic or updated metadata are not recovered from these callbacks. A file
+returned by the metadata locator is not treated as a matching image for arbitrary target
+addresses. Reads made directly by native DBI through the debugger's data target are also
+outside this cDAC-local recovery layer.
+
 ## Contract specifications
 
 Each contract has a specification document in
