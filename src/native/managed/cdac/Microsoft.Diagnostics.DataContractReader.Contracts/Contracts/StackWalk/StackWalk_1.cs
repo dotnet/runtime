@@ -352,6 +352,7 @@ internal partial class StackWalk_1 : IStackWalk
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
 
+                        bool isFunclet = _eman.IsFunclet(cbh.Value);
                         GcSlotEnumerationOptions gcOptions = new()
                         {
                             IsActiveFrame = gcFrame.Frame.IsActiveFrame,
@@ -362,7 +363,8 @@ internal partial class StackWalk_1 : IStackWalk
                             // native CrawlFrame::GetCodeManagerFlags (stackwalk.h).
                             IsExecutionAborted = gcFrame.IsInterrupted,
                             IsParentOfFuncletStackFrame = gcFrame.ShouldParentToFuncletSkipReportingGCReferences,
-                            SuppressUntrackedSlots = _eman.IsFilterFunclet(cbh.Value),
+                            IsFunclet = isFunclet,
+                            SuppressUntrackedSlots = isFunclet && _eman.IsFilterFunclet(cbh.Value),
                         };
 
                         uint? relOffsetOverride = null;
