@@ -604,6 +604,98 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1040", Assert.Single(diagnostics).Id);
         }
 
+        public static IEnumerable<object[]> Diagnostic_FileLocalType_MemberData() =>
+            from type in new[] { "class", "struct", "record", "record struct", "interface" }
+            from nestingDepth in new[] { 0, 1, 2 }
+            select new object[] { type, nestingDepth };
+
+        [Theory]
+        [MemberData(nameof(Diagnostic_FileLocalType_MemberData))]
+        public async Task Diagnostic_FileLocalType(string type, int nestingDepth)
+        {
+            string members = """
+                [GeneratedRegex("ab")]
+                private static partial Regex Method();
+
+                [GeneratedRegex("ab")]
+                private static partial Regex Property { get; }
+                """;
+
+            for (int i = 0; i < nestingDepth; i++)
+            {
+                members = $$"""
+                    partial class Nested{{i}}
+                    {
+                        {{members}}
+                    }
+                    """;
+            }
+
+            string code = $$"""
+                using System.Text.RegularExpressions;
+                namespace Test;
+                file partial {{type}} C
+                {
+                    {{members}}
+                }
+                """;
+
+            (Compilation _, GeneratorDriverRunResult result) = await RegexGeneratorHelper.RunGeneratorCore(code);
+
+            Assert.Equal(2, result.Diagnostics.Length);
+            Assert.All(result.Diagnostics, diagnostic =>
+            {
+                Assert.Equal("SYSLIB1046", diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                Assert.Equal(
+                    "GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.",
+                    diagnostic.GetMessage(CultureInfo.InvariantCulture));
+                Assert.StartsWith("[GeneratedRegex", code.Substring(diagnostic.Location.SourceSpan.Start, diagnostic.Location.SourceSpan.Length));
+            });
+            Assert.Empty(result.GeneratedTrees);
+        }
+
+        [Fact]
+        public async Task Diagnostic_FileLocalType_DoesNotPreventValidGeneration()
+        {
+            string code = """
+                using System.Text.RegularExpressions;
+                partial class ValidRegex
+                {
+                    [GeneratedRegex("ab")]
+                    private static partial Regex Method();
+
+                    [GeneratedRegex("ab")]
+                    private static partial Regex Property { get; }
+                }
+
+                file partial class FileLocalRegex
+                {
+                    [GeneratedRegex("ab")]
+                    private static partial Regex Method();
+
+                    [GeneratedRegex("ab")]
+                    private static partial Regex Property { get; }
+                }
+                """;
+
+            (Compilation compilation, GeneratorDriverRunResult result) = await RegexGeneratorHelper.RunGeneratorCore(code);
+
+            Assert.Equal(2, result.Diagnostics.Length);
+            Assert.All(result.Diagnostics, diagnostic =>
+            {
+                Assert.Equal("SYSLIB1046", diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            });
+            Compilation output = compilation.AddSyntaxTrees(result.GeneratedTrees);
+            INamedTypeSymbol validType = Assert.IsAssignableFrom<INamedTypeSymbol>(output.GetTypeByMetadataName("ValidRegex"));
+            IMethodSymbol method = Assert.Single(validType.GetMembers("Method").OfType<IMethodSymbol>());
+            IPropertySymbol property = Assert.Single(validType.GetMembers("Property").OfType<IPropertySymbol>());
+
+            Assert.NotNull(method.PartialImplementationPart);
+            Assert.NotNull(property.PartialImplementationPart);
+        }
+
         [Fact]
         public async Task Valid_ClassWithoutNamespace()
         {
