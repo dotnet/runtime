@@ -9,6 +9,8 @@
     <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <ProjectReference Include="$(WasmProjectRoot)host\WasmAppHost.csproj" />
     <PackageFile Include="build\*.props;build\*.targets;build\*.web.config;build\*.json" TargetPath="build" />
+    <PackageFile Include="$(BrowserProjectRoot)build\ILLink.Descriptors.JSExportProvider.xml" TargetPath="build" />
+    <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.TypeMap.targets" TargetPath="build" />
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">

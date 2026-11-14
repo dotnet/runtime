@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { dotnetAssert, dotnetLogger, dotnetLoaderExports } from "./cross-module";
 
-import type { GCHandle, JSHandle, WeakRefInternal } from "./types";
+import type { DeferredBindingCS, GCHandle, JSHandle, WeakRefInternal } from "./types";
 import { GCHandleNull } from "./types";
 import { assertJsInterop, isRuntimeRunning } from "./utils";
 import { useWeakRef, createStrongRef, createWeakRef } from "./weak-ref";
@@ -38,6 +38,7 @@ let nextGcvHandle = -2;
 
 export const jsImportWrapperByFnHandle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 export const exportsByAssembly: Map<string, any> = new Map();
+export const deferredCsFunctions = new Map<string, DeferredBindingCS>();
 
 // GCVHandle is like GCHandle, but it's not tracked and allocated by the coreCLR GC, but just by JS.
 // It's used when we need to create GCHandle-like identity ahead of time, before calling coreCLR.
@@ -362,6 +363,13 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
             }
         }
         exportsByAssembly.clear();
+        for (const binding of deferredCsFunctions.values()) {
+            binding.isDisposed = true;
+            binding.signature = undefined;
+            binding.boundFn = undefined;
+            binding.wrapper = undefined;
+        }
+        deferredCsFunctions.clear();
     }
     dotnetLogger.info(`forceDisposeProxies done: ${doneImports} imports, ${doneExports} exports, ${doneGCHandles} GCHandles, ${doneJSHandles} JSHandles.`);
 }

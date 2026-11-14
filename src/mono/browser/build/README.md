@@ -2,6 +2,47 @@
 
 This usually consists of taking the built assemblies, and related files, and generating an app bundle.
 
+Browser builds default the trimming discovery root `TypeMapEntryAssembly` to the
+application's assembly name. The JSExport provider linker descriptor preserves
+the native `BindAssemblyExports` entry point, which makes the type-map lookup
+reachable even when JavaScript is the only caller of the application's exports.
+ILLink forwards this root at target execution time so late WebAssembly imports
+also work for library-mode applications without a managed entry point. Until that
+ILLink fix flows through supported SDKs, a shared compatibility target supplies
+the argument for in-tree, local-build, and packaged SDK paths without duplicating it.
+
+Runtime discovery reads only the requested assembly's local type map, including
+its ReadyToRun map when available. It does not follow assembly-target edges or
+require unrelated lazy assemblies to have been downloaded. Assembly-target
+attributes remain available for build-time trimming.
+
+One generated provider per assembly uses the assembly name as its type-map key.
+Its `ReadOnlySpan<string> GetExportNames()` catalog supplies fully qualified, hash-qualified names without
+enumerating the type map. Discovery activates the provider and publishes deferred
+functions without binding methods. The generated catalog method registers signature
+metadata through an internal unsafe-accessor bridge. JavaScript copies that metadata
+before the temporary native buffers are freed and creates marshalers on first use.
+Managed discovery forwards the catalog strings
+unchanged to JavaScript, which derives the export paths, hashes, method IDs and aliases
+using the same parser for both runtimes. The first overload in catalog order supplies
+the plain-name alias. Each pending invocation handle identifies the provider and
+its catalog index. Both runtimes invoke that provider's `Bind(string methodId)`
+inside the first actual managed invocation, preserving
+synchronous return values and stable function identities without JavaScript proxies.
+Method IDs are invariant decimal catalog indexes, local to the generated assembly
+build rather than stable names or signature hashes. A generated string switch binds
+only the selected method. No managed preflight call or binder delegate is required.
+Async exports use their normal thread dispatch, including on the Mono UI thread.
+Legacy assemblies retain their existing registration path.
+Assemblies without a provider or legacy initializer return empty exports on both
+runtimes. Failed or reentrant binding releases unconsumed argument payloads without
+calling the generated wrapper; subsequent invocations can retry binding.
+Private and protected nested exports use managed unsafe accessors to their generated
+wrappers. Generic and file-local containing types retain the diagnostic and reflection fallback.
+Mono's implementation is limited to an internal unconditional, assembly-local
+lookup for this discovery path. Its public application-wide type-map APIs remain
+unsupported.
+
 Wasm app build can run in two scenarios:
 
 1. After build, eg. when running the app in VS, or `dotnet build foo.csproj`

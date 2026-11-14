@@ -384,7 +384,18 @@ namespace Wasm.Build.Tests
         public async Task LibraryMode(bool useWasmSdk, bool isPublish)
         {
             var config = Configuration.Release;
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode",
+                insertAtEnd: """
+                    <Target Name="VerifyLibraryTypeMapEntryAssembly" AfterTargets="PrepareForILLink">
+                      <PropertyGroup>
+                        <_TypeMapEntryAssemblyArgumentCount>$([System.Text.RegularExpressions.Regex]::Matches('$(_ExtraTrimmerArgs)', '--typemap-entry-assembly\b').Count)</_TypeMapEntryAssemblyArgumentCount>
+                      </PropertyGroup>
+                      <Error Condition="'$(_TypeMapEntryAssemblyArgumentCount)' != '1'"
+                             Text="Library publishing must forward exactly one type-map entry assembly to ILLink." />
+                      <Error Condition="!$([System.String]::Copy('$(_ExtraTrimmerArgs)').Contains('--typemap-entry-assembly &quot;$(AssemblyName)&quot;'))"
+                             Text="Library publishing must use the library assembly as its type-map entry assembly." />
+                    </Target>
+                    """);
             if (!useWasmSdk)
             {
                 UpdateFile($"{info.ProjectName}.csproj", new Dictionary<string, string>() {

@@ -562,6 +562,113 @@ export async function setup() {
     dllExports = await App.runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
 }
 
+export async function invokeDeferredFirstTask() {
+    const scope = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = scope.DeferredFirstTask;
+    let failed = false;
+    try {
+        await fn(-1);
+    } catch (error) {
+        if (!error.message.includes("Deferred first-call failure")) throw error;
+        failed = true;
+    }
+    if (!failed) throw new Error("The first async export did not reject");
+    const values = await Promise.all([fn(19), fn(21)]);
+    if (scope.DeferredFirstTask !== fn) throw new Error("Async export identity changed");
+    return values[0] + values[1];
+}
+
+export function registerRawExportCatalog(assemblyName, exportNames) {
+    const module = App.runtime.Module;
+    const sp = module.stackSave();
+    try {
+        // A version-2, zero-argument signature with a void result.
+        const pointer = module.stackAlloc(96);
+        const heap = App.runtime.localHeapViewI32();
+        heap.fill(0, pointer >>> 2, (pointer + 96) >>> 2);
+        heap[pointer >>> 2] = 2;
+        heap[(pointer + 64) >>> 2] = 1;
+        App.runtime.INTERNAL.registerLazyCsFunctions(assemblyName, exportNames,
+            Int32Array.from(exportNames, () => 2147483647), Int32Array.from(exportNames, () => pointer));
+    } finally {
+        module.stackRestore(sp);
+    }
+}
+
+export function registerPayloadFailure(assemblyName, handle, signature) {
+    App.runtime.INTERNAL.registerLazyCsFunctions(assemblyName,
+        [`[${assemblyName}]Payload:Invoke#1`], [handle], [signature]);
+}
+
+const payloadReentryProbes = new Map();
+
+export function probePayloadReentry(assemblyName) {
+    payloadReentryProbes.get(assemblyName)();
+}
+
+export async function invokePayloadFailure(assemblyName, isAsync) {
+    const fn = (await App.runtime.getAssemblyExports(assemblyName)).Payload.Invoke;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        let failed = false;
+        try {
+            const result = fn(new Uint8Array([19, 23]));
+            if (isAsync) await result;
+        } catch (error) {
+            if (!error.message.includes("Payload binding failure")) throw error;
+            failed = true;
+        }
+        if (!failed) throw new Error("Binding failure did not propagate");
+    }
+    const pending = [];
+    let rejected = 0;
+    const checkReentryError = error => {
+        if (!error.message.includes("cannot be bound recursively")) throw error;
+        rejected++;
+    };
+    payloadReentryProbes.set(assemblyName, () => {
+        try {
+            const result = fn(new Uint8Array([1, 2]));
+            if (!isAsync) throw new Error("Reentrant call was not rejected");
+            pending.push(result.then(
+                () => { throw new Error("Async reentrant call was not rejected"); },
+                checkReentryError));
+        } catch (error) {
+            checkReentryError(error);
+        }
+    });
+    try {
+        const result = fn(new Uint8Array([19, 23]));
+        const value = isAsync ? await result : result;
+        await Promise.all(pending);
+        if (rejected !== 2) throw new Error(`Expected two reentry failures, got ${rejected}`);
+        return value;
+    } finally {
+        payloadReentryProbes.delete(assemblyName);
+    }
+}
+
+export async function inspectRawExportCatalog(assemblyName, typeName) {
+    let scope = await App.runtime.getAssemblyExports(assemblyName);
+    for (const part of typeName.replace(/\//g, ".").split(".")) {
+        scope = scope[part];
+    }
+    if (scope.Echo !== scope["Echo.-17"] ||
+        typeof scope["Echo.23"] !== "function" ||
+        typeof scope["Unused.-2147483648"] !== "function") {
+        throw new Error("Raw catalog discovery changed export paths or aliases");
+    }
+    const messages = [];
+    for (const method of [scope.Echo, scope["Echo.-17"], scope["Echo.23"]]) {
+        try {
+            method();
+            throw new Error("The test binder must throw");
+        } catch (error) {
+            messages.push(error.message);
+        }
+    }
+    return messages.join("|");
+}
+
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));
 
 export function delay(ms) {

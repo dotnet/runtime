@@ -32,7 +32,11 @@ namespace Microsoft.Interop.JavaScript
             s_sharedDescriptors
                 .Add(InvalidSignatureDescriptor)
                 .Add(ContainingTypeMissingModifiersDescriptor)
-                .Add(RequiresAllowUnsafeBlocksDescriptor);
+                .Add(RequiresAllowUnsafeBlocksDescriptor)
+                .AddRange(AdditionalDescriptors);
+
+        /// <summary>Descriptors reported by a specific derived analyzer.</summary>
+        protected virtual ImmutableArray<DiagnosticDescriptor> AdditionalDescriptors => ImmutableArray<DiagnosticDescriptor>.Empty;
 
         /// <summary>The metadata name of the attribute this analyzer handles.</summary>
         protected abstract string AttributeMetadataName { get; }
@@ -77,7 +81,6 @@ namespace Microsoft.Interop.JavaScript
                     context.Compilation.GetEnvironmentFlags());
 
                 bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
-
                 int foundMethod = 0;
 
                 context.RegisterSymbolAction(symbolContext =>

@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <_BrowserWasmAppTypeMapTargetsImported>true</_BrowserWasmAppTypeMapTargetsImported>
+  </PropertyGroup>
+
+  <!-- TODO: Remove this compatibility target and its imports once execution-time
+       TypeMapEntryAssembly forwarding in ILLink flows through the supported SDKs. -->
+  <Target Name="_WasmConfigureTypeMapEntryAssembly"
+          BeforeTargets="PrepareForILLink"
+          Condition="'$(TypeMapEntryAssembly)' != '' and !$([System.String]::Copy('$(_ExtraTrimmerArgs)').Contains('--typemap-entry-assembly'))">
+    <PropertyGroup>
+      <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
+    </PropertyGroup>
+  </Target>
+</Project>

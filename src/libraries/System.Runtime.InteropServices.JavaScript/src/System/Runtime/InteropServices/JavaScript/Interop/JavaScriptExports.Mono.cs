@@ -368,14 +368,17 @@ namespace System.Runtime.InteropServices.JavaScript
         // the arguments are passed positionally by mono_wasm_invoke_jsexport_by_handle, not as a marshaled frame
         public static void CallJSExport(int methodHandle, JSMarshalerArgument* argumentsBuffer)
         {
-            ref JSMarshalerArgument argException = ref argumentsBuffer[0]; // initialized by caller in alloc_stack_frame()
-            var ctx = argException.AssertCurrentThreadContext();
-            if (!ctx.TryGetJSExport(methodHandle, out var jsExport))
+            ref JSMarshalerArgument exception = ref argumentsBuffer[0];
+            var ctx = exception.AssertCurrentThreadContext();
+            if (!ctx.TryGetJSExport(methodHandle, out var entry))
             {
-                argException.ToJS(new InvalidOperationException("Unable to resolve JSExport by handle"));
+                exception.ToJS(new InvalidOperationException(SR.JSExportMissingBinding));
                 return;
             }
-            jsExport(new IntPtr(argumentsBuffer));
+            if (entry.Callback == null && !JSHostImplementation.TryBindJSExport(ctx, methodHandle, argumentsBuffer, out entry))
+                return;
+
+            entry.Callback(argumentsBuffer);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // profiler needs to find it executed under this name

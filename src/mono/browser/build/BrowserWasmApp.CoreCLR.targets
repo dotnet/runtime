@@ -4,6 +4,20 @@
   </PropertyGroup>
   <Import Project="$(WasmPInvokeModulesPropsPath)" />
 
+  <PropertyGroup>
+    <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
+  </PropertyGroup>
+  <!-- TODO: Remove this compatibility import once late type-map forwarding flows through the SDK. -->
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.TypeMap.targets" Condition="'$(_BrowserWasmAppTypeMapTargetsImported)' != 'true'" />
+  <ItemGroup>
+    <!-- The native entry point must be rooted before type-map providers can be discovered. -->
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml" />
+    <!-- JavaScript can request exports before a managed entry point has run. -->
+    <RuntimeHostConfigurationOption Remove="System.Runtime.InteropServices.TypeMappingEntryAssembly" />
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
+                                    Value="$(TypeMapEntryAssembly)" />
+  </ItemGroup>
+
   <!--
     CoreCLR WASM native re-link targets.
 

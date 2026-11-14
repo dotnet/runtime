@@ -111,6 +111,14 @@ export type BindingClosureCS = {
     isDisposed: boolean,
 }
 
+export type DeferredBindingCS = {
+    signature?: Uint8Array,
+    boundFn?: Function,
+    wrapper?: Function,
+    isBinding: boolean,
+    isDisposed: boolean,
+}
+
 export const enum MeasuredBlock {
     bindJsFunction = "clr.bindJsFunction:",
     bindCsFunction = "clr.bindCsFunction:",

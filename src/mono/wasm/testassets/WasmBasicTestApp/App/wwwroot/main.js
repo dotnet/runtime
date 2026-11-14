@@ -350,6 +350,114 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 // Run the test case
 try {
     switch (testCase) {
+        case "MappedJSExports":
+        case "DeferredJSExports": {
+            for (const assemblyName of ["System.Private.CoreLib", "System.Private.CoreLib.dll"]) {
+                const emptyExports = await getAssemblyExports(assemblyName);
+                if (Object.keys(emptyExports).length !== 0) {
+                    throw new Error(`Unexpected exports from ${assemblyName}`);
+                }
+            }
+            testOutput("Empty BCL exports passed");
+            if (testCase === "DeferredJSExports") {
+                if (!await INTERNAL.loadLazyAssembly("Library.dll")) {
+                    throw new Error("The exported library was not downloaded lazily");
+                }
+            }
+            const library = await getAssemblyExports("Library.dll");
+            const again = await getAssemblyExports("Library");
+            if (testCase === "DeferredJSExports") {
+                if (!await INTERNAL.loadLazyAssembly("CountingLibrary.dll")) {
+                    throw new Error("The counting provider was not downloaded lazily");
+                }
+                const countingLibrary = await getAssemblyExports("CountingLibrary");
+                testOutput("lazy:discovered");
+                const add = countingLibrary.AssemblyProviderTest.CountingExports.Add;
+                const hashAdd = countingLibrary.AssemblyProviderTest.CountingExports["Add.1"];
+                const unused = countingLibrary.AssemblyProviderTest.CountingExports.Unused;
+                if (add !== hashAdd || typeof unused !== "function" ||
+                    countingLibrary.AssemblyProviderTest.CountingExports.Missing !== undefined ||
+                    !Object.keys(countingLibrary.AssemblyProviderTest.CountingExports).includes("Unused.2")) {
+                    throw new Error("Deferred export discovery changed the object shape");
+                }
+                testOutput("lazy:read");
+                globalThis.probeDeferredBindingReentry = () => {
+                    let rejected = 0;
+                    for (let attempt = 0; attempt < 2; attempt++) {
+                        try {
+                            add(0, 0);
+                        } catch (error) {
+                            if (error.message !== "A JavaScript export cannot be bound recursively." &&
+                                error.message !== "JSExportReentrantBinding") throw error;
+                            rejected++;
+                        }
+                    }
+                    if (rejected !== 2) throw new Error("Repeated reentrant bindings were not rejected");
+                };
+                let message;
+                try {
+                    add(-1, 0);
+                } catch (error) {
+                    message = error.message;
+                } finally {
+                    delete globalThis.probeDeferredBindingReentry;
+                }
+                if (message !== "Deferred export failure") throw new Error(`First deferred invocation did not propagate its exception: ${message}`);
+                testOutput("lazy:first");
+                if (hashAdd(19, 23) !== 42 ||
+                    countingLibrary.AssemblyProviderTest.CountingExports.Add !== add) {
+                    throw new Error("Repeated deferred invocation or function identity failed");
+                }
+                testOutput("lazy:repeated");
+                let bindingFailed = false;
+                try {
+                    await countingLibrary.AssemblyProviderTest.CountingExports.RetryAsync(41);
+                } catch (error) {
+                    if (!error.message.includes("Deferred binding failure")) throw error;
+                    bindingFailed = true;
+                }
+                if (!bindingFailed || await countingLibrary.AssemblyProviderTest.CountingExports.RetryAsync(41) !== 42) {
+                    throw new Error("A failed async binding was not rejected and retried");
+                }
+            }
+            if (library.AssemblyProviderTest.Exports.Add(17, 25) !== 42 ||
+                library.AssemblyProviderTest.Exports["Add.1568108894"] !== library.AssemblyProviderTest.Exports.Add ||
+                library.AssemblyProviderTest.Exports["Add.1018901745"](41) !== 42 ||
+                library.AssemblyProviderTest.Exports.Echo("type-map") !== "type-map" ||
+                await library.AssemblyProviderTest.Exports.AddAsync(20, 22) !== 42 ||
+                library.AssemblyProviderTest.InaccessibleExports.Private.Add(17, 25) !== 42 ||
+                library.AssemblyProviderTest.InaccessibleExports.Protected.Negate(-42) !== 42 ||
+                again.AssemblyProviderTest.Exports.Add(19, 23) !== 42) {
+                throw new Error("Mapped JSExport invocation failed");
+            }
+            testOutput("Mapped JSExports passed");
+            exit(0);
+            break;
+        }
+        case "LegacyJSExports": {
+            const legacy = (await getAssemblyExports("LegacyExports.dll")).LegacyExports.Exports;
+            const check = (condition, message) => {
+                if (!condition) throw new Error(message);
+            };
+            check(legacy.Add(17, 25) === 42, "Legacy integer export failed");
+            check(legacy.Add(-17, 4) === -13, "Repeated legacy export invocation failed");
+            const text = "Legacy exports: \u9FC0 \uD83D\uDE00";
+            check(legacy.Echo(text) === text, "Legacy string export failed");
+            const value = { name: "legacy", value: 42 };
+            check(legacy.EchoObject(value) === value, "Legacy JSObject export failed");
+            check(legacy.Nested.Negate(17) === -17, "Legacy nested export failed");
+            let exceptionMessage;
+            try {
+                legacy.Throw();
+            } catch (error) {
+                exceptionMessage = error.message;
+            }
+            check(exceptionMessage === "Legacy export exception", "Legacy exception propagation failed");
+            check(await legacy.AddAsync(19, 23) === 42, "Legacy async export failed");
+            testOutput("Legacy JSExports passed");
+            exit(0);
+            break;
+        }
         case "ConfigLoadedCallbacks":
             testOutput("ConfigLoaded: ready");
             exit(0);
