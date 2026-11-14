@@ -41,8 +41,8 @@ namespace TestApp
                         return value switch
                         {
                             null => (typeof(string), (object?)null),
-                            int caseValue0 => (typeof(int), (object?)caseValue0),
-                            string caseValue1 => (typeof(string), (object?)caseValue1),
+                            int => (typeof(int), value.Value),
+                            string => (typeof(string), value.Value),
                         };
                     },
                     TypeClassifier = null,

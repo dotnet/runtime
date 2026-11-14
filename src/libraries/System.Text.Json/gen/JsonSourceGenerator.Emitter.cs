@@ -775,7 +775,6 @@ namespace System.Text.Json.SourceGeneration
                     // unionCases is in topological most-derived-first order, so the first
                     // matching arm always corresponds to the nearest declared case for any
                     // given runtime type.
-                    int deconArmIndex = 0;
                     foreach (UnionCaseSpec caseSpec in unionCases)
                     {
                         if (!caseSpec.IsSwitchArm)
@@ -786,8 +785,10 @@ namespace System.Text.Json.SourceGeneration
                         string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
                         string caseTypeFQN = caseSpec.CaseType.FullyQualifiedName;
 
-                        writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseTypeFQN}), (object?)caseValue{deconArmIndex}),");
-                        deconArmIndex++;
+                        // Read the payload from the union's Value property rather than casting the matched
+                        // case value back to object: for value-type cases the pattern match unboxes the
+                        // existing boxed payload, and the cast would allocate a second box.
+                        writer.WriteLine($"{patternTypeFQN} => (typeof({caseTypeFQN}), value.Value),");
                     }
 
                     writer.Indentation--;
