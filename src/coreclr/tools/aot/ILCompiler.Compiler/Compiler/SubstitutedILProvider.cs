@@ -829,6 +829,11 @@ namespace ILCompiler
                         {
                             return true;
                         }
+                        else if (method.IsIntrinsic
+                            && TryExpandRuntimeHelpersIntrinsic(method, out constant))
+                        {
+                            return true;
+                        }
                         else if (TryGetCharacteristicValue(method, out bool characteristic))
                         {
                             constant = characteristic ? 1 : 0;
@@ -971,6 +976,28 @@ namespace ILCompiler
 
             constant = 0;
             return false;
+        }
+
+        private static bool TryExpandRuntimeHelpersIntrinsic(MethodDesc method, out int constant)
+        {
+            constant = 0;
+
+            if (method.OwningType is not MetadataType mdt
+                || mdt.Name != "RuntimeHelpers"u8 || mdt.Namespace != "System.Runtime.CompilerServices"u8
+                || mdt.Module != mdt.Context.SystemModule)
+            {
+                return false;
+            }
+
+            // The body of these intrinsics is whatever RuntimeHelpersIntrinsics.EmitIL says it is, same as
+            // what RyuJIT sees. If this returns true, the call is a constant for the method instantiation
+            // we're looking at, whether it is an exact instantiation or a canonical one.
+            // Dataflow runs on top of uninstantiated IL; TryGetConstantValue doesn't answer for signature variables.
+            if (!RuntimeHelpersIntrinsics.TryGetConstantValue(method, out bool result))
+                return false;
+
+            constant = result ? 1 : 0;
+            return true;
         }
 
         private static bool TryExpandTypeIs(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string name, out int constant)
