@@ -2898,6 +2898,7 @@ class Compiler
     friend class CSE_HeuristicParameterized;
     friend class CSE_HeuristicRLHook;
     friend class CSE_Heuristic;
+    friend class CSE_CallPressure;
     friend class CodeGenInterface;
     friend class CodeGen;
     friend class LclVarDsc;
@@ -8084,6 +8085,9 @@ protected:
     unsigned optCSEcount = 0;          // The total count of CSEs introduced.
     unsigned optCSEunmarks = 0;        // Number of CSE trees unmarked
     weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
+    bool*    optCSEusedLocals = nullptr; // Locals with remaining reads, collected while locating candidates;
+                                         // liveness ran before the value-number phases, so locals that since
+                                         // lost all reads can linger in the live sets
     CSE_HeuristicCommon* optCSEheuristic = nullptr; // CSE Heuristic to use for this method
 
     bool optIsCSEcandidate(GenTree* tree, bool isReturn = false);
