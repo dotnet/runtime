@@ -158,6 +158,7 @@
 // Defines the type SmallHashTable.
 #include "compiler.h"
 #include "smallhash.h"
+#include "bitvec.h"
 #include "simd.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
@@ -1169,6 +1170,24 @@ public:
     // to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn, bool isIndex = false);
 
+    // Record normal conservative VN equality after a completed CSE rewrite.
+    // The caller must ensure the use is CFG-reachable; arbitrary SSA assignments prove nothing.
+    void RecordCseUseRewrite(ValueNumPair oldVNPair, GenTreeLclVarCommon* use);
+
+    // Freeze after CSE so later fact keys stay stable. OptRepeat rebuilds the store.
+    void FreezeVNEquivalences()
+    {
+        INDEBUG(m_vnEquivalencesFrozen = true;)
+    }
+
+    // Return the canonical representative, preferring constants and structured VNs.
+    ValueNum VNCanonical(ValueNum vn);
+
+    ValueNum VNCanonicalConservativeNormalValue(const ValueNumPair& vnp)
+    {
+        return VNCanonical(VNConservativeNormalValue(vnp));
+    }
+
     // Information about the individual components of a value number representing an unsigned
     // comparison of some value against a checked bound VN.
     struct UnsignedCompareCheckedBoundInfo
@@ -1751,6 +1770,41 @@ private:
     // These are the value numbers flagged as length and index arguments to bounds checks.
     CheckedBoundVNSet m_checkedBoundVNs;
     CheckedBoundVNSet m_checkedBoundIndexVNs;
+
+    // A parent link in the equivalence union-find.
+    struct VNPair
+    {
+        ValueNum from;
+        ValueNum to;
+    };
+    typedef ArrayStack<VNPair> VNPairList;
+
+    static int FindVNPair(VNPairList& list, ValueNum from);
+
+    // Private union operation; RecordCseUseRewrite supplies the equality guarantee.
+    void RecordVNEquivalence(ValueNum fromVN, ValueNum toVN);
+
+    // Allocated on the first rewrite CSE records, so methods without one carry a pointer.
+    struct VNEquivalences
+    {
+        // The numbers that have an entry in "entries", so a lookup of any other number costs a bit test.
+        GrowableBitSet members;
+
+        // Union-find over rewritten numbers, pointing each toward its representative.
+        VNPairList entries;
+
+        VNEquivalences(CompAllocator alloc)
+            : members(alloc)
+            , entries(alloc)
+        {
+        }
+    };
+    VNEquivalences* m_vnEquivalences = nullptr;
+
+#ifdef DEBUG
+    // Freezing prevents unions, but permits path compression, which preserves roots.
+    bool m_vnEquivalencesFrozen = false;
+#endif
 
     // This is a map from "chunk number" to the attributes of the chunk.
     JitExpandArrayStack<Chunk*> m_chunks;

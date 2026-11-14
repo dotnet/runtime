@@ -7995,6 +7995,172 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
     (isIndex ? m_checkedBoundIndexVNs : m_checkedBoundVNs).AddOrUpdate(vn, true);
 }
 
+//------------------------------------------------------------------------
+// FindVNPair: Find the entry for a number in a pair list.
+//
+// Arguments:
+//    list - the list
+//    from - the number
+//
+// Return Value:
+//    The index of the entry, or -1 when there is none.
+//
+int ValueNumStore::FindVNPair(VNPairList& list, ValueNum from)
+{
+    for (int i = 0; i < list.Height(); i++)
+    {
+        if (list.BottomRef(i).from == from)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+//------------------------------------------------------------------------
+// VNCanonical: Return the representative of a value number's equivalence class.
+//
+// Arguments:
+//    vn - the value number
+//
+// Return Value:
+//    The value number itself when no equivalence was recorded for it.
+//
+ValueNum ValueNumStore::VNCanonical(ValueNum vn)
+{
+    if ((m_vnEquivalences == nullptr) || (vn == NoVN))
+    {
+        return vn;
+    }
+
+    VNEquivalences& eq = *m_vnEquivalences;
+    if (!eq.members.Test(vn))
+    {
+        return vn;
+    }
+
+    ValueNum root = vn;
+    int      index;
+    while (eq.members.Test(root) && ((index = FindVNPair(eq.entries, root)) >= 0))
+    {
+        root = eq.entries.BottomRef(index).to;
+    }
+
+    // Compress the path so later lookups take one step.
+    while ((vn != root) && ((index = FindVNPair(eq.entries, vn)) >= 0))
+    {
+        VNPair& entry = eq.entries.BottomRef(index);
+        vn            = entry.to;
+        entry.to      = root;
+    }
+    return root;
+}
+
+//------------------------------------------------------------------------
+// RecordCseUseRewrite: Record normal-value equality established by a completed CSE rewrite.
+//
+// Arguments:
+//    oldVNPair - the normal value number pair the use carried before the rewrite
+//    use       - the rewritten use, already inserted into SSA
+//
+// Notes:
+//    Conservative VNs identify values, not use sites. CSE's completed replacement
+//    establishes their equality; the caller must ensure the use is CFG-reachable.
+//
+void ValueNumStore::RecordCseUseRewrite(ValueNumPair oldVNPair, GenTreeLclVarCommon* use)
+{
+    assert(use->OperIs(GT_LCL_VAR) && use->HasSsaName());
+    LclVarDsc* lclDsc = m_compiler->lvaGetDesc(use);
+    assert(lclDsc->lvIsCSE && lclDsc->lvInSsa);
+    LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(use->GetSsaNum());
+
+    ValueNum oldVN = oldVNPair.GetConservative();
+    ValueNum newVN = ssaDsc->m_vnPair.GetConservative();
+    if (oldVN == newVN)
+    {
+        return;
+    }
+
+    // Either VN can retain a small load type while the other has the temp's widened
+    // register type. They correspond through a widening, not direct substitution.
+    if (TypeOfVN(oldVN) != TypeOfVN(newVN))
+    {
+        assert(genActualType(TypeOfVN(oldVN)) == genActualType(TypeOfVN(newVN)));
+        return;
+    }
+
+#ifdef DEBUG
+    assert(VNNormalValue(oldVN) == oldVN);
+    assert(VNNormalValue(newVN) == newVN);
+
+    GenTreeLclVarCommon* defNode  = ssaDsc->GetDefNode();
+    bool                 isPhiDef = (defNode != nullptr) && defNode->Data()->OperIs(GT_PHI);
+    // The fresh CSE temp is defined only by this candidate's stores. Incremental SSA
+    // builds phis from those definitions, possibly assigning fresh liberal VNs.
+    // We equate the use with the phi result, not its inputs with each other.
+    if (!isPhiDef)
+    {
+        assert(ssaDsc->m_vnPair.GetLiberal() == oldVNPair.GetLiberal());
+        assert(newVN == VNNormalValue(defNode->Data()->gtVNPair.GetConservative()));
+    }
+#endif // DEBUG
+
+    RecordVNEquivalence(oldVN, newVN);
+}
+
+//------------------------------------------------------------------------
+// RecordVNEquivalence: Union the equivalence classes of two value numbers.
+//
+// Arguments:
+//    fromVN - the value number a use carried before CSE rewrote it
+//    toVN   - the value number of the reaching definition it now uses
+//
+// Notes:
+//    Prefer constants, then phis or non-opaque functions; otherwise prefer toVN's root.
+//    Constants never key the map.
+//
+void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
+{
+    assert(!m_vnEquivalencesFrozen);
+    assert((fromVN != NoVN) && (toVN != NoVN));
+    assert(TypeOfVN(fromVN) == TypeOfVN(toVN));
+
+    ValueNum fromRoot = VNCanonical(fromVN);
+    ValueNum toRoot   = VNCanonical(toVN);
+    if (fromRoot == toRoot)
+    {
+        return;
+    }
+
+    // Prefer a representative consumers can inspect over an opaque value.
+    auto rank = [this](ValueNum vn) -> int {
+        if (IsVNConstant(vn))
+        {
+            return 2;
+        }
+        VNFuncApp funcApp;
+        return (IsPhiDef(vn) || (GetVNFunc(vn, &funcApp) && !funcApp.FuncIs(VNF_MemOpaque))) ? 1 : 0;
+    };
+    if (rank(fromRoot) > rank(toRoot))
+    {
+        std::swap(fromRoot, toRoot);
+    }
+    if (IsVNConstant(fromRoot))
+    {
+        // Distinct constants contradict the producer's equality claim.
+        assert(!"CSE recorded a VN equivalence between distinct constants");
+        return;
+    }
+
+    if (m_vnEquivalences == nullptr)
+    {
+        m_vnEquivalences = new (m_alloc) VNEquivalences(m_alloc);
+    }
+    assert(FindVNPair(m_vnEquivalences->entries, fromRoot) < 0);
+    m_vnEquivalences->members.Set(fromRoot);
+    m_vnEquivalences->entries.Push({fromRoot, toRoot});
+}
+
 #ifdef FEATURE_HW_INTRINSICS
 simd8_t GetConstantSimd8(ValueNumStore* vns, var_types baseType, ValueNum argVN)
 {
