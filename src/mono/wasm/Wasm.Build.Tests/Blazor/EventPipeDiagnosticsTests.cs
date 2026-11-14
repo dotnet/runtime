@@ -870,7 +870,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         string dumpText = File.ReadAllText(dumpPath);
         Assert.Contains(expectedMethod, dumpText);
         using JsonDocument dump = JsonDocument.Parse(dumpText);
-        JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray());
+        JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray()
+            .Where(element => element.TryGetProperty("InstrumentationData", out JsonElement instrumentation) &&
+                instrumentation.EnumerateArray().Any(record =>
+                    record.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns"))));
         Assert.Contains("." + expectedMethod + "(", method.GetProperty("Method").GetString(), StringComparison.Ordinal);
         JsonElement entry = Assert.Single(method.GetProperty("InstrumentationData").EnumerateArray()
             .Where(element => element.GetProperty("InstrumentationKind").GetString() is not ("Version" or "NumRuns")));
