@@ -14,11 +14,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
     internal sealed partial class NameFilterCaseSensitive : NameFilter
     {
-        public sealed override bool Matches(ConstantStringValueHandle stringHandle, MetadataReader reader) => stringHandle.StringEquals(ExpectedName, reader);
+        public sealed override bool Matches(ConstantStringValueHandle stringHandle, MetadataReader reader) => CanMatch && stringHandle.StringEquals(ExpectedName, reader);
     }
 
     internal sealed partial class NameFilterCaseInsensitive : NameFilter
     {
-        public sealed override bool Matches(ConstantStringValueHandle stringHandle, MetadataReader reader) => stringHandle.GetConstantStringValue(reader).Value.Equals(ExpectedName, StringComparison.OrdinalIgnoreCase);
+        public sealed override bool Matches(ConstantStringValueHandle stringHandle, MetadataReader reader) => CanMatch && stringHandle.GetConstantStringValue(reader).Value.Equals(ExpectedName, StringComparison.OrdinalIgnoreCase);
     }
 }

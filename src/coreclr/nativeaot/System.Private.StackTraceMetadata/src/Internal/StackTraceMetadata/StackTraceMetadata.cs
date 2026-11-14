@@ -85,7 +85,8 @@ namespace Internal.StackTraceMetadata
             if (methodStartAddress != IntPtr.Zero && ReflectionExecution.TryGetMethodMetadataFromAddress(methodStartAddress, isFunctionPointer: false,
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
-                out MethodHandle methodHandle))
+                out MethodHandle methodHandle)
+                && !IsNameStripped(reader, methodHandle))
             {
                 if (StackTraceHiddenMetadataPresent())
                 {
@@ -203,7 +204,8 @@ namespace Internal.StackTraceMetadata
             if (methodStartAddress != IntPtr.Zero && ReflectionExecution.TryGetMethodMetadataFromAddress(methodStartAddress, isFunctionPointer: false,
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
-                out MethodHandle methodHandle))
+                out MethodHandle methodHandle)
+                && !IsNameStripped(reader, methodHandle))
             {
                 return CreateDiagnosticMethodInfo(reader, typeHandle, reader.GetMethod(methodHandle).Name);
             }
@@ -244,6 +246,11 @@ namespace Internal.StackTraceMetadata
                 reader.GetString(name),
                 MethodNameFormatter.FormatReflectionNotationTypeName(reader, owningType),
                 FormatAssemblyName(reader, owningType));
+        }
+
+        private static bool IsNameStripped(MetadataReader reader, MethodHandle methodHandle)
+        {
+            return reader.ReadStringAsBytes(reader.GetMethod(methodHandle).Name).IsEmpty;
         }
 
         private static string FormatAssemblyName(MetadataReader reader, Handle handle)

@@ -48,11 +48,22 @@ namespace Internal.Runtime.CompilerServices
             // (Same assumption in GetHashCode below!)
             Debug.Assert(Reader == other.Reader);
 
+            // Methods with a name that was stripped by the compiler can only be identified by their handle,
+            // since the signature alone is not enough to tell them apart.
+            if (Handle.Equals(other.Handle))
+                return true;
+
             Method thisMethod = Reader.GetMethod(Handle);
             Method otherMethod = other.Reader.GetMethod(other.Handle);
 
             return thisMethod.Signature.Equals(otherMethod.Signature)
-                && thisMethod.Name.Equals(otherMethod.Name);
+                && thisMethod.Name.Equals(otherMethod.Name)
+                && !HasStrippedName(thisMethod);
+        }
+
+        private bool HasStrippedName(Method method)
+        {
+            return Reader.ReadStringAsBytes(method.Name).IsEmpty;
         }
 
         public bool ReturnTypeHasInstantiation
@@ -71,6 +82,10 @@ namespace Internal.Runtime.CompilerServices
         public override int GetHashCode()
         {
             Method method = Reader.GetMethod(Handle);
+
+            // Methods with a name that was stripped by the compiler are only identified by their handle
+            if (HasStrippedName(method))
+                return Handle.GetHashCode();
 
             // Assumes we only have one metadata blob
             return method.Signature.GetHashCode() ^ method.Name.GetHashCode();

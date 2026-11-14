@@ -14,6 +14,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public abstract bool Matches(string name);
         protected string ExpectedName { get; }
+
+        // Members with a name that was stripped by the compiler have an empty name. They can't be found by name.
+        protected bool CanMatch => ExpectedName.Length != 0;
     }
 
     internal sealed partial class NameFilterCaseSensitive : NameFilter
@@ -23,7 +26,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
         }
 
-        public sealed override bool Matches(string name) => name.Equals(ExpectedName, StringComparison.Ordinal);
+        public sealed override bool Matches(string name) => CanMatch && name.Equals(ExpectedName, StringComparison.Ordinal);
     }
 
     internal sealed partial class NameFilterCaseInsensitive : NameFilter
@@ -33,6 +36,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
         }
 
-        public sealed override bool Matches(string name) => name.Equals(ExpectedName, StringComparison.OrdinalIgnoreCase);
+        public sealed override bool Matches(string name) => CanMatch && name.Equals(ExpectedName, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -142,11 +142,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             StringBuilder? sb = null;
 
+            // The full name is null when the name of the type was stripped by the compiler.
+            string fullName = FullName ?? Name;
+
             foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
             {
                 if (sb == null)
                 {
-                    sb = new StringBuilder(FullName);
+                    sb = new StringBuilder(fullName);
                     sb.Append('[');
                 }
                 else
@@ -159,7 +162,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
             if (sb == null)
             {
-                return FullName;
+                return fullName;
             }
             else
             {

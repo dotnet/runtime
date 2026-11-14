@@ -157,6 +157,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
 
             string name = member.Name;
+            if (name.Length == 0)
+            {
+                // The name was stripped by the compiler, so the base class members can't be matched by name.
+                return null;
+            }
+
             Type type = member.DeclaringType!;
             for (; ; )
             {

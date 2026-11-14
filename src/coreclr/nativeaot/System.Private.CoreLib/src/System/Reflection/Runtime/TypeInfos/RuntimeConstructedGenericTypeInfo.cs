@@ -58,18 +58,27 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ContainsGenericParameters)
                     return null;
 
+                // The definition or a type argument might have a name that was stripped by the compiler.
+                string? definitionFullName = GenericTypeDefinitionTypeInfo.FullName;
+                if (definitionFullName is null)
+                    return null;
+
                 StringBuilder fullName = new StringBuilder();
-                fullName.Append(GenericTypeDefinitionTypeInfo.FullName);
+                fullName.Append(definitionFullName);
                 fullName.Append('[');
 
                 RuntimeTypeInfo[] genericTypeArguments = _key.GenericTypeArguments;
                 for (int i = 0; i < genericTypeArguments.Length; i++)
                 {
+                    string? argumentName = genericTypeArguments[i].AssemblyQualifiedName;
+                    if (argumentName is null)
+                        return null;
+
                     if (i != 0)
                         fullName.Append(',');
 
                     fullName.Append('[');
-                    fullName.Append(genericTypeArguments[i].AssemblyQualifiedName);
+                    fullName.Append(argumentName);
                     fullName.Append(']');
                 }
                 fullName.Append(']');
@@ -149,7 +158,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             // Now, append the generic type arguments.
             StringBuilder sb = new StringBuilder();
-            sb.Append(GenericTypeDefinitionTypeInfo.FullName);
+            sb.Append(GenericTypeDefinitionTypeInfo.FullName ?? GenericTypeDefinitionTypeInfo.Name);
             sb.Append('[');
             RuntimeTypeInfo[] genericTypeArguments = _key.GenericTypeArguments;
             for (int i = 0; i < genericTypeArguments.Length; i++)

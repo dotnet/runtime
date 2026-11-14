@@ -76,10 +76,17 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 string name = Name;
 
+                // The name of the type was stripped by the compiler (see IlcStripNamesAssembly), so it has no full name.
+                if (name.Length == 0)
+                    return null;
+
                 RuntimeTypeInfo? declaringType = this.InternalDeclaringType;
                 if (declaringType is not null)
                 {
                     string? declaringTypeFullName = declaringType.FullName;
+                    if (declaringTypeFullName is null)
+                        return null;
+
                     return declaringTypeFullName + "+" + name;
                 }
 

@@ -22,6 +22,10 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 VersionResilientHashCode.NameHashCode(namespaceName),
                 VersionResilientHashCode.NameHashCode(name));
 
+            // Types with a name that was stripped by the compiler can't be found by name.
+            if (name.Length == 0)
+                return null;
+
             MetadataReader reader = Scope.Reader;
             ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
 

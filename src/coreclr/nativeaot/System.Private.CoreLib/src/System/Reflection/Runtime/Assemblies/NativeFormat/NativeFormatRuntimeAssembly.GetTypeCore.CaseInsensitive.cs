@@ -78,16 +78,21 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             {
                 TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
                 NamespaceDefinitionHandle namespaceHandle = typeDefinition.NamespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader);
+                string typeName = typeDefinition.Name.GetString(reader);
+
+                // Types with a name that was stripped by the compiler can't be found by name.
+                if (typeName.Length == 0)
+                    continue;
+
                 string ns = namespaceHandle.ToNamespaceName(reader);
                 if (ns.Length != 0)
                     ns += ".";
-                string fullName = (ns + typeDefinition.Name.GetString(reader)).ToLowerInvariant();
+                string fullName = (ns + typeName).ToLowerInvariant();
                 if (!dict.TryGetValue(fullName, out _))
                 {
                     dict.Add(fullName, new QHandle(reader, typeDefinitionHandle));
                 }
             }
-
             foreach (TypeForwarderHandle typeForwarderHandle in scopeDefinition.TypeForwarders)
             {
                 TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
