@@ -32,7 +32,9 @@ namespace System.Threading
         private readonly int m_maxCount;
 
         // Head of list representing asynchronous waits on the semaphore.
-        private TaskNode? m_asyncHead;
+        // Volatile for the same reason as m_waitCount: the lock-free WaitAsync fast path reads it without the lock
+        // and must see writes published by the lock-holding enqueue/dequeue paths.
+        private volatile TaskNode? m_asyncHead;
 
         // Tail of list representing asynchronous waits on the semaphore.
         private TaskNode? m_asyncTail;
@@ -398,9 +400,8 @@ namespace System.Threading
         {
             AssertIsLocked();
 
-            if (m_currentCount > 0)
+            if (TryDecrementCount() > 0)
             {
-                --m_currentCount;
                 if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
                 return Task.FromResult(true);
             }

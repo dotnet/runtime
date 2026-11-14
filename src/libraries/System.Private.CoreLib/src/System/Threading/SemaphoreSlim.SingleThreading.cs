@@ -84,6 +84,17 @@ public partial class SemaphoreSlim
 
     private bool RemoveAsyncWaiterWithLock(TaskNode task) => RemoveAsyncWaiter(task);
 
+    // No lock-free fast path races with this on a single thread, so a plain decrement suffices.
+    private int TryDecrementCount()
+    {
+        int count = m_currentCount;
+        if (count > 0)
+        {
+            m_currentCount = count - 1;
+        }
+        return count;
+    }
+
     [Conditional("DEBUG")]
     private static void AssertIsLocked()
     {
