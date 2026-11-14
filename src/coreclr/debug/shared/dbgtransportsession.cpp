@@ -93,6 +93,11 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 {
     _ASSERTE(m_eState == SS_Closed);
 
+#if defined(_DEBUG) && !defined(RIGHT_SIDE_COMPILE)
+    // Before any event is sent, check that GetEventSize can size every declared event type.
+    CheckGetEventSizeCoverage();
+#endif // _DEBUG && !RIGHT_SIDE_COMPILE
+
     m_ref = 1;
 
     // Initialize all per-session state variables.
@@ -2164,6 +2169,22 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     DWORD cbBaseSize = offsetof(DebuggerIPCEvent, MetadataUpdateData);
     DWORD cbAdditionalSize = 0;
 
+    if (!TryGetEventAdditionalSize(pEvent, &cbAdditionalSize))
+    {
+        STRESS_LOG1(LF_CORDB, LL_INFO1000, "Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
+        _ASSERTE(!"Unknown debugger event type");
+    }
+
+    return cbBaseSize + cbAdditionalSize;
+}
+
+// Returns false if GetEventSize does not know the event's type. Otherwise sets *pcbAdditionalSize to the number
+// of bytes the event carries beyond the common header and returns true. Reads only the event's type, plus
+// StepData.rangeCount for DB_IPCE_STEP and DB_IPCE_STEP_RESULT.
+bool DbgTransportSession::TryGetEventAdditionalSize(DebuggerIPCEvent *pEvent, DWORD *pcbAdditionalSize)
+{
+    DWORD cbAdditionalSize = 0;
+
     switch (pEvent->type & DB_IPCE_TYPE_MASK)
     {
     case DB_IPCE_SYNC_COMPLETE:
@@ -2462,14 +2483,94 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         break;
 
     default:
-        STRESS_LOG1(LF_CORDB, LL_INFO1000, "Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
-        _ASSERTE(!"Unknown debugger event type");
+        *pcbAdditionalSize = 0;
+        return false;
     }
 
-    return cbBaseSize + cbAdditionalSize;
+    *pcbAdditionalSize = cbAdditionalSize;
+    return true;
 }
 
 #ifdef _DEBUG
+// GetEventSize maps each event type to its wire size. A type missing from its switch is sent as the header
+// alone, so the receiver reads stale bytes in place of the payload. This check walks every event type
+// declared in dbgipceventtypes.h and asserts on any that GetEventSize does not size. It catches a missing
+// case; it cannot catch a case that is present but sized wrongly. It runs once, from the runtime side's
+// Init, in checked and debug builds only.
+void DbgTransportSession::CheckGetEventSizeCoverage()
+{
+    // Event types that GetEventSize deliberately does not size. This list is the only place a type may be
+    // exempted from the check: removing a type from it makes the check cover that type. An event listed here
+    // as never sent that gains a sender must be sized in GetEventSize and removed from this list.
+    static const DebuggerIPCEventType s_unsizedTypes[] =
+    {
+        // Never sent: declared, but there is no sender anywhere in the tree.
+        DB_IPCE_UNHANDLED_EXCEPTION,
+        DB_IPCE_BREAKPOINT_REMOVE_RESULT,
+        DB_IPCE_LIST_THREADS,
+        DB_IPCE_SUSPEND_THREAD,
+        DB_IPCE_RESUME_THREAD,
+        DB_IPCE_CONTINUE_EXCEPTION,
+
+        // Never sent: the debugger side still has a receiver for it, but nothing sends it.
+        DB_IPCE_METADATA_UPDATE,
+
+        // Not an event: the debugger side's sentinel for an invalid event type.
+        DB_IPCE_DEBUGGER_INVALID,
+    };
+
+    struct DeclaredEventType
+    {
+        DebuggerIPCEventType type;
+        const char *szMessage; // The assert message, which names the type.
+    };
+
+    // Every declared event type, from the same macro expansion as DoCompileTimeCheckOnDbgIpcEventTypes in
+    // debugger.cpp. TYPE0 entries mark ranges rather than events, so they are skipped.
+    #define UNSIZED_EVENT_MESSAGE(type) \
+        #type " has no case in DbgTransportSession::TryGetEventAdditionalSize, the switch behind GetEventSize. " \
+        "Add its size there, or list it as never sent in DbgTransportSession::CheckGetEventSizeCoverage."
+
+    static const DeclaredEventType s_declaredTypes[] =
+    {
+    #define IPC_EVENT_TYPE0(type, val)
+    #define IPC_EVENT_TYPE1(type, val)  { type, UNSIZED_EVENT_MESSAGE(type) },
+    #define IPC_EVENT_TYPE2(type, val)  { type, UNSIZED_EVENT_MESSAGE(type) },
+    #include "dbgipceventtypes.h"
+    #undef IPC_EVENT_TYPE2
+    #undef IPC_EVENT_TYPE1
+    #undef IPC_EVENT_TYPE0
+    };
+
+    #undef UNSIZED_EVENT_MESSAGE
+
+    // A zeroed event, so that StepData.rangeCount is 0 for DB_IPCE_STEP and DB_IPCE_STEP_RESULT.
+    DebuggerIPCEvent event;
+    memset(&event, 0, sizeof(event));
+
+    for (size_t i = 0; i < ARRAY_SIZE(s_declaredTypes); i++)
+    {
+        bool fListedAsUnsized = false;
+        for (size_t j = 0; j < ARRAY_SIZE(s_unsizedTypes); j++)
+        {
+            if (s_unsizedTypes[j] == s_declaredTypes[i].type)
+            {
+                fListedAsUnsized = true;
+                break;
+            }
+        }
+
+        if (fListedAsUnsized)
+            continue;
+
+        event.type = s_declaredTypes[i].type;
+
+        DWORD cbAdditionalSize = 0;
+        bool fSized = TryGetEventAdditionalSize(&event, &cbAdditionalSize);
+        _ASSERTE_MSG(fSized, s_declaredTypes[i].szMessage);
+    }
+}
+
 // Debug helper which returns the name associated with a MessageType.
 const char *DbgTransportSession::MessageName(MessageType eType)
 {
