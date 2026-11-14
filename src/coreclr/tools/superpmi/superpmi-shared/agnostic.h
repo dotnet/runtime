@@ -701,6 +701,7 @@ struct Agnostic_GetWasmTypeSymbol
 struct Agnostic_ResolveVirtualMethodKey
 {
     DWORDLONG                       virtualMethod;
+    DWORDLONG                       callerMethod;
     DWORDLONG                       objClass;
     DWORDLONG                       context;
     DWORD                           pResolvedTokenVirtualMethodNonNull;

@@ -1587,6 +1587,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // [In] arguments of resolveVirtualMethod
     //
     CORINFO_METHOD_HANDLE       virtualMethod;
+    CORINFO_METHOD_HANDLE       callerMethod;
     CORINFO_CLASS_HANDLE        objClass;
     CORINFO_CONTEXT_HANDLE      context;
     CORINFO_RESOLVED_TOKEN     *pResolvedTokenVirtualMethod;

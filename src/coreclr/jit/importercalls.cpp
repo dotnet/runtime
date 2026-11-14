@@ -1172,7 +1172,7 @@ DEVIRT:
         else if (call->AsCall()->IsDelegateInvoke())
         {
             considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, call->AsCall()->gtCallMethHnd,
-                                            NO_CLASS_HANDLE, nullptr);
+                                            NO_CLASS_HANDLE, nullptr, pResolvedToken);
         }
     }
 
@@ -1455,6 +1455,7 @@ DONE:
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
             info->ilLocation                           = impCurStmtDI.GetLocation();
+            info->resolvedToken                        = *pResolvedToken;
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
@@ -8741,7 +8742,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                                                bool                    isInterface,
                                                CORINFO_METHOD_HANDLE   baseMethod,
                                                CORINFO_CLASS_HANDLE    baseClass,
-                                               CORINFO_CONTEXT_HANDLE* pContextHandle)
+                                               CORINFO_CONTEXT_HANDLE* pContextHandle,
+                                               CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
@@ -8835,9 +8837,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 //
                 CORINFO_DEVIRTUALIZATION_INFO dvInfo;
                 dvInfo.virtualMethod               = baseMethod;
+                dvInfo.callerMethod                = call->gtInlineContext->GetCallee();
                 dvInfo.objClass                    = exactCls;
                 dvInfo.context                     = originalContext;
-                dvInfo.pResolvedTokenVirtualMethod = nullptr;
+                dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
 
                 JITDUMP("GDV exact: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
                         dvInfo.objClass, dvInfo.context);
@@ -8920,6 +8923,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             // Figure out which method will be called.
             //
             dvInfo.virtualMethod               = baseMethod;
+            dvInfo.callerMethod                = call->gtInlineContext->GetCallee();
             dvInfo.objClass                    = likelyClass;
             dvInfo.context                     = originalContext;
             dvInfo.pResolvedTokenVirtualMethod = nullptr;
@@ -10043,7 +10047,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle,
+                                        pResolvedToken);
 
         return;
     }
@@ -10087,7 +10092,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle,
+                                        pResolvedToken);
         return;
     }
 
@@ -10099,11 +10105,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         JITDUMP("--- base class is interface\n");
     }
 
-    // Fetch the method that would be called based on the declared type of 'this',
-    // and prepare to fetch the method attributes.
-    //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
     dvInfo.virtualMethod               = baseMethod;
+    dvInfo.callerMethod                = call->gtInlineContext->GetCallee();
     dvInfo.objClass                    = objClass;
     dvInfo.context                     = *pContextHandle;
     dvInfo.detail                      = CORINFO_DEVIRTUALIZATION_UNKNOWN;
@@ -10113,6 +10117,56 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             dvInfo.context);
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
+
+    GenTree* runtimeLookupContext = nullptr;
+
+    if (isLateDevirtualization && dvInfo.instParamLookup.lookupKind.needsRuntimeLookup)
+    {
+        // Late devirtualization may revisit a call that was imported in an inlinee.
+        // If token context is not the current root context, runtime lookups can be rooted in the wrong generic context.
+        //
+        CORINFO_CONTEXT_HANDLE tokenContext       = pResolvedToken->tokenContext;
+        const SIZE_T           tokenContextHandle = (SIZE_T)tokenContext & ~CORINFO_CONTEXTFLAGS_MASK;
+
+        const bool isMethodContext = ((SIZE_T)tokenContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+        const bool isCurrentContext =
+            (tokenContext == METHOD_BEING_COMPILED_CONTEXT()) ||
+            (isMethodContext ? ((CORINFO_METHOD_HANDLE)tokenContextHandle == info.compMethodHnd)
+                             : ((CORINFO_CLASS_HANDLE)tokenContextHandle == info.compClassHnd));
+
+        // If we don't have the right context, try recover it from the tree.
+        //
+        if (!isCurrentContext)
+        {
+            CallArg* runtimeMethodHandleArg = nullptr;
+            if ((call->gtControlExpr != nullptr) && call->gtControlExpr->OperIs(GT_CALL))
+            {
+                runtimeMethodHandleArg =
+                    call->gtControlExpr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+            }
+
+            if (runtimeMethodHandleArg != nullptr && runtimeMethodHandleArg->GetNode()->OperIs(GT_RUNTIMELOOKUP))
+            {
+                if (runtimeMethodHandleArg->GetNode()->AsRuntimeLookup()->Lookup()->OperIs(GT_CALL))
+                {
+                    GenTreeCall* const helperCall =
+                        runtimeMethodHandleArg->GetNode()->AsRuntimeLookup()->Lookup()->AsCall();
+
+                    if (helperCall->IsHelperCall(CORINFO_HELP_RUNTIMEHANDLE_METHOD) ||
+                        helperCall->IsHelperCall(CORINFO_HELP_RUNTIMEHANDLE_CLASS))
+                    {
+                        runtimeLookupContext = helperCall->gtArgs.GetArgByIndex(0)->GetNode();
+                    }
+                }
+            }
+
+            if (runtimeLookupContext == nullptr)
+            {
+                JITDUMP("Late devirt needs a runtime lookup context cannot be figured out. Bail out.\n");
+                return;
+            }
+        }
+    }
 
     CORINFO_METHOD_HANDLE   derivedMethod         = dvInfo.devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.tokenLookupContext;
@@ -10209,7 +10263,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle,
+                                        pResolvedToken);
         return;
     }
 
@@ -10224,6 +10279,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     dcInfo.pInstParamLookup      = &dvInfo.instParamLookup;
     dcInfo.pResolvedToken        = pDerivedResolvedToken;
     dcInfo.pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+    dcInfo.runtimeLookupContext  = runtimeLookupContext;
     dcInfo.pMethSig              = &derivedSig;
     dcInfo.objIsNonNull          = objIsNonNull;
     dcInfo.hadImplicitNullCheck  = true;
@@ -10497,7 +10553,8 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                         CORINFO_METHOD_HANDLE exactMethodHandle =
                             (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
 
-                        instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                        instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle,
+                                                  dcInfo->runtimeLookupContext);
                         JITDUMP("revising call to invoke unboxed entry with additional method desc arg\n");
                     }
                     else if (madeLocalCopy)
@@ -10595,7 +10652,8 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                 CORINFO_METHOD_HANDLE exactMethodHandle =
                     (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
 
-                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle,
+                                          dcInfo->runtimeLookupContext);
             }
             else
             {
@@ -10604,7 +10662,8 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                 CORINFO_CLASS_HANDLE exactClassHandle =
                     (CORINFO_CLASS_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
 
-                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle,
+                                          dcInfo->runtimeLookupContext);
             }
         }
     }

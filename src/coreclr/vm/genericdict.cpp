@@ -857,6 +857,7 @@ Dictionary::PopulateEntry(
         }
 
         case MethodDescSlot:
+        case DevirtualizedMethodDescSlot:
         case DispatchStubAddrSlot:
         case MethodEntrySlot:
         case DeclaringTypeHandleFromMethodSlot:
@@ -1236,7 +1237,7 @@ Dictionary::PopulateEntry(
             }
             else
             {
-                _ASSERTE(kind == MethodDescSlot);
+                _ASSERTE(kind == MethodDescSlot || kind == DevirtualizedMethodDescSlot);
                 result = (CORINFO_GENERIC_HANDLE)pMethod;
             }
             break;
