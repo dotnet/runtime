@@ -614,6 +614,7 @@ namespace DispatchProxyTests
         [InlineData(true, true)]
         [InlineData(false, false)]
         [InlineData(false, true)]
+        [SkipOnMono("AssemblyLoadContext.GetLoadContext returns null for a Reflection.Emit assembly on Mono")]
         public static void Invoke_Method_With_Optional_Custom_Modifier_Invokes_Correct_Method(bool onReturn, bool useGenericCreate)
         {
             // System.Reflection.Emit generates the method so that an optional custom modifier sits on its return type or parameter.
@@ -809,6 +810,7 @@ namespace DispatchProxyTests
 
 #if NET
         [Fact]
+        [SkipOnMono("AssemblyLoadContext.GetLoadContext returns null for a Reflection.Emit assembly on Mono")]
         public static void Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods_Generic_And_Non_Generic_Tests()
         {
             // C# cannot emit raise_Xxx method for the event, so we must use System.Reflection.Emit to generate such event.
@@ -1053,6 +1055,41 @@ namespace DispatchProxyTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62503", TestRuntimes.Mono)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static void Test_Unloadability_Collects_Proxy_Base_Type(bool interfaceFromDefaultAlc, bool useGenericCreate)
+        {
+            // Track a type of the collectible ALC with resurrection: a short weak reference to the ALC
+            // clears when the ALC becomes finalizer-reachable, before its types are collected.
+            WeakReference wr = CreateProxyInUnloadableAlc(interfaceFromDefaultAlc, useGenericCreate);
+
+            for (int i = 0; i < 10 && wr.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.False(wr.IsAlive, "The proxy base type could not be collected.");
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static WeakReference CreateProxyInUnloadableAlc(bool interfaceFromDefaultAlc, bool useGenericCreate)
+            {
+                Assembly assembly = new AssemblyLoadContext(nameof(Test_Unloadability_Collects_Proxy_Base_Type), true)
+                    .LoadFromAssemblyPath(typeof(DispatchProxyTests).Assembly.Location);
+                Type proxyType = assembly.GetType(typeof(TestDispatchProxy).FullName, true);
+                Type interfaceType = interfaceFromDefaultAlc
+                    ? typeof(IDisposable)
+                    : assembly.GetType(typeof(TestType_IHelloService).FullName, true);
+
+                CreateProxyFromTypes(interfaceType, proxyType, useGenericCreate);
+                return new WeakReference(proxyType, trackResurrection: true);
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1088,6 +1125,45 @@ namespace DispatchProxyTests
                            .Invoke(null, new object[] { typeof(IDisposable), type });
                 }
             }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Test_Interface_From_Multiple_AssemblyLoadContexts(bool useGenericCreate)
+        {
+            string interfaceAssemblyPath = typeof(DispatchProxyTestDependency.TestType_IExternalNonPublicHiService).Assembly.Location;
+
+            Type interfaceType1 = LoadInterfaceType(new AssemblyLoadContext(nameof(Test_Interface_From_Multiple_AssemblyLoadContexts) + "1"));
+            Type interfaceType2 = LoadInterfaceType(new AssemblyLoadContext(nameof(Test_Interface_From_Multiple_AssemblyLoadContexts) + "2"));
+            Assert.NotSame(interfaceType1, interfaceType2);
+
+            object proxy1 = CreateProxyFromTypes(interfaceType1, typeof(TestDispatchProxy), useGenericCreate);
+            object proxy2 = CreateProxyFromTypes(interfaceType2, typeof(TestDispatchProxy), useGenericCreate);
+
+            Assert.True(interfaceType1.IsInstanceOfType(proxy1));
+            Assert.False(interfaceType2.IsInstanceOfType(proxy1));
+            Assert.True(interfaceType2.IsInstanceOfType(proxy2));
+            Assert.False(interfaceType1.IsInstanceOfType(proxy2));
+
+            ((TestDispatchProxy)proxy2).CallOnInvoke = (method, args) => method.Name + " " + args[0];
+            Assert.Equal("Hi there", interfaceType2.GetMethod("Hi").Invoke(proxy2, new object[] { "there" }));
+
+            Type LoadInterfaceType(AssemblyLoadContext alc) =>
+                alc.LoadFromAssemblyPath(interfaceAssemblyPath)
+                    .GetType(typeof(DispatchProxyTestDependency.TestType_IExternalNonPublicHiService).FullName, true);
+        }
+
+        private static object CreateProxyFromTypes(Type interfaceType, Type proxyType, bool useGenericCreate)
+        {
+            if (useGenericCreate)
+            {
+                return typeof(DispatchProxy)
+                       .GetMethod("Create", Type.EmptyTypes).MakeGenericMethod(interfaceType, proxyType)
+                       .Invoke(null, null);
+            }
+
+            return DispatchProxy.Create(interfaceType, proxyType);
         }
 
         [Fact]
