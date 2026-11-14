@@ -132,7 +132,7 @@ namespace System.Net.Http.Metrics
 
     internal sealed class SocketsHttpHandlerMetrics
     {
-        public readonly OpenConnectionsTracker OpenConnectionsTracker = new();
+        public readonly OpenConnectionsTracker OpenConnectionsTracker;
 
         public readonly ObservableUpDownCounter<long> OpenConnections;
 
@@ -142,11 +142,7 @@ namespace System.Net.Http.Metrics
 
         public SocketsHttpHandlerMetrics(Meter meter)
         {
-            OpenConnections = meter.CreateObservableUpDownCounter<long>(
-                name: "http.client.open_connections",
-                observeValues: OpenConnectionsTracker.GetMeasurements,
-                unit: "{connection}",
-                description: "Number of outbound HTTP connections that are currently active or idle on the client.");
+            (OpenConnectionsTracker, OpenConnections) = SharedHttpMetrics.GetOpenConnections(meter);
 
             ConnectionDuration = meter.CreateHistogram<double>(
                 name: "http.client.connection.duration",
