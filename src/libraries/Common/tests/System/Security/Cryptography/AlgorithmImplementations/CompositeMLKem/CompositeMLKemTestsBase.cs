@@ -16,6 +16,9 @@ namespace System.Security.Cryptography.Tests
         protected abstract CompositeMLKem ImportDecapsulationKey(CompositeMLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract CompositeMLKem ImportEncapsulationKey(CompositeMLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
 
+        protected virtual void AssertExportPkcs8FromEncapsulationKey(Action export) =>
+            Assert.Throws<CryptographicException>(export);
+
         [Theory]
         [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public void AlgorithmMatches_GenerateKey(CompositeMLKemAlgorithm algorithm)
@@ -151,7 +154,8 @@ namespace System.Security.Cryptography.Tests
                     export => AssertExtensions.SequenceEqual(vector.EncapsulationKey, export(encapsKey)));
 
                 CompositeMLKemTestHelpers.AssertExportDecapsulationKey(
-                    export => Assert.Throws<CryptographicException>(() => export(encapsKey)));
+                    export => Assert.Throws<CryptographicException>(() => export(encapsKey)),
+                    export => AssertExportPkcs8FromEncapsulationKey(() => export(encapsKey)));
             }
         }
 
