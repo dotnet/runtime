@@ -148,6 +148,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Object>]
         internal static partial JSObject createData([JSMarshalAs<JSType.String>] string name);
 
+        [JSImport("getJSHandle", "JavaScriptTestHelper")]
+        internal static partial int GetJSHandle(JSObject value);
+
         #region relaxed
         [JSImport("dummy", "JavaScriptTestHelper")]
         internal static partial void Relaxed(string a1, Exception ex,
@@ -446,7 +449,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static partial Task ReturnResolvedPromise();
 
         [JSImport("invokeReturnCompletedTask", "JavaScriptTestHelper")]
-        internal static partial Task<string> InvokeReturnCompletedTask();
+        internal static partial Task<string> InvokeReturnCompletedTask(int count = 1, bool awaitResult = true);
 
         [JSExport]
         internal static Task ReturnCompletedTask()
