@@ -173,6 +173,21 @@ switch (testCase) {
             return defaultUri;
         });
         break;
+    case "FetchIntegrity": {
+        const disableIntegrityCheck = params.get("disableIntegrityCheck");
+        if (disableIntegrityCheck !== null) {
+            dotnet.withConfig({ disableIntegrityCheck: disableIntegrityCheck === "true" });
+        }
+        const originalFetch = globalThis.fetch.bind(globalThis);
+        globalThis.fetch = (input, options) => {
+            const url = input instanceof Request ? input.url : String(input);
+            if (/\.(wasm|dll|dat)$/.test(new URL(url, location.href).pathname)) {
+                testOutput(`Fetch integrity: ${options?.integrity ? "yes" : "no"} ${url}`);
+            }
+            return originalFetch(input, options);
+        };
+        break;
+    }
     case "NativeSymbolsDownload": {
         const failure = params.get("failure");
         const originalFetch = globalThis.fetch.bind(globalThis);
@@ -487,6 +502,7 @@ try {
             break;
         case "DownloadResourceProgressTest":
         case "AssetIntegrity":
+        case "FetchIntegrity":
             exit(0);
             break;
         case "NativeSymbolsDownload":
