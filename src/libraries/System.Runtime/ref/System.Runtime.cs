@@ -17103,7 +17103,7 @@ namespace System.Text
             void System.IDisposable.Dispose() { }
         }
     }
-    public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
+    public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable
     {
         public StringBuilder() { }
         public StringBuilder(int capacity) { }
@@ -17220,9 +17220,16 @@ namespace System.Text
         public System.Text.StringBuilder Replace(System.ReadOnlySpan<char> oldValue, System.ReadOnlySpan<char> newValue, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public string ToString(int startIndex, int length) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, System.Range sourceRange, out int bytesWritten) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryFormat(System.Span<char> destination, System.Range sourceRange, out int charsWritten) { throw null; }
         public bool TryGetRuneAt(int index, out Rune value) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
