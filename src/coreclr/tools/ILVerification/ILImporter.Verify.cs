@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -92,6 +94,9 @@ namespace Internal.IL
         TypeDesc _constrained;
 
         int _currentInstructionOffset;
+        Dictionary<(int Offset, VerifierError Error, string Found, string Expected),
+            (int Visit, int Count, int Reported)> _verificationErrors;
+        int _verificationVisit;
 
         class BasicBlock
         {
@@ -109,6 +114,7 @@ namespace Internal.IL
             public ImportState State = ImportState.Unmarked;
 
             public StackValue[] EntryStack;
+            public StackValue[] EntryLifetimeMemory;
             public bool IsThisInitialized = false;
 
             public bool TryStart;
@@ -233,7 +239,15 @@ namespace Internal.IL
             Check(!_basicBlocks[0].HandlerIndex.HasValue, VerifierError.FallthroughIntoHandler);
             Check(!_basicBlocks[0].FilterIndex.HasValue, VerifierError.FallthroughIntoFilter);
 
-            ImportBasicBlocks();
+            try
+            {
+                InitializeLifetimes();
+                ImportBasicBlocks();
+            }
+            finally
+            {
+                ReportLifetimeErrors();
+            }
         }
 
         private void FindEnclosingExceptionRegions()
@@ -530,42 +544,34 @@ namespace Internal.IL
         }
 
         // If not, report verification error and continue verification.
-        void VerificationError(VerifierError error)
-        {
-            if (_currentBasicBlock != null)
-                _currentBasicBlock.IncrementErrorCount();
+        void VerificationError(VerifierError error) => VerificationError(error, null, null);
 
-            var args = new ErrorArgument[]
-            {
-                new ErrorArgument("Offset", _currentInstructionOffset)
-            };
-            ReportVerificationError(args, error);
-        }
-
-        void VerificationError(VerifierError error, object found)
-        {
-            if (_currentBasicBlock != null)
-                _currentBasicBlock.IncrementErrorCount();
-
-            var args = new ErrorArgument[]
-            {
-                new ErrorArgument("Offset", _currentInstructionOffset),
-                new ErrorArgument("Found", found.ToString())
-            };
-            ReportVerificationError(args, error);
-        }
+        void VerificationError(VerifierError error, object found) => VerificationError(error, found, null);
 
         void VerificationError(VerifierError error, object found, object expected)
         {
-            if (_currentBasicBlock != null)
-                _currentBasicBlock.IncrementErrorCount();
+            // Repeated errors must still prevent ordinary control-flow propagation.
+            _currentBasicBlock?.IncrementErrorCount();
 
-            var args = new ErrorArgument[]
+            string foundText = found?.ToString();
+            string expectedText = expected?.ToString();
+            if (_currentBasicBlock is not null)
             {
-                new ErrorArgument("Offset", _currentInstructionOffset),
-                new ErrorArgument("Found", found.ToString()),
-                new ErrorArgument("Expected", expected.ToString())
-            };
+                var key = (_currentInstructionOffset, error, foundText, expectedText);
+                _verificationErrors ??= new();
+                _verificationErrors.TryGetValue(key, out var state);
+                int count = state.Visit == _verificationVisit ? state.Count + 1 : 1;
+                _verificationErrors[key] = (_verificationVisit, count, Math.Max(count, state.Reported));
+                if (count <= state.Reported)
+                    return;
+            }
+
+            var args = new ErrorArgument[expected is not null ? 3 : found is not null ? 2 : 1];
+            args[0] = new ErrorArgument("Offset", _currentInstructionOffset);
+            if (found is not null)
+                args[1] = new ErrorArgument("Found", foundText);
+            if (expected is not null)
+                args[2] = new ErrorArgument("Expected", expectedText);
             ReportVerificationError(args, error);
         }
 
@@ -1187,6 +1193,9 @@ namespace Internal.IL
                 return false;
             }
 
+            if (!IsDelegateReadOnlyCompatible(targetMethod, invokeMethod, isOpenDelegate))
+                return false;
+
             // An open static delegate which takes no arguments. In that case we're done.
             if (totalTargetArgs == 0)
             {
@@ -1254,6 +1263,54 @@ namespace Internal.IL
                     return false;
             }
 
+            return true;
+        }
+
+        bool IsDelegateReadOnlyCompatible(MethodDesc targetMethod, MethodDesc invokeMethod, bool isOpenDelegate)
+        {
+            // Delegate Invoke must be an instance method (ECMA-335 II.14.6).
+            if (invokeMethod.Signature.IsStatic)
+                return false;
+
+            // ECMA-335 II.14.6.1 ignores custom modifiers when binding delegates.
+            // Readonly promises therefore need an explicit compatibility check.
+            LifetimeContract invokeContract = null;
+            if (targetMethod.Signature.ReturnType.IsByRef)
+            {
+                LifetimeContract targetContract = GetLifetimeContract(targetMethod);
+                if (targetContract.ReadOnlyReturn)
+                {
+                    invokeContract = GetLifetimeContract(invokeMethod);
+                    if (!targetContract.Valid || !invokeContract.Valid || !invokeContract.ReadOnlyReturn)
+                        return false;
+                }
+            }
+
+            bool exactTarget = !targetMethod.OwningType.IsDelegate &&
+                (HasFixedMethodTarget(targetMethod) ||
+                 !targetMethod.Signature.IsStatic && _delegateCreateStart.HasValue &&
+                 _currentInstructionOffset - _delegateCreateStart.Value == 6 &&
+                 GetOpcodeAt(_delegateCreateStart.Value) == ILOpcode.ldftn);
+            for (int i = 0; i < invokeMethod.Signature.Length; i++)
+            {
+                if (!invokeMethod.Signature[i].IsByRef)
+                    continue;
+                invokeContract ??= GetLifetimeContract(invokeMethod);
+                if (invokeContract.ReadOnly[i + 1])
+                {
+                    if (!invokeContract.Valid)
+                        return false;
+                    int slot = i + (isOpenDelegate ? 0 : 1);
+                    LifetimeContract targetContract = GetLifetimeContract(targetMethod);
+                    // This is a construction-time compatibility check, not permission
+                    // to pass a readonly actual to the delegate's Invoke method.
+                    bool compatible = targetMethod.OwningType.IsDelegate ?
+                        targetContract.Valid && targetContract.ReadOnly[slot] :
+                        CanPassReadOnlyReference(targetMethod, slot, exactTarget);
+                    if (!compatible)
+                        return false;
+                }
+            }
             return true;
         }
 
@@ -1344,9 +1401,11 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _verificationVisit++;
             _currentInstructionOffset = basicBlock.StartOffset;
             _delegateCreateStart = null;
             _isThisInitialized = basicBlock.IsThisInitialized;
+            StartLifetimeBlock(basicBlock);
 
             if (basicBlock.TryStart)
             {
@@ -1361,6 +1420,7 @@ namespace Internal.IL
                     {
                         var filterBlock = _basicBlocks[r.ILRegion.FilterOffset];
                         PropagateThisState(basicBlock, filterBlock);
+                        PropagateLifetimeMemory(filterBlock);
                         MarkBasicBlock(filterBlock);
                     }
 
@@ -1368,6 +1428,7 @@ namespace Internal.IL
                     {
                         var handlerBlock = _basicBlocks[r.ILRegion.HandlerOffset];
                         PropagateThisState(basicBlock, handlerBlock);
+                        PropagateLifetimeMemory(handlerBlock);
                         MarkBasicBlock(handlerBlock);
                     }
                 }
@@ -1445,6 +1506,7 @@ namespace Internal.IL
         void EndImportingBasicBlock(BasicBlock basicBlock)
         {
             basicBlock.State = BasicBlock.ImportState.WasVerified;
+            EndLifetimeBlock(basicBlock);
         }
 
         void ImportNop()
@@ -1487,6 +1549,10 @@ namespace Internal.IL
             CheckIsNotPointer(varType);
 
             var stackValue = StackValue.CreateFromType(varType);
+            if (_lifetimeMemory.Length != 0)
+                stackValue = stackValue.CopyLifetime(_lifetimeMemory[VariableCell(index, argument)]);
+            if (argument && stackValue.Kind == StackValueKind.ByRef && _lifetimeContract?.ReadOnly[index] == true)
+                stackValue.SetIsReadOnly();
             if (index == 0 && argument && _thisType != null)
             {
                 Debug.Assert(varType == _thisType);
@@ -1505,7 +1571,11 @@ namespace Internal.IL
             if (_trackObjCtorState && !_isThisInitialized)
                 Check(index != 0 || !argument, VerifierError.ThisUninitStore);
 
-            CheckIsAssignable(value, StackValue.CreateFromType(varType));
+            StackValue declared = StackValue.CreateFromType(varType);
+            if (declared.Kind == StackValueKind.ByRef && value.IsReadOnly)
+                declared.SetIsReadOnly();
+            CheckIsAssignable(value, declared);
+            StoreLifetimeCell(VariableCell(index, argument), value, true);
         }
 
         void ImportAddressOfVar(int index, bool argument)
@@ -1517,7 +1587,9 @@ namespace Internal.IL
 
             Check(!varType.IsByRef, VerifierError.ByrefOfByref);
 
-            var stackValue = StackValue.CreateByRef(varType);
+            var stackValue = StackValue.CreateByRef(varType).WithLifetime(LifetimeScope.Function, LifetimeScope.Global,
+                target: _lifetimeMemory.Length == 0 ? -1 : VariableCell(index, argument) + 1,
+                whole: true, capacity: LifetimeScope.Function);
             if (index == 0 && argument && _thisType != null)
             {
                 Debug.Assert(varType == _thisType);
@@ -1562,7 +1634,7 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
 
-            Push(StackValue.CreateObjRef(type));
+            Push(StackValue.CreateObjRef(type).WithLifetime(ValueLifetime(value)));
         }
 
         void ImportCall(ILOpcode opcode, int token)
@@ -1574,6 +1646,7 @@ namespace Internal.IL
 
             MethodDesc method = ResolveMethodToken(token);
             MethodSignature sig = method.Signature;
+            int firstLifetimeParameter = sig.IsStatic ? 0 : 1;
 
             if (opcode != ILOpcode.newobj)
             {
@@ -1601,6 +1674,13 @@ namespace Internal.IL
                     tailCall = true;
                 }
             }
+
+            bool needsLifetimeContract = NeedsCallLifetimes(method, constrained);
+            MethodDesc lifetimeTarget = null;
+            bool exactTarget = !method.OwningType.IsDelegate && constrained is null &&
+                (opcode != ILOpcode.callvirt || HasFixedMethodTarget(method));
+            StackValue[] lifetimeArguments = needsLifetimeContract || HasTypedReferenceArguments(method) ?
+                new StackValue[sig.Length + firstLifetimeParameter] : null;
 
             // TODO: VarArgs
             // if (sig.isVarArg())
@@ -1650,7 +1730,17 @@ namespace Internal.IL
                 for (int i = sig.Length - 1; i >= 0; i--)
                 {
                     var actual = Pop(allowUninitThis: true);
+                    if (lifetimeArguments is not null)
+                        lifetimeArguments[firstLifetimeParameter + i] = actual;
                     var declared = StackValue.CreateFromType(sig[i]);
+                    if (declared.Kind == StackValueKind.ByRef && (lifetimeArguments is not null || actual.IsReadOnly))
+                    {
+                        if (!exactTarget && constrained is not null)
+                            lifetimeTarget ??= ResolveLifetimeTarget(method, constrained);
+                        if (CanPassReadOnlyReference(lifetimeTarget ?? method, firstLifetimeParameter + i,
+                            exactTarget || lifetimeTarget is not null))
+                            declared.SetIsReadOnly();
+                    }
 
                     CheckIsAssignable(actual, declared);
 
@@ -1683,10 +1773,11 @@ namespace Internal.IL
                     }
                 }
             }
-            else
-            if (methodType != null)
+            else if (methodType != null)
             {
                 var actualThis = Pop(allowUninitThis: true);
+                if (lifetimeArguments is not null)
+                    lifetimeArguments[0] = actualThis;
                 instance = actualThis.Type;
                 var declaredThis = methodType.IsValueType ?
                     StackValue.CreateByRef(methodType) : StackValue.CreateObjRef(methodType);
@@ -1778,15 +1869,25 @@ namespace Internal.IL
             if (tailCall)
                 CheckTailCallReturn(returnType);
 
+            if (opcode == ILOpcode.newobj && lifetimeArguments is not null)
+            {
+                lifetimeArguments[0] = StackValue.CreateByRef(methodType).WithLifetime(
+                    LifetimeScope.Function, LifetimeScope.Unknown, -1, true, LifetimeScope.Function);
+            }
+            if (lifetimeArguments is not null)
+                lifetimeTarget ??= ResolveLifetimeTarget(method, constrained);
+            StackValue lifetimeResult = ApplyCallLifetimes(lifetimeTarget ?? method, lifetimeArguments,
+                opcode == ILOpcode.newobj ? methodType : returnType,
+                lifetimeTarget is not null || exactTarget, needsLifetimeContract);
+
             // now push on the result
             if (opcode == ILOpcode.newobj)
             {
-                Push(StackValue.CreateFromType(methodType));
+                Push(lifetimeResult);
             }
-            else
-            if (!returnType.IsVoid)
+            else if (!returnType.IsVoid)
             {
-                var returnValue = StackValue.CreateFromType(returnType);
+                var returnValue = lifetimeResult;
 
                 // "readonly." prefixed calls only allowed for the Address operation on arrays.
                 // The methods supported by array types are under the control of the EE
@@ -1800,10 +1901,6 @@ namespace Internal.IL
 
                     ClearPendingPrefix(Prefix.ReadOnly);
                 }
-
-                if (returnValue.Kind == StackValueKind.ByRef)
-                    returnValue.SetIsPermanentHome();
-
                 Push(returnValue);
             }
         }
@@ -1874,15 +1971,10 @@ namespace Internal.IL
             if (tailCall)
                 CheckTailCallReturn(sig.ReturnType);
 
+            InvalidateLifetimeMemory();
+
             if (!sig.ReturnType.IsVoid)
-            {
-                var returnValue = StackValue.CreateFromType(sig.ReturnType);
-
-                if (returnValue.Kind == StackValueKind.ByRef)
-                    returnValue.SetIsPermanentHome();
-
-                Push(returnValue);
-            }
+                Push(StackValue.CreateFromType(sig.ReturnType).WithLifetime(LifetimeScope.Unknown));
         }
 
         void ImportLdFtn(int token, ILOpcode opCode)
@@ -1968,6 +2060,7 @@ namespace Internal.IL
 
         void ImportReturn()
         {
+            CheckOutputLifetimes();
             // 'this' must be init before return, unless System.Object
             if (_trackObjCtorState)
                 Check(_isThisInitialized || _thisType.IsObject, VerifierError.ThisUninitReturn);
@@ -2010,9 +2103,24 @@ namespace Internal.IL
                     Check(_stackTop == 1, VerifierError.ReturnEmpty);
 
                     var actualReturnType = Pop();
-                    CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
+                    StackValue declared = StackValue.CreateFromType(expectedReturnType);
+                    if (declared.Kind == StackValueKind.ByRef)
+                    {
+                        LifetimeContract contract = GetLifetimeContract(_method);
+                        if (_lifetimeContract is null && contract.ReadOnlyReturn)
+                            LifetimeCheck(contract.Valid);
+                        if (contract.ReadOnlyReturn)
+                            declared.SetIsReadOnly();
+                    }
+                    CheckIsAssignable(actualReturnType, declared);
 
-                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    if (HasLifetime(expectedReturnType))
+                    {
+                        LifetimeCheck(!IsRestrictedLifetimeType(expectedReturnType) &&
+                            ValueLifetime(actualReturnType) >= LifetimeScope.ReturnOnly &&
+                            (!expectedReturnType.IsByRef || ReadLifetime(actualReturnType) >= LifetimeScope.ReturnOnly),
+                            VerifierError.ReturnPtrToStack);
+                    }
                 }
             }
         }
@@ -2140,6 +2248,7 @@ namespace Internal.IL
                 return;
 
             PropagateThisState(_currentBasicBlock, next);
+            PropagateLifetimeMemory(next);
 
             // Propagate stack across block bounds
             StackValue[] entryStack = next.EntryStack;
@@ -2169,7 +2278,14 @@ namespace Internal.IL
                                 if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
                                     next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
                             }
+
                         }
+                    }
+                    StackValue lifetimeMerged = entryStack[i].MergeLifetime(_stack[i]);
+                    if (!lifetimeMerged.HasSameLifetime(entryStack[i]))
+                    {
+                        entryStack[i] = lifetimeMerged;
+                        RevisitLifetimeBlock(next);
                     }
                 }
             }
@@ -2271,6 +2387,8 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Volatile);
 
             var field = ResolveFieldToken(token);
+            CheckLifetimeField(field);
+            LifetimeScope contentsScope = LifetimeScope.Global;
 
             TypeDesc instance;
             if (isStatic)
@@ -2287,6 +2405,7 @@ namespace Internal.IL
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
                 var actualThis = Pop(allowUninitThis: true);
+                contentsScope = ReadFieldLifetime(actualThis, field);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -2300,13 +2419,22 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            Push(StackValue.CreateFromType(field.FieldType));
+            if (HasLifetime(field.FieldType))
+                LifetimeCheck(contentsScope != LifetimeScope.Unknown);
+            StackValue value = StackValue.CreateFromType(field.FieldType).WithLifetime(contentsScope);
+            if (IsReadOnlyLifetimeField(field))
+                value.SetIsReadOnly();
+            Push(value);
         }
 
         void ImportAddressOfField(int token, bool isStatic)
         {
             var field = ResolveFieldToken(token);
+            CheckLifetimeField(field);
+            LifetimeCheck(!field.FieldType.IsByRef);
             bool isPermanentHome = false;
+            StackValue lifetimeAddress = StackValue.CreateByRef(field.FieldType)
+                .WithLifetime(LifetimeScope.Global, capacity: LifetimeScope.Global);
 
             TypeDesc instance;
             if (isStatic)
@@ -2326,11 +2454,27 @@ namespace Internal.IL
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
                 var actualThis = Pop(allowUninitThis: true);
+                LifetimeScope contents = ReadFieldLifetime(actualThis, field);
+                lifetimeAddress = lifetimeAddress.WithLifetime(
+                    actualThis.Kind == StackValueKind.ObjRef ? LifetimeScope.Global :
+                    actualThis.Kind == StackValueKind.ByRef ? actualThis.EscapeScope : LifetimeScope.Function,
+                    contents,
+                    actualThis.Kind == StackValueKind.ByRef ? actualThis.LifetimeTarget : -1,
+                    capacity: actualThis.Kind == StackValueKind.ByRef ?
+                        actualThis.LifetimeCapacity : actualThis.Kind == StackValueKind.ObjRef ?
+                            LifetimeScope.Global : LifetimeScope.Function,
+                    writeFloor: actualThis.Kind == StackValueKind.ValueType ? contents : actualThis.LifetimeWriteFloor);
+                if (HasLifetime(field.FieldType) && actualThis.Kind == StackValueKind.ByRef && actualThis.IsWholeLifetimeTarget &&
+                    actualThis.LifetimeTarget > 0 && _lifetimeCellTypes[actualThis.LifetimeTarget - 1] == owningType &&
+                    GetLifetimeFieldMask(owningType, field, out ulong fieldMask) != ulong.MaxValue && fieldMask != 0)
+                    lifetimeAddress.InitializedLifetimeFields = fieldMask;
+                if (actualThis.IsReadOnly)
+                    lifetimeAddress.SetIsReadOnly();
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
                 var declaredThis = owningType.IsValueType ?
-                    StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
+                    StackValue.CreateByRef(owningType, readOnly: true) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
 
@@ -2344,7 +2488,7 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
+            Push(StackValue.CreateByRef(field.FieldType, lifetimeAddress.IsReadOnly, isPermanentHome).CopyLifetime(lifetimeAddress));
         }
 
         void ImportStoreField(int token, bool isStatic)
@@ -2354,7 +2498,10 @@ namespace Internal.IL
 
             var value = Pop();
             var field = ResolveFieldToken(token);
+            CheckLifetimeField(field);
             TypeDesc instance;
+            StackValue lifetimeAddress = StackValue.CreateByRef(field.FieldType)
+                .WithLifetime(LifetimeScope.Global, capacity: LifetimeScope.Global);
 
             if (isStatic)
             {
@@ -2373,6 +2520,13 @@ namespace Internal.IL
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
                 var actualThis = Pop(allowUninitThis: true);
+                lifetimeAddress = actualThis.Kind switch
+                {
+                    StackValueKind.ObjRef => actualThis.WithLifetime(LifetimeScope.Global, capacity: LifetimeScope.Global),
+                    StackValueKind.ValueType => actualThis.WithLifetime(LifetimeScope.Function,
+                        target: -1, capacity: LifetimeScope.Function),
+                    _ => actualThis,
+                };
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -2393,7 +2547,11 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            CheckIsAssignable(value, StackValue.CreateFromType(field.FieldType));
+            StackValue declared = StackValue.CreateFromType(field.FieldType);
+            if (IsReadOnlyLifetimeField(field))
+                declared.SetIsReadOnly();
+            CheckIsAssignable(value, declared);
+            StoreFieldLifetime(lifetimeAddress, value, field);
         }
 
         void ImportLoadIndirect(int token)
@@ -2418,7 +2576,10 @@ namespace Internal.IL
             {
                 CheckIsAssignable(address.Type.GetVerificationType(), type.GetVerificationType());
             }
-            Push(StackValue.CreateFromType(type));
+            LifetimeScope contents = ReadLifetime(address);
+            if (HasLifetime(type))
+                LifetimeCheck(contents != LifetimeScope.Unknown);
+            Push(StackValue.CreateFromType(type).WithLifetime(contents));
         }
 
         void ImportStoreIndirect(int token)
@@ -2446,6 +2607,7 @@ namespace Internal.IL
 
             CheckIsAssignable(typeVal, addressVal);
             CheckIsAssignable(value, typeVal);
+            StoreLifetime(address, value, type);
         }
 
         void ImportThrow()
@@ -2480,6 +2642,7 @@ namespace Internal.IL
             Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
 
             CheckIsAssignable(value, StackValue.CreateByRef(type));
+            StoreLifetime(value, StackValue.CreateFromType(type).WithLifetime(LifetimeScope.Global), type);
         }
 
         void ImportBox(int token)
@@ -2490,7 +2653,8 @@ namespace Internal.IL
 
             var targetType = StackValue.CreateFromType(type);
 
-            Check(!IsByRefLike(targetType), VerifierError.BoxByRef, targetType);
+            Check(!IsByRefLike(targetType) ||
+                type is GenericParameterDesc && IsSupportedGenericBox(type), VerifierError.BoxByRef, targetType);
 
             Check(type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef ||
                 type.IsGenericParameter || type.IsValueType, VerifierError.ExpectedValClassObjRefVariable);
@@ -2505,7 +2669,31 @@ namespace Internal.IL
             var typeForBox = type.IsNullable ? type.Instantiation[0] : type;
 
             // even if type is a value type we want the ref
-            Push(StackValue.CreateObjRef(typeForBox));
+            Push(StackValue.CreateObjRef(typeForBox).CopyLifetime(value));
+        }
+
+        bool IsSupportedGenericBox(TypeDesc type)
+        {
+            // See docs/design/features/byreflike-generics.md, "Special IL sequences".
+            int offset = _currentOffset;
+            if (offset >= _ilBytes.Length || _basicBlocks[offset] is not null)
+                return false;
+            TypeDesc testedType = null;
+            if (offset < _ilBytes.Length && (ILOpcode)_ilBytes[offset] == ILOpcode.isinst)
+            {
+                if (_ilBytes.Length - offset < 1 + sizeof(int))
+                    return false;
+                testedType = ResolveTypeToken(BinaryPrimitives.ReadInt32LittleEndian(_ilBytes.AsSpan(offset + 1)));
+                offset += 1 + sizeof(int);
+                if (offset >= _ilBytes.Length || _basicBlocks[offset] is not null)
+                    return false;
+            }
+            if (offset < _ilBytes.Length && (ILOpcode)_ilBytes[offset] == ILOpcode.unbox_any)
+                return _ilBytes.Length - offset >= 1 + sizeof(int) &&
+                    (testedType is null || testedType == type) &&
+                    ResolveTypeToken(BinaryPrimitives.ReadInt32LittleEndian(_ilBytes.AsSpan(offset + 1))) == type;
+            return offset < _ilBytes.Length && (ILOpcode)_ilBytes[offset] is
+                ILOpcode.brtrue or ILOpcode.brtrue_s or ILOpcode.brfalse or ILOpcode.brfalse_s;
         }
 
         static bool IsOffsetContained(int offset, int start, int length)
@@ -2518,6 +2706,7 @@ namespace Internal.IL
             EmptyTheStack();
 
             PropagateThisState(_currentBasicBlock, target);
+            PropagateLifetimeMemory(target);
             MarkBasicBlock(target);
 
             CheckIsValidLeaveTarget(_currentBasicBlock, target);
@@ -2701,23 +2890,32 @@ namespace Internal.IL
             var src = Pop();
             var dst = Pop();
 
-            Check(src.Kind == StackValueKind.ByRef, VerifierError.StackByRef, src);
-            Check(dst.Kind == StackValueKind.ByRef, VerifierError.StackByRef, dst);
+            bool sourceIsByRef = Check(src.Kind == StackValueKind.ByRef, VerifierError.StackByRef, src);
+            bool destinationIsByRef = Check(dst.Kind == StackValueKind.ByRef, VerifierError.StackByRef, dst);
 
-            // TODO !!!
-            // CheckIsAssignable(src.Type, type);
-            // CheckIsAssignable(type, dst.Type);
+            // ECMA-335 III.4.4: verify source-to-token and token-to-destination assignability.
+            if (sourceIsByRef)
+                CheckIsAssignable(src.Type.GetVerificationType(), type.GetVerificationType());
+            if (destinationIsByRef)
+            {
+                Check(!dst.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
+                CheckIsAssignable(type.GetVerificationType(), dst.Type.GetVerificationType());
+            }
+            if (sourceIsByRef && destinationIsByRef)
+                StoreLifetime(dst, StackValue.CreateFromType(type).WithLifetime(ReadLifetime(src)), type);
         }
 
         void ImportUnbox(int token, ILOpcode opCode)
         {
             var type = ResolveTypeToken(token);
 
-            CheckIsObjRef(Pop());
+            StackValue value = Pop();
+            CheckIsObjRef(value);
 
             if (opCode == ILOpcode.unbox_any)
             {
-                Push(StackValue.CreateFromType(type));
+                StackValue result = StackValue.CreateFromType(type);
+                Push(HasLifetime(type) ? result.WithLifetime(ValueLifetime(value)) : result);
             }
             else
             {
@@ -3005,6 +3203,10 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
 
+            // Only tracked value cells can be invalidated after a callee writes through the typed reference.
+            if (HasLifetimeContents(type))
+                LifetimeCheck(ptr.LifetimeTarget > 0 && ptr.LifetimeTarget - 1 < _variableCount);
+
             Push(StackValue.CreateValueType(GetWellKnownType(WellKnownType.TypedReference)));
         }
 
@@ -3015,8 +3217,8 @@ namespace Internal.IL
             var typedReference = Pop();
             CheckIsAssignable(typedReference, StackValue.CreateValueType(GetWellKnownType(WellKnownType.TypedReference)));
 
-            // The address can point to a local of a caller, so it does not have a permanent home.
-            Push(StackValue.CreateByRef(type));
+            // The target may belong to any ancestor frame, not just the immediate caller.
+            Push(StackValue.CreateByRef(type).WithLifetime(LifetimeScope.Unknown, capacity: LifetimeScope.Global));
         }
     }
 }
