@@ -26,6 +26,18 @@ endif(CLR_CMAKE_TARGET_ARCH_I386)
 
 add_library_clr(gcinfo OBJECT ${GCINFO_SOURCES})
 
+if (FEATURE_INTERPRETER AND NOT FEATURE_DYNAMIC_CODE_COMPILED AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  target_compile_definitions(gcinfo PRIVATE FEATURE_INTERPRETER_DIRECT_CALLS)
+  target_include_directories(gcinfo PRIVATE
+    ../vm
+    ../vm/${ARCH_SOURCES_DIR}
+    ../interop/inc
+    ${CLR_SRC_NATIVE_DIR}
+    ${RUNTIME_DIR}
+  )
+  add_dependencies(gcinfo eventing_headers)
+endif()
+
 install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)
 

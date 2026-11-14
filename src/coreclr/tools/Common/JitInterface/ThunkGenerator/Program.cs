@@ -598,7 +598,7 @@ public:
                     }
                     tw.Write(Environment.NewLine + "          " + param.Type.NativeTypeName2 + " " + param.Name);
                 }
-                tw.WriteLine(") override;");
+                tw.WriteLine(") CORINFO_OVERRIDE;");
             }
 
             tw.Write(@"
