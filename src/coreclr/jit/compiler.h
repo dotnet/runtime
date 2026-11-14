@@ -4444,6 +4444,7 @@ public:
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
     BitVec* m_wasmGCRefCandidates = nullptr;
+    ArrayStack<BasicBlock*>* m_wasmLocalCopyBlocks = nullptr; // Blocks with local-to-local copies, set by lowering
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -7065,6 +7066,7 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmForwardLocalCopies();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
     PhaseStatus fgWasmProfInstrument();
