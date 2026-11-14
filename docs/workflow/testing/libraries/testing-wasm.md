@@ -212,12 +212,17 @@ XHARNESS_COMMAND=test-browser ./build.sh libs.tests -test -os browser -c Release
 As with other mode switches, clean the project-specific `bin` and `obj` outputs when
 switching between composite and per-assembly images.
 
-For CoreCLR browser applications, ReadyToRun remains opt-in: set
-`PublishReadyToRun=true` to publish a single composite ReadyToRun image and component
-WebCIL stubs. Set `PublishReadyToRunComposite=false` to retain per-assembly images.
+CoreCLR browser applications publish composite ReadyToRun by default.
+Set `PublishReadyToRun=false` for IL-only output or `PublishReadyToRunComposite=false`
+for per-assembly ReadyToRun. Normal builds do not run per-app crossgen2;
+Debug builds still stage prebuilt framework R2R from the runtime pack.
+Library CI keeps separate interpreter and R2R jobs, passing `TestWasmReadyToRun=false`
+or `true` to both build and Helix submission.
 Publishing requires a wasm-capable crossgen2. Composite publishing additionally requires
 ReadyToRun SDK tasks that support wasm composite output naming and WebCIL enabled;
 the composite is loaded before the runtime starts.
+With a wasm-R2R-capable SDK that lacks the default compiler request, pass
+`PublishReadyToRun=true` explicitly during restore/publish or update the SDK.
 `ReadyToRunTests.PublishRunAllPagesComposite` exercises the default mode with trimmed, untrimmed, and
 native-relinked publishes in a browser, including asset fingerprinting when
 `USE_FINGERPRINTING_FOR_TESTS=true`.
