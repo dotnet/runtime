@@ -448,13 +448,18 @@ if %__BuildNative% EQU 1 (
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (
         set __CmakeBuildToolArgs=
+        if /i "%__TargetOS%" == "windows" (
+            REM Work around cl.exe's MAX_PATH limit using existing Windows 8.3 directory aliases.
+            REM Pass -C to Ninja because CMake --build expands aliases back to long paths.
+            for %%i in ("%__IntermediatesDir%") do set __CmakeBuildToolArgs=-C "%%~fsi"
+        )
     ) else (
         REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    echo running "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
-    "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
+    echo running "%CMakePath%" --build "%__IntermediatesDir%" --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
+    "%CMakePath%" --build "%__IntermediatesDir%" --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
