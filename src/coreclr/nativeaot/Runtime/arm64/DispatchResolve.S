@@ -116,9 +116,8 @@ LOCAL_LABEL(CacheMiss\@):
 .if \ReturnTarget
         b       C_FUNC(RhpCidResolve_Worker)
 .else
-        PREPARE_EXTERNAL_VAR RhpCidResolve, xip0
-        mov     xip1, \DispatchCellReg
-        b       C_FUNC(RhpUniversalTransitionTailCall)
+        // DispatchCellReg (x11) contains the indirection cell address
+        b       C_FUNC(RhpInterfaceDispatchSlow)
 .endif
 
 LEAF_END \DispatchName, _TEXT

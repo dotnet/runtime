@@ -32,9 +32,9 @@
 #pragma warning(disable:4061)
 
 #if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
-EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
+EXTERN_C CODE_LOCATION ReturnFromInterfaceDispatchSlow;
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionGuardedTailCall;
+EXTERN_C CODE_LOCATION ReturnFromInterfaceDispatchSlowGuarded;
 #endif
 
 EXTERN_C CODE_LOCATION CallEHFunclet2;
@@ -1366,70 +1366,81 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 }
 
 // For a given target architecture, the layout of this structure must precisely match the
-// stack frame layout used by the associated architecture-specific RhpUniversalTransition
+// stack frame layout used by the associated architecture-specific RhpInterfaceDispatchSlow
 // implementation.
-struct UniversalTransitionStackFrame
+struct InterfaceDispatchSlowStackFrame
 {
 
 // In DAC builds, the "this" pointer refers to an object in the DAC host.
 #define GET_POINTER_TO_FIELD(_FieldName) \
-    (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(UniversalTransitionStackFrame, this, _FieldName)
+    (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(InterfaceDispatchSlowStackFrame, this, _FieldName)
 
 #if defined(UNIX_AMD64_ABI)
 
-    // Conservative GC reporting must be applied to everything between the base of the
-    // ReturnBlock and the top of the StackPassedArgs.
+    // The frame created by PROLOG_WITH_TRANSITION_BLOCK. Conservative GC reporting must be applied to everything
+    // between the base of the TransitionBlock and the top of the StackPassedArgs.
 private:
-    Fp128 m_fpArgRegs[8];                   // ChildSP+000 CallerSP-0D0 (0x80 bytes)    (xmm0-xmm7)
-    uintptr_t m_returnBlock[2];            // ChildSP+080 CallerSP-050 (0x10 bytes)
-    uintptr_t m_intArgRegs[6];             // ChildSP+090 CallerSP-040 (0x30 bytes)    (rdi,rsi,rcx,rdx,r8,r9)
-    uintptr_t m_alignmentPad;              // ChildSP+0C0 CallerSP-010 (0x8 bytes)
-    uintptr_t m_callerRetaddr;             // ChildSP+0C8 CallerSP-008 (0x8 bytes)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0D0 CallerSP+000 (unknown size)
+    Fp128 m_fpArgRegs[8];                   // ChildSP+000 CallerSP-0F0 (0x80 bytes)    (xmm0-xmm7)
+    uintptr_t m_alignmentPad;              // ChildSP+080 CallerSP-070 (0x8 bytes)
+    uintptr_t m_intArgRegs[6];             // ChildSP+088 CallerSP-068 (0x30 bytes)    (rdi,rsi,rdx,rcx,r8,r9)
+    uintptr_t m_calleeSavedRegs[6];        // ChildSP+0B8 CallerSP-038 (0x30 bytes)    (r12,r13,r14,r15,rbx,rbp)
+    uintptr_t m_callerRetaddr;             // ChildSP+0E8 CallerSP-008 (0x8 bytes)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+0F0 CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
     PTR_uintptr_t get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_callerRetaddr); }
-    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_intArgRegs[0]); }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        // RhpUniversalTransition does not touch any non-volatile state on amd64.
-        UNREFERENCED_PARAMETER(pRegisterSet);
+        pRegisterSet->pR12 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[0]);
+        pRegisterSet->pR13 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[1]);
+        pRegisterSet->pR14 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[2]);
+        pRegisterSet->pR15 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[3]);
+        pRegisterSet->pRbx = GET_POINTER_TO_FIELD(m_calleeSavedRegs[4]);
+        pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_calleeSavedRegs[5]);
     }
 
     void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
     {
         pRegisterSet->pRdi = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
         pRegisterSet->pRsi = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
-        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
-        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
         pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
         pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
     }
 
 #elif defined(TARGET_AMD64)
 
-    // Conservative GC reporting must be applied to everything between the base of the
-    // ReturnBlock and the top of the StackPassedArgs.
+    // The frame created by PROLOG_WITH_TRANSITION_BLOCK. Conservative GC reporting must be applied to everything
+    // between the homed argument registers and the top of the StackPassedArgs.
 private:
-    uintptr_t m_calleeArgumentHomes[4];    // ChildSP+000 CallerSP-080 (0x20 bytes)
-    Fp128 m_fpArgRegs[4];                   // ChildSP+020 CallerSP-060 (0x40 bytes)    (xmm0-xmm3)
-    uintptr_t m_returnBlock[2];            // ChildSP+060 CallerSP-020 (0x10 bytes)
-    uintptr_t m_alignmentPad;              // ChildSP+070 CallerSP-010 (0x8 bytes)
-    uintptr_t m_callerRetaddr;             // ChildSP+078 CallerSP-008 (0x8 bytes)
-    uintptr_t m_intArgRegs[4];             // ChildSP+080 CallerSP+000 (0x20 bytes)    (rcx,rdx,r8,r9)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0a0 CallerSP+020 (unknown size)
+    uintptr_t m_calleeArgumentHomes[4];    // ChildSP+000 CallerSP-0B0 (0x20 bytes)
+    Fp128 m_fpArgRegs[4];                   // ChildSP+020 CallerSP-090 (0x40 bytes)    (xmm0-xmm3)
+    uintptr_t m_alignmentPad;              // ChildSP+060 CallerSP-050 (0x8 bytes)
+    uintptr_t m_calleeSavedRegs[8];        // ChildSP+068 CallerSP-048 (0x40 bytes)    (rdi,rsi,rbx,rbp,r12-r15)
+    uintptr_t m_callerRetaddr;             // ChildSP+0A8 CallerSP-008 (0x8 bytes)
+    uintptr_t m_intArgRegs[4];             // ChildSP+0B0 CallerSP+000 (0x20 bytes)    (rcx,rdx,r8,r9)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+0D0 CallerSP+020 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_intArgRegs[0]); }
     PTR_uintptr_t get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_callerRetaddr); }
-    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+    // The lower bound must be below CallerSP, where the argument registers are homed.
+    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_callerRetaddr); }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        // RhpUniversalTransition does not touch any non-volatile state on amd64.
-        UNREFERENCED_PARAMETER(pRegisterSet);
+        pRegisterSet->pRdi = GET_POINTER_TO_FIELD(m_calleeSavedRegs[0]);
+        pRegisterSet->pRsi = GET_POINTER_TO_FIELD(m_calleeSavedRegs[1]);
+        pRegisterSet->pRbx = GET_POINTER_TO_FIELD(m_calleeSavedRegs[2]);
+        pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_calleeSavedRegs[3]);
+        pRegisterSet->pR12 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[4]);
+        pRegisterSet->pR13 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[5]);
+        pRegisterSet->pR14 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[6]);
+        pRegisterSet->pR15 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[7]);
     }
 
     void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
@@ -1442,24 +1453,31 @@ public:
 
 #elif defined(TARGET_ARM)
 
-    // Conservative GC reporting must be applied to everything between the base of the
-    // ReturnBlock and the top of the StackPassedArgs.
+    // The frame created by PROLOG_WITH_TRANSITION_BLOCK. Conservative GC reporting must be applied to everything
+    // between the base of the TransitionBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedR11;                 // ChildSP+000 CallerSP-078 (0x4 bytes)     (r11)
-    uintptr_t m_pushedLR;                  // ChildSP+004 CallerSP-074 (0x4 bytes)     (lr)
-    uint64_t m_fpArgRegs[8];                  // ChildSP+008 CallerSP-070 (0x40 bytes)    (d0-d7)
-    uint64_t m_returnBlock[4];                // ChildSP+048 CallerSP-030 (0x20 bytes)
+    uint64_t m_fpArgRegs[8];               // ChildSP+000 CallerSP-078 (0x40 bytes)    (d0-d7)
+    uintptr_t m_alignmentPad;              // ChildSP+040 CallerSP-038 (0x4 bytes)
+    uintptr_t m_calleeSavedRegs[8];        // ChildSP+044 CallerSP-034 (0x20 bytes)    (r4-r11)
+    uintptr_t m_pushedLR;                  // ChildSP+064 CallerSP-014 (0x4 bytes)     (lr)
     uintptr_t m_intArgRegs[4];             // ChildSP+068 CallerSP-010 (0x10 bytes)    (r0-r3)
     uintptr_t m_stackPassedArgs[1];        // ChildSP+078 CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
     PTR_uintptr_t get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_pushedLR); }
-    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_calleeSavedRegs[0]); }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_pushedR11);
+        pRegisterSet->pR4  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[0]);
+        pRegisterSet->pR5  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[1]);
+        pRegisterSet->pR6  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[2]);
+        pRegisterSet->pR7  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[3]);
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[4]);
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[5]);
+        pRegisterSet->pR10 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[6]);
+        pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[7]);
     }
 
     void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
@@ -1475,11 +1493,11 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // IntArgRegs and the top of the StackPassedArgs.
 private:
-    uintptr_t m_intArgRegs[2];             // ChildSP+000 CallerSP-018 (0x8 bytes)     (edx,ecx)
-    uintptr_t m_returnBlock[2];            // ChildSP+008 CallerSP-010 (0x8 bytes)
-    uintptr_t m_pushedEBP;                 // ChildSP+010 CallerSP-008 (0x4 bytes)
-    uintptr_t m_callerRetaddr;             // ChildSP+014 CallerSP-004 (0x4 bytes)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+018 CallerSP+000 (unknown size)
+    uintptr_t m_intArgRegs[2];             // ChildSP+000 CallerSP-014 (0x8 bytes)     (edx,ecx)
+    uintptr_t m_dispatchCell;              // ChildSP+008 CallerSP-00C (0x4 bytes)
+    uintptr_t m_pushedEBP;                 // ChildSP+00C CallerSP-008 (0x4 bytes)
+    uintptr_t m_callerRetaddr;             // ChildSP+010 CallerSP-004 (0x4 bytes)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+014 CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
@@ -1499,25 +1517,36 @@ public:
 
 #elif defined(TARGET_ARM64)
 
-    // Conservative GC reporting must be applied to everything between the base of the
-    // ReturnBlock and the top of the StackPassedArgs.
+    // The frame created by PROLOG_WITH_TRANSITION_BLOCK. Conservative GC reporting must be applied to everything
+    // between the base of the TransitionBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-100 (0x08 bytes)    (fp)
-    uintptr_t m_pushedLR;                  // ChildSP+008     CallerSP-0F8 (0x08 bytes)    (lr)
-    Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0F0 (0x80 bytes)    (q0-q7)
-    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-070 (0x20 bytes)
-    uintptr_t m_intArgRegs[9];             // ChildSP+0B0     CallerSP-050 (0x48 bytes)    (x0-x8)
-    uintptr_t m_alignmentPad;              // ChildSP+0F8     CallerSP-008 (0x08 bytes)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+100     CallerSP+000 (unknown size)
+    Fp128   m_fpArgRegs[8];                // ChildSP+000     CallerSP-130 (0x80 bytes)    (q0-q7)
+    uintptr_t m_pushedFP;                  // ChildSP+080     CallerSP-0B0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedLR;                  // ChildSP+088     CallerSP-0A8 (0x08 bytes)    (lr)
+    uintptr_t m_calleeSavedRegs[10];       // ChildSP+090     CallerSP-0A0 (0x50 bytes)    (x19-x28)
+    uintptr_t m_alignmentPad;              // ChildSP+0E0     CallerSP-050 (0x08 bytes)
+    uintptr_t m_x8;                        // ChildSP+0E8     CallerSP-048 (0x08 bytes)    (x8)
+    uintptr_t m_intArgRegs[8];             // ChildSP+0F0     CallerSP-040 (0x40 bytes)    (x0-x7)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+130     CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
     PTR_uintptr_t get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_pushedLR); }
-    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_pushedFP); }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
+        pRegisterSet->pFP  = GET_POINTER_TO_FIELD(m_pushedFP);
+        pRegisterSet->pX19 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[0]);
+        pRegisterSet->pX20 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[1]);
+        pRegisterSet->pX21 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[2]);
+        pRegisterSet->pX22 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[3]);
+        pRegisterSet->pX23 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[4]);
+        pRegisterSet->pX24 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[5]);
+        pRegisterSet->pX25 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[6]);
+        pRegisterSet->pX26 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[7]);
+        pRegisterSet->pX27 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[8]);
+        pRegisterSet->pX28 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[9]);
     }
 
     void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
@@ -1530,29 +1559,39 @@ public:
         pRegisterSet->pX5 = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
         pRegisterSet->pX6 = GET_POINTER_TO_FIELD(m_intArgRegs[6]);
         pRegisterSet->pX7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
-        pRegisterSet->pX8 = GET_POINTER_TO_FIELD(m_intArgRegs[8]);
+        pRegisterSet->pX8 = GET_POINTER_TO_FIELD(m_x8);
     }
 
 #elif defined(TARGET_LOONGARCH64)
 
-    // Conservative GC reporting must be applied to everything between the base of the
-    // ReturnBlock and the top of the StackPassedArgs.
+    // The frame created by PROLOG_WITH_TRANSITION_BLOCK. Conservative GC reporting must be applied to everything
+    // between the base of the TransitionBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0A0 (0x08 bytes)    (fp)
-    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-098 (0x08 bytes)    (ra)
-    uint64_t  m_fpArgRegs[8];              // ChildSP+010     CallerSP-090 (0x40 bytes)    (fa0-fa7)
-    uintptr_t m_returnBlock[2];            // ChildSP+050     CallerSP-050 (0x10 bytes)
-    uintptr_t m_intArgRegs[8];             // ChildSP+060     CallerSP-040 (0x40 bytes)    (a0-a7)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0A0     CallerSP+000 (unknown size)
+    uint64_t  m_fpArgRegs[8];              // ChildSP+000     CallerSP-0E0 (0x40 bytes)    (fa0-fa7)
+    uintptr_t m_pushedFP;                  // ChildSP+040     CallerSP-0A0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+048     CallerSP-098 (0x08 bytes)    (ra)
+    uintptr_t m_calleeSavedRegs[9];        // ChildSP+050     CallerSP-090 (0x48 bytes)    (s0-s8)
+    uintptr_t m_alignmentPad;              // ChildSP+098     CallerSP-048 (0x08 bytes)
+    uintptr_t m_intArgRegs[8];             // ChildSP+0A0     CallerSP-040 (0x40 bytes)    (a0-a7)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+0E0     CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
     PTR_uintptr_t get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_pushedRA); }
-    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_pushedFP); }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
+        pRegisterSet->pFP  = GET_POINTER_TO_FIELD(m_pushedFP);
+        pRegisterSet->pR23 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[0]);
+        pRegisterSet->pR24 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[1]);
+        pRegisterSet->pR25 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[2]);
+        pRegisterSet->pR26 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[3]);
+        pRegisterSet->pR27 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[4]);
+        pRegisterSet->pR28 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[5]);
+        pRegisterSet->pR29 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[6]);
+        pRegisterSet->pR30 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[7]);
+        pRegisterSet->pR31 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[8]);
     }
 
     void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
@@ -1569,24 +1608,40 @@ public:
 
 #elif defined(TARGET_RISCV64)
 
-    // Conservative GC reporting must be applied to everything between the base of the
-    // ReturnBlock and the top of the StackPassedArgs.
+    // The frame created by PROLOG_WITH_TRANSITION_BLOCK. Conservative GC reporting must be applied to everything
+    // between the base of the TransitionBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0A0 (0x08 bytes)    (fp)
-    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-098 (0x08 bytes)    (ra)
-    uint64_t  m_fpArgRegs[8];              // ChildSP+010     CallerSP-090 (0x40 bytes)    (fa0-fa7)
-    uintptr_t m_returnBlock[2];            // ChildSP+050     CallerSP-050 (0x10 bytes)
-    uintptr_t m_intArgRegs[8];             // ChildSP+060     CallerSP-040 (0x40 bytes)    (a0-a7)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0A0     CallerSP+000 (unknown size)
+    uint64_t  m_fpArgRegs[8];              // ChildSP+000     CallerSP-100 (0x40 bytes)    (fa0-fa7)
+    uintptr_t m_pushedFP;                  // ChildSP+040     CallerSP-0C0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+048     CallerSP-0B8 (0x08 bytes)    (ra)
+    uintptr_t m_calleeSavedRegs[11];       // ChildSP+050     CallerSP-0B0 (0x58 bytes)    (s1-s11)
+    uintptr_t m_pushedTP;                  // ChildSP+0A8     CallerSP-058 (0x08 bytes)    (tp)
+    uintptr_t m_pushedGP;                  // ChildSP+0B0     CallerSP-050 (0x08 bytes)    (gp)
+    uintptr_t m_alignmentPad;              // ChildSP+0B8     CallerSP-048 (0x08 bytes)
+    uintptr_t m_intArgRegs[8];             // ChildSP+0C0     CallerSP-040 (0x40 bytes)    (a0-a7)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+100     CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
     PTR_uintptr_t get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_pushedRA); }
-    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_pushedFP); }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
+        pRegisterSet->pFP  = GET_POINTER_TO_FIELD(m_pushedFP);
+        pRegisterSet->pS1  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[0]);
+        pRegisterSet->pS2  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[1]);
+        pRegisterSet->pS3  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[2]);
+        pRegisterSet->pS4  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[3]);
+        pRegisterSet->pS5  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[4]);
+        pRegisterSet->pS6  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[5]);
+        pRegisterSet->pS7  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[6]);
+        pRegisterSet->pS8  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[7]);
+        pRegisterSet->pS9  = GET_POINTER_TO_FIELD(m_calleeSavedRegs[8]);
+        pRegisterSet->pS10 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[9]);
+        pRegisterSet->pS11 = GET_POINTER_TO_FIELD(m_calleeSavedRegs[10]);
+        pRegisterSet->pTP  = GET_POINTER_TO_FIELD(m_pushedTP);
+        pRegisterSet->pGP  = GET_POINTER_TO_FIELD(m_pushedGP);
     }
 
     void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
@@ -1629,7 +1684,7 @@ public:
 
 };
 
-typedef DPTR(UniversalTransitionStackFrame) PTR_UniversalTransitionStackFrame;
+typedef DPTR(InterfaceDispatchSlowStackFrame) PTR_InterfaceDispatchSlowStackFrame;
 
 // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
 //
@@ -1637,21 +1692,21 @@ typedef DPTR(UniversalTransitionStackFrame) PTR_UniversalTransitionStackFrame;
 // of stack-passed argument space to be callee-popped before control returns (or unwinds) to the
 // callsite.  Since the callsite signature (and thus the amount of callee-popped space) is unknown,
 // the recovered SP does not account for the callee-popped space is therefore "wrong" for the
-// purposes of unwind.  This implies that any x86 function which calls into RhpUniversalTransition
+// purposes of unwind.  This implies that any x86 function which calls into RhpInterfaceDispatchSlow
 // must have a frame pointer to ensure that the incorrect SP value is ignored and does not break the
 // unwind.
-void StackFrameIterator::UnwindUniversalTransitionThunk()
+void StackFrameIterator::UnwindInterfaceDispatchSlowThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
 #if defined(FEATURE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
     return;
 #else // defined(FEATURE_PORTABLE_HELPERS)
-    ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InUniversalTransitionThunk);
+    ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InInterfaceDispatchSlowThunk);
 
-    // The current PC is within RhpUniversalTransition, so establish a view of the surrounding stack frame.
+    // The current PC is within RhpInterfaceDispatchSlow, so establish a view of the surrounding stack frame.
     // NOTE: In DAC builds, the pointer will refer to a newly constructed object in the DAC host.
-    UniversalTransitionStackFrame * stackFrame = (PTR_UniversalTransitionStackFrame)m_RegDisplay.SP;
+    InterfaceDispatchSlowStackFrame * stackFrame = (PTR_InterfaceDispatchSlowStackFrame)m_RegDisplay.SP;
 
     stackFrame->UnwindNonVolatileRegisters(&m_RegDisplay);
     stackFrame->UnwindVolatileArgRegisters(&m_RegDisplay);
@@ -2073,9 +2128,9 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
     {
         ASSERT(m_pConservativeStackRangeLowerBound == NULL);
 
-        if (category == InUniversalTransitionThunk)
+        if (category == InInterfaceDispatchSlowThunk)
         {
-            UnwindUniversalTransitionThunk();
+            UnwindInterfaceDispatchSlowThunk();
             ASSERT(m_pConservativeStackRangeLowerBound != NULL);
         }
         else
@@ -2150,7 +2205,7 @@ void StackFrameIterator::PrepareToYieldFrame()
         // flowed into a managed callsite which called into the runtime.  The runtime has no
         // knowledge of the callsite signature in these cases, and unwind through these callsites
         // is only possible via the associated assembly thunk (e.g., the ManagedCalloutThunk or
-        // UniversalTransitionThunk).
+        // RhpInterfaceDispatchSlow).
         //
         // The iterator is currently positioned on the managed frame which contains the callsite of
         // interest.  The lower bound of the argument set was already computed while unwinding
@@ -2292,13 +2347,15 @@ bool StackFrameIterator::IsNonEHThunk(ReturnAddressCategory category)
     {
         default:
             return false;
-        case InUniversalTransitionThunk:
+        case InInterfaceDispatchSlowThunk:
             return true;
     }
 }
 
 bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
 {
+    pvAddress = dac_cast<PTR_VOID>(ReturnAddressToCanonicalPC(dac_cast<TADDR>(pvAddress)));
+
     // These are return addresses into functions that call into managed (non-funclet) code, so we might see
     // them as hijacked return addresses.
     ReturnAddressCategory category = CategorizeUnadjustedReturnAddress(pvAddress);
@@ -2369,13 +2426,13 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     return InManagedCode;
 #else // defined(FEATURE_PORTABLE_HELPERS)
 
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionTailCall)
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromInterfaceDispatchSlow)
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-        || EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionGuardedTailCall)
+        || EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromInterfaceDispatchSlowGuarded)
 #endif
         )
     {
-        return InUniversalTransitionThunk;
+        return InInterfaceDispatchSlowThunk;
     }
 
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowImpl2) ||

@@ -255,3 +255,136 @@ __PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
 GC_ALLOC_FINALIZE               equ 1
 GC_ALLOC_ALIGN8_BIAS            equ 4
 GC_ALLOC_ALIGN8                 equ 8
+
+;-----------------------------------------------------------------------------
+; The following group of macros assist in implementing prologs and epilogs for methods that set up some
+; subclass of TransitionFrame. They ensure that the SP is 16-byte aligned at the conclusion of the prolog
+
+;-----------------------------------------------------------------------------
+; Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
+; comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned
+;
+; $pushCalleeSavedFloatRegs - Optional parameter. If set to PushCalleeSavedFloatRegs, the macro will also save
+;                             the callee-saved floating point registers (d8-d15) to the stack. These registers
+;                             are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+;
+    MACRO
+        PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs, $pushCalleeSavedFloatRegs
+
+        GBLA __PWTB_FloatArgumentRegisters
+        GBLA __PWTB_FloatCalleeSavedRegisters
+        GBLA __PWTB_ArgumentRegisters
+        GBLA __PWTB_ArgumentRegister_FirstArg ; We save the x8 register ahead of the first argument, so this
+                                              ; is different from the start of the argument register save area.
+        GBLA __PWTB_StackAlloc
+        GBLA __PWTB_TransitionBlock
+        GBLL __PWTB_SaveFPArgs
+
+        IF "$SaveFPArgs" != ""
+__PWTB_SaveFPArgs SETL $SaveFPArgs
+        ELSE
+__PWTB_SaveFPArgs SETL {true}
+        ENDIF
+
+        IF "$extraLocals" != ""
+__PWTB_FloatCalleeSavedRegisters SETA $extraLocals
+        ELSE
+__PWTB_FloatCalleeSavedRegisters SETA 0
+        ENDIF
+
+        IF __PWTB_FloatCalleeSavedRegisters:MOD:16 != 0
+__PWTB_FloatCalleeSavedRegisters SETA __PWTB_FloatCalleeSavedRegisters + 8
+        ENDIF
+
+        ; If PushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
+__PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters + 64
+        ELSE
+__PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters
+        ENDIF
+
+        IF __PWTB_SaveFPArgs
+__PWTB_TransitionBlock SETA __PWTB_FloatArgumentRegisters + SIZEOF__FloatArgumentRegisters
+        ELSE
+__PWTB_TransitionBlock SETA __PWTB_FloatArgumentRegisters
+        ENDIF
+
+__PWTB_StackAlloc SETA __PWTB_TransitionBlock
+__PWTB_ArgumentRegisters SETA __PWTB_StackAlloc + 104
+__PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
+
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
+        ; Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, #16
+        PROLOG_SAVE_REG_PAIR   x21, x22, #32
+        PROLOG_SAVE_REG_PAIR   x23, x24, #48
+        PROLOG_SAVE_REG_PAIR   x25, x26, #64
+        PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+        ; Allocate space for the rest of the frame
+        PROLOG_STACK_ALLOC  __PWTB_StackAlloc
+
+        ; Spill argument registers.
+        SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+
+        IF __PWTB_SaveFPArgs
+        SAVE_FLOAT_ARGUMENT_REGISTERS  sp, __PWTB_FloatArgumentRegisters
+        ENDIF
+
+        ; Save callee-saved floating point registers if requested
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
+        stp     d8, d9, [sp, #__PWTB_FloatCalleeSavedRegisters]
+        stp     d10, d11, [sp, #(__PWTB_FloatCalleeSavedRegisters + 16)]
+        stp     d12, d13, [sp, #(__PWTB_FloatCalleeSavedRegisters + 32)]
+        stp     d14, d15, [sp, #(__PWTB_FloatCalleeSavedRegisters + 48)]
+        ENDIF
+
+    MEND
+
+;-----------------------------------------------------------------------------
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK.
+;
+    MACRO
+        EPILOG_WITH_TRANSITION_BLOCK
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+        EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    MEND
+
+;-----------------------------------------------------------------------------
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and returns to caller.
+;
+    MACRO
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_WITH_TRANSITION_BLOCK
+		EPILOG_RETURN
+    MEND
+
+;-----------------------------------------------------------------------------
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
+; Since this is a tail call argument registers are restored.
+;
+    MACRO
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        IF __PWTB_SaveFPArgs
+        RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, __PWTB_FloatArgumentRegisters
+        ENDIF
+
+        RESTORE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+        EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    MEND

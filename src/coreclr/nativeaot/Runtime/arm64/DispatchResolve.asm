@@ -7,8 +7,8 @@
 
     EXTERN RhpCidResolve
     EXTERN RhpCidResolve_Worker
-    EXTERN RhpUniversalTransitionTailCall
-    EXTERN RhpUniversalTransitionGuardedTailCall
+    EXTERN RhpInterfaceDispatchSlow
+    EXTERN RhpInterfaceDispatchSlowGuarded
 
     EXTERN __guard_dispatch_icall_fptr
     EXTERN g_pDispatchCache
@@ -144,12 +144,10 @@
     IF "$ReturnTarget" != "0"
         b       RhpCidResolve_Worker
     ELSE
-        ldr     xip0, =RhpCidResolve
-        mov     xip1, $DispatchCellReg
     IF "$Guarded" != "0"
-        b       RhpUniversalTransitionGuardedTailCall
+        b       RhpInterfaceDispatchSlowGuarded
     ELSE
-        b       RhpUniversalTransitionTailCall
+        b       RhpInterfaceDispatchSlow
     ENDIF
     ENDIF
 

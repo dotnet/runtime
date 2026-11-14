@@ -280,7 +280,7 @@ virtual unsigned int GetFrameSize(GCInfoToken gcInfoToken) = 0;
 
 /* Debugger API */
 
-virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter) = 0;
+virtual UINT_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter) = 0;
 virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted) = 0;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
 virtual void UpdateSSP(PREGDISPLAY pRD) = 0;
@@ -493,7 +493,7 @@ unsigned int GetFrameSize(GCInfoToken gcInfoToken);
 
 #ifndef DACCESS_COMPILE
 
-virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual UINT_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
 virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
@@ -651,7 +651,7 @@ unsigned int GetFrameSize(GCInfoToken gcInfoToken)
 
 #ifndef DACCESS_COMPILE
 
-virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual UINT_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
 virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
 virtual void UpdateSSP(PREGDISPLAY pRD);

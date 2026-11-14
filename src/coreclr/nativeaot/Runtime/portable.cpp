@@ -33,9 +33,9 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(FEATURE_PORTABLE_HELPERS)
-// @TODO Implement UniversalTransitionTailCall
-EXTERN_C void * ReturnFromUniversalTransitionTailCall;
-void * ReturnFromUniversalTransitionTailCall;
+// @TODO Implement RhpInterfaceDispatchSlow
+EXTERN_C void * ReturnFromInterfaceDispatchSlow;
+void * ReturnFromInterfaceDispatchSlow;
 
 #if !defined(HOST_WASM)
 FCIMPL2_RAW(void, RhpAssignRef, Object ** dst, Object * ref)

@@ -42,32 +42,13 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         // lr: IP of fault site (as a 'return address')
         mov         r4, r2 // save exception code of fault
 
-        // r0 = GetThread()
-        INLINE_GETTHREAD
+        add         r0, sp, #rsp_offsetof_ExInfo                    // r0 <- ExInfo*
+        add         r1, sp, #rsp_offsetof_Context                   // r1 <- PAL_LIMITED_CONTEXT*
+        mov         r2, #2                                          // r2 <- ExKind.HardwareFault
+        bl          C_FUNC(RhpPushExInfo)
 
-        // r1 <- ExInfo*
-        add         r1, sp, #rsp_offsetof_ExInfo
-        mov         r3, #0
-        str         r3, [r1, #OFFSETOF__ExInfo__m_exception]        // pExInfo->m_exception = null
-        mov         r3, #1
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // pExInfo->m_passNumber = 1
-        mov         r3, #0xFFFFFFFF
-        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]     // pExInfo->m_idxCurClause = MaxTryRegionIdx
-        mov         r3, #2
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]             // pExInfo->m_kind = ExKind.HardwareFault
-
-        // link the ExInfo into the thread's ExInfo chain
-        ldr         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]
-        str         r3, [r1, #OFFSETOF__ExInfo__m_pPrevExInfo]      // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        str         r1, [r0, #OFFSETOF__Thread__m_pExInfoStackHead] // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        add         r2, sp, #rsp_offsetof_Context                   // r2 <- PAL_LIMITED_CONTEXT*
-        str         r2, [r1, #OFFSETOF__ExInfo__m_pExContext]       // pExInfo->m_pExContext = pContext
-
-        mov         r0, r4 	        // restore the exception code
-        // r0 contains the exception code
-        // r1 contains the address of the ExInfo
+        mov         r0, r4                                          // r0 <- exception code
+        add         r1, sp, #rsp_offsetof_ExInfo                    // r1 <- ExInfo*
         bl          C_FUNC(RhThrowHwEx)
 
 GLOBAL_LABEL RhpThrowHwEx2
@@ -126,77 +107,14 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
         str         r4, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
 
         mov         r4, r0 // Save exception object
-        mov         r5, r2 // Save ExKind
-        // r0 = GetThread()
-        INLINE_GETTHREAD
 
-        // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic. So  the return
-        // address could have been hijacked when we were in that C# code and we must remove the hijack and
-        // reflect the correct return address in our exception context record.  The other throw helpers don't
-        // need this because they cannot be tail-called from C#.
-        // NOTE: we cannot use INLINE_THREAD_UNHIJACK because it will write into the stack at the location
-        // where the tail-calling thread had saved LR, which may not match where we have saved LR.
+        add         r0, sp, #rsp_offsetof_ExInfo                    // r0 <- ExInfo*
+        add         r1, sp, #rsp_offsetof_Context                   // r1 <- PAL_LIMITED_CONTEXT*
+        // r2 contains the ExKind
+        bl          C_FUNC(RhpPushExInfo)
 
-        ldr         r1, [r0, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        cbz         r1, LOCAL_LABEL(NotHiJacked)
-
-        ldr         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-
-        // r4: exception object
-        // r5: ExKind
-        // r1: hijacked return address
-        // r0: pThread
-        // r3: hijacked return address location
-
-        add         r12, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)        // re-compute SP at callsite
-        cmp         r3, r12             // if (m_ppvHijackedReturnAddressLocation < SP at callsite)
-        blo         LOCAL_LABEL(TailCallWasHijacked)
-
-        // normal case where a valid return address location is hijacked
-        str         r1, [r3]
-        b           LOCAL_LABEL(ClearThreadState)
-
-LOCAL_LABEL(TailCallWasHijacked):
-
-        // Abnormal case where the return address location is now invalid because we ended up here via a tail
-        // call.  In this case, our hijacked return address should be the correct caller of this method.
-        //
-
-        // stick the previous return address in LR as well as in the right spots in our PAL_LIMITED_CONTEXT.
-        mov         lr, r1
-        str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__LR)]
-        str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)]
-
-LOCAL_LABEL(ClearThreadState):
-
-        // clear the Thread's hijack state
-        mov         r3, #0
-        str         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        str         r3, [r0, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-
-LOCAL_LABEL(NotHiJacked):
-
+        mov         r0, r4                                          // r0 <- exception object
         add         r1, sp, #rsp_offsetof_ExInfo                    // r1 <- ExInfo*
-        mov         r3, #0
-        str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
-        mov         r3, #1
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        strb        r5, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind
-        mov         r3, #0xFFFFFFFF
-        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
-
-        // link the ExInfo into the thread's ExInfo chain
-        ldr         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]
-        str         r3, [r1, #OFFSETOF__ExInfo__m_pPrevExInfo]  	  // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        str         r1, [r0, #OFFSETOF__Thread__m_pExInfoStackHead] // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        add         r3, sp, #rsp_offsetof_Context             // r3 <- PAL_LIMITED_CONTEXT*
-        str         r3, [r1, #OFFSETOF__ExInfo__m_pExContext] // init ExInfo.m_pExContext
-
-        mov         r0, r4 // Restore exception object
-        // r0 contains the exception object
-        // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
 GLOBAL_LABEL RhpThrowImpl2
@@ -232,32 +150,13 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         add         r1, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
         str         r1, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
 
-        // r0 = GetThread();
-        INLINE_GETTHREAD
+        add         r0, sp, #rsp_offsetof_ExInfo                    // r0 <- ExInfo*
+        add         r1, sp, #rsp_offsetof_Context                   // r1 <- PAL_LIMITED_CONTEXT*
+        mov         r2, #0                                          // r2 <- ExKind.None
+        bl          C_FUNC(RhpPushExInfo)
 
-        // r1 <- ExInfo*
-        add         r1, sp, #rsp_offsetof_ExInfo
-
-        mov         r3, #0
-        str         r3, [r1, #OFFSETOF__ExInfo__m_exception]         // init the exception object to null
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]              // init to a deterministic value (ExKind.None)
-        mov         r3, #1
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]        // pExInfo->m_passNumber = 1
-        mov         r3, #0xFFFFFFFF
-        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
-
-        // link the ExInfo into the thread's ExInfo chain
-        ldr         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead] 	// r3 <- currently active ExInfo
-        str         r3, [r1, #OFFSETOF__ExInfo__m_pPrevExInfo]        // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        str         r1, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]   // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        add         r2, sp, #rsp_offsetof_Context                 	  // r2 <- PAL_LIMITED_CONTEXT*
-        str         r2, [r1, #OFFSETOF__ExInfo__m_pExContext]         // init ExInfo.m_pExContext
-
-        mov         r0, r3
         // r0 contains the currently active ExInfo
-        // r1 contains the address of the new ExInfo
+        add         r1, sp, #rsp_offsetof_ExInfo                    // r1 <- ExInfo*
         blx    C_FUNC(RhRethrow)
 
 GLOBAL_LABEL RhpRethrow2

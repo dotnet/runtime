@@ -619,4 +619,25 @@ FCIMPL0(void, RhpFallbackFailFast)
 }
 FCIMPLEND
 
+#ifndef FEATURE_PORTABLE_HELPERS
+
+// Called by the throw helpers (RhpThrowEx, RhpThrowExact, RhpRethrow and RhpThrowHwEx) to initialize the ExInfo
+// in their frame and link it into the ExInfo chain of the thread. Returns the previously active ExInfo.
+EXTERN_C ExInfo* FASTCALL RhpPushExInfo(ExInfo* pExInfo, PAL_LIMITED_CONTEXT* pContext, uint32_t kind)
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    ExInfo* pActiveExInfo = pThread->GetCurExInfo();
+
+    pExInfo->m_pExContext = pContext;
+    pExInfo->m_exception = nullptr;
+    pExInfo->m_kind = (ExKind)kind;
+    pExInfo->m_passNumber = 1;
+    pExInfo->m_idxCurClause = UINT32_MAX;
+    pThread->PushExInfo(pExInfo);
+
+    return pActiveExInfo;
+}
+
+#endif // !FEATURE_PORTABLE_HELPERS
+
 #endif // !DACCESS_COMPILE

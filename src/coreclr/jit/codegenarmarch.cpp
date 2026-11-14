@@ -3921,7 +3921,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 
         if (m_compiler->info.compIsVarArgs)
         {
-            // Varargs save all int registers between saved registers and PSP.
+            // Varargs save all integer argument registers.
             preservedAreaSize += MAX_REG_ARG * REGSIZE_BYTES;
         }
 
