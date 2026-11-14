@@ -316,11 +316,14 @@ namespace System.Runtime
 #else
             Exception? e = id switch
             {
+#if !TARGET_WASM
                 ExceptionIDs.AccessViolation => new AccessViolationException(),
-                ExceptionIDs.Arithmetic => new ArithmeticException(),
+#endif
                 ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
                 ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
+#if !TARGET_WASM
                 ExceptionIDs.DataMisaligned => new DataMisalignedException(),
+#endif
                 ExceptionIDs.DivideByZero => new DivideByZeroException(),
                 ExceptionIDs.EntrypointNotFound => new EntryPointNotFoundException(),
                 ExceptionIDs.IndexOutOfRange => new IndexOutOfRangeException(),
@@ -328,11 +331,13 @@ namespace System.Runtime
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
                 ExceptionIDs.Overflow => new OverflowException(),
+#if !TARGET_WASM
 #pragma warning disable CS0618 // ExecutionEngineException is obsolete
                 ExceptionIDs.IllegalInstruction => new ExecutionEngineException("Illegal instruction: Attempted to execute an instruction code not defined by the processor."),
                 ExceptionIDs.PrivilegedInstruction => new ExecutionEngineException("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode."),
                 ExceptionIDs.InPageError => new ExecutionEngineException("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network."),
 #pragma warning restore CS0618
+#endif
                 _ => null
             };
 #endif
@@ -447,6 +452,7 @@ namespace System.Runtime
 #endif
 #endif // NATIVEAOT
 
+#if !TARGET_WASM
         private enum HwExceptionCode : uint
         {
             STATUS_NATIVEAOT_NULL_REFERENCE = 0x00000000u,
@@ -460,6 +466,7 @@ namespace System.Runtime
             STATUS_INTEGER_OVERFLOW = 0xC0000095u,
             STATUS_PRIVILEGED_INSTRUCTION = 0xC0000096u,
         }
+#endif
         [StructLayout(LayoutKind.Explicit, Size = AsmOffsets.SIZEOF__PAL_LIMITED_CONTEXT)]
         public struct PAL_LIMITED_CONTEXT
         {
@@ -587,6 +594,7 @@ namespace System.Runtime
             return pExInfo != null ? pExInfo->ThrownException : null;
         }
 
+#if !TARGET_WASM
         //
         // Called by RhpThrowHwEx
         //
@@ -674,6 +682,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif
         }
+#endif
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
