@@ -71,12 +71,9 @@ effects.
 For runtime library builds, support `--ignore-link-attributes true` followed by zero or more
 `--link-attributes FILE`, `--substitutions FILE`, `--ignore-substitutions true|false`, or
 `--feature NAME true|false` options. Require the XML files to be readable. Runtime library builds
-supply selected reference files through `ReferenceAssemblyPaths`, with project references first.
-Shared framework libraries use their selected transitive implementation closure, including CoreLib;
-packable and cross-platform flavors retain reference assemblies. Unrelated assemblies beside those
-files are not inputs. Custom arguments retain directory resolution in the runtime targets;
-`-d DIRECTORY` and other options outside this narrow whitelist bypass caching without changing
-linker CLI execution.
+pass their selected references through `ReferenceAssemblyPaths` rather than search directories, so
+unrelated assemblies beside those files are not inputs. `-d DIRECTORY` and other options outside
+this whitelist bypass caching without changing linker execution.
 
 Uninspectable assemblies (including PE images without managed metadata) and
 other input-read failures bypass caching with diagnostics. Missing declared files have explicit
