@@ -180,6 +180,30 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void ExceptWithThrowingEnumerable()
+        {
+            var builder = ImmutableHashSet.CreateBuilder<int>();
+            builder.UnionWith(new[] { 1, 2, 3, 4 });
+
+            Assert.Throws<InvalidOperationException>(() => builder.ExceptWith(ThrowingEnumerable()));
+
+            int count = 0;
+            foreach (int item in builder) count++;
+
+            Assert.Equal(count, builder.Count);
+            Assert.DoesNotContain(1, builder);
+            Assert.Contains(2, builder);
+            Assert.Contains(3, builder);
+            Assert.Contains(4, builder);
+
+            IEnumerable<int> ThrowingEnumerable()
+            {
+                yield return 1;
+                throw new InvalidOperationException();
+            }
+        }
+
+        [Fact]
         public void SymmetricExceptWith()
         {
             ImmutableHashSet<int>.Builder builder = ImmutableHashSet.Create(1, 2, 3).ToBuilder();
