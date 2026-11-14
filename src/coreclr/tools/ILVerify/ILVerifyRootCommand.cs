@@ -22,6 +22,8 @@ namespace ILVerify
             new("--system-module", "-s") { Description = "System module name (default: mscorlib)" };
         public Option<bool> SanityChecks { get; } =
             new("--sanity-checks", "-c") { Description = "Check for valid constructs that are likely mistakes" };
+        public Option<bool> ValidationOnly { get; } =
+            new("--validation-only") { Description = "Report invalid IL; do not report most IL that is valid but unverifiable" };
         public Option<string[]> Include { get; } =
             new("--include", "-i") { Description = "Use only methods/types/namespaces, which match the given regular expression(s)" };
         public Option<FileInfo> IncludeFile { get; } =
@@ -56,6 +58,7 @@ namespace ILVerify
             Options.Add(Reference);
             Options.Add(SystemModule);
             Options.Add(SanityChecks);
+            Options.Add(ValidationOnly);
             Options.Add(Include);
             Options.Add(IncludeFile);
             Options.Add(Exclude);

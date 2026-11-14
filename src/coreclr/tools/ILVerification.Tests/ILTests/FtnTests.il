@@ -307,7 +307,7 @@
     }
 
     // a boxed int32 is not a valid target for an instance method on an unrelated class
-    .method static public hidebysig void LdFtn.BoxedValueTypeForTestClassInstance_Invalid_DelegateCtor() cil managed
+    .method static public hidebysig void LdFtn.BoxedValueTypeForTestClassInstance_Invalid_DelegateCtor_Validation_Valid() cil managed
     {
         ldc.i4.s   42
         box        [System.Runtime]System.Int32
@@ -391,7 +391,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.ValueTypeWrongBox_Invalid_StackUnexpected.DelegateCtorSigO.DelegatePattern.DelegateCtor(int32 i) cil managed
+    .method static public hidebysig void LdvirtFtn.ValueTypeWrongBox_Invalid_StackUnexpected.DelegateCtorSigO.DelegatePattern.DelegateCtor_Validation_StackUnexpected.DelegateCtorSigO.DelegateCtor(int32 i) cil managed
     {
         // (int i)
         // var f = new System.Func<int, int>(i.CompareTo);
@@ -408,7 +408,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.ObjectForTestClassInstance_Invalid_StackUnexpected.DelegateCtor(object c) cil managed
+    .method static public hidebysig void LdvirtFtn.ObjectForTestClassInstance_Invalid_StackUnexpected.DelegateCtor_Validation_Valid(object c) cil managed
     {
         // (object c)
         // var a = new System.Action(c.InstanceMethod);
@@ -439,7 +439,7 @@
         ret
     }
 
-    .method static public hidebysig void NewObj.DelegateFromNativeIntArgument_Invalid_StackMethod.DelegatePattern(native int fn) cil managed
+    .method static public hidebysig void NewObj.DelegateFromNativeIntArgument_Invalid_StackMethod.DelegatePattern_Validation_Valid(native int fn) cil managed
     {
         // The function pointer is an argument, not the result of ldftn/ldvirtftn.
 
@@ -450,7 +450,7 @@
         ret
     }
 
-    .method static public hidebysig void LdFtn.NopInDelegatePattern_Invalid_DelegatePattern() cil managed
+    .method static public hidebysig void LdFtn.NopInDelegatePattern_Invalid_DelegatePattern_Validation_Valid() cil managed
     {
         // var a = new System.Action(TestClass.StaticMethod);
         // a();
@@ -463,7 +463,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.NopInDelegatePattern_Invalid_DelegatePattern(class TestClass c) cil managed
+    .method static public hidebysig void LdvirtFtn.NopInDelegatePattern_Invalid_DelegatePattern_Validation_Valid(class TestClass c) cil managed
     {
         // (TestClass c)
         // var a = new System.Action(c.InstanceMethod);
@@ -478,7 +478,7 @@
         ret
     }
 
-    .method static public hidebysig void LdFtn.BranchIntoDelegatePattern_Invalid_DelegatePattern() cil managed
+    .method static public hidebysig void LdFtn.BranchIntoDelegatePattern_Invalid_DelegatePattern_Validation_Valid() cil managed
     {
         ldnull
         ldftn       void TestClass::StaticMethod()
@@ -493,7 +493,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.BranchIntoDelegatePattern_Invalid_DelegatePattern(class TestClass t) cil managed
+    .method static public hidebysig void LdvirtFtn.BranchIntoDelegatePattern_Invalid_DelegatePattern_Validation_Valid(class TestClass t) cil managed
     {
         ldarg.0
         dup
@@ -528,7 +528,7 @@
         ret
     }
 
-    .method static public hidebysig void LdFtn.VirtualMethodNonThisPtr_Invalid_LdftnNonFinalVirtual(class TestClass c) cil managed
+    .method static public hidebysig void LdFtn.VirtualMethodNonThisPtr_Invalid_LdftnNonFinalVirtual_Validation_Valid(class TestClass c) cil managed
     {
         ldarg.0
         ldftn       instance void TestClass::VirtInstanceMethod()

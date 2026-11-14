@@ -16,7 +16,7 @@
 .class public auto ansi beforefieldinit LocAllocTests
         extends [System.Runtime]System.Object
 {
-    .method private hidebysig instance void Load.LocAllocShouldFailWhenStackNotEmpty_Invalid_Unverifiable.LocallocStackNotEmpty() cil managed
+    .method private hidebysig instance void Load.LocAllocShouldFailWhenStackNotEmpty_Invalid_Unverifiable.LocallocStackNotEmpty_Validation_LocallocStackNotEmpty() cil managed
     {
         ldnull // pretend there's meaningfull value on stack
         ldc.i4.2 // size parameter for localloc
@@ -26,14 +26,14 @@
         ret
     }
 
-    .method private hidebysig instance void Load.LocAllocShouldFailWhenSizeIsAbsent_Invalid_Unverifiable.StackUnderflow() cil managed
+    .method private hidebysig instance void Load.LocAllocShouldFailWhenSizeIsAbsent_Invalid_Unverifiable.StackUnderflow_Validation_StackUnderflow() cil managed
     {
         localloc
         pop // pop localloc pointer
         ret
     }
 
-    .method private hidebysig instance void Load.LocAllocShouldSuccesWhenSizeIsPresent_Invalid_Unverifiable() cil managed
+    .method private hidebysig instance void Load.LocAllocShouldSuccesWhenSizeIsPresent_Invalid_Unverifiable_Validation_Valid() cil managed
     {
         ldc.i4.2 // size parameter for localloc
         localloc
