@@ -101,17 +101,17 @@ cd /d "%repo_root%"
 set "generator_proj=%script_dir%generate-coreclr-helpers.proj"
 
 :: Each override goes in as one quoted argument so that a path containing spaces survives. A
-:: trailing backslash would escape the closing quote, so it is dropped here; the project puts the
-:: separator back.
+:: trailing backslash would escape the closing quote, so append a dot to preserve the separator,
+:: including for drive roots.
 set "browser_prop="
 if not "%browser_scan_path_override%"=="" (
-    if "%browser_scan_path_override:~-1%."=="\." set "browser_scan_path_override=%browser_scan_path_override:~0,-1%"
+    if "!browser_scan_path_override:~-1!."=="\." set "browser_scan_path_override=!browser_scan_path_override!."
     set browser_prop="-p:BrowserScanPath=!browser_scan_path_override!"
 )
 
 set "wasi_prop="
 if not "%wasi_scan_path_override%"=="" (
-    if "%wasi_scan_path_override:~-1%."=="\." set "wasi_scan_path_override=%wasi_scan_path_override:~0,-1%"
+    if "!wasi_scan_path_override:~-1!."=="\." set "wasi_scan_path_override=!wasi_scan_path_override!."
     set wasi_prop="-p:WasiScanPath=!wasi_scan_path_override!"
 )
 
