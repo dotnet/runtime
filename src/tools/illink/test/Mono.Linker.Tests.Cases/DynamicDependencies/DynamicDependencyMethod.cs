@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 #if NATIVEAOT
@@ -17,9 +18,51 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
             B.SameContext();
             B.Broken();
             B.Conditional();
+            ExplicitInterfaceMembers();
 #if NATIVEAOT
             ReferenceViaReflection.Test();
 #endif
+        }
+
+        const string ExplicitInterface = "Mono#Linker#Tests#Cases#DynamicDependencies#DynamicDependencyMethod#";
+
+        [Kept]
+        [DynamicDependency(ExplicitInterface + "IGeneric{System#String}#M(System.String)", typeof(ExplicitImplementation))]
+        [DynamicDependency(ExplicitInterface + "IGeneric<System#String>#M(System.String)", typeof(ExplicitImplementation))]
+        [DynamicDependency(ExplicitInterface + "IDict{System#String,System#Int32}#M(System.Collections.Generic.Dictionary{System.String,System.Int32})", typeof(ExplicitImplementation))]
+        [DynamicDependency(ExplicitInterface + "IDict<System#String,System#Int32>#M(System.Collections.Generic.Dictionary{System.String,System.Int32})", typeof(ExplicitImplementation))]
+        [DynamicDependency(ExplicitInterface + "IGeneric{System#Collections#Generic#List{System#Collections#Generic#Dictionary{System#String,System#Int32}}}#M", typeof(ExplicitImplementation))]
+        [DynamicDependency(ExplicitInterface + "IGeneric<System#Collections#Generic#List<System#Collections#Generic#Dictionary<System#String,System#Int32>>>#M", typeof(ExplicitImplementation))]
+        static void ExplicitInterfaceMembers() { }
+
+        [Kept(By = Tool.Trimmer)]
+        interface IGeneric<T>
+        {
+            [Kept(By = Tool.Trimmer)]
+            void M(T value);
+        }
+
+        [Kept(By = Tool.Trimmer)]
+        interface IDict<K, V>
+        {
+            [Kept(By = Tool.Trimmer)]
+            void M(Dictionary<K, V> value);
+        }
+
+        [Kept]
+        [KeptInterface(typeof(IGeneric<string>), By = Tool.Trimmer)]
+        [KeptInterface(typeof(IDict<string, int>), By = Tool.Trimmer)]
+        [KeptInterface(typeof(IGeneric<List<Dictionary<string, int>>>), By = Tool.Trimmer)]
+        class ExplicitImplementation : IGeneric<string>, IDict<string, int>, IGeneric<List<Dictionary<string, int>>>
+        {
+            [Kept]
+            void IGeneric<string>.M(string value) { }
+
+            [Kept]
+            void IDict<string, int>.M(Dictionary<string, int> value) { }
+
+            [Kept]
+            void IGeneric<List<Dictionary<string, int>>>.M(List<Dictionary<string, int>> value) { }
         }
 
         [KeptMember(".ctor()")]

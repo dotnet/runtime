@@ -231,7 +231,7 @@ namespace Mono.Linker
         // which may be non-zero for generic types.
         public static (string name, int arity) ParseTypeOrNamespaceName(string id, ref int index, StringBuilder nameBuilder)
         {
-            var name = ParseName(id, ref index);
+            var name = ParseName(id, ref index, isDeclarationName: true);
             // don't parse ` after an empty name
             if (string.IsNullOrEmpty(name))
                 return (name, 0);
@@ -741,12 +741,43 @@ namespace Mono.Linker
         }
 
         static readonly char[] s_nameDelimiters = { ':', '.', '(', ')', '{', '}', '[', ']', ',', '\'', '@', '*', '`', '~' };
+        static readonly char[] s_declarationNameDelimiters = { ':', '.', '(', ')', '{', '}', '<', '[', ']', ',', '\'', '@', '*', '`', '~' };
 
-        static string ParseName(string id, ref int index)
+        static string ParseName(string id, ref int index, bool isDeclarationName = false)
         {
             string name;
+            bool hasEscapedTypeArguments = false;
 
-            int delimiterOffset = id.IndexOfAny(s_nameDelimiters, index);
+            char[] delimiters = isDeclarationName ? s_declarationNameDelimiters : s_nameDelimiters;
+            int delimiterOffset = id.IndexOfAny(delimiters, index);
+            while (isDeclarationName && delimiterOffset >= 0 && id[delimiterOffset] is '{' or '<')
+            {
+                // Explicit interface type arguments are part of the name. Accept both documentation
+                // ID braces (C# specification D.4.2) and legacy angle brackets.
+                char open = id[delimiterOffset];
+                char close = open == '{' ? '}' : '>';
+                int end = delimiterOffset + 1;
+                int depth = 1;
+                for (; end < id.Length && depth > 0; end++)
+                {
+                    if (id[end] == open)
+                        depth++;
+                    else if (id[end] == close)
+                        depth--;
+                }
+
+                if (depth != 0 || PeekNextChar(id, end) != '#')
+                {
+                    // Preserve literal angle brackets in names that are not interface qualifiers.
+                    if (open == '<')
+                        delimiterOffset = id.IndexOfAny(s_nameDelimiters, delimiterOffset + 1);
+                    break;
+                }
+
+                hasEscapedTypeArguments |= open == '{';
+                delimiterOffset = id.IndexOfAny(delimiters, end);
+            }
+
             if (delimiterOffset >= 0)
             {
                 name = id.Substring(index, delimiterOffset - index);
@@ -757,6 +788,9 @@ namespace Mono.Linker
                 name = id.Substring(index);
                 index = id.Length;
             }
+
+            if (hasEscapedTypeArguments)
+                name = name.Replace('{', '<').Replace('}', '>');
 
             return DecodeName(name);
         }

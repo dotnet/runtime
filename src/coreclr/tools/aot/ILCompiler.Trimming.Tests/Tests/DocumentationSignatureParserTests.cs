@@ -401,6 +401,82 @@ namespace Mono.Linker.Tests
         {
         }
 
+        const string ExplicitType = "Mono.Linker.Tests.DocumentationSignatureParserTests.ExplicitImplementation.";
+        const string ExplicitInterface = "Mono#Linker#Tests#DocumentationSignatureParserTests#";
+
+        public interface IGeneric<T>
+        {
+            void M(T value);
+            void Generic<U>(T value, U other);
+            int P { get; }
+            event Action E;
+        }
+
+        public interface IPlain
+        {
+            void M();
+        }
+
+        public interface IDict<K, V> where K : notnull
+        {
+            void M(Dictionary<K, V> value);
+        }
+
+        public interface INested<T>
+        {
+            void M(T value);
+        }
+
+        public class ExplicitImplementation : IPlain, IGeneric<string>, IDict<string, int>, INested<List<Dictionary<string, int>>>
+        {
+            [ExpectGeneratedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IPlain#M")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IPlain#M")]
+            void IPlain.M() { }
+
+            [ExpectGeneratedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#M(System.String)")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#M(System.String)")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric<System#String>#M(System.String)")]
+            [ExpectUnresolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric{System#String#M(System.String)")]
+            [ExpectUnresolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric<System#String#M(System.String)")]
+            void IGeneric<string>.M(string value) { }
+
+            [ExpectGeneratedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#Generic``1(System.String,``0)")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#Generic``1(System.String,``0)")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric<System#String>#Generic``1(System.String,``0)")]
+            void IGeneric<string>.Generic<U>(string value, U other) { }
+
+            [ExpectGeneratedDocumentationSignature("P:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#P")]
+            [ExpectExactlyResolvedDocumentationSignature("P:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#P")]
+            [ExpectExactlyResolvedDocumentationSignature("P:" + ExplicitType + ExplicitInterface + "IGeneric<System#String>#P")]
+            int IGeneric<string>.P
+            {
+                [ExpectGeneratedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#get_P")]
+                [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#get_P")]
+                [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IGeneric<System#String>#get_P")]
+                get => 0;
+            }
+
+            [ExpectGeneratedDocumentationSignature("E:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#E")]
+            [ExpectExactlyResolvedDocumentationSignature("E:" + ExplicitType + ExplicitInterface + "IGeneric{System#String}#E")]
+            [ExpectExactlyResolvedDocumentationSignature("E:" + ExplicitType + ExplicitInterface + "IGeneric<System#String>#E")]
+            event Action IGeneric<string>.E
+            {
+                add { }
+                remove { }
+            }
+
+            [ExpectGeneratedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IDict{System#String,System#Int32}#M(System.Collections.Generic.Dictionary{System.String,System.Int32})")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IDict{System#String,System#Int32}#M(System.Collections.Generic.Dictionary{System.String,System.Int32})")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IDict<System#String,System#Int32>#M(System.Collections.Generic.Dictionary{System.String,System.Int32})")]
+            [ExpectUnresolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "IDict{System#String,System#Int32>#M(System.Collections.Generic.Dictionary{System.String,System.Int32})")]
+            void IDict<string, int>.M(Dictionary<string, int> value) { }
+
+            [ExpectGeneratedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "INested{System#Collections#Generic#List{System#Collections#Generic#Dictionary{System#String,System#Int32}}}#M(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Int32}})")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "INested{System#Collections#Generic#List{System#Collections#Generic#Dictionary{System#String,System#Int32}}}#M(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Int32}})")]
+            [ExpectExactlyResolvedDocumentationSignature("M:" + ExplicitType + ExplicitInterface + "INested<System#Collections#Generic#List<System#Collections#Generic#Dictionary<System#String,System#Int32>>>#M(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Int32}})")]
+            void INested<List<Dictionary<string, int>>>.M(List<Dictionary<string, int>> value) { }
+        }
+
         public class Invalid
         {
             [ExpectUnresolvedDocumentationSignature("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoReturnType~")]
