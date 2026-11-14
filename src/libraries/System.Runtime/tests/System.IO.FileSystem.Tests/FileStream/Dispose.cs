@@ -512,5 +512,33 @@ namespace System.IO.Tests
                 return weakReference;
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task AsyncPipeHandlesAreFinalizedWhenNotDisposed()
+        {
+            (WeakReference<SafeFileHandle> readHandle, WeakReference<SafeFileHandle> writeHandle) = await ReadAndWriteAsync();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(readHandle.TryGetTarget(out _));
+            Assert.False(writeHandle.TryGetTarget(out _));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static async Task<(WeakReference<SafeFileHandle>, WeakReference<SafeFileHandle>)> ReadAndWriteAsync()
+            {
+                SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: true, asyncWrite: true);
+                FileStream reader = new(readHandle, FileAccess.Read, bufferSize: 0, isAsync: true);
+                FileStream writer = new(writeHandle, FileAccess.Write, bufferSize: 0, isAsync: true);
+
+                byte[] buffer = new byte[1];
+                ValueTask<int> readTask = reader.ReadAsync(buffer);
+                await writer.WriteAsync(new byte[] { 42 });
+                Assert.Equal(1, await readTask);
+
+                return (new(readHandle, trackResurrection: true), new(writeHandle, trackResurrection: true));
+            }
+        }
     }
 }

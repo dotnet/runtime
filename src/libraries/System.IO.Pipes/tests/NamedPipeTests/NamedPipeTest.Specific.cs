@@ -3,10 +3,12 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -769,5 +771,36 @@ namespace System.IO.Pipes.Tests
                 new object[] { CancellationToken.None },
                 new object[] { new CancellationTokenSource().Token },
             };
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation is based on sockets
+        public async Task AsyncPipeHandlesAreFinalizedWhenNotDisposed()
+        {
+            (WeakReference<SafePipeHandle> serverHandle, WeakReference<SafePipeHandle> clientHandle) = await ConnectReadAndWriteAsync();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(serverHandle.TryGetTarget(out _));
+            Assert.False(clientHandle.TryGetTarget(out _));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static async Task<(WeakReference<SafePipeHandle>, WeakReference<SafePipeHandle>)> ConnectReadAndWriteAsync()
+            {
+                string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+                NamedPipeServerStream server = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                NamedPipeClientStream client = new(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+
+                await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+
+                byte[] buffer = new byte[1];
+                ValueTask<int> readTask = server.ReadAsync(buffer);
+                await client.WriteAsync(new byte[] { 42 });
+                Assert.Equal(1, await readTask);
+
+                return (new(server.SafePipeHandle, trackResurrection: true), new(client.SafePipeHandle, trackResurrection: true));
+            }
+        }
     }
 }

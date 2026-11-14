@@ -18,8 +18,17 @@ namespace Microsoft.Win32.SafeHandles
 
         // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
         // should only happen on first use or if the SafeFileHandle is being used concurrently).
-        internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
-            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
+        internal OverlappedValueTaskSource GetOverlappedValueTaskSource()
+        {
+            OverlappedValueTaskSource? source = Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null);
+            if (source is null)
+            {
+                return new OverlappedValueTaskSource(this);
+            }
+
+            source._fileHandle = this;
+            return source;
+        }
 
         // Rent the reusable ManualResetEvent for sync-over-async I/O, or create a new one.
         // The returned event is guaranteed to be in non-signaled state.
@@ -61,6 +70,10 @@ namespace Microsoft.Win32.SafeHandles
         {
             source._source.Reset();
 
+            // The cached source is rooted by its PreAllocatedOverlapped (until it's disposed by ReleaseHandle),
+            // so it must not reference this handle. Otherwise, the handle could never be finalized.
+            source._fileHandle = null;
+
             if (Interlocked.CompareExchange(ref _reusableOverlappedValueTaskSource, source, null) is not null)
             {
                 source.Dispose();
@@ -77,7 +90,7 @@ namespace Microsoft.Win32.SafeHandles
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
-            internal readonly SafeFileHandle _fileHandle;
+            internal SafeFileHandle? _fileHandle; // null while the instance is cached for reuse
             private OSFileStreamStrategy? _strategy;
             internal MemoryHandle _memoryHandle;
             private int _bufferSize;
@@ -117,6 +130,7 @@ namespace Microsoft.Win32.SafeHandles
                 _strategy = strategy;
                 _bufferSize = memory.Length;
                 _memoryHandle = memory.Pin();
+                Debug.Assert(_fileHandle is not null);
                 _overlapped = _fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
                 if (_fileHandle.CanSeek)
                 {
@@ -137,8 +151,9 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 finally
                 {
-                    // The instance is ready to be reused
-                    _fileHandle.TryToReuse(this);
+                    // The instance is ready to be reused. _fileHandle is null when the instance has already been
+                    // returned to the cache (the same ValueTask awaited twice).
+                    _fileHandle?.TryToReuse(this);
                 }
             }
 
@@ -154,11 +169,13 @@ namespace Microsoft.Win32.SafeHandles
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
                         {
                             OverlappedValueTaskSource vts = (OverlappedValueTaskSource)s!;
-                            if (!vts._fileHandle.IsInvalid)
+                            SafeFileHandle? fileHandle = vts._fileHandle;
+                            Debug.Assert(fileHandle is not null);
+                            if (!fileHandle.IsInvalid)
                             {
                                 try
                                 {
-                                    Interop.Kernel32.CancelIoEx(vts._fileHandle, vts._overlapped);
+                                    Interop.Kernel32.CancelIoEx(fileHandle, vts._overlapped);
                                     // Ignore all failures: no matter whether it succeeds or fails, completion is handled via the IOCallback.
                                 }
                                 catch (ObjectDisposedException) { } // in case the SafeHandle is (erroneously) closed concurrently
@@ -189,6 +206,7 @@ namespace Microsoft.Win32.SafeHandles
                 // Free the overlapped.
                 if (_overlapped != null)
                 {
+                    Debug.Assert(_fileHandle is not null);
                     _fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
