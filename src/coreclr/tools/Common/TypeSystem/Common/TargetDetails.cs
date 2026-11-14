@@ -162,15 +162,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the alignment that is optimal for this platform.
         /// </summary>
-        public int OptimumFunctionAlignment
-        {
-            get
-            {
-                // Matches the choice in the C++ compiler.
-                // We want a number that is optimized for micro-op caches in the processor.
-                return 16;
-            }
-        }
+        // The default matches the choice in the C++ compiler.
+        // We want a number that is optimized for micro-op caches in the processor.
+        public int OptimumFunctionAlignment { get; } = 16;
 
         public int MinimumCodeAlignment
         {

@@ -31,7 +31,7 @@ public:
     bool FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfoOut) override;
     bool IsFunclet(MethodInfo* pMethodInfo) override;
     PTR_VOID GetFramePointer(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet) override;
-    bool IsSafePoint(PTR_VOID address) override;
+    bool IsSafePoint(MethodInfo* pMethodInfo, PTR_VOID address) override;
     void EnumGcRefs(MethodInfo* pMethodInfo, PTR_VOID safePointAddress, REGDISPLAY* pRegisterSet,
         GCEnumContext* hCallback, bool isActiveStackFrame) override;
     bool UnwindStackFrame(MethodInfo* pMethodInfo, uint32_t flags, REGDISPLAY* pRegisterSet,

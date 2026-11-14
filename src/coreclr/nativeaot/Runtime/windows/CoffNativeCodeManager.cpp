@@ -200,6 +200,23 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
 #endif
 }
 
+// Returns the module-relative address just past the code described by the runtime function.
+static uint32_t GetFunctionEndAddress(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+    return pRuntimeFunction->EndAddress;
+#elif defined(TARGET_ARM64)
+    ASSERT((pRuntimeFunction->UnwindData & 0x3) == 0);
+
+    // FunctionLength is the low 18 bits of the first xdata word, in units of 4 bytes.
+    PTR_uint32_t xdata = dac_cast<PTR_uint32_t>(pRuntimeFunction->UnwindData + moduleBase);
+    return pRuntimeFunction->BeginAddress + (xdata[0] & 0x3FFFF) * 4;
+#else
+    PORTABILITY_ASSERT("GetFunctionEndAddress");
+    return 0;
+#endif
+}
+
 CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase,
                                              PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                                              PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
@@ -215,7 +232,8 @@ CoffNativeCodeManager::~CoffNativeCodeManager()
 {
 }
 
-static int LookupUnwindInfoForMethod(uint32_t relativePc,
+static int LookupUnwindInfoForMethod(TADDR moduleBase,
+                                     uint32_t relativePc,
                                      PTR_RUNTIME_FUNCTION pRuntimeFunctionTable,
                                      int low,
                                      int high)
@@ -251,6 +269,11 @@ static int LookupUnwindInfoForMethod(uint32_t relativePc,
     PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + high;
     if (relativePc >= pFunctionEntry->BeginAddress)
     {
+        // Code between two functions, such as a range extension thunk the linker placed
+        // between two sections of managed code, does not belong to any method.
+        if (relativePc >= GetFunctionEndAddress(moduleBase, pFunctionEntry))
+            return -1;
+
         return high;
     }
 
@@ -282,7 +305,7 @@ bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
 
-    int MethodIndex = LookupUnwindInfoForMethod((uint32_t)relativePC, m_pRuntimeFunctionTable,
+    int MethodIndex = LookupUnwindInfoForMethod(m_moduleBase, (uint32_t)relativePC, m_pRuntimeFunctionTable,
         0, m_nRuntimeFunctionTable - 1);
     if (MethodIndex < 0)
         return false;
@@ -423,16 +446,10 @@ uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
     return (uint32_t)(dac_cast<TADDR>(address) - methodStartAddress);
 }
 
-bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+bool CoffNativeCodeManager::IsSafePoint(MethodInfo * pMethodInfo, PTR_VOID pvAddress)
 {
-    MethodInfo pMethodInfo;
-    if (!FindMethodInfo(pvAddress, &pMethodInfo))
-    {
-        return false;
-    }
-
     PTR_uint8_t gcInfo;
-    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, pvAddress, &gcInfo);
 
 #ifdef USE_GC_INFO_DECODER
     GcInfoDecoder decoder(
@@ -1162,7 +1179,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
 
     TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
 
-    int MethodIndex = LookupUnwindInfoForMethod((uint32_t)relativePC, m_pRuntimeFunctionTable, 0, m_nRuntimeFunctionTable - 1);
+    int MethodIndex = LookupUnwindInfoForMethod(m_moduleBase, (uint32_t)relativePC, m_pRuntimeFunctionTable, 0, m_nRuntimeFunctionTable - 1);
     if (MethodIndex < 0)
         return NULL;
 

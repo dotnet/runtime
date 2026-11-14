@@ -1274,21 +1274,57 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
     return true;
 }
 
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND && defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+// Finds the FDE covering the address through the .eh_frame_hdr binary search table, and returns false
+// only when that table is present and no FDE covers the address. libunwind would otherwise scan the
+// whole .eh_frame section, which in a large image takes long enough that a thread interrupted for
+// suspension in a range extension thunk between two sections of managed code makes no progress.
+template <typename R>
+static bool FindFdeOffsetInDwarfIndex(PCODE pc, const UnwindInfoSections &uwInfoSections, uint32_t *pDwarfOffset)
+{
+    LocalAddressSpace::pint_t indexStart = uwInfoSections.dwarf_index_section;
+    if (indexStart == 0)
+    {
+        return true;
+    }
+
+    LocalAddressSpace::pint_t indexEnd = indexStart + uwInfoSections.dwarf_index_section_length;
+    libunwind::EHHeaderParser<LocalAddressSpace>::EHHeaderInfo indexInfo;
+    if (!libunwind::EHHeaderParser<LocalAddressSpace>::decodeEHHdr(_addressSpace, indexStart, indexEnd, indexInfo) ||
+        indexInfo.fde_count == 0)
+    {
+        return true;
+    }
+
+    libunwind::CFI_Parser<LocalAddressSpace>::FDE_Info fdeInfo;
+    libunwind::CFI_Parser<LocalAddressSpace>::CIE_Info cieInfo;
+    if (!libunwind::EHHeaderParser<LocalAddressSpace>::template findFDE<R>(
+            _addressSpace, pc, indexStart, (uint32_t)uwInfoSections.dwarf_index_section_length, &fdeInfo, &cieInfo))
+    {
+        return false;
+    }
+
+    *pDwarfOffset = (uint32_t)(fdeInfo.fdeStart - uwInfoSections.dwarf_section);
+    return true;
+}
+#endif
+
 bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
 {
 #if defined(TARGET_AMD64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_x86_64;
 #elif defined(TARGET_ARM)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_arm;
 #elif defined(TARGET_ARM64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_arm64;
 #elif defined(HOST_LOONGARCH64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_loongarch> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_loongarch;
 #elif defined(HOST_RISCV64)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_riscv> uc(_addressSpace, nullptr);
+    using NativeRegisters = Registers_riscv;
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
+    libunwind::UnwindCursor<LocalAddressSpace, NativeRegisters> uc(_addressSpace, nullptr);
 
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     uint32_t dwarfOffsetHint = 0;
@@ -1325,6 +1361,13 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
 #else
         PORTABILITY_ASSERT("GetUnwindProcInfo");
 #endif
+    }
+#endif
+
+#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+    if (dwarfOffsetHint == 0 && !FindFdeOffsetInDwarfIndex<NativeRegisters>(pc, uwInfoSections, &dwarfOffsetHint))
+    {
+        return false;
     }
 #endif
 

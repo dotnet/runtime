@@ -163,14 +163,11 @@ PTR_VOID WasmCodeManager::GetFramePointer(MethodInfo* pMethodInfo, REGDISPLAY* p
     return reinterpret_cast<PTR_VOID>(pRegisterSet->GetFP());
 }
 
-bool WasmCodeManager::IsSafePoint(PTR_VOID address)
+bool WasmCodeManager::IsSafePoint(MethodInfo* pMethodInfo, PTR_VOID address)
 {
-    MethodInfo info;
-    if (!FindMethodInfo(address, &info))
-        return false;
-    WasmMethodInfo* pMethodInfo = reinterpret_cast<WasmMethodInfo*>(&info);
-    GcInfoDecoder decoder(GCInfoToken(pMethodInfo->m_gcInfo), DECODE_INTERRUPTIBILITY,
-        static_cast<uint32_t>(reinterpret_cast<uintptr_t>(address) - pMethodInfo->m_methodStart));
+    WasmMethodInfo* pWasmMethodInfo = reinterpret_cast<WasmMethodInfo*>(pMethodInfo);
+    GcInfoDecoder decoder(GCInfoToken(pWasmMethodInfo->m_gcInfo), DECODE_INTERRUPTIBILITY,
+        static_cast<uint32_t>(reinterpret_cast<uintptr_t>(address) - pWasmMethodInfo->m_methodStart));
     return decoder.IsInterruptible() || decoder.IsSafePoint();
 }
 

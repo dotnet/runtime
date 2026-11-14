@@ -72,7 +72,7 @@ public:
 
     uint32_t GetCodeOffset(MethodInfo * pMethodInfo, PTR_VOID address, /*out*/ PTR_uint8_t* gcInfo);
 
-    bool IsSafePoint(PTR_VOID pvAddress);
+    bool IsSafePoint(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     void EnumGcRefs(MethodInfo *    pMethodInfo,
                     PTR_VOID        safePointAddress,

@@ -39,6 +39,10 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection ArmUnwindIndexSection = new ObjectNodeSection(".ARM.exidx", SectionType.UnwindData);
         private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
 
+        // GNU ld and lld place arm64 range extension thunks between input sections. Only arm64 opts in:
+        // the split has not been validated with the arm and loongarch64 linkers and runtime.
+        private protected override bool LinkerPlacesRangeExtensionThunks => _nodeFactory.Target.Architecture == TargetArchitecture.ARM64;
+
         private protected override void CreateEhSections()
         {
             // ARM creates the EHABI sections lazily in EmitUnwindInfo

@@ -65,6 +65,33 @@ namespace ILCompiler.ObjectWriter
         }
         private protected virtual bool UsesSubsectionsViaSymbols => false;
 
+        /// <summary>
+        /// Whether the linker for this format places range-extension thunks between sections, so that
+        /// code larger than <see cref="GetCodeSectionSplitSize"/> can be emitted as several sections of
+        /// the same name.
+        /// </summary>
+        private protected virtual bool LinkerPlacesRangeExtensionThunks => false;
+
+        /// <summary>
+        /// The size beyond which a code section is split, or 0 when it is not. Half the reach of the
+        /// target's direct call: a call within one section always fits, and every call site is within
+        /// reach of a thunk the linker places at a section boundary.
+        /// </summary>
+        private long GetCodeSectionSplitSize()
+        {
+            if (!LinkerPlacesRangeExtensionThunks)
+                return 0;
+
+            long directCallReach = _nodeFactory.Target.Architecture switch
+            {
+                TargetArchitecture.ARM64 => 128 * 1024 * 1024,
+                TargetArchitecture.LoongArch64 => 128 * 1024 * 1024,
+                TargetArchitecture.ARM => 16 * 1024 * 1024,
+                _ => 0,
+            };
+            return directCallReach / 2;
+        }
+
         private protected abstract void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream);
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
@@ -126,6 +153,16 @@ namespace ILCompiler.ObjectWriter
                 this,
                 sectionIndex,
                 sectionData);
+        }
+
+        /// <summary>
+        /// Creates a new non-COMDAT section with the name of <paramref name="section"/>.
+        /// Later requests for that name return the new section.
+        /// </summary>
+        private SectionWriter StartNewSection(ObjectNodeSection section)
+        {
+            _sectionNameToSectionIndex.Remove(GetEmitSection(section).Name);
+            return GetOrCreateSection(section);
         }
 
         private protected bool ShouldShareSymbol(ObjectNode node)
@@ -358,6 +395,7 @@ namespace ILCompiler.ObjectWriter
                 progressReporter = new ProgressReporter(logger, count);
             }
 
+            long codeSectionSplitSize = GetCodeSectionSplitSize();
             List<ISymbolRangeNode> symbolRangeNodes = [];
             List<BlockToRelocate> blocksToRelocate = [];
             List<ChecksumsToCalculate> checksumRelocations = [];
@@ -426,9 +464,19 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 ObjectNodeSection section = node.GetSection(_nodeFactory);
-                SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
+                bool shareSymbol = ShouldShareSymbol(node, section);
+                SectionWriter sectionWriter = shareSymbol ?
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
                     GetOrCreateSection(section);
+
+                if (!shareSymbol &&
+                    codeSectionSplitSize > 0 &&
+                    section.Type == SectionType.Executable &&
+                    sectionWriter.Position > 0 &&
+                    sectionWriter.Position + nodeContents.Data.Length > codeSectionSplitSize)
+                {
+                    sectionWriter = StartNewSection(section);
+                }
 
                 if (section.NeedsAlignment)
                 {
