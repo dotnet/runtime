@@ -311,6 +311,11 @@
   </Target>
 
   <Target Name="_BrowserWasmWriteRspForLinking" BeforeTargets="_WasmWriteRspForLinking">
+    <PropertyGroup>
+      <WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
+      <_WasmProducersSourcePath Condition="'$(_WasmProducersSourcePath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s</_WasmProducersSourcePath>
+      <_WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == 'true' and Exists('$(_WasmProducersSourcePath)')">true</_WasmEmitProducersSection>
+    </PropertyGroup>
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
       <!-- _EmccIncomingModuleJSAPI defaults (incl. wasmMemory when threads are enabled) come from wasm-props.json
@@ -329,6 +334,7 @@
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccIncomingModuleJSAPIs>"[@(_EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPIs>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+
     </PropertyGroup>
 
     <ItemGroup>
@@ -350,6 +356,8 @@
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="@(_WasmObjectFilesForBundle)" />
+      <!-- emcc assembles this source and wasm-ld merges it into the 'producers' custom section. -->
+      <_WasmNativeFileForLinking Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="$(_WasmProducersSourcePath)" />
 
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
@@ -381,6 +389,10 @@
       <_EmccLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
 
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
+      <_EmccLinkStepArgs Include="-Wl,--build-id" />
+      <!-- Emscripten strips producers by default. Preserve the section that wasm-ld merges from dotnet-producers.s. -->
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-Wno-unused-command-line-argument" />
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
 
       <_WasmLinkStepArgs Include="@(_EmccLinkStepArgs)" />
       <_WasmLinkStepArgs Include="@(LinkerArg)" />

@@ -12,6 +12,45 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(UsingNativeAOT)' == 'true' and '$(EMSDK_PATH)' != ''" />
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.InTree.CI.targets" Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
 
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersSource"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(UsingNativeAOT)' != 'true'" />
+
+  <Target Name="_BrowserWasmEmitProducersSource"
+          BeforeTargets="_BrowserWasmWriteRspForLinking"
+          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
+    <PropertyGroup>
+      <WasmEmitProducersSection>true</WasmEmitProducersSection>
+      <_WasmEmitProducersSection>true</_WasmEmitProducersSection>
+      <_WasmProducersSourcePath>$(_WasmIntermediateOutputPath)dotnet-producers.s</_WasmProducersSourcePath>
+    </PropertyGroup>
+    <WasmEmitProducersSource
+        OutputPath="$(_WasmProducersSourcePath)"
+        RuntimeName="Mono"
+        ProductVersion="$(ProductVersion)" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmProducersSourcePath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_CoreCLREmitProducersSource"
+          BeforeTargets="_CoreCLRWriteLinkRsp"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
+    <PropertyGroup>
+      <WasmEmitProducersSection>true</WasmEmitProducersSection>
+      <_WasmEmitProducersSection>true</_WasmEmitProducersSection>
+      <_WasmProducersSourcePath>$(_WasmIntermediateOutputPath)dotnet-producers.s</_WasmProducersSourcePath>
+    </PropertyGroup>
+    <WasmEmitProducersSource
+        OutputPath="$(_WasmProducersSourcePath)"
+        RuntimeName="CoreCLR"
+        ProductVersion="$(ProductVersion)" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmProducersSourcePath)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="CopyAppZipToHelixTestDir"
           Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           AfterTargets="Build"

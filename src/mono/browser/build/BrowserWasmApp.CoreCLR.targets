@@ -290,7 +290,7 @@
        served binary would be the original (runtime pack) dotnet.native.wasm. -->
   <Target Name="_CoreCLRWasmNativeForBuild"
           DependsOnTargets="WasmBuildApp"
-          BeforeTargets="_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
+          BeforeTargets="_StampWasmBuildIdForBuild;_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
@@ -304,7 +304,7 @@
        completes — too late for ComputeWasmPublishAssets to pick up @(WasmNativeAsset). -->
   <Target Name="_CoreCLRWasmNative"
           DependsOnTargets="WasmTriggerPublishApp"
-          BeforeTargets="ProcessPublishFilesForWasm"
+          BeforeTargets="_StampWasmBuildIdForPublish;ProcessPublishFilesForWasm"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(UsingBrowserRuntimeWorkload)' != 'true'" />
@@ -474,9 +474,12 @@
       <MicrosoftNetCoreAppRuntimePackRidDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', $(RuntimeIdentifier)))</MicrosoftNetCoreAppRuntimePackRidDir>
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
       <MicrosoftNetCoreAppRuntimePackRidNativeDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+      <WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
 
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' != 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-build'))</_WasmIntermediateOutputPath>
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' == 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-publish'))</_WasmIntermediateOutputPath>
+      <_WasmProducersSourcePath Condition="'$(_WasmProducersSourcePath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s</_WasmProducersSourcePath>
+      <_WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == 'true' and Exists('$(_WasmProducersSourcePath)')">true</_WasmEmitProducersSection>
 
       <_WasmCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_WasmCompileRsp>
       <_WasmCompileRspGenerated>$(_WasmIntermediateOutputPath)emcc-compile-generated.rsp</_WasmCompileRspGenerated>
@@ -976,6 +979,12 @@
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
+      <_EmccLinkStepArgs Include="-Wl,--build-id" />
+
+      <!-- Emscripten strips producers by default. Assemble the source and preserve the section wasm-ld merges from it. -->
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-Wno-unused-command-line-argument" />
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmProducersSourcePath)&quot;" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->
@@ -983,6 +992,7 @@
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
       <_WasmLinkDependencies Include="@(_CoreCLRNativeLibs)" />
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
+      <_WasmLinkDependencies Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="$(_WasmProducersSourcePath)" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
       <_WasmLinkDependencies Include="$(_WasmOptArgsFile)" />
     </ItemGroup>
@@ -1023,7 +1033,6 @@
     </Exec>
     <!-- Do not leave an unoptimized link output that looks up to date to the next incremental build. -->
     <Delete Files="$(_WasmRelinkedWasmPath)" Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' != '0'" />
-
     <ItemGroup>
       <FileWrites Include="$(_WasmRelinkedWasmPath)" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />

@@ -37,6 +37,12 @@ public class ConvertDllsToWebcil : Task
 
     public int WebcilVersion { get; set; }
 
+    /// <summary>Product version recorded in the producers section of each webcil module.</summary>
+    public string? ProductVersion { get; set; }
+
+    /// <summary>Whether to emit producers and build_id sections in produced webcil modules.</summary>
+    public bool EmitMetadataSections { get; set; }
+
     [Output]
     public ITaskItem[] WebcilCandidates { get; set; }
 
@@ -209,6 +215,8 @@ public class ConvertDllsToWebcil : Task
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
             var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion);
+            webcilWriter.EmitMetadataSections = EmitMetadataSections;
+            webcilWriter.ProductVersion = ProductVersion ?? string.Empty;
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))

@@ -252,6 +252,7 @@
     </PropertyGroup>
     <ItemGroup>
       <_EmccLinkFlags Include="-Wno-unused-command-line-argument" />
+      <_EmccLinkFlags Include="-Wl,--build-id" />
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
       <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccCommonFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread" />

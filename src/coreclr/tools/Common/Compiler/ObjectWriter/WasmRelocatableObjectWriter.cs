@@ -17,6 +17,8 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed partial class WasmRelocatableObjectWriter : WasmObjectWriter
     {
+        private protected override string WasmProducerName => "ILCompiler";
+
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
         private SectionWriter _pdataSectionWriter;
@@ -92,6 +94,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
+            base.EmitSectionsAndLayout();
+
             if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
             {
                 _pdataSectionWriter.WriteLittleEndian<uint>(_nextVirtualIP);
@@ -159,6 +163,10 @@ namespace ILCompiler.ObjectWriter
 
             using MemoryStream linking = CreateLinkingSection(fileSectionIndices);
             sections.Add(new WasmCustomSection(linking, new Utf8String("linking"), sections.Count));
+            using MemoryStream producers = CreateProducersSectionPayload();
+            // Metadata custom sections are not linkable sections. Emit producers after the mandatory
+            // linking section without adding it to the linking symbol table or relocation bookkeeping.
+            sections.Add(new WasmCustomSection(producers, new Utf8String("producers"), sections.Count));
             Dictionary<int, (string Name, MemoryStream Entries, int Count)> relocationSections = new();
             try
             {

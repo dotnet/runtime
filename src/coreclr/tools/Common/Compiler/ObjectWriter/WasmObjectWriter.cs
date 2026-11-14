@@ -79,6 +79,7 @@ namespace ILCompiler.ObjectWriter
         private int ActualFunctionCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
 
         private protected virtual bool ShouldDeduplicateFunctionBodies => false;
+        private protected abstract string WasmProducerName { get; }
 
         private readonly struct FoldedFunctionAlias
         {
@@ -119,6 +120,45 @@ namespace ILCompiler.ObjectWriter
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
+        }
+
+        private protected void EmitProducersSection(Stream outputFileStream)
+        {
+            using MemoryStream payload = CreateProducersSectionPayload();
+            var section = new WasmCustomSection(payload, new Utf8String("producers"), sectionIndex: -1);
+            section.EmitToStream(outputFileStream);
+        }
+
+        private protected MemoryStream CreateProducersSectionPayload()
+        {
+            MemoryStream payload = new();
+            WriteULEB128(payload, 2);
+            WriteProducerField(payload, "processed-by", WasmProducerName);
+            WriteProducerField(payload, "sdk", ".NET");
+            payload.Position = 0;
+            return payload;
+        }
+
+        private static void WriteProducerField(Stream output, string field, string name)
+        {
+            WriteName(output, field);
+            WriteULEB128(output, 1);
+            WriteName(output, name);
+            WriteULEB128(output, 0);
+        }
+
+        private static void WriteName(Stream output, string value)
+        {
+            Utf8String utf8 = new(value);
+            WriteULEB128(output, (ulong)utf8.Length);
+            output.Write(utf8.AsSpan());
+        }
+
+        private static void WriteULEB128(Stream output, ulong value)
+        {
+            Span<byte> buffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128(value)];
+            int written = DwarfHelper.WriteULEB128(buffer, value);
+            output.Write(buffer.Slice(0, written));
         }
 
         public override void EmitObject(
