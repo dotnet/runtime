@@ -340,6 +340,13 @@ namespace Internal.TypeSystem.Ecma
         public TypeDesc ParseTypeSpec(TypeSpecificationHandle typeSpecHandle)
         {
             SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
+
+            // The augments permit leading custom modifiers on signature Types, including those encoded in a
+            // TypeSpec. C# encodes the 'unmanaged' constraint this way:
+            // modreq(System.Runtime.InteropServices.UnmanagedType) class System.ValueType.
+            bool hasCustomModifiers = typeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier;
+            typeCode = ParseTypeCodeImpl(typeCode);
+
             switch (typeCode)
             {
                 case SignatureTypeCode.Pointer:
@@ -349,10 +356,12 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.GenericTypeInstance:
                 case SignatureTypeCode.GenericTypeParameter:
                 case SignatureTypeCode.GenericMethodParameter:
-                    return ParseType(ParseTypeCodeImpl(typeCode));
+                // A class or value type with custom modifiers cannot be encoded as a TypeDefOrRef token.
+                case SignatureTypeCode.TypeHandle when hasCustomModifiers:
+                    return ParseType(typeCode);
             }
             ReportInvalidTypeSpecEncoding(typeSpecHandle);
-            return ParseType(ParseTypeCodeImpl(typeCode));
+            return ParseType(typeCode);
         }
 
         public bool IsFieldSignature
