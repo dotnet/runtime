@@ -57,7 +57,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             DataFlowAnalyzerContext dataFlowAnalyzerContext)
             : base(compilation, lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
         {
-            _multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
+            _multiValueLattice = lattice.LocalStateLattice.ValueLattice;
             TrimAnalysisPatterns = trimAnalysisPatterns;
             _featureChecksVisitor = new FeatureChecksVisitor(dataFlowAnalyzerContext);
             _typeNameResolver = new TypeNameResolver(compilation);
