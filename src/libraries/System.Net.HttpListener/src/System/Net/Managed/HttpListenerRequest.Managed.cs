@@ -161,7 +161,7 @@ namespace System.Net
             if (raw_uri != null)
                 host = raw_uri.Host;
 
-            int colon = host.IndexOf(':');
+            int colon = ListenerPrefix.IndexOfPortSeparator(host);
             if (colon >= 0)
                 host = host.Slice(0, colon);
 
