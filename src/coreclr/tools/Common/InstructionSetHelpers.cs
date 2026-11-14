@@ -80,7 +80,6 @@ namespace System.CommandLine
                     {
                         // While Unix needs a lower baseline due to things like Raspberry PI
                         instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
-                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
                     }
                 }
                 else
