@@ -35,7 +35,7 @@
         ret
     }
 
-    .method public hidebysig static void Calli.StaticFromLdftn_Invalid_Unverifiable() cil managed
+    .method public hidebysig static void Calli.StaticFromLdftn_Invalid_Unverifiable_Validation_Valid() cil managed
     {
         ldc.i4.1
         ldftn void CalliTests::StaticTarget(int32)
@@ -43,14 +43,14 @@
         ret
     }
 
-    .method public hidebysig static int32 Calli.ReturnValue_Invalid_Unverifiable() cil managed
+    .method public hidebysig static int32 Calli.ReturnValue_Invalid_Unverifiable_Validation_Valid() cil managed
     {
         ldftn int32 CalliTests::ReturnsInt32()
         calli int32()
         ret
     }
 
-    .method public hidebysig static void Calli.ErrorAfterCalli_Invalid_Unverifiable.StackUnderflow() cil managed
+    .method public hidebysig static void Calli.ErrorAfterCalli_Invalid_Unverifiable.StackUnderflow_Validation_StackUnderflow() cil managed
     {
         ldc.i4.1
         ldftn void CalliTests::StaticTarget(int32)
@@ -59,7 +59,7 @@
         ret
     }
 
-    .method public hidebysig static void Calli.FromArgument_Invalid_Unverifiable(method void *(int32) f) cil managed
+    .method public hidebysig static void Calli.FromArgument_Invalid_Unverifiable_Validation_Valid(method void *(int32) f) cil managed
     {
         ldc.i4.1
         ldarg.0
@@ -67,7 +67,7 @@
         ret
     }
 
-    .method public hidebysig static void Calli.ArgumentMismatch_Invalid_Unverifiable.StackUnexpected(method void *(int32) f) cil managed
+    .method public hidebysig static void Calli.ArgumentMismatch_Invalid_Unverifiable.StackUnexpected_Validation_StackUnexpected(method void *(int32) f) cil managed
     {
         ldnull
         ldarg.0
@@ -75,7 +75,7 @@
         ret
     }
 
-    .method public hidebysig static void Calli.MethodPointerNotNativeInt_Invalid_Unverifiable.StackMethod() cil managed
+    .method public hidebysig static void Calli.MethodPointerNotNativeInt_Invalid_Unverifiable.StackMethod_Validation_StackMethod() cil managed
     {
         ldc.i4.1
         ldc.i4.0
@@ -83,7 +83,7 @@
         ret
     }
 
-    .method public hidebysig instance void Calli.ImplicitThis_Invalid_Unverifiable(method instance void *(int32) f) cil managed
+    .method public hidebysig instance void Calli.ImplicitThis_Invalid_Unverifiable_Validation_Valid(method instance void *(int32) f) cil managed
     {
         ldarg.0
         ldc.i4.1
@@ -92,7 +92,7 @@
         ret
     }
 
-    .method public hidebysig instance void Calli.ExplicitThis_Invalid_Unverifiable() cil managed
+    .method public hidebysig instance void Calli.ExplicitThis_Invalid_Unverifiable_Validation_Valid() cil managed
     {
         ldarg.0
         ldc.i4.1
@@ -102,7 +102,7 @@
     }
 
     // A vararg call site with no extra arguments has no sentinel.
-    .method public hidebysig static void Calli.Vararg_Invalid_Unverifiable(method vararg void *(int32) f) cil managed
+    .method public hidebysig static void Calli.Vararg_Invalid_Unverifiable_Validation_Valid(method vararg void *(int32) f) cil managed
     {
         ldc.i4.1
         ldarg.0
@@ -110,14 +110,14 @@
         ret
     }
 
-    .method public hidebysig static void Calli.TailCall_Invalid_Unverifiable() cil managed
+    .method public hidebysig static void Calli.TailCall_Invalid_Unverifiable_Validation_Valid() cil managed
     {
         ldftn void CalliTests::ManagedTarget()
         tail. calli void()
         ret
     }
 
-    .method public hidebysig static void Calli.TailCallByRefArgument_Invalid_Unverifiable.TailByRef(method void *(int32&) f) cil managed
+    .method public hidebysig static void Calli.TailCallByRefArgument_Invalid_Unverifiable.TailByRef_Validation_TailByRef(method void *(int32&) f) cil managed
     {
         .locals init (int32 V_0)
         ldloca.s V_0
@@ -126,7 +126,7 @@
         ret
     }
 
-    .method public hidebysig static void Calli.TailCallByRefThis_Invalid_Unverifiable.TailByRef(method instance void *() f) cil managed
+    .method public hidebysig static void Calli.TailCallByRefThis_Invalid_Unverifiable.TailByRef_Validation_TailByRef(method instance void *() f) cil managed
     {
         .locals init (int32 V_0)
         ldloca.s V_0
@@ -135,7 +135,7 @@
         ret
     }
 
-    .method public hidebysig static void Calli.TailCallNotFollowedByRet_Invalid_Unverifiable.TailRet() cil managed
+    .method public hidebysig static void Calli.TailCallNotFollowedByRet_Invalid_Unverifiable.TailRet_Validation_TailRet() cil managed
     {
         ldftn void CalliTests::ManagedTarget()
         tail. calli void()
@@ -145,14 +145,14 @@
 
     // The tail call's return checks are shared with call. A void method cannot tail-call a method returning a value;
     // the value then left on the stack also makes the ret report ReturnVoid.
-    .method public hidebysig static void Calli.TailCallReturnsValue_Invalid_Unverifiable.TailRetVoid.ReturnVoid() cil managed
+    .method public hidebysig static void Calli.TailCallReturnsValue_Invalid_Unverifiable.TailRetVoid.ReturnVoid_Validation_TailRetVoid.ReturnVoid() cil managed
     {
         ldftn int32 CalliTests::ReturnsInt32()
         tail. calli int32()
         ret
     }
 
-    .method public hidebysig static int32& Calli.ByRefReturn_Invalid_Unverifiable(method int32& *() f) cil managed
+    .method public hidebysig static int32& Calli.ByRefReturn_Invalid_Unverifiable_Validation_Valid(method int32& *() f) cil managed
     {
         ldarg.0
         calli int32&()
@@ -160,7 +160,7 @@
     }
 
     // The calli operand is the TypeDef token of CalliTests (0x02000002), not a StandAloneSig token.
-    .method public hidebysig static void Calli.NotSignatureToken_Invalid_Unverifiable.ExpectedSignatureToken() cil managed
+    .method public hidebysig static void Calli.NotSignatureToken_Invalid_Unverifiable.ExpectedSignatureToken_Validation_ExpectedSignatureToken() cil managed
     {
         ldftn void CalliTests::ManagedTarget()
         .emitbyte 0x29
@@ -193,7 +193,7 @@
         ret
     }
 
-    .method public hidebysig instance void 'special.CalliUninitThis..ctor_Invalid_Unverifiable.UninitStack'(method void *(object) f) cil managed
+    .method public hidebysig instance void 'special.CalliUninitThis..ctor_Invalid_Unverifiable.UninitStack_Validation_UninitStack'(method void *(object) f) cil managed
     {
         ret
     }
