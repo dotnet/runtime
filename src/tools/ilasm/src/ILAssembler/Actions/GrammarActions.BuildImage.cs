@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.ILAssembler
         {
             if (_vtableFixups.Count == 0)
             {
-                return ImmutableArray<ValidatedVTableFixup>.Empty;
+                return SynthesizeExportFixup(machine);
             }
 
             var builder = ImmutableArray.CreateBuilder<ValidatedVTableFixup>(_vtableFixups.Count);
@@ -315,10 +315,55 @@ namespace Microsoft.DotNet.ILAssembler
             return builder.ToImmutable();
         }
 
+        private ImmutableArray<ValidatedVTableFixup> SynthesizeExportFixup(Machine machine)
+        {
+            EntityRegistry.MethodDefinitionEntity[] methods = GetParsedMethods()
+                .Where(method => method.ExportOrdinal >= 0)
+                .OrderBy(method => method.ExportOrdinal)
+                .ToArray();
+            if (methods.Length == 0)
+            {
+                return ImmutableArray<ValidatedVTableFixup>.Empty;
+            }
+
+            if (methods.Length > ushort.MaxValue)
+            {
+                ReportError(
+                    DiagnosticIds.InvalidVTableSlotCount,
+                    string.Format(
+                        DiagnosticMessageTemplates.InvalidVTableSlotCount,
+                        methods.Length,
+                        ushort.MaxValue),
+                    _exportDirectiveContexts[methods[ushort.MaxValue]]);
+                return ImmutableArray<ValidatedVTableFixup>.Empty;
+            }
+
+            int slotSize = VTableFixupSupport.GetPointerSize(machine);
+            ushort flags = (ushort)(VTableFixupSupport.COR_VTABLE_FROM_UNMANAGED |
+                (slotSize == sizeof(long) ? VTableFixupSupport.COR_VTABLE_64BIT : VTableFixupSupport.COR_VTABLE_32BIT));
+            _mappedFieldData.Align(slotSize);
+            var dataLocation = new DataLocation(DataSection.Data, _mappedFieldData.Count);
+            _mappedFieldData.WriteBytes(0, methods.Length * slotSize);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                EntityRegistry.MethodDefinitionEntity method = methods[i];
+                if (!_vtableEntryDirectiveContexts.ContainsKey(method))
+                {
+                    method.VTableEntry = 1;
+                    method.VTableSlot = i + 1;
+                }
+            }
+
+            return [new ValidatedVTableFixup(
+                1,
+                new VTableFixupSupport.VTableFixupEntry(methods.Length, flags, string.Empty),
+                dataLocation)];
+        }
+
         private ImmutableArray<ValidatedVTableAssociation> ValidateVTableAssociations(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups)
         {
-            if (_vtableFixups.Count == 0)
+            if (_vtableFixups.Count == 0 && validatedVTableFixups.IsEmpty)
             {
                 return ImmutableArray<ValidatedVTableAssociation>.Empty;
             }
@@ -335,7 +380,8 @@ namespace Microsoft.DotNet.ILAssembler
             var builder = ImmutableArray.CreateBuilder<ValidatedVTableAssociation>();
             foreach (EntityRegistry.MethodDefinitionEntity method in GetParsedMethods())
             {
-                if (!_vtableEntryDirectiveContexts.TryGetValue(method, out ParserRuleContext? context))
+                if (!_vtableEntryDirectiveContexts.TryGetValue(method, out ParserRuleContext? context) &&
+                    (_vtableFixups.Count != 0 || !_exportDirectiveContexts.TryGetValue(method, out context)))
                 {
                     continue;
                 }
@@ -378,11 +424,6 @@ namespace Microsoft.DotNet.ILAssembler
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations,
             Machine machine)
         {
-            if (_vtableFixups.Count == 0)
-            {
-                return ImmutableArray<ValidatedExport>.Empty;
-            }
-
             var associationsByMethod =
                 new Dictionary<EntityRegistry.MethodDefinitionEntity, ValidatedVTableAssociation>(
                     validatedVTableAssociations.Length);
