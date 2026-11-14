@@ -17075,8 +17075,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
     {
         emitHandleGCrefRegs(dst, id);
     }
-
-    if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
+    else if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
     {
         switch (id->idInsFmt())
         {
