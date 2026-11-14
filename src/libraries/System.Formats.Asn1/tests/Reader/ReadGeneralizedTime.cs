@@ -238,15 +238,50 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, "2017121900.06861111087Z")]
-        [InlineData(AsnEncodingRules.BER, "201712190004.11666665167Z")]
-        [InlineData(AsnEncodingRules.BER, "20171219000406.9999991Z")]
-        [InlineData(AsnEncodingRules.CER, "20171219000406.9999991Z")]
-        [InlineData(AsnEncodingRules.DER, "20171219000406.9999991Z")]
-        public void MaximumEffectivePrecision(AsnEncodingRules ruleSet, string dateAscii)
+        [InlineData(AsnEncodingRules.BER, "2017121900.06861111087Z", 2469999991L)]
+        [InlineData(AsnEncodingRules.BER, "201712190004.11666665167Z", 2469999991L)]
+        [InlineData(AsnEncodingRules.BER, "20171219000406.9999991Z", 2469999991L)]
+        [InlineData(AsnEncodingRules.CER, "20171219000406.9999991Z", 2469999991L)]
+        [InlineData(AsnEncodingRules.DER, "20171219000406.9999991Z", 2469999991L)]
+        [InlineData(AsnEncodingRules.BER, "20171219000406.0000001Z", 2460000001L)]
+        [InlineData(AsnEncodingRules.CER, "20171219000406.0000001Z", 2460000001L)]
+        [InlineData(AsnEncodingRules.DER, "20171219000406.0000001Z", 2460000001L)]
+        [InlineData(AsnEncodingRules.BER, "20171219000406.1234567Z", 2461234567L)]
+        [InlineData(AsnEncodingRules.CER, "20171219000406.1234567Z", 2461234567L)]
+        [InlineData(AsnEncodingRules.DER, "20171219000406.1234567Z", 2461234567L)]
+        [InlineData(AsnEncodingRules.BER, "20171219000406.999999999999Z", 2469999999L)]
+        [InlineData(AsnEncodingRules.CER, "20171219000406.999999999999Z", 2469999999L)]
+        [InlineData(AsnEncodingRules.DER, "20171219000406.999999999999Z", 2469999999L)]
+        [InlineData(AsnEncodingRules.BER, "20171219000406.000000099999Z", 2460000000L)]
+        [InlineData(AsnEncodingRules.CER, "20171219000406.000000099999Z", 2460000000L)]
+        [InlineData(AsnEncodingRules.DER, "20171219000406.000000099999Z", 2460000000L)]
+        [InlineData(AsnEncodingRules.DER, "20171219000406.0430000000001Z", 2460430000L)]
+        [InlineData(AsnEncodingRules.BER, "201712190004.043Z", 2425800000L)]
+        [InlineData(AsnEncodingRules.BER, "201712190004,051Z", 2430600000L)]
+        [InlineData(AsnEncodingRules.BER, "201712190004.999999999999Z", 2999999999L)]
+        [InlineData(AsnEncodingRules.BER, "201712190004.000000001667Z", 2400000001L)]
+        [InlineData(AsnEncodingRules.BER, "201712190004.000000000001Z", 2400000000L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.043Z", 1548000000L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900,086Z", 3096000000L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.999999999999Z", 35999999999L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.000000000028Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.000000000001Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000278Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016667Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000277Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016666Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000277777777777777777777777777778Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.0000000000277777777777777777777777777777Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016666666666666666666666666666667Z", 1L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.0000000016666666666666666666666666666666Z", 0L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900.9999999999999999999999999999999999999999Z", 35999999999L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000.9999999999999999999999999999999999999999Z", 599999999L)]
+        [InlineData(AsnEncodingRules.BER, "2017121900,0000000000278-0000", 1L)]
+        [InlineData(AsnEncodingRules.BER, "201712190000,0000000016667+0000", 1L)]
+        public void ParseTime_Precision(AsnEncodingRules ruleSet, string dateAscii, long expectedTicks)
         {
-            DateTimeOffset expectedTime = new DateTimeOffset(2017, 12, 19, 0, 4, 6, TimeSpan.Zero);
-            expectedTime += new TimeSpan(TimeSpan.TicksPerSecond - 9);
+            DateTimeOffset expectedTime = new DateTimeOffset(2017, 12, 19, 0, 0, 0, TimeSpan.Zero);
+            expectedTime = expectedTime.AddTicks(expectedTicks);
 
             byte[] inputData = new byte[dateAscii.Length + 2];
             inputData[0] = 0x18;
@@ -254,7 +289,42 @@ namespace System.Formats.Asn1.Tests.Reader
             Text.Encoding.ASCII.GetBytes(dateAscii, 0, dateAscii.Length, inputData, 2);
 
             AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
-            Assert.Equal(expectedTime, reader.ReadGeneralizedTime());
+            DateTimeOffset actual = reader.ReadGeneralizedTime();
+            Assert.Equal(expectedTime, actual);
+            Assert.Equal(TimeSpan.Zero, actual.Offset);
+            Assert.False(reader.HasData);
+            Assert.Equal(expectedTime, AsnDecoder.ReadGeneralizedTime(inputData, ruleSet, out int bytesConsumed));
+            Assert.Equal(inputData.Length, bytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public void FractionalSeconds_RoundTrip(AsnEncodingRules ruleSet)
+        {
+            DateTimeOffset baseTime = new DateTimeOffset(2017, 12, 19, 0, 4, 6, TimeSpan.Zero);
+            AsnWriter writer = new AsnWriter(ruleSet);
+
+            for (int millisecond = 1; millisecond < 1000; millisecond++)
+            {
+                DateTimeOffset expected = baseTime.AddTicks(millisecond * TimeSpan.TicksPerMillisecond);
+                writer.Reset();
+                writer.WriteGeneralizedTime(expected);
+                byte[] inputData = writer.Encode();
+
+                AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
+                DateTimeOffset actual = reader.ReadGeneralizedTime();
+                Assert.Equal(expected, actual);
+                Assert.Equal(TimeSpan.Zero, actual.Offset);
+                Assert.False(reader.HasData);
+                Assert.Equal(expected, AsnDecoder.ReadGeneralizedTime(inputData, ruleSet, out int bytesConsumed));
+                Assert.Equal(inputData.Length, bytesConsumed);
+
+                writer.Reset();
+                writer.WriteGeneralizedTime(actual);
+                Assert.Equal(inputData, writer.Encode());
+            }
         }
 
         [Fact]
@@ -337,14 +407,21 @@ namespace System.Formats.Asn1.Tests.Reader
                 static (ref reader) => reader.ReadGeneralizedTime());
         }
 
-        [Fact]
-        public void ExcessivelyPreciseNonFraction()
+        [Theory]
+        [InlineData(AsnEncodingRules.BER, "2017092118.012345678901234567890123Q56789Z")]
+        [InlineData(AsnEncodingRules.BER, "20170921180044.000000000000000000000000000000QZ")]
+        [InlineData(AsnEncodingRules.CER, "20170921180044.000000000000000000000000000000QZ")]
+        [InlineData(AsnEncodingRules.DER, "20170921180044.000000000000000000000000000000QZ")]
+        public void ExcessivelyPreciseNonFraction(AsnEncodingRules ruleSet, string dateAscii)
         {
-            byte[] inputData = "\u0018\u002A2017092118.012345678901234567890123Q56789Z"u8.ToArray();
-            AsnReaderWrapper berReader = CreateWrapper(inputData, AsnEncodingRules.BER);
+            byte[] inputData = new byte[dateAscii.Length + 2];
+            inputData[0] = 0x18;
+            inputData[1] = (byte)dateAscii.Length;
+            Text.Encoding.ASCII.GetBytes(dateAscii, 0, dateAscii.Length, inputData, 2);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                ref berReader,
+                ref reader,
                 static (ref reader) => reader.ReadGeneralizedTime());
         }
 
