@@ -2133,6 +2133,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_DISABLE_OPTS_RESULT:
     case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
     case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_2_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2346,6 +2347,12 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_SET_NGEN_COMPILER_FLAGS:
         cbAdditionalSize = sizeof(pEvent->JitDebugInfo);
+        break;
+
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_1:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_2:
+        cbAdditionalSize = sizeof(pEvent->MetadataUpdateRequest);
         break;
 
     case DB_IPCE_IS_TRANSITION_STUB:
