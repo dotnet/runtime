@@ -6,7 +6,7 @@
 // calls out to it to obtain the composite R2R webcil image and the per-assembly stubs.
 //
 // The in-tree WASI R2R composer populates the image when publishing. The host must be linked with the
-// flags that supply a composite's imports -- see WasiEnableCompositeR2R in WasiApp.CoreCLR.targets.
+// flags that supply a composite's imports (see WasiApp.CoreCLR.targets).
 // Without them this probe compiles but can never be satisfied.
 //
 // Requires corerun.hpp to be included first (for pal::try_map_file_readonly). Include exactly once per

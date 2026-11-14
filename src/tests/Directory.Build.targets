@@ -295,6 +295,15 @@
        native code need a corerun with that code linked in. -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
           Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'" />
+
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134949 WASI ReadyToRun tests run
+       with an interpreted CoreLib currently so they can only use the runtime's baseline instruction sets. -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
+    <PublishReadyToRunInstructionSet Condition="'$(PublishReadyToRunInstructionSet)' == ''">-relaxed-simd</PublishReadyToRunInstructionSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PublishReadyToRunInstructionSet)' != ''">
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:$(PublishReadyToRunInstructionSet)</CrossGen2TestExtraArguments>
+  </PropertyGroup>
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
           Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"

@@ -81,7 +81,6 @@
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
     <!-- Run wasm-opt over the composed module. Off by default so codegen problems surface in crossgen2's
          output instead of being optimized away. -->
     <WasiR2ROptimizeComposite Condition="'$(WasiR2ROptimizeComposite)' == ''">false</WasiR2ROptimizeComposite>
@@ -96,8 +95,6 @@
            Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR wasi-wasm; only 'wasm' is supported." />
     <Error Condition="'$(WasmSingleFileBundle)' == 'true'"
            Text="CoreCLR ReadyToRun publishing for wasi-wasm does not support WasmSingleFileBundle." />
-    <Error Condition="'$(WasiEnableCompositeR2R)' != 'true'"
-           Text="CoreCLR ReadyToRun publishing for wasi-wasm requires WasiEnableCompositeR2R=true." />
   </Target>
 
   <Target Name="_WasiCoreCLRSetRuntimePaths"
@@ -438,10 +435,6 @@
     <PropertyGroup>
       <_WasiRelinkOutput>$(_WasiRelinkObjDir)corerun</_WasiRelinkOutput>
       <_WasiPublishedHost>$(WasmAppDir)managed\corerun</_WasiPublishedHost>
-      <!-- Opt-in: link the app host so a composite ReadyToRun image can be spliced into it afterwards
-           (see docs/workflow/building/coreclr/wasi-r2r.md). Off by default because the table reservation below is a fixed
-           cost paid by every app whether or not it is ever spliced. -->
-      <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">false</WasiEnableCompositeR2R>
       <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
            installs at instantiation - so the table must already be large enough. Reserve by the
            element segment's slot count, independently of how many function definitions those slots reference. -->
@@ -459,10 +452,10 @@
       <!-- The remaining imports a composed composite needs from its host. The per-app host carries the
            probe (wasi_r2r_probe.hpp, via libWasiHost.a), so without them the probe is present but can
            never be satisfied and the app silently interprets everything. -->
-      <_WasiRelinkLinkFlags Include="-Wl,--table-base=$(WasiCompositeR2RTableBase)" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
-      <_WasiRelinkLinkFlags Include="-Wl,--export-table" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
-      <_WasiRelinkLinkFlags Include="-Wl,--export=__stack_pointer" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
-      <_WasiRelinkLinkFlags Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" Condition="'$(WasiEnableCompositeR2R)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--table-base=$(WasiCompositeR2RTableBase)" Condition="'$(PublishReadyToRun)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export-table" Condition="'$(PublishReadyToRun)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__stack_pointer" Condition="'$(PublishReadyToRun)' == 'true'" />
+      <_WasiRelinkLinkFlags Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" Condition="'$(PublishReadyToRun)' == 'true'" />
       <_WasiRelinkLinkFlags Include="-fwasm-exceptions" />
       <_WasiRelinkLinkFlags Include="-mllvm" />
       <_WasiRelinkLinkFlags Include="-wasm-use-legacy-eh=false" />
