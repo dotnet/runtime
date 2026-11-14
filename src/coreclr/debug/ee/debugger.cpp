@@ -7170,7 +7170,7 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
 
     _ASSERTE(SUCCEEDED(hr) && "D::SE: Send ExceptionCallback2 event failed.");
 
-    if (SUCCEEDED(hr))
+    if (SUCCEEDED(hr) && CORDebuggerAttached())
     {
         // Stop all Runtime threads
         TrapAllRuntimeThreads();
@@ -7314,7 +7314,7 @@ void Debugger::SendExceptionEventsWorker(
 
             _ASSERTE(SUCCEEDED(hr) && "D::SE: Send ExceptionCallback2 (User) event failed.");
 
-            if (SUCCEEDED(hr))
+            if (SUCCEEDED(hr) && CORDebuggerAttached())
             {
                 // Stop all Runtime threads
                 TrapAllRuntimeThreads();
