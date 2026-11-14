@@ -102,7 +102,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
             if (ipv6 && PlatformDetection.IsApplePlatform)
@@ -115,12 +114,12 @@ namespace System.Net.Sockets.Tests
                 return;
             }
 
-            (Socket sender, Socket receiver) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            (Socket sender, Socket receiver) = await SocketTestExtensions.CreateConnectedSocketPairAsync(ipv6);
             using (sender)
             using (receiver)
             {
                 byte[] sendBuffer = { 1, 2, 3 };
-                sender.Send(sendBuffer);
+                await sender.SendAsync(sendBuffer, SocketFlags.None);
 
                 byte[] receiveBuffer = new byte[3];
                 var r = await ReceiveFromAsync(receiver, receiveBuffer, sender.LocalEndPoint);
@@ -510,7 +509,6 @@ namespace System.Net.Sockets.Tests
         public ReceiveFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_Apm : ReceiveFrom<SocketHelperApm>
     {
         public ReceiveFrom_Apm(ITestOutputHelper output) : base(output) { }

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <!-- TODO remove with https://github.com/dotnet/runtime/pull/107185 -->
+    <!-- System.Configuration.ConfigurationManager, used throughout, is unsupported on WASI. -->
     <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>

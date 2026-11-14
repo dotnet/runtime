@@ -63,7 +63,7 @@ namespace System.Net.Sockets.Tests
         {
             if (!OperatingSystem.IsWasi()) yield return new[] { "Sync" };
             yield return new[] { "Task" };
-            if (!OperatingSystem.IsWasi()) yield return new[] { "Apm" };
+            yield return new[] { "Apm" };
             yield return new[] { "Eap" };
         }
 
