@@ -505,7 +505,8 @@ namespace System.Reflection.Emit
                 typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = m_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
+                PackingSize packing = size % 8 == 0 ? PackingSize.Size8 : PackingSize.Size4;
+                valueClassType = m_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), packing, size);
                 valueClassType.CreateType();
             }
 

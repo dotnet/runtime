@@ -62,7 +62,9 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(fields[i].MetadataToken, field.MetadataToken);
                 Assert.True((field.Attributes & FieldAttributes.HasFieldRVA) != 0);
                 Assert.Equal(addresses[i], (IntPtr)createdType.GetMethod($"GetAddress{i}").Invoke(null, null));
-                Assert.Equal(0L, addresses[i].ToInt64() % (sizes[i] % 8 == 0 ? 8 : 4));
+                int expectedAlignment = sizes[i] % 8 == 0 ? 8 : 4;
+                Assert.Equal(0L, addresses[i].ToInt64() % expectedAlignment);
+                Assert.Equal(expectedAlignment, field.FieldType.StructLayoutAttribute.Pack);
                 Assert.Equal(expected[i], Helpers.GetFieldValueBytes(field, sizes[i]));
 
                 byte[] initialized = new byte[sizes[i]];
@@ -179,6 +181,12 @@ namespace System.Reflection.Emit.Tests
 
             var checkType = checkTypeBuilder.CreateType();
 
+            CheckFieldAlignment(field1Byte.Name, PlatformDetection.IsMonoRuntime ? 1 : 4);
+            CheckFieldAlignment(field4Byte_1.Name, 4);
+            CheckFieldAlignment(field8Byte_1.Name, 8);
+            CheckFieldAlignment(field4Byte_2.Name, 4);
+            CheckFieldAlignment(field8Byte_2.Name, 8);
+
             CheckMethod("LoadAddress4_1", 4, field4Byte_1_data);
             CheckMethod("LoadAddress4_2", 4, field4Byte_2_data);
             CheckMethod("LoadAddress8_1", 8, field8Byte_1_data);
@@ -190,6 +198,14 @@ namespace System.Reflection.Emit.Tests
                 var methodIL = loadAddressMethod.GetILGenerator();
                 methodIL.Emit(OpCodes.Ldsflda, fieldBuilder);
                 methodIL.Emit(OpCodes.Ret);
+            }
+
+            void CheckFieldAlignment(string fieldName, int expectedAlignment)
+            {
+                var field = module.GetField(fieldName);
+                var layout = field.FieldType.StructLayoutAttribute;
+                Assert.NotNull(layout);
+                Assert.Equal(expectedAlignment, layout.Pack);
             }
 
             void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
