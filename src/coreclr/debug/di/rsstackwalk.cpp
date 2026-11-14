@@ -608,7 +608,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                               FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(frameData.fp)),
                                                               pNativeCode,
                                                               (SIZE_T)pJITFuncData->nativeOffset,
-                                                              (TADDR)frameData.v.taAmbientESP,
+                                                              frameData.v.taAmbientESP,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
                                                               contextBuffer);

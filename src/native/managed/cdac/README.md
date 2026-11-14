@@ -52,6 +52,21 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `mscordaccore_enummemory` | Dump enumerator entrypoint; produces `mscordaccore` |
 | `tests` | Unit tests with mock memory infrastructure |
 
+## Cross-bitness
+
+The dump enumerator retains all target context implementations by default.
+Builds intended exclusively for same-architecture inspection can set
+`TargetHostPlatformOnly=true` to trim the other implementations.
+
+Existing SOS interfaces with native-sized outputs retain their COM layouts.
+When a target value cannot fit in a caller-sized output, the API returns an
+overflow HRESULT instead of silently truncating it. A 64-bit diagnostic host
+is needed to retrieve those larger values through these interfaces.
+
+The Windows `OutOfProcessFunctionTableCallback` exports support only
+same-architecture x64 or Arm64 targets. For other targets, use
+`IXCLRDataProcess3.GetFunctionTable`.
+
 ## Contract specifications
 
 Each contract has a specification document in
@@ -78,9 +93,14 @@ use Test Explorer to run and debug tests.
 
 ### Running unit tests from the command line
 
-Use the `dotnet.sh` (or `dotnet.cmd`) script in the repo root:
+Use the `dotnet.sh` (or `dotnet.cmd`) script in the repo root. Build the test
+project first, the `Test` target does not build the test assembly:
 
 ```bash
+./dotnet.sh build \
+  src/native/managed/cdac/tests/UnitTests/Microsoft.Diagnostics.DataContractReader.Tests.csproj \
+  -c Debug -p:RuntimeConfiguration=Debug -p:LibrariesConfiguration=Release
+
 ./dotnet.sh build /t:Test \
   src/native/managed/cdac/tests/UnitTests/Microsoft.Diagnostics.DataContractReader.Tests.csproj \
   -c Debug -p:RuntimeConfiguration=Debug -p:LibrariesConfiguration=Release
@@ -90,6 +110,9 @@ Use the `dotnet.sh` (or `dotnet.cmd`) script in the repo root:
 > `-p:RuntimeConfiguration=Debug` and `-p:LibrariesConfiguration=Release` so the test
 > project resolves the correct shared framework. If everything is Debug, then just
 > `-c Debug` is sufficient.
+
+To test 32-bit native-sized outputs, such as SOS `nuint` fields, install an x86
+runtime under `.dotnet/x86` and pass `/p:TestArchitectures=x86`.
 
 ## End-to-end testing with WinDbg
 

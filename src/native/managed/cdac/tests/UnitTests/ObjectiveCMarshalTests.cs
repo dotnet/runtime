@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -243,5 +244,26 @@ public class ObjectiveCMarshalTests
 
         Assert.Equal(expectedTaggedMemory, result.Value);
         Assert.Equal(2ul * (ulong)helpers.PointerSize, size.Value);
+    }
+
+    [Theory]
+    [InlineData(0ul)]
+    [InlineData((ulong)uint.MaxValue)]
+    [InlineData((ulong)uint.MaxValue + 1)]
+    public unsafe void SOSGetTaggedMemory_SizeDoesNotTruncate(ulong value)
+    {
+        var objc = new Mock<IObjectiveCMarshal>();
+        TargetNUInt size = new(value);
+        objc.Setup(o => o.GetTaggedMemory(It.IsAny<TargetPointer>(), out size)).Returns(new TargetPointer(0x2000));
+        Target target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true }).AddMockContract(objc).Build();
+        ISOSDacInterface11 sos = new SOSDacImpl(target, legacyObj: null, new());
+        ClrDataAddress address = new(ulong.MaxValue);
+        nuint actualSize = nuint.MaxValue;
+        bool fits = value <= nuint.MaxValue;
+
+        Assert.Equal(fits ? System.HResults.S_OK : new OverflowException().HResult,
+            sos.GetTaggedMemory(new ClrDataAddress(0x1000), &address, &actualSize));
+        Assert.Equal(fits ? 0x2000ul : 0, address.Value);
+        Assert.Equal(fits ? value : 0, (ulong)actualSize);
     }
 }

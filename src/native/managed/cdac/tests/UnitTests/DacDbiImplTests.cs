@@ -985,6 +985,34 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
+    [InlineData("x86", CorDebugRegister.REGISTER_X86_EAX, CorDebugRegister.REGISTER_X86_ECX)]
+    [InlineData("x64", CorDebugRegister.REGISTER_AMD64_RAX, CorDebugRegister.REGISTER_AMD64_RCX)]
+    [InlineData("arm64", CorDebugRegister.REGISTER_ARM64_X0, CorDebugRegister.REGISTER_ARM64_X1)]
+    public void RegisterTransport_UsesTargetWidth(string architecture, CorDebugRegister first, CorDebugRegister second)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = architecture != "x86" };
+        Target target = RuntimeInfoTests.CreateTarget(arch, [(Constants.Globals.Architecture, architecture)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        byte[] bytes = context.GetBytes().ToArray();
+        CorDebugRegister* registers = stackalloc CorDebugRegister[] { first, second };
+        ulong* values = stackalloc ulong[] { 0x1234_5678_8765_4321, 0xabcd_ef01_fedc_ba98 };
+        ulong* actual = stackalloc ulong[3];
+        actual[2] = ulong.MaxValue;
+
+        fixed (byte* buffer = bytes)
+        {
+            ContextBuffer contextBuffer = new() { pContextBytes = buffer, contextSize = (uint)bytes.Length };
+            Assert.Equal(System.HResults.S_OK, dacDbi.WriteRegistersToContext(contextBuffer, registers, 2, values));
+            Assert.Equal(System.HResults.S_OK, dacDbi.ReadRegistersFromContext(contextBuffer, registers, 2, actual));
+        }
+
+        Assert.Equal(arch.Is64Bit ? values[0] : (uint)values[0], actual[0]);
+        Assert.Equal(arch.Is64Bit ? values[1] : (uint)values[1], actual[1]);
+        Assert.Equal(ulong.MaxValue, actual[2]);
+    }
+
+    [Theory]
     [InlineData("x86", 0xccu)]
     [InlineData("x64", 0x4d0u)]
     public void GetTargetContextSize_OptionalExtendedRegisters(string targetArch, uint expectedBaseSize)

@@ -581,6 +581,23 @@ public unsafe class LoaderTests
     }
 
     [Theory]
+    [InlineData(0ul)]
+    [InlineData((ulong)uint.MaxValue)]
+    [InlineData((ulong)uint.MaxValue + 1)]
+    public void SOSTraverseLoaderHeap_SizeDoesNotTruncate(ulong value)
+    {
+        var loader = new Mock<ILoader>();
+        loader.Setup(l => l.EnumerateLoaderHeapBlocks(It.IsAny<TargetPointer>()))
+            .Returns([new LoaderHeapBlock(new TargetPointer(0x2000), new TargetNUInt(value))]);
+        Target target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract(loader).Build();
+        ISOSDacInterface sos = new SOSDacImpl(target, legacyObj: null, new());
+
+        Assert.Equal(value <= nuint.MaxValue ? System.HResults.S_OK : new OverflowException().HResult,
+            sos.TraverseLoaderHeap(new ClrDataAddress(0x1000), &VisitHeapNoOp));
+    }
+
+    [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetLoaderAllocatorHeapNames_GetCount(MockTarget.Architecture arch)
     {

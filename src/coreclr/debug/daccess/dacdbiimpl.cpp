@@ -6115,7 +6115,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteRegistersToContext(
     IN ContextBuffer contextBuffer,
     IN const CorDebugRegister * regs,
     IN ULONG32 nRegs,
-    IN const TADDR * values)
+    IN const CORDB_REGISTER * values)
 {
     DD_ENTER_MAY_THROW;
 

@@ -6414,7 +6414,7 @@ public:
     virtual const ContextBuffer GetContext() const { return ContextBuffer{}; }
 
     // Reads an integer register from this frame's CONTEXT buffer via the DAC.
-    HRESULT ReadContextRegister(CorDebugRegister reg, TADDR * pValue) const;
+    HRESULT ReadContextRegister(CorDebugRegister reg, CORDB_REGISTER * pValue) const;
 
     // Reads a floating-point / SIMD register's scalar value (as a double bit
     // pattern) from this frame's CONTEXT buffer via the DAC.
@@ -6785,7 +6785,7 @@ public:
                      FramePointer         fp,
                      CordbNativeCode *    pNativeCode,
                      SIZE_T               ip,
-                     TADDR                addrAmbientESP,
+                     CORDB_ADDRESS        addrAmbientESP,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
                      ContextBuffer        contextBuffer = {});
@@ -6904,7 +6904,7 @@ public:
     // Given the native variable information of a variable, return its value.
     // This function assumes that the value is either in a register or on the stack
     // (i.e. VLT_REG or VLT_STK).
-    SIZE_T  GetRegisterOrStackValue(const ICorDebugInfo::NativeVarInfo * pNativeVarInfo);
+    CORDB_REGISTER GetRegisterOrStackValue(const ICorDebugInfo::NativeVarInfo * pNativeVarInfo);
 
     HRESULT GetLocalRegisterValue(CorDebugRegister reg,
                                      CordbType * pType,
@@ -6945,7 +6945,7 @@ public:
                                             CordbType * pType,
                                             ICorDebugValue **ppValue);
 
-    HRESULT ReadJitRegFromContext(ULONG32 jitRegNum, TADDR * pValue) const;
+    HRESULT ReadJitRegFromContext(ULONG32 jitRegNum, CORDB_REGISTER * pValue) const;
 
     CorDebugRegister ConvertJitRegToCorDebugRegister(ULONG32 jitRegNum) const;
 
@@ -6969,7 +6969,7 @@ public:
     // return the offset of the parent method frame at which an exception occurs
     SIZE_T    GetParentIP();
 
-    TADDR GetAmbientESP() { return m_taAmbientESP; }
+    CORDB_ADDRESS GetAmbientESP() { return m_taAmbientESP; }
 
     // accessor for the shim private hook code:CordbThread::ConvertFrameForILMethodWithoutMetadata
     BOOL ConvertNativeFrameForILMethodWithoutMetadata(ICorDebugInternalFrame2 ** ppInternalFrame2);
@@ -6989,7 +6989,7 @@ public:
 private:
     // the ambient SP value only used on x86 to retrieve sp-relative local variables
     // (most likely in a frameless method)
-    TADDR    m_taAmbientESP;
+    CORDB_ADDRESS m_taAmbientESP;
     NewArrayHolder<BYTE> m_pContextBuffer;
 };
 
@@ -7588,8 +7588,6 @@ public:
     CorDebugIntercept m_rgfInterceptStop;
 };
 
-#define REG_SIZE sizeof(SIZE_T)
-
 // class RegisterInfo: encapsulates information necessary to identify and access a specific register in a
 // register display
 class RegisterInfo
@@ -7599,8 +7597,9 @@ public:
     // Arguments:
     //     input:  kNumber - value from CorDebugRegister to identify the register
     //             addr    - address in remote register display that holds the value
+    //             value   - target register value in fixed-width transport
     //     output: no out parameters, but this instance of RegisterInfo has been initialized
-    RegisterInfo(const CorDebugRegister kNumber, CORDB_ADDRESS addr, SIZE_T value):
+    RegisterInfo(const CorDebugRegister kNumber, CORDB_ADDRESS addr, CORDB_REGISTER value):
         m_kRegNumber((CorDebugRegister)kNumber),
         m_regAddr(addr),
         m_regValue(value)
@@ -7629,7 +7628,7 @@ public:
     CORDB_ADDRESS     m_regAddr;
 
     // the actual value of the register
-    SIZE_T            m_regValue;
+    CORDB_REGISTER    m_regValue;
 }; // class RegisterInfo
 
 // class EnregisteredValueHome: abstract class to encapsulate basic information for a register value, and
@@ -7700,6 +7699,8 @@ public:
     // data members
     //-------------------------------------
 protected:
+    ULONG32 GetRegisterSize() const;
+
     // The frame on which the value resides
     const CordbNativeFrame * m_pFrame;
 
@@ -7745,7 +7746,7 @@ public:
 
     void SetContextRegister(ContextBuffer    contextBuffer,
                             CorDebugRegister regNum,
-                            SIZE_T           newVal);
+                            CORDB_REGISTER   newVal);
 
     // set the value of a remote enregistered value
     virtual
@@ -7760,12 +7761,12 @@ public:
     void CopyToIPCEType(RemoteAddress * pRegAddr);
 
 protected:
-    static SIZE_T ReadFrameRegister(const CordbNativeFrame * pFrame, CorDebugRegister regNum)
+    static CORDB_REGISTER ReadFrameRegister(const CordbNativeFrame * pFrame, CorDebugRegister regNum)
     {
-        TADDR v = 0;
+        CORDB_REGISTER v = 0;
         HRESULT hr = pFrame->ReadContextRegister(regNum, &v);
         IfFailThrow(hr);
-        return (SIZE_T)v;
+        return v;
     }
 
     //-------------------------------------
@@ -8767,10 +8768,11 @@ class CordbGenericValue : public CordbValue, public ICorDebugGenericValue, publi
 public:
     CordbGenericValue(CordbAppDomain *              appdomain,
                       CordbType *                   type,
+                      ULONG32                       size,
                       TargetBuffer                  remoteValue,
                       EnregisteredValueHomeHolder * ppRemoteRegAddr);
 
-    CordbGenericValue(CordbType * pType);
+    CordbGenericValue(CordbType * pType, ULONG32 size);
     // destructor
     ~CordbGenericValue();
 
@@ -8899,8 +8901,9 @@ public:
                         MemoryRange                   localValue,
                         TargetBuffer                  remoteValue,
                         EnregisteredValueHomeHolder * ppRegAddr,
-                        VMPTR_OBJECTHANDLE            vmObjectHandle);
-    CordbReferenceValue(CordbType * pType);
+                        VMPTR_OBJECTHANDLE            vmObjectHandle,
+                        ULONG32                       pointerSize);
+    CordbReferenceValue(CordbType * pType, ULONG32 pointerSize);
     virtual ~CordbReferenceValue();
     virtual void Neuter();
 
@@ -8994,7 +8997,7 @@ public:
     // an array or string
     static
     void GetObjectData(CordbProcess *            pProcess,
-                       void *                    objectAddress,
+                       CORDB_ADDRESS             objectAddress,
                        CorElementType            type,
                        VMPTR_AppDomain           vmAppdomain,
                        DacDbiObjectData * pInfo);
@@ -9008,7 +9011,7 @@ public:
                            DacDbiObjectData * pInfo);
 
     //  get the address of the object referenced
-    void * GetObjectAddress(MemoryRange localValue);
+    CORDB_ADDRESS GetObjectAddress(MemoryRange localValue);
 
     // update type information after initializing -- when we initialize, we may get more exact type
     // information than we previously had
@@ -9715,7 +9718,8 @@ class CordbHandleValue : public CordbValue, public ICorDebugHandleValue, public 
 public:
     CordbHandleValue(CordbAppDomain *appdomain,
                      CordbType *type,
-                     CorDebugHandleType handleType);
+                     CorDebugHandleType handleType,
+                     ULONG32 pointerSize);
     HRESULT Init(VMPTR_OBJECTHANDLE pHandle);
 
     virtual ~CordbHandleValue();
