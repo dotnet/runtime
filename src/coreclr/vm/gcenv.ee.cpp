@@ -1729,6 +1729,7 @@ uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
     return 0;
 }
 
+#ifdef FEATURE_GCGENANALYSIS
 NormalizedTimer analysisTimer;
 
 bool GenAwareMatchingGeneration(int condemnedGeneration)
@@ -1756,15 +1757,18 @@ bool GenAwareMatchingCondition(size_t gcIndex, int condemnedGeneration, uint64_t
     }
     return true;
 }
+#endif // FEATURE_GCGENANALYSIS
 
 bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_GCGENANALYSIS
     if (GenAwareMatchingGeneration(condemnedGeneration) && gcGenAnalysisTime > 0)
     {
         analysisTimer.Start();
     }
+#endif // FEATURE_GCGENANALYSIS
 
     GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
     return GcNotifications::GetNotification(gea);
@@ -1774,12 +1778,14 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_GCGENANALYSIS
     uint64_t elapsed = 0;
     if (GenAwareMatchingGeneration(condemnedGeneration) && gcGenAnalysisTime > 0)
     {
         analysisTimer.Stop();
         elapsed = analysisTimer.Elapsed100nsTicks();
     }
+#endif // FEATURE_GCGENANALYSIS
 
     GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
     if (GcNotifications::GetNotification(gea))
@@ -1787,6 +1793,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         DACNotify::DoGCNotification(gea);
     }
 
+#ifdef FEATURE_GCGENANALYSIS
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS
@@ -1821,6 +1828,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             EnableFinalization(true);
         }
     }
+#endif // FEATURE_GCGENANALYSIS
 }
 
 void GCToEEInterface::VerifySyncTableEntry()
