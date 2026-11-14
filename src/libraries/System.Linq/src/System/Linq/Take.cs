@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -71,8 +72,13 @@ namespace System.Linq
                 return SpeedOptimizedTakeRangeIterator(source, startIndex, endIndex);
             }
 
-            return TakeRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
+            return TakeRangeFromEnd(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
         }
+
+        private static IEnumerable<TSource> TakeRangeFromEnd<TSource>(IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndex, bool isEndIndexFromEnd, int endIndex) =>
+            startIndex == 1 && isStartIndexFromEnd && endIndex == 0 && isEndIndexFromEnd ?
+                TakeLastOneIterator(source) :
+                TakeRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
 
         private static IEnumerable<TSource> TakeRangeFromEndIterator<TSource>(IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndex, bool isEndIndexFromEnd, int endIndex)
         {
@@ -194,6 +200,44 @@ namespace System.Linq
                 Math.Min(count, isEndIndexFromEnd ? count - endIndex : endIndex);
         }
 
+        private static IEnumerable<TSource> TakeLastOneIterator<TSource>(IEnumerable<TSource> source)
+        {
+            if (source.TryGetNonEnumeratedCount(out int count))
+            {
+                if (count > 0)
+                {
+                    foreach (TSource element in SpeedOptimizedTakeRangeIterator(source, count - 1, count))
+                    {
+                        yield return element;
+                    }
+                }
+            }
+            else if (TryGetLastWithCheckedCount(source, out TSource? result))
+            {
+                yield return result;
+            }
+        }
+
+        private static bool TryGetLastWithCheckedCount<TSource>(IEnumerable<TSource> source, [MaybeNullWhen(false)] out TSource result)
+        {
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
+            {
+                result = default;
+                return false;
+            }
+
+            result = e.Current;
+            int count = 1;
+            while (e.MoveNext())
+            {
+                result = e.Current;
+                checked { ++count; }
+            }
+
+            return true;
+        }
+
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
             if (source is null)
@@ -275,7 +319,7 @@ namespace System.Linq
 
             return count <= 0 || IsEmptyArray(source) ?
                 [] :
-                TakeRangeFromEndIterator(source,
+                TakeRangeFromEnd(source,
                     isStartIndexFromEnd: true, startIndex: count,
                     isEndIndexFromEnd: true, endIndex: 0);
         }
