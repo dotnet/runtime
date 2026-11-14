@@ -232,6 +232,7 @@
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
     <Compile Include="System\Diagnostics\Process.Multiplexing.Windows.cs" />
+    <Compile Include="System\Diagnostics\Process.Scenarios.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs"
@@ -251,6 +252,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Multiplexing.Unix.cs" />
+    <Compile Include="System\Diagnostics\Process.Scenarios.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
