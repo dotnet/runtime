@@ -324,6 +324,11 @@ namespace System.Reflection
         {
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
+            // A static abstract interface method has no implementation to call. Checked before the delegate signature, as on
+            // CoreCLR; a generic method definition is left to the checks that follow.
+            if (IsStatic && IsAbstract && !IsGenericMethodDefinition)
+                throw new MemberAccessException(SR.Acc_BindStaticAbstract);
+
             RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
