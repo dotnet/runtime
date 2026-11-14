@@ -34,11 +34,11 @@ namespace ILLink.Shared.TrimAnalysis
         /// <summary>
         /// Constructs an array value of the given size
         /// </summary>
-        ArrayValue(SingleValue size, TypeReference elementType)
+        ArrayValue(SingleValue size, TypeReference elementType, int capacity = 0)
         {
             Size = size;
             ElementType = elementType;
-            IndexValues = new Dictionary<int, ValueBasicBlockPair>();
+            IndexValues = new Dictionary<int, ValueBasicBlockPair>(capacity);
         }
 
         public TypeReference ElementType { get; }
@@ -84,7 +84,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         public override SingleValue DeepCopy()
         {
-            var newValue = new ArrayValue(Size.DeepCopy(), ElementType);
+            var newValue = new ArrayValue(Size.DeepCopy(), ElementType, IndexValues.Count);
             foreach (var kvp in IndexValues)
             {
 #if DEBUG

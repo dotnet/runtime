@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -11,6 +12,7 @@ namespace ILLink.RoslynAnalyzer
     internal readonly struct DataFlowAnalyzerContext
     {
         private readonly Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> _enabledAnalyzers;
+        private readonly AnalyzerCompilationState? _compilationState;
 
         public IEnumerable<RequiresAnalyzerBase> EnabledRequiresAnalyzers => _enabledAnalyzers.Keys;
 
@@ -22,6 +24,15 @@ namespace ILLink.RoslynAnalyzer
         }
 
         public Compilation Compilation { get; }
+
+        public AnalyzerCompilationState CompilationState
+        {
+            get
+            {
+                Debug.Assert(_compilationState is not null);
+                return _compilationState!;
+            }
+        }
 
         public readonly RequiresUnreferencedCodeAnalyzer? TrimAnalyzer { get; }
 
@@ -35,6 +46,7 @@ namespace ILLink.RoslynAnalyzer
             _enabledAnalyzers = enabledAnalyzers;
             TrimAnalyzer = trimAnalyzer;
             Compilation = compilation;
+            _compilationState = AnyAnalyzersEnabled ? new AnalyzerCompilationState() : null;
         }
 
         public static DataFlowAnalyzerContext Create(AnalyzerOptions options, Compilation compilation, ImmutableArray<RequiresAnalyzerBase> requiresAnalyzers)

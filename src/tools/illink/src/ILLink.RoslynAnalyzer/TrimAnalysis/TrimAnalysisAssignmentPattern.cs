@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
@@ -39,17 +38,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public TrimAnalysisAssignmentPattern Merge(
             ValueSetLattice<SingleValue> lattice,
             FeatureContextLattice featureContextLattice,
-            TrimAnalysisAssignmentPattern other)
+            MultiValue source,
+            MultiValue target,
+            FeatureContext featureContext)
         {
-            Debug.Assert(Operation == other.Operation);
-            Debug.Assert(SymbolEqualityComparer.Default.Equals(OwningSymbol, other.OwningSymbol));
-
-            return new TrimAnalysisAssignmentPattern(
-                lattice.Meet(Source, other.Source),
-                lattice.Meet(Target, other.Target),
-                Operation,
-                OwningSymbol,
-                featureContextLattice.Meet(FeatureContext, other.FeatureContext));
+            return new TrimAnalysisAssignmentPattern
+            {
+                Source = lattice.Meet(source, Source),
+                Target = lattice.Meet(target, Target),
+                Operation = Operation,
+                OwningSymbol = OwningSymbol,
+                FeatureContext = featureContextLattice.Meet(featureContext, FeatureContext)
+            };
         }
 
         public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)

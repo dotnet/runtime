@@ -34,6 +34,19 @@ namespace ILLink.Shared.DataFlow
             DefaultValue = other.DefaultValue;
         }
 
+        internal DefaultValueDictionary(DefaultValueDictionary<TKey, TValue> other, int capacity)
+        {
+            Dictionary = new Dictionary<TKey, TValue>(capacity);
+            if (other.Dictionary is not null)
+            {
+                foreach (KeyValuePair<TKey, TValue> item in other.Dictionary)
+                {
+                    Dictionary.Add(item.Key, item.Value);
+                }
+            }
+            DefaultValue = other.DefaultValue;
+        }
+
         public TValue Get(TKey key) => Dictionary?.TryGetValue(key, out var value) == true ? value : DefaultValue;
 
         public void Set(TKey key, TValue value)
@@ -71,12 +84,61 @@ namespace ILLink.Shared.DataFlow
 
         public int Count => Dictionary?.Count ?? 0;
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return Dictionary?.GetEnumerator() ?? Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator();
-        }
+        public Enumerator GetEnumerator() => Dictionary is null ? default : new(Dictionary);
+
+        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        {
+            private readonly bool _hasDictionary;
+            private Dictionary<TKey, TValue>.Enumerator _enumerator;
+
+            internal Enumerator(Dictionary<TKey, TValue> dictionary)
+            {
+                _hasDictionary = true;
+                _enumerator = dictionary.GetEnumerator();
+            }
+
+            public KeyValuePair<TKey, TValue> Current => _hasDictionary
+                ? _enumerator.Current
+                : Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator().Current;
+
+            object IEnumerator.Current => _hasDictionary
+                ? GetCurrent(ref _enumerator)
+                : ((IEnumerator)Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator()).Current;
+
+            public bool MoveNext()
+            {
+                if (!_hasDictionary)
+                {
+                    return false;
+                }
+
+                // Avoid exposing the containing struct's address on the empty path.
+                Dictionary<TKey, TValue>.Enumerator enumerator = _enumerator;
+                bool hasNext = enumerator.MoveNext();
+                _enumerator = enumerator;
+                return hasNext;
+            }
+
+            public void Dispose() => _enumerator.Dispose();
+
+            public void Reset()
+            {
+                if (_hasDictionary)
+                {
+                    ResetEnumerator(ref _enumerator);
+                }
+            }
+
+            private static object GetCurrent<TEnumerator>(ref TEnumerator enumerator)
+                where TEnumerator : struct, IEnumerator => enumerator.Current;
+
+            private static void ResetEnumerator<TEnumerator>(ref TEnumerator enumerator)
+                where TEnumerator : struct, IEnumerator => enumerator.Reset();
+        }
 
         public override string ToString()
         {
@@ -98,7 +160,7 @@ namespace ILLink.Shared.DataFlow
             if (Dictionary == null)
                 return new DefaultValueDictionary<TKey, TValue>(defaultValue);
 
-            var dict = new Dictionary<TKey, TValue>();
+            var dict = new Dictionary<TKey, TValue>(Dictionary.Count);
             foreach (var kvp in Dictionary)
             {
                 var key = kvp.Key;

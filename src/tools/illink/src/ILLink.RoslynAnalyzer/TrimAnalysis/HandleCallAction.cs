@@ -36,13 +36,14 @@ namespace ILLink.Shared.TrimAnalysis
             ISymbol owningSymbol,
             IOperation operation,
             ValueSetLattice<SingleValue> multiValueLattice,
+            FlowAnnotations annotations,
             Action<Diagnostic>? reportDiagnostic)
         {
             _owningSymbol = owningSymbol;
             _operation = operation;
             _isNewObj = operation.Kind == OperationKind.ObjectCreation;
             _diagnosticContext = new DiagnosticContext(location, reportDiagnostic, typeNameResolver.Compilation);
-            _annotations = FlowAnnotations.Instance;
+            _annotations = annotations;
             _reflectionAccessAnalyzer = new(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
             _typeNameResolver = typeNameResolver;
             _requireDynamicallyAccessedMembersAction = new(trimAnalyzer, featureContext, typeNameResolver, location, reportDiagnostic, _reflectionAccessAnalyzer, _owningSymbol);
@@ -123,7 +124,7 @@ namespace ILLink.Shared.TrimAnalysis
                         break;
                     }
 
-                    foreach (var valueNode in instanceValue.AsEnumerable())
+                    foreach (SingleValue valueNode in instanceValue.AsEnumerable())
                     {
                         // Note that valueNode can be statically typed as some generic argument type.
                         // For example:
@@ -155,12 +156,12 @@ namespace ILLink.Shared.TrimAnalysis
 
                             if (annotation != default)
                             {
-                                AddReturnValue(FlowAnnotations.Instance.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
+                                AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
                             }
                             else
                             {
                                 // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(FlowAnnotations.Instance.GetMethodReturnValue(calledMethod, _isNewObj));
+                                AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, _isNewObj));
                             }
                         }
                         else if (staticType.IsSealed || staticType.IsTypeOf("System", "Delegate") || staticType.TypeKind == TypeKind.Array)
@@ -184,14 +185,15 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                         else if (staticType.IsTypeOf("System", "Enum"))
                         {
-                            AddReturnValue(FlowAnnotations.Instance.GetMethodReturnValue(calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
+                            AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
                         }
                         else
                         {
                             var annotation = FlowAnnotations.GetTypeAnnotation(staticType);
-                            AddReturnValue(FlowAnnotations.Instance.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
+                            AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
                         }
                     }
+
                     break;
                 }
 

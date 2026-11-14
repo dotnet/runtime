@@ -52,6 +52,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public void TrackMethod(MethodBodyValue method)
         {
             Debug.Assert(!Methods.IsUnknown());
+            if (Methods.Contains(method))
+            {
+                return;
+            }
+
             var methodsList = new List<MethodBodyValue>(Methods.GetKnownValues());
             methodsList.Add(method);
             Methods = new ValueSet<MethodBodyValue>(methodsList);

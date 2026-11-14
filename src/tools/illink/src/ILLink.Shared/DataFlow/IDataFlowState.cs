@@ -22,5 +22,9 @@ namespace ILLink.Shared.DataFlow
         TValue Current { get; set; }
         Box<TValue>? Exception { get; set; }
         TValueLattice Lattice { get; init; }
+
+        // The final output may consume Current's owned storage. The solver assigns a fresh,
+        // independently met Current before the next transfer; earlier outputs must be isolated.
+        TValue CreateBranchOutput(bool canTransferOwnership);
     }
 }
