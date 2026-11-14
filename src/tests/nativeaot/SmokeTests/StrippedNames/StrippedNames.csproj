@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- The test exercises reflection on purpose -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL3050</NoWarn>
+
+    <!-- Multimodule builds don't support stripping names -->
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="StrippedNames.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="StrippedNamesLibrary.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <IlcStripNamesAssembly Include="StrippedNamesLibrary" />
+  </ItemGroup>
+</Project>
