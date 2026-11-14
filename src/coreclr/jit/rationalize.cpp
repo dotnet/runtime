@@ -1977,6 +1977,7 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
         op2 = tmp;
 
         tmp = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, NI_AdvSimd_AddWideningLower, simdBaseType, 8);
+        tmp->AsHWIntrinsic()->SetAuxiliaryType(TYP_USHORT);
         BlockRange().InsertAfter(op2, tmp);
         op1 = tmp;
 
