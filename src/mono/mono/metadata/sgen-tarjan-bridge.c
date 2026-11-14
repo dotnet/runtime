@@ -628,8 +628,8 @@ push_object (GCObject *obj)
 		return;
 	}
 
-	/* We only care about dead objects */
-	if (!data && sgen_object_is_live (obj)) {
+	/* Promoted bridge candidates are registered before this pass; skip other old-gen objects during minors. */
+	if (!data && sgen_is_object_alive_for_current_gen (obj)) {
 #if DUMP_GRAPH
 		printf ("alive\n");
 #endif
