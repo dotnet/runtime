@@ -164,6 +164,7 @@ extends:
         parameters:
           platforms:
           - wasi_wasm
+          - wasi_wasm_win
           publishArtifactsForWorkload: true
           condition: >-
             or(
@@ -171,6 +172,7 @@ extends:
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_callhelpers.containsChange'], true),
+              eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true),
               eq(variables['isRollingBuild'], true))
 
       # CoreCLR src/tests subset run on wasmtime via Helix
@@ -1189,44 +1191,6 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      # Build Mono AOT offset headers once, for validation
-      # Only when mono changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - browser_wasm
-          - wasi_wasm
-          variables:
-            - name: _osParameter
-              value: -os linux
-            - name: _archParameter
-              value: -arch x64
-          jobParameters:
-            nameSuffix: MonoAOTOffsets
-            buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup) /p:ValidateMonoOffsets=true
-            postBuildSteps:
-              # Upload offset files
-              - task: CopyFiles@2
-                displayName: Collect offset files
-                condition: failed()
-                inputs:
-                  sourceFolder: '$(Build.SourcesDirectory)/src/mono/mono/offsets'
-                  contents: '*.h.new'
-                  targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
-
-              - publish: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-                condition: failed()
-                artifact: MonoAOTOffsets_$(osGroup)$(osSubGroup)
-                displayName: Upload offset files
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
       # WebAssembly CoreCLR
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
         parameters:
@@ -1265,18 +1229,6 @@ extends:
           scenarios:
             - WasmTestOnFirefox
             - WasmTestOnV8
-
-      # WASI/WASM
-
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
-          publishArtifactsForWorkload: false
-          publishWBT: false
 
       #
       # Android arm/arm64 devices and x64 emulators
@@ -1505,34 +1457,6 @@ extends:
                     eq(variables['librariesContainsChange'], true),
                     eq(variables['coreclrContainsChange'], true),
                     eq(variables['isRollingBuild'], true))
-
-      #
-      # Build Mono release AOT cross-compilers for WebAssembly
-      # Only when mono changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - linux_x64
-          - linux_musl_x64
-          - linux_arm64
-          - linux_musl_arm64
-          - windows_arm64
-          - windows_x64
-          - osx_x64
-          - osx_arm64
-          jobParameters:
-            buildArgs: -c $(_BuildConfig) /p:DotNetBuildMonoCrossAOT=true /p:MonoCrossAOTTargetOS=browser+wasi
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # Build and test libraries for .NET Framework

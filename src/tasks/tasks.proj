@@ -2,11 +2,11 @@
 
   <ItemGroup>
     <ProjectReference Include="**\*.csproj" />
+    <ProjectReference Remove="AotCompilerTask\MonoAOTCompiler.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <ProjectReference Remove="AndroidAppBuilder\AndroidAppBuilder.csproj" />
-    <ProjectReference Remove="AotCompilerTask\MonoAOTCompiler.csproj" />
     <ProjectReference Remove="AppleAppBuilder\AppleAppBuilder.csproj" />
     <ProjectReference Remove="LibraryBuilder\LibraryBuilder.csproj" />
     <ProjectReference Remove="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />

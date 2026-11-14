@@ -12,15 +12,12 @@
 
       - A job can specify EnableDefaultRidSpecificArtifacts=false as a global property to publish all packages it produces.
         We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
-      - Mono AOT LLVM builds only publish LLVM-specific packages always.
 
       The VMR orchestrator will set EnableDefaultRidSpecificArtifacts=true as a global property based on its configuration.
 
       Packages that do not meet the above rules are added with Vertical visibility in the VMR and excluded in non-VMR builds.
     -->
-    <EnableDefaultArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableDefaultArtifacts>
     <EnableBlobArtifacts>true</EnableBlobArtifacts>
-    <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
 
     <!-- The final stage of the runtime official build should publish everything. -->
     <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildFromVMR)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
@@ -107,37 +104,21 @@
     - A job can specify EnableDefaultArtifacts=true as a global property to publish all packages it produces.
       We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
     - For some target RIDs, we also include specific RID-agnostic packages.
-    - For LLVM builds, we only publish LLVM-specific packages.
   -->
   <Choose>
-    <When Condition="'$(MonoAOTEnableLLVM)' == 'true'">
-      <ItemGroup>
-        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(TargetRid).*.nupkg" />
-        <Artifact Include="@(PackageArtifacts)"
-                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
-                  Kind="Package" />
-      </ItemGroup>
-    </When>
     <When Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
       <ItemGroup Condition="'$(TargetRid)' == 'ios-arm64'">
         <PackageArtifacts
-          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.iOS.Sample.Mono.*.nupkg;
-                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
-                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoAOTCompiler.Task.*.nupkg;
+          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoTargets.Sdk.*.nupkg" />
-      </ItemGroup>
-      <ItemGroup Condition="'$(TargetRid)' == 'android-arm64'">
-        <PackageArtifacts
-          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.Android.Sample.Mono.*.nupkg" />
       </ItemGroup>
       <ItemGroup Condition="'$(TargetRid)' == 'wasi-wasm'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">
+      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
         <PackageArtifacts
-          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
-                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;
+          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Templates.net*.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
