@@ -79,6 +79,46 @@ namespace StrippedNamesLibrary
     [Marker(Label = "label", Number = 42)]
     public class Marked { }
 
+    public abstract class BaseMarkerAttribute : Attribute
+    {
+        public virtual string Value { get; set; }
+    }
+
+    public class DerivedMarkerAttribute : BaseMarkerAttribute
+    {
+        public override string Value { get; set; }
+    }
+
+    [DerivedMarker(Value = "overridden")]
+    public class MarkedWithOverride { }
+
+    public static class GenericHelpers
+    {
+        public static string Describe<T>(T value) => "helper:" + (typeof(T).IsValueType ? "value" : "ref");
+    }
+
+    public interface ICaller
+    {
+        string Call();
+    }
+
+    public class GenericCaller<T> : ICaller
+    {
+        public string Call() => GenericHelpers.Describe<T>(default);
+    }
+
+    public struct Point { public int X; }
+
+    public interface IMaker
+    {
+        static abstract string Make<T>();
+    }
+
+    public struct Maker : IMaker
+    {
+        public static string Make<T>() => "made";
+    }
+
     public class UniqueStrippedTypeNameMarker
     {
         [MethodImpl(MethodImplOptions.NoInlining)]

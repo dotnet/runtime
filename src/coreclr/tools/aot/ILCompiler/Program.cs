@@ -424,6 +424,9 @@ namespace ILCompiler
             };
 
             var nameStrippingPolicy = new MetadataNameStrippingPolicy(Get(_command.StrippedNamesAssemblies));
+            if (multiFile && Get(_command.StrippedNamesAssemblies).Length > 0)
+                throw new CommandLineException("Stripping names is not supported in multi-file compilation");
+
             foreach (string strippedNamesAssembly in Get(_command.StrippedNamesAssemblies))
             {
                 // The reflection stack in the system module relies on the names of its own types and members.

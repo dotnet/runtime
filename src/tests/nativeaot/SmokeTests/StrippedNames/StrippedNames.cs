@@ -192,6 +192,11 @@ internal static class Program
             Assert(Array.IndexOf(types, typeof(Derived)) >= 0);
             Assert(Array.IndexOf(types, typeof(Widget.Nested)) >= 0);
 
+            // Generic definitions reached through the metadata unify with the ones from the type handles
+            Type holder = types.Single(t => t.IsGenericTypeDefinition && t == typeof(GenericHolder<>));
+            Assert(holder == typeof(GenericHolder<>));
+            Assert(holder.MakeGenericType(typeof(int)) == typeof(GenericHolder<int>));
+
             Type marked = types.Single(t => t.IsDefined(typeof(MarkerAttribute)));
             Assert(marked == Keep(typeof(Marked)));
             Assert(Activator.CreateInstance(marked).GetType() == marked);
@@ -223,7 +228,24 @@ internal static class Program
             IConverter<int> converter = new IntConverter();
             Assert(converter.Convert<int>(1) == 2);
             Assert(converter.Convert<object>(1).Equals(2));
+
+            // Generic methods that are not virtual are looked up by name at runtime too
+            Assert(GenericHelpers.Describe<Marked>(null) == "helper:ref");
+            Assert(GenericHelpers.Describe<Point>(default) == "helper:value");
+            MethodInfo helper = Keep(typeof(GenericHelpers)).GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly).Single().MakeGenericMethod(typeof(Marked));
+            Assert((string)helper.Invoke(null, new object[] { null }) == "helper:ref");
+            helper = Keep(typeof(GenericHelpers)).GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly).Single().MakeGenericMethod(typeof(Point));
+            Assert((string)helper.Invoke(null, new object[] { default(Point) }) == "helper:value");
+
+            // GenericCaller<GenericHolder<Marked>> is created by the type loader at runtime, sharing the code of GenericCaller<__Canon>
+            Assert(((ICaller)new GenericCaller<Marked>()).Call() == "helper:ref");
+            Type caller = Keep(typeof(GenericCaller<>)).MakeGenericType(typeof(GenericHolder<>).MakeGenericType(typeof(Marked)));
+            Assert(((ICaller)Activator.CreateInstance(caller)).Call() == "helper:ref");
+
+            Assert(CallMaker<Maker>() == "made");
         }
+
+        private static string CallMaker<T>() where T : IMaker => T.Make<Marked>();
     }
 
     private static class TestLookupByName
@@ -262,6 +284,13 @@ internal static class Program
             Assert(data.NamedArguments.Select(a => a.MemberName).OrderBy(n => n, StringComparer.Ordinal).SequenceEqual(new[] { "Label", "Number" }));
 
             Assert(new Marked() is not null);
+
+            // The accessors of properties of attribute types are used to match overrides
+            DerivedMarkerAttribute derived = typeof(MarkedWithOverride).GetCustomAttribute<DerivedMarkerAttribute>();
+            Assert(derived is not null);
+            Assert(derived.Value == "overridden");
+            Assert(typeof(MarkedWithOverride).CustomAttributes.Single().NamedArguments.Single().MemberName == "Value");
+            Assert(new MarkedWithOverride() is not null);
         }
     }
 

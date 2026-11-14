@@ -56,9 +56,14 @@ namespace ILCompiler.Metadata
             if (owningType.IsDelegate && method.GetName() == "Invoke")
                 return false;
 
-            // The runtime matches generic virtual methods (e.g. interface methods and their implementations)
-            // by name and signature.
-            if (method.IsVirtual && method.HasInstantiation)
+            // The runtime hashes and looks up generic method instantiations (and the implementations of
+            // generic virtual methods) by name.
+            if (method.HasInstantiation)
+                return false;
+
+            // Named arguments of custom attributes are resolved by name, and the accessors of the properties
+            // are used to detect which properties override or hide the ones of the base type.
+            if (IsAttributeType(owningType))
                 return false;
 
             return true;

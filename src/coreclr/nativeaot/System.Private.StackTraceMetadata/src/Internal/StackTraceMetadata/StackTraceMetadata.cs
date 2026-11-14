@@ -86,7 +86,7 @@ namespace Internal.StackTraceMetadata
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle)
-                && !IsNameStripped(reader, methodHandle))
+                && !IsNameStripped(reader, typeHandle, methodHandle))
             {
                 if (StackTraceHiddenMetadataPresent())
                 {
@@ -205,7 +205,7 @@ namespace Internal.StackTraceMetadata
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle)
-                && !IsNameStripped(reader, methodHandle))
+                && !IsNameStripped(reader, typeHandle, methodHandle))
             {
                 return CreateDiagnosticMethodInfo(reader, typeHandle, reader.GetMethod(methodHandle).Name);
             }
@@ -225,7 +225,8 @@ namespace Internal.StackTraceMetadata
             if (ReflectionExecution.TryGetMethodMetadataFromAddress(functionPointer, isFunctionPointer: true,
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
-                out MethodHandle methodHandle))
+                out MethodHandle methodHandle)
+                && !IsNameStripped(reader, typeHandle, methodHandle))
             {
                 return CreateDiagnosticMethodInfo(reader, typeHandle, reader.GetMethod(methodHandle).Name);
             }
@@ -248,9 +249,11 @@ namespace Internal.StackTraceMetadata
                 FormatAssemblyName(reader, owningType));
         }
 
-        private static bool IsNameStripped(MetadataReader reader, MethodHandle methodHandle)
+        private static bool IsNameStripped(MetadataReader reader, TypeDefinitionHandle typeHandle, MethodHandle methodHandle)
         {
-            return reader.ReadStringAsBytes(reader.GetMethod(methodHandle).Name).IsEmpty;
+            // Constructors and a few other methods keep their names, but are still declared on a type that doesn't have one.
+            return reader.ReadStringAsBytes(reader.GetMethod(methodHandle).Name).IsEmpty
+                || reader.ReadStringAsBytes(reader.GetTypeDefinition(typeHandle).Name).IsEmpty;
         }
 
         private static string FormatAssemblyName(MetadataReader reader, Handle handle)

@@ -22,14 +22,16 @@ Behavior for types and members of an assembly that strips names:
 | --- | --- |
 | `Type.Name`, `MemberInfo.Name`, `ParameterInfo.Name`, names of generic parameters | `""` (empty string, the properties are not nullable) |
 | `Type.Namespace`, `Type.FullName`, `Type.AssemblyQualifiedName` | `null` |
-| `Type.ToString()` | `""`, matching `Type.Name` (the method is not nullable) |
+| `Type.ToString()` | `""`, matching `Type.Name` (the method is not nullable). Also for generic type definitions |
 | `FullName` and `AssemblyQualifiedName` of arrays, pointers, by-refs, nested types and constructed generic types that involve such a type (including as a type argument) | `null`, like for a generic parameter |
 | `Type.GetType(string)`, `Assembly.GetType(string)`, `GetMethod(string)`, `GetField(string)`, `GetProperty(string)`, `GetEvent(string)`, `GetNestedType(string)`, `GetMember(string)` | Don't find the type or member, since nothing can match an empty name |
 | Enum members, e.g. `Enum.ToString()`, `Enum.Parse` | Unchanged, the names of enum literals are kept |
-| Constructors (`.ctor`, `.cctor`), `Invoke` of delegates, generic virtual methods | Unchanged, the runtime looks these up by name |
-| Fields and properties of attribute types, and named arguments of custom attributes | Unchanged |
+| Constructors (`.ctor`, `.cctor`), `Invoke` of delegates, generic methods (the runtime looks up instantiations and implementations of generic virtual methods by name), methods, fields and properties of attribute types | Unchanged, the names are kept |
+| Named arguments of custom attributes | Unchanged |
 | Exception messages and `Exception.ToString()` | Use the empty name for the type |
 | Stack traces | The frames of methods of the assembly don't have names. They show up as an offset in the module, which can be symbolicated with the symbol files, e.g. on a crash report server |
+| `MethodInfo.GetBaseDefinition()`, `GetCustomAttributes(inherit: true)` on overridden methods, properties and events, `GetMethods()` and `GetProperties()` on derived types | Members are matched with the ones they override by name, so an override is not associated with the member of the base type. `GetBaseDefinition()` returns the method itself, inherited attributes of overridden members are not found, and both the override and the base member are listed. This also applies to a type from another assembly that overrides a member of a type that strips names |
+| Compiler generated attribute types in the assembly, e.g. `NullableAttribute` | The types lose their names, so consumers that identify them by name, e.g. `NullabilityInfoContext`, don't recognize them |
 
 Everything else is unchanged. In particular, type identity, `typeof`, `GetType()`, `Activator.CreateInstance`, `MethodInfo.Invoke`, `MakeGenericType`, `MakeGenericMethod`, custom attribute instantiation, and virtual and interface dispatch don't depend on the names.
 
@@ -38,4 +40,4 @@ Limitations:
 * The names are removed from the reflection metadata only. Other places in the binary that contain names are not affected, e.g. the field names that are part of struct marshalling metadata, the keys of external type maps (`TypeMapping`), embedded resource names, and strings that code explicitly contains (e.g. the string passed to `[UnsafeAccessorType]`, `Type.GetType`, or the arguments of custom attributes).
 * Code that looks up types or members of such an assembly by name, e.g. `Type.GetType("Namespace.Type, Assembly")`, will not find them, even if the compiler has seen the string. A reference that goes through metadata directly (e.g. a type referenced by a custom attribute argument) is not affected.
 * Serializers, `EventSource`, `DataContract`, data binding, and anything else that derives behavior from type or member names don't work for these types.
-* The setting is not supported for the framework assemblies or for multi-file compilation.
+* The setting is not supported for the system module or for multi-file compilation (the compiler reports an error). Assemblies that are not part of the compilation are ignored.

@@ -142,8 +142,10 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             StringBuilder? sb = null;
 
-            // The full name is null when the name of the type was stripped by the compiler.
-            string fullName = FullName ?? Name;
+            // The name of the type was stripped by the compiler, so there is nothing to print.
+            string? fullName = FullName;
+            if (fullName is null)
+                return Name;
 
             foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
             {
