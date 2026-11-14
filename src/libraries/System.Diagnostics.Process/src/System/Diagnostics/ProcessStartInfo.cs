@@ -91,13 +91,37 @@ namespace System.Diagnostics
                 "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public StringDictionary EnvironmentVariables => new StringDictionaryWrapper((Environment as DictionaryWrapper)!);
 
+        /// <summary>
+        /// Gets the environment variables that apply to this process and its child processes.
+        /// </summary>
+        /// <value>A generic dictionary containing the environment variables that apply to this process and its child processes.</value>
+        /// <remarks>
+        /// <para>
+        /// Modifying the returned dictionary is not supported when <see cref="UseShellExecute"/> is <see langword="true"/>.
+        /// </para>
+        /// <para>
+        /// On Windows, when <see cref="UserName"/> is set, the dictionary is populated with the default environment variables
+        /// of that user rather than the environment variables of the current process. The user's profile is not loaded to compute them,
+        /// so variables stored in the user's profile (for example, user-specific variables from the <c>HKEY_CURRENT_USER\Environment</c>
+        /// registry key) might be missing, even when <see cref="LoadUserProfile"/> is <see langword="true"/>.
+        /// </para>
+        /// <para>
+        /// On Windows, changing <see cref="UserName"/>, <see cref="Domain"/>, or <see cref="UseCredentialsForNetworkingOnly"/>
+        /// after accessing this property throws an <see cref="InvalidOperationException"/> if the change would cause the process
+        /// to use a different user's environment variables.
+        /// </para>
+        /// </remarks>
         public IDictionary<string, string?> Environment
         {
             get
             {
                 if (_environmentVariables == null)
                 {
+#if TARGET_WINDOWS
+                    IDictionary envVars = GetDefaultEnvironmentVariables();
+#else
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
+#endif
 
                     Dictionary<string, string?> contents = new Dictionary<string, string?>(
                         envVars.Count,
@@ -375,7 +399,17 @@ namespace System.Diagnostics
         public string UserName
         {
             get => _userName ?? string.Empty;
-            set => _userName = value;
+            set
+            {
+#if TARGET_WINDOWS
+                ThrowIfEnvironmentWasAccessed(
+                    nameof(UserName),
+                    !UseCredentialsForNetworkingOnly &&
+                    !string.Equals(value ?? string.Empty, _userName ?? string.Empty, StringComparison.Ordinal));
+                s_getUserEnvironmentVariables ??= static startInfo => startInfo.GetUserEnvironmentVariables();
+#endif
+                _userName = value;
+            }
         }
 
         [DefaultValue("")]

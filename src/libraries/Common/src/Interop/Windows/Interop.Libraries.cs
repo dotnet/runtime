@@ -32,6 +32,7 @@ internal static partial class Interop
         internal const string Shell32 = "shell32.dll";
         internal const string SspiCli = "sspicli.dll";
         internal const string User32 = "user32.dll";
+        internal const string Userenv = "userenv.dll";
         internal const string Version = "version.dll";
         internal const string WebSocket = "websocket.dll";
         internal const string Wevtapi = "wevtapi.dll";
