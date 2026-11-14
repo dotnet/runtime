@@ -54,4 +54,9 @@
   <Target Name="GenerateLocalRunnerScript" DependsOnTargets="GenerateRunScript" AfterTargets="PublishTestAsSelfContained" />
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
+
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <!-- Tests can reload assemblies into collectible contexts, which cannot use ReadyToRun code. -->
+    <PublishReadyToRunStripILBodies>false</PublishReadyToRunStripILBodies>
+  </PropertyGroup>
 </Project>
