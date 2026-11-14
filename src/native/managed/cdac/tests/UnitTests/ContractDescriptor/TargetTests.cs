@@ -2,18 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure.ContractDescriptor;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
 
 public unsafe partial class TargetTests
 {
+    private const int PageCachePageSize = 4096;
+    private const int PageCachePageCount = 32;
+    private const string PageCacheEnabledSetting = "Microsoft.Diagnostics.DataContractReader.PageCache.Enabled";
+    private const string PageCachePageSizeSetting = "Microsoft.Diagnostics.DataContractReader.PageCache.PageSize";
+    private const string PageCachePageCountSetting = "Microsoft.Diagnostics.DataContractReader.PageCache.PageCount";
+
     private static readonly Dictionary<DataType, Target.TypeInfo> TestTypes = new()
     {
         // Size and fields
@@ -857,6 +866,433 @@ public unsafe partial class TargetTests
             Assert.True((expected is null && actual is null) || expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
         }
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void PageCache_ReadsSharePagesAndPreserveEndianness(MockTarget.Architecture arch)
+    {
+        List<(ulong Address, int Size)> reads = [];
+        byte[] memory = Enumerable.Range(0, 8192).Select(i => (byte)(i % 251)).ToArray();
+        ContractDescriptorTarget target = CreatePageCacheTarget((address, buffer) =>
+        {
+            reads.Add((address, buffer.Length));
+            memory.AsSpan(checked((int)address), buffer.Length).CopyTo(buffer);
+            return 0;
+        }, arch: arch);
+
+        TargetTestHelpers helpers = new(arch);
+        Span<byte> expected = stackalloc byte[8];
+        helpers.Write(expected, 0x12345678ul);
+        expected.CopyTo(memory.AsSpan(64));
+        Assert.Equal(0x12345678ul, target.Read<ulong>(64));
+        Assert.Equal(BinaryPrimitives.ReadUInt64LittleEndian(memory.AsSpan(64)), target.ReadLittleEndian<ulong>(64));
+        Assert.True(target.TryRead<byte>(71, out byte value));
+        Assert.Equal(memory[71], value);
+        Assert.Equal(helpers.ReadPointer(memory.AsSpan(64)).Value, target.ReadNUInt(64).Value);
+        Assert.Equal(helpers.ReadPointer(memory.AsSpan(64)), target.ReadPointer(64));
+        Assert.True(target.TryReadPointer(64, out TargetPointer pointer));
+        Assert.Equal(target.ReadPointer(64), pointer);
+        byte[] actual = new byte[16];
+        target.ReadBuffer(96, actual);
+        Assert.Equal(memory.AsSpan(96, 16).ToArray(), actual);
+        Assert.Equal(new (ulong, int)[] { (0, PageCachePageSize) }, reads);
+
+        Assert.Equal(memory[PageCachePageSize], target.Read<byte>(PageCachePageSize));
+        Assert.Equal(new (ulong, int)[] { (0, PageCachePageSize), (PageCachePageSize, PageCachePageSize) }, reads);
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(PageCachePageSize - 2, 4)]
+    [InlineData(PageCachePageSize, PageCachePageSize * 2)]
+    public void PageCache_BypassesEmptyLargeAndCrossingReads(int address, int size)
+    {
+        List<(ulong Address, int Size)> reads = [];
+        ContractDescriptorTarget target = CreatePageCacheTarget((location, buffer) =>
+        {
+            reads.Add((location, buffer.Length));
+            buffer.Fill(0x5a);
+            return 0;
+        });
+        byte[] buffer = new byte[size];
+        target.ReadBuffer((ulong)address, buffer);
+        target.ReadBuffer((ulong)address, buffer);
+        Assert.All(buffer, value => Assert.Equal((byte)0x5a, value));
+        Assert.Equal(new (ulong, int)[] { ((ulong)address, size), ((ulong)address, size) }, reads);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PageCache_FailedFillFallsBackWithoutCachingPartialBytes(bool failExactRead)
+    {
+        const ulong Address = 0x1234;
+        List<(ulong Address, int Size)> reads = [];
+        ContractDescriptorTarget target = CreatePageCacheTarget((address, buffer) =>
+        {
+            reads.Add((address, buffer.Length));
+            buffer.Fill(0xcc);
+            if (buffer.Length == PageCachePageSize || failExactRead)
+                return HResults.E_FAIL;
+
+            buffer[0] = 0x5a;
+            return 0;
+        });
+        List<(ulong Address, ulong Size)> reported = [];
+        using IDisposable scope = target.RegisterReadCallback((address, size) => reported.Add((address, size)));
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.Equal(!failExactRead, target.TryRead<byte>(Address, out byte value));
+            Assert.Equal(failExactRead ? (byte)0 : (byte)0x5a, value);
+        }
+        Assert.Equal(new (ulong, int)[] { (0x1000, PageCachePageSize), (Address, 1), (Address, 1) }, reads);
+        Assert.Equal(failExactRead ? [] : new (ulong, ulong)[] { (Address, 1), (Address, 1) }, reported);
+        if (failExactRead)
+            Assert.Throws<VirtualReadException>(() => target.Read<byte>(Address));
+    }
+
+    [Theory]
+    [InlineData(FlushScope.All)]
+    [InlineData(FlushScope.ForwardExecution)]
+    public void PageCache_FlushRetriesPreviouslyUnavailablePages(FlushScope scope)
+    {
+        int pageReads = 0;
+        int directReads = 0;
+        bool available = false;
+        ContractDescriptorTarget target = CreatePageCacheTarget((_, buffer) =>
+        {
+            buffer.Fill(0x5a);
+            if (buffer.Length == PageCachePageSize)
+            {
+                pageReads++;
+                return available ? 0 : HResults.E_FAIL;
+            }
+            directReads++;
+            return 0;
+        });
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1001));
+        available = true;
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1002));
+        Assert.Equal(1, pageReads);
+        Assert.Equal(2, directReads);
+
+        target.Flush(scope);
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1001));
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1002));
+        Assert.Equal(2, pageReads);
+        Assert.Equal(2, directReads);
+    }
+
+    [Fact]
+    public void PageCache_WriteRetriesPreviouslyUnavailablePage()
+    {
+        int pageReads = 0;
+        bool available = false;
+        ContractDescriptorTarget target = CreatePageCacheTarget((_, buffer) =>
+        {
+            buffer.Fill(0x5a);
+            if (buffer.Length != PageCachePageSize)
+                return 0;
+
+            pageReads++;
+            return available ? 0 : HResults.E_FAIL;
+        }, (_, _) => { available = true; return 0; });
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1001));
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1002));
+        Assert.Equal(1, pageReads);
+
+        target.Write<byte>(0x1001, 0x5a);
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1001));
+        Assert.Equal((byte)0x5a, target.Read<byte>(0x1002));
+        Assert.Equal(2, pageReads);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PageCache_EvictionDoesNotReusePartiallyOverwrittenData(bool failReplacement)
+    {
+        const ulong First = 0x1000;
+        const ulong Conflict = First + PageCachePageCount * PageCachePageSize;
+        List<ulong> reads = [];
+        ContractDescriptorTarget target = CreatePageCacheTarget((address, buffer) =>
+        {
+            reads.Add(address);
+            buffer.Fill(address == First ? (byte)0x11 : (byte)0x22);
+            return address == Conflict && buffer.Length == PageCachePageSize && failReplacement ? HResults.E_FAIL : 0;
+        });
+        Assert.Equal((byte)0x11, target.Read<byte>(First));
+        for (int i = 1; i < PageCachePageCount; i++)
+            Assert.Equal((byte)0x22, target.Read<byte>(First + (ulong)i * PageCachePageSize));
+
+        Assert.Equal((byte)0x22, target.Read<byte>(Conflict));
+        Assert.Equal((byte)0x11, target.Read<byte>(First));
+        List<ulong> expected = Enumerable.Range(0, PageCachePageCount + 1).Select(i => First + (ulong)i * PageCachePageSize).ToList();
+        if (failReplacement)
+            expected.Add(Conflict);
+        expected.Add(First);
+        Assert.Equal(expected, reads);
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(PageCachePageCount)]
+    public void PageCache_DoesNotAliasPowerOfTwoStridedPages(int count)
+    {
+        List<ulong> reads = [];
+        ContractDescriptorTarget target = CreatePageCacheTarget((address, buffer) =>
+        {
+            reads.Add(address);
+            buffer.Fill((byte)(address / PageCachePageSize % 251));
+            return 0;
+        });
+        ulong[] addresses = Enumerable.Range(0, count).Select(i => 0x1000ul + (ulong)i * PageCachePageCount * PageCachePageSize).ToArray();
+        foreach (ulong address in addresses)
+            Assert.Equal((byte)(address / PageCachePageSize % 251), target.Read<byte>(address));
+        foreach (ulong address in addresses.Reverse())
+            Assert.Equal((byte)(address / PageCachePageSize % 251), target.Read<byte>(address));
+        Assert.Equal(addresses, reads);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(PageCachePageCount)]
+    public void PageCache_DoesNotSuppressUnexpectedReaderExceptions(int cachedPages)
+    {
+        InvalidOperationException expected = new("Reader failed unexpectedly.");
+        bool fail = false;
+        ContractDescriptorTarget target = CreatePageCacheTarget((_, buffer) =>
+        {
+            buffer.Fill(fail ? (byte)0xcc : (byte)0x11);
+            return fail ? throw expected : 0;
+        });
+        for (int i = 1; i <= cachedPages; i++)
+            Assert.Equal((byte)0x11, target.Read<byte>((ulong)i * PageCachePageSize));
+        fail = true;
+        Assert.Same(expected, Assert.Throws<InvalidOperationException>(() => target.Read<byte>((ulong)(PageCachePageCount + 1) * PageCachePageSize)));
+        fail = false;
+        Assert.Equal((byte)0x11, target.Read<byte>(0x1000));
+    }
+
+    [Theory]
+    [InlineData(FlushScope.All)]
+    [InlineData(FlushScope.ForwardExecution)]
+    public void PageCache_FlushRefreshesMemoryAndSurvivesReadScopeDisposal(FlushScope scope)
+    {
+        byte value = 0x11;
+        int reads = 0;
+        ContractDescriptorTarget target = CreatePageCacheTarget((_, buffer) =>
+        {
+            reads++;
+            buffer.Fill(value);
+            return 0;
+        });
+        Assert.Equal(value, target.Read<byte>(0x1000));
+        using (target.RegisterReadCallback((_, _) => { }))
+        {
+            value = 0x22;
+            target.Flush(scope);
+            Assert.Equal(value, target.Read<byte>(0x1000));
+        }
+        Assert.Equal(value, target.Read<byte>(0x1000));
+        Assert.Equal(2, reads);
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 0)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    public void PageCache_WritesInvalidateEvenWhenTheyFail(bool scalar, int failureMode)
+    {
+        byte value = 0x11;
+        int reads = 0;
+        ContractDescriptorTarget target = CreatePageCacheTarget((_, buffer) =>
+        {
+            reads++;
+            buffer.Fill(value);
+            return 0;
+        }, (_, buffer) =>
+        {
+            value = buffer[0];
+            return failureMode switch
+            {
+                0 => 0,
+                1 => HResults.E_FAIL,
+                _ => throw new InvalidOperationException("Write failed after modifying memory."),
+            };
+        });
+        Assert.Equal((byte)0x11, target.Read<byte>(0x1000));
+        Action write = scalar ? () => target.Write<byte>(0x1000, 0x22) : () => target.WriteBuffer(0x1000, [0x22]);
+        if (failureMode != 0)
+            Assert.Throws<InvalidOperationException>(write);
+        else
+            write();
+
+        Assert.Equal((byte)0x22, target.Read<byte>(0x1000));
+        Assert.Equal(2, reads);
+    }
+
+    [Fact]
+    public void PageCache_ReadCallbacksReportLogicalReadsNotPrefetch()
+    {
+        int physicalReads = 0;
+        ContractDescriptorTarget target = CreatePageCacheTarget((_, buffer) =>
+        {
+            physicalReads++;
+            buffer.Fill(0x11);
+            return 0;
+        });
+        List<(ulong Address, ulong Size)> outer = [];
+        List<(ulong Address, ulong Size)> inner = [];
+        Assert.Equal((byte)0x11, target.Read<byte>(0x1000));
+        using (target.RegisterReadCallback((address, size) => outer.Add((address, size))))
+        {
+            Assert.Equal((byte)0x11, target.Read<byte>(0x1001));
+            using (target.RegisterReadCallback((address, size) => inner.Add((address, size))))
+                Assert.Equal(0x11111111u, target.Read<uint>(0x1002));
+
+            Assert.Equal((byte)0x11, target.Read<byte>(0x2001));
+        }
+        Assert.Equal((byte)0x11, target.Read<byte>(0x2002));
+        Assert.Equal(new (ulong, ulong)[] { (0x1001, 1), (0x1002, 4), (0x2001, 1) }, outer);
+        Assert.Equal(new (ulong, ulong)[] { (0x1002, 4) }, inner);
+        Assert.Equal(2, physicalReads);
+    }
+
+    [Theory]
+    [InlineData(0ul)]
+    [InlineData(ulong.MaxValue)]
+    public void PageCache_ExtremeAddressesAreNotConfusedWithEmptyEntries(ulong address)
+    {
+        int reads = 0;
+        ContractDescriptorTarget target = CreatePageCacheTarget((_, buffer) =>
+        {
+            reads++;
+            buffer.Fill(0x5a);
+            return 0;
+        });
+        Assert.Equal((byte)0x5a, target.Read<byte>(address));
+        Assert.Equal((byte)0x5a, target.Read<byte>(address));
+        target.Flush(FlushScope.All);
+        Assert.Equal((byte)0x5a, target.Read<byte>(address));
+        Assert.Equal(2, reads);
+    }
+
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [InlineData(true, 4096, 32)]
+    [InlineData(true, 2048, 1)]
+    [InlineData(true, 8192, 3)]
+    [InlineData(true, 1, 1)]
+    [InlineData(false, 4096, 32)]
+    [InlineData(false, 0, 0)]
+    public void PageCache_ConfigurationControlsReads(bool enabled, int pageSize, int pageCount)
+    {
+        RemoteInvokeOptions options = new();
+        options.RuntimeConfigurationOptions[PageCacheEnabledSetting] = enabled;
+        options.RuntimeConfigurationOptions[PageCachePageSizeSetting] = pageSize;
+        options.RuntimeConfigurationOptions[PageCachePageCountSetting] = pageCount;
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static (enabledText, sizeText, countText) =>
+        {
+            bool enabled = bool.Parse(enabledText);
+            int pageSize = int.Parse(sizeText, CultureInfo.InvariantCulture);
+            int pageCount = int.Parse(countText, CultureInfo.InvariantCulture);
+            byte value = 0x11;
+            List<(ulong, int)> reads = [];
+            ContractDescriptorTarget target = CreatePageCacheTarget((address, buffer) =>
+            {
+                reads.Add((address, buffer.Length));
+                buffer.Fill(value);
+                return 0;
+            }, (_, _) => { value = 0x33; return 0; });
+
+            Assert.Equal(value, target.Read<byte>(0));
+            Assert.Equal(value, target.Read<byte>(0));
+            Assert.Equal(enabled ? new (ulong, int)[] { (0, pageSize) } : [(0, 1), (0, 1)], reads);
+            if (enabled)
+            {
+                for (int i = 1; i <= pageCount; i++)
+                    Assert.Equal(value, target.Read<byte>((ulong)i * (ulong)pageSize));
+                Assert.Equal(value, target.Read<byte>(0));
+                Assert.Equal(pageCount + 2, reads.Count);
+                Assert.All(reads, read => Assert.Equal(pageSize, read.Item2));
+            }
+
+            value = 0x22;
+            Assert.Equal(enabled ? (byte)0x11 : value, target.Read<byte>(0));
+            target.Flush(FlushScope.All);
+            Assert.Equal(value, target.Read<byte>(0));
+            target.Write<byte>(0, 0x33);
+            Assert.Equal((byte)0x33, target.Read<byte>(0));
+            List<(ulong, ulong)> reported = [];
+            using (target.RegisterReadCallback((address, size) => reported.Add((address, size))))
+                Assert.Equal((byte)0x33, target.Read<byte>(0));
+            Assert.Equal(new (ulong, ulong)[] { (0, 1) }, reported);
+        }, enabled.ToString(), pageSize.ToString(CultureInfo.InvariantCulture), pageCount.ToString(CultureInfo.InvariantCulture), options);
+    }
+
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [InlineData(PageCachePageSizeSetting, 0)]
+    [InlineData(PageCachePageSizeSetting, -1)]
+    [InlineData(PageCachePageSizeSetting, 4095)]
+    [InlineData(PageCachePageSizeSetting, "not-an-integer")]
+    [InlineData(PageCachePageSizeSetting, "2147483648")]
+    [InlineData(PageCachePageSizeSetting, true)]
+    [InlineData(PageCachePageCountSetting, 0)]
+    [InlineData(PageCachePageCountSetting, -1)]
+    [InlineData(PageCachePageCountSetting, int.MaxValue)]
+    [InlineData(PageCachePageCountSetting, "not-an-integer")]
+    public void PageCache_InvalidConfigurationThrows(string name, object value)
+    {
+        RemoteInvokeOptions options = new();
+        options.RuntimeConfigurationOptions[name] = value;
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static setting =>
+        {
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(
+                () => CreatePageCacheTarget((_, _) => 0));
+            Assert.Equal(setting, exception.ParamName);
+        }, name, options);
+    }
+
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    public void PageCache_StringConfigurationIsCapturedAtConstruction()
+    {
+        RemoteInvokeOptions options = new();
+        options.RuntimeConfigurationOptions[PageCachePageSizeSetting] = "1024";
+        options.RuntimeConfigurationOptions[PageCachePageCountSetting] = "2";
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
+        {
+            List<(ulong, int)> reads = [];
+            ContractDescriptorTarget target = CreatePageCacheTarget((address, buffer) =>
+            {
+                reads.Add((address, buffer.Length));
+                buffer.Fill(0x11);
+                return 0;
+            });
+            AppContext.SetData(PageCachePageSizeSetting, 0);
+            AppContext.SetData(PageCachePageCountSetting, 0);
+            Assert.Equal((byte)0x11, target.Read<byte>(1023));
+            Assert.Equal((byte)0x11, target.Read<byte>(1024));
+            byte[] crossing = new byte[2];
+            target.ReadBuffer(1023, crossing);
+            Assert.Equal(new byte[] { 0x11, 0x11 }, crossing);
+            Assert.Equal(new (ulong, int)[] { (0, 1024), (1024, 1024), (1023, 2) }, reads);
+        }, options);
+    }
+
+    private static ContractDescriptorTarget CreatePageCacheTarget(
+        ContractDescriptorTarget.ReadFromTargetDelegate read,
+        ContractDescriptorTarget.WriteToTargetDelegate? write = null,
+        MockTarget.Architecture? arch = null)
+        => ContractDescriptorTarget.Create(
+            new ContractDescriptorParser.ContractDescriptor { Version = 2 }, [], read,
+            write ?? ((_, _) => HResults.E_NOTIMPL),
+            (_, _, _) => HResults.E_NOTIMPL,
+            (_, _) => HResults.E_NOTIMPL,
+            (ulong _, out ulong address) => { address = 0; return HResults.E_NOTIMPL; },
+            arch?.IsLittleEndian ?? true, arch?.Is64Bit == false ? 4 : 8);
 
     private static void ValidateTypes(
         ContractDescriptorTarget target,
