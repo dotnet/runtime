@@ -587,22 +587,28 @@ namespace System.Threading
                             break;
                         }
 
-                        _sharedData->TimedWaiterCount++;
-
-                        do
+                        // The timed waiter count is shared between processes, so it must be updated atomically and must be
+                        // decremented on every exit path, including exceptions such as ThreadInterruptedException from the sleep.
+                        _sharedData->IncrementTimedWaiterCount();
+                        try
                         {
-                            int elapsedMilliseconds = Environment.TickCount - startTime;
-                            if (elapsedMilliseconds >= timeoutMilliseconds)
+                            do
                             {
-                                _sharedData->TimedWaiterCount--;
-                                return MutexTryAcquireLockResult.TimedOut;
-                            }
+                                int elapsedMilliseconds = Environment.TickCount - startTime;
+                                if (elapsedMilliseconds >= timeoutMilliseconds)
+                                {
+                                    return MutexTryAcquireLockResult.TimedOut;
+                                }
 
-                            int remainingTimeoutMilliseconds = timeoutMilliseconds - elapsedMilliseconds;
-                            int sleepMilliseconds = Math.Min(PollLoopMaximumSleepMilliseconds, remainingTimeoutMilliseconds);
-                            Thread.Sleep(sleepMilliseconds);
-                        } while (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true));
-                        _sharedData->TimedWaiterCount--;
+                                int remainingTimeoutMilliseconds = timeoutMilliseconds - elapsedMilliseconds;
+                                int sleepMilliseconds = Math.Min(PollLoopMaximumSleepMilliseconds, remainingTimeoutMilliseconds);
+                                Thread.Sleep(sleepMilliseconds);
+                            } while (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true));
+                        }
+                        finally
+                        {
+                            _sharedData->DecrementTimedWaiterCount();
+                        }
                         break;
                     }
                 }
@@ -633,7 +639,17 @@ namespace System.Threading
             private ulong _lockOwnerThreadId;
             private byte _isAbandoned;
 
-            public uint TimedWaiterCount { get => _timedWaiterCount; set => _timedWaiterCount = value; }
+            public uint TimedWaiterCount
+            {
+                get => Volatile.Read(ref _timedWaiterCount);
+                set => Volatile.Write(ref _timedWaiterCount, value);
+            }
+
+            // The count lives in memory shared with other processes, which do not take this process's locks.
+            public void IncrementTimedWaiterCount() => Interlocked.Increment(ref _timedWaiterCount);
+
+            public void DecrementTimedWaiterCount() => Interlocked.Decrement(ref _timedWaiterCount);
+
             public uint LockOwnerProcessId
             {
                 get
