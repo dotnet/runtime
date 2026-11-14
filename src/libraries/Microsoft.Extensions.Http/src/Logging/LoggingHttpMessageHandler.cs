@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Http.Logging
 
                     return response;
                 }
-                catch (HttpRequestException ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     _logger.LogRequestFailed(stopwatch.GetElapsedTime(), ex);
                     throw;
