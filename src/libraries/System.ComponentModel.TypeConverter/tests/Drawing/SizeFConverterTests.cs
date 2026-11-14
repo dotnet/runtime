@@ -125,6 +125,43 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Null(Converter.ConvertFromString(value));
         }
 
+        [Theory]
+        [InlineData("1.5,2.5", 1.5f, 2.5f)]
+        [InlineData(" 1.5,2.5", 1.5f, 2.5f)]
+        [InlineData("1.5 ,2.5", 1.5f, 2.5f)]
+        [InlineData("1.5, 2.5", 1.5f, 2.5f)]
+        [InlineData("1.5,2.5 ", 1.5f, 2.5f)]
+        [InlineData(" 1.5 ,2.5", 1.5f, 2.5f)]
+        [InlineData(" 1.5, 2.5", 1.5f, 2.5f)]
+        [InlineData(" 1.5,2.5 ", 1.5f, 2.5f)]
+        [InlineData("1.5 , 2.5", 1.5f, 2.5f)]
+        [InlineData("1.5 ,2.5 ", 1.5f, 2.5f)]
+        [InlineData("1.5, 2.5 ", 1.5f, 2.5f)]
+        [InlineData(" 1.5 , 2.5", 1.5f, 2.5f)]
+        [InlineData(" 1.5 ,2.5 ", 1.5f, 2.5f)]
+        [InlineData(" 1.5, 2.5 ", 1.5f, 2.5f)]
+        [InlineData("1.5 , 2.5 ", 1.5f, 2.5f)]
+        [InlineData(" 1.5 , 2.5 ", 1.5f, 2.5f)]
+        [InlineData("  1.5  ,  2.5  ", 1.5f, 2.5f)]
+        [InlineData("\t1.5\t,\t2.5\t", 1.5f, 2.5f)]
+        [InlineData("\r\n1.5,2.5\r\n", 1.5f, 2.5f)]
+        [InlineData(" 0 , 0 ", 0f, 0f)]
+        [InlineData(" 1 , 2 ", 1f, 2f)]
+        [InlineData(" 1.0 , 2.0 ", 1f, 2f)]
+        [InlineData(" .5 , .25 ", 0.5f, 0.25f)]
+        [InlineData(" 0.5 , 0.25 ", 0.5f, 0.25f)]
+        [InlineData(" -1.5 , -2.5 ", -1.5f, -2.5f)]
+        [InlineData(" 1920.5 , 1080.25 ", 1920.5f, 1080.25f)]
+        [InlineData(" 1e3 , 2.5e-2 ", 1000f, 0.025f)]
+        [InlineData(" 0.1 , 0.2 ", 0.1f, 0.2f)]
+        public void ConvertFrom_ContainsWhitespace(string value, float width, float height)
+        {
+            var size = (SizeF)Converter.ConvertFromInvariantString(value);
+
+            Assert.Equal(width, size.Width);
+            Assert.Equal(height, size.Height);
+        }
+
         public static IEnumerable<object[]> ConvertFrom_NotSupportedData =>
             new[]
             {
