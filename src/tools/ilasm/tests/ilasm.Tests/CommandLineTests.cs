@@ -5,6 +5,7 @@ using System;
 using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,6 +13,46 @@ namespace Microsoft.DotNet.ILAssembler.Tests;
 
 public class CommandLineTests
 {
+    [Theory]
+    [InlineData("", Machine.I386, PEMagic.PE32)]
+    [InlineData("-PE64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("--pe64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-X64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("--x64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-ARM64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("--arm64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-PE64 -ARM64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-ARM64 -PE64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("--pe64 --arm64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("--arm64 --pe64", Machine.Arm64, PEMagic.PE32Plus)]
+    [InlineData("-PE64 -X64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("-X64 -PE64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("--pe64 --x64", Machine.Amd64, PEMagic.PE32Plus)]
+    [InlineData("--x64 --pe64", Machine.Amd64, PEMagic.PE32Plus)]
+    public void TargetOptions_EmitRequestedArchitecture(string options, Machine machine, PEMagic magic)
+    {
+        string directory = Directory.CreateTempSubdirectory("ilasm-architecture-").FullName;
+        try
+        {
+            string input = Path.Combine(directory, "input.il");
+            string output = Path.Combine(directory, "output.dll");
+            File.WriteAllText(input, ".assembly Test {}");
+            string[] args = ["-DLL", "-NOLOGO", "-QUIET", $"-OUTPUT={output}", .. options.Split(' ', StringSplitOptions.RemoveEmptyEntries), input];
+            var command = new IlasmRootCommand();
+            ParseResult result = command.Parse(NativeCommandLine.Normalize(args, command));
+
+            Assert.Empty(result.Errors);
+            Assert.Equal(0, new Program(command, result).Run());
+            using var pe = new PEReader(File.OpenRead(output));
+            Assert.Equal(machine, pe.PEHeaders.CoffHeader.Machine);
+            Assert.Equal(magic, pe.PEHeaders.PEHeader!.Magic);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("", 0, "input.il(1,1)")]
     [InlineData("abc", 0, "input.il(1,1)")]
