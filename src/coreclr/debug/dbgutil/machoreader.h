@@ -80,6 +80,7 @@ private:
     mach_header_64 m_header;
     std::string m_name;
     load_command* m_commands;
+    bool m_loadCommandsValid;
     std::vector<segment_command_64*> m_segments;
     symtab_command* m_symtabCommand;
     dysymtab_command* m_dysymtabCommand;
