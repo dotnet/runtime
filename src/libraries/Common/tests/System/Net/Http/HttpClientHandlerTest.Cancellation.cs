@@ -86,7 +86,16 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, async server =>
             {
-                await IgnoreExceptions(server.AcceptConnectionAsync(connection => serverRelease.Task));
+                Task serverTask = IgnoreExceptions(server.AcceptConnectionAsync(connection => serverRelease.Task));
+                if (IsWasiHttpHandler)
+                {
+                    // The wasi:http host may abandon the request before it connects to the server.
+                    await Task.WhenAny(serverTask, serverRelease.Task);
+                }
+                else
+                {
+                    await serverTask;
+                }
             });
         }
 
