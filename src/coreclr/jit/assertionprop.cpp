@@ -2375,8 +2375,19 @@ void Compiler::optAssertionGen(GenTree* tree)
             if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) &&
                 lvaGetDesc(tree->AsLclVarCommon())->IsNeverNegative())
             {
-                // Create "LCL_VAR >= 0" assertion for int local variables that are never negative.
-                // Typically, it's Span.Length.
+                // Create "LCL_VAR >= 0" assertions for locals that are never negative.
+                ValueNum opVN = optConservativeNormalVN(tree);
+                if (opVN != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, opVN, vnStore->VNZeroForType(TYP_INT)));
+                }
+            }
+            break;
+
+        case GT_LCL_FLD:
+            if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) && IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
                 ValueNum opVN = optConservativeNormalVN(tree);
                 if (opVN != ValueNumStore::NoVN)
                 {
@@ -2404,7 +2415,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
             }
-            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
+            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) && !optLocalAssertionProp &&
                      IntegralRange::ForNode(tree, this).IsNonNegative())
             {
                 // Create "IND >= 0" assertion for int indirections that are known to be non-negative.
