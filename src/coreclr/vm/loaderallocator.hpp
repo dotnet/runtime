@@ -791,7 +791,6 @@ public:
     virtual ~LoaderAllocator();
     virtual BOOL CanUnload() = 0;
     void Init(BYTE *pExecutableHeapMemory);
-    void Terminate();
     virtual void ReleaseAssemblyLoadContext() {}
 
     SIZE_T EstimateSize();
@@ -866,6 +865,9 @@ public:
 private:
     // Deletes marshaling data at shutdown (which contains cached factories that needs to be released)
     void DeleteMarshalingData();
+
+    // Only called from the destructor.
+    void Terminate();
 
 public:
 
