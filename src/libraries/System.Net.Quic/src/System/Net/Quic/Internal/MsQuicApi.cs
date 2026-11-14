@@ -114,6 +114,39 @@ internal sealed unsafe partial class MsQuicApi
             // Non-Windows relies on the package being installed on the system and may include the version in its name
             loaded = NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{s_minMsQuicVersion.Major}", typeof(MsQuicApi).Assembly, null, out msQuicHandle) ||
                      NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, null, out msQuicHandle);
+
+            if (!loaded && OperatingSystem.IsMacOS())
+            {
+                // On macOS versioned dylibs follow the "libname.MAJOR.dylib" pattern rather than
+                // "libname.dylib.MAJOR", and the dynamic loader (dyld) does not always search
+                // Homebrew locations (e.g. /opt/homebrew/lib on Apple Silicon, /usr/local/lib
+                // on Intel) by default. Try the properly-versioned name via the default loader
+                // first, then fall back to well-known Homebrew locations.
+                //
+                // Interop.Libraries.MsQuic is "libmsquic.dylib"; strip the extension to build
+                // the properly-versioned macOS name.
+                string libName = Interop.Libraries.MsQuic;
+                string libBaseName = libName.EndsWith(".dylib", StringComparison.Ordinal)
+                    ? libName.Substring(0, libName.Length - ".dylib".Length)
+                    : libName;
+                string versionedName = $"{libBaseName}.{s_minMsQuicVersion.Major}.dylib";
+
+                loaded = NativeLibrary.TryLoad(versionedName, typeof(MsQuicApi).Assembly, null, out msQuicHandle);
+
+                if (!loaded)
+                {
+                    ReadOnlySpan<string> searchDirectories = ["/opt/homebrew/lib", "/usr/local/lib"];
+                    foreach (string dir in searchDirectories)
+                    {
+                        if (NativeLibrary.TryLoad(System.IO.Path.Combine(dir, versionedName), out msQuicHandle) ||
+                            NativeLibrary.TryLoad(System.IO.Path.Combine(dir, libName), out msQuicHandle))
+                        {
+                            loaded = true;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         if (!loaded)
