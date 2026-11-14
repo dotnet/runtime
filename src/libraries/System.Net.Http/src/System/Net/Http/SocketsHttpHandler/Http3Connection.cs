@@ -69,6 +69,20 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// The value of <see cref="ShuttingDown"/>, for callers that do not hold the connection's lock.
+        /// </summary>
+        public bool IsShuttingDown
+        {
+            get
+            {
+                lock (SyncObj)
+                {
+                    return ShuttingDown;
+                }
+            }
+        }
+
         public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, bool includeAltUsedHeader)
             : base(pool, GetNextConnectionId())
         {
