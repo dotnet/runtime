@@ -269,6 +269,22 @@ namespace System.IO.Pipes
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper!;
 
+            if (Interop.Advapi32.OpenThreadToken(Interop.Kernel32.GetCurrentThread(), TokenAccessLevels.Impersonate, bOpenAsSelf: true, out SafeTokenHandle previousToken))
+            {
+                execHelper._previousToken = previousToken;
+            }
+            else
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+                previousToken.Dispose();
+
+                if (errorCode != Interop.Errors.ERROR_NO_TOKEN)
+                {
+                    execHelper._impersonateErrorCode = errorCode;
+                    return;
+                }
+            }
+
             if (Interop.Advapi32.ImpersonateNamedPipeClient(execHelper._handle!))
             {
                 execHelper._mustRevert = true;
@@ -276,6 +292,8 @@ namespace System.IO.Pipes
             else
             {
                 execHelper._impersonateErrorCode = Marshal.GetLastPInvokeError();
+                execHelper._previousToken?.Dispose();
+                execHelper._previousToken = null;
             }
 
             if (execHelper._mustRevert)
@@ -291,10 +309,14 @@ namespace System.IO.Pipes
 
             if (execHelper._mustRevert)
             {
-                if (!Interop.Advapi32.RevertToSelf())
-                {
-                    execHelper._revertImpersonateErrorCode = Marshal.GetLastPInvokeError();
-                }
+                bool reverted = execHelper._previousToken is null ?
+                    Interop.Advapi32.RevertToSelf() :
+                    Interop.Advapi32.SetThreadToken(IntPtr.Zero, execHelper._previousToken);
+
+                int errorCode = reverted ? 0 : Marshal.GetLastPInvokeError();
+                execHelper._previousToken?.Dispose();
+
+                execHelper._revertImpersonateErrorCode = errorCode;
             }
         }
 
@@ -302,6 +324,7 @@ namespace System.IO.Pipes
         {
             internal PipeStreamImpersonationWorker _userCode;
             internal SafePipeHandle? _handle;
+            internal SafeTokenHandle? _previousToken;
             internal bool _mustRevert;
             internal int _impersonateErrorCode;
             internal int _revertImpersonateErrorCode;
