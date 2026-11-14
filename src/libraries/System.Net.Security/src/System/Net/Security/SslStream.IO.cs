@@ -577,8 +577,8 @@ namespace System.Net.Security
 
             ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
 
-            // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (availableData.Length - chunkSize > TlsFrameHelper.HeaderSize)
+            // During renegotiation, preserve any application-data records following Finished for Read.
+            while (!_isRenego && availableData.Length - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
@@ -592,9 +592,9 @@ namespace System.Net.Security
 
                 frameSize = nextHeader.Length;
 
-                // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
+                // Can process more handshake frames in single step, but we should
                 // avoid processing too much so as to preserve API boundary between handshake and I/O.
-                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > availableData.Length - chunkSize)
+                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) || frameSize > availableData.Length - chunkSize)
                 {
                     // We don't have full frame left or we already have app data which needs to be processed by decrypt.
                     break;

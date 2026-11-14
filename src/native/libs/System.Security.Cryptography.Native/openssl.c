@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 c_static_assert(CRYPTO_EX_INDEX_X509 == 3);
+c_static_assert(CRYPTO_EX_INDEX_SSL == 0);
 c_static_assert(CRYPTO_EX_INDEX_SSL_SESSION == 2);
 
 // See X509NameType.SimpleName
@@ -1245,6 +1246,58 @@ static int ExDataDupNoOp(
     return 1;
 }
 
+static void ExDataFreeSslPostHandshakeAuthState(
+    void* parent,
+    void* ptr,
+    CRYPTO_EX_DATA* ad,
+    int idx,
+    long argl,
+    void* argp)
+{
+    (void)parent;
+    (void)ad;
+    (void)idx;
+    (void)argl;
+    (void)argp;
+
+    OPENSSL_free(ptr);
+}
+
+static int ExDataDupSslPostHandshakeAuthState(
+    CRYPTO_EX_DATA* to,
+    const CRYPTO_EX_DATA* from,
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+    void** from_d,
+#else
+    void* from_d,
+#endif
+    int idx,
+    long argl,
+    void* argp)
+{
+    (void)to;
+    (void)from;
+    (void)idx;
+    (void)argl;
+    (void)argp;
+
+    void** state = (void**)from_d;
+    if (state == NULL || *state == NULL)
+    {
+        return 1;
+    }
+
+    SslPostHandshakeAuthState* copy = OPENSSL_malloc(sizeof(SslPostHandshakeAuthState));
+    if (copy == NULL)
+    {
+        return 0;
+    }
+
+    memcpy(copy, *state, sizeof(SslPostHandshakeAuthState));
+    *state = copy;
+    return 1;
+}
+
 void CryptoNative_RegisterLegacyAlgorithms(void)
 {
 #ifdef NEED_OPENSSL_3_0
@@ -1344,6 +1397,13 @@ static int32_t EnsureOpenSsl11Initialized(void)
 
     // In OpenSSL 1.1.0+, CRYPTO_EX_INDEX_X509 is 3.
     g_x509_ocsp_index = CRYPTO_get_ex_new_index(3, 0, NULL, NULL, ExDataDupOcspResponse, ExDataFreeOcspResponse);
+    g_ssl_post_handshake_auth_state_index = CRYPTO_get_ex_new_index(
+        CRYPTO_EX_INDEX_SSL,
+        0,
+        NULL,
+        NULL,
+        ExDataDupSslPostHandshakeAuthState,
+        ExDataFreeSslPostHandshakeAuthState);
     // In OpenSSL 1.1.0+, CRYPTO_EX_INDEX_SSL_SESSION is 2.
     g_ssl_sess_cert_index = CRYPTO_get_ex_new_index(2, 0, NULL, NULL, ExDataDupNoOp, ExDataFreeNoOp);
     return 0;
@@ -1364,6 +1424,7 @@ int32_t CryptoNative_OpenSslAvailable(void)
 
 static int32_t g_initStatus = 1;
 int g_x509_ocsp_index = -1;
+int g_ssl_post_handshake_auth_state_index = -1;
 int g_ssl_sess_cert_index = -1;
 
 static int32_t EnsureOpenSslInitializedCore(void)
@@ -1380,6 +1441,7 @@ static int32_t EnsureOpenSslInitializedCore(void)
     if (ret == 0)
     {
         assert(g_x509_ocsp_index != -1);
+        assert(g_ssl_post_handshake_auth_state_index != -1);
         assert(g_ssl_sess_cert_index != -1);
     }
 

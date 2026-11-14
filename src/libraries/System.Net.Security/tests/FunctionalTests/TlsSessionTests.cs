@@ -3453,6 +3453,115 @@ namespace System.Net.Security.Tests
             Assert.Equal(TestHelper.s_ping, appBuf);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SocketBoundSession_RequestClientCertificate_FinishedFollowedByCloseNotify_Completes(bool sendClientCertificate)
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource(TestConfiguration.PassingTestTimeout);
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+                AllowRenegotiation = true,
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+            using NetworkStream clientNetworkStream = new NetworkStream(clientUnderlying, ownsSocket: false);
+            using ManualChunkingStream chunkingStream = new ManualChunkingStream(clientNetworkStream, false);
+            using DelegateDelegatingStream clientTransport = new DelegateDelegatingStream(chunkingStream);
+            using SslStream clientSsl = new SslStream(clientTransport, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+
+            Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                AllowRenegotiation = true,
+                LocalCertificateSelectionCallback = (_, _, _, _, _) => sendClientCertificate ? clientCert : null,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(() => DriveSocketHandshakeToCompletionAsync(session));
+            await Task.WhenAll(clientAuth, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.True(session.IsHandshakeComplete);
+            Assert.Null(session.GetRemoteCertificate());
+
+            TaskCompletionSource flightBuffered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            clientTransport.ReadAsyncMemoryFunc = (memory, token) =>
+            {
+                if (chunkingStream.PendingWriteLength > 0)
+                {
+                    flightBuffered.TrySetResult();
+                }
+
+                return chunkingStream.ReadAsync(memory, token);
+            };
+            chunkingStream.SetWriteChunking(true);
+
+            Task<int> clientRead = clientSsl.ReadAsync(new byte[1]).AsTask();
+            StageClientCertRequestOverSocket(session);
+            Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
+
+            await flightBuffered.Task.WaitAsync(cts.Token);
+            await clientSsl.ShutdownAsync().WaitAsync(cts.Token);
+
+            int pendingWriteLength = chunkingStream.PendingWriteLength;
+            await chunkingStream.CommitWriteAsync(pendingWriteLength);
+            chunkingStream.SetWriteChunking(false);
+
+            while (serverSocket.Available < pendingWriteLength)
+            {
+                await Task.Delay(5, cts.Token);
+            }
+
+            await DriveSocketHandshakeToCompletionAsync(session).WaitAsync(cts.Token);
+
+            Assert.True(session.IsHandshakeComplete);
+            Assert.Equal(TlsOperationStatus.Closed, session.Read(new byte[1], out int bytesRead));
+            Assert.Equal(0, bytesRead);
+
+            TlsOperationStatus shutdownStatus;
+            do
+            {
+                shutdownStatus = session.Shutdown();
+                if (shutdownStatus == TlsOperationStatus.DestinationTooSmall)
+                {
+                    await Task.Delay(5, cts.Token);
+                }
+            }
+            while (shutdownStatus == TlsOperationStatus.DestinationTooSmall);
+
+            Assert.Equal(TlsOperationStatus.Closed, shutdownStatus);
+            Assert.Equal(0, await clientRead.WaitAsync(cts.Token));
+
+            X509Certificate2? negotiated = session.GetRemoteCertificate();
+            Assert.Equal(sendClientCertificate, negotiated is not null);
+            if (sendClientCertificate)
+            {
+                Assert.Equal(clientCert.Thumbprint, negotiated!.Thumbprint);
+            }
+        }
+
         // A TLS 1.3 client that sets no certificate doesn't offer post-handshake authentication,
         // so RequestClientCertificate() on a socket-bound server has nothing to request: it
         // completes without re-arming the handshake and the session stays usable.

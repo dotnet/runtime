@@ -781,6 +781,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_set_connect_state) \
     REQUIRED_FUNCTION(SSL_set_ex_data) \
     REQUIRED_FUNCTION(SSL_set_fd) \
+    REQUIRED_FUNCTION(SSL_set_msg_callback) \
     REQUIRED_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
     REQUIRED_FUNCTION(SSL_get_session) \

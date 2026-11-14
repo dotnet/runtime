@@ -10,6 +10,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -108,6 +109,13 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslRenegotiatePending")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsSslRenegotiatePending(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslPostHandshakeAuthPending")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsSslPostHandshakeAuthPending(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslPending")]
+        internal static partial int SslPending(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslShutdown")]
         internal static partial int SslShutdown(IntPtr ssl);
@@ -537,6 +545,23 @@ namespace Microsoft.Win32.SafeHandles
         internal void MarkHandshakeCompleted()
         {
             _handshakeCompleted = true;
+        }
+
+        internal bool IsPostHandshakeAuthenticationPending()
+        {
+            // RFC 8446 section 4.6.2: even an empty Certificate response ends with Finished.
+            // SSL_renegotiate_pending and SSL_is_init_finished do not track TLS 1.3 PHA.
+            if (Interop.Ssl.IsSslPostHandshakeAuthPending(this))
+            {
+                if (Interop.Ssl.SslPending(this) > 0)
+                {
+                    throw new AuthenticationException(SR.net_ssl_renegotiate_data);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
