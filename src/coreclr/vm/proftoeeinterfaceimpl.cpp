@@ -4250,8 +4250,32 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
 
     LPCBYTE pbMethod = NULL;
 
+#ifdef FEATURE_CODE_VERSIONING
+    // An EnC edit's IL lives on its IL code version; the method's RVA now points into the delta.
+    if (pModule->IsEditAndContinueEnabled())
+    {
+        ILCodeVersion ilCodeVersion;
+        {
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ilCodeVersion = pModule->GetCodeVersionManager()->GetActiveILCodeVersion(pModule, methodId);
+        }
+
+        if (ilCodeVersion.GetSource() == CodeVersionSource::kEnC)
+        {
+            HRESULT hr = S_OK;
+            EX_TRY
+            {
+                pbMethod = (LPCBYTE) ilCodeVersion.GetIL();
+            }
+            EX_CATCH_HRESULT(hr);
+            IfFailRet(hr);
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
     // Don't return rewritten IL, use the new API to get that.
-    pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId);
+    if (pbMethod == NULL)
+        pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId);
 
     // Method not overridden - get the original copy of the IL by going to metadata
     if (pbMethod == NULL)
