@@ -5,6 +5,12 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        internal static void WaitForForegroundThreads()
+        {
+            // ProcessExit handlers observe this state even on single-threaded targets.
+            Thread.CurrentThread.IsBackground = true;
+        }
+
         internal static int GetOptimalMaxSpinWaitsPerSpinIteration() => 0;
 
         internal static bool CurrentThreadIsFinalizerThread() => false;

@@ -249,7 +249,8 @@
     <Compile Include="System\ModuleHandle.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
-    <Compile Include="System\Threading\ManagedThreadId.cs" />
+    <Compile Include="System\Threading\ManagedThreadId.Multithreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="System\Threading\ManagedThreadId.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\ObjectHeader.NativeAot.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
