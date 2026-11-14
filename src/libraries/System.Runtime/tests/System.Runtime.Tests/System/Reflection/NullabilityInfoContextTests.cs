@@ -867,6 +867,82 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.Nullable, info.WriteState);
         }
 
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void IndexerParameter_ClassWithMixedNullability_ReturnsCorrectNullability()
+        {
+            PropertyInfo property = typeof(ClassWithMixedNullabilityAndIndexer).GetProperty("Item")!;
+            ParameterInfo[] parameters = property.GetIndexParameters();
+
+            NullabilityInfo param0 = nullabilityContext.Create(parameters[0]);
+            Assert.Equal(NullabilityState.NotNull, param0.ReadState);
+            Assert.Equal(NullabilityState.NotNull, param0.WriteState);
+            Assert.Equal(typeof(string), param0.Type);
+
+            NullabilityInfo param1 = nullabilityContext.Create(parameters[1]);
+            Assert.Equal(NullabilityState.Nullable, param1.ReadState);
+            Assert.Equal(NullabilityState.Nullable, param1.WriteState);
+            Assert.Equal(typeof(string), param1.Type);
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void IndexerParameter_SetOnlyAndGetterSetter_ReturnsCorrectNullability()
+        {
+            // Set-only indexer
+            PropertyInfo setOnlyProp = typeof(ClassWithIndexers).GetProperty("Item", typeof(string), new[] { typeof(string) })!;
+            ParameterInfo setParam = Assert.Single(setOnlyProp.GetIndexParameters());
+            NullabilityInfo setInfo = nullabilityContext.Create(setParam);
+            Assert.Equal(NullabilityState.NotNull, setInfo.ReadState);
+            Assert.Equal(NullabilityState.NotNull, setInfo.WriteState);
+            Assert.Equal(typeof(string), setInfo.Type);
+
+            // Read-write indexer
+            PropertyInfo readWriteProp = typeof(ClassWithIndexers).GetProperty("Item", typeof(string), new[] { typeof(string), typeof(int) })!;
+            ParameterInfo[] rwParams = readWriteProp.GetIndexParameters();
+            NullabilityInfo rwParam0 = nullabilityContext.Create(rwParams[0]);
+            Assert.Equal(NullabilityState.NotNull, rwParam0.ReadState);
+            Assert.Equal(NullabilityState.NotNull, rwParam0.WriteState);
+            Assert.Equal(typeof(string), rwParam0.Type);
+
+            NullabilityInfo rwParam1 = nullabilityContext.Create(rwParams[1]);
+            Assert.Equal(NullabilityState.NotNull, rwParam1.ReadState);
+            Assert.Equal(NullabilityState.NotNull, rwParam1.WriteState);
+            Assert.Equal(typeof(int), rwParam1.Type);
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void IndexerParameter_GenericClass_ReturnsCorrectNullability()
+        {
+            // Unconstrained TKey is nullable because TKey can be any type
+            PropertyInfo property = typeof(GenericClassWithIndexer<string, int>).GetProperty("Item", typeof(int), new[] { typeof(string) })!;
+            ParameterInfo param = Assert.Single(property.GetIndexParameters());
+            NullabilityInfo info = nullabilityContext.Create(param);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+            Assert.Equal(typeof(string), info.Type);
+
+            PropertyInfo listProperty = typeof(GenericClassWithIndexer<string, int>).GetProperty("Item", typeof(int), new[] { typeof(List<string>) })!;
+            ParameterInfo listParam = Assert.Single(listProperty.GetIndexParameters());
+            NullabilityInfo listInfo = nullabilityContext.Create(listParam);
+            Assert.Equal(NullabilityState.NotNull, listInfo.ReadState);
+            Assert.Equal(NullabilityState.NotNull, listInfo.WriteState);
+            Assert.Equal(typeof(List<string>), listInfo.Type);
+            NullabilityInfo genericArg = Assert.Single(listInfo.GenericTypeArguments);
+            Assert.Equal(NullabilityState.Nullable, genericArg.ReadState);
+            Assert.Equal(NullabilityState.Nullable, genericArg.WriteState);
+            Assert.Equal(typeof(string), genericArg.Type);
+
+            // Constrained TKey : notnull is not null
+            PropertyInfo constrProperty = typeof(GenericClassConstrained<string, int>).GetProperty("Item", typeof(int), new[] { typeof(string) })!;
+            ParameterInfo constrParam = Assert.Single(constrProperty.GetIndexParameters());
+            NullabilityInfo constrInfo = nullabilityContext.Create(constrParam);
+            Assert.Equal(NullabilityState.NotNull, constrInfo.ReadState);
+            Assert.Equal(NullabilityState.NotNull, constrInfo.WriteState);
+            Assert.Equal(typeof(string), constrInfo.Type);
+        }
+
         public static IEnumerable<object[]> StringTypeTestData()
         {
             yield return new object[] { "Format", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.Nullable, new Type[] { typeof(string), typeof(object), typeof(object) } };
@@ -1805,5 +1881,31 @@ namespace System.Reflection.Tests
     {
         public static void GenericMethod<T>([AllowNull] T value) => throw new Exception();
         public static void GenericNotNullMethod<T>([AllowNull] T value) where T : notnull => throw new Exception();
+    }
+
+    public class ClassWithMixedNullabilityAndIndexer
+    {
+        public string this[string notNullKey, string? nullableKey] => throw new NotImplementedException();
+        public (int A, int B) ValueTupleProp { get; }
+    }
+
+    public class ClassWithIndexers
+    {
+        public (int A, int B) ValueTupleProp { get; }
+        public string this[string key] { set => throw new NotImplementedException(); }
+        public string this[string key, int count] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    }
+
+    public class GenericClassWithIndexer<TKey, TValue>
+    {
+        public (int A, int B) ValueTupleProp { get; }
+        public TValue this[TKey key] => throw new NotImplementedException();
+        public TValue this[List<TKey> keys] => throw new NotImplementedException();
+    }
+
+    public class GenericClassConstrained<TKey, TValue> where TKey : notnull
+    {
+        public (int A, int B) ValueTupleProp { get; }
+        public TValue this[TKey key] => throw new NotImplementedException();
     }
 }
