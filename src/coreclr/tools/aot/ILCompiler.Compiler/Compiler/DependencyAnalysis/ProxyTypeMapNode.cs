@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (canonKey != key && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonKey))
                 {
                     sink.Add(new CombinedDependencyListEntry(
-                        context.MaximallyConstructableType(key),
+                        context.TypeLoaderArgumentGate(key, 0, context.MaximallyConstructableType(key)),
                         context.NativeLayout.TemplateTypeLayout(canonKey),
                         "Proxy map entry that could be loaded at runtime"));
                 }

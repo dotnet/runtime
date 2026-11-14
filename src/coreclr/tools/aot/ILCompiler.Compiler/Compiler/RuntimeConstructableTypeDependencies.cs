@@ -66,7 +66,7 @@ namespace ILCompiler
             if (canonType != type && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonType))
             {
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    dependencyType,
+                    factory.TypeLoaderArgumentGate(type, 0, dependencyType),
                     factory.NativeLayout.TemplateTypeLayout(canonType),
                     reason));
             }
