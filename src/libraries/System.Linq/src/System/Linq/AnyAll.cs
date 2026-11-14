@@ -10,31 +10,9 @@ namespace System.Linq
     {
         public static bool Any<TSource>(this IEnumerable<TSource> source)
         {
-            if (source is null)
+            if (TryGetNonEnumeratedCount(source, out int nonEnumeratedCount))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (source is ICollection<TSource> gc)
-            {
-                return gc.Count != 0;
-            }
-
-            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
-            {
-                int count = iterator.GetCount(onlyIfCheap: true);
-                if (count >= 0)
-                {
-                    return count != 0;
-                }
-
-                iterator.TryGetFirst(out bool found);
-                return found;
-            }
-
-            if (source is ICollection ngc)
-            {
-                return ngc.Count != 0;
+                return nonEnumeratedCount != 0;
             }
 
             using IEnumerator<TSource> e = source.GetEnumerator();
