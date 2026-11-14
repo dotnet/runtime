@@ -8,6 +8,7 @@
 #include "jithost.h"
 
 #include <clrconfignocache.h>
+#include <minipal/environ.h>
 #include <minipal/utf8.h>
 
 WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, const WCHAR* key, JitInstance& jitInstance)
@@ -21,7 +22,7 @@ WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, con
     wcscpy_s(&keyBuffer[prefixLen], keyLen + 1, key);
 
     // Look up the environment variable
-    DWORD valueLen = GetEnvironmentVariableW(keyBuffer, nullptr, 0);
+    DWORD valueLen = minipal_environ_get_variable_u16((const CHAR16_T*)keyBuffer, nullptr, 0);
     if (valueLen == 0)
     {
         jitInstance.freeArray(keyBuffer);
@@ -30,7 +31,7 @@ WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, con
 
     // Note this value must live as long as the jit instance does.
     WCHAR* value       = reinterpret_cast<WCHAR*>(jitInstance.allocateLongLivedArray(sizeof(WCHAR) * valueLen));
-    DWORD    newValueLen = GetEnvironmentVariableW(keyBuffer, value, valueLen);
+    DWORD    newValueLen = minipal_environ_get_variable_u16((const CHAR16_T*)keyBuffer, (CHAR16_T*)value, valueLen);
 
     jitInstance.freeArray(keyBuffer);
     if (valueLen < newValueLen)

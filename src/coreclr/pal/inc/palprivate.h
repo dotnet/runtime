@@ -32,20 +32,6 @@ GetModuleFileNameA(
     OUT LPSTR lpFileName,
     IN DWORD nSize);
 
-PALIMPORT
-BOOL
-PALAPI
-SetEnvironmentVariableA(
-            IN LPCSTR lpName,
-            IN LPCSTR lpValue);
-
-PALIMPORT
-DWORD
-PALAPI
-GetEnvironmentVariableA(
-            IN LPCSTR lpName,
-            OUT LPSTR lpBuffer,
-            IN DWORD nSize);
 
 #ifdef  __cplusplus
 }

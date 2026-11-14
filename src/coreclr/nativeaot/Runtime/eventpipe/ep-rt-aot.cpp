@@ -17,6 +17,7 @@
 #include <unistd.h>
 #endif
 
+#include "ProcessEnvironment.h"
 #include <minipal/random.h>
 #include <minipal/time.h>
 
@@ -835,42 +836,20 @@ bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     return false;
 }
 
-#ifndef HOST_WIN32
-#if defined(__APPLE__)
-#if defined (HOST_OSX)
-extern "C" {char ***_NSGetEnviron(void);}
-#define environ (*_NSGetEnviron())
-#else
-static char *_ep_rt_aot_environ[1] = { NULL };
-#define environ _ep_rt_aot_environ
-#endif /* defined (HOST_OSX) */
-#else
-extern "C" {
-extern char **environ;
-}
-#endif /* defined (__APPLE__) */
-#endif /* !defined (HOST_WIN32) */
-
 void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 {
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (env_array != NULL);
 
-#ifdef HOST_WIN32
-    ep_char16_t * envs = reinterpret_cast<ep_char16_t *>(GetEnvironmentStringsW ());
+    ep_char16_t * envs = reinterpret_cast<ep_char16_t *>(ProcessEnvironment_GetStrings ());
     if (envs) {
         const ep_char16_t * next = envs;
         while (*next) {
             dn_vector_ptr_push_back (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
             next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
         }
-        FreeEnvironmentStringsW (reinterpret_cast<LPWSTR>(envs));
+        ProcessEnvironment_FreeStrings (reinterpret_cast<CHAR16_T *>(envs));
     }
-#else
-    ep_char8_t **next = NULL;
-    for (next = environ; *next != NULL; ++next)
-        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next));
-#endif
 }
 
 ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void)

@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
+#include <minipal/environ.h>
 #include <minipal/utf8.h>
 
 #include "holder.h"
@@ -1039,5 +1040,5 @@ uint32_t PalGetCurrentProcessId()
 
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
 {
-    return ::GetEnvironmentVariableW(lpName, lpBuffer, nSize);
+    return minipal_environ_get_variable_u16(lpName, lpBuffer, nSize);
 }

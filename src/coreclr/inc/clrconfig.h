@@ -13,6 +13,7 @@
 
 #include "utilcode.h"
 #include "holder.h"
+#include <minipal/types.h>
 
 #ifndef __CLRConfig_h__
 #define __CLRConfig_h__
@@ -138,6 +139,16 @@ public:
 
     // Initialize the configuration.
     static void Initialize();
+
+    // Replace how environment variables are read. The runtime uses this to read its own copy of the
+    // process environment, so that variables set through the profiler or diagnostic server are visible.
+    typedef uint32_t (*GetEnvironmentVariableCallback)(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize);
+    typedef CHAR16_T* (*GetEnvironmentStringsCallback)();
+    typedef void (*FreeEnvironmentStringsCallback)(CHAR16_T* strings);
+    static void SetEnvironmentCallbacks(
+        GetEnvironmentVariableCallback getVariable,
+        GetEnvironmentStringsCallback getStrings,
+        FreeEnvironmentStringsCallback freeStrings);
 };
 
 inline CLRConfig::LookupOptions operator|(CLRConfig::LookupOptions lhs, CLRConfig::LookupOptions rhs)

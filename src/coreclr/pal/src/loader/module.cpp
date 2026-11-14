@@ -26,7 +26,6 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/process.h"
 #include "pal/utils.h"
 #include "pal/init.h"
-#include "pal/environ.h"
 #include "pal/stackstring.hpp"
 #include <minipal/utf8.h>
 

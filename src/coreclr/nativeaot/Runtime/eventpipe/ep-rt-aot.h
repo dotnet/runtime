@@ -1121,15 +1121,10 @@ ep_rt_temp_path_get (
     EP_ASSERT (buffer != NULL);
     EP_ASSERT (buffer_len > 0);
 
+    // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
     const ep_char8_t *path = getenv ("TMPDIR");
-    if (path == NULL){
-        path = getenv ("TMP");
-        if (path == NULL){
-            path = getenv ("TEMP");
-            if (path == NULL)
-                path = "/tmp/";
-        }
-    }
+    if (path == NULL || path[0] == '\0')
+        path = "/tmp/";
 
     int32_t result = snprintf (buffer, buffer_len, path[strlen(path) - 1] == '/' ? "%s" : "%s/", path);
     if (result <= 0 || (uint32_t)result >= buffer_len)

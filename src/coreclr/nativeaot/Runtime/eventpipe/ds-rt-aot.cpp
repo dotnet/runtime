@@ -7,6 +7,12 @@
 #include <stdlib.h>
 #endif
 
+#include "ProcessEnvironment.h"
+
+#ifndef TARGET_WINDOWS
+#include "gcenv.base.h"
+#endif
+
 #include <sys/types.h>
 
 #ifdef __APPLE__
@@ -237,16 +243,7 @@ ep_on_error:
 uint32_t
 ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-#ifdef TARGET_UNIX
-    ep_char8_t *nameNarrow = ep_rt_utf16le_to_utf8_string (name);
-    ep_char8_t *valueNarrow = ep_rt_utf16le_to_utf8_string (value);
-    int32_t ret_value = setenv(nameNarrow, valueNarrow, 1);
-    free(nameNarrow);
-    free(valueNarrow);
-    return ret_value;
-#else
-    return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-#endif
+    return ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value) == 0 ? S_OK : E_FAIL;
 }
 
 #endif /* ENABLE_PERFTRACING */

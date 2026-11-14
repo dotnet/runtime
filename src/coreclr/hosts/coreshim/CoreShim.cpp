@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <mutex>
+#include <minipal/environ.h>
 
 namespace
 {
@@ -65,13 +66,13 @@ namespace
 
     bool TryGetEnvVar(_In_z_ const WCHAR* env, _Inout_ std::wstring& value)
     {
-        DWORD len = ::GetEnvironmentVariableW(env, nullptr, 0);
+        DWORD len = minipal_environ_get_variable_u16((const CHAR16_T*)env, nullptr, 0);
         if (len == 0)
             return false;
 
         PathBuffer<WCHAR> buffer;
         buffer.SetLength(len);
-        (void)::GetEnvironmentVariableW(env, buffer, buffer);
+        (void)minipal_environ_get_variable_u16((const CHAR16_T*)env, (CHAR16_T*)(WCHAR*)buffer, buffer);
 
         value = static_cast<WCHAR *>(buffer.Buf);
         return true;

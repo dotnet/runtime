@@ -16,6 +16,7 @@
 #include <configuration.h>
 #include <minipal.h>
 #include "../../vm/ceemain.h"
+#include "../../runtime/ProcessEnvironment.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
@@ -328,6 +329,8 @@ int coreclr_initialize(
     {
         return hr;
     }
+
+    CLRConfig::SetEnvironmentCallbacks(ProcessEnvironment_GetVariable, ProcessEnvironment_GetStrings, ProcessEnvironment_FreeStrings);
 #endif
 
     if (hostContract != nullptr)

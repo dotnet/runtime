@@ -30,6 +30,7 @@
 
 #include <unistd.h>
 #include <minipal/cpucount.h>
+#include "ProcessEnvironment.h"
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -728,21 +729,7 @@ uint32_t PalGetCurrentProcessId()
 
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
-    const char* value = getenv(name);
-    if (value == NULL)
-    {
-        return 0;
-    }
-
-    size_t valueLen = strlen(value);
-    if (valueLen < size)
-    {
-        strcpy(buffer, value);
-        return valueLen;
-    }
-
-    // return required size including the null character or 0 if the size doesn't fit into uint32_t
-    return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
+    return ProcessEnvironment_GetVariableUtf8(name, buffer, size);
 }
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)

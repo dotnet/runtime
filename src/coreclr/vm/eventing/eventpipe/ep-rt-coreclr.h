@@ -26,6 +26,7 @@
 #include <unistd.h>
 #endif // HOST_WINDOWS
 
+#include "ProcessEnvironment.h"
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>
@@ -1451,14 +1452,14 @@ ep_rt_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (env_array != NULL);
 
-	LPWSTR envs = GetEnvironmentStringsW ();
+	LPWSTR envs = reinterpret_cast<LPWSTR>(ProcessEnvironment_GetStrings ());
 	if (envs) {
 		LPWSTR next = envs;
 		while (*next) {
 			dn_vector_ptr_push_back (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
 			next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
 		}
-		FreeEnvironmentStringsW (envs);
+		ProcessEnvironment_FreeStrings (reinterpret_cast<CHAR16_T *>(envs));
 	}
 }
 

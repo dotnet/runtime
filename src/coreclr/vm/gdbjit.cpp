@@ -13,6 +13,7 @@
 #include "formattype.h"
 #include "gdbjit.h"
 #include "gdbjithelpers.h"
+#include <minipal/environ.h>
 
 thread_local bool tls_isSymReaderInProgress = false;
 
@@ -2448,7 +2449,7 @@ void NotifyGdb::Initialize()
     // Get names of interesting modules from environment
     if (g_wszModuleNames == nullptr && g_cBytesNeeded == 0)
     {
-        DWORD cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
+        DWORD cCharsNeeded = minipal_environ_get_variable_u16((const CHAR16_T*)W("CORECLR_GDBJIT"), NULL, 0);
 
         if (cCharsNeeded == 0)
         {
@@ -2458,7 +2459,7 @@ void NotifyGdb::Initialize()
 
         WCHAR *wszModuleNamesBuf = new WCHAR[cCharsNeeded+1];
 
-        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNamesBuf, cCharsNeeded);
+        cCharsNeeded = minipal_environ_get_variable_u16((const CHAR16_T*)W("CORECLR_GDBJIT"), (CHAR16_T*)wszModuleNamesBuf, cCharsNeeded);
 
         if (cCharsNeeded == 0)
         {

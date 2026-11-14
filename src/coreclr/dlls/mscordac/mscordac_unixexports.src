@@ -48,14 +48,10 @@ nativeStringResourceTable_mscorrc
 #DuplicateHandle
 #FlushInstructionCache
 #FormatMessageW
-#FreeEnvironmentStringsW
 #FreeLibrary
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
-#GetEnvironmentStringsW
-#GetEnvironmentVariableA
-#GetEnvironmentVariableW
 #GetLastError
 #GetModuleFileNameW
 #GetProcAddress
