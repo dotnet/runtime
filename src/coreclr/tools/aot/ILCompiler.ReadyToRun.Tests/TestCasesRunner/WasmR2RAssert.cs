@@ -22,6 +22,31 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static void AssertPrimaryOnlyAuxiliaryMetadata(ReadyToRunReader reader)
+    {
+        const int RuntimeFunctionEntrySize = sizeof(uint) * 2;
+
+        Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.AuxiliaryModuleMetadata));
+        ReadyToRunSection metadataSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.AuxiliaryModuleMetadata];
+        Assert.Equal(AuxiliaryModuleMetadataSection.HeaderSize, metadataSection.Size);
+
+        int metadataOffset = reader.GetOffset(metadataSection.RelativeVirtualAddress);
+        AuxiliaryModuleMetadataSection metadata =
+            new AuxiliaryModuleMetadataSection(reader, metadataOffset, metadataOffset + metadataSection.Size);
+        Assert.Equal(0, metadata.EntryPointsFilenameRva);
+        Assert.Equal(0, metadata.InstanceMethodEntryPointsRva);
+        Assert.Equal(0, metadata.MethodDefEntryPointsInfoRva);
+        Assert.Equal(1u, metadata.EntryPointsModuleActivationStatus);
+        Assert.Empty(metadata.Entries);
+
+        Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.RuntimeFunctions));
+        ReadyToRunSection runtimeFunctionsSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        Assert.Equal(0, runtimeFunctionsSection.Size % RuntimeFunctionEntrySize);
+        Assert.Equal(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize, metadata.PrimaryModuleMethodCount);
+    }
+
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
     {
         ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();

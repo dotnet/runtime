@@ -128,6 +128,52 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsBrowserWasmTarget))]
+    [InlineData(null)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions(bool? auxiliaryModules)
+    {
+        List<string> additionalArgs = ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath];
+        if (auxiliaryModules.HasValue)
+        {
+            additionalArgs.Add("--auxiliary-modules");
+            if (auxiliaryModules is false)
+            {
+                additionalArgs.Add("false");
+            }
+        }
+
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions),
+            [
+                new(nameof(AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = additionalArgs,
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            if (auxiliaryModules is true)
+            {
+                WasmR2RAssert.AssertPrimaryOnlyAuxiliaryMetadata(reader);
+            }
+            else
+            {
+                Assert.False(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.AuxiliaryModuleMetadata));
+            }
+        }
+    }
+
     [Theory]
     [InlineData("--two-phase-compilation")]
     [InlineData("--deferred-wasm-calls")]
