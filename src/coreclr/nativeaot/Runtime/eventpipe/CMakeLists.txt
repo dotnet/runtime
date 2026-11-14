@@ -1,104 +1,41 @@
 project(Runtime)
 
-include(FindPython)
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(EVENT_MANIFEST ${VM_DIR}/ClrEtwAll.man)
-set(EVENT_EXCLUSIONS ${VM_DIR}/ClrEtwAllMeta.lst)
-set(EVENT_INCLUSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/gen-eventing-event-inc.lst)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
-set(NONEXTERN_ARG "--nonextern")
-set(NOXPLATHEADER_ARG "--noxplatheader")
 
-# Platform agnostic source generation, clretwallmain.h/cpp, disabledclretwallmain.cpp, clreventpipewriteevents.h, etmdummy.h
-set (GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp)
-
-set (GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp)
-
-set(GENERATE_PLAT_AGNOSTIC_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
-
-set (EventingHeaders
-  ${GENERATED_INCLUDE_DIR}/etmdummy.h
-  ${GENERATED_INCLUDE_DIR}/clretwallmain.h
-  ${GENERATED_INCLUDE_DIR}/clreventpipewriteevents.h
-  ${GENERATED_INCLUDE_DIR}/clrproviders.h
-  ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
-  ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
+list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
+  ${NATIVEAOT_RUNTIME_DIR}/DisabledEventPipeInterface.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledeventpipeinternal.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledeventtrace.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledruntimeeventinternal.cpp
 )
 
-if(CMAKE_CROSSCOMPILING)
-  set(GEN_EVENTING_TARGETOS --targetos)
-  set(GEN_EVENTING_TARGETOS_ARG ${CLR_CMAKE_TARGET_OS})
+if(NOT CLR_DOTNET_HOST_PATH)
+  # The eventing sources cannot be generated, so both libraries are the disabled implementation.
+  set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
+  include(${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
+  include_directories(${EP_GENERATED_HEADER_PATH})
+
+  add_custom_target(aot_eventing_headers)
+  foreach(library eventpipe-enabled eventpipe-disabled)
+    add_library(${library} STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
+    target_compile_definitions(${library} PRIVATE FEATURE_PERFTRACING FEATURE_EVENT_TRACE)
+    install_static_library(${library} aotsdk nativeaot)
+  endforeach()
+  return()
 endif()
 
-add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
-  COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --incdir ${GENERATED_INCLUDE_DIR} --inc ${EVENT_INCLUSION_FILE} ${GEN_EVENTING_TARGETOS} ${GEN_EVENTING_TARGETOS_ARG} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
-  COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
-  DEPENDS ${EVENT_MANIFEST} ${GENERATE_PLAT_AGNOSTIC_SCRIPT}
-  VERBATIM
-)
+add_event_data_target(aot_eventing_headers
+  FLAVOR nativeaot
+  OUTPUT_DIR ${GENERATED_INCLUDE_DIR}
+  INCLUSION_LIST ${CMAKE_CURRENT_SOURCE_DIR}/gen-eventing-event-inc.lst
+  OUTPUTS AOT_EVENT_DATA_OUTPUTS)
 
-set_source_files_properties(${EventingHeaders} PROPERTIES GENERATED TRUE)
-
-add_custom_target(aot_eventing_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp)
-
-if(CLR_CMAKE_TARGET_WIN32)
-
-  set(ETW_PROVIDER_SCRIPT ${CLR_DIR}/scripts/genEtwProvider.py)
-
-  set (ETW_PROVIDER_OUTPUTS
-    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAll.h
-    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAll.rc
-    ${GENERATED_INCLUDE_DIR}/etw/etwmacros.h
-    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAll_MSG00001.bin
-    ${GENERATED_INCLUDE_DIR}/etw/ClrEtwAllTEMP.bin
-    ${GENERATED_INCLUDE_DIR}/clrxplatevents.h
-  )
-
-  set_source_files_properties(${ETW_PROVIDER_OUTPUTS} PROPERTIES GENERATED TRUE)
-
-  add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp
-    COMMAND ${Python_EXECUTABLE} ${ETW_PROVIDER_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${GENERATED_INCLUDE_DIR}
-    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp
-    DEPENDS ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS} ${ETW_PROVIDER_SCRIPT}
-  )
-
-  add_custom_target(aot_etw_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp)
-
-endif()
-
-# EventPipe provider source, currently dotnetruntime provider and helper file
-set(GENERATE_EVENTPIPE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
-set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_EVENTPIPE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --inc ${EVENT_INCLUSION_FILE} --intermediate ${CMAKE_CURRENT_BINARY_DIR} --runtimeflavor nativeaot ${NONEXTERN_ARG})
-
-execute_process(
-  COMMAND ${GENERATE_COMMAND} --dry-run
-  RESULT_VARIABLE GEN_EVENTPIPE_RESULT
-  OUTPUT_VARIABLE GEN_EVENTPIPE_SOURCE_PATHS
-  ERROR_VARIABLE GEN_EVENTPIPE_ERRORS
-)
-
-if (NOT GEN_EVENTPIPE_RESULT EQUAL 0)
-  message(FATAL_ERROR "Failed to generate EventPipe: ${GEN_EVENTPIPE_ERRORS}")
-endif()
-
-string(REPLACE "\n" ";" GEN_EVENTPIPE_SOURCE_PATHS ${GEN_EVENTPIPE_SOURCE_PATHS}) # turn the outputted list of files into a CMake list
-
-set (GEN_EVENTPIPE_PROVIDER_SOURCES "")
-foreach(GEN_EVENTPIPE_SOURCE_PATH ${GEN_EVENTPIPE_SOURCE_PATHS})
-  file(TO_CMAKE_PATH ${GEN_EVENTPIPE_SOURCE_PATH} GEN_EVENTPIPE_SOURCE)
-  list(APPEND GEN_EVENTPIPE_PROVIDER_SOURCES ${GEN_EVENTPIPE_SOURCE})
-endforeach()
-
-# Generate the provider source files via python auto-gen
-add_custom_command(OUTPUT ${GEN_EVENTPIPE_PROVIDER_SOURCES}
-  COMMAND ${GENERATE_COMMAND}
-  DEPENDS ${GENERATE_EVENTPIPE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
-
-set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES GENERATED TRUE)
+set(GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp)
+set(GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp)
+set(GEN_EVENTPIPE_PROVIDER_SOURCES ${AOT_EVENT_DATA_OUTPUTS})
+list(FILTER GEN_EVENTPIPE_PROVIDER_SOURCES INCLUDE REGEX "/eventpipe/[^/]+\\.cpp$")
 
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
@@ -185,21 +122,12 @@ list(APPEND EVENTPIPE_SOURCES
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
 )
 
-list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
-  ${NATIVEAOT_RUNTIME_DIR}/DisabledEventPipeInterface.cpp
-  ${NATIVEAOT_RUNTIME_DIR}/disabledeventpipeinternal.cpp
-  ${NATIVEAOT_RUNTIME_DIR}/disabledeventtrace.cpp
-  ${NATIVEAOT_RUNTIME_DIR}/disabledruntimeeventinternal.cpp
-  ${GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES}
-)
+list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES ${GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES})
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
 
 target_link_libraries(eventpipe-enabled PRIVATE eventpipe-shared-objects dn-containers-no-lto)
 add_dependencies(eventpipe-enabled aot_eventing_headers)
-if(CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(eventpipe-enabled aot_etw_headers)
-endif()
 
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
 add_dependencies(eventpipe-disabled aot_eventing_headers)

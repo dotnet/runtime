@@ -1845,15 +1845,22 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // Refer to the comments in src/gc/gcevents.h see which events are enabled.
 
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
-    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();
-    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart();
+#ifdef FEATURE_EVENTSOURCE_XPLAT
+#define XPLAT_EVENT_ENABLED(name) EventXplatEnabled##name()
+#else
+    // Without LTTng (e.g. Android), only EventPipe sessions enable these events.
+#define XPLAT_EVENT_ENABLED(name) FALSE
+#endif
+    BOOL keyword_gc_verbose = XPLAT_EVENT_ENABLED(GCJoin_V2) || EventPipeEventEnabledGCJoin_V2();
+    BOOL keyword_gc_informational = XPLAT_EVENT_ENABLED(GCStart) || EventPipeEventEnabledGCStart();
 
-    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
-    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle();
-    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle();
+    BOOL keyword_gc_heapsurvival_and_movement_informational = XPLAT_EVENT_ENABLED(GCGenerationRange) || EventPipeEventEnabledGCGenerationRange();
+    BOOL keyword_gchandle_informational = XPLAT_EVENT_ENABLED(SetGCHandle) || EventPipeEventEnabledSetGCHandle();
+    BOOL keyword_gchandle_prv_informational = XPLAT_EVENT_ENABLED(PrvSetGCHandle) || EventPipeEventEnabledPrvSetGCHandle();
 
-    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin();
-    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime();
+    BOOL prv_gcprv_informational = XPLAT_EVENT_ENABLED(BGCBegin) || EventPipeEventEnabledBGCBegin();
+    BOOL prv_gcprv_verbose = XPLAT_EVENT_ENABLED(PinPlugAtGCTime) || EventPipeEventEnabledPinPlugAtGCTime();
+#undef XPLAT_EVENT_ENABLED
 
     int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose :
                                  ((keyword_gc_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);

@@ -126,6 +126,13 @@ else()
   set(stubs_to_build ${components})
 endif()
 
+# Without EventPipe only the diagnostics_tracing stub is available.
+set(available_components ${components})
+if(NOT ENABLE_PERFTRACING)
+  list(REMOVE_ITEM components_to_build ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
+  list(REMOVE_ITEM available_components ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
+endif()
+
 # from here down, all the components are treated in the same way
 
 #define a library for each component and component stub
@@ -214,6 +221,9 @@ elseif(AOT_COMPONENTS OR (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS))
   foreach(component IN LISTS components_to_build)
     list(APPEND mono-components-objects $<TARGET_OBJECTS:${component}-objects>)
   endforeach()
+  if(NOT ENABLE_PERFTRACING)
+    list(APPEND mono-components-objects $<TARGET_OBJECTS:${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-stub-objects>)
+  endif()
 
 endif()
 
@@ -262,7 +272,7 @@ if(NOT MONO_CROSS_COMPILE)
     set(TemplateMonoRuntimeComponentLinking "static")
     set(TemplateMonoRuntimeAvailableComponents "")
   else()
-    list(TRANSFORM components REPLACE "^(.+)$" "{ \"identity\": \"\\1\", \"RuntimeIdentifier\": \"${TemplateRuntimeIdentifier}\" }," OUTPUT_VARIABLE TemplateMonoRuntimeAvailableComponentsList)
+    list(TRANSFORM available_components REPLACE "^(.+)$" "{ \"identity\": \"\\1\", \"RuntimeIdentifier\": \"${TemplateRuntimeIdentifier}\" }," OUTPUT_VARIABLE TemplateMonoRuntimeAvailableComponentsList)
     list(JOIN TemplateMonoRuntimeAvailableComponentsList "\n" TemplateMonoRuntimeAvailableComponents)
     if(STATIC_COMPONENTS)
       set(TemplateMonoRuntimeComponentLinking "static")

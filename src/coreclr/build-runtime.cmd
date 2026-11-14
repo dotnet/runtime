@@ -300,6 +300,9 @@ REM ============================================================================
 set __IntermediatesIncDir=%__IntermediatesDir%\src\inc
 set __IntermediatesEventingDir=%__ArtifactsIntermediatesDir%\Eventing\%__TargetArch%\%__BuildType%
 
+REM Python is only needed for pgocheck.py
+if %__EnforcePgo% NEQ 1 goto SkipLocatePython
+
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
 set __PythonLocation=
@@ -316,6 +319,8 @@ if NOT DEFINED PYTHON (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a Python installation.
     goto ExitWithError
 )
+
+:SkipLocatePython
 
 set __CMakeTarget=
 set __BuildAllJitsCommunity=0

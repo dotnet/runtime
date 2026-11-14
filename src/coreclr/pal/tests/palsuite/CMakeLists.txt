@@ -30,9 +30,6 @@ endif()
 
 #these PAL tests have special build needs, and are built separately
 add_subdirectory(exception_handling/pal_sxs/test1)
-if(FEATURE_EVENT_TRACE)
-  add_subdirectory(eventprovider)
-endif(FEATURE_EVENT_TRACE)
 
 add_executable_clr(paltests
   EXCLUDE_FROM_ALL
