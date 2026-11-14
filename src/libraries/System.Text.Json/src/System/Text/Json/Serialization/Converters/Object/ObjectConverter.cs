@@ -18,15 +18,16 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public sealed override object ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type, this);
-            return null!;
-        }
+            => ReadAsPropertyNameCore(ref reader, typeToConvert, options);
 
         internal sealed override object ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type, this);
-            return null!;
+            if (typeToConvert == Type)
+            {
+                ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(typeToConvert, this);
+            }
+
+            return GetConverterForKeyType(typeToConvert, options).ReadAsPropertyNameCoreAsObject(ref reader, typeToConvert, options)!;
         }
 
         public sealed override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
@@ -56,8 +57,31 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(runtimeType, this);
             }
 
-            JsonConverter runtimeConverter = options.GetConverterInternal(runtimeType);
-            runtimeConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
+            GetConverterForKeyType(runtimeType, options).WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
+        }
+
+        // Resolves the converter that should serialize a property name of the given key type.
+        private JsonConverter GetConverterForKeyType(Type keyType, JsonSerializerOptions options)
+        {
+            JsonConverter converter = options.GetConverterInternal(keyType);
+
+            // A converter declared for object delegates straight back into this fallback, which would
+            // recurse until the stack overflows (dotnet/runtime#122835). Such a converter doesn't
+            // override the property name methods -- if it did, it would have handled the key without
+            // ever getting here -- so use the default converter for the key type instead of
+            // dispatching through it again.
+            JsonConverter sourceConverter = converter.SourceConverterForCastingConverter ?? converter;
+            if (sourceConverter.Type == typeof(object))
+            {
+                if (!DefaultJsonTypeInfoResolver.TryGetDefaultSimpleConverter(keyType, out JsonConverter? defaultConverter))
+                {
+                    ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(keyType, this);
+                }
+
+                converter = defaultConverter;
+            }
+
+            return converter;
         }
     }
 
