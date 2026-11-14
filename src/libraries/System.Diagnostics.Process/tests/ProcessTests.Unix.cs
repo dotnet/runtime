@@ -1320,5 +1320,71 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(expected, actual);
             }).Dispose();
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_OtherProcess_AreEmptyWhenFirstAccessedAfterProcessExited()
+        {
+            Process p = CreateDefaultProcess();
+
+            // Read other information first so that the process information is cached without the threads being read.
+            // The value itself is not checked as it can be zero just after the process started on Linux 6.2+.
+            _ = p.WorkingSet64;
+
+            p.Kill();
+
+            // Wait for the exit without calling WaitForExit(), which would refresh the cached information.
+            Assert.True(SpinWait.SpinUntil(() => p.HasExited, WaitInMS));
+
+            // The process ID may have been recycled, so its threads must not be read after the process exited.
+            Assert.Empty(p.Threads.Cast<ProcessThread>());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_OtherProcess_AreEmptyWhenProcessIdentityChangedBeforeFirstAccess()
+        {
+            Process p = CreateDefaultProcess();
+
+            // Read other information first so that the process information is cached without the threads being read.
+            // The value itself is not checked as it can be zero just after the process started on Linux 6.2+.
+            _ = p.WorkingSet64;
+
+            // Simulate the process ID being reused by a different process, which has a different start time,
+            // after the process information was read but before the threads were. The process is still running,
+            // so the exit check alone does not detect this.
+            object processInfo = typeof(Process).GetField("_processInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(p);
+            PropertyInfo startTime = processInfo.GetType().GetProperty("ProcStartTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            startTime.SetValue(processInfo, (ulong)startTime.GetValue(processInfo) + 1);
+
+            Assert.False(p.HasExited);
+            Assert.Empty(p.Threads.Cast<ProcessThread>());
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_AreAvailableAfterOtherProcessInformationWasRead()
+        {
+            using Process p = Process.GetCurrentProcess();
+
+            // Reading the memory properties must not require (or prevent) the thread list being read afterwards.
+            Assert.True(p.WorkingSet64 > 0);
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+
+            p.Refresh();
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_OtherProcess_AreAvailableAfterOtherProcessInformationWasRead()
+        {
+            Process p = CreateDefaultProcess();
+
+            // Reading the memory properties must not require (or prevent) the thread list being read afterwards.
+            // The value itself is not checked as it can be zero just after the process started on Linux 6.2+.
+            _ = p.WorkingSet64;
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+        }
     }
 }

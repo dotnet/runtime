@@ -102,9 +102,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
+        /// Creates a ProcessInfo from the data parsed from the /proc/pid/stat and /proc/pid/status files.
         /// </summary>
-        internal static unsafe ProcessInfo CreateProcessInfo(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
+        internal static ProcessInfo CreateProcessInfo(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
         {
             int pid = procFsStat.pid;
 
@@ -125,9 +125,32 @@ namespace System.Diagnostics
                 // A few of these could probably be filled in from getrusage,
                 // but only for the current process or its children, not for
                 // arbitrary other processes.
+
+                // Reading /proc/pid/task/*/stat for every thread dominates the cost of
+                // creating a ProcessInfo, so it is deferred until Process.Threads is used.
+                ThreadsPopulated = false,
+                ProcPid = procPid,
+                ProcStartTime = procFsStat.starttime,
             };
 
-            // Then read through /proc/pid/task/ to find each thread in the process...
+            return pi;
+        }
+
+        /// <summary>
+        /// Fills in the thread information of a ProcessInfo from the /proc/pid/task directory.
+        /// </summary>
+        internal static unsafe void PopulateThreads(Interop.procfs.ProcPid procPid, ProcessInfo pi)
+        {
+            int pid = pi.ProcessId;
+
+            // The process may have exited, and its ID been reused by another process, since the ProcessInfo was created.
+            // Don't report the threads of a different process.
+            if (!IsSameProcess(procPid, pi))
+            {
+                return;
+            }
+
+            // Read through /proc/pid/task/ to find each thread in the process...
             string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(procPid);
             try
             {
@@ -159,9 +182,16 @@ namespace System.Diagnostics
                 // directories and files in procfs, the process could be gone.
             }
 
-            // Finally return what we've built up
-            return pi;
+            // The process could also have exited, and its ID been reused, while its threads were being read.
+            if (!IsSameProcess(procPid, pi))
+            {
+                pi._threadInfoList.Clear();
+            }
         }
+
+        /// <summary>Gets whether the process with the specified ID is still the one the ProcessInfo was created for.</summary>
+        private static bool IsSameProcess(Interop.procfs.ProcPid procPid, ProcessInfo pi) =>
+            Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat) && stat.starttime == pi.ProcStartTime;
 
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
