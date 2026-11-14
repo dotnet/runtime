@@ -133,6 +133,16 @@
           DependsOnTargets="ResolveProjectReferences;MergeMibcFiles" />
 
   <Target Name="PrepareInvokeCrossgen2" DependsOnTargets="ResolveProjectReferences;CreateMergedMibcFile">
+    <PropertyGroup>
+      <_CoreLibInstructionSetStampFile>$(IntermediatesDir)System.Private.CoreLib.instruction-set.stamp</_CoreLibInstructionSetStampFile>
+    </PropertyGroup>
+    <!-- Recompile CoreLib when the instruction sets change. -->
+    <MakeDir Directories="$(IntermediatesDir)" />
+    <WriteLinesToFile File="$(_CoreLibInstructionSetStampFile)"
+                      Lines="$(PublishReadyToRunInstructionSet)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
     <ItemGroup>
       <Crossgen2Inputs Include="@(CoreLib)" />
       <Crossgen2Inputs Include="$(MergedMibcPath)" />
@@ -140,6 +150,7 @@
       <Crossgen2Inputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)"
                        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
       <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" />
+      <Crossgen2Inputs Include="$(_CoreLibInstructionSetStampFile)" />
     </ItemGroup>
 
     <ItemGroup>

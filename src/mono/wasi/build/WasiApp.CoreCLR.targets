@@ -31,6 +31,34 @@
     </ItemGroup>
   </Target>
 
+  <!-- The crossgen2 arguments, including the instruction sets, are not inputs of _CreateR2RImages, so
+       record them and recompile when they change. -->
+  <Target Name="_WasiReadyToRunArgumentsState"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <PropertyGroup>
+      <_WasiReadyToRunStateHash>$([MSBuild]::StableStringHash('$(PublishReadyToRunCrossgen2ExtraArgs)', 'Sha256'))</_WasiReadyToRunStateHash>
+      <_WasiReadyToRunStateFile>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'wasi-r2r-state.stamp'))</_WasiReadyToRunStateFile>
+      <_WasiPreviousReadyToRunStateHash />
+    </PropertyGroup>
+    <ReadLinesFromFile File="$(_WasiReadyToRunStateFile)"
+                       Condition="Exists('$(_WasiReadyToRunStateFile)')">
+      <Output TaskParameter="Lines" PropertyName="_WasiPreviousReadyToRunStateHash" />
+    </ReadLinesFromFile>
+    <!-- Images can be newer than a newly written state file, so delete them on a change. -->
+    <Delete Condition="'$(_WasiPreviousReadyToRunStateHash)' != '$(_WasiReadyToRunStateHash)'"
+            Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)')" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasiReadyToRunStateFile)'))" />
+    <WriteLinesToFile File="$(_WasiReadyToRunStateFile)"
+                      Lines="$(_WasiReadyToRunStateHash)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasiReadyToRunStateFile)" />
+      <FileWrites Include="$(_WasiReadyToRunStateFile)" />
+    </ItemGroup>
+  </Target>
+
   <!--
     CoreCLR-WASI app-builder targets. Sibling of Mono's WasiApp.targets, mirroring the
     browser split (BrowserWasmApp.targets vs BrowserWasmApp.CoreCLR.targets).
