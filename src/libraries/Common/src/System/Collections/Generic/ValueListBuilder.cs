@@ -110,7 +110,7 @@ namespace System.Collections.Generic
 
             int pos = _pos;
             Span<T> span = _span;
-            if ((uint)(pos + length) <= (uint)span.Length)
+            if ((uint)pos <= (uint)span.Length && (uint)length <= (uint)(span.Length - pos))
             {
                 _pos = pos + length;
                 return span.Slice(pos, length);
