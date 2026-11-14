@@ -1,20 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeComment : CodeObject
     {
-        private string _text;
+        private string? _text;
 
         public CodeComment() { }
 
-        public CodeComment(string text)
+        public CodeComment(string? text)
         {
             Text = text;
         }
 
-        public CodeComment(string text, bool docComment)
+        public CodeComment(string? text, bool docComment)
         {
             Text = text;
             DocComment = docComment;
@@ -22,6 +24,7 @@ namespace System.CodeDom
 
         public bool DocComment { get; set; }
 
+        [AllowNull]
         public string Text
         {
             get => _text ?? string.Empty;

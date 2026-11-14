@@ -14,7 +14,7 @@ namespace System.Collections.Specialized
     internal static class FixedStringLookup
     {
         // Returns whether the match is found in the lookup table
-        internal static bool Contains(string[][] lookupTable, string value, bool ignoreCase)
+        internal static bool Contains(string[]?[] lookupTable, string value, bool ignoreCase)
         {
             int length = value.Length;
             if (length <= 0 || length - 1 >= lookupTable.Length)
@@ -22,7 +22,7 @@ namespace System.Collections.Specialized
                 return false;
             }
 
-            string[] subArray = lookupTable[length - 1];
+            string[]? subArray = lookupTable[length - 1];
             if (subArray == null)
             {
                 return false;

@@ -46,11 +46,11 @@ namespace Microsoft.VisualBasic
                                                          GeneratorSupport.DeclareIndexerProperties;
 
         private int _statementDepth;
-        private readonly IDictionary<string, string> _provOptions;
+        private readonly IDictionary<string, string>? _provOptions;
 
         // This is the keyword list. To minimize search time and startup time, this is stored by length
         // and then alphabetically for use by FixedStringLookup.Contains.
-        private static readonly string[][] s_keywords = new string[][] {
+        private static readonly string[]?[] s_keywords = new string[]?[] {
             null,           // 1 character
             new string[] {  // 2 characters
                 "as",
@@ -246,7 +246,7 @@ namespace Microsoft.VisualBasic
 
         internal VBCodeGenerator() { }
 
-        internal VBCodeGenerator(IDictionary<string, string> providerOptions)
+        internal VBCodeGenerator(IDictionary<string, string>? providerOptions)
         {
             _provOptions = providerOptions;
         }
@@ -256,7 +256,7 @@ namespace Microsoft.VisualBasic
         protected override string CompilerName => "vbc.exe";
 
         /// <summary>Tells whether or not the current class should be generated as a module</summary>
-        private bool IsCurrentModule => IsCurrentClass && GetUserData(CurrentClass, "Module", false);
+        private bool IsCurrentModule => IsCurrentClass && GetUserData(CurrentClass!, "Module", false);
 
         protected override string NullToken => "Nothing";
 
@@ -398,7 +398,7 @@ namespace Microsoft.VisualBasic
                 OutputIdentifier(arg.Name);
                 Output.Write(":=");
             }
-            ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value, ((ExposedTabStringIndentedTextWriter)Output).InnerWriter, Options);
+            ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value!, ((ExposedTabStringIndentedTextWriter)Output).InnerWriter, Options);
         }
 
         private void OutputAttributes(CodeAttributeDeclarationCollection attributes, bool inLine)
@@ -406,7 +406,7 @@ namespace Microsoft.VisualBasic
             OutputAttributes(attributes, inLine, null, false);
         }
 
-        private void OutputAttributes(CodeAttributeDeclarationCollection attributes, bool inLine, string prefix, bool closingLine)
+        private void OutputAttributes(CodeAttributeDeclarationCollection attributes, bool inLine, string? prefix, bool closingLine)
         {
             if (attributes.Count == 0) return;
             bool firstAttr = true;
@@ -492,7 +492,7 @@ namespace Microsoft.VisualBasic
         protected override void GenerateDirectionExpression(CodeDirectionExpression e)
         {
             // Visual Basic does not need to adorn the calling point with a direction, so just output the expression.
-            GenerateExpression(e.Expression);
+            GenerateExpression(e.Expression!);
         }
 
         protected override void OutputFieldScopeModifier(MemberAttributes attributes)
@@ -647,12 +647,12 @@ namespace Microsoft.VisualBasic
             // "o <> nothing" should be "not o is nothing"
             if (e.Right is CodePrimitiveExpression && ((CodePrimitiveExpression)e.Right).Value == null)
             {
-                GenerateNotIsNullExpression(e.Left);
+                GenerateNotIsNullExpression(e.Left!);
                 return;
             }
             if (e.Left is CodePrimitiveExpression && ((CodePrimitiveExpression)e.Left).Value == null)
             {
-                GenerateNotIsNullExpression(e.Right);
+                GenerateNotIsNullExpression(e.Right!);
                 return;
             }
 
@@ -796,13 +796,13 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateIterationStatement(CodeIterationStatement e)
         {
-            GenerateStatement(e.InitStatement);
+            GenerateStatement(e.InitStatement!);
             Output.Write("Do While ");
-            GenerateExpression(e.TestExpression);
+            GenerateExpression(e.TestExpression!);
             Output.WriteLine();
             Indent++;
             GenerateVBStatements(e.Statements);
-            GenerateStatement(e.IncrementStatement);
+            GenerateStatement(e.IncrementStatement!);
             Indent--;
             Output.WriteLine("Loop");
         }
@@ -929,7 +929,7 @@ namespace Microsoft.VisualBasic
         protected override void GenerateCastExpression(CodeCastExpression e)
         {
             Output.Write("CType(");
-            GenerateExpression(e.Expression);
+            GenerateExpression(e.Expression!);
             Output.Write(',');
             OutputType(e.TargetType);
             OutputArrayPostfix(e.TargetType);
@@ -939,7 +939,7 @@ namespace Microsoft.VisualBasic
         protected override void GenerateDelegateCreateExpression(CodeDelegateCreateExpression e)
         {
             Output.Write("AddressOf ");
-            GenerateExpression(e.TargetObject);
+            GenerateExpression(e.TargetObject!);
             Output.Write('.');
             OutputIdentifier(e.MethodName);
         }
@@ -1016,7 +1016,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateIndexerExpression(CodeIndexerExpression e)
         {
-            GenerateExpression(e.TargetObject);
+            GenerateExpression(e.TargetObject!);
             // If this IndexerExpression is referencing to base, we need to emit
             // .Item after MyBase. Otherwise the code won't compile.
             if (e.TargetObject is CodeBaseReferenceExpression)
@@ -1043,7 +1043,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateArrayIndexerExpression(CodeArrayIndexerExpression e)
         {
-            GenerateExpression(e.TargetObject);
+            GenerateExpression(e.TargetObject!);
             Output.Write('(');
             bool first = true;
             foreach (CodeExpression exp in e.Indices)
@@ -1189,7 +1189,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateExpressionStatement(CodeExpressionStatement e)
         {
-            GenerateExpression(e.Expression);
+            GenerateExpression(e.Expression!);
             Output.WriteLine();
         }
 
@@ -1272,7 +1272,7 @@ namespace Microsoft.VisualBasic
             if (e.Expression != null)
             {
                 Output.Write("Return ");
-                GenerateExpression(e.Expression);
+                GenerateExpression(e.Expression!);
                 Output.WriteLine();
             }
             else
@@ -1284,7 +1284,7 @@ namespace Microsoft.VisualBasic
         protected override void GenerateConditionStatement(CodeConditionStatement e)
         {
             Output.Write("If ");
-            GenerateExpression(e.Condition);
+            GenerateExpression(e.Condition!);
             Output.WriteLine(" Then");
             Indent++;
             GenerateVBStatements(e.TrueStatements);
@@ -1332,9 +1332,9 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateAssignStatement(CodeAssignStatement e)
         {
-            GenerateExpression(e.Left);
+            GenerateExpression(e.Left!);
             Output.Write(" = ");
-            GenerateExpression(e.Right);
+            GenerateExpression(e.Right!);
             Output.WriteLine();
         }
 
@@ -1343,7 +1343,7 @@ namespace Microsoft.VisualBasic
             Output.Write("AddHandler ");
             GenerateFormalEventReferenceExpression(e.Event);
             Output.Write(", ");
-            GenerateExpression(e.Listener);
+            GenerateExpression(e.Listener!);
             Output.WriteLine();
         }
 
@@ -1352,7 +1352,7 @@ namespace Microsoft.VisualBasic
             Output.Write("RemoveHandler ");
             GenerateFormalEventReferenceExpression(e.Event);
             Output.Write(", ");
-            GenerateExpression(e.Listener);
+            GenerateExpression(e.Listener!);
             Output.WriteLine();
         }
 
@@ -1388,7 +1388,7 @@ namespace Microsoft.VisualBasic
             CodeTypeReference typeRef = e.Type;
             if (typeRef.ArrayRank == 1 && e.InitExpression != null)
             {
-                CodeArrayCreateExpression eAsArrayCreate = e.InitExpression as CodeArrayCreateExpression;
+                CodeArrayCreateExpression? eAsArrayCreate = e.InitExpression as CodeArrayCreateExpression;
                 if (eAsArrayCreate != null && eAsArrayCreate.Initializers.Count == 0)
                 {
                     doInit = false;
@@ -2162,7 +2162,7 @@ namespace Microsoft.VisualBasic
 
         private static bool AllowLateBound(CodeCompileUnit e)
         {
-            object o = e.UserData["AllowLateBound"];
+            object? o = e.UserData["AllowLateBound"];
             if (o != null && o is bool)
             {
                 return (bool)o;
@@ -2174,7 +2174,7 @@ namespace Microsoft.VisualBasic
 
         private static bool RequireVariableDeclaration(CodeCompileUnit e)
         {
-            object o = e.UserData["RequireVariableDeclaration"];
+            object? o = e.UserData["RequireVariableDeclaration"];
             if (o != null && o is bool)
             {
                 return (bool)o;
@@ -2184,7 +2184,7 @@ namespace Microsoft.VisualBasic
 
         private static bool GetUserData(CodeObject e, string property, bool defaultValue)
         {
-            object o = e.UserData[property];
+            object? o = e.UserData[property];
             if (o != null && o is bool)
             {
                 return (bool)o;

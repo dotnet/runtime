@@ -13,7 +13,7 @@ namespace System.CodeDom
 
         public CodeNamespaceImport this[int index]
         {
-            get => (CodeNamespaceImport)_data[index];
+            get => (CodeNamespaceImport)_data[index]!;
             set
             {
                 _data[index] = value;
@@ -63,12 +63,12 @@ namespace System.CodeDom
 
         public IEnumerator GetEnumerator() => _data.GetEnumerator();
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get => this[index];
             set
             {
-                this[index] = (CodeNamespaceImport)value;
+                this[index] = (CodeNamespaceImport)value!;
                 SyncKeys();
             }
         }
@@ -77,29 +77,29 @@ namespace System.CodeDom
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot => null;
+        object ICollection.SyncRoot => null!;
 
         void ICollection.CopyTo(Array array, int index) => _data.CopyTo(array, index);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        int IList.Add(object value) => _data.Add((CodeNamespaceImport)value);
+        int IList.Add(object? value) => _data.Add((CodeNamespaceImport)value!);
 
         void IList.Clear() => Clear();
 
-        bool IList.Contains(object value) => _data.Contains(value);
+        bool IList.Contains(object? value) => _data.Contains(value);
 
-        int IList.IndexOf(object value) => _data.IndexOf((CodeNamespaceImport)value);
+        int IList.IndexOf(object? value) => _data.IndexOf((CodeNamespaceImport)value!);
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
-            _data.Insert(index, (CodeNamespaceImport)value);
+            _data.Insert(index, (CodeNamespaceImport)value!);
             SyncKeys();
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
-            _data.Remove((CodeNamespaceImport)value);
+            _data.Remove((CodeNamespaceImport)value!);
             SyncKeys();
         }
 
