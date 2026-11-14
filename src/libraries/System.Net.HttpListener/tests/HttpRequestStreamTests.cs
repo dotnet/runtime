@@ -740,6 +740,60 @@ namespace System.Net.Tests
             }
         }
 
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
+        // No chunk size received.
+        [InlineData("", false)]
+        [InlineData("", true)]
+        // Chunk size line is missing its final LF.
+        [InlineData("a\r", false)]
+        [InlineData("a\r", true)]
+        // Only 5 of the declared 10 data bytes received.
+        [InlineData("a\r\n01234", false)]
+        [InlineData("a\r\n01234", true)]
+        // CRLF after the chunk data is missing its final LF.
+        [InlineData("a\r\n0123456789\r", false)]
+        [InlineData("a\r\n0123456789\r", true)]
+        // Complete data chunk, but no zero-sized terminating chunk.
+        [InlineData("a\r\n0123456789\r\n", false)]
+        [InlineData("a\r\n0123456789\r\n", true)]
+        // Zero-sized terminating chunk is missing the final empty line.
+        [InlineData("a\r\n0123456789\r\n0\r\n", false)]
+        [InlineData("a\r\n0123456789\r\n0\r\n", true)]
+        // Trailer section is missing the final empty line.
+        [InlineData("a\r\n0123456789\r\n0\r\nX-Trailer: value\r\n", false)]
+        [InlineData("a\r\n0123456789\r\n0\r\nX-Trailer: value\r\n", true)]
+        public async Task Read_TruncatedChunkedBody_ThrowsHttpListenerException(string body, bool useAsync)
+        {
+            using (Socket client = _factory.GetConnectedSocket())
+            {
+                Uri listeningUri = new Uri(_factory.ListeningUrl);
+                string request =
+                    $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                    $"Host: {listeningUri.Host}\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    body;
+
+                await client.SendAsync(Encoding.ASCII.GetBytes(request));
+                HttpListenerContext context = await _listener.GetContextAsync();
+                client.Shutdown(SocketShutdown.Send);
+
+                Task readTask = Task.Run(async () =>
+                {
+                    byte[] buffer = new byte[1];
+                    while ((useAsync ?
+                        await context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length) :
+                        context.Request.InputStream.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                    }
+                });
+
+                HttpListenerException exception = await Assert.ThrowsAsync<HttpListenerException>(
+                    () => readTask.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds)));
+                Assert.Equal((int)HttpStatusCode.BadRequest, exception.ErrorCode);
+            }
+        }
+
         // http.sys tolerates whitespace around the chunk size and delivers the body, so this
         // is asserting the behavior of the managed implementation only. Gating on the
         // implementation rather than the platform keeps it running on Windows when the

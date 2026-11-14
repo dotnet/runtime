@@ -162,6 +162,11 @@ namespace System.Net
                 int nread = base.EndRead(base_ares);
                 if (nread == 0)
                 {
+                    if (_decoder.WantMore)
+                    {
+                        throw new HttpListenerException((int)HttpStatusCode.BadRequest);
+                    }
+
                     _no_more_data = true;
                     ares._count = rb.InitialCount - rb.Count;
                     ares.Complete();
