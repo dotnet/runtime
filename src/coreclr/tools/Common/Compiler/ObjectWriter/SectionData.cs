@@ -16,36 +16,57 @@ namespace ILCompiler.ObjectWriter
     /// Optimized append-only structure for writing sections.
     /// </summary>
     /// <remarks>
-    /// The section data are kept in memory as a list of buffers. It supports
-    /// appending existing read-only buffers without copying (such as buffer
-    /// from ObjectNode.ObjectData).
+    /// The section data are kept in memory as a sequence of buffers, with the
+    /// first buffer stored directly and a list allocated only when needed. It
+    /// supports appending existing read-only buffers without copying (such as
+    /// buffer from ObjectNode.ObjectData).
     /// </remarks>
     internal sealed class SectionData
     {
-        private readonly ArrayBufferWriter<byte> _appendBuffer = new();
-        private readonly List<ReadOnlyMemory<byte>> _buffers = new();
+        private const int PaddingBufferSize = 16;
+        private const byte NopPaddingByte = 0x90;
+
+        private static readonly byte[] s_zeroPadding = new byte[PaddingBufferSize];
+        private static readonly byte[] s_nopPadding = CreatePadding(NopPaddingByte);
+
+        private ArrayBufferWriter<byte> _appendBuffer;
+        private List<ReadOnlyMemory<byte>> _buffers;
+        private ReadOnlyMemory<byte> _firstBuffer;
+        private int _bufferCount;
         private long _length;
-        private readonly byte[] _padding = new byte[16];
+        private readonly byte[] _padding;
 
         public SectionData(byte paddingByte = 0)
         {
-            _padding.AsSpan().Fill(paddingByte);
+            _padding = paddingByte switch
+            {
+                0 => s_zeroPadding,
+                NopPaddingByte => s_nopPadding,
+                _ => CreatePadding(paddingByte),
+            };
+        }
+
+        private static byte[] CreatePadding(byte value)
+        {
+            byte[] result = new byte[PaddingBufferSize];
+            result.AsSpan().Fill(value);
+            return result;
         }
 
         private void FlushAppendBuffer()
         {
-            if (_appendBuffer.WrittenCount > 0)
+            if (_appendBuffer is { WrittenCount: > 0 } appendBuffer)
             {
-                _buffers.Add(_appendBuffer.WrittenSpan.ToArray());
-                _length += _appendBuffer.WrittenCount;
-                _appendBuffer.Clear();
+                AddBuffer(appendBuffer.WrittenSpan.ToArray());
+                _length += appendBuffer.WrittenCount;
+                appendBuffer.Clear();
             }
         }
 
         public void AppendData(ReadOnlyMemory<byte> data)
         {
             FlushAppendBuffer();
-            _buffers.Add(data);
+            AddBuffer(data);
             _length += data.Length;
         }
 
@@ -53,10 +74,11 @@ namespace ILCompiler.ObjectWriter
         {
             if (paddingLength > 0)
             {
-                if (_appendBuffer.WrittenCount > 0 || paddingLength > _padding.Length)
+                if ((_appendBuffer?.WrittenCount ?? 0) > 0 || paddingLength > _padding.Length)
                 {
-                    _appendBuffer.GetSpan(paddingLength).Slice(0, paddingLength).Fill(_padding[0]);
-                    _appendBuffer.Advance(paddingLength);
+                    ArrayBufferWriter<byte> appendBuffer = GetAppendBuffer();
+                    appendBuffer.GetSpan(paddingLength).Slice(0, paddingLength).Fill(_padding[0]);
+                    appendBuffer.Advance(paddingLength);
                 }
                 else
                 {
@@ -65,14 +87,47 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public IBufferWriter<byte> BufferWriter => _appendBuffer;
+        public IBufferWriter<byte> BufferWriter => GetAppendBuffer();
 
-        public long Length => _length + _appendBuffer.WrittenCount;
+        public long Length => _length + (_appendBuffer?.WrittenCount ?? 0);
 
         /// <summary>
         /// Gets a read-only stream accessing the section data.
         /// </summary>
         public Stream GetReadStream() => new ReadStream(this);
+
+        private ArrayBufferWriter<byte> GetAppendBuffer()
+        {
+            return _appendBuffer ??= new ArrayBufferWriter<byte>();
+        }
+
+        private void AddBuffer(ReadOnlyMemory<byte> data)
+        {
+            if (_bufferCount == 0)
+            {
+                _firstBuffer = data;
+            }
+            else
+            {
+                if (_buffers is null)
+                {
+                    _buffers = new List<ReadOnlyMemory<byte>>();
+                    _buffers.Add(_firstBuffer);
+                }
+
+                _buffers.Add(data);
+            }
+
+            _bufferCount++;
+        }
+
+        private int BufferCount => _bufferCount;
+
+        private ReadOnlyMemory<byte> GetBuffer(int index)
+        {
+            Debug.Assert((uint)index < (uint)_bufferCount);
+            return _buffers is null ? _firstBuffer : _buffers[index];
+        }
 
         private sealed class ReadStream : Stream
         {
@@ -98,11 +153,12 @@ namespace ILCompiler.ObjectWriter
                     _position = 0;
                     _bufferIndex = 0;
                     _bufferPosition = 0;
-                    while (_position < value && _bufferIndex < _sectionData._buffers.Count)
+                    while (_position < value && _bufferIndex < _sectionData.BufferCount)
                     {
-                        if (_sectionData._buffers[_bufferIndex].Length < value - _position)
+                        ReadOnlyMemory<byte> currentBuffer = _sectionData.GetBuffer(_bufferIndex);
+                        if (currentBuffer.Length < value - _position)
                         {
-                            _position += _sectionData._buffers[_bufferIndex].Length;
+                            _position += currentBuffer.Length;
                             _bufferIndex++;
                         }
                         else
@@ -136,9 +192,9 @@ namespace ILCompiler.ObjectWriter
 
                 // _bufferIndex and _bufferPosition is only valid after seeking when
                 // _position < _length
-                while (_position < _sectionData._length && _bufferIndex < _sectionData._buffers.Count)
+                while (_position < _sectionData._length && _bufferIndex < _sectionData.BufferCount)
                 {
-                    ReadOnlySpan<byte> currentBuffer = _sectionData._buffers[_bufferIndex].Span.Slice(_bufferPosition);
+                    ReadOnlySpan<byte> currentBuffer = _sectionData.GetBuffer(_bufferIndex).Span.Slice(_bufferPosition);
 
                     if (currentBuffer.Length >= buffer.Length)
                     {
