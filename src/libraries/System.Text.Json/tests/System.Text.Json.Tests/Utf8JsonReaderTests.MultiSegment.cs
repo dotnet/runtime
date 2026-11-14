@@ -1880,6 +1880,94 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [InlineData("fals")]
+        [InlineData("\r\nf")]
+        [InlineData("tb:")]
+        [InlineData("{\"\":tr")]
+        [InlineData("[[n{\"a\":")]
+        [InlineData("f-2.2e-2,-")]
+        [InlineData("[\n  falé]")]
+        [InlineData("/+")]
+        [InlineData("{/")]
+        [InlineData("{/s")]
+        [InlineData("{ /")]
+        [InlineData("{} /")]
+        [InlineData("[0,/*")]
+        [InlineData("[\n  0, /*\r\nunterminated")]
+        [InlineData("[0, //illegal\u2028separator\n 1]")]
+        [InlineData("[0, //illegal\u2029separator\n 1]")]
+        public static void InvalidJsonDiagnosticsMatchAcrossSegments(string json)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling });
+                var spanReader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                JsonException expected = ReadToError(ref spanReader);
+
+                for (int split = 1; split < utf8.Length; split++)
+                {
+                    IEnumerable<byte[]> segments = [utf8.AsSpan(0, split).ToArray(), [], utf8.AsSpan(split).ToArray(), []];
+                    ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(segments);
+                    var sequenceReader = new Utf8JsonReader(sequence, isFinalBlock: true, state);
+                    JsonException actual = ReadToError(ref sequenceReader);
+
+                    Assert.Equal(expected.Message, actual.Message);
+                    Assert.Equal(expected.LineNumber, actual.LineNumber);
+                    Assert.Equal(expected.BytePositionInLine, actual.BytePositionInLine);
+                    Assert.Equal(spanReader.BytesConsumed, sequenceReader.BytesConsumed);
+                    Assert.Equal(spanReader.TokenStartIndex, sequenceReader.TokenStartIndex);
+                    Assert.Equal(spanReader.TokenType, sequenceReader.TokenType);
+                    Assert.Equal(spanReader.CurrentDepth, sequenceReader.CurrentDepth);
+                    Assert.Equal(sequenceReader.BytesConsumed, sequence.Slice(0, sequenceReader.Position).Length);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("  tru", "e x", JsonCommentHandling.Disallow)]
+        [InlineData("{\n  \"key\": fa", "lse x}", JsonCommentHandling.Disallow)]
+        [InlineData("[0, nu", "ll x]", JsonCommentHandling.Disallow)]
+        [InlineData(" /*", " comment */ 1 x", JsonCommentHandling.Skip)]
+        [InlineData("[\n /* comment\r\n", " */ 1 x]", JsonCommentHandling.Skip)]
+        [InlineData("[\n /* comment\r\n", " */ 1 x]", JsonCommentHandling.Allow)]
+        public static void IncompleteValueRestoresMultiSegmentReaderState(string prefix, string suffix, JsonCommentHandling commentHandling)
+        {
+            byte[] partial = Encoding.UTF8.GetBytes(prefix);
+            byte[] complete = Encoding.UTF8.GetBytes(prefix + suffix);
+
+            var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling });
+            var spanReader = new Utf8JsonReader(partial, isFinalBlock: false, state);
+            while (spanReader.Read()) { }
+            var resumedSpan = new Utf8JsonReader(complete.AsSpan((int)spanReader.BytesConsumed), isFinalBlock: true, spanReader.CurrentState);
+            JsonException expected = ReadToError(ref resumedSpan);
+
+            for (int size = 1; size < partial.Length; size++)
+            {
+                ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(partial, size);
+                var sequenceReader = new Utf8JsonReader(sequence, isFinalBlock: false, state);
+                while (sequenceReader.Read()) { }
+
+                Assert.Equal(spanReader.BytesConsumed, sequenceReader.BytesConsumed);
+                Assert.Equal(sequenceReader.BytesConsumed, sequence.Slice(0, sequenceReader.Position).Length);
+                Assert.False(sequenceReader.Read());
+                Assert.Equal(spanReader.BytesConsumed, sequenceReader.BytesConsumed);
+
+                var resumedSequence = new Utf8JsonReader(complete.AsSpan((int)sequenceReader.BytesConsumed), isFinalBlock: true, sequenceReader.CurrentState);
+                JsonException actual = ReadToError(ref resumedSequence);
+                Assert.Equal(expected.LineNumber, actual.LineNumber);
+                Assert.Equal(expected.BytePositionInLine, actual.BytePositionInLine);
+            }
+        }
+
+        private static JsonException ReadToError(ref Utf8JsonReader reader) =>
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, static (ref Utf8JsonReader jsonReader) =>
+            {
+                while (jsonReader.Read()) { }
+            });
+
         [Fact]
         public static void MultiSegmentInvalidLiteral()
         {
