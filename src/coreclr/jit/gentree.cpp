@@ -9149,6 +9149,16 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
             return true;
+#ifdef FEATURE_HW_INTRINSICS
+        // Vector element access with a non-constant index is only in range due to
+        // its bounds check. Once that check is removed, the access must stay below
+        // whatever proved the index in range.
+        case GT_HWINTRINSIC:
+        {
+            NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+            return HWIntrinsicInfo::IsVectorGetElement(id) || (id == NI_Vector_WithElement);
+        }
+#endif // FEATURE_HW_INTRINSICS
         default:
             return false;
     }
@@ -26085,6 +26095,12 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         GenTree* index = fgMakeMultiUse(&op2);
         index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
         op2            = gtWrapWithSideEffects(index, op2, GTF_OBS_EFFECT);
+
+        // The bounds check may later be removed; keep the access ordered after
+        // whatever proved the index is in range.
+        GenTree* getElement = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
+        getElement->SetHasOrderingSideEffect();
+        return getElement;
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
@@ -31802,6 +31818,12 @@ GenTree* Compiler::gtNewSimdWithElementNode(
         index          = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
         value          = gtWrapWithSideEffects(value, index, GTF_OBS_EFFECT);
         op3            = gtWrapWithSideEffects(value, op3, GTF_OBS_EFFECT);
+
+        // The bounds check may later be removed; keep the access ordered after
+        // whatever proved the index is in range.
+        GenTree* withElement = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseType, simdSize);
+        withElement->SetHasOrderingSideEffect();
+        return withElement;
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseType, simdSize);
