@@ -10,7 +10,10 @@ pr:
     include:
     - eng/pipelines/coreclr/hardware-intrinsics-wasm.yml
     - eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
+    - src/coreclr/crossgen-corelib.proj
     - src/coreclr/jit/*wasm*
+    - src/tests/Directory.Build.targets
+    - src/tests/build.proj
     - src/tests/JIT/HardwareIntrinsics/Wasm/**
 
 variables:
@@ -28,4 +31,12 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          testBuildArgs: '/p:WasmEnableRelaxedSimd=true -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
+          extraBuildArgs: /p:PublishReadyToRunInstructionSet=relaxed-simd
+          testBuildArgs: '/p:PublishReadyToRunInstructionSet=relaxed-simd -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+          # Compiles CoreLib into each test composite, so the tests can use relaxed SIMD.
+          extraHelixArguments: /p:WholeProgramCompositeBuildMode=true
+          testBuildArgs: '/p:PublishReadyToRunInstructionSet=relaxed-simd -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'

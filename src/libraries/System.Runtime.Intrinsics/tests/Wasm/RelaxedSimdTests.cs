@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Runtime.Intrinsics.Wasm.Tests
 {
-    [PlatformSpecific(TestPlatforms.Browser)]
+    [PlatformSpecific(TestPlatforms.Browser | TestPlatforms.Wasi)]
     public sealed class RelaxedSimdTests
     {
         public static bool IsNotSupported => !RelaxedSimd.IsSupported;

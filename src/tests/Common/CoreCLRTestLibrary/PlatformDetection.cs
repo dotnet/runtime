@@ -113,6 +113,9 @@ namespace TestLibrary
         public static bool IsWasm => IsBrowser || IsWasi;
         public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
         public static bool IsWasmReadyToRun => IsWasm && IsReadyToRunCompiled;
+        // The test assemblies and CoreLib were compiled into one composite image.
+        public static bool IsWholeProgramComposite => IsReadyToRunCompiled && Environment.GetEnvironmentVariable("WholeProgramCompositeBuildMode") is not null;
+        public static bool IsNotWholeProgramComposite => !IsWholeProgramComposite;
 
         // CoreCLR on WebAssembly (FEATURE_PORTABLE_ENTRYPOINTS) cannot create native-callable entrypoints at run time,
         // e.g. for Marshal.GetFunctionPointerForDelegate or a delegate passed to a P/Invoke.
