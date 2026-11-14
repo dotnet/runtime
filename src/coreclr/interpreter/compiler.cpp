@@ -2062,6 +2062,10 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
     new (pMethodRW) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems,
                                   m_initLocals, m_unmanagedCallersOnly, m_publishSecretStubParam,
                                   m_methodCodeSize);
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    assert(m_pEntrySafepointIns != nullptr);
+    pMethodRW->auxiliaryEntryOpcodeIndex = m_pEntrySafepointIns->nativeOffset;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     // Copy async suspend data and fix up pointers
     uint32_t currentAsyncOffset = asyncSuspendDataOffset;
@@ -8954,7 +8958,13 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Reserve a second word so methods with an auxiliary activation flag can be patched before publication.
+    m_pEntrySafepointIns = AddIns(INTOP_SAFEPOINT_AND_SKIP);
+    m_pEntrySafepointIns->data[0] = 0;
+#else
     AddIns(INTOP_SAFEPOINT);
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 #ifdef PERFTRACING_DISABLE_THREADS
     if (m_emitSamplingProfiler)
         AddIns(INTOP_PROF_SAMPLEPOINT);

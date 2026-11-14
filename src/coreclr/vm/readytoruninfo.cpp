@@ -1079,6 +1079,41 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         pModule->m_pMethodIsGenericMap = (ReadyToRun_MethodIsGenericMap*)m_pComposite->GetImage()->GetDirectoryData(methodIsGenericMap);
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    if (m_isComponentAssembly)
+        m_pAuxiliaryModuleMetadata = m_pCompositeInfo->GetAuxiliaryModuleMetadata();
+
+    IMAGE_DATA_DIRECTORY *auxiliaryModuleMetadata = m_component.FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
+    if (auxiliaryModuleMetadata == NULL && m_pAuxiliaryModuleMetadata == nullptr)
+    {
+        // Fake an AuxiliaryModuleMetadata for now.
+        size_t metadataSize = sizeof(ReadyToRun_AuxiliaryModuleMetadata) + sizeof(ReadyToRun_AuxiliaryModuleMetadataEntry);
+        BYTE* metadata = static_cast<BYTE*>(pamTracker->Track(
+            pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(metadataSize))));
+        m_pAuxiliaryModuleMetadata = new (metadata) ReadyToRun_AuxiliaryModuleMetadata
+            {
+                0, // EntryPointsFilenameRVA
+                0, // InstanceMethodEntryPointsRVA
+                0, // MethodDefEntryPointsInfoRVA
+                1, // EntryPointsModuleActivationStatus
+                0, // PrimaryModuleMethodCount
+                1  // AuxiliaryModuleCount
+            };
+        new (m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries())
+            ReadyToRun_AuxiliaryModuleMetadataEntry
+            {
+                0,                   // FileNameRVA
+                0,                   // RelativeTableBase
+                m_nRuntimeFunctions, // MethodCount
+                1                    // ActivationStatus
+            };
+    }
+    else if (m_pAuxiliaryModuleMetadata == nullptr)
+    {
+        m_pAuxiliaryModuleMetadata = (ReadyToRun_AuxiliaryModuleMetadata*)m_pComposite->GetImage()->GetDirectoryData(auxiliaryModuleMetadata);
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 }
 
 static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
@@ -1349,33 +1384,46 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         || pMD->IsAsyncVariantMethod()
         || pMD->IsUnboxingStub())
     {
-        if (m_instMethodEntryPoints.IsNull())
-            goto done;
-
-        NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
-        NativeParser entryParser;
         offset = (uint)-1;
-        while (lookup.GetNext(entryParser))
+        if (!m_instMethodEntryPoints.IsNull())
         {
-            PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
-            SigPointer sig(pBlob);
-            if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+            NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
+            NativeParser entryParser;
+            while (lookup.GetNext(entryParser))
             {
-                // Get the updated SigPointer location, so we can calculate the size of the blob,
-                // in order to skip the blob and find the entry point data.
-                offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
-                break;
+                PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
+                SigPointer sig(pBlob);
+                if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+                {
+                    // Get the updated SigPointer location, so we can calculate the size of the blob,
+                    // in order to skip the blob and find the entry point data.
+                    offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
+                    break;
+                }
             }
         }
-
-        if (offset == (uint)-1)
-            goto done;
     }
     else
     {
         if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
-            goto done;
+            offset = (uint)-1;
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    if (offset == (uint)-1 && m_pAuxiliaryModuleMetadata != nullptr &&
+        VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 0)
+    {
+        if (pMD->GetModule() == m_pModule)
+        {
+            pConfig->SetAuxiliaryActivationFlag(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus);
+        }
+        goto done;
+    }
+    // TODO: Lookup in auxiliary EntryPoints module's MethodDefEntryPoints and InstanceMethodEntryPoints
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
+    if (offset == (uint)-1)
+        goto done;
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -1397,27 +1445,17 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #endif // PROFILING_SUPPORTED
 
     uint id;
+    bool hasFixups;
     offset = m_nativeReader.DecodeUnsigned(offset, &id);
+    hasFixups = (id & 1) != 0;
 
-    if (id & 1)
+    if (hasFixups)
     {
         if (id & 2)
         {
             uint val;
             m_nativeReader.DecodeUnsigned(offset, &val);
             offset -= val;
-        }
-
-        if (fFixups)
-        {
-            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
-            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
-
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
-            {
-                pConfig->SetReadyToRunRejectedPrecompiledCode();
-                goto done;
-            }
         }
 
         id >>= 2;
@@ -1428,6 +1466,49 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    // Ensure the auxiliary module is activated before attempting fixups
+    if (m_pAuxiliaryModuleMetadata != nullptr && id >= m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount)
+    {
+        uint32_t auxModuleCount = m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount;
+        _ASSERTE(auxModuleCount == 1); // Only one auxiliary module is currently supported
+        ReadyToRun_AuxiliaryModuleMetadataEntry* entries = m_pAuxiliaryModuleMetadata->GetAuxiliaryModuleMetadataEntries();
+        uint32_t entryBase = m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount;
+        if (auxModuleCount == 1 && id - entryBase < entries[0].MethodCount)
+        {
+            if (VolatileLoad(&entries[0].ActivationStatus) == 0)
+            {
+                if (pMD->GetModule() == m_pModule)
+                {
+                    pConfig->SetAuxiliaryActivationFlag(entries[0].GetActivationFlag());
+                }
+                goto done;
+            }
+            // Module is activated, continue
+        }
+        else
+        {
+            // AuxModuleMetadata says it's nowhere to be found
+            // This maybe should be validated at image load time to ensure all method IDs are accounted for
+            pConfig->SetReadyToRunRejectedPrecompiledCode();
+            goto done;
+        }
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
+
+    if (hasFixups && fFixups)
+    {
+        BOOL mayUsePrecompiledPInvokeMethods = TRUE;
+        mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
+
+        if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
+        {
+            pConfig->SetReadyToRunRejectedPrecompiledCode();
+            goto done;
+        }
+    }
+
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
 #ifdef TARGET_ARM

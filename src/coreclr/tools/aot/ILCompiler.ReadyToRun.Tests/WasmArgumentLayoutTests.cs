@@ -1199,7 +1199,8 @@ public class WasmArgumentLayoutTests
     /// The generated wrapper only needs to reach the R2R native entrypoint for callbacks exported by
     /// name: native code calls the extern "C" export (and thus the wrapper) directly. Every other
     /// reverse thunk is handed out by the runtime, which already prefers R2R code before falling back to
-    /// the interpreter wrapper, so the dispatch is emitted for exports alone.
+    /// the interpreter wrapper, so the dispatch is emitted for exports alone. Every wrapper still calls
+    /// the native code the runtime reports when the method switches to it after the wrapper was handed out.
     /// </summary>
     [Theory]
     [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_export\")]", true)]
@@ -1251,6 +1252,14 @@ public class WasmArgumentLayoutTests
             {
                 Assert.DoesNotContain(mySymbol, reverseHelpers);
             }
+
+            // Every wrapper falls back to native code the runtime reports after the method switches to it.
+            int wrapperStart = reverseHelpers.IndexOf("Call_Callbacks__Exports_Handle", StringComparison.Ordinal);
+            Assert.True(wrapperStart >= 0);
+            string wrapper = reverseHelpers.Substring(wrapperStart, reverseHelpers.IndexOf("\n}", wrapperStart, StringComparison.Ordinal) - wrapperStart);
+            Assert.Contains("void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(", wrapper);
+            Assert.Contains("return ((int32_t(*)(int32_t))nativeCode)(arg0);", wrapper);
+            Assert.Equal(expectR2RDispatch, wrapper.Contains(", nativeCode, __ATOMIC_RELEASE);", StringComparison.Ordinal));
         }
         finally
         {

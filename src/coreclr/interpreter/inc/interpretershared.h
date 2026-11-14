@@ -47,6 +47,9 @@ struct InterpMethod
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
     int32_t codeSize; // size in int32_t slots
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    int32_t auxiliaryEntryOpcodeIndex;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 
     // Maps Continuation.State (suspension-point index) to the byte offset of the matching
     // INTOP_HANDLE_CONTINUATION_RESUME opcode from InterpByteCodeStart.
@@ -71,6 +74,9 @@ struct InterpMethod
         this->unmanagedCallersOnly = unmanagedCallersOnly;
         this->publishSecretStubParam = publishSecretStubParam;
         this->codeSize = codeSize;
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+        this->auxiliaryEntryOpcodeIndex = -1;
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
         this->numSuspensionPoints = 0;
         this->suspensionPointIPOffsets = NULL;
         pCallStub = NULL;
@@ -98,6 +104,20 @@ struct InterpByteCodeStart
     {
         return reinterpret_cast<const int32_t*>(this + 1);
     }
+
+#ifdef FEATURE_READYTORUN_AUXILIARY_MODULES
+    void InitializeAuxiliaryEntry(uint32_t* activationFlag)
+    {
+        static_assert(sizeof(uintptr_t) == sizeof(int32_t));
+        int32_t index = Method->auxiliaryEntryOpcodeIndex;
+        assert(index >= 0 && index < Method->codeSize - 1);
+        int32_t* entry = const_cast<int32_t*>(GetByteCodes()) + index;
+        assert(entry[0] == INTOP_SAFEPOINT_AND_SKIP);
+        entry[1] = static_cast<int32_t>(reinterpret_cast<uintptr_t>(activationFlag));
+        if (activationFlag != nullptr)
+            entry[0] = INTOP_SAFEPOINT_TRY_ACTIVATE;
+    }
+#endif // FEATURE_READYTORUN_AUXILIARY_MODULES
 };
 
 typedef class ICorJitInfo* COMP_HANDLE;
