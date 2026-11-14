@@ -11,8 +11,7 @@ jobs:
 
 #
 # Build CoreCLR + libraries for WASI and run a subset of src/tests on
-# Helix under wasmtime. Mirrors wasm-runtime-tests.yml (Mono variant),
-# with runtimeFlavor=coreclr and a curated -tree: subset (see the
+# Helix under wasmtime, with runtimeFlavor=coreclr and a curated -tree: subset (see the
 # testBuildArgs below).
 #
 # Merged-runner mode; xharness dispatches via helixpublishwitharcade.proj.

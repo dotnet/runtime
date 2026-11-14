@@ -84,7 +84,7 @@
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">El parámetro especificado debe serializarse de administrado a no administrado y no administrado a administrado, pero el tipo de serializador "{0}" no lo admite.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
@@ -179,7 +179,7 @@
       </trans-unit>
       <trans-unit id="ComObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
+        <target state="translated"> La interfaz "{0}" no especifica "ComInterfaceOptions.ComObjectWrapper", por lo que no se genera ningún contenedor de objeto COM (RCW). La serialización de esta interfaz desde código no administrado a código administrado no funcionará.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -809,12 +809,12 @@
       </trans-unit>
       <trans-unit id="ManagedObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</target>
+        <target state="translated"> La interfaz "{0}" no especifica "ComInterfaceOptions.ManagedObjectWrapper", por lo que no se genera ningún contenedor de objetos COM (CCW). La serialización de esta interfaz desde código administrado a código no administrado no funcionará.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">El parámetro especificado debe serializarse de administrado a no administrado, pero el tipo de serializador "{0}" no lo admite.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -1361,7 +1361,7 @@
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">El parámetro especificado debe serializarse de no administrado a administrado, pero el tipo serializador “{0}” no lo admite.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
