@@ -191,6 +191,7 @@ int32_t CryptoNative_MLDsaSignExternalMu(EVP_PKEY* pKey,
 
     if (EVP_PKEY_sign_message_init(ctx, NULL, initParams) <= 0)
     {
+        ret = 0;
         goto done;
     }
 
