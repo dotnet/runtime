@@ -1,8 +1,2 @@
-include(configure.cmake)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-add_subdirectory(superpmi)
-add_subdirectory(mcs)
-add_subdirectory(superpmi-shim-collector)
-add_subdirectory(superpmi-shim-counter)
-add_subdirectory(superpmi-shim-simple)
+# The native parts of the managed SuperPMI tools (managed/), which the managed projects publish next to them.
+add_subdirectory(jitinterface)

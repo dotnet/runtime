@@ -454,6 +454,10 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\cdac-build-tool\cdac-build-tool.csproj" Category="clr" />
   </ItemGroup>
 
+  <ItemGroup Condition="($(_subset.Contains('+clr.spmi+')) or $(_subset.Contains('+clr.native+'))) and '$(SdkToolsSupported)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\superpmi\managed\superpmi-tools.proj" Category="clr" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework.Tests\ILCompiler.DependencyAnalysisFramework.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>

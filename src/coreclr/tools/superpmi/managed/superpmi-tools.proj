@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <!-- Publishes the managed SuperPMI tools into the CoreCLR bin directory. -->
+  <ItemGroup>
+    <ProjectReference Include="mcs\mcs.csproj" Targets="Publish" />
+    <ProjectReference Include="superpmi\superpmi.csproj" Targets="Publish" />
+    <ProjectReference Include="superpmi-shim-collector\superpmi-shim-collector.csproj" Targets="Publish" />
+    <ProjectReference Include="superpmi-shim-counter\superpmi-shim-counter.csproj" Targets="Publish" />
+    <ProjectReference Include="superpmi-shim-simple\superpmi-shim-simple.csproj" Targets="Publish" />
+  </ItemGroup>
+</Project>

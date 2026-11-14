@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>mcs</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+
+    <!-- Published as a NativeAOT executable next to the other SuperPMI tools. -->
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishDir>$(RuntimeBinDir)</PublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <ProjectReference Include="..\SuperPmi.Shared\SuperPmi.Shared.csproj" />
+  </ItemGroup>
+</Project>
