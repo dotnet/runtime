@@ -1550,14 +1550,15 @@ namespace System
 
                 string remoteUrl = info.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
 
-                if (IsFile)
-                {
-                    return StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl);
-                }
-                else
-                {
-                    return remoteUrl.GetHashCode();
-                }
+                int hashCode = IsFile ?
+                    StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl) :
+                    remoteUrl.GetHashCode();
+
+                // Non-simple parsers may return HttpRequestUrl without initializing the host.
+                // Exclude their cached scope IDs to keep the hash stable after Host or IdnHost is accessed.
+                return HostType == Flags.IPv6HostType && _syntax.IsSimple && info.ScopeId is string scopeId ?
+                    HashCode.Combine(hashCode, scopeId) :
+                    hashCode;
             }
         }
 
@@ -1746,7 +1747,10 @@ namespace System
             if (DisablePathAndQueryCanonicalization != other.DisablePathAndQueryCanonicalization)
                 return false;
 
-            if (ReferenceEquals(OriginalString, other.OriginalString))
+            // The same URI string can use different parsers before and after UriParser.Register.
+            // Only use string equality as a shortcut when both URIs share the same parser.
+            bool sameSyntax = _syntax == other._syntax;
+            if (sameSyntax && ReferenceEquals(OriginalString, other.OriginalString))
             {
                 return true;
             }
@@ -1757,10 +1761,11 @@ namespace System
             if (IsNotAbsoluteUri)
                 return OriginalString.Equals(other.OriginalString);
 
-            if (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet))
+            if (sameSyntax && (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet)))
             {
                 // Try raw compare for _strings as the last chance to keep the working set small
-                if (string.Equals(_string, other._string, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                // Keep IPv6 scope IDs case-sensitive even when UNC/DOS paths ignore case.
+                if (string.Equals(_string, other._string, IsUncOrDosPath && HostType != Flags.IPv6HostType ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -1851,7 +1856,24 @@ namespace System
             string otherUrl = otherInfo.RemoteUrl ??= other.GetParts(components, UriFormat.SafeUnescaped);
 
             // if IsUncOrDosPath is true then we ignore case in the path comparison
-            return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            if (!string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            // Simple parsers omit IPv6 scope IDs from HttpRequestUrl, so compare them separately.
+            if (HostType == Flags.IPv6HostType || other.HostType == Flags.IPv6HostType)
+            {
+                // Ignore cached scope IDs for non-simple parsers, which define their own request URL.
+                string? selfScopeId = HostType == Flags.IPv6HostType && _syntax.IsSimple ? selfInfo.ScopeId : null;
+                string? otherScopeId = other.HostType == Flags.IPv6HostType && other._syntax.IsSimple ? otherInfo.ScopeId : null;
+                if (selfScopeId != otherScopeId)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public Uri MakeRelativeUri(Uri uri)
