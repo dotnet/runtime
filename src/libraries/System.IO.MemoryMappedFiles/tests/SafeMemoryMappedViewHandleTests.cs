@@ -66,6 +66,17 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.NotNull(handle);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        public void EmptyViewHandleUsesMappedLength()
+        {
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 4096);
+            using MemoryMappedViewStream view = mmf.CreateViewStream(4096, 0);
+
+            // ReleaseHandle passes ByteLength to munmap. A zero-length view still maps one byte.
+            Assert.Equal(1UL, view.SafeMemoryMappedViewHandle.ByteLength);
+        }
+
         [LibraryImport("libc")]
         private static unsafe partial SafeMemoryMappedViewHandle mmap(IntPtr addr, nint lengthint, int prot, int flags, int fd, nuint offset);
     }
