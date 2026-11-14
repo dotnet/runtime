@@ -12,6 +12,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0" TreatAsLocalProperty="_WasmFilesystemUsageDetected">
 
   <PropertyGroup>
+    <!-- Temporary coverage experiment; revert this default before shipping worker hosting. -->
+    <WasmRunInWorker Condition="'$(WasmRunInWorker)' == '' and '$(UseMonoRuntime)' == 'false'">true</WasmRunInWorker>
     <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
 
     <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
@@ -34,7 +36,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_RunWorkingDirectory Condition="'$(_RunWorkingDirectory)' != '' and !$([System.IO.Path]::IsPathRooted($(_RunWorkingDirectory)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_RunWorkingDirectory)))</_RunWorkingDirectory>
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_RunWorkingDirectory), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
 
-    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmRunInWorker)' == 'true'">--apply-cop-headers</_RunExtraArguments>
     <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory>$(_RunWorkingDirectory)</RunWorkingDirectory>
   </PropertyGroup>
@@ -62,6 +64,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.StageWasmSharedMemory" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.AttachWebcilSizes" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
@@ -338,6 +341,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitDiagnosticModuleBuild Condition="'$(_WasmEmitDiagnosticModuleBuild)' == ''">false</_WasmEmitDiagnosticModuleBuild>
     </PropertyGroup>
 
+    <Error Condition="'$(WasmRunInWorker)' == 'true' and '$(UseMonoRuntime)' != 'false'"
+           Text="WasmRunInWorker is supported only by the CoreCLR browser worker prototype." />
+    <StageWasmSharedMemory Condition="'$(WasmRunInWorker)' == 'true'"
+                          Candidates="@(_WasmBuildAssetCandidates)"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\build">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedBuildCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmRunInWorker)' == 'true'">
+      <_WasmBuildAssetCandidates Remove="@(_WasmBuildAssetCandidates)" />
+      <_WasmBuildAssetCandidates Include="@(_WasmSharedBuildCandidates)" />
+    </ItemGroup>
+
     <ComputeWasmBuildAssets
       Candidates="@(_WasmBuildAssetCandidates->Distinct())"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
@@ -423,6 +439,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup>
     <_WasmWebcilStampProperty Include="_WasmEnableWebcil" />
     <_WasmWebcilStampProperty Include="_WasmWebcilVersion" />
+    <_WasmWebcilStampProperty Include="WasmRunInWorker" />
     <_WasmWebcilStampProperty Include="PublishReadyToRun" />
     <_WasmWebcilStampProperty Include="_WasmBuildPrebuiltR2RDirectory" />
   </ItemGroup>
@@ -465,7 +482,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Inputs="@(_WasmDllBuildCandidates);$(IntermediateOutputPath)wasm-webcil-build.stamp;$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" WasmRunInWorker="$(WasmRunInWorker)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
@@ -602,6 +619,16 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCompositeBuildCandidate Update="@(_WasmCompositeBuildCandidate)"
                                     ContentRoot="%(RootDir)%(Directory)"
                                     RelativePath="_framework/%(FileName)%(Extension)" />
+    </ItemGroup>
+    <StageWasmSharedMemory Condition="'$(WasmRunInWorker)' == 'true' and '@(_WasmCompositeBuildCandidate)' != ''"
+                          Candidates="@(_WasmCompositeBuildCandidate)" AllCandidates="true"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\composite-build">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedCompositeBuildCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmRunInWorker)' == 'true' and '@(_WasmCompositeBuildCandidate)' != ''">
+      <_WasmCompositeBuildCandidate Remove="@(_WasmCompositeBuildCandidate)" />
+      <_WasmCompositeBuildCandidate Include="@(_WasmSharedCompositeBuildCandidates)" />
     </ItemGroup>
     <DefineStaticWebAssets Condition="'@(_WasmCompositeBuildCandidate)' != ''"
       CandidateAssets="@(_WasmCompositeBuildCandidate)"
@@ -764,7 +791,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmBootJsonBuildPropertyStamp"
     DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
     <PropertyGroup>
-      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonBuildStampContent>
+      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmRunInWorker)</_WasmBootJsonBuildStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
@@ -818,6 +845,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="false"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
+      WasmRunInWorker="$(WasmRunInWorker)"
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
@@ -1080,12 +1108,32 @@ Copyright (c) .NET Foundation. All rights reserved.
                                    Condition="'$(PublishReadyToRunComposite)' != 'true' and '$(PublishTrimmed)' != 'true'" />
     </ItemGroup>
 
+    <StageWasmSharedMemory Condition="'$(WasmRunInWorker)' == 'true'"
+                          Candidates="@(_WasmResolvedFilesToPublish)"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\publish">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedPublishCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmRunInWorker)' == 'true'">
+      <_WasmResolvedFilesToPublish Remove="@(_WasmResolvedFilesToPublish)" />
+      <_WasmResolvedFilesToPublish Include="@(_WasmSharedPublishCandidates)" />
+    </ItemGroup>
+    <StageWasmSharedMemory Condition="'$(WasmRunInWorker)' == 'true'"
+                          Candidates="@(WasmNativeAsset)"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\publish">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmNativePublishAssets" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmRunInWorker)' != 'true'">
+      <_WasmNativePublishAssets Include="@(WasmNativeAsset)" />
+    </ItemGroup>
+
     <ComputeWasmPublishAssets
       ResolvedFilesToPublish="@(_WasmResolvedFilesToPublish)"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
       PublishPath="$(PublishDir)"
-      WasmAotAssets="@(WasmNativeAsset)"
+      WasmAotAssets="@(_WasmNativePublishAssets)"
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
@@ -1113,6 +1161,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
     <Error Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(_WasmCompositePublishCandidate)' == ''"
            Text="Composite ReadyToRun compilation did not produce a composite WebAssembly image." />
+    <StageWasmSharedMemory Condition="'$(WasmRunInWorker)' == 'true' and '@(_WasmCompositePublishCandidate)' != ''"
+                          Candidates="@(_WasmCompositePublishCandidate)" AllCandidates="true"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\composite">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedCompositeCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmRunInWorker)' == 'true' and '@(_WasmCompositePublishCandidate)' != ''">
+      <_WasmCompositePublishCandidate Remove="@(_WasmCompositePublishCandidate)" />
+      <_WasmCompositePublishCandidate Include="@(_WasmSharedCompositeCandidates)" />
+    </ItemGroup>
     <!-- The composite owner is not a managed assembly, so it bypasses ComputeWasmPublishAssets/ConvertDllsToWebcil.
          The readyToRunComposite trait routes it to coreAssembly with isCompositeImage set in the boot config. -->
     <DefineStaticWebAssets Condition="'@(_WasmCompositePublishCandidate)' != ''"
@@ -1149,6 +1207,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishWebcilStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
       <_WasmPublishWebcilStampLine Include="_WasmEnableWebcil=$(_WasmEnableWebcil)" />
       <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
+      <_WasmPublishWebcilStampLine Include="WasmRunInWorker=$(WasmRunInWorker)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRunComposite=$(PublishReadyToRunComposite)" />
       <_WasmPublishWebcilStampLine Include="PublishTrimmed=$(PublishTrimmed)" />
@@ -1164,7 +1223,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-publish.stamp" />
     </ItemGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" WasmRunInWorker="$(WasmRunInWorker)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedPublishWebcilOutputs" />
@@ -1363,7 +1422,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFilesystemUsageDetected Condition="'@(WasmFilesToIncludeInFileSystem)' != ''">true</_WasmFilesystemUsageDetected>
       <!-- TODO-WASM: Default to false once IL trimming provides better filesystem usage detection. -->
       <_WasmFilesystemUsageDetected Condition="'$(_WasmFilesystemUsageDetected)' == ''">true</_WasmFilesystemUsageDetected>
-      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(PublishReadyToRunComposite)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(PublishReadyToRunComposite)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmRunInWorker)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
@@ -1411,6 +1470,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="true"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
+      WasmRunInWorker="$(WasmRunInWorker)"
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"

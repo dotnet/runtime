@@ -1128,10 +1128,16 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteMemoryImport(ulong contentSize)
         {
+            const uint MaximumWasm32MemoryPages = 65536;
             uint dataPages = checked((uint)((contentSize + (1 << 16) - 1) >> 16));
             uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
-            WasmImport memoryImport = new WasmImport("webcil", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
+            // Browser deployment can make an app-owned shared copy without resizing this import.
+            // Keep WASI's existing unbounded import contract.
+            WasmMemoryImportType memoryType = _nodeFactory.Target.OperatingSystem == TargetOS.Browser
+                ? new WasmMemoryImportType(WasmLimitType.HasMinAndMax, numPages, MaximumWasm32MemoryPages)
+                : new WasmMemoryImportType(WasmLimitType.HasMin, numPages);
+            WasmImport memoryImport = new WasmImport("webcil", "memory", import: memoryType);
             WriteImport(memoryImport);
         }
 

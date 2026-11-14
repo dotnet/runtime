@@ -3,7 +3,8 @@
 
 import type { JSMarshalerArguments, GCHandle, MarshalerToCs, MarshalerToJs, CSFnHandle } from "./types";
 
-import { dotnetAssert, dotnetBrowserUtilsExports, dotnetInteropJSExports, Module } from "./cross-module";
+import { dotnetAssert, dotnetBrowserUtilsExports, dotnetInteropJSExports, dotnetInternals, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 import { allocStackFrame, getArg, isArgsException, setArgType, setGcHandle } from "./marshal";
 import { marshalExceptionToCs, marshalStringToCs } from "./marshal-to-cs";
 import { beginMarshalTaskToJs, endMarshalTaskToJs, marshalExceptionToJs, marshalInt32ToJs, marshalStringToJs, releaseEagerTaskHolder } from "./marshal-to-js";
@@ -62,6 +63,7 @@ export function releaseJsOwnedObjectByGcHandle(gcHandle: GCHandle) {
 
 export function callDelegate(callbackGcHandle: GCHandle, arg1Js: any, arg2Js: any, arg3Js: any, resConverter?: MarshalerToJs, arg1Converter?: MarshalerToCs, arg2Converter?: MarshalerToCs, arg3Converter?: MarshalerToCs) {
     assertRuntimeRunning();
+    dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.assertNativeCall?.();
 
     const sp = Module.stackSave();
     try {
@@ -110,7 +112,8 @@ export function callDelegate(callbackGcHandle: GCHandle, arg1Js: any, arg2Js: an
     }
 }
 
-export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, resConverter?: MarshalerToCs) {
+export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, resConverter?: MarshalerToCs,
+    prepareCompletion?: () => { error: unknown, data: unknown }) {
     assertRuntimeRunning();
     const sp = Module.stackSave();
     try {
@@ -120,20 +123,25 @@ export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, 
         setArgType(arg1, MarshalerType.Object);
         setGcHandle(arg1, holderGcHandle);
         const arg2 = getArg(args, 3);
-        if (!error) {
-            try {
-                setArgType(arg2, MarshalerType.None);
-                const arg3 = getArg(args, 4);
-                dotnetAssert.check(resConverter, "resConverter missing");
-                resConverter(arg3, data);
-            } catch (e) {
-                error = e;
+        const prepare = () => {
+            if (prepareCompletion) ({ error, data } = prepareCompletion());
+            if (!error) {
+                try {
+                    setArgType(arg2, MarshalerType.None);
+                    const arg3 = getArg(args, 4);
+                    dotnetAssert.check(resConverter, "resConverter missing");
+                    resConverter(arg3, data);
+                } catch (e) {
+                    error = e;
+                }
             }
-        }
-        if (error) {
-            marshalExceptionToCs(arg2, error);
-        }
+            if (error) marshalExceptionToCs(arg2, error);
+        };
+        const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+        const previous = context?.beforeTaskCompletion;
         try {
+            if (context?.role === "ui") context.beforeTaskCompletion = prepare;
+            else prepare();
             dotnetInteropJSExports.SystemInteropJS_CompleteTask(args);
         } catch (error: any) {
             // unexpected exception here would be invalid runtime
@@ -141,6 +149,8 @@ export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, 
                 dotnetBrowserUtilsExports.abortPosix(1, error, true);
             }
             throw error;
+        } finally {
+            if (context?.role === "ui") context.beforeTaskCompletion = previous;
         }
     } finally {
         if (isRuntimeRunning()) Module.stackRestore(sp);
@@ -149,6 +159,7 @@ export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, 
 
 export function bindAssemblyExports(assemblyName: string): Promise<void> {
     assertRuntimeRunning();
+    dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.assertNativeCall?.();
     const sp = Module.stackSave();
     try {
         const size = 3;

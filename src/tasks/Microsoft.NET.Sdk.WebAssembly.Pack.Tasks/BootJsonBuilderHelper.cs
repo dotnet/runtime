@@ -222,9 +222,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             assets.hash = resources.hash;
             assets.jsModuleRuntime = MapJsAssets(resources.jsModuleRuntime);
-            assets.jsModuleNative = MapJsAssets(resources.jsModuleNative);
+            assets.jsModuleNative = MapJsAssets(resources.jsModuleNative, workerOnly: config.runInWorker == true);
             assets.jsModuleWorker = MapJsAssets(resources.jsModuleWorker);
-            assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics);
+            assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics, workerOnly: config.runInWorker == true);
 
             assets.wasmNative = resources.wasmNative?.Select(a =>
             {
@@ -266,9 +266,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 );
             }
 
-            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers, subFolder: "..");
-            assets.modulesAfterConfigLoaded = MapJsAssets(resources.modulesAfterConfigLoaded);
-            assets.modulesAfterRuntimeReady = MapJsAssets(resources.modulesAfterRuntimeReady);
+            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers, subFolder: "..", uiOnly: config.runInWorker == true);
+            assets.modulesAfterConfigLoaded = MapJsAssets(resources.modulesAfterConfigLoaded, uiOnly: config.runInWorker == true);
+            assets.modulesAfterRuntimeReady = MapJsAssets(resources.modulesAfterRuntimeReady, uiOnly: config.runInWorker == true);
 
             assets.extensions = resources.extensions;
 
@@ -369,7 +369,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 return asset;
             }).ToList();
 
-            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null, string? subFolder = null) => assets?.Select(a =>
+            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null, string? subFolder = null,
+                bool workerOnly = false, bool uiOnly = false) => assets?.Select(a =>
             {
                 var asset = new JsAsset()
                 {
@@ -380,8 +381,18 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 {
                     string escaped = EscapeName(string.Concat(subFolder, a.Key));
                     string subFolderWithSeparator = subFolder != null ? $"{subFolder}/" : string.Empty;
-                    imports.Add($"import * as {escaped} from \"./{subFolderWithSeparator}{a.Key}\";");
-                    asset.moduleExports = EncodeJavascriptVariableInJson(escaped);
+                    if (workerOnly || uiOnly)
+                    {
+                        string condition = workerOnly ? "typeof importScripts === \"function\"" : "typeof importScripts !== \"function\"";
+                        string url = JsonSerializer.Serialize($"./{subFolderWithSeparator}{a.Key}", JsonOptions);
+                        imports.Add($"const {escaped} = {condition} ? import({url}) : undefined;");
+                        asset.moduleExports = EncodeJavascriptVariableInJson(escaped);
+                    }
+                    else
+                    {
+                        imports.Add($"import * as {escaped} from \"./{subFolderWithSeparator}{a.Key}\";");
+                        asset.moduleExports = EncodeJavascriptVariableInJson(escaped);
+                    }
                 }
 
                 return asset;

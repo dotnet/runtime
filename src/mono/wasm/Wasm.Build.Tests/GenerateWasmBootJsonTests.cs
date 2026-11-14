@@ -21,6 +21,46 @@ namespace Wasm.Build.Tests;
     public class GenerateWasmBootJsonTests
     {
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void BundlerFriendlyModulesUseOwningRealm(bool runInWorker)
+        {
+            var config = new BootJsonData
+            {
+                runInWorker = runInWorker,
+                resources = new ResourcesData
+                {
+                    jsModuleRuntime = new() { ["dotnet.runtime.js"] = "runtime" },
+                    jsModuleNative = new() { ["dotnet.native.js"] = "native" },
+                    jsModuleDiagnostics = new() { ["dotnet.diagnostics.js"] = "diagnostics" },
+                    modulesAfterConfigLoaded = new() { ["initializer.js"] = "initializer" },
+                },
+            };
+            var task = new GenerateWasmBootJson();
+            var helper = new BootJsonBuilderHelper(task.Log, "0", false, false, new Version(12, 0), false);
+            string imports = helper.TransformResourcesToAssets(config, bundlerFriendly: true);
+            if (runInWorker)
+            {
+                Assert.Contains("typeof importScripts === \"function\" ? import(\"./dotnet.native.js\")", imports);
+                Assert.Contains("typeof importScripts === \"function\" ? import(\"./dotnet.diagnostics.js\")", imports);
+                Assert.Contains("typeof importScripts !== \"function\" ? import(\"./initializer.js\")", imports);
+            }
+            else
+            {
+                Assert.DoesNotContain("? import(", imports);
+            }
+            Assert.Contains("from \"./dotnet.runtime.js\"", imports);
+            using JsonDocument json = JsonDocument.Parse(JsonSerializer.Serialize(config, BootJsonBuilderHelper.JsonOptions));
+            foreach (string kind in new[] { "jsModuleRuntime", "jsModuleNative", "jsModuleDiagnostics", "modulesAfterConfigLoaded" })
+            {
+                string expression = json.RootElement.GetProperty("resources").GetProperty(kind)[0].GetProperty("moduleExports").GetString()!;
+                Assert.StartsWith("$#[", expression);
+                Assert.DoesNotContain("import(", expression);
+                Assert.DoesNotContain("typeof", expression);
+            }
+        }
+
+        [Theory]
         [InlineData("v12.0", false, false, true)]
         [InlineData("v12.0", false, true, true)]
         [InlineData("v13.0", false, false, true)]

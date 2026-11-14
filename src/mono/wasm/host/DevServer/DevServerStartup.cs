@@ -43,19 +43,10 @@ internal sealed class DevServerStartup
 
         if (options.WebServerUseCrossOriginPolicy)
         {
-            app.Use(async (ctx, next) =>
+            app.Use((ctx, next) =>
             {
-                if (ctx.Request.Path.StartsWithSegments("/_framework") && !ctx.Request.Path.StartsWithSegments("/_framework/blazor.server.js") && !ctx.Request.Path.StartsWithSegments("/_framework/blazor.web.js"))
-                {
-                    string fileExtension = Path.GetExtension(ctx.Request.Path);
-                    if (string.Equals(fileExtension, ".js") || string.Equals(fileExtension, ".mjs"))
-                    {
-                        // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.
-                        ApplyCrossOriginPolicyHeaders(ctx);
-                    }
-                }
-
-                await next(ctx);
+                ApplyCrossOriginPolicyHeaders(ctx);
+                return next(ctx);
             });
         }
 

@@ -3,7 +3,8 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import { dotnetBrowserUtilsExports, dotnetLoaderExports, dotnetApi, dotnetAssert, dotnetLogger, Module } from "./cross-module";
+import { dotnetBrowserUtilsExports, dotnetLoaderExports, dotnetApi, dotnetAssert, dotnetLogger, dotnetInternals, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 
 import type { BoundMarshalerToJs, JSHandle, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, TypedArray } from "./types";
 import { GCHandleNull, JavaScriptMarshalerArgSize, MarshalerType } from "./types";
@@ -211,6 +212,13 @@ function _marshalDelegateToJs(arg: JSMarshalerArgument, _?: MarshalerType, resCo
 export class TaskHolder {
     constructor(public promise: Promise<any>, public resolveOrReject: (type: MarshalerType, jsHandle: JSHandle, argInner: JSMarshalerArgument) => void) {
     }
+
+    dispose(): void {
+        const promise = this.promise;
+        dotnetAssert.check(dotnetLoaderExports.isControllablePromise(promise), "Expected a controllable Task promise");
+        const reason = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.exitError ?? new Error("Process is being terminated.");
+        dotnetLoaderExports.getPromiseCompletionSource(promise).reject(reason);
+    }
 }
 
 export function marshalTaskToJs(arg: JSMarshalerArgument, _?: MarshalerType, resConverter?: MarshalerToJs): Promise<any> | null {
@@ -284,24 +292,28 @@ function tryMarshalSyncTaskToJs(arg: JSMarshalerArgument, type: MarshalerType, r
     if (type === MarshalerType.None) {
         return null;
     }
-    if (type === MarshalerType.TaskRejected) {
-        return Promise.reject(marshalExceptionToJs(arg));
-    }
-    if (type === MarshalerType.TaskResolved) {
-        const elementType = getArgElementType(arg);
-        if (elementType === MarshalerType.Void) {
-            return Promise.resolve();
+    try {
+        if (type === MarshalerType.TaskRejected) {
+            return Promise.reject(marshalExceptionToJs(arg));
         }
-        // this will change the type to the actual type of the result
-        setArgType(arg, elementType);
-        if (!resConverter) {
-            // when we arrived here from _marshalCsObjectToJs
-            resConverter = csToJsMarshalers.get(elementType);
-        }
-        dotnetAssert.fastCheck(resConverter, () => `Unknown subConverter for type ${elementType}. ${jsinteropDoc}`);
+        if (type === MarshalerType.TaskResolved) {
+            const elementType = getArgElementType(arg);
+            if (elementType === MarshalerType.Void) {
+                return Promise.resolve();
+            }
+            // this will change the type to the actual type of the result
+            setArgType(arg, elementType);
+            if (!resConverter) {
+                // when we arrived here from _marshalCsObjectToJs
+                resConverter = csToJsMarshalers.get(elementType);
+            }
+            dotnetAssert.fastCheck(resConverter, () => `Unknown subConverter for type ${elementType}. ${jsinteropDoc}`);
 
-        const val = resConverter(arg);
-        return Promise.resolve(val);
+            const val = resConverter(arg);
+            return Promise.resolve(val);
+        }
+    } catch (error) {
+        return Promise.reject(error);
     }
     return false;
 }
@@ -309,27 +321,32 @@ function tryMarshalSyncTaskToJs(arg: JSMarshalerArgument, type: MarshalerType, r
 function createTaskHolder(resConverter?: MarshalerToJs) {
     const pcs = dotnetLoaderExports.createPromiseCompletionSource<any>();
     const holder = new TaskHolder(pcs.promise, (type, jsHandle, argInner) => {
-        if (type === MarshalerType.TaskRejected) {
-            const reason = marshalExceptionToJs(argInner);
-            pcs.reject(reason);
-        } else if (type === MarshalerType.TaskResolved) {
-            const type = getArgType(argInner);
-            if (type === MarshalerType.Void) {
-                pcs.resolve(undefined);
-            } else {
-                if (!resConverter) {
-                    // when we arrived here from _marshalCsObjectToJs
-                    resConverter = csToJsMarshalers.get(type);
-                }
-                dotnetAssert.fastCheck(resConverter, () => `Unknown subConverter for type ${type}. ${jsinteropDoc}`);
+        try {
+            if (type === MarshalerType.TaskRejected) {
+                const reason = marshalExceptionToJs(argInner);
+                pcs.reject(reason);
+            } else if (type === MarshalerType.TaskResolved) {
+                const type = getArgType(argInner);
+                if (type === MarshalerType.Void) {
+                    pcs.resolve(undefined);
+                } else {
+                    if (!resConverter) {
+                        // when we arrived here from _marshalCsObjectToJs
+                        resConverter = csToJsMarshalers.get(type);
+                    }
+                    dotnetAssert.fastCheck(resConverter, () => `Unknown subConverter for type ${type}. ${jsinteropDoc}`);
 
-                const jsValue = resConverter!(argInner);
-                pcs.resolve(jsValue);
+                    const jsValue = resConverter!(argInner);
+                    pcs.resolve(jsValue);
+                }
+            } else {
+                dotnetAssert.fastCheck(false, () => `Unexpected type ${type}`);
             }
-        } else {
-            dotnetAssert.fastCheck(false, () => `Unexpected type ${type}`);
+        } catch (error) {
+            pcs.reject(error);
+        } finally {
+            releaseCSOwnedObject(jsHandle);
         }
-        releaseCSOwnedObject(jsHandle);
     });
     return holder;
 }
@@ -355,7 +372,10 @@ export function marshalExceptionToJs(arg: JSMarshalerArgument): Error | null {
         // this is JSException roundtrip
         const jsHandle = getArgJsHandle(arg);
         const jsObj = getJSObjectFromJSHandle(jsHandle);
-        return jsObj;
+        if (jsObj !== undefined) return jsObj;
+        const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+        if (context?.getRemoteError) return context.getRemoteError(Number(jsHandle));
+        throw new Error(`JS exception handle ${jsHandle} was not found`);
     }
 
     const gcHandle = getArgGcHandle(arg);
@@ -374,13 +394,21 @@ export function marshalExceptionToJs(arg: JSMarshalerArgument): Error | null {
     return result;
 }
 
+function getJSObjectForMarshaling(jsHandle: JSHandle): any {
+    const jsObj = getJSObjectFromJSHandle(jsHandle);
+    if (jsObj === undefined && dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]) {
+        throw new Error(`JS object JSHandle ${jsHandle} is not available in this realm; cross-realm JSObject marshaling is not supported.`);
+    }
+    return jsObj;
+}
+
 function _marshalJsObjectToJs(arg: JSMarshalerArgument): any {
     const type = getArgType(arg);
     if (type == MarshalerType.None) {
         return null;
     }
     const jsHandle = getArgJsHandle(arg);
-    const jsObj = getJSObjectFromJSHandle(jsHandle);
+    const jsObj = getJSObjectForMarshaling(jsHandle);
     dotnetAssert.fastCheck(jsObj !== undefined, () => `JS object JSHandle ${jsHandle} was not found`);
     return jsObj;
 }
@@ -392,8 +420,7 @@ function _marshalCsObjectToJs(arg: JSMarshalerArgument): any {
     }
     if (marshalerType == MarshalerType.JSObject) {
         const jsHandle = getArgJsHandle(arg);
-        const jsObj = getJSObjectFromJSHandle(jsHandle);
-        return jsObj;
+        return getJSObjectForMarshaling(jsHandle);
     }
 
     if (marshalerType == MarshalerType.Array) {

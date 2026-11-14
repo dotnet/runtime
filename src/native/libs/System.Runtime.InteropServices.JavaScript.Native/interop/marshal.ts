@@ -11,6 +11,7 @@ export const jsInteropState = {
     proxyGCHandle: undefined as GCHandle | undefined,
     cspPolicy: false,
     isInitialized: false,
+    isWorkerUI: false,
     isChromium: false,
     isFirefox: false,
     enablePerfMeasure: false,
@@ -353,4 +354,3 @@ export function arrayElementSize(elementType: MarshalerType): number {
     if (elementType == MarshalerType.JSObject) return JavaScriptMarshalerArgSize;
     return -1;
 }
-

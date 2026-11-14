@@ -5,7 +5,8 @@ import BuildConfiguration from "consts:configuration";
 
 import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, JSFunctionSignature } from "./types";
 
-import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 
 import { bindAssemblyExports, invokeJSExport } from "./managed-exports";
 import { allocStackFrame, getSig, getSignatureType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
@@ -14,6 +15,11 @@ import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
 import { MarshalerType, MeasuredBlock } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
+
+function assertJSExportRunning(): void {
+    assertRuntimeRunning();
+    dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.assertNativeCall?.();
+}
 
 export async function getAssemblyExports(assemblyName: string): Promise<any> {
     assertJsInterop();
@@ -118,7 +124,7 @@ function bindFn_0V(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function boundFn_0V() {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 2;
@@ -139,7 +145,7 @@ function bindFn_1V(closure: BindingClosureCS) {
     const fqn = closure.fullyQualifiedName;
     return function boundFn_1V(arg1: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 3;
@@ -163,7 +169,7 @@ function bindFn_1R(closure: BindingClosureCS) {
     const fqn = closure.fullyQualifiedName;
     return function boundFn_1R(arg1: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 3;
@@ -191,7 +197,7 @@ function bindFn_1RA(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function bindFn_1RA(arg1: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 3;
@@ -231,7 +237,7 @@ function bindFn_2R(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function boundFn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 4;
@@ -261,7 +267,7 @@ function bindFn_2RA(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function bindFn_2RA(arg1: any, arg2: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 4;
@@ -303,7 +309,7 @@ function bindFn(closure: BindingClosureCS) {
     const isDiscardNoWait = closure.isDiscardNoWait;
     return function boundFn(...jsArgs: any[]) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 2 + argsCount;

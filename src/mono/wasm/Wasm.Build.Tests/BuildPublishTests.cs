@@ -21,6 +21,142 @@ namespace Wasm.Build.Tests
         {
         }
 
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [TestCategory("no-workload")]
+        public Task SharedMemoryIsAppOwnedAndOptIn() => SharedMemoryIsAppOwnedAndOptInCore(nativeRelink: false);
+
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public Task SharedMemoryIsAppOwnedAndOptInNativeRelink() => SharedMemoryIsAppOwnedAndOptInCore(nativeRelink: true);
+
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [TestCategory("no-workload")]
+        public Task DefaultWorkerHosting() => SharedMemoryIsAppOwnedAndOptInCore(nativeRelink: false, useDefault: true);
+
+        private async Task SharedMemoryIsAppOwnedAndOptInCore(bool nativeRelink, bool useDefault = false)
+        {
+            const Configuration Config = Configuration.Debug;
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, Config, aot: false, "shared_opt_in", addFrameworkArg: true,
+                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><WasmFingerprintAssets>true</WasmFingerprintAssets>",
+                extraItems: IsUsingWorkloads ? "" : $"""
+                    <PackageReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk"
+                                      Version="{s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework)}"
+                                      GeneratePathProperty="true" PrivateAssets="all" />
+                    """,
+                insertAtEnd: IsUsingWorkloads ? "" : """
+                    <Import Project="$(PkgMicrosoft_NET_Runtime_WebAssembly_Sdk)\Sdk\Sdk.targets"
+                            Condition="'$(WasmBuildNative)' == 'true' and '$(PkgMicrosoft_NET_Runtime_WebAssembly_Sdk)' != ''" />
+                    """);
+            UpdateFile("Program.cs", """
+                using System.Runtime.InteropServices.JavaScript;
+                using System.Text;
+                using System.Threading.Tasks;
+
+                internal static partial class Program
+                {
+                    public static int Main() => 0;
+                    [JSImport("increment", "test")]
+                    internal static partial int Import(int value);
+                    [JSImport("delayed", "test")]
+                    internal static partial Task<int> Delayed(int value);
+                    [JSExport]
+                    internal static int Increment(int value) => value + 1;
+                    [JSExport]
+                    internal static int ThroughImport(int value) => Import(value);
+                    [JSExport]
+                    internal static Task<int> ThroughAsyncImport(int value) => Delayed(value);
+                    [JSImport("INTERNAL.getAppSettingsBytes")]
+                    [return: JSMarshalAs<JSType.Array<JSType.Number>>]
+                    internal static partial byte[] ReadSettings(string fileName);
+                    [JSExport]
+                    internal static string ReadAppSettings() => Encoding.UTF8.GetString(ReadSettings("appsettings.json"));
+                }
+                """);
+            File.WriteAllText(Path.Combine(_projectDir, "wwwroot", "appsettings.json"), """{"source":"file"}""");
+            UpdateFile(Path.Combine("wwwroot", "main.js"), $$"""
+                import { dotnet, exit } from "./_framework/dotnet.js";
+                const shared = new URLSearchParams(location.search).get("shared") === "true";
+                const check = (value, message) => { if (!value) throw new Error(message); };
+                const builder = dotnet.withConfig({ logExitCode: true, exitOnUnhandledError: true });
+                const settingsText = '{"source":"provider","value":42}';
+                const checkSettings = () => {
+                    const internal = getDotnetRuntime(0).INTERNAL;
+                    check(internal.getAppSettingsFiles().includes("appsettings.json"), "UI settings list is missing");
+                    check(new TextDecoder().decode(internal.getAppSettingsBytes("appsettings.json")) === settingsText, "UI settings bytes changed");
+                };
+                let configCalls = 0;
+                builder.withConfigLoaded(config => {
+                    configCalls++;
+                    check(!!config.runInWorker === shared, "Embedded boot flag does not match the build property");
+                    const asset = config.resources.appsettings.find(asset => asset.virtualPath === "appsettings.json");
+                    check(asset, "Appsettings boot asset is missing");
+                    asset.buffer = Promise.resolve(new TextEncoder().encode(settingsText).buffer);
+                    asset.loadIntoVfs = false;
+                });
+                builder.withDotnetReady(checkSettings);
+                await builder.download({{nativeRelink.ToString().ToLowerInvariant()}});
+                if (!{{nativeRelink.ToString().ToLowerInvariant()}}) checkSettings();
+                const runtime = await builder.create();
+                check(configCalls === 1, "Preload/create initialized config more than once");
+                check(!!runtime.getConfig().runInWorker === shared, "Boot config does not match WasmRunInWorker");
+                check(typeof builder.withWorker === "undefined", "Removed worker builder API is still exposed");
+                check(crossOriginIsolated === shared, "Unexpected isolation mode");
+                const config = runtime.getConfig();
+                for (const asset of [config.resources.wasmNative[0], config.resources.coreAssembly[0]]) {
+                    const url = asset.resolvedUrl ?? new URL("_framework/" + asset.name, document.baseURI).href;
+                    const response = await fetch(url);
+                    check(response.ok, "Asset fetch failed");
+                    const bytes = await response.arrayBuffer();
+                    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+                    const hash = "sha256-" + btoa(String.fromCharCode(...digest));
+                    check(hash === asset.hash, "Integrity does not describe deployed bytes");
+                }
+                runtime.setModuleImports("test", {
+                    increment: value => value + 1,
+                    delayed: async value => value + 1
+                });
+                const exports = (await runtime.getAssemblyExports("{{info.ProjectName}}")).Program;
+                check(exports.ReadAppSettings() === settingsText, "Native-host settings bytes changed");
+                check(exports.Increment(41) === 42, "Scalar export failed");
+                check(exports.ThroughImport(41) === 42, "Scalar import failed");
+                const results = await Promise.all(Array.from({ length: 70 }, (_, value) => exports.ThroughAsyncImport(value)));
+                check(results.every((value, index) => value === index + 1), "Async import failed");
+                if (shared) {
+                    check(runtime.INTERNAL.workerMemoryViews.getViews().u8.buffer instanceof SharedArrayBuffer, "Memory is not shared");
+                } else {
+                    check(runtime.localHeapViewU8().buffer instanceof ArrayBuffer, "Ordinary memory is shared");
+                }
+                if (shared) {
+                    const running = runtime.runMain();
+                    await runtime.runMainAndExit().then(
+                        () => { throw new Error("Concurrent exit unexpectedly succeeded"); },
+                        error => check(error.message.includes("another command"), "Wrong concurrent command error"));
+                    check(await running === 0, "Rejected concurrent exit interrupted Main");
+                    check(exports.Increment(41) === 42, "Rejected concurrent exit terminated the runtime");
+                }
+                console.log("TestOutput -> Opt-in scalar worker interop passed");
+                const code = await runtime.runMainAndExit();
+                exit(code);
+                """);
+
+            var provider = new WasmSdkBasedProjectProvider(_testOutput, DefaultTargetFramework);
+            foreach (bool shared in new[] { true, false, true })
+            {
+                string workerArg = useDefault && shared ? "" : $"-p:WasmRunInWorker={shared.ToString().ToLowerInvariant()} ";
+                string args = $"{workerArg}-p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload={IsUsingWorkloads.ToString().ToLowerInvariant()}";
+                // Shared copies intentionally differ from runtime-pack/relink bytes; verify the live memory below.
+                BuildProject(info, Config, new BuildOptions(UseCache: false, AssertAppBundle: !shared,
+                    ExtraMSBuildArgs: args + " -p:WasmBuildOnlyAfterPublish=false"), isNativeBuild: nativeRelink);
+                string buildBootPath = provider.GetBootConfigPath(GetBinFrameworkDir(Config, forPublish: false));
+                Assert.Equal(shared, provider.GetBootJson(buildBootPath).runInWorker == true);
+                PublishProject(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: !shared, ExtraMSBuildArgs: args), isNativeBuild: nativeRelink);
+                RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(Config,
+                    BrowserQueryString: new System.Collections.Specialized.NameValueCollection { ["shared"] = shared ? "true" : "false" },
+                    ExtraArgs: shared && !useDefault ? "--web-server-use-cop" : ""));
+                Assert.Contains("Opt-in scalar worker interop passed", result.TestOutput);
+            }
+        }
+
         [Theory]
         [BuildAndRun(config: Configuration.Debug, aot: true)]
         [TestCategory("native"), TestCategory("mono")]

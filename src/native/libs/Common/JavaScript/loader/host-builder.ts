@@ -9,6 +9,8 @@ import { loaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config"
 import { createRuntime } from "./run";
 import { exit } from "./exit";
 import { setLoadBootResourceCallback } from "./assets";
+import { createWorkerProxy } from "./worker-proxy";
+import { ENVIRONMENT_IS_WEB_WORKER, ENVIRONMENT_IS_SIDECAR } from "./per-module";
 
 let applicationArguments: string[] | undefined = [];
 
@@ -17,12 +19,6 @@ export class HostBuilder implements DotnetHostBuilder {
     private dotnetApi: RuntimeAPI | undefined;
     withConfig(config: LoaderConfig): DotnetHostBuilder {
         mergeLoaderConfig(config);
-        return this;
-    }
-    /**
-     * @deprecated This method is no longer supported and will be removed in a future version.
-     */
-    withConfigSrc(_configSrc: string): DotnetHostBuilder {
         return this;
     }
     withApplicationArguments(...args: string[]): DotnetHostBuilder {
@@ -120,6 +116,10 @@ export class HostBuilder implements DotnetHostBuilder {
     async download(httpCacheOnly?: boolean): Promise<void> {
         try {
             validateLoaderConfig();
+            if (loaderConfig.runInWorker && !httpCacheOnly && !ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR) {
+                await createWorkerProxy(loaderConfig, true);
+                return;
+            }
             return createRuntime(true, httpCacheOnly ?? false);
         } catch (err) {
             exit(1, err);
@@ -130,7 +130,12 @@ export class HostBuilder implements DotnetHostBuilder {
     async create(): Promise<RuntimeAPI> {
         try {
             validateLoaderConfig();
-            await createRuntime(false);
+            if (loaderConfig.runInWorker && !ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR) {
+                const apiProxy = await createWorkerProxy(loaderConfig);
+                Object.assign(dotnetApi, apiProxy);
+            } else {
+                await createRuntime(false);
+            }
             this.dotnetApi = dotnetApi;
             return this.dotnetApi;
         } catch (err) {
