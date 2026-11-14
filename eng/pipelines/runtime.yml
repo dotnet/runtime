@@ -970,8 +970,38 @@ extends:
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
+              - script: |
+                  set -euo pipefail
+                  touch "$(Agent.TempDirectory)/nativeaot-compiler-crash-start"
+                displayName: Record NativeAOT compiler crash collection start
+                condition: and(succeeded(), eq(variables['osGroup'], 'osx'))
             # extra steps, run tests
             postBuildSteps:
+              - script: |
+                  set -euo pipefail
+                  marker="$(Agent.TempDirectory)/nativeaot-compiler-crash-start"
+                  destination="$(Build.ArtifactStagingDirectory)/artifacts/log/NativeAotCompilerCrashReports"
+                  if [[ ! -f "$marker" ]]; then
+                      echo "##vso[task.logissue type=error]NativeAOT compiler crash collection start marker is missing."
+                      exit 1
+                  fi
+
+                  shopt -s nullglob
+                  reports=("$HOME"/Library/Logs/DiagnosticReports/ilc*.ips "$HOME"/Library/Logs/DiagnosticReports/ilc*.crash)
+                  found=false
+                  for report in "${reports[@]}"; do
+                      if [[ -f "$report" && "$report" -nt "$marker" ]]; then
+                          mkdir -p "$destination"
+                          cp "$report" "$destination/"
+                          echo "Collected ${report##*/}"
+                          found=true
+                      fi
+                  done
+                  if [[ "$found" == false ]]; then
+                      echo "##vso[task.logissue type=warning]No new ilc crash reports were found in the agent user's DiagnosticReports directory."
+                  fi
+                displayName: Collect NativeAOT compiler crash reports
+                condition: and(failed(), eq(variables['osGroup'], 'osx'))
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:

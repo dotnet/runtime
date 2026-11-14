@@ -15080,6 +15080,10 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         pCode->EmitLDLOC(newContinuationLoc);
         pCode->EmitBRTRUE(doneResult);
 
+        // The awaiting continuation has no result storage when the caller ignores the result.
+        pCode->EmitLDARG(1);
+        pCode->EmitBRFALSE(doneResult);
+
         pCode->EmitLDARG(1); // resultLoc
         pCode->EmitLDLOC(resultLoc);
         pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));

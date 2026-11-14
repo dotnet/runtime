@@ -1542,9 +1542,9 @@ void AsyncTransformation::Transform(BasicBlock*               block,
 
     CreateLiveSetForSuspension(block, call, defs, analyses, layoutBuilder);
 
-    BuildContinuation(block, call, ContinuationNeedsKeepAlive(analyses), layoutBuilder);
-
     CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &analyses);
+
+    BuildContinuation(block, call, callDefInfo, ContinuationNeedsKeepAlive(analyses), layoutBuilder);
 
     const AsyncState* reusedState =
         FindReusableSuspension(block, call, callDefInfo, layoutBuilder, resumeReachable, mutatedSinceResumption);
@@ -1835,16 +1835,21 @@ public:
 // Parameters:
 //   block          - The block containing the async call.
 //   call           - The async call.
+//   callDefInfo    - Information about the definition of the call's result.
 //   needsKeepAlive - Whether a KeepAlive field is needed to keep a
 //                    LoaderAllocator alive.
 //   layoutBuilder  - The continuation layout builder to configure.
 //
 void AsyncTransformation::BuildContinuation(BasicBlock*                block,
                                             GenTreeCall*               call,
+                                            const CallDefinitionInfo&  callDefInfo,
                                             bool                       needsKeepAlive,
                                             ContinuationLayoutBuilder* layoutBuilder)
 {
-    if (call->gtReturnType != TYP_VOID)
+    // When the result is unused there is no need for result storage in the continuation.
+    // Everything that propagates a result into a continuation (the resumption stubs and the
+    // runtime helpers that complete awaits) tolerates the continuation having no result storage.
+    if ((call->gtReturnType != TYP_VOID) && (callDefInfo.DefinitionNode != nullptr))
     {
         ClassLayout* layout =
             call->gtReturnType == TYP_STRUCT ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : nullptr;
@@ -2097,12 +2102,39 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
         layout->ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    // Now allocate all returns
+    // Now allocate all returns.
+    auto returnHasGCPtr = [](const ReturnInfo& ret) {
+        return varTypeIsGC(ret.Type.ReturnType) ||
+               ((ret.Type.ReturnType == TYP_STRUCT) && ret.Type.ReturnLayout->HasGCPtr());
+    };
+
+    unsigned sharedReturnSize = 0;
+    for (const ReturnInfo& ret : layout->Returns)
+    {
+        if (!returnHasGCPtr(ret))
+        {
+            sharedReturnSize = std::max(sharedReturnSize, ret.Size);
+        }
+    }
+
+    unsigned sharedReturnOffset = UINT_MAX;
     for (ReturnInfo& ret : layout->Returns)
     {
         // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.
         layout->Size = roundUp(layout->Size, TARGET_POINTER_SIZE);
-        ret.Offset   = allocLayout(ret.HeapAlignment(), ret.Size);
+        if (returnHasGCPtr(ret))
+        {
+            ret.Offset = allocLayout(ret.HeapAlignment(), ret.Size);
+        }
+        else
+        {
+            if (sharedReturnOffset == UINT_MAX)
+            {
+                sharedReturnOffset = allocLayout(TARGET_POINTER_SIZE, sharedReturnSize);
+            }
+
+            ret.Offset = sharedReturnOffset;
+        }
     }
 
     for (GenTree* memberOffsetNode : continuationMemberOffsets.BottomUpOrder())
@@ -2858,7 +2890,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
                     CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
     }
 
-    if (call->gtReturnType != TYP_VOID)
+    if (subLayout.HasReturn())
     {
         const ReturnInfo* returnInfo = layout.FindReturn(m_compiler, call);
         assert(returnInfo != nullptr);
@@ -2876,9 +2908,14 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
         continuationFlags |= CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK;
     }
 
+    if (CanFinishSuspensionInDispatcher(call))
+    {
+        continuationFlags |= CORINFO_CONTINUATION_FINISH_SUSPENSION_IN_DISPATCHER;
+    }
+
     newContinuation      = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
-    GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
+    GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)(int32_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeFlags));
 
@@ -3190,6 +3227,51 @@ SuspensionContextHelper AsyncTransformation::GetSuspensionContextHelper(GenTreeC
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::CanFinishSuspensionInDispatcher:
+//   Check whether the context capture that a finish-suspension helper does
+//   for this suspension can be left to the dispatcher when the frame has
+//   already been resumed.
+//
+// Parameters:
+//   call - The async call
+//
+// Returns:
+//   True if the suspension uses a finish-suspension helper and is not inside
+//   an inlined async frame.
+//
+// Remarks:
+//   A frame that has resumed was called by the dispatcher, and it hands its
+//   continuation straight back to it. On that path the helper only captures
+//   the current contexts into the continuation, which the dispatcher can do
+//   just as well with the thread it already has at hand, saving the call. The
+//   dispatcher knows to do that from CORINFO_CONTINUATION_FINISH_SUSPENSION_IN_DISPATCHER.
+//
+//   Suspensions inside inlined async frames are excluded: there the frame
+//   being suspended may not have resumed even if the physical frame has, and
+//   the enclosing frames' handling runs after this one and changes the thread's
+//   contexts before the dispatcher sees the continuation.
+//
+bool AsyncTransformation::CanFinishSuspensionInDispatcher(GenTreeCall* call)
+{
+    if (GetSuspensionContextHelper(call) == SuspensionContextHelper::None)
+    {
+        return false;
+    }
+
+    unsigned numResumedArgs = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetWellKnownArg() == WellKnownArg::AsyncResumedUse)
+        {
+            numResumedArgs++;
+        }
+    }
+
+    assert(numResumedArgs >= 1);
+    return numResumedArgs == 1;
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::FinishContextHandlingAndSuspension:
 //   Generate code to finish handling of contexts on suspension, and finish the suspension:
 //   - Capture SynchronizationContext or TaskScheduler into the continuation
@@ -3413,8 +3495,12 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
     }
     else
     {
-        // Otherwise insert a new call
-        InsertFinishContextHandlingCall(suspendBB, layout, helper, resumed, execContext, syncContext);
+        // Otherwise insert a new call. Outside inlined frames the flags of the
+        // continuation tell the dispatcher to do the capture when the frame has
+        // resumed (see CanFinishSuspensionInDispatcher), so the call is only
+        // needed when it has not.
+        suspendBB = InsertFinishContextHandlingCall(suspendBB, layout, helper, resumed, execContext, syncContext,
+                                                    /* skipIfResumed */ frameTail == nullptr);
 
         // And continue with the enclosing frames, or return either via a new
         // GT_RETURN_SUSPEND or via the shared return BB.
@@ -3978,7 +4064,7 @@ void AsyncTransformation::CreateResumption(BasicBlock*                      call
         storeResultBB = RethrowExceptionOnResumption(callBlock, layout, resumeBB);
     }
 
-    if (call->gtReturnType != TYP_VOID)
+    if (subLayout.HasReturn())
     {
         const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
         assert(retInfo != nullptr);
@@ -4680,9 +4766,11 @@ BasicBlock* AsyncTransformation::CreateSharedFinishContextHandlingBB(SuspensionC
         syncContextLclNum = m_compiler->lvaAsyncSynchronizationContextVar;
     }
 
+    // The shared finish is only used outside inlined async frames, where the
+    // dispatcher captures the contexts if the frame has resumed.
     InsertFinishContextHandlingCall(block, layout, helper, resumed,
                                     m_compiler->gtNewLclvNode(execContextLclNum, TYP_REF),
-                                    m_compiler->gtNewLclvNode(syncContextLclNum, TYP_REF));
+                                    m_compiler->gtNewLclvNode(syncContextLclNum, TYP_REF), /* skipIfResumed */ true);
 
     return block;
 }
@@ -4698,14 +4786,57 @@ BasicBlock* AsyncTransformation::CreateSharedFinishContextHandlingBB(SuspensionC
 //   resumed     - The resumed tree to pass to the helper
 //   execContext - The execution context tree to pass to the helper
 //   syncContext - The synchronization context tree to pass to the helper
+//   skipIfResumed - If true, only call the helper when 'resumed' is zero; the
+//                   continuation is flagged for the dispatcher to finish otherwise.
 //
-void AsyncTransformation::InsertFinishContextHandlingCall(BasicBlock*               block,
-                                                          const ContinuationLayout& layout,
-                                                          SuspensionContextHelper   helper,
-                                                          GenTree*                  resumed,
-                                                          GenTree*                  execContext,
-                                                          GenTree*                  syncContext)
+// Returns:
+//   The block to continue the suspension in.
+//
+BasicBlock* AsyncTransformation::InsertFinishContextHandlingCall(BasicBlock*               block,
+                                                                 const ContinuationLayout& layout,
+                                                                 SuspensionContextHelper   helper,
+                                                                 GenTree*                  resumed,
+                                                                 GenTree*                  execContext,
+                                                                 GenTree*                  syncContext,
+                                                                 bool                      skipIfResumed)
 {
+    BasicBlock* tailBB = block;
+    if (skipIfResumed)
+    {
+        if (resumed->IsIntegralConst())
+        {
+            if (resumed->AsIntConCommon()->IntegralValue() != 0)
+            {
+                JITDUMP("    Frame is known to have resumed; dispatcher finishes the suspension\n");
+                return block;
+            }
+        }
+        else
+        {
+            // block: JTRUE(resumed != 0) -> tailBB, else -> callBB
+            // callBB: call helper -> tailBB
+            BasicBlock* callBB = m_compiler->fgSplitBlockAtEnd(block);
+            tailBB             = m_compiler->fgSplitBlockAtEnd(callBB);
+
+            FlowEdge* toTail = m_compiler->fgAddRefPred(tailBB, block);
+            block->SetCond(toTail, block->GetTargetEdge());
+            // Suspensions in loops are mostly done by frames that have resumed.
+            block->GetTrueEdge()->setLikelihood(0.9);
+            block->GetFalseEdge()->setLikelihood(0.1);
+
+            GenTree* neZero = m_compiler->gtNewOperNode(GT_NE, TYP_INT, resumed, m_compiler->gtNewIconNode(0));
+            GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neZero);
+            LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+
+            JITDUMP("    Finish-suspension call only when not resumed: " FMT_BB " -> " FMT_BB " / " FMT_BB "\n",
+                    block->bbNum, callBB->bbNum, tailBB->bbNum);
+            block = callBB;
+        }
+
+        // The helper only runs when the frame has not resumed.
+        resumed = m_compiler->gtNewIconNode(0);
+    }
+
     CORINFO_METHOD_HANDLE helperMethod = (helper == SuspensionContextHelper::WithContinuationContext)
                                              ? m_asyncInfo->finishSuspensionWithContinuationContextMethHnd
                                              : m_asyncInfo->finishSuspensionNoContinuationContextMethHnd;
@@ -4820,6 +4951,8 @@ void AsyncTransformation::InsertFinishContextHandlingCall(BasicBlock*           
 
     JITDUMP("    Created FinishSuspension call:\n");
     DISPTREERANGE(LIR::AsRange(block), finishCall);
+
+    return tailBB;
 }
 
 //------------------------------------------------------------------------

@@ -6339,13 +6339,12 @@ void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHan
         if (i == -1)
         {
             returnValueDataStartOffset = currentOffset;
-            // Always encode the would-be result offset as it is the basis for
-            // where interpreter data is copied from, even when there is no
-            // result
-            encodeIndex(currentOffset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
             // Handle return value first
             if (returnValueVar == -1)
                 continue;
+            // Only encode the result index when there is a result: runtime helpers that complete
+            // awaits write the awaited result to any result storage the continuation has.
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
             var = returnValueVar;
             INTERP_DUMP("returnValueVar is  %d\n", returnValueVar);
         }
@@ -6464,6 +6463,7 @@ void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHan
     suspendData->flags = (CorInfoContinuationFlags)flags;
 
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
+    suspendData->continuationDataOffset = returnValueDataStartOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
     suspendData->restoreContextsOnSuspensionMethod = asyncInfo.restoreContextsOnSuspensionMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;

@@ -222,6 +222,9 @@ struct InterpAsyncSuspendData
     int32_t continuationArgOffset;
     int32_t returnValueContinuationDataSize; // Aligned size of the return value in continuation data (0 if void). Live locals start after this offset.
     int32_t returnValueVarStackOffset; // Interpreter stack offset of the return value var (valid only when returnValueContinuationDataSize > 0)
+    // Offset from the start of the continuation object to the return value storage, followed by the live locals.
+    // This is tracked separately because the continuation has no result index when the call returns void.
+    int32_t continuationDataOffset;
 
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsOnSuspensionMethod);

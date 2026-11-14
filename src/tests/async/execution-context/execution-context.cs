@@ -9,7 +9,188 @@ using Xunit;
 
 public class Async2ExecutionContext
 {
+    [ThreadStatic]
+    private static bool t_inCompletingScheduler;
+
     public static AsyncLocal<long?> s_local = new AsyncLocal<long?>();
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    public static async Task TaskAwaitDoesNotInheritCompletingTask(int completionKind, bool suppressThrowing)
+    {
+        TaskCompletionSource suspension = new TaskCompletionSource();
+        Task waiter = ObserveTaskAwait(suspension.Task, completionKind, suppressThrowing);
+        Task completer = Task.Factory.StartNew(() =>
+        {
+            int? currentTaskId = Task.CurrentId;
+            Assert.NotNull(currentTaskId);
+            CompleteTask(suspension, completionKind);
+            Assert.Equal(currentTaskId, Task.CurrentId);
+        }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+
+        await Task.WhenAll(waiter, completer);
+    }
+
+    private static async Task ObserveTaskAwait(Task suspension, int completionKind, bool suppressThrowing)
+    {
+        bool threw = false;
+        try
+        {
+            await suspension.ConfigureAwait(suppressThrowing ? ConfigureAwaitOptions.SuppressThrowing : ConfigureAwaitOptions.None);
+        }
+        catch (InvalidOperationException) when (completionKind == 1 && !suppressThrowing)
+        {
+            threw = true;
+        }
+        catch (OperationCanceledException) when (completionKind == 2 && !suppressThrowing)
+        {
+            threw = true;
+        }
+
+        Assert.Equal(completionKind != 0 && !suppressThrowing, threw);
+        Assert.Null(Task.CurrentId);
+        Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static async Task TaskAwaitDoesNotInlineOnCompletingScheduler(bool suppressThrowing)
+    {
+        ConcurrentExclusiveSchedulerPair pair = new ConcurrentExclusiveSchedulerPair();
+        TaskCompletionSource suspension = new TaskCompletionSource();
+        Task waiter = ObserveCompletingScheduler(suspension.Task, suppressThrowing);
+        Task completer = Task.Factory.StartNew(() =>
+        {
+            int? currentTaskId = Task.CurrentId;
+            Assert.NotNull(currentTaskId);
+            Assert.Same(pair.ExclusiveScheduler, TaskScheduler.Current);
+            t_inCompletingScheduler = true;
+            try
+            {
+                CompleteTask(suspension, suppressThrowing ? 1 : 0);
+            }
+            finally
+            {
+                t_inCompletingScheduler = false;
+            }
+            Assert.Equal(currentTaskId, Task.CurrentId);
+            Assert.Same(pair.ExclusiveScheduler, TaskScheduler.Current);
+        }, CancellationToken.None, TaskCreationOptions.None, pair.ExclusiveScheduler);
+
+        try
+        {
+            await Task.WhenAll(waiter, completer);
+        }
+        finally
+        {
+            pair.Complete();
+        }
+        await pair.Completion;
+    }
+
+    private static async Task ObserveCompletingScheduler(Task suspension, bool suppressThrowing)
+    {
+        await suspension.ConfigureAwait(suppressThrowing ? ConfigureAwaitOptions.SuppressThrowing : ConfigureAwaitOptions.None);
+        Assert.False(t_inCompletingScheduler);
+        Assert.Null(Task.CurrentId);
+        Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static async Task TaskAwaitInlinesOnCapturedContext(bool suppressThrowing, bool useSynchronizationContext)
+    {
+        ConcurrentExclusiveSchedulerPair pair = new ConcurrentExclusiveSchedulerPair();
+        SynchronizationContext? context = useSynchronizationContext ? new CapturedSynchronizationContext() : null;
+        try
+        {
+            await Task.Factory.StartNew(() =>
+            {
+                int? currentTaskId = Task.CurrentId;
+                Assert.NotNull(currentTaskId);
+                SynchronizationContext? previousContext = SynchronizationContext.Current;
+                SynchronizationContext.SetSynchronizationContext(context);
+                try
+                {
+                    TaskCompletionSource suspension = new TaskCompletionSource();
+                    Task waiter = ObserveCapturedContext(suspension.Task, suppressThrowing, pair.ExclusiveScheduler, context, currentTaskId);
+                    Assert.False(waiter.IsCompleted);
+                    t_inCompletingScheduler = true;
+                    try
+                    {
+                        CompleteTask(suspension, suppressThrowing ? 1 : 0);
+                    }
+                    finally
+                    {
+                        t_inCompletingScheduler = false;
+                    }
+
+                    Assert.True(waiter.IsCompleted);
+                    Assert.Equal(currentTaskId, Task.CurrentId);
+                    Assert.Same(pair.ExclusiveScheduler, TaskScheduler.Current);
+                    return waiter;
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }, CancellationToken.None, TaskCreationOptions.None, pair.ExclusiveScheduler).Unwrap();
+        }
+        finally
+        {
+            pair.Complete();
+        }
+        await pair.Completion;
+    }
+
+    private static async Task ObserveCapturedContext(
+        Task suspension, bool suppressThrowing, TaskScheduler scheduler, SynchronizationContext? context, int? completingTaskId)
+    {
+        await suspension.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext |
+            (suppressThrowing ? ConfigureAwaitOptions.SuppressThrowing : ConfigureAwaitOptions.None));
+        Assert.True(t_inCompletingScheduler);
+        Assert.Same(context, SynchronizationContext.Current);
+        Assert.Same(context is null ? scheduler : TaskScheduler.Default, TaskScheduler.Current);
+        if (context is null)
+        {
+            Assert.NotNull(Task.CurrentId);
+            Assert.NotEqual(completingTaskId, Task.CurrentId);
+        }
+        else
+        {
+            Assert.Null(Task.CurrentId);
+        }
+    }
+
+    private sealed class CapturedSynchronizationContext : SynchronizationContext
+    {
+    }
+
+    private static void CompleteTask(TaskCompletionSource suspension, int completionKind)
+    {
+        switch (completionKind)
+        {
+            case 0:
+                suspension.SetResult();
+                break;
+            case 1:
+                suspension.SetException(new InvalidOperationException());
+                break;
+            default:
+                Assert.Equal(2, completionKind);
+                suspension.SetCanceled();
+                break;
+        }
+    }
 
     [Fact]
     public static async Task Test()

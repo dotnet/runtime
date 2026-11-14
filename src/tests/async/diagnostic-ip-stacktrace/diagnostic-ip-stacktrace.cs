@@ -2,12 +2,77 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using TestLibrary;
 using Xunit;
 
 public class RuntimeAsyncDiagnosticIPStackTrace
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void SynchronousExceptionDoesNotDuplicateCaller(bool isValueTask, bool isGeneric)
+    {
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => InvokeSynchronouslyThrowingAsync(isValueTask, isGeneric));
+        string stackTrace = exception.StackTrace;
+        Assert.NotNull(stackTrace);
+
+        string callerFrame = $"{nameof(RuntimeAsyncDiagnosticIPStackTrace)}.{nameof(InvokeSynchronouslyThrowingAsync)}(";
+        int firstFrame = stackTrace.IndexOf(callerFrame, StringComparison.Ordinal);
+        Assert.True(firstFrame >= 0, stackTrace);
+        Assert.Equal(-1, stackTrace.IndexOf(callerFrame, firstFrame + callerFrame.Length, StringComparison.Ordinal));
+        // NativeAOT's extra EDI boundaries are tracked by https://github.com/dotnet/runtime/issues/129155.
+        if (!Utilities.IsNativeAot)
+        {
+            Assert.False(stackTrace.Contains("--- End of stack trace from previous location ---", StringComparison.Ordinal), stackTrace);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [RuntimeAsyncMethodGeneration(false)]
+    private static void InvokeSynchronouslyThrowingAsync(bool isValueTask, bool isGeneric)
+    {
+        if (isValueTask)
+        {
+            if (isGeneric)
+            {
+                _ = ThrowValueTaskOfInt().GetAwaiter().GetResult();
+            }
+            else
+            {
+                ThrowValueTask().GetAwaiter().GetResult();
+            }
+        }
+        else
+        {
+            if (isGeneric)
+            {
+                _ = ThrowTaskOfInt().GetAwaiter().GetResult();
+            }
+            else
+            {
+                ThrowTask().GetAwaiter().GetResult();
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task ThrowTask() => throw new InvalidOperationException();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task<int> ThrowTaskOfInt() => throw new InvalidOperationException();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async ValueTask ThrowValueTask() => throw new InvalidOperationException();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async ValueTask<int> ThrowValueTaskOfInt() => throw new InvalidOperationException();
+
     [Fact]
     public static async Task TestEntryPoint()
     {
@@ -36,7 +101,7 @@ public class RuntimeAsyncDiagnosticIPStackTrace
             Assert.NotNull(stackTrace);
             Console.WriteLine(stackTrace);
 
-            string[] expectedMethods =
+            List<string> expectedMethods =
             [
                 nameof(ThrowAfterResume),
                 nameof(Level4),
@@ -44,6 +109,12 @@ public class RuntimeAsyncDiagnosticIPStackTrace
                 nameof(Level2),
                 nameof(Level1),
             ];
+
+            // A non-async forwarder has no suspended frame on NativeAOT.
+            if (!Utilities.IsNativeAot)
+            {
+                expectedMethods.Insert(3, nameof(NoInlineForwarder));
+            }
 
             int previousFrame = -1;
             foreach (string method in expectedMethods)
@@ -60,7 +131,10 @@ public class RuntimeAsyncDiagnosticIPStackTrace
     private static async Task Level1(Task suspension) => await Level2(suspension);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task Level2(Task suspension) => await Level3(suspension);
+    private static async Task Level2(Task suspension) => await NoInlineForwarder(suspension);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task NoInlineForwarder(Task suspension) => Level3(suspension);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Level3(Task suspension) => await Level4(suspension);

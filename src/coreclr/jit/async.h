@@ -160,6 +160,10 @@ public:
         return m_needsExecutionContext;
     }
     void AddReturn(const ReturnTypeInfo& info);
+    bool HasReturn() const
+    {
+        return !m_returns.empty();
+    }
     void AddLocal(unsigned lclNum);
     bool ContainsLocal(unsigned lclNum) const;
 
@@ -453,6 +457,7 @@ class AsyncTransformation
 
     void BuildContinuation(BasicBlock*                block,
                            GenTreeCall*               call,
+                           const CallDefinitionInfo&  callDefInfo,
                            bool                       needsKeepAlive,
                            ContinuationLayoutBuilder* layoutBuilder);
 
@@ -494,6 +499,7 @@ class AsyncTransformation
                                                    SaveSet                          saveSet);
     SaveSet                 GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
     SuspensionContextHelper GetSuspensionContextHelper(GenTreeCall* call);
+    bool                    CanFinishSuspensionInDispatcher(GenTreeCall* call);
     void                    FinishContextHandlingAndSuspension(BasicBlock*                      callBlock,
                                                                GenTreeCall*                     call,
                                                                BasicBlock*                      suspendBB,
@@ -558,12 +564,13 @@ class AsyncTransformation
                                                                   GenTree*                  invariantResumed,
                                                                   bool                      execContextMayVary,
                                                                   bool                      syncContextMayVary);
-    void                      InsertFinishContextHandlingCall(BasicBlock*               block,
+    BasicBlock*               InsertFinishContextHandlingCall(BasicBlock*               block,
                                                               const ContinuationLayout& layout,
                                                               SuspensionContextHelper   helper,
                                                               GenTree*                  resumed,
                                                               GenTree*                  execContext,
-                                                              GenTree*                  syncContext);
+                                                              GenTree*                  syncContext,
+                                                              bool                      skipIfResumed);
     GenTreeLclVarCommon*      FindAndRemoveCommonAsyncResumedDef();
     const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
     BasicBlock*               CreateOSRJumpBB(GenTree* osrAddress);

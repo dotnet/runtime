@@ -13,94 +13,89 @@ namespace System.Runtime.CompilerServices
         private sealed unsafe class ValueTaskSourceContinuation : Continuation
         {
             internal object? Source;
-            internal short Token;
-            internal delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> OnCompletedValueTaskSource;
             private delegate*<object, short, ref byte, void> _getResult;
+            private short _token;
 
-            public ValueTaskSourceContinuation()
-            {
-                ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in ValueTaskSourceContinuationResume.ResumeInfo);
-            }
+            // Whether the source is being awaited, i.e. the dispatcher has yet to fetch its result.
+            internal bool IsPending;
+
+            // This is never linked into a continuation chain or resumed. Instead, the suspended
+            // RuntimeAsyncTask holds it while awaiting the source, and the dispatcher calls GetResult
+            // to store the result directly into the awaiting continuation. The RuntimeAsyncTask keeps
+            // the empty continuation installed for reuse, but must not retain the consumed source.
 
             [StackTraceHidden]
             public void GetResult(ref byte returnValue)
             {
-                Debug.Assert(Source != null);
-
-                // Avoid retaining source. The call below may throw.
+                Debug.Assert(IsPending && Source is not null);
                 object source = Source;
                 Source = null;
-
-                _getResult(source, Token, ref returnValue);
+                IsPending = false;
+                _getResult(source, _token, ref returnValue);
             }
 
-            public void Initialize(IValueTaskSource source, short token)
+            public void Initialize(object source, short token, delegate*<object, short, ref byte, void> getResult)
             {
+                Debug.Assert(!IsPending && Source is null);
                 Source = source;
-                Token = token;
-                OnCompletedValueTaskSource = &OnCompleted;
-                _getResult = &GetResult;
+                _token = token;
+                _getResult = getResult;
+                IsPending = true;
             }
 
-            public void Initialize<T>(IValueTaskSource<T> source, short token)
-            {
-                Source = source;
-                Token = token;
-                OnCompletedValueTaskSource = &OnCompleted<T>;
-                _getResult = &GetResult<T>;
-            }
-
-            private static void OnCompleted(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            // Registers the continuation with the source. Like any notifier, a source that throws from OnCompleted
+            // has its exception propagated to the thread pool; returns false in that case.
+            internal static bool OnCompleted(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             {
                 Debug.Assert(source is IValueTaskSource);
                 IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
-                typedSource.OnCompleted(continuation, state, token, flags);
+                try
+                {
+                    typedSource.OnCompleted(continuation, state, token, flags);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                    return false;
+                }
             }
 
             [StackTraceHidden]
-            private static void GetResult(object source, short token, ref byte result)
+            internal static void GetResult(object source, short token, ref byte _)
             {
                 Debug.Assert(source is IValueTaskSource);
                 IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
                 typedSource.GetResult(token);
             }
 
-            private static void OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            internal static bool OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             {
                 Debug.Assert(source is IValueTaskSource<T>);
                 IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                typedSource.OnCompleted(continuation, state, token, flags);
+                try
+                {
+                    typedSource.OnCompleted(continuation, state, token, flags);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                    return false;
+                }
             }
 
             [StackTraceHidden]
-            private static void GetResult<T>(object source, short token, ref byte result)
+            internal static void GetResult<T>(object source, short token, ref byte result)
             {
                 Debug.Assert(source is IValueTaskSource<T>);
                 IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
-            }
+                T value = typedSource.GetResult(token);
 
-            private static class ValueTaskSourceContinuationResume
-            {
-                [FixedAddressValueType]
-                public static readonly ResumeInfo ResumeInfo = new ResumeInfo
+                // The awaiting continuation has no result storage if it ignores the result.
+                if (!Unsafe.IsNullRef(ref result))
                 {
-                    DiagnosticIP = null,
-                    Resume = &ResumeValueTaskSourceContinuation,
-                };
-
-                [StackTraceHidden]
-                private static Continuation? ResumeValueTaskSourceContinuation(Continuation cont, ref byte result)
-                {
-                    var vtsCont = (ValueTaskSourceContinuation)cont;
-                    vtsCont.Next = null;
-
-                    Debug.Assert((vtsCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-
-                    t_runtimeAsyncAwaitState.CachedValueTaskSourceContinuation = vtsCont;
-
-                    vtsCont.GetResult(ref result);
-                    return null;
+                    Unsafe.As<byte, T>(ref result) = value;
                 }
             }
         }
