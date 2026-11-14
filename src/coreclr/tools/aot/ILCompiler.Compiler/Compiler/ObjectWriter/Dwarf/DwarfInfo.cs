@@ -367,8 +367,8 @@ namespace ILCompiler.ObjectWriter
         private readonly DwarfMemberFunction _memberFunction;
         private readonly (DebugVarInfoMetadata, uint)[] _debugVars;
         private readonly DebugEHClauseInfo[] _debugEHClauseInfos;
+        private readonly FrameInfo[] _frameInfos;
         private readonly bool _isStatic;
-        private readonly bool _hasChildren;
         private readonly int _thisVariableIndex;
 
         public DwarfSubprogramInfo(
@@ -377,7 +377,8 @@ namespace ILCompiler.ObjectWriter
             int methodSize,
             DwarfMemberFunction memberFunction,
             (DebugVarInfoMetadata, uint)[] debugVars,
-            DebugEHClauseInfo[] debugEHClauseInfos)
+            DebugEHClauseInfo[] debugEHClauseInfos,
+            FrameInfo[] frameInfos)
         {
             _sectionSymbolName = sectionSymbolName;
             _methodAddress = methodAddress;
@@ -386,7 +387,7 @@ namespace ILCompiler.ObjectWriter
             _isStatic = memberFunction.IsStatic;
             _debugVars = debugVars;
             _debugEHClauseInfos = debugEHClauseInfos;
-            _hasChildren = _debugVars.Length > 0 || _debugEHClauseInfos.Length > 0;
+            _frameInfos = frameInfos;
             _thisVariableIndex = -1;
 
             if (!_isStatic)
@@ -405,18 +406,40 @@ namespace ILCompiler.ObjectWriter
 
         public override void Dump(DwarfInfoWriter writer)
         {
+            List<EHRegion> regions = GetEHRegions();
+
+            if (_frameInfos.Length <= 1)
+            {
+                DumpSubprogram(writer, 0, (uint)_methodSize, regions);
+                return;
+            }
+
+            // Funclets have their own unwind info. Debuggers such as lldb pick the unwind info by the start
+            // of the enclosing function, and merge adjacent DW_AT_ranges entries, so each funclet is described
+            // by its own subprogram.
+            foreach (FrameInfo frameInfo in _frameInfos)
+            {
+                DumpSubprogram(writer, (uint)frameInfo.StartOffset, (uint)frameInfo.EndOffset, regions);
+            }
+        }
+
+        private void DumpSubprogram(DwarfInfoWriter writer, uint start, uint end, List<EHRegion> allRegions)
+        {
+            List<EHRegion> regions = allRegions.FindAll(r => r.Start >= start && r.End <= end);
+            bool hasChildren = _debugVars.Length > 0 || regions.Count > 0;
+
             writer.WriteStartDIE(
                 _thisVariableIndex >= 0 ? DwarfAbbrev.Subprogram :
-                _hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
+                hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
 
             // DW_AT_specification
             writer.WriteInfoAbsReference(_memberFunction.InfoOffset);
 
             // DW_AT_low_pc
-            writer.WriteCodeReference(_sectionSymbolName, _methodAddress);
+            writer.WriteCodeReference(_sectionSymbolName, _methodAddress + start);
 
             // DW_AT_high_pc
-            writer.WriteAddressSize((ulong)_methodSize);
+            writer.WriteAddressSize(end - start);
 
             // DW_AT_frame_base
             if (writer.TargetArchitecture == TargetArchitecture.Wasm32)
@@ -453,26 +476,75 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            // EH clauses
-            foreach (DebugEHClauseInfo clause in _debugEHClauseInfos)
-            {
-                writer.WriteStartDIE(DwarfAbbrev.TryBlock);
-                // DW_AT_low_pc
-                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + clause.TryOffset);
-                // DW_AT_high_pc
-                writer.WriteAddressSize(clause.TryLength);
-                writer.WriteEndDIE();
-
-                writer.WriteStartDIE(DwarfAbbrev.CatchBlock);
-                // DW_AT_low_pc
-                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + clause.HandlerOffset);
-                // DW_AT_high_pc
-                writer.WriteAddressSize(clause.HandlerLength);
-                writer.WriteEndDIE();
-            }
+            DumpEHRegions(writer, regions);
 
             writer.WriteEndDIE();
         }
+
+        private List<EHRegion> GetEHRegions()
+        {
+            var regions = new List<EHRegion>(_debugEHClauseInfos.Length * 2);
+            foreach (DebugEHClauseInfo clause in _debugEHClauseInfos)
+            {
+                AddRegion(regions, new EHRegion(clause.TryOffset, clause.TryOffset + clause.TryLength, IsTry: true));
+                AddRegion(regions, new EHRegion(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, IsTry: false));
+            }
+
+            // Outer regions come first when several regions start at the same offset
+            regions.Sort((x, y) => x.Start != y.Start ? x.Start.CompareTo(y.Start) : y.End.CompareTo(x.End));
+            return regions;
+
+            static void AddRegion(List<EHRegion> regions, EHRegion region)
+            {
+                if (region.End > region.Start && !regions.Contains(region))
+                    regions.Add(region);
+            }
+        }
+
+        private void DumpEHRegions(DwarfInfoWriter writer, List<EHRegion> regions)
+        {
+            // Sibling DIEs must not have overlapping address ranges, so try and handler regions
+            // nested inside another region are emitted as children of the innermost one.
+            var openRegions = new Stack<EHRegion>();
+            for (int i = 0; i < regions.Count; i++)
+            {
+                EHRegion region = regions[i];
+
+                while (openRegions.Count > 0 && openRegions.Peek().End <= region.Start)
+                {
+                    openRegions.Pop();
+                    writer.WriteEndDIE();
+                }
+
+                if (openRegions.Count > 0 && region.End > openRegions.Peek().End)
+                {
+                    // Partially overlapping regions cannot be represented
+                    continue;
+                }
+
+                bool hasChildren = i + 1 < regions.Count && regions[i + 1].End <= region.End;
+                writer.WriteStartDIE(region.IsTry ?
+                    (hasChildren ? DwarfAbbrev.TryBlockWithChildren : DwarfAbbrev.TryBlock) :
+                    (hasChildren ? DwarfAbbrev.CatchBlockWithChildren : DwarfAbbrev.CatchBlock));
+                // DW_AT_low_pc
+                writer.WriteCodeReference(_sectionSymbolName, _methodAddress + region.Start);
+                // DW_AT_high_pc
+                writer.WriteAddressSize(region.End - region.Start);
+
+                if (hasChildren)
+                    openRegions.Push(region);
+                else
+                    writer.WriteEndDIE();
+            }
+
+            while (openRegions.Count > 0)
+            {
+                openRegions.Pop();
+                writer.WriteEndDIE();
+            }
+        }
+
+        private readonly record struct EHRegion(uint Start, uint End, bool IsTry);
 
         private void DumpVar(DwarfInfoWriter writer, DebugVarInfoMetadata metadataInfo, uint typeIndex, bool isThis)
         {
