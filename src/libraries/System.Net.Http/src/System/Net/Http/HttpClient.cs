@@ -434,6 +434,66 @@ namespace System.Net.Http
             return SendAsync(request, cancellationToken);
         }
 
+        /// <summary>
+        /// Sends a QUERY request to a specified URI as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The content of the QUERY request.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> is not set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an underlying issue such as network connectivity, DNS failure, or server certificate validation.</exception>
+        /// <exception cref="OperationCanceledException">The request failed due to timeout. This exception is stored into the returned task.</exception>
+        /// <exception cref="UriFormatException">The <paramref name="requestUri"/> is not a valid URI.</exception>
+        public Task<HttpResponseMessage> QueryAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content) =>
+            QueryAsync(CreateUri(requestUri), content);
+
+        /// <summary>
+        /// Sends a QUERY request to a specified URI as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The content of the QUERY request.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> is not set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an underlying issue such as network connectivity, DNS failure, or server certificate validation.</exception>
+        /// <exception cref="OperationCanceledException">The request failed due to timeout. This exception is stored into the returned task.</exception>
+        public Task<HttpResponseMessage> QueryAsync(Uri? requestUri, HttpContent? content) =>
+            QueryAsync(requestUri, content, CancellationToken.None);
+
+        /// <summary>
+        /// Sends a QUERY request to a specified URI with a cancellation token as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The content of the QUERY request.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> is not set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an underlying issue such as network connectivity, DNS failure, or server certificate validation.</exception>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled, or the request failed due to timeout. This exception is stored into the returned task.</exception>
+        /// <exception cref="UriFormatException">The <paramref name="requestUri"/> is not a valid URI.</exception>
+        public Task<HttpResponseMessage> QueryAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, HttpContent? content, CancellationToken cancellationToken) =>
+            QueryAsync(CreateUri(requestUri), content, cancellationToken);
+
+        /// <summary>
+        /// Sends a QUERY request to a specified URI with a cancellation token as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestUri">The URI the request is sent to.</param>
+        /// <param name="content">The content of the QUERY request.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">The <paramref name="requestUri"/> is not an absolute URI and <see cref="BaseAddress"/> is not set.</exception>
+        /// <exception cref="ObjectDisposedException">The current instance has been disposed.</exception>
+        /// <exception cref="HttpRequestException">The request failed due to an underlying issue such as network connectivity, DNS failure, or server certificate validation.</exception>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled, or the request failed due to timeout. This exception is stored into the returned task.</exception>
+        public Task<HttpResponseMessage> QueryAsync(Uri? requestUri, HttpContent? content, CancellationToken cancellationToken)
+        {
+            HttpRequestMessage request = CreateRequestMessage(HttpMethod.Query, requestUri);
+            request.Content = content;
+            return SendAsync(request, cancellationToken);
+        }
+
         public Task<HttpResponseMessage> DeleteAsync([StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri) =>
             DeleteAsync(CreateUri(requestUri));
 

@@ -757,6 +757,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ObjectDisposedException>(() => { client.GetStringAsync(CreateFakeUri()); });
             Assert.Throws<ObjectDisposedException>(() => { client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
+            Assert.Throws<ObjectDisposedException>(() => { client.QueryAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.SendAsync(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())); });
             Assert.Throws<ObjectDisposedException>(() => { client.Send(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())); });
             Assert.Throws<ObjectDisposedException>(() => { client.Timeout = TimeSpan.FromSeconds(1); });
@@ -1008,6 +1009,92 @@ namespace System.Net.Http.Functional.Tests
             client.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => { client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
+        }
+
+        [Fact]
+        public async Task QueryAsync_Canceled_Throws()
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                var content = new ByteArrayContent(new byte[1]);
+                var cts = new CancellationTokenSource();
+
+                Task t1 = client.QueryAsync(CreateFakeUri(), content, cts.Token);
+
+                cts.Cancel();
+
+                TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
+                Assert.Equal(cts.Token, tce.CancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task QueryAsync_Success()
+        {
+            HttpRequestMessage? lastRequest = null;
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) =>
+            {
+                lastRequest = r;
+                return Task.FromResult(new HttpResponseMessage());
+            })))
+            {
+                string fakeUriString = CreateFakeUri();
+                Uri fakeUri = new Uri(fakeUriString);
+                var content1 = new ByteArrayContent(new byte[1]);
+                var content2 = new ByteArrayContent(new byte[1]);
+                var content3 = new ByteArrayContent(new byte[1]);
+                var content4 = new ByteArrayContent(new byte[1]);
+
+                // 1. QueryAsync(string?, HttpContent?)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUriString, content1))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content1, lastRequest.Content);
+                }
+
+                // 2. QueryAsync(string?, HttpContent?, CancellationToken)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUriString, content2, CancellationToken.None))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content2, lastRequest.Content);
+                }
+
+                // 3. QueryAsync(Uri?, HttpContent?)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUri, content3))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content3, lastRequest.Content);
+                }
+
+                // 4. QueryAsync(Uri?, HttpContent?, CancellationToken)
+                using (HttpResponseMessage response = await client.QueryAsync(fakeUri, content4, CancellationToken.None))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.NotNull(lastRequest);
+                    Assert.Equal(HttpMethod.Query, lastRequest.Method);
+                    Assert.Equal(fakeUri, lastRequest.RequestUri);
+                    Assert.Same(content4, lastRequest.Content);
+                }
+            }
+        }
+
+        [Fact]
+        public void Dispose_UseQueryAfterDispose_Throws()
+        {
+            var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage())));
+            client.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => { client.QueryAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
+            Assert.Throws<ObjectDisposedException>(() => { client.QueryAsync(new Uri(CreateFakeUri()), new ByteArrayContent(new byte[1])); });
         }
 
         [Theory]
