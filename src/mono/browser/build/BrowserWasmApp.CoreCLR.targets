@@ -3,6 +3,7 @@
     <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</WasmPInvokeModulesPropsPath>
   </PropertyGroup>
   <Import Project="$(WasmPInvokeModulesPropsPath)" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.Timezone.targets" />
 
   <!--
     CoreCLR WASM native re-link targets.
@@ -899,8 +900,8 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
 
       <!-- Timezone data (conditional on InvariantTimezone) -->
-      <_CoreCLRNativeLibs Condition="'$(InvariantTimezone)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.a" />
-      <_CoreCLRNativeLibs Condition="'$(InvariantTimezone)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.Invariant.a" />
+      <_CoreCLRNativeLibs Condition="'$(WasmCustomTimezoneDataDirectory)' == '' and '$(InvariantTimezone)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.a" />
+      <_CoreCLRNativeLibs Condition="'$(WasmCustomTimezoneDataDirectory)' == '' and '$(InvariantTimezone)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.Invariant.a" />
     </ItemGroup>
 
     <!-- JS library files linked via js-library and extern-post-js flags -->
