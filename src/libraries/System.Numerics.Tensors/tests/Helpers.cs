@@ -85,7 +85,7 @@ namespace System.Numerics.Tensors.Tests
                 }
                 else if (IntPtr.Size == 4 && floatTolerance != null)
                 {
-                    return (T?)(object)(NFloat)doubleTolerance;
+                    return (T?)(object)(NFloat)floatTolerance;
                 }
             }
 #endif

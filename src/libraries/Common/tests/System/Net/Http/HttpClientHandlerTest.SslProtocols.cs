@@ -103,7 +103,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
             int count = 0;
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false))
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ServerCertificateCustomValidationCallback =
