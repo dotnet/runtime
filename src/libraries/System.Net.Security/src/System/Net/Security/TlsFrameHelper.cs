@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Security.Authentication;
@@ -94,6 +95,73 @@ namespace System.Net.Security
     internal static class TlsFrameHelper
     {
         public const int HeaderSize = 5;
+        private const int HandshakeHeaderSize = 4;
+        private const int MaxPlaintextLength = 1 << 14;
+
+        // Bound ClientHello by its length-prefixed fields (RFC 5246, section 7.4.1.2).
+        private const int MaxHelloLength = HandshakeHeaderSize + ProtocolVersionSize + RandomSize +
+            1 + 32 + 2 + ushort.MaxValue + 1 + byte.MaxValue + 2 + ushort.MaxValue;
+
+        internal struct HandshakeFrame
+        {
+            private uint _handshakeHeader;
+            private int _payloadLength;
+
+            public int FrameLength { get; private set; }
+            public int HandshakeLength { get; private set; }
+
+            // Resume at the next record without rescanning previously buffered fragments.
+            public OperationStatus Process(ReadOnlySpan<byte> frames, out int requiredLength)
+            {
+                while (true)
+                {
+                    requiredLength = FrameLength + HeaderSize;
+                    if (frames.Length < requiredLength)
+                    {
+                        return OperationStatus.NeedMoreData;
+                    }
+
+                    ReadOnlySpan<byte> frame = frames.Slice(FrameLength);
+                    TlsFrameHeader header = default;
+                    // Handshake fragments cannot be interleaved with other record types
+                    // or be empty (RFC 8446, section 5.1).
+                    if (frame[0] != (byte)TlsContentType.Handshake || frame[1] != ProtocolVersionTlsMajorValue ||
+                        !TryGetFrameHeader(frame, ref header) ||
+                        header.Length <= HeaderSize || header.Length > HeaderSize + MaxPlaintextLength)
+                    {
+                        return OperationStatus.InvalidData;
+                    }
+
+                    requiredLength = FrameLength + header.Length;
+                    if (frames.Length < requiredLength)
+                    {
+                        return OperationStatus.NeedMoreData;
+                    }
+
+                    ReadOnlySpan<byte> payload = frame.Slice(HeaderSize, header.Length - HeaderSize);
+                    for (int i = 0; _payloadLength + i < HandshakeHeaderSize && i < payload.Length; i++)
+                    {
+                        _handshakeHeader = (_handshakeHeader << 8) | payload[i];
+                    }
+
+                    _payloadLength += payload.Length;
+                    FrameLength = requiredLength;
+                    if (HandshakeLength == 0 && _payloadLength >= HandshakeHeaderSize)
+                    {
+                        HandshakeLength = (int)(_handshakeHeader & 0xFFFFFF) + HandshakeHeaderSize;
+                        if (HandshakeLength > MaxHelloLength)
+                        {
+                            return OperationStatus.InvalidData;
+                        }
+                    }
+
+                    if (HandshakeLength != 0 && _payloadLength >= HandshakeLength)
+                    {
+                        return OperationStatus.Done;
+                    }
+                }
+            }
+        }
 
         [Flags]
         public enum ProcessingOptions
@@ -226,8 +294,13 @@ namespace System.Net.Security
         // It is also possible to limit what information is processed.
         // If callback delegate is provided, it will be called on ALL extensions.
         public static bool TryGetFrameInfo(ReadOnlySpan<byte> frame, ref TlsFrameInfo info, ProcessingOptions options = ProcessingOptions.ServerName, HelloExtensionCallback? callback = null)
+            => TryGetFrameInfo(frame, ref info, out _, options, callback);
+
+        // frameLength includes all records containing the first handshake message.
+        public static bool TryGetFrameInfo(ReadOnlySpan<byte> frame, ref TlsFrameInfo info, out int frameLength, ProcessingOptions options = ProcessingOptions.ServerName, HelloExtensionCallback? callback = null)
         {
             const int HandshakeTypeOffset = 5;
+            frameLength = 0;
             if (frame.Length < HeaderSize)
             {
                 return false;
@@ -248,13 +321,14 @@ namespace System.Net.Security
                 if (TryGetAlertInfo(frame, ref level, ref description))
                 {
                     info.AlertDescription = description;
+                    frameLength = info.Header.Length;
                     return true;
                 }
 
                 return false;
             }
 
-            if (info.Header.Type != TlsContentType.Handshake || frame.Length <= HandshakeTypeOffset)
+            if (info.Header.Type != TlsContentType.Handshake || info.Header.Length <= HeaderSize || frame.Length <= HandshakeTypeOffset)
             {
                 return false;
             }
@@ -269,6 +343,7 @@ namespace System.Net.Security
                 // This is needed to trigger certificate selection callback in SslStream.
                 info.HandshakeType = TlsHandshakeType.ClientHello;
                 // There is no more parsing for old protocols.
+                frameLength = info.Header.Length;
                 return true;
             }
 #pragma warning restore CS0618
@@ -279,15 +354,60 @@ namespace System.Net.Security
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (((int)info.Header.Version >= (int)SslProtocols.Tls) &&
 #pragma warning restore SYSLIB0039
-                (info.HandshakeType == TlsHandshakeType.ClientHello || info.HandshakeType == TlsHandshakeType.ServerHello))
+                (info.HandshakeType is TlsHandshakeType.ClientHello or TlsHandshakeType.ServerHello))
             {
-                if (!TryParseHelloFrame(frame.Slice(HeaderSize), ref info, options, callback))
+                info.TargetName = null!;
+                info.ApplicationProtocols = default;
+                info.RawApplicationProtocols = null;
+
+                if (!isComplete || info.Header.Length > HeaderSize + MaxPlaintextLength)
                 {
-                    isComplete = false;
+                    return false;
                 }
+
+                ReadOnlySpan<byte> payload = frame.Slice(HeaderSize, info.Header.Length - HeaderSize);
+                if (payload.Length >= HandshakeHeaderSize &&
+                    ReadUInt24BigEndian(payload.Slice(1)) <= payload.Length - HandshakeHeaderSize)
+                {
+                    frameLength = info.Header.Length;
+                    return TryParseHelloFrame(payload, ref info, options, callback);
+                }
+
+                HandshakeFrame handshake = default;
+                if (handshake.Process(frame, out _) != OperationStatus.Done)
+                {
+                    return false;
+                }
+
+                frameLength = handshake.FrameLength;
+                return TryParseFragmentedHelloFrame(frame, handshake.HandshakeLength, ref info, options, callback);
             }
 
+            frameLength = isComplete ? info.Header.Length : 0;
             return isComplete;
+        }
+
+        private static bool TryParseFragmentedHelloFrame(ReadOnlySpan<byte> frames, int handshakeLength, ref TlsFrameInfo info, ProcessingOptions options, HelloExtensionCallback? callback)
+        {
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(handshakeLength);
+            try
+            {
+                int copied = 0;
+                while (copied < handshakeLength)
+                {
+                    int payloadLength = BinaryPrimitives.ReadUInt16BigEndian(frames.Slice(3));
+                    int length = Math.Min(payloadLength, handshakeLength - copied);
+                    frames.Slice(HeaderSize, length).CopyTo(buffer.AsSpan(copied));
+                    copied += length;
+                    frames = frames.Slice(HeaderSize + payloadLength);
+                }
+
+                return TryParseHelloFrame(buffer.AsSpan(0, handshakeLength), ref info, options, callback);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         // This is similar to TryGetFrameInfo, but it will only process SNI.
