@@ -394,6 +394,7 @@ namespace System.Threading.Tests
             string name = Guid.NewGuid().ToString("N");
             string prefixedName = namePrefix + name;
             bool currentSessionOnly = namePrefix != @"Global\";
+            bool currentUserOnly = !PlatformDetection.IsWindows;
 
             using (var m = new Mutex(initiallyOwned: false, prefixedName, out bool createdNew))
             {
@@ -402,18 +403,18 @@ namespace System.Threading.Tests
                 new Mutex(
                     initiallyOwned: false,
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                     out createdNew).Dispose();
                 Assert.False(createdNew);
 
                 Mutex.OpenExisting(
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly }).Dispose();
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly }).Dispose();
 
                 Assert.True(
                     Mutex.TryOpenExisting(
                         name,
-                        new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                        new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                         out Mutex m2));
                 m2.Dispose();
             }
