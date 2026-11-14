@@ -1176,7 +1176,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
         *reason = "[runtime disallows]";
         return false;
     }
-    if (allocType == OAT_NEWARR)
+    if ((allocType == OAT_NEWARR) || (allocType == OAT_NEWARR_R2R))
     {
         if (!enableArrays)
         {
@@ -1285,10 +1285,22 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         const bool isValueClass = m_compiler->info.compCompHnd->isValueClass(clsHnd);
         bool const canBeOnStack = isValueClass || m_compiler->info.compCompHnd->canAllocateOnStack(clsHnd);
         allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
+
+        if (canBeOnStack)
+        {
+            JITDUMP("Checking if we can stack allocate object [%06u] (%s)\n", m_compiler->dspTreeID(tree),
+                    m_compiler->eeGetClassName(clsHnd));
+        }
+        else
+        {
+            JITDUMP("Object [%06u] must be allocated on the heap (%s)\n", m_compiler->dspTreeID(tree),
+                    m_compiler->eeGetClassName(clsHnd));
+        }
     }
-    else if (!m_isR2R && tree->IsHelperCall())
+    else if (tree->IsHelperCall())
     {
         GenTreeCall* const call = tree->AsCall();
+
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
@@ -1299,6 +1311,26 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
                 if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
                 {
                     allocType = OAT_NEWARR;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                break;
+            }
+
+            case CORINFO_HELP_READYTORUN_NEWARR_1:
+            {
+                assert(m_isR2R);
+                if ((call->gtArgs.CountUserArgs() == 1) && call->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                {
+                    allocType = OAT_NEWARR_R2R;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", m_compiler->dspTreeID(call));
                 }
                 break;
             }
@@ -1534,6 +1566,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     switch (candidate.m_allocType)
     {
         case OAT_NEWARR:
+        case OAT_NEWARR_R2R:
             return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWOBJ:
             return MorphAllocObjNodeHelperObj(candidate);
@@ -1558,14 +1591,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
 bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 {
     assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
-
-    // R2R not yet supported
-    //
-    if (m_isR2R)
-    {
-        candidate.m_onHeapReason = "[R2R array not yet supported]";
-        return false;
-    }
+    assert((candidate.m_allocType == OAT_NEWARR) || (candidate.m_allocType == OAT_NEWARR_R2R));
 
     GenTree* const data = candidate.m_tree->AsLclVar()->Data();
 
@@ -1587,7 +1613,8 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+    unsigned const       lengthArg = candidate.m_allocType == OAT_NEWARR_R2R ? 0 : 1;
+    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(lengthArg)->GetNode();
 
     assert(len != nullptr);
 
@@ -1778,10 +1805,23 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     assert(newArr->IsHelperCall());
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
 
-    const bool         shortLifetime = false;
-    const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
-    const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
-    LclVarDsc* const   lclDsc        = m_compiler->lvaGetDesc(lclNum);
+    const bool shortLifetime = false;
+    bool       alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (!alignTo8)
+    {
+        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+        var_types elemType = JITtype2varType(m_compiler->info.compCompHnd->getChildType(clsHnd, &elemClsHnd));
+        alignTo8           = (elemType == TYP_LONG) || (elemType == TYP_ULONG) || (elemType == TYP_DOUBLE);
+        if (elemType == TYP_STRUCT)
+        {
+            assert(elemClsHnd != NO_CLASS_HANDLE);
+            alignTo8 = m_compiler->info.compCompHnd->getClassAlignmentRequirement(elemClsHnd) == 8;
+        }
+    }
+#endif
+    const unsigned int lclNum = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
+    LclVarDsc* const   lclDsc = m_compiler->lvaGetDesc(lclNum);
 
     if (alignTo8)
     {

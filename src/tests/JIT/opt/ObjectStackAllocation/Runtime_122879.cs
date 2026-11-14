@@ -20,6 +20,8 @@ public class Runtime_122879
         heavy.ToString();
     }
 
+    // This one-shot regression test needs optimized code for the CreateArray/Span<T>.Fill path;
+    // AggressiveOptimization prevents tiered compilation from leaving Creator in Tier0.
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
     static Poco[] Creator() => CreateArray(new Poco("Passed"), 2);
 
