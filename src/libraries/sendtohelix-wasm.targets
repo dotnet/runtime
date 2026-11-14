@@ -46,6 +46,13 @@
            $(BuildWasmAppsJobsList) differs. -->
       <_FanOutPerTestClass>false</_FanOutPerTestClass>
       <_FanOutPerTestClass Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false' and '$(WasmRunWasmOpt)' != 'true'">true</_FanOutPerTestClass>
+      <!-- The CoreCLR no-workload lane is too slow for a single work item, so its slowest class,
+           ReadyToRunTests, runs in a work item of its own. That item selects the class with -class rather
+           than -trait category=r2r: xunit ORs repeated -trait filters, so it would add to the lane's
+           -trait category=no-workload instead of narrowing it, while -class is ANDed with it. The
+           class's `r2r` category keeps it out of the lane's main work item. -->
+      <_SplitOutReadyToRunTests>false</_SplitOutReadyToRunTests>
+      <_SplitOutReadyToRunTests Condition="'$(TestUsingWorkloads)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEnableWebcil)' != 'false' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false' and '$(WasmRunWasmOpt)' != 'true'">true</_SplitOutReadyToRunTests>
     </PropertyGroup>
 
     <!-- The fan-out lane has no catch-all work item, so a missing list means the tests silently do not run. -->
@@ -66,6 +73,14 @@
 
       <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(_FanOutPerTestClass)' != 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(_SplitOutReadyToRunTests)' == 'true'">$(EnvVarCommand) &quot;HELIX_XUNIT_ARGS=-notrait category=r2r&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests.ReadyToRunTests" Condition="'$(_SplitOutReadyToRunTests)' == 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands>$(EnvVarCommand) &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.ReadyToRunTests&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>

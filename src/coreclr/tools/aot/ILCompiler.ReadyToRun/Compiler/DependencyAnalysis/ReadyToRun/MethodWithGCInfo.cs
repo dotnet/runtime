@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Threading;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -16,6 +16,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
     {
+        // #PrecodeFixupMinimization
+        //
+        // Minimize per-method precode metadata while ensuring that every required
+        // import cell is resolved before the compiled method executes.
+        //
+        // Direct calls covered by this optimization, currently only supported on
+        // Wasm, bypass the callee's normal activation path. The caller must therefore
+        // arrange callee activation through a method-entry fixup or module-eager
+        // activation. Activating the callee also resolves its transitive requirements,
+        // so the caller can omit fixups already covered by its direct callees or by
+        // module activation.
+        //
+        // Keep two sets distinct: _fixups contains the remaining work for this
+        // method's precode; the cached activation guarantees include requirements
+        // satisfied by the module and direct callees as well. Callers need the full
+        // guarantee set even after redundant entries have been removed from _fixups.
+        // Coverage is by import-cell identity, not merely by matching signatures.
+        //
+        // Startup-eager promotion uses the same guarantees to move the requirements
+        // of eagerly activated methods and their direct-call closure to module startup.
+        // Those cells can then be removed from every method's precode without
+        // invalidating its cached guarantees.
+        //
+        // Deferred call choices and code/data publication must be complete before
+        // computing guarantees, and direct callees must be finalized before callers.
+
         public readonly MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
@@ -30,9 +56,57 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private byte[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
+        private Import[] _guaranteedPrecodeFixups;
+#if DEBUG
+        private bool _precodeFixupsFinalized;
+#endif
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
+
+        // Preserve activation imports not represented by the final direct-call
+        // relocations. See #PrecodeFixupMinimization.
+        internal void AddDeferredWasmDependency(ISymbolNode node)
+        {
+            _nonRelocationDependencies ??= new DependencyList();
+            _nonRelocationDependencies.Add(node, "Selected deferred Wasm call");
+        }
+
+        // Install finalized call relocations and frame ranges, remapping debug
+        // offsets before encoding. See #PrecodeFixupMinimization for ordering.
+        internal void FinalizeDeferredWasmCode(
+            ObjectData code, FrameInfo[] frames, OffsetMapping[] locations, NativeVarInfo[] variables,
+            Func<int, int> mapOffset = null)
+        {
+#if DEBUG
+            Debug.Assert(!_precodeFixupsFinalized);
+#endif
+            _methodCode = code;
+            _frameInfos = frames;
+            if (locations is not null)
+            {
+                if (mapOffset is not null)
+                {
+                    foreach (ref OffsetMapping location in locations.AsSpan())
+                    {
+                        location.nativeOffset = checked((uint)mapOffset((int)location.nativeOffset));
+                    }
+                }
+                InitializeDebugLocInfos(locations);
+            }
+            if (variables is not null)
+            {
+                if (mapOffset is not null)
+                {
+                    foreach (ref NativeVarInfo variable in variables.AsSpan())
+                    {
+                        variable.startOffset = checked((uint)mapOffset((int)variable.startOffset));
+                        variable.endOffset = checked((uint)mapOffset((int)variable.endOffset));
+                    }
+                }
+                InitializeDebugVarInfos(variables);
+            }
+        }
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -98,6 +172,184 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public List<ISymbolNode> Fixups => _fixups;
 
+        internal ReadOnlySpan<Relocation> CodeRelocations => _methodCode?.Relocs;
+
+        // Identify activation-guaranteeing direct calls from paired frame-identity
+        // and call relocations. See #PrecodeFixupMinimization.
+        internal MethodWithGCInfo GetDirectCallTarget(int relocationIndex)
+        {
+            ReadOnlySpan<Relocation> relocations = CodeRelocations;
+            Relocation relocation = relocations[relocationIndex];
+            if (relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB &&
+                relocation.Target is MethodWithGCInfo target && target != this && relocationIndex > 0)
+            {
+                Relocation identity = relocations[relocationIndex - 1];
+                if (identity.RelocType == RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB &&
+                    identity.Offset + Relocation.WASM_PADDED_RELOC_SIZE_32 + 1 == relocation.Offset &&
+                    identity.Target is WasmMethodFrameIdentityNode { Method: var identityMethod } &&
+                    identityMethod == target)
+                {
+                    return target;
+                }
+            }
+
+            return null;
+        }
+
+        internal Import[] GuaranteedPrecodeFixups => Volatile.Read(ref _guaranteedPrecodeFixups);
+
+        // Remove requirements covered by module activation or direct callees.
+        // See #PrecodeFixupMinimization.
+        internal void FinalizePrecodeFixups(HashSet<Import> scratch = null)
+        {
+#if DEBUG
+            Debug.Assert(!_precodeFixupsFinalized);
+            _precodeFixupsFinalized = true;
+#endif
+
+            HashSet<Import> coveredFixups = scratch ?? new HashSet<Import>();
+            CollectCoveredPrecodeFixups(coveredFixups);
+
+            if (coveredFixups.Count != 0)
+            {
+                _fixups.RemoveAll(fixup =>
+                    fixup is Import import &&
+                    coveredFixups.Contains(import));
+            }
+            coveredFixups.Clear();
+        }
+
+        // Compute and cache the full activation guarantees used by callers and
+        // startup-eager promotion. See #PrecodeFixupMinimization.
+        internal Import[] GetGuaranteedPrecodeFixups(HashSet<Import> scratch)
+        {
+            Import[] guarantees = GuaranteedPrecodeFixups;
+            if (guarantees is not null)
+            {
+                return guarantees;
+            }
+
+#if DEBUG
+            Debug.Assert(_precodeFixupsFinalized);
+#endif
+            Import[] seed = CollectCoveredPrecodeFixups(scratch);
+            foreach (ISymbolNode fixup in _fixups)
+            {
+                if (fixup is Import import)
+                {
+                    scratch.Add(import);
+                }
+            }
+            // The union contains seed, so equal counts mean its array can be shared unchanged.
+            if (scratch.Count == seed.Length)
+            {
+                guarantees = seed;
+            }
+            else
+            {
+                guarantees = new Import[scratch.Count];
+                scratch.CopyTo(guarantees);
+            }
+            scratch.Clear();
+
+            return Interlocked.CompareExchange(ref _guaranteedPrecodeFixups, guarantees, null) ?? guarantees;
+        }
+
+        // Fill coveredFixups with module and direct-callee guarantees; return
+        // a reusable array seed, not the complete collected union.
+        // See #PrecodeFixupMinimization.
+        private Import[] CollectCoveredPrecodeFixups(HashSet<Import> coveredFixups)
+        {
+            // Materialize callees before using the same scratch storage for this method.
+            ReadOnlySpan<Relocation> relocations = CodeRelocations;
+            for (int i = 0; i < relocations.Length; i++)
+            {
+                if (GetDirectCallTarget(i) is MethodWithGCInfo target)
+                {
+                    target.GetGuaranteedPrecodeFixups(coveredFixups);
+                }
+            }
+
+            coveredFixups.Clear();
+            Import[] seed = Array.Empty<Import>();
+
+            CollectModuleEagerFixups(_methodCode, coveredFixups);
+            if (ColdCodeNode is not null)
+            {
+                CollectModuleEagerFixups(ColdCodeNode.GetData(null), coveredFixups);
+            }
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    if (dependency.Node is Import { Table.IsEager: true } import)
+                    {
+                        coveredFixups.Add(import);
+                    }
+                }
+            }
+
+            for (int i = 0; i < relocations.Length; i++)
+            {
+                if (GetDirectCallTarget(i) is MethodWithGCInfo target)
+                {
+#if DEBUG
+                    Debug.Assert(target._precodeFixupsFinalized);
+#endif
+                    Import[] targetFixups = target.GuaranteedPrecodeFixups;
+                    foreach (Import fixup in targetFixups)
+                    {
+                        coveredFixups.Add(fixup);
+                    }
+                    if (targetFixups.Length > seed.Length)
+                    {
+                        seed = targetFixups;
+                    }
+                }
+            }
+
+            return seed;
+        }
+
+        // Recover module-eager imports from code and referenced read-only/read-write
+        // data. Do not follow those blobs' data references, which may be
+        // self-referential. See #PrecodeFixupMinimization.
+        private static void CollectModuleEagerFixups(ObjectData data, HashSet<Import> fixups, bool includeDataReferences = true)
+        {
+            MethodReadOnlyDataNode readOnlyData = null;
+            MethodReadWriteDataNode readWriteData = null;
+            foreach (Relocation relocation in (data?.Relocs).AsSpan())
+            {
+                if (relocation.Target is Import { Table.IsEager: true } import)
+                {
+                    fixups.Add(import);
+                }
+                else if (includeDataReferences && relocation.Target is MethodReadOnlyDataNode roData && roData != readOnlyData)
+                {
+                    readOnlyData = roData;
+                    CollectModuleEagerFixups(roData.GetData(null), fixups, includeDataReferences: false);
+                }
+                else if (includeDataReferences && relocation.Target is MethodReadWriteDataNode rwData && rwData != readWriteData)
+                {
+                    readWriteData = rwData;
+                    CollectModuleEagerFixups(rwData.GetData(null), fixups, includeDataReferences: false);
+                }
+            }
+        }
+
+        // Remove precode entries whose resolution has been promoted to module startup.
+        // See #PrecodeFixupMinimization.
+        internal void ApplyModuleEagerFixups(HashSet<Import> fixups)
+        {
+#if DEBUG
+            Debug.Assert(_precodeFixupsFinalized);
+#endif
+
+            _fixups.RemoveAll(fixup =>
+                fixup is Import import &&
+                fixups.Contains(import));
+        }
+
         public int Size => _methodCode.Data.Length;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
@@ -143,48 +395,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public byte[] GetFixupBlob(NodeFactory factory)
         {
-            Relocation[] relocations = GetData(factory, relocsOnly: true).Relocs;
-
-            if (ColdCodeNode != null)
-            {
-                Relocation[] coldRelocations = ColdCodeNode.GetData(factory, relocsOnly: true).Relocs;
-                if (relocations == null)
-                {
-                    relocations = coldRelocations;
-                }
-                else if (coldRelocations != null)
-                {
-                    relocations = Enumerable.Concat(relocations, coldRelocations).ToArray();
-                }
-            }
-
-            if (relocations == null)
-            {
-                return null;
-            }
-
             List<FixupCell> fixupCells = null;
-
-            foreach (Relocation reloc in relocations)
-            {
-                if (reloc.Target is Import fixupCell && fixupCell.EmitPrecode)
-                {
-                    if (fixupCells == null)
-                    {
-                        fixupCells = new List<FixupCell>();
-                    }
-                    fixupCells.Add(new FixupCell(fixupCell.Table.IndexFromBeginningOfArray, fixupCell.OffsetFromBeginningOfArray));
-                }
-            }
 
             foreach (ISymbolNode node in _fixups)
             {
+                Import fixupCell = (Import)node;
+                if (fixupCell.Table.IsEager)
+                {
+                    continue;
+                }
+
                 if (fixupCells == null)
                 {
                     fixupCells = new List<FixupCell>();
                 }
 
-                Import fixupCell = (Import)node;
                 fixupCells.Add(new FixupCell(fixupCell.Table.IndexFromBeginningOfArray, fixupCell.OffsetFromBeginningOfArray));
             }
 

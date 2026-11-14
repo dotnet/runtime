@@ -43,12 +43,69 @@ namespace Wasm.Build.Tests
             Assert.Equal(useQCall, symbols.Contains("GCInterface_GetTotalMemory", StringComparison.Ordinal));
 
             string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
-            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
             Assert.Equal(useQCall, table.Contains("{ \"GCInterface_GetTotalMemory\",", StringComparison.Ordinal));
             Assert.DoesNotContain("{\"QCall\",", table);
 
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             Assert.Contains(result.TestOutput, line => line.Contains("QCall trimming sample passed", StringComparison.Ordinal));
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, true })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, true })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public async Task UnusedCoreLibEntryPointsAreTrimmed(Configuration config, bool aot, bool useEntryPoints, bool readyToRun)
+        {
+            string extraProperties = $"<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap><AllowUnsafeBlocks>true</AllowUnsafeBlocks><PublishTrimmed>true</PublishTrimmed><PublishReadyToRun>{readyToRun}</PublishReadyToRun>";
+            if (useEntryPoints)
+                extraProperties += "<DefineConstants>$(DefineConstants);USE_ENTRYPOINTS</DefineConstants>";
+
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"entrypoints_{useEntryPoints}_{readyToRun}", extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "CoreLibEntryPointTrimming.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
+            string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
+            Assert.DoesNotContain("{\"QCall\",", table);
+            foreach (string entryPoint in new[] { "GCInterface_GetTotalMemory", "Math_Asinh" })
+            {
+                Assert.Equal(useEntryPoints, symbols.Split('\n').Any(line => line.TrimEnd('\r').EndsWith($":{entryPoint}", StringComparison.Ordinal)));
+                Assert.Equal(useEntryPoints, table.Contains($"{{ \"{entryPoint}\",", StringComparison.Ordinal));
+            }
+            Assert.False(File.Exists(Path.Combine(nativeBuildDir, "callhelpers-ecalls.cpp")));
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
+
+            if (useEntryPoints)
+                return;
+
+            string linkedDir = Path.GetRelativePath(_projectDir, Path.Combine(GetObjDir(config), "linked")) + Path.DirectorySeparatorChar;
+            Assert.True(File.Exists(Path.Combine(_projectDir, linkedDir, "System.Private.CoreLib.dll")));
+            UpdateFile(Path.Combine("Common", "Program.cs"), new Dictionary<string, string>
+            {
+                { "#if USE_ENTRYPOINTS", "#if true" },
+            });
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false, UseCache: false, Label: "untrimmed",
+                ExtraMSBuildArgs: $"{ReadyToRunTests.GetR2RBuildArgs(config)} -p:PublishTrimmed=false -p:IntermediateLinkDir={linkedDir}"), isNativeBuild: true);
+
+            symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
+            table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            foreach (string entryPoint in new[] { "GCInterface_GetTotalMemory", "Math_Asinh" })
+            {
+                Assert.Contains(symbols.Split('\n'), line => line.TrimEnd('\r').EndsWith($":{entryPoint}", StringComparison.Ordinal));
+                Assert.Contains($"{{ \"{entryPoint}\",", table);
+            }
+
+            result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
         }
 
         // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the

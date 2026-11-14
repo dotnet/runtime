@@ -4246,13 +4246,13 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
         for (EnumeratorVarAppearance* const a : *(ev->m_appearances))
         {
-            // If this is a use, see if it's part of a GDV guard.
+            // If this is a use, see if it's part of a GDV guard for this allocation's type.
             //
             if (!a->m_isDef && (a->m_stmt == a->m_block->lastStmt()))
             {
                 GuardInfo      tempInfo;
                 GenTree* const guardingRelop = IsGuard(a->m_block, &tempInfo);
-                a->m_isGuard                 = (guardingRelop != nullptr);
+                a->m_isGuard                 = (guardingRelop != nullptr) && (tempInfo.m_type == info->m_type);
             }
 
             // If this is V, we're done

@@ -2793,8 +2793,7 @@ public unsafe class StackWalkTests
         => AddWasmR2RFunctions(targetBuilder, allocator, functionTableIndex, minVirtualIP, [(functionBeginAddress, frameSize)]);
 
     // Registers one R2R module whose RUNTIME_FUNCTIONs occupy consecutive function-table indices
-    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet; a frame size of 0
-    // leaves the unwind data unset.
+    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet.
     private static TargetPointer AddWasmR2RFunctions(
         TestPlaceholderTarget.Builder targetBuilder,
         MockMemorySpace.BumpAllocator allocator,
@@ -2824,14 +2823,11 @@ public unsafe class StackWalkTests
         {
             Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
             helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
-            if (functions[i].FrameSize != 0)
-            {
-                // Unwind data is the ULEB128 frame size, addressed as LoadedImageBase (0 here) + UnwindData.
-                Assert.True(functions[i].FrameSize < 0x80);
-                MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
-                unwindData.Data[0] = functions[i].FrameSize;
-                helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
-            }
+            Assert.True(functions[i].FrameSize < 0x80);
+            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(2, "UnwindData");
+            unwindData.Data[0] = functions[i].FrameSize;
+            unwindData.Data[1] = 3;
+            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
         }
 
         MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
