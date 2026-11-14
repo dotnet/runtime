@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 using System.Text.Unicode;
 
@@ -795,58 +796,53 @@ namespace System
             }
         }
 
-        internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
+        internal static int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
         {
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
 
-            int length = span.Length;
-            fixed (char* src = &MemoryMarshal.GetReference(span))
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(span);
+
+        LengthSwitch:
+            switch (source.Length)
             {
-                uint* ptr = (uint*)src;
+                default:
+                    while (source.Length >= 4)
+                    {
+                        (uint first, uint second) = ReadFourChars(source);
+                        hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ first;
+                        hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ second;
+                        source = source.Slice(4);
+                    }
+                    goto LengthSwitch;
 
-                LengthSwitch:
-                switch (length)
-                {
-                    default:
-                        do
-                        {
-                            length -= 4;
-                            hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ Unsafe.ReadUnaligned<uint>(ptr);
-                            hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ Unsafe.ReadUnaligned<uint>(ptr + 1);
-                            ptr += 2;
-                        }
-                        while (length >= 4);
-                        goto LengthSwitch;
+                case 3:
+                    hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ ReadTwoChars(source);
+                    uint p1 = source[2];
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        p1 <<= 16;
+                    }
 
-                    case 3:
-                        hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ Unsafe.ReadUnaligned<uint>(ptr);
-                        uint p1 = *(char*)(ptr + 1);
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            p1 <<= 16;
-                        }
+                    hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p1;
+                    break;
 
-                        hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p1;
-                        break;
+                case 2:
+                    hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ ReadTwoChars(source);
+                    break;
 
-                    case 2:
-                        hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ Unsafe.ReadUnaligned<uint>(ptr);
-                        break;
+                case 1:
+                    uint p0 = source[0];
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        p0 <<= 16;
+                    }
 
-                    case 1:
-                        uint p0 = *(char*)ptr;
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            p0 <<= 16;
-                        }
+                    hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p0;
+                    break;
 
-                        hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p0;
-                        break;
-
-                    case 0:
-                        break;
-                }
+                case 0:
+                    break;
             }
 
             return (int)(hash1 + (hash2 * 1_566_083_941));
@@ -904,47 +900,21 @@ namespace System
             return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, this.AsSpan(Length - length));
         }
 
-        internal static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span)
+        internal static int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span)
         {
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
 
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(span);
             uint p0, p1;
-            int length = span.Length;
 
-            fixed (char* src = &MemoryMarshal.GetReference(span))
+        LengthSwitch:
+            switch (source.Length)
             {
-                uint* ptr = (uint*)src;
-
-                LengthSwitch:
-                switch (length)
-                {
-                    default:
-                        do
-                        {
-                            p0 = Unsafe.ReadUnaligned<uint>(ptr);
-                            p1 = Unsafe.ReadUnaligned<uint>(ptr + 1);
-                            if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
-                            {
-                                goto NotAscii;
-                            }
-
-                            length -= 4;
-                            hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
-                            hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
-                            ptr += 2;
-                        }
-                        while (length >= 4);
-                        goto LengthSwitch;
-
-                    case 3:
-                        p0 = Unsafe.ReadUnaligned<uint>(ptr);
-                        p1 = *(char*)(ptr + 1);
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            p1 <<= 16;
-                        }
-
+                default:
+                    while (source.Length >= 4)
+                    {
+                        (p0, p1) = ReadFourChars(source);
                         if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
                         {
                             goto NotAscii;
@@ -952,42 +922,73 @@ namespace System
 
                         hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
                         hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
-                        break;
+                        source = source.Slice(4);
+                    }
+                    goto LengthSwitch;
 
-                    case 2:
-                        p0 = Unsafe.ReadUnaligned<uint>(ptr);
-                        if (!Utf16Utility.AllCharsInUInt32AreAscii(p0))
-                        {
-                            goto NotAscii;
-                        }
+                case 3:
+                    p0 = ReadTwoChars(source);
+                    p1 = source[2];
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        p1 <<= 16;
+                    }
 
-                        hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
-                        break;
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
+                    {
+                        goto NotAscii;
+                    }
 
-                    case 1:
-                        p0 = *(char*)ptr;
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            p0 <<= 16;
-                        }
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
+                    break;
 
-                        if (p0 > 0x7f)
-                        {
-                            goto NotAscii;
-                        }
+                case 2:
+                    p0 = ReadTwoChars(source);
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0))
+                    {
+                        goto NotAscii;
+                    }
 
-                        hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
-                        break;
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+                    break;
 
-                    case 0:
-                        break;
-                }
+                case 1:
+                    p0 = source[0];
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        p0 <<= 16;
+                    }
+
+                    if (p0 > 0x7f)
+                    {
+                        goto NotAscii;
+                    }
+
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+                    break;
+
+                case 0:
+                    break;
             }
 
             return (int)(hash1 + (hash2 * 1566083941));
 
         NotAscii:
-            return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, span.Slice(span.Length - length));
+            return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, span.Slice(span.Length - source.Length));
+        }
+
+        // Reads the first two UTF-16 code units as a native-endian uint.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint ReadTwoChars(ReadOnlySpan<ushort> source) =>
+            BitConverter.IsLittleEndian ? source[0] | ((uint)source[1] << 16) : ((uint)source[0] << 16) | source[1];
+
+        // Reads the first four UTF-16 code units as two native-endian uints.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (uint First, uint Second) ReadFourChars(ReadOnlySpan<ushort> source)
+        {
+            ulong packed = Unsafe.BitCast<Vector64<ushort>, ulong>(Vector64.Create(source));
+            return BitConverter.IsLittleEndian ? ((uint)packed, (uint)(packed >> 32)) : ((uint)(packed >> 32), (uint)packed);
         }
 
         private static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(uint hash1, uint hash2, ReadOnlySpan<char> str)

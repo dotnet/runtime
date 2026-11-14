@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -139,11 +138,9 @@ namespace System.Numerics.Tensors
 
             if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
             {
-                ref T xRef = ref MemoryMarshal.GetReference(x);
-
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector512<T> result = Vector512.LoadUnsafe(ref xRef, 0);
+                Vector512<T> result = Vector512.Create(x);
                 Vector512<T> current;
 
                 Vector512<T> nanMask;
@@ -164,7 +161,7 @@ namespace System.Numerics.Tensors
                 while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
-                    current = Vector512.LoadUnsafe(ref xRef, (uint)i);
+                    current = Vector512.Create(x.Slice(i));
 
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
@@ -183,7 +180,7 @@ namespace System.Numerics.Tensors
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
                 {
-                    current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<T>.Count));
+                    current = Vector512.Create(x.Slice(x.Length - Vector512<T>.Count));
 
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
@@ -204,11 +201,9 @@ namespace System.Numerics.Tensors
 
             if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
             {
-                ref T xRef = ref MemoryMarshal.GetReference(x);
-
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector256<T> result = Vector256.LoadUnsafe(ref xRef, 0);
+                Vector256<T> result = Vector256.Create(x);
                 Vector256<T> current;
 
                 Vector256<T> nanMask;
@@ -229,7 +224,7 @@ namespace System.Numerics.Tensors
                 while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
-                    current = Vector256.LoadUnsafe(ref xRef, (uint)i);
+                    current = Vector256.Create(x.Slice(i));
 
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
@@ -248,7 +243,7 @@ namespace System.Numerics.Tensors
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
                 {
-                    current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<T>.Count));
+                    current = Vector256.Create(x.Slice(x.Length - Vector256<T>.Count));
 
 
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
@@ -270,11 +265,9 @@ namespace System.Numerics.Tensors
 
             if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && x.Length >= Vector128<T>.Count)
             {
-                ref T xRef = ref MemoryMarshal.GetReference(x);
-
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector128<T> result = Vector128.LoadUnsafe(ref xRef, 0);
+                Vector128<T> result = Vector128.Create(x);
                 Vector128<T> current;
 
                 Vector128<T> nanMask;
@@ -295,7 +288,7 @@ namespace System.Numerics.Tensors
                 while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
-                    current = Vector128.LoadUnsafe(ref xRef, (uint)i);
+                    current = Vector128.Create(x.Slice(i));
 
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
@@ -314,7 +307,7 @@ namespace System.Numerics.Tensors
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
                 {
-                    current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<T>.Count));
+                    current = Vector128.Create(x.Slice(x.Length - Vector128<T>.Count));
 
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
