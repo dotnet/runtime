@@ -5921,7 +5921,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
         }
 
         // Try to optimize a load/store with an alternative instruction.
-        if (isLdrStr && m_compiler->opts.OptimizationEnabled() &&
+        if (isLdrStr && !insOptsIndexed(opt) && m_compiler->opts.OptimizationEnabled() &&
             OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1 DEBUG_ARG(false)))
         {
             return;
@@ -17611,7 +17611,8 @@ bool emitter::OptimizeLdrStr(instruction ins,
 {
     assert(ins == INS_ldr || ins == INS_str);
 
-    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
+    // A preceding writeback changes the base used by this access.
+    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins) || insOptsIndexed(emitLastIns->idInsOpt()))
     {
         return false;
     }
