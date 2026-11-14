@@ -270,7 +270,7 @@ virtual-IP ranges bypass native thunk classification.
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks; absent on WebAssembly |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
 | `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers; present only with `FEATURE_COLD_R2R_CODE` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
-| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image; unset for component assemblies of a composite image, so it is read from the `CompositeInfo` |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap`; absent without `FEATURE_COLD_R2R_CODE`, meaning no hot/cold mapping |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
@@ -398,7 +398,7 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
     // Find the relative address that we are looking for
     TargetCodePointer addr = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
     TargetPointer codeBase = /* RangeSection.RangeBegin, or ReadyToRunInfo.MinVirtualIP on WebAssembly */;
-    TargetPointer loadedImageBase = /* ReadyToRunInfo.LoadedImageBase on WebAssembly, otherwise codeBase */;
+    TargetPointer loadedImageBase = /* LoadedImageBase of r2rInfo.CompositeInfo on WebAssembly, otherwise codeBase */;
     TargetPointer relativeAddr = addr - codeBase;
 
     TargetPointer runtimeFunctions = Target.ReadPointer(r2rInfo + /* ReadyToRunInfo::RuntimeFunctions offset */);
@@ -556,6 +556,14 @@ bool TryGetWasmVirtualIPFromFunctionTableIndex(uint functionTableIndex, out ulon
     // R2RModule's ReadyToRunInfo, step back past funclet entries to the controlling function, then
     // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunction.BeginAddress.
 }
+
+// Mirrors ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex.
+bool TryGetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(uint runtimeFunctionIndex, out ulong virtualIP)
+{
+    // Find the R2R module whose ReadyToRunInfo.MinVirtualIP is the reserved initial WebAssembly
+    // virtual IP, 0x80000001. Reject an out-of-range index or a funclet entry, then compute
+    // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunctions[runtimeFunctionIndex].BeginAddress.
+}
 ```
 
 The `CodeBlock` encapsulates the `MethodDesc` data from the target runtime together with the start of the jitted method
@@ -602,7 +610,7 @@ The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fie
     }
 ```
 
-`IExecutionManager.GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
+`IExecutionManager.GetUnwindInfo` gets the platform-dependent `RUNTIME_FUNCTION` for an existing `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the unwind infos are stored differently on jitted and R2R code.
 
 * For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 
@@ -617,7 +625,7 @@ Unwind info (`RUNTIME_FUNCTION`) uses relative addressing. For managed code, the
 
 * For Jitted code (`EEJitManager`) a pointer to the `DebugInfo` is stored on the `RealCodeHeader` which is accessed in the same way as `GetMethodInfo` described above. `hasFlagByte` is `true` if either the global `FeatureOnStackReplacement` is `true` or `StoreRichDebugInfo` is `true` on the `EEJitManager`.
 
-* For R2R code (`ReadyToRunJitManager`) the `DebugInfo` is stored as part of the R2R image. The relevant `ReadyToRunInfo` stores a pointer to the an `ImageDataDirectory` representing the `DebugInfo` directory. Read the `VirtualAddress` of this data directory as a `NativeArray` containing the `DebugInfos`. To find the specific `DebugInfo`, index into the array using the `index` of the beginning of the R2R function as found like in `GetMethodInfo` above. This yields an offset `offset` value relative to the image base. Read the first variable length uint at `imageBase + offset`, `lookBack`. If `lookBack != 0`, return `imageBase + offset - lookback`. Otherwise return `offset + size of reading lookback`.
+* For R2R code (`ReadyToRunJitManager`) the `DebugInfo` is stored as part of the R2R image. The relevant `ReadyToRunInfo` stores a pointer to the an `ImageDataDirectory` representing the `DebugInfo` directory. If this pointer is null (the image was compiled without debug info, e.g. with `--strip-debug-info`), return `TargetPointer.Null`. Otherwise, read the `VirtualAddress` of this data directory as a `NativeArray` containing the `DebugInfos`. To find the specific `DebugInfo`, index into the array using the `index` of the beginning of the R2R function as found like in `GetMethodInfo` above. This yields an offset `offset` value relative to the image base. Read the first variable length uint at `imageBase + offset`, `lookBack`. If `lookBack != 0`, return `imageBase + offset - lookback`. Otherwise return `offset + size of reading lookback`.
 For R2R images, `hasFlagByte` is always `false`.
 
 * For interpreted code (`InterpreterJitManager`), a pointer to the `DebugInfo` is stored on the `InterpreterRealCodeHeader` which is accessed in the same way as the EE JitManager's `GetMethodInfo` (nibble map lookup followed by code header read). `hasFlagByte` is always `false`.

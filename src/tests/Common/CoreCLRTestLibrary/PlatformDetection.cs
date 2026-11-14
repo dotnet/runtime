@@ -29,7 +29,7 @@ namespace TestLibrary
 
         public static bool IsSimulator => RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator") || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 
-        public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
+        public static bool IsBuiltInComEnabled => IsWindows && IsCoreCLR && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);
@@ -113,6 +113,10 @@ namespace TestLibrary
         public static bool IsWasm => IsBrowser || IsWasi;
         public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
         public static bool IsWasmReadyToRun => IsWasm && IsReadyToRunCompiled;
+
+        // CoreCLR on WebAssembly (FEATURE_PORTABLE_ENTRYPOINTS) cannot create native-callable entrypoints at run time,
+        // e.g. for Marshal.GetFunctionPointerForDelegate or a delegate passed to a P/Invoke.
+        public static bool IsDynamicEntrypointSupported => !(IsWasm && IsCoreCLR);
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 

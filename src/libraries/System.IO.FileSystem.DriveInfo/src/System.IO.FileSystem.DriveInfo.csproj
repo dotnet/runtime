@@ -81,6 +81,8 @@
              Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs"
              Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

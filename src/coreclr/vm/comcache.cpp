@@ -308,7 +308,7 @@ CtxEntry* CtxEntryCache::CreateCtxEntry(LPVOID pCtxCookie, Thread * pSTAThread)
 
     // If we don't already have a context entry for the context cookie,
     // we need to create one.
-    NewHolder<CtxEntry> pNewCtxEntry = new CtxEntry(pCtxCookie, pSTAThread);
+    NewHolder<CtxEntry> pNewCtxEntry(new CtxEntry(pCtxCookie, pSTAThread));
     // tiggers GC, can't happen when we hold spin lock
     pNewCtxEntry->Init();
 
@@ -321,7 +321,7 @@ CtxEntry* CtxEntryCache::CreateCtxEntry(LPVOID pCtxCookie, Thread * pSTAThread)
         {
             // We successfully allocated and initialized the entry.
             m_CtxEntryHash.Add(pNewCtxEntry);
-            pCtxEntry = pNewCtxEntry.Extract();
+            pCtxEntry = pNewCtxEntry.Detach();
         }
         // We must have an entry now; we need to addref it before
         // we leave the lock.
@@ -1005,9 +1005,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;

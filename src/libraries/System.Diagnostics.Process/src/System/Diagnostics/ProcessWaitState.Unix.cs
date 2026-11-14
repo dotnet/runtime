@@ -622,18 +622,18 @@ namespace System.Diagnostics
                     pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait();
                     if (pid > 0)
                     {
-                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
+                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws) &&
+                            pws.TryReapChild(configureConsole))
                         {
-                            // Known Process.
-                            if (pws.TryReapChild(configureConsole))
-                            {
-                                pws.ReleaseRef();
-                            }
+                            pws.ReleaseRef();
                         }
                         else
                         {
-                            // unlikely: This is not a managed Process, so we are not responsible for reaping.
-                            // Fall back to checking all Processes.
+                            // The child may be unmanaged, or stopped rather than exited. On macOS,
+                            // waitid can report stopped children despite omitting WSTOPPED;
+                            // the SIGCHLD handler is also registered with SA_NOCLDSTOP.
+                            // Scan all managed children instead of repeatedly observing
+                            // the same child without reaping it.
                             checkAll = true;
                             break;
                         }

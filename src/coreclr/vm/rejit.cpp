@@ -734,9 +734,9 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
     // Iterate through all modules, for any that are NGEN or R2R need to check if there are inliners there and call
     // RequestReJIT on them
     AppDomain::AssemblyIterator assemblyIterator = AppDomain::GetCurrentDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    CollectibleAssemblyHolder pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (assemblyIterator.Next(pAssembly.This()))
+    while (assemblyIterator.Next(&pAssembly))
     {
         _ASSERTE(pAssembly != NULL);
 
@@ -986,6 +986,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         HRESULT hr = S_OK;
         ReleaseHolder<ProfilerFunctionControl> pFuncControl;
 
+#ifdef PROFILING_SUPPORTED
         if (ilCodeVersion.GetEnableReJITCallback())
         {
             // Here's where we give a chance for the rejit requestor to
@@ -1011,6 +1012,9 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 END_PROFILER_CALLBACK();
             }
         }
+#else
+        _ASSERTE(!ilCodeVersion.GetEnableReJITCallback());
+#endif // PROFILING_SUPPORTED
 
         if (!ilCodeVersion.GetEnableReJITCallback() || FAILED(hr))
         {

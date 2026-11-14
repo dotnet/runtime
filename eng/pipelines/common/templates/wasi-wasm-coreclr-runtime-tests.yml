@@ -5,13 +5,13 @@ parameters:
   platforms: []
   extraBuildArgs: ''
   useHelixMonitor: false
+  readyToRun: false
 
 jobs:
 
 #
 # Build CoreCLR + libraries for WASI and run a subset of src/tests on
-# Helix under wasmtime. Mirrors wasm-runtime-tests.yml (Mono variant),
-# with runtimeFlavor=coreclr and a curated -tree: subset (see the
+# Helix under wasmtime, with runtimeFlavor=coreclr and a curated -tree: subset (see the
 # testBuildArgs below).
 #
 # Merged-runner mode; xharness dispatches via helixpublishwitharcade.proj.
@@ -22,7 +22,10 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
+    ${{ if eq(parameters.readyToRun, true) }}:
+      buildConfig: Checked
+    ${{ else }}:
+      buildConfig: Release
     runtimeFlavor: coreclr
     platforms: ${{ parameters.platforms }}
     variables:
@@ -42,8 +45,11 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: CoreCLR_WASI_RuntimeTests
-      buildArgs: -s clr+libs+packs -c $(_BuildConfig) ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false
+      ${{ if eq(parameters.readyToRun, true) }}:
+        nameSuffix: CoreCLR_WASI_RuntimeTests_R2R_CG2
+      ${{ else }}:
+        nameSuffix: CoreCLR_WASI_RuntimeTests
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) -lc Release -hc Release ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -55,8 +61,11 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
+            readyToRun: ${{ parameters.readyToRun }}
+            compositeBuildMode: ${{ parameters.readyToRun }}
             # Curated test-tree subset -- expand as gates stabilize.
             testBuildArgs: >-
+              /p:HostConfiguration=Release
               -priority1
               -tree:JIT/CodeGenBringUpTests
               -tree:JIT/Generics
@@ -68,3 +77,6 @@ jobs:
               -tree:reflection
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            liveLibrariesBuildConfig: Release
+            readyToRun: ${{ parameters.readyToRun }}

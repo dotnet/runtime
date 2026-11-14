@@ -1248,7 +1248,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     ReadyToRunImportSection importSection = ImportSections[(int)fixup.TableIndex];
                     ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixup.CellOffset];
-                    int sigOffset = GetOffset((int)entry.SignatureRVA);
+                    int sigOffset = entry.GetSignatureOffset(this);
                     byte kind = Image[sigOffset];
 
                     if (kind != (byte)ReadyToRunFixupKind.ResumptionStubEntryPoint)
@@ -1620,8 +1620,21 @@ namespace ILCompiler.Reflection.ReadyToRun
                         : ImageReader.ReadInt64(ref sectionOffset);
                     uint sigRva = ImageReader.ReadUInt32(ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
+                    GCRefMap gcRefMap = null;
+                    int gcRefMapSize = 0;
+                    if ((flags & ReadyToRunImportSectionFlags.GCRefMap) != 0)
+                    {
+                        GCRefMapDecoder decoder = new GCRefMapDecoder(this, sigOffset);
+                        gcRefMap = decoder.ReadMap();
+                        gcRefMapSize = decoder.GetOffset() - sigOffset;
+                        sigOffset = decoder.GetOffset();
+                    }
                     ReadyToRunSignature signature = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
-                    entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, signature));
+                    entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, signature)
+                    {
+                        GCRefMap = gcRefMap,
+                        GCRefMapSize = gcRefMapSize,
+                    });
                     _importSignatures.Add(rva + entrySize * i, signature);
                 }
 

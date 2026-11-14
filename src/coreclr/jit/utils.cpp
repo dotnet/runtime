@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 /*****************************************************************************/
 
@@ -1451,6 +1452,7 @@ void HelperCallProperties::init()
         bool mayRunCctor = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape  = false; // true if none of the GC ref arguments can escape
         bool isNoGC      = false; // true if the helper cannot trigger GC
+        bool nativeAotMayThrow = false; // true if the helper may throw on NativeAOT even when 'exceptions' is None
 
         switch (helper)
         {
@@ -1539,11 +1541,18 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
                 exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
+                break;
+
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
+                // NativeAOT compiles generic lookups it failed to build into helpers that throw when invoked.
+                nativeAotMayThrow = true;
                 break;
 
             // type casting helpers
@@ -1552,11 +1561,17 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ISINSTANCEOFCLASS:
             case CORINFO_HELP_ISINSTANCEOFANY:
             case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
-            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
                 isPure     = true;
                 exceptions = ExceptionSetFlags::None; // These return null for a failing cast
+                break;
+
+            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
+                // Public default-handle null handling bypasses this internal, non-null-returning helper.
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -1589,11 +1604,14 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MEMZERO:
             case CORINFO_HELP_MEMSET:
             case CORINFO_HELP_NATIVE_MEMSET:
-                isNoEscape = true;
+                isNoEscape  = true;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
-                isPure = true;
+                // The returned slot address cannot be null; the object stored there can be.
+                isPure        = true;
+                nonNullReturn = true;
                 break;
 
             // GETREFANY is pure up to the value of the struct argument. We
@@ -1628,6 +1646,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
@@ -1740,13 +1760,23 @@ void HelperCallProperties::init()
                 FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
             case CORINFO_HELP_POLL_GC:
-            case CORINFO_HELP_MON_ENTER:
-            case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
             case CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
                 exceptions = ExceptionSetFlags::None;
+                break;
+
+            case CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                isNoGC     = true;
+                exceptions = ExceptionSetFlags::None;
+                break;
+
+            // Monitor enter/exit are full memory barriers and write *lockTaken.
+            case CORINFO_HELP_MON_ENTER:
+            case CORINFO_HELP_MON_EXIT:
+                exceptions  = ExceptionSetFlags::None;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
@@ -1762,6 +1792,7 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
             case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
             case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
                 mutatesHeap = false;
                 isPure      = true;
@@ -1790,6 +1821,8 @@ void HelperCallProperties::init()
         m_mayRunCctor[helper]   = mayRunCctor;
         m_isNoEscape[helper]    = isNoEscape;
         m_isNoGC[helper]        = isNoGC;
+
+        m_nativeAotExceptions[helper] = nativeAotMayThrow ? ExceptionSetFlags::UnknownException : exceptions;
     }
 }
 
@@ -2369,21 +2402,6 @@ double FloatingPointUtils::infinite_double()
 }
 
 //------------------------------------------------------------------------
-// infinite_float: return an infinite float value
-//
-// Returns:
-//    Infinite float value.
-//
-// Notes:
-//    This is the predefined constant HUGE_VALF on many platforms.
-//
-float FloatingPointUtils::infinite_float()
-{
-    int32_t bits = 0x7F800000;
-    return *reinterpret_cast<float*>(&bits);
-}
-
-//------------------------------------------------------------------------
 // hasPreciseReciprocal: check double for precise reciprocal. E.g. 2.0 <--> 0.5
 //
 // Arguments:
@@ -2619,70 +2637,6 @@ double FloatingPointUtils::maximum(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a greater magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::maximumMagnitude(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax > ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitudeNumber: // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::maximumMagnitudeNumber(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax > ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
 // maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
 //
 // It does not propagate NaN inputs back to the caller and
@@ -2738,70 +2692,6 @@ float FloatingPointUtils::maximum(float val1, float val2)
     }
 
     return isNegative(val2) ? val1 : val2;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a greater magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::maximumMagnitude(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax > ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitudeNumber: This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::maximumMagnitudeNumber(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax > ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
 }
 
 //------------------------------------------------------------------------
@@ -2863,70 +2753,6 @@ double FloatingPointUtils::minimum(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a lesser magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::minimumMagnitude(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax < ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::minimumMagnitudeNumber(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax < ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
 // minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
 //
 // It does not propagate NaN inputs back to the caller and
@@ -2982,70 +2808,6 @@ float FloatingPointUtils::minimum(float val1, float val2)
     }
 
     return isNegative(val1) ? val1 : val2;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a lesser magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::minimumMagnitude(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax < ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::minimumMagnitudeNumber(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax < ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
 }
 
 //------------------------------------------------------------------------
@@ -4183,13 +3945,10 @@ private:
 public:
     Utf16String(const char* str)
     {
-        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-        if (strBufferSize == 0)
-        {
-            return;
-        }
+        size_t strLength     = strlen(str) + 1;
+        size_t strBufferSize = minipal_get_length_utf8_to_utf16(str, strLength, 0);
 
-        if (static_cast<size_t>(strBufferSize) > bufferSize)
+        if (strBufferSize > bufferSize)
         {
             m_pBuffer = new WCHAR[strBufferSize];
         }
@@ -4198,15 +3957,7 @@ public:
             m_pBuffer = m_bufferUnsafe;
         }
 
-        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
-        {
-            if (m_pBuffer != m_bufferUnsafe)
-            {
-                delete[] m_pBuffer;
-            }
-
-            m_pBuffer = nullptr;
-        }
+        minipal_convert_utf8_to_utf16(str, strLength, (CHAR16_T*)m_pBuffer, strBufferSize, 0);
     }
 
     ~Utf16String()

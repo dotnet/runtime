@@ -20,6 +20,8 @@ static const instruction INS_I_store = INS_i64_store;
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_and   = INS_i64_and;
+static const instruction INS_I_or    = INS_i64_or;
+static const instruction INS_I_shl   = INS_i64_shl;
 static const instruction INS_I_eqz   = INS_i64_eqz;
 static const instruction INS_I_mul   = INS_i64_mul;
 static const instruction INS_I_sub   = INS_i64_sub;
@@ -32,6 +34,8 @@ static const instruction INS_I_store = INS_i32_store;
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_and   = INS_i32_and;
+static const instruction INS_I_or    = INS_i32_or;
+static const instruction INS_I_shl   = INS_i32_shl;
 static const instruction INS_I_eqz   = INS_i32_eqz;
 static const instruction INS_I_mul   = INS_i32_mul;
 static const instruction INS_I_sub   = INS_i32_sub;
@@ -183,9 +187,29 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
-        // fp[0] == functionIndex
+        // NativeAOT encodes the method start. CoreCLR helpers may be called without a PEP,
+        // so their identity is independent of the caller.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
+        if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
+        {
+            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                                    reinterpret_cast<cnsval_ssize_t>(m_compiler->info.compMethodHnd));
+        }
+        else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
+        {
+            unsigned pepIndex = WasmRegToIndex(
+                m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmPortableEntryPointArg).Segment(0).GetRegister());
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, pepIndex);
+        }
+        else
+        {
+            // Reverse P/Invokes have no PEP argument. Positive odd identities retain their table index.
+            GetEmitter()->emitFuncletAddressConstant(0);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+            GetEmitter()->emitIns(INS_I_shl);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+            GetEmitter()->emitIns(INS_I_or);
+        }
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
 
         // Ensure the resume IP is initialized to a non-resuming value.
@@ -207,8 +231,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 }
 
 //------------------------------------------------------------------------
-// genZeroInitFrame: zero the lvMustInit untracked range of the frame using
-// a single memory.fill.
+// genZeroInitFrame: zero the lvMustInit untracked range of the frame.
 //
 // Arguments:
 //    untrLclHi      - High offset (exclusive) of the untracked range relative to FP.
@@ -237,12 +260,66 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclLo);
         emit->emitIns(INS_I_add);
     }
-    // Push fill value (zero, always i32 per memory.fill spec).
-    emit->emitIns_I(INS_i32_const, EA_4BYTE, 0);
-    // Push length (pointer-sized: i32 on wasm32, i64 on wasm64).
-    emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
-    // memory.fill 0
-    emit->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+    genWasmZeroInit(untrLclHi - untrLclLo);
+}
+
+//------------------------------------------------------------------------
+// genWasmZeroInit: zero memory using a scalar or v128 store, or memory.fill.
+//
+// Arguments:
+//    size - Number of bytes to zero.
+//
+// Notes:
+//    The destination address must already be on the operand stack.
+//
+void CodeGen::genWasmZeroInit(size_t size)
+{
+    instruction store = INS_invalid;
+    switch (size)
+    {
+        case 1:
+            store = INS_i32_store8;
+            break;
+        case 2:
+            store = INS_i32_store16;
+            break;
+        case 4:
+            store = INS_i32_store;
+            break;
+        case 8:
+            store = INS_i64_store;
+            break;
+#ifdef FEATURE_SIMD
+        case 16:
+            store = INS_v128_store;
+            break;
+#endif // FEATURE_SIMD
+        default:
+            break;
+    }
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = (size == 8) ? EA_8BYTE : EA_4BYTE;
+    emit->emitIns_I((size == 8) ? INS_i64_const : INS_i32_const, attr, 0);
+
+#ifdef FEATURE_SIMD
+    if (size == 16)
+    {
+        // i8x16.splat is 14 bytes smaller than a zero v128.const.
+        emit->emitIns(INS_i8x16_splat);
+        attr = EA_16BYTE;
+    }
+#endif // FEATURE_SIMD
+
+    if (store != INS_invalid)
+    {
+        emit->emitIns_I(store, attr, 0);
+    }
+    else
+    {
+        emit->emitIns_I(INS_I_const, EA_PTRSIZE, size);
+        emit->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -546,7 +623,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     //
     if (func->needsUnwindableFrame)
     {
-        // We need two stack slots for the function index and for the funclet virtual IP.
+        // We need two stack slots for the frame identity and for the funclet virtual IP.
         // We also need to keep SP aligned.
         //
         size_t slotSize  = 2 * TARGET_POINTER_SIZE;
@@ -561,7 +638,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 2);
+        GetEmitter()->emitIns(INS_I_add);
         GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
     }
 }
@@ -1214,11 +1293,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         default:
 #ifdef DEBUG
-            if (JitConfig.JitWasmNyiToR2RUnsupported())
-            {
-                NYI_WASM("Opcode not implemented");
-            }
-
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
 #else
             NYI_WASM("Opcode not implemented");
@@ -2151,9 +2225,15 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
-            // Wasm has no absolute-address literals; every handle is materialized as a module-base-
-            // relative constant and relocated. compReloc is always on for a real AOT compile, so a
-            // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
+            if (icon->IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
+            {
+                GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
+                WasmProduceReg(treeNode);
+                return;
+            }
+
+            // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
+            // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
             GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
             WasmProduceReg(treeNode);
@@ -2611,7 +2691,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     }
 
     // Result is the address of the array element.
-    unsigned const scale = node->gtElemSize;
+    unsigned const scale = node->GetElemSize();
 
     if (scale > 1)
     {
@@ -2917,7 +2997,9 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         var_types type         = varDsc->GetRegisterType(tree);
         unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex);
+        bool      isLastUse    = varDsc->lvTracked && ((tree->gtFlags & GTF_VAR_DEATH) != 0) &&
+                         ((tree->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None);
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex, isLastUse);
         // In this case, the resulting tree type may be different from the local var type where the value originates,
         // and so we need an explicit conversion since we can't "load"
         // the value with a different type like we can if the value is on the shadow stack.
@@ -3125,11 +3207,18 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (addr->isContained() && !addr->OperIs(GT_LEA))
     {
-        // A contained address constant folds into the memarg offset, so emit just the image base here.
+        // A contained address constant folds into the memarg offset, so emit just the address base here.
         //
         assert(addr->IsIconHandle() && !tree->TypeIs(TYP_SIMD12));
         assert(addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler));
-        GetEmitter()->emitImageBase();
+        if (m_compiler->IsNativeAot())
+        {
+            GetEmitter()->emitIns_I(INS_i32_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            GetEmitter()->emitImageBase();
+        }
         GetEmitter()->emitIns_MemargAddress(ins_Load(type), emitActualTypeSize(type),
                                             (void*)addr->AsIntConCommon()->IntegralValue());
     }
@@ -3302,6 +3391,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(wvt < WasmValueType::Count);
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
+    }
+
+    if ((call->gtDirectCallAddress != nullptr) &&
+        (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) == CorInfoReloc::WASM_DEFERRED_CALL))
+    {
+        // The emitter supplies this operand outside the argument IR; its exact call signature
+        // must still include it. See #DeferredWasmCallRelocationProtocol.
+        assert(!call->IsHelperCall() && !call->IsUnmanaged());
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) == nullptr);
+        typeStack.Push(CORINFO_WASM_TYPE_I32);
     }
 
     // Report managed call signatures to the R2R compiler for thunk generation.
@@ -3511,14 +3610,33 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
+    auto emitHelperCellLoad = [this, &helperFunction]() {
+        if (m_compiler->opts.compReloc && !m_compiler->IsNativeAot())
+        {
+            GetEmitter()->emitImageBase();
+            GetEmitter()->emitIns_MemargAddress(INS_I_load, EA_PTRSIZE, helperFunction.addr);
+        }
+        else
+        {
+            GetEmitter()->emitAddressConstant(helperFunction.addr);
+            GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        }
+    };
+
     if (helperUsesPep)
     {
-        // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
-        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
-        // address to push.
-        assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        if (helperFunction.accessType == IAT_VALUE)
+        {
+            // Direct same-image managed helpers do not need a portable entrypoint.
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+            // The helper function address is the address of an indirection cell, so load the PEP address from the cell.
+            assert(helperFunction.accessType == IAT_PVALUE);
+            emitHelperCellLoad();
+        }
     }
 
     if (params.callType == EC_INDIR_R)
@@ -3526,8 +3644,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
         // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        emitHelperCellLoad();
         GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
@@ -3566,10 +3683,45 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 void CodeGen::genCompareInt(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
+
+    GenTree* const op1   = treeNode->gtGetOp1();
+    GenTree* const op2   = treeNode->gtGetOp2();
+    GenTree*       value = nullptr;
+
+    if (treeNode->OperIs(GT_EQ, GT_NE))
+    {
+        if (op1->isContained() && op1->IsIntegralConst(0))
+        {
+            value = op2;
+        }
+        else if (op2->isContained() && op2->IsIntegralConst(0))
+        {
+            value = op1;
+        }
+    }
+
     genConsumeOperands(treeNode);
 
+    if (value != nullptr)
+    {
+        const bool canUseValueDirectly = treeNode->OperIs(GT_NE) && ((treeNode->gtFlags & GTF_RELOP_JMP_USED) != 0) &&
+                                         (genActualType(value->TypeGet()) == TYP_INT);
+
+        if (!canUseValueDirectly)
+        {
+            GetEmitter()->emitIns(genActualType(value->TypeGet()) == TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+            if (treeNode->OperIs(GT_NE))
+            {
+                GetEmitter()->emitIns(INS_i32_eqz);
+            }
+        }
+
+        WasmProduceReg(treeNode);
+        return;
+    }
+
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), genActualType(treeNode->gtGetOp1()->TypeGet())))
+    switch (PackOperAndType(treeNode->OperGet(), genActualType(op1->TypeGet())))
     {
         case PackOperAndType(GT_EQ, TYP_INT):
             ins = INS_i32_eq;
@@ -3768,12 +3920,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             if (needsZeroing)
             {
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
-                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
-
-                // TODO-WASM-CQ: possibly do small fills directly
-                //
-                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+                genWasmZeroInit(amount);
             }
 
             // SP now points at the reserved space just below the allocation.
@@ -3925,7 +4072,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     unsigned  destOffset    = 0;
     unsigned  srcOffset     = 0;
 
-    // Unwrap a contained GT_INIT_VAL so the wrapped fill value (not the wrapper) is pushed onto the WASM value stack.
+    // Unwrap a contained GT_INIT_VAL to consume its fill value.
     GenTree* srcForConsume = src->OperIs(GT_INIT_VAL) ? src->gtGetOp1() : src;
     assert(!src->OperIs(GT_INIT_VAL) || src->isContained());
 
@@ -3952,7 +4099,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         {
             src = src->gtGetOp1();
         }
-        assert(!src->isContained());
+        assert(src->isContained() == src->IsIntegralConst(0));
         assert(!isCopyBlk);
         assert(isNativeOp);
     }
@@ -4010,10 +4157,9 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     if (isNativeOp)
     {
         // The destination should already be on the stack.
-        // The src may not be on the evaluation stack if it was contained, in which case we need to manufacture it
-        if (src->isContained())
+        // A contained copy source still needs its address on the operand stack.
+        if (isCopyBlk && src->isContained())
         {
-            assert(isCopyBlk);
             assert(srcReg != REG_NA);
             genEmitLocalGet(srcReg, WasmValueType::I);
             if (srcOffset != 0)
@@ -4022,8 +4168,15 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
                 emit->emitIns(INS_I_add);
             }
         }
-        GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-        GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        if (!isCopyBlk && src->isContained())
+        {
+            genWasmZeroInit(blkOp->Size());
+        }
+        else
+        {
+            emit->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+            emit->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        }
         genUpdateLife(blkOp);
         return;
     }
@@ -4098,17 +4251,13 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
 {
     // TODO-WASM: In multi-threaded wasm we will need to generate a for loop that atomically zeroes one GC ref
-    //  at a time. Right now we're single-threaded, so we can just use memory.fill.
+    //  at a time. Right now we're single-threaded, so regular stores and memory.fill suffice.
     assert(!WASM_THREAD_SUPPORT);
 
     // FIXME-WASM: We're missing a null check here.
 
     genConsumeOperands(blkOp);
-    // Emit the value constant expected by the memory.fill opcode (zero)
-    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
-    // Emit the size constant expected by the memory.copy and memory.fill opcodes
-    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-    GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
+    genWasmZeroInit(blkOp->Size());
 }
 
 //------------------------------------------------------------------------
@@ -4587,10 +4736,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
+    // NativeAOT uses unscaled virtual IPs.
     // Use 1 as the prolog size.
     //
-    codeSize   = 2 * maxVirtualIP;
+    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).

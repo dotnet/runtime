@@ -96,7 +96,6 @@ typedef ComCallWrapper *ComCallWrapperPtr;
 // This is used to hold a newly created CCW. It will release the CCW (and linked wrappers)
 // upon exit, if SuppressRelease() is not called. It doesn't try to release the SimpleComCallWrapper
 // or destroy the handle
-// I need to use BaseHolder instead of BaseWrapper because BaseHolder allows me to use a class as BASE
 //
 class NewCCWHolder : public BaseHolder<ComCallWrapperPtr, NewCCWHolderBase>
 {
@@ -751,14 +750,14 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         return;
 
     // Create the DispatchExInfo object.
-    NewHolder<DispatchExInfo> pDispExInfo = new DispatchExInfo(this, m_pMT);
+    NewHolder<DispatchExInfo> pDispExInfo{ new DispatchExInfo(this, m_pMT) };
 
     // Synchronize the DispatchExInfo with the actual object.
     pDispExInfo->SynchWithManagedView();
 
     // Swap the lock into the class member in a thread safe manner.
-    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, pDispExInfo.GetValue(), NULL))
-        pDispExInfo.SuppressRelease();
+    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, static_cast<DispatchExInfo*>(pDispExInfo), NULL))
+        pDispExInfo.Detach();
 
     // Set the vtable entry to ensure that the next QI call will return immediately.
     m_rgpVtable[enum_IDispatchEx] = g_rgStdVtables[enum_IDispatchEx];
@@ -1273,13 +1272,13 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
 
     // Create a new connection point enum.
     ComCallWrapper *pWrap = GetMainWrapper();
-    NewHolder<ConnectionPointEnum>pCPEnum = new ConnectionPointEnum(pWrap, m_pCPList);
+    NewHolder<ConnectionPointEnum> pCPEnum{ new ConnectionPointEnum(pWrap, m_pCPList) };
 
     // Retrieve the IEnumConnectionPoints interface. This cannot fail.
     HRESULT hr = SafeQueryInterface((IUnknown*)pCPEnum, IID_IEnumConnectionPoints, (IUnknown**)ppEnumCP);
     _ASSERTE(hr == S_OK);
 
-    pCPEnum.SuppressRelease();
+    pCPEnum.Detach();
 }
 
 //--------------------------------------------------------------------------
@@ -1873,11 +1872,6 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
     // grab the sync block from the server
     SyncBlock* pSyncBlock = pServer->GetSyncBlock();
 
-    pSyncBlock->SetPrecious();
-
-    // if the object belongs to a domain neutral class, need to allocate the wrapper in the default domain.
-    // The object is potentially agile so if allocate out of the current domain and then hand out to
-    // multiple domains we might never release the wrapper for that object and hence never unload the CCWC.
     ComCallWrapperCache *pWrapperCache = NULL;
     TypeHandle thClass = pServer->GetTypeHandle();
 
@@ -1904,7 +1898,8 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                 pStartWrapper = GetWrapperForObject(pServer, pTemplate);
                 if (pStartWrapper == NULL)
                 {
-                    Wrapper<OBJECTHANDLE, DoNothing, DestroyRefcountedHandle> oh;
+                    RefcountedHandleHolder ownedHandle;
+                    OBJECTHANDLE oh = NULL;
 
                     ComCallWrapper *pRootWrapper = GetWrapperForObject(pServer, NULL);
                     if (pRootWrapper == NULL)
@@ -1914,19 +1909,19 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         // attempt to hand this out to another domain then we will assume that the object is truly
                         // agile and will convert the handle to a global handle.
                         oh = GetAppDomain()->CreateRefcountedHandle(NULL);
+                        ownedHandle = oh;
                         _ASSERTE(oh);
                     }
                     else
                     {
                         // if the object already has a CCW, we reuse the handle
                         oh = pRootWrapper->GetObjectHandle();
-                        oh.SuppressRelease();
                     }
 
                     // copy from template
                     pNewCCW = CopyFromTemplate(pTemplate, pWrapperCache, oh);
 
-                    NewHolder<SimpleComCallWrapper> pSimpleWrap = new SimpleComCallWrapper();
+                    NewHolder<SimpleComCallWrapper> pSimpleWrap{ new SimpleComCallWrapper() };
 
                     pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pSyncBlock, pTemplate);
 
@@ -1951,9 +1946,9 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
                         ComCallWrapper::SetNext(pRootWrapper, pNewCCW);
                     }
 
-                    oh.SuppressRelease();
+                    ownedHandle.Detach();
                     pNewCCW.SuppressRelease();
-                    pSimpleWrap.SuppressRelease();
+                    pSimpleWrap.Detach();
 
                     pStartWrapper = pNewCCW;
                 }
@@ -2663,21 +2658,19 @@ ComCallWrapperCache *ComCallWrapperCache::Create(LoaderAllocator *pLoaderAllocat
     }
     CONTRACTL_END;
 
-    NewHolder<ComCallWrapperCache> pWrapperCache = new ComCallWrapperCache();
+    NewHolder<ComCallWrapperCache> pWrapperCache{ new ComCallWrapperCache() };
 
     LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Create %8.8x in loader allocator [%d] %8.8x\n",
         (ComCallWrapperCache *)pWrapperCache, pLoaderAllocator ? pLoaderAllocator->GetCreationNumber() : 0, pLoaderAllocator));
 
-    NewHolder<CCacheLineAllocator> line = new CCacheLineAllocator;
+    NewHolder<CCacheLineAllocator> line{ new CCacheLineAllocator };
 
     pWrapperCache->m_pLoaderAllocator = pLoaderAllocator;
-    pWrapperCache->m_pCacheLineAllocator = line;
+    pWrapperCache->m_pCacheLineAllocator = line.Detach();
 
     pWrapperCache->AddRef();
 
-    line.SuppressRelease();
-    pWrapperCache.SuppressRelease();
-    return pWrapperCache;
+    return pWrapperCache.Detach();
 }
 
 //-------------------------------------------------------------------
@@ -2728,7 +2721,7 @@ LONG ComCallWrapperCache::Release()
 
 //--------------------------------------------------------------------------
 // void ComMethodTable::Cleanup()
-// free the stubs and the vtable
+// Release the cached dispatch and type information.
 //--------------------------------------------------------------------------
 void ComMethodTable::Cleanup()
 {
@@ -2740,37 +2733,12 @@ void ComMethodTable::Cleanup()
     }
     CONTRACTL_END;
 
-    unsigned cbExtraSlots = GetNumExtraSlots(GetInterfaceType());
-    unsigned cbSlots = m_cbSlots;
-
-    SLOT* pComVtable = (SLOT *)(this + 1);
-
-    // If we have created and laid out the method desc then we need to delete them.
-    if (IsLayoutComplete())
-    {
-#ifdef PROFILING_SUPPORTED
-        // We used to issue the COMClassicVTableDestroyed callback from here.
-        // However, that causes an AV.  At this point the MethodTable is gone
-        // (as the AppDomain containing it has been unloaded), but the ComMethodTable
-        // still points to it.  The code here used to wrap a TypeHandle around the
-        // MethodTable pointer, cast to a ClassID, and then call COMClassicVTableDestroyed.
-        // But the act of casting to a TypeHandle invokes debug-code to verify the
-        // MethodTable, which causes an AV.
-        //
-        // For now, we're not issuing the COMClassicVTableDestroyed callback anymore.
-        // <REVISIT_TODO>Reexamine the profiling API around
-        // CCWs and move the callback elsewhere and / or rethink the current
-        // set of CCW callbacks to mirror reality more accurately.</REVISIT_TODO>
-#endif // PROFILING_SUPPORTED
-    }
-
     if (m_pDispatchInfo)
         delete m_pDispatchInfo;
     if (m_pITypeInfo && !IsAtProcessExit())
         SafeRelease(m_pITypeInfo);
 
-    // The m_pMDescr and the current instance is allocated from the related LoaderAllocator
-    // so no cleanup is needed here.
+    // The method descriptors, entry thunks, and this instance belong to the LoaderAllocator.
 }
 
 namespace
@@ -2818,8 +2786,6 @@ void ComMethodTable::LayOutClassMethodTable()
     IDispatchVtable* pDispVtable;
     SLOT *pComVtable;
     unsigned cbPrevSlots = 0;
-    unsigned cbAlloc = 0;
-    BYTE* pMDMemoryPtr = nullptr;
     AllocMemTracker amTracker;
     LoaderAllocator* pLoaderAllocator = m_pMT->GetLoaderAllocator();
     ComCallMethodDesc* pMethodDescMemory = NULL;
@@ -2858,8 +2824,8 @@ void ComMethodTable::LayOutClassMethodTable()
     if (cbTempVtable.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewArrayHolder<BYTE> pTempVtable = new BYTE[cbTempVtable.Value()];
-    pDispVtable = (IDispatchVtable *)pTempVtable.GetValue();
+    NewArrayHolder<BYTE> pTempVtable{ new BYTE[cbTempVtable.Value()] };
+    pDispVtable = reinterpret_cast<IDispatchVtable*>(static_cast<BYTE*>(pTempVtable));
 
     //
     // Set up the IUnknown and IDispatch methods.
@@ -2919,18 +2885,12 @@ void ComMethodTable::LayOutClassMethodTable()
         // Allocate method desc's for the rest of the slots.
         //
         unsigned cbMethodDescs = sizeof(ComCallMethodDesc) * (m_cbSlots - cbParentComMTSlots);
-        cbAlloc = cbMethodDescs;
-        if (cbAlloc > 0)
+        if (cbMethodDescs > 0)
         {
-            pMDMemoryPtr = (BYTE*)amTracker.Track(m_pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR))));
+            pMethodDescMemory = (ComCallMethodDesc*)amTracker.Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbMethodDescs)));
 
             // initialize the method desc memory to zero
-            FillMemory(pMDMemoryPtr, cbAlloc + sizeof(UINT_PTR), 0x0);
-
-            *(UINT_PTR *)(pMDMemoryPtr) = cbMethodDescs; // fill in the size of the method desc's
-
-            // move past the size
-            pMethodDescMemory = (ComCallMethodDesc*)(pMDMemoryPtr + sizeof(UINT_PTR));
+            FillMemory(pMethodDescMemory, cbMethodDescs, 0x0);
         }
 
         _ASSERTE(0 == (((DWORD_PTR)pMethodDescMemory) & (sizeof(void*)-1)));
@@ -3104,16 +3064,11 @@ void ComMethodTable::LayOutClassMethodTable()
         // IDispatch vtable follows the header
         CopyMemory(this + 1, pDispVtable, cbTempVtable.Value());
 
-        // Set the layout complete flag and release the lock.
-        m_Flags |= enum_LayoutComplete;
+        amTracker.SuppressRelease();
 
-        // We've successfully laid out the class method table so we need to suppress the release of the
-        // memory for the ComCallMethodDescs and store it inside the ComMethodTable so we can
-        // release it when we clean up the ComMethodTable.
-        m_pMDescr = (BYTE*)pMDMemoryPtr;
+        // Publish only after the descriptors and allocation ownership are committed.
+        SetFlags(enum_LayoutComplete);
     }
-
-    amTracker.SuppressRelease();
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, parent: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), pParentClass ? pParentClass->GetDebugClassName() : 0, this));
 }
@@ -3156,9 +3111,9 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     if (cbTempVtable.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewArrayHolder<BYTE> pTempVtable = new BYTE[cbTempVtable.Value()];
+    NewArrayHolder<BYTE> pTempVtable{ new BYTE[cbTempVtable.Value()] };
 
-    pUnkVtable = (IUnkVtable *)pTempVtable.GetValue();
+    pUnkVtable = reinterpret_cast<IUnkVtable*>(static_cast<BYTE*>(pTempVtable));
     pComVtable = ((SLOT*)pUnkVtable) + cbExtraSlots;
 
     // Set all vtable slots to -1 for sparse vtables. That way we catch attempts
@@ -3295,7 +3250,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         _ASSERTE(numVtableSlots == cbEmittedSlots);
 
         // Set the layout complete flag and release the lock.
-        m_Flags |= enum_LayoutComplete;
+        SetFlags(enum_LayoutComplete);
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -3342,7 +3297,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 
     //
     // Set up the IUnknown and IDispatch methods. Each thread will write exactly the same values to the
-    // slots so we let it run concurrently and execute a memory barrier by doing InterlockOr at the end.
+    // slots so we let it run concurrently and publish them with an atomic flag update at the end.
     //
 
     // IDispatch vtable follows the header
@@ -3378,9 +3333,30 @@ void ComMethodTable::LayOutBasicMethodTable()
     //
     // Set the layout complete flag.
     //
-    InterlockedOr((LONG*)&m_Flags, enum_LayoutComplete);
+    SetFlags(enum_LayoutComplete);
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), this));
+}
+
+void ComMethodTable::GenerateIID()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Metadata generation can throw and trigger GC, so do it outside the commit lock.
+    IID iid = GenerateClassItfGuid(TypeHandle(m_pMT));
+
+    CrstHolder ch(&g_CreateWrapperTemplateCrst);
+    if (!(VolatileLoad(&m_Flags) & enum_GuidGenerated))
+    {
+        m_IID = iid;
+        SetFlags(enum_GuidGenerated);
+    }
 }
 
 //--------------------------------------------------------------------------
@@ -3400,14 +3376,14 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
     if (!m_pDispatchInfo)
     {
         // Create the DispatchInfo object.
-        NewHolder<DispatchInfo> pDispInfo = new DispatchInfo(m_pMT);
+        NewHolder<DispatchInfo> pDispInfo{ new DispatchInfo(m_pMT) };
 
         // Synchronize the DispatchInfo with the actual object.
         pDispInfo->SynchWithManagedView();
 
         // Swap the lock into the class member in a thread safe manner.
-        if (NULL == InterlockedCompareExchangeT(&m_pDispatchInfo, pDispInfo.GetValue(), NULL))
-            pDispInfo.SuppressRelease();
+        if (NULL == InterlockedCompareExchangeT(&m_pDispatchInfo, static_cast<DispatchInfo*>(pDispInfo), NULL))
+            pDispInfo.Detach();
 
     }
 
@@ -3969,7 +3945,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
     pComMT->m_ptReserved = (SLOT)(size_t)0xDEADC0FF;          // reserved
     pComMT->m_pMT  = pClassMT; // pointer to the class method table
     pComMT->m_cbRefCount = 0;
-    pComMT->m_pMDescr = NULL;
     pComMT->m_pITypeInfo = NULL;
     pComMT->m_pDispatchInfo = NULL;
     pComMT->m_cbSlots = cbTotalSlots.Value(); // number of slots not counting IDisp methods.
@@ -4043,7 +4018,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
     pComMT->m_pMT  = pInterfaceMT; // pointer to the interface's method table
     pComMT->m_cbSlots = cbComSlots; // number of slots not counting IUnk
     pComMT->m_cbRefCount = 0;
-    pComMT->m_pMDescr = NULL;
     pComMT->m_pITypeInfo = NULL;
     pComMT->m_pDispatchInfo = NULL;
 
@@ -4102,7 +4076,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
     pComMT->m_pMT  = pMT;
     pComMT->m_cbSlots = 0;  // number of slots not counting IUnk
     pComMT->m_cbRefCount = 0;
-    pComMT->m_pMDescr = NULL;
     pComMT->m_pITypeInfo = NULL;
     pComMT->m_pDispatchInfo = NULL;
 
@@ -4361,7 +4334,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
         // If the class is visible from COM, then give out the IClassX IID.
         if (pRetTemplate->m_pClassComMT->IsComVisible())
-            GenerateClassItfGuid(thClass, &IClassXIID);
+            IClassXIID = GenerateClassItfGuid(thClass);
 
 #if defined(_DEBUG)
         CHAR rIID[MINIPAL_GUID_BUFFER_LEN];

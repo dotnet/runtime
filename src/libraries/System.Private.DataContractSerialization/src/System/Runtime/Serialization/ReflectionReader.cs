@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization
         private static readonly MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
         private static readonly MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
-        private static readonly Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
+        private static readonly Type[] s_arrayConstructorParameters = new Type[] { typeof(int) };
         private static readonly object[] s_arrayConstructorArguments = new object[] { 32 };
 
         private static MethodInfo CollectionSetItemDelegateMethod =>
@@ -250,7 +250,7 @@ namespace System.Runtime.Serialization
         {
             object? value;
             int nullables = 0;
-            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 nullables++;
                 type = type.GetGenericArguments()[0];
@@ -260,7 +260,7 @@ namespace System.Runtime.Serialization
                 PrimitiveDataContract.GetPrimitiveDataContract(type)
                 : (primitiveContractForOriginalType ?? PrimitiveDataContract.GetPrimitiveDataContract(type));
 
-            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
+            if ((primitiveContract != null && primitiveContract.UnderlyingType != typeof(object)) || nullables != 0 || type.IsValueType)
             {
                 value = ReadItemOfPrimitiveType(xmlReader, context, type, name, ns, primitiveContract, nullables);
             }
@@ -291,7 +291,7 @@ namespace System.Runtime.Serialization
                         throw new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type)));
                     }
 
-                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
+                    if (primitiveContract != null && primitiveContract.UnderlyingType != typeof(object))
                     {
                         value = primitiveContract.ReadXmlValue(xmlReader, context);
                     }
@@ -345,14 +345,14 @@ namespace System.Runtime.Serialization
         private CollectionReadItemDelegate GetReflectionReadValueDelegate(Type type)
         {
             int nullables = 0;
-            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 nullables++;
                 type = type.GetGenericArguments()[0];
             }
 
             PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
-            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
+            if ((primitiveContract != null && primitiveContract.UnderlyingType != typeof(object)) || nullables != 0 || type.IsValueType)
             {
                 return GetReadItemOfPrimitiveTypeDelegate;
             }
@@ -439,11 +439,11 @@ namespace System.Runtime.Serialization
         private static object ResolveAdapterObject(object obj)
         {
             Type objType = obj.GetType();
-            if (objType == Globals.TypeOfDateTimeOffsetAdapter)
+            if (objType == typeof(DateTimeOffsetAdapter))
             {
                 obj = DateTimeOffsetAdapter.GetDateTimeOffset((DateTimeOffsetAdapter)obj);
             }
-            else if (objType == Globals.TypeOfMemoryStreamAdapter)
+            else if (objType == typeof(MemoryStreamAdapter))
             {
                 obj = MemoryStreamAdapter.GetMemoryStream((MemoryStreamAdapter)obj);
             }
@@ -486,7 +486,7 @@ namespace System.Runtime.Serialization
             }
             else if (collectionContract.Kind == CollectionKind.GenericDictionary && collectionContract.UnderlyingType.IsInterface)
             {
-                Type type = Globals.TypeOfDictionaryGeneric.MakeGenericType(collectionContract.ItemType.GetGenericArguments());
+                Type type = typeof(Dictionary<,>).MakeGenericType(collectionContract.ItemType.GetGenericArguments());
                 ConstructorInfo ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes)!;
                 object newGenericDict = ci.Invoke(Array.Empty<object>());
                 return newGenericDict;
@@ -498,7 +498,7 @@ namespace System.Runtime.Serialization
                     object newValueObject = Activator.CreateInstance(collectionContract.UnderlyingType)!;
                     return newValueObject;
                 }
-                else if (collectionContract.UnderlyingType == Globals.TypeOfIDictionary)
+                else if (collectionContract.UnderlyingType == typeof(IDictionary))
                 {
                     object newGenericDict = new Dictionary<object, object>();
                     return newGenericDict;
@@ -583,7 +583,7 @@ namespace System.Runtime.Serialization
             {
                 Type collectionType = resultCollectionObject.GetType();
                 Type genericCollectionType = typeof(ICollection<T>);
-                Type typeIList = Globals.TypeOfIList;
+                Type typeIList = typeof(IList);
                 if (genericCollectionType.IsAssignableFrom(collectionType))
                 {
                     return (resultCollection, collectionItem, index) =>

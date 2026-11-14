@@ -227,12 +227,9 @@ namespace System.Net.Mime
                 return false;
             }
 
-            foreach (char c in value)
+            if (value.ContainsAnyExceptInRange('!', '~'))
             {
-                if (c is < '!' or > '~')
-                {
-                    return false;
-                }
+                return false;
             }
 
             int charSetEnd = value[2..].IndexOf('?');

@@ -21,6 +21,16 @@ namespace System.Net.Test.Common
                 CheckHasSystemNetSecurityNative() && (!PlatformDetection.IsOpenSslSupported || PlatformDetection.OpenSslVersion.Major < 3);
         }
 
+        // Initial server challenges do not require the NTLM response generation affected by OpenSSL 3.
+        public static bool IsNtlmServerAvailable() =>
+            !OperatingSystem.IsBrowser() &&
+            !OperatingSystem.IsWasi() &&
+            // macOS and MacCatalyst advertise NTLM but do not support default NTLM acceptor credentials.
+            !OperatingSystem.IsMacOS() &&
+            !OperatingSystem.IsMacCatalyst() &&
+            CheckHasSystemNetSecurityNative() &&
+            Interop.NetSecurityNative.IsNtlmInstalled();
+
         private static bool CheckHasSystemNetSecurityNative()
         {
             try
@@ -34,5 +44,10 @@ namespace System.Net.Test.Common
                 return false;
             }
         }
+
+        public static bool IsGssGetNameAttributeSupported() =>
+            !OperatingSystem.IsBrowser() &&
+            !OperatingSystem.IsWasi() &&
+            Interop.NetSecurityNative.IsGetNameAttributeSupported();
     }
 }

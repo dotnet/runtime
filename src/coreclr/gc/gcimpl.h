@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #ifndef GCIMPL_H_
 #define GCIMPL_H_
 
@@ -67,18 +66,15 @@ public:
 public:
     GCHeap(){};
 
-    /* BaseGCHeap Methods*/
-    PER_HEAP_ISOLATED   HRESULT StaticShutdown ();
-
     size_t  GetTotalBytesInUse ();
     // Gets the amount of bytes objects currently occupy on the GC heap.
     size_t  GetCurrentObjSize();
 
     uint64_t GetTotalAllocatedBytes();
 
-    size_t  GetLastGCStartTime(int generation);
-    size_t  GetLastGCDuration(int generation);
-    size_t  GetNow();
+    int64_t GetLastGCStartTime(int generation);
+    int64_t GetLastGCDuration(int generation);
+    int64_t GetNow();
 
     void  DiagTraceGCSegments ();
     void PublishObject(uint8_t* obj);

@@ -108,6 +108,19 @@ namespace System.Runtime
             return pTargetCode;
         }
 
+#if TARGET_WASM
+        [RuntimeExport("RhpDispatchResolve")]
+        private static IntPtr RhpDispatchResolve(object pObject, IntPtr pCell)
+        {
+            if (pObject is null)
+            {
+                throw new NullReferenceException();
+            }
+
+            return RhpResolveInterfaceMethod(pObject, pCell);
+        }
+#endif
+
         [RuntimeExport("RhpResolveInterfaceMethod")]
         private static IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell)
         {
@@ -185,9 +198,14 @@ namespace System.Runtime
                                                                                     DispatchResolve.ResolveFlags.IDynamicInterfaceCastable,
                                                                                     ppGenericContext);
 
-            if ((result & (nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag) != 0)
+#if TARGET_WASM
+            const int RequiresInstantiatingThunkFlag = DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlagWasm;
+#else
+            const int RequiresInstantiatingThunkFlag = DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+#endif
+            if ((result & (nint)RequiresInstantiatingThunkFlag) != 0)
             {
-                result &= ~(nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+                result &= ~(nint)RequiresInstantiatingThunkFlag;
             }
             else
             {

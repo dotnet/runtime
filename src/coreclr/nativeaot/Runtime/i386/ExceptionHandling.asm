@@ -8,20 +8,7 @@
         .code
 
 
-include AsmMacros.inc
-
-;; input:   ECX: possible exception object
-;;          EDX: funclet IP
-;;          EAX: funclet EBP
-CALL_FUNCLET  macro  SUFFIX
-        push    ebp
-        mov     ebp, eax
-        mov     eax, ecx
-        call    edx
-ALTERNATE_ENTRY _RhpCall&SUFFIX&Funclet2
-        pop     ebp
-endm
-
+include AsmMacros_Shared.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -260,224 +247,43 @@ ALTERNATE_ENTRY _RhpRethrow2
 
 FASTCALL_ENDFUNC
 
-;;
-;; Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
-;;
-FUNCLET_CALL_PROLOGUE macro localsCount
-    push        ebp
-    mov         ebp, esp
-
-    push        ebx     ;; save preserved registers (for the stackwalker)
-    push        esi     ;;
-    push        edi     ;;
-
-    stack_alloc_size = localsCount * 4
-
-    if stack_alloc_size ne 0
-    sub         esp, stack_alloc_size
-    endif
-endm
-
-;;
-;; Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
-;;
-FUNCLET_CALL_EPILOGUE macro
-    if stack_alloc_size ne 0
-    add         esp, stack_alloc_size
-    endif
-    pop         edi
-    pop         esi
-    pop         ebx
-    pop         ebp
-endm
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
-;;                                    ExInfo* pExInfo)
+;; void FASTCALL RhpResumeAfterCatch(REGDISPLAY* pRegDisplay, void* pResumeIP)
 ;;
-;; INPUT:  ECX:         exception object
-;;         EDX:         handler funclet address
-;;         [ESP + 4]:   ExInfo*
-;;         [ESP + 8]:   REGDISPLAY*
-;;         (CLR calling convention switches the last two parameters!)
+;; Resumes execution after a catch funclet called by CallEHFunclet has returned and the dispatcher has popped
+;; the ExInfos below the resume SP. Does not return.
 ;;
-;; OUTPUT:
+;; INPUT:  ECX:  REGDISPLAY* of the frame that contains the catch
+;;         EDX:  resume address returned by the catch funclet
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpCallCatchFunclet, 16
+FASTCALL_FUNC  RhpResumeAfterCatch, 8
 
-        FUNCLET_CALL_PROLOGUE 1
+        ;; The preserved registers are reloaded from the REGDISPLAY below.
+        mov         esi, ecx
+        mov         edi, edx
 
-        esp_offsetof_ResumeIP                   textequ %00h        ;; [esp + 00h]: continuation address
-                                                                    ;; [esp + 04h]: edi save
-                                                                    ;; [esp + 08h]: esi save
-                                                                    ;; [esp + 0Ch]: ebx save
-        esp_offsetof_PrevEBP                    textequ %10h        ;; [esp + 10h]: prev ebp
-        esp_offsetof_RetAddr                    textequ %14h        ;; [esp + 14h]: return address
-        esp_offsetof_RegDisplay                 textequ %1ch        ;; [esp + 1Ch]: REGDISPLAY*
-        esp_offsetof_ExInfo                     textequ %18h        ;; [esp + 18h]: ExInfo*
+        INLINE_GETTHREAD    eax, ebx                                ;; eax <- Thread*, ebx is trashed
 
-        ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
-        INLINE_GETTHREAD    eax, ebx        ;; eax <- Thread*, ebx is trashed
+        ;; Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
         lock and            dword ptr [eax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
-
-        mov         edi, [esp + esp_offsetof_RegDisplay]            ;; edi <- REGDISPLAY *
-
-        mov         eax, [edi + OFFSETOF__REGDISPLAY__pRbx]
-        mov         ebx, [eax]
-
-        mov         eax, [edi + OFFSETOF__REGDISPLAY__pRbp]
-        mov         eax, [eax]
-        push        eax     ; save the funclet's EBP value for later
-
-        mov         eax, [edi + OFFSETOF__REGDISPLAY__pRsi]
-        mov         esi, [eax]
-
-        mov         eax, [edi + OFFSETOF__REGDISPLAY__pRdi]
-        mov         edi, [eax]
-
-        pop         eax     ; get the funclet's EBP value
-
-        ;; ECX still contains the exception object
-        ;; EDX: funclet IP
-        ;; EAX: funclet EBP
-        CALL_FUNCLET Catch
-
-        ;; eax: resume IP
-        mov         [esp + esp_offsetof_ResumeIP], eax              ;; save for later
-
-        INLINE_GETTHREAD edx, ecx                                   ;; edx <- Thread*, trash ecx
 
         ;; We must unhijack the thread at this point because the section of stack where the hijack is applied
         ;; may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
-        INLINE_THREAD_UNHIJACK edx, ecx, eax                        ;; Thread in edx, trashes ecx and eax
+        INLINE_THREAD_UNHIJACK eax, ecx, edx                        ;; Thread in eax, trashes ecx and edx
 
-        mov         ecx, [esp + esp_offsetof_ExInfo]                ;; ecx <- current ExInfo *
-        mov         eax, [esp + esp_offsetof_RegDisplay]            ;; eax <- REGDISPLAY*
-        mov         eax, [eax + OFFSETOF__REGDISPLAY__ResumeSP]     ;; eax <- resume SP value
+        mov         ecx, esi
+        mov         edx, edi
 
-    @@: mov         ecx, [ecx + OFFSETOF__ExInfo__m_pPrevExInfo]    ;; ecx <- next ExInfo
-        cmp         ecx, 0
-        je          @F                                              ;; we're done if it's null
-        cmp         ecx, eax
-        jl          @B                                              ;; keep looping if it's lower than the new SP
-
-    @@: mov         [edx + OFFSETOF__Thread__m_pExInfoStackHead], ecx   ;; store the new head on the Thread
-
-        ;; RhpCallFunclet preserved our local EBP value, so let's fetch the correct one for the resume address
-        mov         ecx, [esp + esp_offsetof_RegDisplay]            ;; ecx <- REGDISPLAY *
-        mov         ecx, [ecx + OFFSETOF__REGDISPLAY__pRbp]
-        mov         ebp, [ecx]
+        LOAD_FUNCLET_REGISTER ecx, Ebx
+        LOAD_FUNCLET_REGISTER ecx, Esi
+        LOAD_FUNCLET_REGISTER ecx, Edi
+        LOAD_FUNCLET_REGISTER ecx, Ebp
 
         ;; reset ESP and jump to the continuation address
-        mov         ecx, [esp + esp_offsetof_ResumeIP]
-        mov         esp, eax
-        jmp         ecx
-
-FASTCALL_ENDFUNC
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
-;;
-;; INPUT:  ECX:  handler funclet address
-;;         EDX:  REGDISPLAY*
-;;
-;; OUTPUT:
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpCallFinallyFunclet, 8
-
-        FUNCLET_CALL_PROLOGUE 0
-
-        push        edx     ;; save REGDISPLAY*
-
-        ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
-        INLINE_GETTHREAD    eax, ebx        ;; eax <- Thread*, ebx is trashed
-        lock and            dword ptr [eax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
-
-        ;;
-        ;; load preserved registers for funclet
-        ;;
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRbx]
-        mov         ebx, [eax]
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRsi]
-        mov         esi, [eax]
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRdi]
-        mov         edi, [eax]
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRbp]
-        mov         eax, [eax]
-        mov         edx, ecx
-
-        ;; ECX: not used
-        ;; EDX: funclet IP
-        ;; EAX: funclet EBP
-        CALL_FUNCLET Finally
-
-        pop         edx     ;; restore REGDISPLAY*
-
-        ;;
-        ;; save preserved registers from funclet
-        ;;
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRbx]
-        mov         [eax], ebx
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRsi]
-        mov         [eax], esi
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRdi]
-        mov         [eax], edi
-
-        INLINE_GETTHREAD    eax, ebx        ;; eax <- Thread*, ebx is trashed
-        lock or             dword ptr [eax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
-
-        FUNCLET_CALL_EPILOGUE
-        ret
-
-FASTCALL_ENDFUNC
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
-;;
-;; INPUT:  ECX:         exception object
-;;         EDX:         filter funclet address
-;;         [ESP + 4]:   REGDISPLAY*
-;;
-;; OUTPUT:
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpCallFilterFunclet, 12
-
-        FUNCLET_CALL_PROLOGUE 0
-
-        push        edx     ;; save filter funclet address
-
-        ;;
-        ;; load preserved registers for funclet
-        ;;
-        mov         edx, [ebp + 8]
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRbp]
-        mov         eax, [eax]
-
-        ;; ECX still contains exception object
-        ;; EAX contains the funclet EBP value
-        mov         edx, [esp + 0]                  ;; reload filter funclet address
-
-        CALL_FUNCLET Filter
-
-        ;; EAX contains the result of the filter execution
-        mov         edx, [ebp + 8]
-
-        pop         ecx         ;; pop scratch slot
-
-        FUNCLET_CALL_EPILOGUE
-        ret
+        mov         esp, [ecx + OFFSETOF__REGDISPLAY__ResumeSP]
+        jmp         edx
 
 FASTCALL_ENDFUNC
 

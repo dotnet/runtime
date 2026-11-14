@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -73,13 +73,14 @@ namespace ILLink.RoslynAnalyzer.Tests
             var project = solution.GetProject(projectId)!;
             var parseOptions = (CSharpParseOptions)project.ParseOptions!;
             parseOptions = parseOptions.WithLanguageVersion(LanguageVersion.Preview);
+            var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
             if (updatedMemorySafetyRules)
             {
-                parseOptions = parseOptions
-                    .WithFeatures([.. parseOptions.Features, new("updated-memory-safety-rules", "")]);
+#pragma warning disable RSEXPERIMENTAL006
+                compilationOptions = compilationOptions.WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2);
+#pragma warning restore RSEXPERIMENTAL006
             }
 
-            var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
             // CS9377 is emitted at a warning level above the test framework's default.
             var diagnosticOptions = compilationOptions.SpecificDiagnosticOptions
                 .SetItems(CSharpVerifierHelper.NullableWarnings)

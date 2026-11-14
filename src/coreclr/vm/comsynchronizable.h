@@ -38,27 +38,28 @@ public:
         ThreadSuspended = 64,
         ThreadAbortRequested = 128,
     };
-
-    FCDECL0(static INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
-#ifdef TARGET_WASM
-    FCDECL0(static void*,       GetThreadStaticsBaseNative);
-#endif
-    FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
-    FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
-    FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
 };
 
+extern "C"
+{
+#ifdef FEATURE_MULTITHREADING
+    FCDECL1(void,        Thread_InternalFinalize, ThreadBaseObject* pThis);
+    FCDECL0(FC_BOOL_RET, Thread_CatchAtSafePoint);
+    FCDECL0(FC_BOOL_RET, Thread_CurrentThreadIsFinalizerThread);
+#endif // FEATURE_MULTITHREADING
+}
+
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(INT_PTR status, QCall::ObjectHandleOnStack exception, QCallExceptionStatus* qcallError);
+#ifdef FEATURE_MULTITHREADING
 extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName, QCall::ObjectHandleOnStack exception, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len, QCallExceptionStatus* qcallError);
-extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_PollGC();
-extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId(QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, QCallExceptionStatus* qcallError);
+#endif // FEATURE_MULTITHREADING
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles, QCallExceptionStatus* qcallError);
 #ifdef TARGET_WINDOWS
@@ -77,12 +78,14 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, QCal
 
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
-extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP
 
 extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj, QCallExceptionStatus* qcallError);
 
-FCDECL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* obj);
+extern "C"
+{
+    FCDECL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* obj);
+}
 #endif // _COMSYNCHRONIZABLE_H

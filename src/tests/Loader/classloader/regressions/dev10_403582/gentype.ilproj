@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
+    <!-- The fixture deliberately wraps the 16-bit GenericParam number column. -->
+    <IlasmFlags>$(IlasmFlags) -ERR</IlasmFlags>
+    <!-- Generates invalid metadata that do not round-trip -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>

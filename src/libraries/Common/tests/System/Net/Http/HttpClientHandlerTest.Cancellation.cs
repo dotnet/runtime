@@ -86,7 +86,16 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, async server =>
             {
-                await IgnoreExceptions(server.AcceptConnectionAsync(connection => serverRelease.Task));
+                Task serverTask = IgnoreExceptions(server.AcceptConnectionAsync(connection => serverRelease.Task));
+                if (IsWasiHttpHandler)
+                {
+                    // The wasi:http host may abandon the request before it connects to the server.
+                    await Task.WhenAny(serverTask, serverRelease.Task);
+                }
+                else
+                {
+                    await serverTask;
+                }
             });
         }
 
@@ -97,6 +106,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && connectionClose)
             {
                 // There is no Connection header in HTTP/2 and later
+                return;
+            }
+
+            if (connectionClose && IsWasiHttpHandler)
+            {
+                // wasi:http rejects the Connection request header.
                 return;
             }
 
@@ -155,6 +170,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (connectionClose && IsWasiHttpHandler)
+            {
+                // wasi:http rejects the Connection request header.
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
@@ -208,6 +229,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
+                return;
+            }
+
+            if (connectionClose && IsWasiHttpHandler)
+            {
+                // wasi:http rejects the Connection request header.
                 return;
             }
 
@@ -276,6 +303,12 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
+                return;
+            }
+
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler's response stream doesn't support synchronous reads.
                 return;
             }
 
@@ -350,6 +383,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // HTTP/2 does not use connection limits.
+                return;
+            }
+
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support MaxConnectionsPerServer.
                 return;
             }
 
@@ -531,12 +570,15 @@ namespace System.Net.Http.Functional.Tests
             {
                 return;
             }
+
             // Skipping test for a sync scenario because DelegateStream drops the original cancellationToken when it calls Read/Write methods.
             // As a result, ReadAsyncFunc receives default in cancellationToken, which will never get signaled through the cancellationTokenSource.
             if (!TestAsync)
             {
                 return;
             }
+
+            var clientFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -551,12 +593,25 @@ namespace System.Net.Http.Functional.Tests
                             }
                         }
                         catch (OperationCanceledException) { }
+                        finally
+                        {
+                            clientFinished.SetResult();
+                        }
                 },
                 async server =>
                 {
                     try
                     {
-                        await server.HandleRequestAsync(content: "Hello World");
+                        Task serverTask = server.HandleRequestAsync(content: "Hello World");
+                        if (IsWasiHttpHandler)
+                        {
+                            // The wasi:http host may abandon the request before it connects to the server.
+                            await Task.WhenAny(serverTask, clientFinished.Task);
+                        }
+                        else
+                        {
+                            await serverTask;
+                        }
                     }
                     catch (Exception) { }
                 }).WaitAsync(TestHelper.PassingTestTimeout);

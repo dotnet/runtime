@@ -50,12 +50,17 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [Fact]
         public static void RunBarrierSignalAndWaitTests()
         {
             RunBarrierTest2_SignalAndWait(1, new TimeSpan(0, 0, 0, 0, -1), true, null);
             RunBarrierTest2_SignalAndWait(5, new TimeSpan(0, 0, 0, 0, 100), false, null);
             RunBarrierTest2_SignalAndWait(5, new TimeSpan(0), false, null);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static void RunBarrierSignalAndWaitParallelTests()
+        {
             RunBarrierTest3_SignalAndWait(3);
         }
 

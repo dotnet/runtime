@@ -23,7 +23,7 @@ namespace ILLink.Shared.TypeSystemProxy
                 builder.Add(new GenericParameterProxy(typeParameter));
             }
 
-            return builder.ToImmutableArray();
+            return builder.MoveToImmutable();
         }
 
         public readonly ITypeSymbol Type;

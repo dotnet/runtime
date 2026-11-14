@@ -55,7 +55,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_GenericPositive);
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
             if (!dataflowBlockOptions.Greedy) throw new ArgumentException(SR.Argument_NonGreedyNotSupported, nameof(dataflowBlockOptions));
             if (dataflowBlockOptions.BoundedCapacity != DataflowBlockOptions.Unbounded) throw new ArgumentException(SR.Argument_BoundedCapacityNotSupported, nameof(dataflowBlockOptions));
 
@@ -300,7 +300,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_GenericPositive);
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
             if (!dataflowBlockOptions.Greedy ||
                 dataflowBlockOptions.BoundedCapacity != DataflowBlockOptions.Unbounded)
             {

@@ -12,6 +12,7 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public T Context;
 
     public uint Size => Context.Size;
+    public uint GetSize() => Context.GetSize();
     public uint ContextControlFlags => Context.ContextControlFlags;
     public uint FullContextFlags => Context.FullContextFlags;
     public uint AllContextFlags => Context.AllContextFlags;
@@ -43,12 +44,7 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
             buffer.CopyTo(byteSpan);
         }
     }
-    public unsafe byte[] GetBytes()
-    {
-        Span<T> structSpan = MemoryMarshal.CreateSpan(ref Context, 1);
-        Span<byte> byteSpan = MemoryMarshal.AsBytes(structSpan);
-        return byteSpan.ToArray();
-    }
+    public ReadOnlySpan<byte> GetBytes() => MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Context, 1));
     public IPlatformAgnosticContext Clone() => new ContextHolder<T>() { Context = Context };
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
@@ -58,6 +54,14 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public bool TryReadRegister(string fieldName, out TargetNUInt value) => Context.TryReadRegister(fieldName, out value);
     public bool TrySetRegister(int number, TargetNUInt value) => Context.TrySetRegister(number, value);
     public bool TryReadRegister(int number, out TargetNUInt value) => Context.TryReadRegister(number, out value);
+    public bool TryReadFloatingPointRegister(int index, out double value) => Context.TryReadFloatingPointRegister(index, out value);
+    public bool TryWriteFloatingPointRegister(int index, double value) => Context.TryWriteFloatingPointRegister(index, value);
+
+    public void CopyContext(IPlatformAgnosticContext source)
+    {
+        ContextHolder<T> sourceHolder = (ContextHolder<T>)source;
+        Context.CopyContext(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref sourceHolder.Context, 1)));
+    }
 
     public bool Equals(ContextHolder<T>? other)
     {

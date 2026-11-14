@@ -36,13 +36,5 @@ namespace Internal.IL
         {
             return _interopStateManager.GetPInvokeCalliStub(signature, moduleContext);
         }
-
-        public string GetDirectCallExternName(MethodDesc method)
-        {
-            bool directCall = _pInvokeILEmitterConfiguration.GenerateDirectCall(method, out string externName);
-            Debug.Assert(directCall);
-            Debug.Assert(externName != null);
-            return externName;
-        }
     }
 }

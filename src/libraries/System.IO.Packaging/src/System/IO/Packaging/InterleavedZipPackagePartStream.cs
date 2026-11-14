@@ -231,14 +231,7 @@ namespace System.IO.Packaging
             CheckClosed();
 
             // Check argument and stream capabilities.
-#if NET
             ArgumentOutOfRangeException.ThrowIfNegative(newLength);
-#else
-            if (newLength < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(newLength));
-            }
-#endif
             if (!CanWrite)
             {
                 throw new NotSupportedException(SR.StreamDoesNotSupportWrite);

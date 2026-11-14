@@ -945,7 +945,7 @@ namespace System
                         return ReadOnlySpan<TChar>.Empty;
                     }
 
-                    if (!Rune.IsWhiteSpace(current))
+                    if (Rune.IsWhiteSpace(current))
                     {
                         break;
                     }

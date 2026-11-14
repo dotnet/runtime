@@ -29,6 +29,7 @@
 #include <time.h>
 #endif
 
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
 #include <minipal/utils.h>
@@ -67,7 +68,7 @@ bool GCToOSInterface::Initialize()
 
     assert(g_totalPhysicalMemSize != 0);
 
-    return true;
+    return minipal_initialize_memory_barrier_process_wide();
 }
 
 void GCToOSInterface::Shutdown()
@@ -274,6 +275,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 // ============================================================================
 // Thread affinity / priority
 // ============================================================================
+
+bool GCToOSInterface::CanSetThreadAffinity()
+{
+    return false;
+}
 
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {

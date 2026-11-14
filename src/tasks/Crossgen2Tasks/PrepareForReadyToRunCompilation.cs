@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This task is replicated in dotnet/sdk at src/Tasks/Microsoft.NET.Build.Tasks/PrepareForReadyToRunCompilation.cs.
+// Keep both copies synchronized.
+
 #nullable disable
 
 using System.Reflection;
@@ -346,13 +349,6 @@ namespace Microsoft.NET.Build.Tasks
             out string compilerOutputRelativePath,
             out string compilerOutputPath)
         {
-            if (isCompositeImage && Crossgen2ContainerFormat == "wasm" &&
-                Crossgen2Tool?.GetMetadata(MetadataKeys.TargetOS) == "wasi")
-            {
-                // The WASI composition pipeline consumes this fixed composite image name.
-                relativePath = "composite-r2r.wasm";
-            }
-
             // Crossgen2 emits WebAssembly directly, while Mach-O composite output is an object file
             // that must be linked into the dylib published by the SDK.
             (string compilerExtension, string publishExtension) = Crossgen2ContainerFormat switch

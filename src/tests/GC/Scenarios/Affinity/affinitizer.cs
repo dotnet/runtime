@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
 using System.Diagnostics;
 
 public class Affinitizer
@@ -78,7 +77,10 @@ public class Affinitizer
         // run the test
         Random rand = null;
 
-        Process p = Process.Start(processName, processArgs);
+        using Process p = Process.Start(new ProcessStartInfo(processName, processArgs)
+        {
+            InheritedHandles = [],
+        })!;
         
         // cannot set the affinity before the process starts in managed code
         // This code executes so quickly that the GC heaps have not yet been initialized,
@@ -96,10 +98,9 @@ public class Affinitizer
             Console.WriteLine("Using random seed: {0}", seed);
         }
 
-        while (!p.HasExited)
+        while (!p.TryWaitForExitStatus(TimeSpan.FromSeconds(5), out _))
         {
             // change affinity randomly every 5 seconds
-            Thread.Sleep(5000);
             if (affinity == IntPtr.Zero)
             {
                 try
@@ -122,7 +123,8 @@ public class Affinitizer
 
         }
 
-        Console.WriteLine("Exiting with exit code {0}", p.ExitCode);
-        return p.ExitCode;
+        ProcessExitStatus status = p.WaitForExitStatus();
+        Console.WriteLine("Exiting with exit code {0}", status.ExitCode);
+        return status.ExitCode;
     }
 }

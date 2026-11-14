@@ -3,8 +3,4 @@
 
 using Xunit;
 
-// Process tests can conflict with each other, as they modify ambient state
-// like the console code page and environment variables
-[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
-
 [assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Diagnostics.Process is not supported on Browser.")]

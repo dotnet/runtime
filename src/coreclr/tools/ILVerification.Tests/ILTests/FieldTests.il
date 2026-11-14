@@ -63,6 +63,14 @@
         ret
     }
 
+    // TODO: verification of readonly references https://github.com/dotnet/runtime/issues/57444
+    .method public instance void Ldsflda.InitonlyFieldOutsideCctor_Valid() cil managed
+    {
+        ldsflda int32 FieldTestsType::StaticInitonlyField
+        pop
+        ret
+    }
+
     .method public hidebysig instance void 'special.StoreInitonlyField..ctor_Valid'() cil managed { ret }
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
     {
@@ -128,7 +136,7 @@
         ret
     }
 
-    .method public hidebysig instance void 'special.LdsfldInitonlyInCtor..ctor_Invalid_InitOnly'(char) cil managed { ret }
+    .method public hidebysig instance void 'special.LdsfldaInitonlyInCtor..ctor_Valid'(char) cil managed { ret }
     .method public hidebysig specialname rtspecialname instance void .ctor(char) cil managed
     {
         ldarg.0

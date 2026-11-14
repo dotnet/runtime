@@ -790,9 +790,10 @@ bool AsyncAnalysis::IsLive(unsigned lclNum)
         return false;
     }
 
-    if ((dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef()) && dsc->GetLayout()->HasGCByRef())
+    if ((dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef()) &&
+        (dsc->GetLayout()->HasGCByRef() || dsc->GetLayout()->IsStackOnly(m_compiler)))
     {
-        // Same as above
+        // Byref-like structs cannot be captured even if they contain no byrefs.
         return false;
     }
 

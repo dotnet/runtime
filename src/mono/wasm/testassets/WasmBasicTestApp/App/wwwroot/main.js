@@ -75,6 +75,15 @@ if (logLevel !== null && logMask !== null) {
 
 // Modify runtime start based on test case
 switch (testCase) {
+    case "ConfigLoadedCallbacks":
+        dotnet.withConfigLoaded(async () => {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            testOutput("ConfigLoaded: first");
+        });
+        dotnet.withConfigLoaded(() => {
+            testOutput("ConfigLoaded: second");
+        });
+        break;
     case "SatelliteAssembliesTest":
         if (params.get("loadAllSatelliteResources") === "true") {
             dotnet.withConfig({ loadAllSatelliteResources: true });
@@ -84,6 +93,33 @@ switch (testCase) {
         const applicationEnvironment = params.get("applicationEnvironment");
         if (applicationEnvironment) {
             dotnet.withApplicationEnvironment(applicationEnvironment);
+        }
+        if (params.get("legacySettings") === "true") {
+            dotnet.withConfigLoaded(config => {
+                config.appsettings = config.resources.appsettings.map(asset => asset.name);
+                delete config.resources.appsettings;
+            });
+        }
+        if (params.get("noSettings") === "true") {
+            dotnet.withConfigLoaded(config => {
+                config.resources.appsettings = [];
+                delete config.appsettings;
+            });
+        }
+        if (params.get("settingsLoader")) {
+            dotnet.withResourceLoader((type, name, url, hash, behavior) => {
+                if (type !== "configuration") return url;
+                if (behavior !== "appsettings") throw new Error(`Unexpected settings behavior: ${behavior}`);
+                switch (params.get("settingsLoader")) {
+                    case "null": return null;
+                    case "response": return fetch(url);
+                    case "url": return url;
+                    default: throw new Error("Unexpected settings loader mode");
+                }
+            });
+        }
+        if (params.get("settingsDownload")) {
+            await dotnet.download(params.get("settingsDownload") === "cache");
         }
         break;
     case "LazyLoadingTest":
@@ -127,6 +163,9 @@ switch (testCase) {
                 testOutput("DownloadResourceProgress: Finished");
             }
         });
+        dotnet.withDotnetReady(() => {
+            testOutput("onDotnetReady called");
+        });
         break;
     case "AssetIntegrity":
         dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
@@ -134,6 +173,39 @@ switch (testCase) {
             return defaultUri;
         });
         break;
+    case "NativeSymbolsDownload": {
+        const failure = params.get("failure");
+        const originalFetch = globalThis.fetch.bind(globalThis);
+        dotnet.withConfig({
+            enableDownloadRetry: true,
+            ignorePdbLoadErrors: params.get("ignorePdbLoadErrors") === "true"
+        }).withConfigLoaded(config => {
+            if (config.resources.wasmSymbols?.length !== 1 || !config.resources.jsModuleDiagnostics?.length) {
+                throw new Error("Expected emitted native symbols and a diagnostics module");
+            }
+            const symbols = config.resources.wasmSymbols[0];
+            if (symbols.cache !== "force-cache" || !symbols.hash?.startsWith("sha256-")) {
+                throw new Error("Expected fingerprinted native symbols with integrity");
+            }
+            globalThis.fetch = (input, options) => {
+                const url = input instanceof Request ? input.url : String(input);
+                if (url.includes(symbols.name)) {
+                    testOutput(`Native symbols fetch: ${options?.cache}`);
+                    if (failure === "not-found") {
+                        return Promise.resolve(new Response(null, { status: 404, statusText: "Not Found" }));
+                    }
+                    if (failure === "network") {
+                        return Promise.reject(new TypeError("Simulated native-symbol network failure"));
+                    }
+                    if (failure !== "none") {
+                        throw new Error(`Unknown native-symbol failure '${failure}'`);
+                    }
+                }
+                return originalFetch(input, options);
+            };
+        });
+        break;
+    }
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -154,11 +226,9 @@ switch (testCase) {
         break;
     case "DownloadThenInit":
         let dtConfigLoadedCalled = false;
-        dotnet.withModuleConfig({
-            onConfigLoaded: () => {
-                dtConfigLoadedCalled = true;
-                testOutput("onConfigLoaded called");
-            }
+        dotnet.withConfigLoaded(() => {
+            dtConfigLoadedCalled = true;
+            testOutput("onConfigLoaded called");
         });
         const originalFetch = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
@@ -179,11 +249,9 @@ switch (testCase) {
             loadBootResourceCalled = true;
             return defaultUri;
         });
-        dotnet.withModuleConfig({
-            onConfigLoaded: () => {
-                hcConfigLoadedCalled = true;
-                testOutput("onConfigLoaded called");
-            }
+        dotnet.withConfigLoaded(() => {
+            hcConfigLoadedCalled = true;
+            testOutput("onConfigLoaded called");
         });
         const originalFetch3 = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
@@ -254,23 +322,21 @@ switch (testCase) {
         break;
     case "BufferedAssetsTest":
         const originalFetch4 = globalThis.fetch.bind(globalThis);
-        dotnet.withModuleConfig({
-            onConfigLoaded: (config) => {
-                const bufferedAssets = [
-                    ...config.resources.wasmNative,
-                    ...config.resources.coreAssembly,
-                    ...config.resources.assembly,
-                    ...(config.resources.corePdb ?? []),
-                    ...(config.resources.pdb ?? []),
-                    ...config.resources.wasmSymbols,
-                ];
-                for (const asset of bufferedAssets) {
-                    const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
-                    asset.buffer = originalFetch4(url).then(r => {
-                        if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
-                        return r.arrayBuffer();
-                    });
-                }
+        dotnet.withConfigLoaded((config) => {
+            const bufferedAssets = [
+                ...config.resources.wasmNative,
+                ...config.resources.coreAssembly,
+                ...config.resources.assembly,
+                ...(config.resources.corePdb ?? []),
+                ...(config.resources.pdb ?? []),
+                ...config.resources.wasmSymbols,
+            ];
+            for (const asset of bufferedAssets) {
+                const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
+                asset.buffer = originalFetch4(url).then(r => {
+                    if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
+                    return r.arrayBuffer();
+                });
             }
         });
         break;
@@ -284,6 +350,10 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 // Run the test case
 try {
     switch (testCase) {
+        case "ConfigLoadedCallbacks":
+            testOutput("ConfigLoaded: ready");
+            exit(0);
+            break;
         case "SatelliteAssembliesTest":
             await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);
@@ -340,7 +410,75 @@ try {
             exit(0);
             break;
         case "AppSettingsTest":
-            exports.AppSettingsTest.Run();
+            const inMemorySettings = !INTERNAL.monoStringToStringUnsafe;
+            const expectSettingsVfs = params.get("settingsVfs") !== "false";
+            if (inMemorySettings && params.get("settingsVfs") !== null && params.get("legacySettings") !== "true") {
+                if (!config.resources.appsettings || config.appsettings !== undefined) {
+                    throw new Error("Expected resources.appsettings instead of the legacy manifest list");
+                }
+                if (config.resources.appsettings.some(asset => asset.loadIntoVfs !== expectSettingsVfs)) {
+                    throw new Error("Unexpected appsettings VFS placement flag");
+                }
+            }
+            exports.AppSettingsTest.Run(expectSettingsVfs, inMemorySettings);
+            if (params.get("noSettings") === "true") {
+                if (INTERNAL.getAppSettingsFiles().length !== 0 || INTERNAL.getAppSettingsBytes("appsettings.json") !== undefined) {
+                    throw new Error("Unconfigured settings must not be loaded from VFS");
+                }
+                testOutput("Appsettings file API passed");
+                exit(0);
+                break;
+            }
+            const settingsBytes = INTERNAL.getAppSettingsBytes("appsettings.json");
+            const firstSettingsByte = settingsBytes[0];
+            settingsBytes[0] ^= 0xff;
+            if (inMemorySettings) {
+                if (INTERNAL.getAppSettingsBytes("appsettings.json") !== settingsBytes) {
+                    throw new Error("Appsettings getter should return the stored Uint8Array");
+                }
+                settingsBytes[0] = firstSettingsByte;
+                const files = INTERNAL.getAppSettingsFiles();
+                const expected = ["appsettings.json", `appsettings.${config.applicationEnvironment}.json`]
+                    .filter(name => INTERNAL.getAppSettingsBytes(name) !== undefined);
+                if (JSON.stringify(files) !== JSON.stringify(expected)) {
+                    throw new Error(`Unexpected appsettings selection: ${JSON.stringify(files)}`);
+                }
+                const baseConfig = JSON.parse(new TextDecoder().decode(settingsBytes));
+                if (baseConfig.key1 !== "Default key1-value") {
+                    throw new Error("Unexpected downloaded appsettings content");
+                }
+                testOutput("Appsettings file API passed");
+                exit(0);
+                break;
+            } else if (INTERNAL.getAppSettingsBytes("appsettings.json")[0] !== firstSettingsByte) {
+                throw new Error("Mutating returned appsettings bytes changed VFS contents");
+            }
+            const originalAppsettings = config.appsettings;
+            config.appsettings = [...originalAppsettings].reverse().concat(originalAppsettings);
+            const selectedFiles = INTERNAL.getAppSettingsFiles();
+            const expectedFiles = ["appsettings.json", `appsettings.${config.applicationEnvironment}.json`]
+                .filter(name => originalAppsettings.some(url => url.substring(url.lastIndexOf("/") + 1) === name));
+            if (JSON.stringify(selectedFiles) !== JSON.stringify(expectedFiles)) {
+                throw new Error(`Unexpected appsettings selection: ${JSON.stringify(selectedFiles)}`);
+            }
+            selectedFiles.length = 0;
+            if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles)) {
+                throw new Error("Mutating the returned appsettings list changed subsequent results");
+            }
+            config.appsettings = originalAppsettings.filter(url => url.substring(url.lastIndexOf("/") + 1) !== "appsettings.json");
+            if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles.slice(1))) {
+                throw new Error("Unexpected appsettings selection without base settings");
+            }
+            config.appsettings = [];
+            if (INTERNAL.getAppSettingsFiles().length !== 0) {
+                throw new Error("Empty appsettings should return an empty file list");
+            }
+            delete config.appsettings;
+            if (INTERNAL.getAppSettingsFiles().length !== 0) {
+                throw new Error("Absent appsettings should return an empty file list");
+            }
+            config.appsettings = originalAppsettings;
+            testOutput("Appsettings file API passed");
             exit(0);
             break;
         case "FilesToIncludeInFileSystemTest":
@@ -351,6 +489,10 @@ try {
         case "AssetIntegrity":
             exit(0);
             break;
+        case "NativeSymbolsDownload":
+            testOutput("Native symbols startup completed");
+            exit(0);
+            break;
         case "OutErrOverrideWorks":
         case "DotnetRun":
         case "MainWithArgs":
@@ -359,6 +501,10 @@ try {
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
             exit(42);
+            break;
+        case "StackTraceTest":
+            exports.StackTraceTest.Run();
+            exit(0);
             break;
         case "InterpPgoTest":
             setModuleImports('main.js', {

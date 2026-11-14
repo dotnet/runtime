@@ -53,7 +53,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        ///     The defaut constructor. Creates the perf counter object
+        ///     The default constructor. Creates the perf counter object
         /// </summary>
         public PerformanceCounter()
         {

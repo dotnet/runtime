@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
+using Internal;
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 
@@ -14,76 +15,50 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
     {
         internal sealed override RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName)
         {
-            string[] parts = fullName.Split('.');
-            int numNamespaceParts = parts.Length - 1;
-            string[] namespaceParts = new string[numNamespaceParts];
-            for (int i = 0; i < numNamespaceParts; i++)
-                namespaceParts[numNamespaceParts - i - 1] = parts[i];
-            string name = parts[numNamespaceParts];
+            int separator = fullName.LastIndexOf('.');
+            ReadOnlySpan<char> namespaceName = separator < 0 ? default : fullName.AsSpan(0, separator);
+            ReadOnlySpan<char> name = fullName.AsSpan(separator + 1);
+            int hashCode = VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode(namespaceName),
+                VersionResilientHashCode.NameHashCode(name));
 
             MetadataReader reader = Scope.Reader;
-            ScopeDefinitionHandle scopeDefinitionHandle = Scope.Handle;
+            ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
 
-            NamespaceDefinition namespaceDefinition;
-            if (TryResolveNamespaceDefinitionCaseSensitive(reader, namespaceParts, scopeDefinitionHandle, out namespaceDefinition))
+            foreach (TypeDefinitionHandle candidateType in scopeDefinition.TypeDefinitions.Lookup(hashCode))
             {
-                // We've successfully drilled down the namespace chain. Now look for a top-level type matching the type name.
-                TypeDefinitionHandleCollection candidateTypes = namespaceDefinition.TypeDefinitions;
-                foreach (TypeDefinitionHandle candidateType in candidateTypes)
+                TypeDefinition typeDefinition = candidateType.GetTypeDefinition(reader);
+                if (typeDefinition.Name.StringEquals(name, reader))
                 {
-                    TypeDefinition typeDefinition = candidateType.GetTypeDefinition(reader);
-                    if (typeDefinition.Name.StringEquals(name, reader))
+                    NamespaceDefinition namespaceDefinition = typeDefinition.NamespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader).GetNamespaceDefinition(reader);
+                    if (namespaceDefinition.Name.IsNil != (separator < 0))
+                        continue;
+                    if (separator < 0 || namespaceDefinition.Name.StringEquals(namespaceName, reader))
                         return candidateType.ResolveTypeDefinition(reader);
                 }
+            }
 
-                // No match found in this assembly - see if there's a matching type forwarder.
-                TypeForwarderHandleCollection candidateTypeForwarders = namespaceDefinition.TypeForwarders;
-                foreach (TypeForwarderHandle typeForwarderHandle in candidateTypeForwarders)
+            // No match found in this assembly - see if there's a matching type forwarder.
+            foreach (TypeForwarderHandle typeForwarderHandle in scopeDefinition.TypeForwarders.Lookup(hashCode))
+            {
+                TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
+                if (typeForwarder.Name.StringEquals(name, reader))
                 {
-                    TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
-                    if (typeForwarder.Name.StringEquals(name, reader))
-                    {
-                        RuntimeAssemblyName redirectedAssemblyName = typeForwarder.Scope.ToRuntimeAssemblyName(reader);
-                        RuntimeAssemblyInfo redirectedAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(redirectedAssemblyName);
-                        if (redirectedAssembly == null)
-                            return null;
-                        return redirectedAssembly.GetTypeCoreCaseSensitive(fullName);
-                    }
+                    NamespaceReference namespaceReference = typeForwarder.Namespace.GetNamespaceReference(reader);
+                    if (namespaceReference.Name.IsNil != (separator < 0))
+                        continue;
+                    if (separator >= 0 && !namespaceReference.Name.StringEquals(namespaceName, reader))
+                        continue;
+
+                    RuntimeAssemblyName redirectedAssemblyName = namespaceReference.Scope.ToRuntimeAssemblyName(reader);
+                    RuntimeAssemblyInfo redirectedAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(redirectedAssemblyName);
+                    if (redirectedAssembly is null)
+                        return null;
+                    return redirectedAssembly.GetTypeCoreCaseSensitive(fullName);
                 }
             }
 
             return null;
-        }
-
-        private static bool TryResolveNamespaceDefinitionCaseSensitive(MetadataReader reader, string[] namespaceParts, ScopeDefinitionHandle scopeDefinitionHandle, out NamespaceDefinition namespaceDefinition)
-        {
-            namespaceDefinition = scopeDefinitionHandle.GetScopeDefinition(reader).RootNamespaceDefinition.GetNamespaceDefinition(reader);
-            NamespaceDefinitionHandleCollection candidates = namespaceDefinition.NamespaceDefinitions;
-            int idx = namespaceParts.Length;
-            while (idx-- != 0)
-            {
-                // Each iteration finds a match for one segment of the namespace chain.
-                string expected = namespaceParts[idx];
-                bool foundMatch = false;
-                foreach (NamespaceDefinitionHandle candidate in candidates)
-                {
-                    namespaceDefinition = candidate.GetNamespaceDefinition(reader);
-                    if (namespaceDefinition.Name.StringOrNullEquals(expected, reader))
-                    {
-                        // Found a match for this segment of the namespace chain. Move on to the next level.
-                        foundMatch = true;
-                        candidates = namespaceDefinition.NamespaceDefinitions;
-                        break;
-                    }
-                }
-
-                if (!foundMatch)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 }

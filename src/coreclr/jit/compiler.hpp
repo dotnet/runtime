@@ -473,53 +473,30 @@ BasicBlockVisit BasicBlock::VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp
 
     assert(enclosingHBtab->HasFilter());
 
-    // Search the EH table for enclosed regions.
-    //
-    // All the enclosed regions will be lower numbered and
-    // immediately prior to and contiguous with the enclosing
-    // region in the EH tab.
+    // Search all lower-numbered regions. Regions nested in sibling handlers
+    // can intervene, so a non-enclosed region does not end the search.
     unsigned index = thisHndIndex;
 
     while (index > 0)
     {
         index--;
-        bool     inTry;
-        unsigned enclosingIndex = comp->ehGetEnclosingRegionIndex(index, &inTry);
-        bool     isEnclosed     = false;
-
-        // To verify this is an enclosed region, search up
-        // through the enclosing regions until we find the
-        // region associated with the filter.
-        while (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        EHblkDsc* enclosedHBtab = comp->ehGetDsc(index);
+        if (!enclosedHBtab->HasFinallyOrFaultHandler())
         {
-            if (enclosingIndex == thisHndIndex)
-            {
-                isEnclosed = true;
-                break;
-            }
-
-            enclosingIndex = comp->ehGetEnclosingRegionIndex(enclosingIndex, &inTry);
+            continue;
         }
 
-        // If we found an enclosed region, check if the region
-        // is a try fault or try finally, and if so, invoke the callback
-        // for the enclosed region's handler.
-        if (isEnclosed)
+        // Follow only enclosing tries, as in BlockPredsWithEH. Following a
+        // handler link could lead to a mutually-protecting sibling's try.
+        unsigned enclosingIndex = enclosedHBtab->ebdEnclosingTryIndex;
+        while (enclosingIndex < thisHndIndex)
         {
-            if (inTry)
-            {
-                EHblkDsc* enclosedHBtab = comp->ehGetDsc(index);
-
-                if (enclosedHBtab->HasFinallyOrFaultHandler())
-                {
-                    RETURN_ON_ABORT(func(enclosedHBtab->ebdHndBeg));
-                }
-            }
+            enclosingIndex = comp->ehGetEnclosingTryIndex(enclosingIndex);
         }
-        // Once we run across a non-enclosed region, we can stop searching.
-        else
+
+        if (enclosingIndex == thisHndIndex)
         {
-            break;
+            RETURN_ON_ABORT(func(enclosedHBtab->ebdHndBeg));
         }
     }
 
@@ -1559,7 +1536,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -1622,7 +1599,7 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
-    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper, IsNativeAot()))
     {
         result->gtFlags |= GTF_EXCEPT;
 
@@ -1701,8 +1678,8 @@ inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
                                                   unsigned             firstElemOffset,
                                                   unsigned             lengthOffset)
 {
-    unsigned elemSize =
-        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
+    ValueSize elemSize = (elemType == TYP_STRUCT) ? ValueSize(info.compCompHnd->getClassSize(elemClassHandle))
+                                                  : ValueSize::FromJitType(elemType);
 
 #ifdef DEBUG
     bool boundsCheck = JitConfig.JitSkipArrayBoundCheck() != 1;
@@ -1752,8 +1729,6 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
-    static_assert(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
-    static_assert(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
 }
 
@@ -1810,7 +1785,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
-    static_assert(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -3272,7 +3246,9 @@ inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize
 // IsWideAccess: Is the access to a local wide?
 //
 // An access is wide when the access overflows the end of the local. If the
-// access size is unknown, the access is assumed wide if it is not entire.
+// access size or local size is unknown, the access is assumed wide if it is not entire.
+//
+// If the access size is known, it must also fit inside a uint16_t.
 //
 // Arguments:
 //    lclNum - The local's number
@@ -3285,7 +3261,7 @@ inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize
 inline bool Compiler::IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
 {
     assert(!accessSize.IsNull());
-    if (accessSize.IsExact())
+    if (accessSize.IsExact() && lvaLclValueSize(lclNum).IsExact())
     {
         ClrSafeInt<uint32_t> extent = ClrSafeInt<uint32_t>(offset) + ClrSafeInt<uint32_t>(accessSize.GetExact());
         // The access is wide if:
@@ -3320,6 +3296,12 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
             // assume that we have a safe point.
             return true;
         }
+    }
+
+    // A tree that may throw can call a throw helper, which is a gc safe point.
+    if ((tree->gtFlags & GTF_EXCEPT) != 0)
+    {
+        return true;
     }
 
     // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
@@ -4433,10 +4415,19 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return VisitResult::Continue;
         }
 
+#ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
+#endif
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
             RETURN_IF_ABORT(visitor(&cond->gtCond));
+            if (cond->gtOp2 == nullptr)
+            {
+                return visitor(&cond->gtOp1);
+            }
             RETURN_IF_ABORT(visitor(&cond->gtOp1));
             return visitor(&cond->gtOp2);
         }
@@ -4764,24 +4755,19 @@ struct PromotedRangeLocalDef : LocalDefProvider<PromotedRangeLocalDef>
 };
 
 template <typename TVisitor>
-GenTree::VisitResult VisitPromotedRangeLocalDefs(
-    Compiler* comp, GenTreeLclVarCommon* def, LclVarDsc* varDsc, ssize_t offset, ValueSize storeSize, TVisitor visitor)
+GenTree::VisitResult VisitPromotedRangeLocalDefs(Compiler*            comp,
+                                                 GenTreeLclVarCommon* def,
+                                                 LclVarDsc*           varDsc,
+                                                 ssize_t              offset,
+                                                 ValueSize            storeSize,
+                                                 TVisitor             visitor,
+                                                 bool*                needsBaseDef)
 {
-    unsigned fieldLclNum = comp->lvaGetFieldLocal(varDsc, static_cast<unsigned>(offset));
-    if (fieldLclNum != BAD_VAR_NUM)
-    {
-        LclVarDsc* fieldVarDsc = comp->lvaGetDesc(fieldLclNum);
-        if (fieldVarDsc->lvValueSize() == storeSize)
-        {
-            unsigned index = fieldLclNum - varDsc->lvFieldLclStart;
-            return visitor(PromotedRangeLocalDef(def, fieldLclNum, index, /* isEntire */ true,
-                                                 /* offset */ 0, storeSize, /* valueOffset */ 0, storeSize));
-        }
-    }
-
+    *needsBaseDef        = false;
+    unsigned coveredSize = 0;
     for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
     {
-        fieldLclNum            = varDsc->lvFieldLclStart + index;
+        unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
         LclVarDsc* fieldVarDsc = comp->lvaGetDesc(fieldLclNum);
 
         ssize_t   fieldStoreOffset;
@@ -4789,6 +4775,11 @@ GenTree::VisitResult VisitPromotedRangeLocalDefs(
         if (!comp->gtStoreMayDefineField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
         {
             continue;
+        }
+
+        if (fieldStoreSize.IsExact())
+        {
+            coveredSize += fieldStoreSize.GetExact();
         }
 
         bool    isEntire    = (fieldStoreOffset == 0) && (fieldStoreSize == fieldVarDsc->lvValueSize());
@@ -4800,42 +4791,9 @@ GenTree::VisitResult VisitPromotedRangeLocalDefs(
         }
     }
 
+    *needsBaseDef = varDsc->lvContainsHoles && (ValueSize(coveredSize) != storeSize) && varDsc->lvDoNotEnregister;
+
     return GenTree::VisitResult::Continue;
-}
-
-//------------------------------------------------------------------------
-// IsEntireLocalDef: Check whether a physical local definition entirely
-// defines its local.
-//
-// Arguments:
-//   comp - the compiler instance
-//   def  - the physical definition
-//
-// Return Value:
-//   True if it does.
-//
-inline bool GenTree::IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def)
-{
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        return true;
-    }
-
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        return !def->IsPartialLclFld(comp);
-    }
-
-    assert(OperIs(GT_CALL));
-    GenTreeCall* call = AsCall();
-    if (def == comp->gtCallGetDefinedAsyncResumedLclAddr(call))
-    {
-        return comp->lvaLclExactSize(def->GetLclNum()) == TARGET_POINTER_SIZE;
-    }
-
-    assert(def == comp->gtCallGetDefinedRetBufLclAddr(call));
-    ValueSize storeSize(comp->typGetObjLayout(call->gtRetClsHnd)->GetSize());
-    return comp->IsEntireAccess(def->GetLclNum(), def->GetLclOffs(), storeSize);
 }
 
 //------------------------------------------------------------------------
@@ -4867,6 +4825,11 @@ GenTree::VisitResult GenTree::VisitLocalDef(Compiler* comp, GenTreeLclVarCommon*
         RETURN_IF_ABORT(visitor(PromotedStoreLclVarDef(def, fieldLclNum, index)));
     }
 
+    if (varDsc->lvContainsHoles && varDsc->lvDoNotEnregister)
+    {
+        return visitor(StoreLclVarDef(def));
+    }
+
     return VisitResult::Continue;
 }
 
@@ -4891,14 +4854,20 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 {
     assert(OperIs(GT_CALL));
 
-    unsigned   lclNum = def->GetLclNum();
-    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
-    if (!varDsc->lvPromoted)
+    unsigned   lclNum       = def->GetLclNum();
+    LclVarDsc* varDsc       = comp->lvaGetDesc(lclNum);
+    bool       needsBaseDef = true;
+    if (varDsc->lvPromoted)
+    {
+        RETURN_IF_ABORT(VisitPromotedRangeLocalDefs(comp, def, varDsc, offset, size, visitor, &needsBaseDef));
+    }
+
+    if (needsBaseDef)
     {
         return visitor(CallLocalDef(def, isEntire, offset, size));
     }
 
-    return VisitPromotedRangeLocalDefs(comp, def, varDsc, offset, size, visitor);
+    return VisitResult::Continue;
 }
 
 //------------------------------------------------------------------------
@@ -4912,6 +4881,10 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
 // Notes:
+//   Stores touching padding in dependently promoted locals also report a
+//   definition of the parent covering the full store range, overlapping any
+//   reported field definitions.
+//
 //   This function is contractually bound to recognize a superset of stores
 //   that "LocalAddressVisitor" recognizes and transforms, as it is used to
 //   detect which trees can define tracked locals.
@@ -4925,14 +4898,21 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
-        GenTreeLclFld* fld    = AsLclFld();
-        LclVarDsc*     varDsc = comp->lvaGetDesc(fld);
-        if (!varDsc->lvPromoted)
+        GenTreeLclFld* fld          = AsLclFld();
+        LclVarDsc*     varDsc       = comp->lvaGetDesc(fld);
+        bool           needsBaseDef = true;
+        if (varDsc->lvPromoted)
+        {
+            RETURN_IF_ABORT(VisitPromotedRangeLocalDefs(comp, fld, varDsc, fld->GetLclOffs(), fld->GetValueSize(),
+                                                        visitor, &needsBaseDef));
+        }
+
+        if (needsBaseDef)
         {
             return visitor(StoreLclFldDef(fld));
         }
 
-        return VisitPromotedRangeLocalDefs(comp, fld, varDsc, fld->GetLclOffs(), fld->GetValueSize(), visitor);
+        return VisitResult::Continue;
     }
     if (OperIs(GT_CALL))
     {
@@ -4964,7 +4944,7 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
 }
 
 //------------------------------------------------------------------------
-// VisitPhysicalLocalDefNodes: Visit physical GenTreeLclVarCommon nodes representing definitions in the specified node.
+// VisitCallLocalDefNodes: Visit local address nodes representing definitions made by this call.
 //
 // Arguments:
 //   comp    - the compiler instance
@@ -4974,31 +4954,18 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor)
+GenTree::VisitResult GenTreeCall::VisitCallLocalDefNodes(Compiler* comp, TVisitor visitor)
 {
-    if (OperIs(GT_STORE_LCL_VAR))
+    GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(this);
+    if (asyncResumedLclAddr != nullptr)
     {
-        return visitor(AsLclVarCommon());
+        RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
     }
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        return visitor(AsLclFld());
-    }
-    if (OperIs(GT_CALL))
-    {
-        GenTreeCall* call = AsCall();
 
-        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
-        if (asyncResumedLclAddr != nullptr)
-        {
-            RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
-        }
-
-        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (retBufLclAddr != nullptr)
-        {
-            return visitor(retBufLclAddr);
-        }
+    GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(this);
+    if (retBufLclAddr != nullptr)
+    {
+        return visitor(retBufLclAddr);
     }
 
     return VisitResult::Continue;
@@ -5016,9 +4983,38 @@ GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisito
 //
 inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
 {
-    return VisitPhysicalLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
+    return VisitLogicalLocalDefs(comp, [](const auto& def) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalOccurrencesViaLocalsTreeList:
+//   Visit occurrences in locals-list order without expanding promoted parents.
+//
+// Arguments:
+//   visitor - Generic functor accepting a local occurrence provider.
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Remarks:
+//   The callback may abort the walk, but must not change the list and continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult Statement::VisitLogicalLocalOccurrencesViaLocalsTreeList(TVisitor visitor)
+{
+    assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllLocals);
+
+    for (GenTree* node : LocalsTreeList())
+    {
+        if (visitor(LocalOccurrence(node->AsLclVarCommon())) == GenTree::VisitResult::Abort)
+        {
+            return GenTree::VisitResult::Abort;
+        }
+    }
+
+    return GenTree::VisitResult::Continue;
 }
 
 /*****************************************************************************

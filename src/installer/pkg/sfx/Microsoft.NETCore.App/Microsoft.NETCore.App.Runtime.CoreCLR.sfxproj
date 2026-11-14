@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
+    <ProjectReference Include="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+                      Condition="'$(TargetOS)' == 'browser' and '$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -39,7 +41,7 @@
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
-    <_PublishReadyToRunCrossgen2ExtraArgs>--opt-cross-module:*;--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</_PublishReadyToRunCrossgen2ExtraArgs>
+    <_PublishReadyToRunCrossgen2ExtraArgs>--opt-cross-module:*</_PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!-- Use the Mach-O format for Apple mobile platforms as we can't load native code from PE files on these platforms -->
@@ -49,6 +51,14 @@
   </PropertyGroup>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
+
+  <Target Name="BuildBrowserHost"
+          BeforeTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"
+          Condition="'$(TargetOS)' == 'browser'">
+    <MSBuild Projects="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+             Targets="Build"
+             Properties="Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration)" />
+  </Target>
 
   <PropertyGroup>
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>

@@ -148,7 +148,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetParentType(QCall::ModuleHandle pModule,
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    IfFailThrow( pRCW->GetEmitHelper()->SetTypeParent(tdType, tkParent) );
+    IfFailThrow( pRCW->GetEmitter()->SetTypeParent(tdType, tkParent) );
 
     END_QCALL;
 }
@@ -163,7 +163,7 @@ extern "C" void QCALLTYPE TypeBuilder_AddInterfaceImpl(QCall::ModuleHandle pModu
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    IfFailThrow( pRCW->GetEmitHelper()->AddInterfaceImpl(tdType, tkInterface) );
+    IfFailThrow( pRCW->GetEmitter()->AddInterfaceImpl(tdType, tkInterface) );
 
     END_QCALL;
 }
@@ -307,8 +307,6 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
                                             UINT16 maxStackSize,
                                             ExceptionInstance * pExceptions,
                                             INT32 numExceptions,
-                                            INT32 * pTokenFixups,
-                                            INT32 numTokenFixups,
                                             QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -382,14 +380,11 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
     if (totalSizeSafe.IsOverflow())
         COMPlusThrowOM();
     UINT32 totalSize = totalSizeSafe.Value();
-    ICeeGenInternal* pGen = pRCW->GetCeeGen();
-    BYTE* buf = NULL;
-    ULONG methodRVA = 0;
-    IfFailThrow(pGen->AllocateMethodBuffer(totalSize, &buf, &methodRVA));
+    BYTE* buf = static_cast<BYTE*>(static_cast<void*>(
+        pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(totalSize))));
 
     _ASSERTE(buf != NULL);
     _ASSERTE((((size_t) buf) & (sizeof(DWORD) - 1)) == 0);   // header is dword aligned
-    _ASSERTE(methodRVA != 0); // Method RVAs should never be 0, since that is reserved in ECMA-335.
 
     INDEBUG(BYTE* endbuf = &buf[totalSize]);
     BYTE* startBuf = buf;
@@ -407,62 +402,26 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
     buf += codeSizeAligned;
 
     // Emit the eh
-    CQuickArray<ULONG> ehTypeOffsets;
     if (numExceptions > 0)
     {
-        // Allocate space for the offsets to the TypeTokens in the Exception headers
-        // in the IL stream.
-        ehTypeOffsets.AllocThrows(numExceptions);
-
-        // Emit the eh.  This will update the array ehTypeOffsets with offsets
-        // to Exception type tokens.  The offsets are with reference to the
-        // beginning of eh section.
         buf += COR_ILMETHOD_SECT_EH::Emit(ehSize, numExceptions, clauses.Ptr(),
-                                          false, buf, ehTypeOffsets.Ptr());
+                                          false, buf);
     }
     _ASSERTE(buf == endbuf);
-
-    //Get the IL Section.
-    HCEESECTION ilSection;
-    IfFailThrow(pGen->GetIlSection(&ilSection));
-
-    // Token Fixup data...
-    ULONG ilOffset = methodRVA + headerSize;
-
-    //Add all of the relocs based on the info which I saved from ILGenerator.
-
-    //Add the Token Fixups
-    for (int iTokenFixup=0; iTokenFixup<numTokenFixups; iTokenFixup++)
-    {
-        IfFailThrow(pGen->AddSectionReloc(ilSection, pTokenFixups[iTokenFixup] + ilOffset, ilSection, srRelocMapToken));
-    }
-
-    // Add token fixups for exception type tokens.
-    for (int iException=0; iException < numExceptions; iException++)
-    {
-        if (ehTypeOffsets[iException] != (ULONG) -1)
-        {
-            IfFailThrow(pGen->AddSectionReloc(
-                                             ilSection,
-                                             ehTypeOffsets[iException] + codeSizeAligned + ilOffset,
-                                             ilSection, srRelocMapToken));
-        }
-    }
 
     //nasty interface workaround.  What does this mean for abstract methods?
     if (fatHeader.GetCodeSize() != 0)
     {
-        // add the starting address of the il blob to the il blob hash table
-        // we need to find this information from out of process for debugger inspection
-        // APIs so we have to store this information where we can get it later
+        // Publish the body by method token for execution and out-of-process inspection.
         pModule->SetDynamicIL(mdToken(tk), TADDR(startBuf));
 
         DWORD       dwImplFlags;
 
-        //Set the RVA of the method.
+        // Use the method token instead of an image offset. A method with IL must have a nonzero
+        // metadata RVA (ECMA-335 II.22.26); ReflectionModule::GetIL resolves it through the token map.
         IfFailThrow(pRCW->GetMDImport()->GetMethodImplProps(tk, NULL, &dwImplFlags));
         dwImplFlags |= (miManaged | miIL);
-        IfFailThrow(pRCW->GetEmitter()->SetMethodProps(tk, (DWORD) -1, methodRVA, dwImplFlags));
+        IfFailThrow(pRCW->GetEmitter()->SetMethodProps(tk, (DWORD) -1, static_cast<ULONG>(tk), dwImplFlags));
     }
 
     END_QCALL;
@@ -588,7 +547,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineEvent(QCall::ModuleHandle pModule, 
     _ASSERTE(pRCW);
 
     // Define the Event
-    IfFailThrow(pRCW->GetEmitHelper()->DefineEventHelper(
+    IfFailThrow(pRCW->GetEmitter()->DefineEventHelper(
             tkParent,               // ParentTypeDef
             wszName,                // Name of Member
             attr,                       // property Attributes (prDefaultProperty, etc);
@@ -616,7 +575,7 @@ extern "C" void QCALLTYPE TypeBuilder_DefineMethodSemantics(QCall::ModuleHandle 
     _ASSERTE(pRCW);
 
     // Define the MethodSemantics
-    IfFailThrow(pRCW->GetEmitHelper()->DefineMethodSemanticsHelper(
+    IfFailThrow(pRCW->GetEmitter()->DefineMethodSemanticsHelper(
             tkAssociation,
             attr,
             tkMethod));
@@ -801,7 +760,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetFieldLayoutOffset(QCall::ModuleHandle p
     _ASSERTE(pRCW);
 
     // Set the field layout
-    IfFailThrow(pRCW->GetEmitHelper()->SetFieldLayoutHelper(
+    IfFailThrow(pRCW->GetEmitter()->SetFieldLayoutHelper(
             tkField,                  // field
             iOffset));                // layout offset
 

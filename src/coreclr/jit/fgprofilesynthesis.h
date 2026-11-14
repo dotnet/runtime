@@ -21,8 +21,6 @@ enum class ProfileSynthesisOption
     RepairLikelihoods,
     BlendLikelihoods,
     ResetAndSynthesize,
-    ReverseLikelihoods,
-    RandomLikelihoods,
 };
 
 //------------------------------------------------------------------------
@@ -93,8 +91,6 @@ private:
     void RepairLikelihoods();
     void BlendLikelihoods();
     void ClearLikelihoods();
-    void ReverseLikelihoods();
-    void RandomizeLikelihoods();
 
     void ComputeCyclicProbabilities();
     void ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop);

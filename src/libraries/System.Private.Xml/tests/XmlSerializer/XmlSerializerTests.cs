@@ -1533,6 +1533,8 @@ public static partial class XmlSerializerTests
     [InlineData("12:34:56.789", DateTimeKind.Unspecified)]      // Obviously fake
     [InlineData("02:38:23.40"/*Z*/, DateTimeKind.Utc)]          // My heart will go on
     [InlineData("08:32:00"/*-07:00*/, DateTimeKind.Local)]      // Helen errupts
+    [InlineData("2000-01-01T12:34:56.789", DateTimeKind.Unspecified)]
+    [InlineData("2000-07-01T08:32:00", DateTimeKind.Local)]
     public static void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
     {
         var toSerializer = new XmlSerializer(typeof(TimeOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
@@ -1548,7 +1550,7 @@ public static partial class XmlSerializerTests
         // Use the latter approach here.
 
         var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
-        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind);
+        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString, CultureInfo.InvariantCulture), kind);
         Assert.Equal(kind, testTime.Kind);
 
         // Verify TimeOnly -> DateTime
@@ -1564,7 +1566,6 @@ public static partial class XmlSerializerTests
         Assert.Equal(DateTime.MinValue.Date, dttObj.TestValue.Date);
 
         // Verify DateTime -> TimeOnly
-        // Use an Unspecified kind explicitly; DateTime.Now is Local.
         dttObj = new DateTimeTimeWrapper() { TestValue = testTime };
         xml = Serialize(dttObj, WithXmlHeader($"""
             <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -2933,6 +2934,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     // loaded in the default ALC, which causes problems for this test.
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
+    [SkipOnPlatform(TestPlatforms.Wasi, "AssemblyDependencyResolver is not supported on WASI.")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
     public static void Xml_TypeInCollectibleALC()
@@ -2953,6 +2955,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     // Since 'List<>' is *not* defined in SerializableAssembly.dll, the pre-generated serializers do not include serializers for List<SerializationType>,
     // Therefore, this test is excluded from the Generator tests.
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [SkipOnPlatform(TestPlatforms.Wasi, "AssemblyDependencyResolver is not supported on WASI.")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
@@ -3759,8 +3762,9 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     private static string FormatDateString(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     private static string FormatDateString(DateTime date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     private static string FormatTimeString(TimeOnly time) => time.ToString($"HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
+    // xsd:time discards the date; offset-bearing output uses the current local offset.
     private static string FormatTimeString(DateTime time, bool ignoreUtc)
-        => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
+        => (DateTime.MinValue + time.TimeOfDay).ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
 }
 
 internal sealed class BlockingAfterBufferStream : Stream

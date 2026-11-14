@@ -323,7 +323,7 @@ HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStor
         threadStoreData->fHostConfig = FALSE;
 
         // identify the "important" threads
-        threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
+        threadStoreData->firstThread = HOST_CDADDR(ThreadStore::GetAllThreadList(NULL, 0, 0));
         threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
         threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
     }
@@ -786,7 +786,12 @@ ClrDataAccess::GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread
 
     SOSDacEnter();
 
-    Thread *thread = g_pThinLockThreadIdDispenser->IdToThread(thinLockId);
+    Thread *thread;
+#ifdef FEATURE_MULTITHREADING
+    thread = g_pThinLockThreadIdDispenser->IdToThread(thinLockId);
+#else
+    thread = thinLockId == 1 ? ThreadStore::GetAllThreadList(NULL, 0, 0) : NULL;
+#endif // FEATURE_MULTITHREADING
     *pThread = PTR_HOST_TO_TADDR(thread);
 
     SOSDacLeave();
@@ -912,7 +917,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
         threadData->lastThrownObjectHandle = TO_CDADDR(ohException);
     }
     threadData->nextThread =
-        HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
+        HOST_CDADDR(ThreadStore::GetAllThreadList(thread, 0, 0));
     if (thread->m_ExceptionState.m_pCurrentTracker)
     {
         threadData->firstNestedException = HOST_CDADDR(
@@ -2459,9 +2464,9 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
 
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
-        while (i.Next(pAssembly.This()))
+        while (i.Next(&pAssembly))
         {
             if (pAssembly->IsLoaded())
             {
@@ -2570,23 +2575,23 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
     {
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        CollectibleAssemblyHolder pAssembly;
 
         int n = 0;
         if (values)
         {
-            while (i.Next(pAssembly.This()) && (n < count))
+            while (i.Next(&pAssembly) && (n < count))
             {
                 if (pAssembly->IsLoaded())
                 {
                     // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-                    values[n++] = HOST_CDADDR(pAssembly.Extract());
+                    values[n++] = HOST_CDADDR(static_cast<Assembly*>(pAssembly));
                 }
             }
         }
         else
         {
-            while (i.Next(pAssembly.This()))
+            while (i.Next(&pAssembly))
                 if (pAssembly->IsLoaded())
                     n++;
         }
@@ -3819,7 +3824,13 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 
                 pSyncBlockData->MonitorHeld = monitorHeld == TRUE ? 1 : 0;
                 pSyncBlockData->Recursion = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
+#ifdef FEATURE_MULTITHREADING
                 pSyncBlockData->HoldingThread = PTR_HOST_TO_TADDR(g_pThinLockThreadIdDispenser->IdToThread(holdingThread));
+#else
+                pSyncBlockData->HoldingThread = holdingThread == 1
+                    ? PTR_HOST_TO_TADDR(ThreadStore::GetAllThreadList(NULL, 0, 0))
+                    : 0;
+#endif // FEATURE_MULTITHREADING
                 pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
                 // TODO: Microsoft, implement the wait list

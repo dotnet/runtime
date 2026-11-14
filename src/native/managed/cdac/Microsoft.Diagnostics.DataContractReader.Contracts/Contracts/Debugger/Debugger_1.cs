@@ -291,7 +291,7 @@ internal sealed class Debugger_1 : IDebugger
                 TargetPointer espOSRecord = threadData.OSExceptionRecord;
                 if (espOSContext < sp)
                 {
-                    _target.WriteBuffer(espOSContext.Value, ctx.GetBytes());
+                    _target.WriteBuffer(espOSContext.Value, ctx.GetBytes().ToArray());
                     espContext = espOSContext;
 
                     // We should have an EXCEPTION_RECORD if we're hijacked at an exception.
@@ -308,7 +308,7 @@ internal sealed class Debugger_1 : IDebugger
         {
             Debug.Assert(espRecord == TargetPointer.Null);
 
-            espContext = StackPusher.Push(_target, ref sp, ctx.GetBytes(), align: true);
+            espContext = StackPusher.Push(_target, ref sp, ctx.GetBytes().ToArray(), align: true);
 
             // If the caller didn't pass an exception record, we're not hijacking at an
             // exception and pass null for the record argument.
@@ -332,7 +332,7 @@ internal sealed class Debugger_1 : IDebugger
         ctx.StackPointer = sp;
         ctx.InstructionPointer = new TargetCodePointer(pfnHijackFunction.Value);
 
-        ctx.GetBytes().AsSpan().CopyTo(context);
+        ctx.GetBytes().CopyTo(context);
 
         return espContext;
     }

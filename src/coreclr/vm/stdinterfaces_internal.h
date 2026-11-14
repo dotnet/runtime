@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #ifndef _H_INTERNAL_STDINTERFACES
 #define _H_INTERNAL_STDINTERFACES
 
@@ -13,8 +12,6 @@
 // prototypes IUnknown methods
 HRESULT Unknown_QueryInterface_Internal (
                         ComCallWrapper* pWrap, IUnknown* pUnk, REFIID riid, void** ppv);
-HRESULT __stdcall   Unknown_QueryInterface_IErrorInfo_Simple (
-                        IUnknown* pUnk, REFIID riid, void** ppv);
 
 ULONG __stdcall     Unknown_AddRef_Internal(IUnknown* pUnk);
 ULONG __stdcall     Unknown_Release_Internal(IUnknown* pUnk);

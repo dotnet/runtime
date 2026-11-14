@@ -1096,6 +1096,16 @@ namespace System
             return ptr;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetVirtualFunctionPointer")]
+        private static partial IntPtr GetVirtualFunctionPointer(RuntimeMethodHandleInternal method, QCallTypeHandle declaringType, ObjectHandleOnStack target);
+
+        internal static IntPtr GetVirtualFunctionPointer(RuntimeMethodInfo method, RuntimeType declaringType, object target)
+        {
+            return GetVirtualFunctionPointer(IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref declaringType),
+                ObjectHandleOnStack.Create(ref target));
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsCollectible(RuntimeMethodHandleInternal method);
 
@@ -1200,26 +1210,6 @@ namespace System
             return new MdUtf8String(name);
         }
 
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_InvokeMethod")]
-        private static partial void InvokeMethod(ObjectHandleOnStack target, void** arguments, ObjectHandleOnStack sig, Interop.BOOL isConstructor, ObjectHandleOnStack result);
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal static object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor)
-        {
-            object? result = null;
-            InvokeMethod(
-                ObjectHandleOnStack.Create(ref target),
-                arguments,
-                ObjectHandleOnStack.Create(ref sig),
-                isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                ObjectHandleOnStack.Create(ref result));
-            return result;
-        }
-
         /// <summary>
         /// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
         /// </summary>
@@ -1254,6 +1244,28 @@ namespace System
                 ref obj.GetRawData(),
                 pMT,
                 src);
+            return obj;
+        }
+
+        /// <summary>
+        /// Copy an unboxed Nullable{T} value to a true boxed Nullable{T}.
+        /// </summary>
+        internal static object BoxToNullable(ref byte src, RuntimeType destNullableType)
+        {
+            Debug.Assert(destNullableType.IsNullableOfT);
+            MethodTable* pMT = destNullableType.GetNativeTypeHandle().AsMethodTable();
+            object obj = RuntimeTypeHandle.InternalAlloc(pMT);
+            GC.KeepAlive(destNullableType); // The obj instance will keep the type alive.
+
+            uint size = pMT->GetNullableNumInstanceFieldBytes();
+            if (pMT->ContainsGCPointers)
+            {
+                Buffer.BulkMoveWithWriteBarrier(ref obj.GetRawData(), ref src, size);
+            }
+            else
+            {
+                SpanHelpers.Memmove(ref obj.GetRawData(), ref src, size);
+            }
             return obj;
         }
 
@@ -1852,9 +1864,11 @@ namespace System
             byte[] sig,
             int sigLen,
             ObjectHandleOnStack resolver,
+            [MarshalAs(UnmanagedType.Bool)] bool isDiagnosticsHidden,
             ObjectHandleOnStack result);
 
-        internal static IRuntimeMethodInfo GetDynamicMethod(RuntimeModule module, string name, byte[] sig, Resolver resolver)
+        internal static IRuntimeMethodInfo GetDynamicMethod(RuntimeModule module, string name, byte[] sig,
+            Resolver resolver, bool isDiagnosticsHidden)
         {
             IRuntimeMethodInfo? methodInfo = null;
             GetDynamicMethod(
@@ -1863,6 +1877,7 @@ namespace System
                 sig,
                 sig.Length,
                 ObjectHandleOnStack.Create(ref resolver),
+                isDiagnosticsHidden,
                 ObjectHandleOnStack.Create(ref methodInfo));
             return methodInfo!;
         }
@@ -2242,8 +2257,8 @@ namespace System
             return (SignatureCallingConvention)callConvMaybe;
         }
 
-        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
-            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
+        internal Type[] GetCustomModifiers(int parameterIndex, bool isOptional) =>
+            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), isOptional);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_GetCustomModifiersAtOffset")]
@@ -2253,14 +2268,15 @@ namespace System
             Interop.BOOL required,
             ObjectHandleOnStack result);
 
-        internal Type[] GetCustomModifiersAtOffset(int offset, bool required)
+        internal Type[] GetCustomModifiersAtOffset(int offset, bool isOptional)
         {
             Signature _this = this;
             Type[]? result = null;
+            Interop.BOOL required = isOptional ? Interop.BOOL.FALSE : Interop.BOOL.TRUE;
             GetCustomModifiersAtOffset(
                 ObjectHandleOnStack.Create(ref _this),
                 offset,
-                required ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                required,
                 ObjectHandleOnStack.Create(ref result));
             return result!;
         }

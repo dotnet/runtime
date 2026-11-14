@@ -198,10 +198,10 @@ namespace Internal.Runtime
                     }
 
                     Debug.Assert(pointerCount < 64 * 1024);
-                    builder.EmitHalfNaturalInt((short)pointerCount);
+                    builder.EmitHalfNaturalUInt((ushort)pointerCount);
 
                     Debug.Assert(nonPointerCount * pointerSize < 64 * 1024);
-                    builder.EmitHalfNaturalInt((short)(nonPointerCount * pointerSize));
+                    builder.EmitHalfNaturalUInt((ushort)(nonPointerCount * pointerSize));
 
                     nonPointerCount = 0;
                 }

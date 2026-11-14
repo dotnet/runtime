@@ -3,9 +3,6 @@
 
 /*
  * Wraps handle table to implement various handle types (Strong, Weak, etc.)
- *
-
- *
  */
 
 #include "common.h"
@@ -839,38 +836,6 @@ uint32_t GetVariableHandleType(OBJECTHANDLE handle)
     WRAPPER_NO_CONTRACT;
 
     return (uint32_t)HndGetHandleExtraInfo(handle);
-}
-
-/*
- * UpdateVariableHandleType.
- *
- * Changes the dynamic type of a variable-strength handle.
- *
- * N.B. This routine is not a macro since we do validation in RETAIL.
- * We always validate the type here because it can come from external callers.
- */
-void UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // verify that we are being asked to set a valid type
-    if (!IS_VALID_VHT_VALUE(type))
-    {
-        // bogus value passed in
-        _ASSERTE(FALSE);
-        return;
-    }
-
-    // <REVISIT_TODO> (francish)  CONCURRENT GC NOTE</REVISIT_TODO>
-    //
-    // If/when concurrent GC is implemented, we need to make sure variable handles
-    // DON'T change type during an asynchronous scan, OR that we properly recover
-    // from the change.  Some changes are benign, but for example changing to or
-    // from a pinning handle in the middle of a scan would not be fun.
-    //
-
-    // store the type in the handle's extra info
-    HndSetHandleExtraInfo(handle, HNDTYPE_VARIABLE, (uintptr_t)type);
 }
 
 /*

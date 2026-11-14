@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  AppDomain.cpp
 **
-
-**
 ** Purpose: Implements AppDomain (loader domain) architecture
-**
-**
 ===========================================================*/
+
 #ifndef _APPDOMAIN_H
 #define _APPDOMAIN_H
 
@@ -231,21 +227,30 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    DEBUG_NOINLINE static void HolderEnter(PEFileListLock *pThis)
+    struct HolderTraits final
+    {
+        using Type = PEFileListLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            WRAPPER_NO_CONTRACT;
+            if (value != NULL)
+                value->Leave();
+        }
+    };
+
+    using Holder = LifetimeHolder<HolderTraits>;
+
+    Holder TakeLock(BOOL take = TRUE)
     {
         WRAPPER_NO_CONTRACT;
 
-        pThis->Enter();
+        if (!take)
+            return Holder();
+
+        Enter();
+        return Holder(this);
     }
-
-    DEBUG_NOINLINE static void HolderLeave(PEFileListLock *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        pThis->Leave();
-    }
-
-    typedef Wrapper<PEFileListLock*, PEFileListLock::HolderEnter, PEFileListLock::HolderLeave> Holder;
 };
 
 typedef PEFileListLock::Holder PEFileListLockHolder;
@@ -463,77 +468,6 @@ enum AssemblyIterationFlags
 
 //---------------------------------------------------------------------------------------
 //
-// Base class for holder code:CollectibleAssemblyHolder (see code:HolderBase).
-// Manages AddRef/Release for collectible assemblies. It is no-op for 'normal' non-collectible assemblies.
-//
-// Each type of type parameter needs 2 methods implemented:
-//  code:CollectibleAssemblyHolderBase::GetLoaderAllocator
-//  code:CollectibleAssemblyHolderBase::IsCollectible
-//
-template<typename _Type>
-class CollectibleAssemblyHolderBase
-{
-protected:
-    _Type m_value;
-public:
-    CollectibleAssemblyHolderBase(const _Type & value = NULL)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_value = value;
-    }
-    void DoAcquire()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        // We don't need to keep the assembly alive in DAC - see code:#CAH_DAC
-#ifndef DACCESS_COMPILE
-        if (this->IsCollectible(m_value))
-        {
-            LoaderAllocator * pLoaderAllocator = GetLoaderAllocator(m_value);
-            pLoaderAllocator->AddReference();
-        }
-#endif //!DACCESS_COMPILE
-    }
-    void DoRelease()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-        if (this->IsCollectible(m_value))
-        {
-            LoaderAllocator * pLoaderAllocator = GetLoaderAllocator(m_value);
-            pLoaderAllocator->Release();
-        }
-#endif //!DACCESS_COMPILE
-    }
-
-private:
-    LoaderAllocator * GetLoaderAllocator(Assembly * pAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pAssembly->GetLoaderAllocator();
-    }
-    BOOL IsCollectible(Assembly * pAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pAssembly->IsCollectible();
-    }
-};  // class CollectibleAssemblyHolderBase<>
-
-//---------------------------------------------------------------------------------------
-//
 // Holder of assembly reference which keeps collectible assembly alive while the holder is valid.
 //
 // Collectible assembly can be collected at any point when GC happens. Almost instantly all native data
@@ -541,39 +475,79 @@ private:
 // Therefore any usage of (collectible) assembly data structures from native world, has to prevent the
 // deallocation by increasing ref-count on the assembly / associated loader allocator.
 //
-// #CAH_DAC
-// In DAC we don't AddRef/Release as the assembly doesn't have to be kept alive: The process is stopped when
-// DAC is used and therefore the assembly cannot just disappear.
-//
-template<typename _Type>
-class CollectibleAssemblyHolder : public BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >
+class CollectibleAssemblyHolder final
 {
-public:
-    FORCEINLINE
-    CollectibleAssemblyHolder(const _Type & value = NULL, BOOL fTake = TRUE)
-        : BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >(value, fTake)
+    struct ReferenceTraits final
     {
-        STATIC_CONTRACT_WRAPPER;
-    }
+        using Type = LoaderAllocator*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+            }
+            CONTRACTL_END;
 
-    FORCEINLINE
-    CollectibleAssemblyHolder &
-    operator=(const _Type & value)
+#ifndef DACCESS_COMPILE
+            if (value != NULL)
+            {
+                _ASSERTE(value->IsCollectible());
+                value->Release();
+            }
+#endif // !DACCESS_COMPILE
+        }
+    };
+
+    Assembly* m_assembly = NULL;
+    LifetimeHolder<ReferenceTraits> m_reference;
+
+public:
+    CollectibleAssemblyHolder() = default;
+    CollectibleAssemblyHolder(const CollectibleAssemblyHolder&) = delete;
+    CollectibleAssemblyHolder& operator=(const CollectibleAssemblyHolder&) = delete;
+
+    CollectibleAssemblyHolder& operator=(Assembly* value)
     {
-        STATIC_CONTRACT_WRAPPER;
-        BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >::operator=(value);
+        WRAPPER_NO_CONTRACT;
+
+        LoaderAllocator* allocator = NULL;
+#ifndef DACCESS_COMPILE
+        // Acquire before replacing the old reference in case both assemblies share an allocator.
+        if (value != NULL && value->IsCollectible())
+        {
+            allocator = value->GetLoaderAllocator();
+            allocator->AddReference();
+        }
+#endif // !DACCESS_COMPILE
+
+        m_reference = allocator;
+        m_assembly = value;
         return *this;
     }
 
-    // Operator & is overloaded in parent, therefore we have to get to 'this' pointer explicitly.
-    FORCEINLINE
-    CollectibleAssemblyHolder<_Type> *
-    This()
+    void AssignBorrowed(Assembly* value)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        m_reference.Free();
+        m_assembly = value;
+    }
+
+    operator Assembly*() const
     {
         LIMITED_METHOD_CONTRACT;
-        return this;
+        return m_assembly;
     }
-};  // class CollectibleAssemblyHolder<>
+
+    Assembly* operator->() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return static_cast<Assembly*>(*this);
+    }
+};
 
 //---------------------------------------------------------------------------------------
 //
@@ -854,7 +828,7 @@ protected:
             return m_array.GetCount();
         }
 
-        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder* pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -867,7 +841,7 @@ protected:
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             Get_Unlocked(index, pAssemblyHolder);
         }
-        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder* pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -877,22 +851,6 @@ protected:
 
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
             *pAssemblyHolder = dac_cast<PTR_Assembly>(m_array.Get(index));
-        }
-        // Doesn't lock the assembly list (caller has to hold the lock already).
-        // Doesn't AddRef the returned assembly (if collectible).
-        Assembly * Get_UnlockedNoReference(DWORD index)
-        {
-            CONTRACTL {
-                NOTHROW;
-                GC_NOTRIGGER;
-                MODE_ANY;
-                SUPPORTS_DAC;
-            } CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-            _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
-#endif
-            return dac_cast<PTR_Assembly>(m_array.Get(index));
         }
 
 #ifndef DACCESS_COMPILE
@@ -942,7 +900,7 @@ protected:
         }
 #endif // DACCESS_COMPILE
 
-        // Should be used only by code:AssemblyIterator::Create
+        // Callers other than AssemblyIterator::Create must hold the assembly-list lock.
         ArrayList::Iterator GetArrayListIterator()
         {
             return m_array.Iterate();
@@ -976,9 +934,9 @@ public:
         AssemblyIterationFlags m_assemblyIterationFlags;
 
     public:
-        BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        BOOL Next(CollectibleAssemblyHolder* pAssemblyHolder);
         // Note: Does not lock the assembly list, but AddRefs collectible assemblies' loader allocator.
-        BOOL Next_Unlocked(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        BOOL Next_Unlocked(CollectibleAssemblyHolder* pAssemblyHolder);
 
     private:
         inline DWORD GetIndex()
@@ -1206,9 +1164,6 @@ public:
     DefaultAssemblyBinder *CreateDefaultBinder();
     DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
 
-    // Only call this routine when you can guarantee there are no loads in progress.
-    void ClearBinderContext();
-
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
     Assembly* RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
@@ -1435,23 +1390,14 @@ public:
         }
     };
 
-    class LoadLockHolder :  public PEFileListLockHolder
+    using LoadLockHolder = PEFileListLockHolder;
+
+    LoadLockHolder TakeLoadLock(BOOL take = TRUE)
     {
-    public:
-        LoadLockHolder(AppDomain *pD, BOOL Take = TRUE)
-          : PEFileListLockHolder(&pD->m_FileLoadLock, Take)
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_TRIGGERS;
-                MODE_ANY;
-                CAN_TAKE_LOCK;
-            }
-            CONTRACTL_END;
-        }
-    };
-    friend class LoadLockHolder;
+        WRAPPER_NO_CONTRACT;
+
+        return m_FileLoadLock.TakeLock(take);
+    }
 
     //---------------------------------------------------------
     // Stub caches for Method stubs
@@ -1566,13 +1512,6 @@ public:
     // that require the use of system classes (i.e., exceptions).
     // DetachBegin stops all domains, while DetachEnd deallocates domain resources.
     static void DetachBegin();
-
-    //****************************************************************************************
-    //
-    // To be run during shutdown. This must be done after all operations
-    // that require the use of system classes (i.e., exceptions).
-    // DetachBegin stops release resources held by systemdomain and the default domain.
-    static void DetachEnd();
 
     //****************************************************************************************
     //
@@ -1716,11 +1655,6 @@ public:
     // Tell profiler about system created domains which are created before the profiler is
     // actually activated.
     static void NotifyProfilerStartup();
-
-    //****************************************************************************************
-    // Tell profiler at shutdown that system created domains are going away.  They are not
-    // torn down using the normal sequence.
-    static HRESULT NotifyProfilerShutdown();
 #endif // PROFILING_SUPPORTED
 
 #ifndef DACCESS_COMPILE
@@ -1778,9 +1712,6 @@ private:
 
     void PreallocateSpecialObjects();
 
-    //****************************************************************************************
-    //
-    static StackWalkAction CallersMethodCallback(CrawlFrame* pCrawlFrame, VOID* pClientData);
     static StackWalkAction CallersMethodCallbackWithStackMark(CrawlFrame* pCrawlFrame, VOID* pClientData);
 
 #ifndef DACCESS_COMPILE

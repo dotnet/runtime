@@ -97,9 +97,11 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
             if (!STATUS_CODE_SUCCEEDED(rc))
                 return rc;
 
-            on_before_run(fxr, context);
-
-            rc = hostfxr_get_runtime_delegate(context, type, delegate);
+            rc = on_before_run(fxr, context);
+            if (rc == StatusCode::Success)
+            {
+                rc = hostfxr_get_runtime_delegate(context, type, delegate);
+            }
 
             int rcClose = hostfxr_close(context);
             if (rcClose != StatusCode::Success)

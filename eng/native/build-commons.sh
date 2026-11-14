@@ -7,7 +7,7 @@ initTargetDistroRid()
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
-    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" ]]; then
+    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" && "$__TargetOS" != "openharmony" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
@@ -137,12 +137,44 @@ build_native()
             echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
+    elif [[ "$targetOS" == openharmony ]]; then
+        # OpenHarmony NDK-style toolchain. The OHOS NDK provides its
+        # own CMake toolchain file (ohos.toolchain.cmake) which sets CMAKE_SYSTEM_NAME=OHOS
+        # and selects the aarch64/arm/x86_64 openharmony clang wrappers + sysroot.
+        if [[ -z "$OHOS_NDK_HOME" ]]; then
+            echo "Error: You need to set the OHOS_NDK_HOME environment variable pointing to the OpenHarmony NDK root."
+            exit 1
+        fi
+
+        local ohosToolchainFile="$OHOS_NDK_HOME/native/build/cmake/ohos.toolchain.cmake"
+        if [[ ! -f "$ohosToolchainFile" ]]; then
+            echo "Error: OHOS CMake toolchain file not found at $ohosToolchainFile. Verify OHOS_NDK_HOME."
+            exit 1
+        fi
+
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ohosToolchainFile $cmakeArgs"
+        cmakeArgs="-DOHOS_NDK_HOME=$OHOS_NDK_HOME $cmakeArgs"
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in ohos.toolchain.cmake already
+        __Compiler="default"
+
+        if [[ "$hostArch" == arm64 ]]; then
+            cmakeArgs="-DOHOS_ARCH=arm64-v8a $cmakeArgs"
+        elif [[ "$hostArch" == arm ]]; then
+            cmakeArgs="-DOHOS_ARCH=armeabi-v7a $cmakeArgs"
+        elif [[ "$hostArch" == x64 ]]; then
+            cmakeArgs="-DOHOS_ARCH=x86_64 $cmakeArgs"
+        else
+            echo "Error: Unknown OHOS architecture $hostArch."
+            exit 1
+        fi
     elif [[ "$targetOS" == iossimulator ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
         # set default iOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 $cmakeArgs"
         if [[ "$__TargetArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$__TargetArch" == arm64 ]]; then
@@ -156,7 +188,7 @@ build_native()
 
         # set default iOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 $cmakeArgs"
         if [[ "$__TargetArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
@@ -168,7 +200,7 @@ build_native()
 
         # set default tvOS simulator deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 $cmakeArgs"
         if [[ "$__TargetArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$__TargetArch" == arm64 ]]; then
@@ -182,7 +214,7 @@ build_native()
 
         # set default tvOS device deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 $cmakeArgs"
         if [[ "$__TargetArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
@@ -596,6 +628,9 @@ elif [[ "$__TargetOS" == osx || "$__TargetOS" == maccatalyst ]]; then
 elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
+elif [[ "$__TargetOS" == openharmony ]]; then
+    # OpenHarmony uses its NDK toolchain, no rootfs required
+    true
 else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 fi
@@ -604,8 +639,8 @@ fi
 if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
-    # Darwin that doesn't use rootfs
-    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" ]]; then
+    # Darwin that doesn't use rootfs; OpenHarmony uses its NDK toolchain
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" && "$__TargetOS" != "openharmony" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR
     fi

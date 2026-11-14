@@ -731,7 +731,7 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == typeof(System.Numerics.Decimal64) ||
                 potentialNumberType == typeof(System.Numerics.Decimal128) ||
 #endif
-                potentialNumberType == JsonTypeInfo.ObjectType;
+                potentialNumberType == typeof(object);
         }
 
         /// <summary>
@@ -858,7 +858,7 @@ namespace System.Text.Json.Serialization.Metadata
                 else
                 {
                     JsonConverter<object> converter = GetDictionaryValueConverter<object>();
-                    object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options)!;
+                    object value = converter.Read(ref reader, typeof(object), Options)!;
                     AddProperty(in state.Current, dictionaryObjectValue, value);
                 }
             }
@@ -915,7 +915,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(this == state.Current.JsonTypeInfo.ExtensionDataProperty);
 
-            if (JsonTypeInfo.ElementType == JsonTypeInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
+            if (JsonTypeInfo.ElementType == typeof(object) && reader.TokenType == JsonTokenType.Null)
             {
                 value = null;
                 return true;

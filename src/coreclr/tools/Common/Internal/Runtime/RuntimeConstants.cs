@@ -49,6 +49,7 @@ namespace Internal.Runtime
     internal static class DispatchMapCodePointerFlags
     {
         public const int RequiresInstantiatingThunkFlag = 2;
+        public const int RequiresInstantiatingThunkFlagWasm = unchecked((int)0x80000000);
     }
 
     internal static class SpecialGVMInterfaceEntry

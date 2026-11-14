@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.NET.Sdk.WebAssembly;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -27,6 +28,12 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_tasks");     
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);
+
+            WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
+            AssetsData assets = (AssetsData)provider.GetBootJson(provider.GetBootConfigPath(paths.BinFrameworkDir)).resources;
+            Assert.DoesNotContain(
+                $"System.Text.RegularExpressions{ProjectProviderBase.WasmAssemblyExtension}",
+                assets.coreAssembly.Concat(assets.assembly).Select(asset => asset.virtualPath));
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
             pathsDict.UpdateTo(unchanged: true, "corebindings.o");

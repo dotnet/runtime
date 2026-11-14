@@ -473,9 +473,22 @@ namespace Internal.JitInterface
 
     unsafe partial class CorInfoImpl
     {
+        internal readonly struct ManagedHelperProbeResult(
+            bool compilationSucceeded,
+            bool requiresInstructionSetSupportFixup,
+            bool retryRequested,
+            MethodDesc[] methodsRequiringILBodies)
+        {
+            public bool CompilationSucceeded { get; } = compilationSucceeded;
+            public bool RequiresInstructionSetSupportFixup { get; } = requiresInstructionSetSupportFixup;
+            public bool RetryRequested { get; } = retryRequested;
+            public MethodDesc[] MethodsRequiringILBodies { get; } = methodsRequiringILBodies;
+        }
+
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
         private readonly ReadyToRunCodegenCompilation _compilation;
+        private bool _isCompilationProbe;
         private MethodWithGCInfo _methodCodeNode;
         private MethodColdCodeNode _methodColdCodeNode;
         private OffsetMapping[] _debugLocInfos;
@@ -483,10 +496,13 @@ namespace Internal.JitInterface
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
+        private readonly HashSet<Import> _precodeFixupScratch = new();
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
+        private WasmTypeNode _deferredWasmCallSignature;
+        private Dictionary<MethodWithGCInfo, DelayLoadMethodImport> _deferredWasmActivationImports;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -501,11 +517,16 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
-        private void AddAdditionalDependency(ISymbolNode node, string reason)
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget)
         {
-            _additionalDependencies ??= new DependencyList();
-            _additionalDependencies.Add(node, reason);
+            if (relocTarget is Import { Table.IsEager: false, EmitPrecode: true } import)
+            {
+                AddPrecodeFixup(import);
+            }
         }
+
+        private void AddAdditionalDependency(ISymbolNode node, string reason) =>
+            _additionalDependencies.Add(node, reason);
 
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
@@ -708,7 +729,9 @@ namespace Internal.JitInterface
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
-            if ((_ilBodiesNeeded == null) && _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
+            if (!_isCompilationProbe &&
+                (_ilBodiesNeeded == null) &&
+                _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
             {
                 HashCode hashCode = default(HashCode);
                 hashCode.AddBytes(_code);
@@ -741,9 +764,13 @@ namespace Internal.JitInterface
             }
 
             // If any il bodies need to be recomputed, force recompilation
-            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)
+            if ((_ilBodiesNeeded != null) ||
+                (!_isCompilationProbe && (InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)))
             {
-                _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
+                if (!_isCompilationProbe)
+                {
+                    _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
+                }
                 result = CompilationResult.CompilationRetryRequested;
             }
         }
@@ -763,7 +790,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public static bool IsMethodCompilable(Compilation compilation, MethodDesc method)
+        public static bool IsMethodCompilable(Compilation compilation, MethodDesc method, bool isJitHelper)
         {
             // This logic must mirror the logic in CompileMethod used to get to the point of calling CompileMethodInternal
             if (ShouldSkipCompilation(compilation.InstructionSetSupport, method) || MethodSignatureIsUnstable(method.Signature, out var _))
@@ -773,7 +800,7 @@ namespace Internal.JitInterface
             if (methodIL == null)
                 return false;
 
-            if (FunctionJustThrows(methodIL))
+            if (!isJitHelper && FunctionJustThrows(methodIL))
                 return false;
 
             if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, compilation.NodeFactory.CompilationModuleGroup))
@@ -784,7 +811,24 @@ namespace Internal.JitInterface
 
         public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger)
         {
+            CompileMethod(methodCodeNodeNeedingCode, logger, publishCode: true);
+        }
+
+        public ManagedHelperProbeResult ProbeManagedHelper(MethodDesc method, Logger logger)
+        {
+            MethodWithGCInfo methodCodeNode = new MethodWithGCInfo(method)
+            {
+                IsJitHelper = true,
+            };
+
+            return CompileMethod(methodCodeNode, logger, publishCode: false);
+        }
+
+        private ManagedHelperProbeResult CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger, bool publishCode)
+        {
             bool codeGotPublished = false;
+            ManagedHelperProbeResult result = default;
+            _isCompilationProbe = !publishCode;
             _methodCodeNode = methodCodeNodeNeedingCode;
 
             try
@@ -793,35 +837,35 @@ namespace Internal.JitInterface
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
-                    return;
+                    return result;
                 }
 
                 if (MethodSignatureIsUnstable(MethodBeingCompiled.Signature, out var _))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has an non version resilient signature.");
-                    return;
+                    return result;
                 }
                 MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
                 if (methodIL == null)
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because IL code could not be found for the method.");
-                    return;
+                    return result;
                 }
 
-                if (FunctionJustThrows(methodIL))
+                if (!_methodCodeNode.IsJitHelper && FunctionJustThrows(methodIL))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
-                    return;
+                    return result;
                 }
 
                 if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, _compilation.NodeFactory.CompilationModuleGroup))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has a non referenceable catch clause");
-                    return;
+                    return result;
                 }
 
                 var typicalDef = MethodBeingCompiled.GetTypicalMethodDefinition();
@@ -878,16 +922,60 @@ namespace Internal.JitInterface
                 {
                     logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` triggered recompilation to acquire stable tokens for cross module inline.");
                 }
+
+                if (!publishCode)
+                {
+                    MethodDesc[] methodsRequiringILBodies = _ilBodiesNeeded is null ? null : [.. _ilBodiesNeeded];
+                    if (compilationResult == CompilationResult.CompilationComplete)
+                    {
+                        ValidatePrecodeFixups();
+                    }
+
+                    result = new ManagedHelperProbeResult(
+                        compilationResult == CompilationResult.CompilationComplete,
+                        compilationResult == CompilationResult.CompilationComplete && RequiresInstructionSetSupportFixup(),
+                        compilationResult == CompilationResult.CompilationRetryRequested,
+                        methodsRequiringILBodies);
+                }
             }
             finally
             {
-                if (!codeGotPublished)
+                if (publishCode && !codeGotPublished)
                 {
                     PublishEmptyCode();
                 }
 
                 HasColdCode = (_methodColdCodeNode != null);
                 CompileMethodCleanup();
+                _isCompilationProbe = false;
+            }
+
+            return result;
+        }
+
+        private void ValidatePrecodeFixups()
+        {
+            if (_precodeFixups is null)
+                return;
+
+            foreach (ISymbolNode fixup in _precodeFixups)
+            {
+                ValidatePrecodeFixup(fixup);
+            }
+        }
+
+        private void ValidatePrecodeFixup(ISymbolNode fixup)
+        {
+            if (fixup is IMethodNode methodNode)
+            {
+                try
+                {
+                    _compilation.NodeFactory.DetectGenericCycles(_methodCodeNode.Method, methodNode.Method);
+                }
+                catch (TypeLoadException)
+                {
+                    throw new RequiresRuntimeJitException("Requires runtime JIT - potential generic cycle detected");
+                }
             }
         }
 
@@ -996,13 +1084,61 @@ namespace Internal.JitInterface
                 genericContextObject: typeOrMethodContext,
                 forceOwningTypeFromMethodDesc: strippedInstantiation);
 
+            if (DelegateCtorSignature.CanEmitGCRefMap(targetMethod))
+            {
+                // A delegate-ctor import can cache a GCRefMap on the target method when resolved. Check the
+                // signature layouts at this caller's entrypoint so a versioning mismatch rejects the R2R caller
+                // before it can use a map computed from stale layouts.
+                MethodSignature signature = targetMethodDesc.Signature;
+                if (NeedsTypeLayoutCheck(signature.ReturnType))
+                {
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(signature.ReturnType));
+                }
+
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    TypeDesc parameterType = signature[i];
+                    if (NeedsTypeLayoutCheck(parameterType))
+                    {
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckTypeLayout(parameterType));
+                    }
+                }
+            }
+
             // runtime lookup is not needed, callerHandle is unused
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
 
-        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
+        private void AddManagedHelperDependency(MethodDesc helperMethod)
         {
+            // Cached helper targets outlive the current compilation's dependencies, including probes.
+            MethodWithToken helperMethodWithToken = new MethodWithToken(
+                helperMethod,
+                _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(helperMethod, true, true),
+                constrainedType: null,
+                unboxing: false,
+                genericContextObject: MethodBeingCompiled);
+            AddAdditionalDependency(
+                _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(helperMethodWithToken),
+                "Eager ReadyToRun method entry");
+        }
+
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
+        {
+            MethodDesc managedHelper = ReadyToRunJitHelperRootProvider.GetManagedHelper(
+                _compilation.TypeSystemContext,
+                ftnNum);
+
+            if (managedHelper is not null &&
+                _compilation.IsDirectManagedHelperEligible(managedHelper))
+            {
+                Debug.Assert(_compilation.CompilationModuleGroup.ContainsMethodBody(managedHelper, unboxingStub: false));
+                helperMethod = managedHelper;
+                return _compilation.NodeFactory.CompiledMethodNode(managedHelper);
+            }
+
+            helperMethod = null;
             ReadyToRunHelper id;
 
             switch (ftnNum)
@@ -1285,6 +1421,10 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
                     id = ReadyToRunHelper.GCPoll;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                    id = ReadyToRunHelper.WasmProfSamplepoint;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -1616,6 +1756,7 @@ namespace Internal.JitInterface
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
             Debug.Assert(_debugVarInfos == null);
+            Debug.Assert(!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo);
 
             if (cVars == 0)
                 return;
@@ -1636,6 +1777,7 @@ namespace Internal.JitInterface
         private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
             Debug.Assert(_debugLocInfos == null);
+            Debug.Assert(!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo);
 
             _debugLocInfos = new OffsetMapping[cMap];
             for (int i = 0; i < cMap; i++)
@@ -1681,6 +1823,9 @@ namespace Internal.JitInterface
         {
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
+
+        private static bool IsThreadStaticForTarget(FieldDesc field)
+            => ((ReadyToRunCompilerContext)field.Context).IsThreadStaticForTarget(field);
 
         private bool IsClassPreInited(TypeDesc type)
         {
@@ -1730,7 +1875,7 @@ namespace Internal.JitInterface
                         return true; // Dynamic statics
 
                     if (!field.HasRva &&
-                        !field.IsThreadStatic &&
+                        !IsThreadStaticForTarget(field) &&
                         field.FieldType.IsValueType &&
                         !field.FieldType.UnderlyingType.IsPrimitive)
                     {
@@ -1793,6 +1938,7 @@ namespace Internal.JitInterface
             if (field.IsStatic)
             {
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
+                CORINFO_FIELD_ACCESSOR intrinsicAccessor;
 
                 if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
                 {
@@ -1816,11 +1962,18 @@ namespace Internal.JitInterface
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
                 }
+                else if (field.IsIntrinsic &&
+                    (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
+                    (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
+                {
+                    fieldAccessor = intrinsicAccessor;
+                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
+                }
                 else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || _compilation.NodeFactory.Target.IsWasm)
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
-                    if (field.IsThreadStatic)
+                    if (IsThreadStaticForTarget(field))
                     {
                         pResult->helper = (field.HasGCStaticBase ?
                             CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE :
@@ -1845,14 +1998,7 @@ namespace Internal.JitInterface
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
-                    if (field.IsIntrinsic &&
-                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
-                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
-                    {
-                        fieldAccessor = intrinsicAccessor;
-                    }
-                    else if (field.IsThreadStatic)
+                    if (IsThreadStaticForTarget(field))
                     {
                         if (field.HasGCStaticBase)
                         {
@@ -2448,19 +2594,25 @@ namespace Internal.JitInterface
             }
         }
 
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc type = HandleToObject(cls);
-            classMustBeLoadedBeforeCodeIsRun(type);
-        }
-
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
             if (!type.IsPrimitive)
             {
-                ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-                AddPrecodeFixup(node);
+                Import typeHandle = GetTypeHandleImport(type);
+                if (typeHandle.Table.IsEager)
+                {
+                    AddAdditionalDependency(typeHandle, "Module eager type handle");
+                }
+                else
+                {
+                    AddPrecodeFixup(typeHandle);
+                }
             }
+        }
+
+        private Import GetTypeHandleImport(TypeDesc type)
+        {
+            return _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
         }
 
         private static bool MethodSignatureIsUnstable(MethodSignature methodSig, out string unstableMessage)
@@ -2625,6 +2777,7 @@ namespace Internal.JitInterface
                         {
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
+                        bool isRawPInvoke = nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod;
                         if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         {
                             nonUnboxingMethod = rawPinvoke.Target;
@@ -2649,6 +2802,33 @@ namespace Internal.JitInterface
                             MethodDesc compilableTarget = nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
+                        }
+                        else if (_compilation.DeferredWasmCalls is not null &&
+                            !_isCompilationProbe &&
+                            !isUnboxingStub &&
+                            !isRawPInvoke &&
+                            !useInstantiatingStub &&
+                            (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+                        {
+                            // Represent eligible calls with a compiled target and the ordinary import
+                            // as a fallback. The JIT emits a rewritable call bundle; finalization
+                            // chooses direct calls once the call graph and callee activation guarantees
+                            // are known, expanding rejected calls into indirect calls.
+                            // Preserve each target's first import-time activation token separately:
+                            // surviving call sites may carry different tokens after JIT transformations.
+                            // See #DeferredWasmCallFinalization and #DeferredWasmCallRewriting.
+                            MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
+                                nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: false);
+                            ISymbolNode fallback = _compilation.NodeFactory.MethodEntrypoint(
+                                targetMethodWithToken, isInstantiatingStub: false,
+                                isPrecodeImportRequired: false, isJumpableImportRequired: false);
+                            ISymbolNode deferredTarget = _compilation.DeferredWasmCalls.GetCall(targetMethodWithToken, fallback);
+                            if (deferredTarget is DeferredWasmCallNode deferredCall)
+                            {
+                                _deferredWasmActivationImports ??= new Dictionary<MethodWithGCInfo, DelayLoadMethodImport>();
+                                _deferredWasmActivationImports.TryAdd(deferredCall.Target, deferredCall.Fallback);
+                            }
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(deferredTarget);
                         }
                         else
                         {
@@ -3045,6 +3225,10 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            if (!CanEncodeTypeInSignature(type))
+            {
+                throw new RequiresRuntimeJitException(type.ToString());
+            }
             // Continuations require special handling to encode the layout of the type.
             // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
             // PrecodeHelper(
@@ -3056,10 +3240,8 @@ namespace Internal.JitInterface
                 ppIndirection = (void*)ObjectToHandle(import);
                 return null;
             }
-            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
-                throw new RequiresRuntimeJitException(type.ToString());
 
-            Import typeHandleImport = (Import)_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
+            Import typeHandleImport = GetTypeHandleImport(type);
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
             ppIndirection = (void*)ObjectToHandle(typeHandleImport);
             return null;
@@ -3101,9 +3283,7 @@ namespace Internal.JitInterface
                             }
                             else
                             {
-                                symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                    ReadyToRunHelperId.TypeHandle,
-                                    typeHandleType);
+                                symbolNode = GetTypeHandleImport(typeHandleType);
                             }
                         }
                         break;
@@ -3383,6 +3563,19 @@ namespace Internal.JitInterface
             if (!_compilation.NodeFactory.Target.IsWasm)
                 return;
 
+            if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
+            {
+                Debug.Assert(locationBlock == BlockType.Code);
+                object targetObject = HandleToObject(target);
+                MethodWithGCInfo method = targetObject is DeferredWasmCallNode call
+                    ? call.Target
+                    : _compilation.NodeFactory.CompiledMethodNode((MethodDesc)targetObject);
+                relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
+                relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
+                handled = true;
+                return;
+            }
+
             if (fRelocType != CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
                 return;
 
@@ -3415,6 +3608,8 @@ namespace Internal.JitInterface
         partial void ClearWasmMethodVirtualIPFixups()
         {
             _wasmMethodVirtualIPFixups = null;
+            _deferredWasmCallSignature = null;
+            _deferredWasmActivationImports = null;
         }
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
@@ -3640,8 +3835,11 @@ namespace Internal.JitInterface
         {
             _stashedPrecodeFixups.Push(_precodeFixups);
             _precodeFixups = null;
-            _stashedInlinedMethods.Push(_inlinedMethods);
-            _inlinedMethods = null;
+            if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+            {
+                _stashedInlinedMethods.Push(_inlinedMethods);
+                _inlinedMethods = null;
+            }
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
@@ -3662,20 +3860,35 @@ namespace Internal.JitInterface
                 }
                 _precodeFixups = previouslyStashedFixups;
 
-                // If during inlining we found new inlinees, then if the inline was successful, add them to the set of fixups
-                // for the entire method.
-                HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();
-                if (_inlinedMethods != null)
+                // Static methods, constructors, and instance methods on default-initialized value types
+                // can be the first use of a module.
+                // Preserve activation if the module has, or outside the version bubble can gain, an initializer.
+                EcmaModule inlineeModule = (inlinee.OwningType as MetadataType)?.Module as EcmaModule;
+                if ((inlinee.Signature.IsStatic || inlinee.IsConstructor || inlinee.OwningType.IsValueType) &&
+                    inlineeModule is not null &&
+                    inlineeModule != _compilation.TypeSystemContext.SystemModule &&
+                    inlineeModule != (MethodBeingCompiled.OwningType as MetadataType)?.Module &&
+                    (!_compilation.CompilationModuleGroup.VersionsWithModule(inlineeModule) ||
+                        inlineeModule.GetGlobalModuleType().HasStaticConstructor))
                 {
-                    previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
-                    foreach (var inlineeInHashSet in _inlinedMethods)
-                        previouslyStashedInlinees.Add(inlineeInHashSet);
+                    classMustBeLoadedBeforeCodeIsRun(inlineeModule.GetGlobalModuleType());
                 }
-                _inlinedMethods = previouslyStashedInlinees;
 
-                // Then add the fact we inlined this method.
-                _inlinedMethods = _inlinedMethods ?? new HashSet<MethodDesc>();
-                _inlinedMethods.Add(inlinee);
+                if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+                {
+                    // Propagate nested inlinees only when the enclosing inline succeeds.
+                    HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();
+                    if (_inlinedMethods != null)
+                    {
+                        previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
+                        foreach (var inlineeInHashSet in _inlinedMethods)
+                            previouslyStashedInlinees.Add(inlineeInHashSet);
+                    }
+                    _inlinedMethods = previouslyStashedInlinees;
+
+                    _inlinedMethods = _inlinedMethods ?? new HashSet<MethodDesc>();
+                    _inlinedMethods.Add(inlinee);
+                }
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
 
@@ -3727,7 +3940,10 @@ namespace Internal.JitInterface
             {
                 // If we didn't succeed on the inline, just pop back to the state before inlining
                 _precodeFixups = _stashedPrecodeFixups.Pop();
-                _inlinedMethods = _stashedInlinedMethods.Pop();
+                if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+                {
+                    _inlinedMethods = _stashedInlinedMethods.Pop();
+                }
             }
         }
 
@@ -3836,6 +4052,44 @@ namespace Internal.JitInterface
             }
         }
 
+        /// <summary>
+        /// Returns true if a cast from an object of exact type <paramref name="fromType"/> to
+        /// <paramref name="toType"/> that fails now also fails in every later version of its dependencies.
+        /// </summary>
+        private bool IsNegativeCastResultVersionResilient(TypeDesc fromType, TypeDesc toType)
+        {
+            if (fromType.HasTypeEquivalence || toType.HasTypeEquivalence)
+                return false;
+
+            // A value type can gain interfaces, but its other cast targets are fixed.
+            if (fromType.IsValueType && !toType.IsInterface)
+                return true;
+
+            // Otherwise every type that decides the cast must version with this code. Array and variant casts
+            // also depend on element types and generic arguments, and COM objects can be cast to interfaces
+            // through QueryInterface.
+            if (fromType is not DefType || toType is not DefType || toType.HasVariance)
+                return false;
+
+            CompilationModuleGroup moduleGroup = _compilation.CompilationModuleGroup;
+            if (!moduleGroup.VersionsWithType(toType))
+                return false;
+
+            for (TypeDesc type = fromType; type is not null; type = type.BaseType)
+            {
+                if (type.IsComImport || !moduleGroup.VersionsWithType(type))
+                    return false;
+            }
+
+            foreach (DefType iface in fromType.RuntimeInterfaces)
+            {
+                if (!moduleGroup.VersionsWithType(iface))
+                    return false;
+            }
+
+            return true;
+        }
+
         private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
         {
             MethodDesc method = HandleToObject(ftn);
@@ -3923,6 +4177,16 @@ namespace Internal.JitInterface
                         AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }
                 }
+            }
+        }
+
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+        {
+            // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the VirtualEntry dynamic helper cell,
+            // so add the dependencies of the cell's signature for each lookup that survives to lowering.
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, HandleToObject(method));
             }
         }
 

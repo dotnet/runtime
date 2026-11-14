@@ -1,7 +1,8 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
-<Project>
+<Project TreatAsLocalProperty="UseMonoRuntime">
   <PropertyGroup>
     <_RuntimePackInWorkloadVersionCurrent>${PackageVersion}</_RuntimePackInWorkloadVersionCurrent>
+    <_RuntimePackInWorkloadVersion11>${PackageVersionNet11}</_RuntimePackInWorkloadVersion11>
     <_RuntimePackInWorkloadVersion10>${PackageVersionNet10}</_RuntimePackInWorkloadVersion10>
     <_RuntimePackInWorkloadVersion9>${PackageVersionNet9}</_RuntimePackInWorkloadVersion9>
     <_RuntimePackInWorkloadVersion8>${PackageVersionNet8}</_RuntimePackInWorkloadVersion8>
@@ -9,14 +10,16 @@
     <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
 
     <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '${FrameworkVersionCurrent}'))">true</TargetsCurrent>
+    <UseMonoRuntime Condition="'$(TargetsCurrent)' == 'true'">false</UseMonoRuntime>
 
-    <!-- Disabled until next release: force net10.0 to use the current targets until the SDK can target net11.0 -->
+    <!-- Disabled until next release: force net11.0 to use the current targets until the SDK can target net12.0 -->
     <!--
     <TreatPreviousAsCurrent Condition="'$(TreatPreviousAsCurrent)' == ''">true</TreatPreviousAsCurrent>
-    <TargetsCurrent Condition="'$(TreatPreviousAsCurrent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsCurrent>
+    <TargetsCurrent Condition="'$(TreatPreviousAsCurrent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '11.0'))">true</TargetsCurrent>
     -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
+    <TargetsNet11   Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '11.0'))">true</TargetsNet11>
     <TargetsNet10   Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsNet10>
     <TargetsNet9    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsNet9>
     <TargetsNet8    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsNet8>
@@ -37,7 +40,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload12)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet11)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet10)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet9)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
@@ -54,6 +58,7 @@
     <!-- Keep in sync with $(PropertiesThatTriggerRelinking) -->
     <_WasmNativeWorkloadNeeded Condition="
         '$(WasmEnableSIMD)' == 'false' or
+        '$(WasmEnableRelaxedSimd)' == 'true' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
         '$(WasmNativeStrip)' == 'false' or
@@ -65,6 +70,9 @@
         '$(WasmBuildNative)' == 'true' or
         '$(EmccInitialHeapSize)' != '' or
         '$(EmccMaximumHeapSize)' != '' " >true</_WasmNativeWorkloadNeeded>
+    <!-- Not a relink trigger: CoreCLR runs wasm-opt from the workload's Emscripten SDK over the relinked runtime
+         and over ReadyToRun images, so requesting it requires the workload. -->
+    <_WasmNativeWorkloadNeeded Condition="'$(WasmRunWasmOpt)' == 'true' and '$(UseMonoRuntime)' == 'false'">true</_WasmNativeWorkloadNeeded>
 
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
@@ -73,7 +81,7 @@
 
   <!-- Mono AOT library mode support -->
   <PropertyGroup Condition="'$(PublishAot)' != 'true' and '$(NativeLib)' != ''">
-    <_IsAndroidLibraryMode Condition="'$(RuntimeIdentifier)' == 'android-arm64' or '$(RuntimeIdentifier)' == 'android-arm' or '$(RuntimeIdentifier)' == 'android-x64' or '$(RuntimeIdentifier)' == 'android-x86'">true</_IsAndroidLibraryMode>
+    <_IsAndroidLibraryMode Condition="'$(RuntimeIdentifier)' == 'android-arm64' or '$(RuntimeIdentifier)' == 'android-arm' or '$(RuntimeIdentifier)' == 'android-x64' or ('$(TargetsCurrent)' != 'true' and '$(RuntimeIdentifier)' == 'android-x86')">true</_IsAndroidLibraryMode>
     <_IsAppleMobileLibraryMode Condition="'$(RuntimeIdentifier)' == 'ios-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-x64' or '$(RuntimeIdentifier)' == 'maccatalyst-arm64' or '$(RuntimeIdentifier)' == 'maccatalyst-x64' or '$(RuntimeIdentifier)' == 'tvos-arm64'">true</_IsAppleMobileLibraryMode>
     <_IsiOSLibraryMode Condition="'$(RuntimeIdentifier)' == 'ios-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-x64'">true</_IsiOSLibraryMode>
     <_IsMacCatalystLibraryMode Condition="'$(RuntimeIdentifier)' == 'maccatalyst-arm64' or '$(RuntimeIdentifier)' == 'maccatalyst-x64'">true</_IsMacCatalystLibraryMode>
@@ -88,6 +96,12 @@
   <PropertyGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and ('$(UsingMobileWorkload)' == 'true' or '$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm')">
     <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
   </PropertyGroup>
+
+  <Target Name="_ErrorUnsupportedCurrentMobileNativeLibrary"
+          BeforeTargets="ProcessFrameworkReferences;Restore;Build;Publish"
+          Condition="'$(TargetsCurrent)' == 'true' and '$(UseMonoRuntime)' == 'false' and '$(PublishAot)' != 'true' and '$(NativeLib)' != '' and ('$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true' or '$(RuntimeIdentifier)' == 'tvossimulator-arm64' or '$(RuntimeIdentifier)' == 'tvossimulator-x64')">
+    <Error Text="Building a native library for $(RuntimeIdentifier) with CoreCLR is not supported. Set PublishAot=true to build a native library with NativeAOT." />
+  </Target>
 
   <PropertyGroup Condition="'$(_UsingBlazorOrWasmSdk)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
     <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
@@ -153,21 +167,13 @@
 
   <!-- start of TFM specific logic, make sure every node has a TargetsCurrent/TargetsNet* condition -->
 
-  <Import Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(UseMonoRuntime)' != 'false' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true' or '$(UsingWasiRuntimeWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.${NetVersion}" />
-
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true')">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(UseMonoRuntime)' != 'false' and ('$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true')">
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.android-x86" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.android-x64" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.android-arm" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.android-arm64" />
   </ImportGroup>
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(TargetPlatformIdentifier)' == 'macOS'">
@@ -179,36 +185,21 @@
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and $([MSBuild]::IsOSPlatform('osx')) and ('$(TargetPlatformIdentifier)' == 'ios' or '$(_IsiOSLibraryMode)' == 'true')">
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.ios-arm64" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.iossimulator-arm64" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.iossimulator-x64" />
-  </ImportGroup>
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(_IsMacCatalystLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and $([MSBuild]::IsOSPlatform('osx')) and ('$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(_IsMacCatalystLibraryMode)' == 'true')">
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.maccatalyst-arm64" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.maccatalyst-x64" />
   </ImportGroup>
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'tvos' or '$(_IstvOSLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and $([MSBuild]::IsOSPlatform('osx')) and ('$(TargetPlatformIdentifier)' == 'tvos' or '$(_IstvOSLibraryMode)' == 'true')">
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.tvos-arm64" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.tvossimulator-arm64" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.tvossimulator-x64" />
-  </ImportGroup>
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true' and '$(UseMonoRuntime)' != 'false'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.browser-wasm" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
 
@@ -219,11 +210,10 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
   </ImportGroup>
 
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(UsingWasiRuntimeWorkload)' == 'true'">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(UsingWasiRuntimeWorkload)' == 'true' and '$(PublishAot)' != 'true'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.${NetVersion}" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.wasi-wasm" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
 
@@ -236,14 +226,14 @@
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
       <RuntimePackRuntimeIdentifiers Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}.0' and '$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
-
-      <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}.0' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
-      <!-- Overrides for wasm threading support -->
-      <RuntimePackNamePatterns Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}.0' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
     <KnownFrameworkReference Update="Microsoft.NETCore.App">
       <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
+      <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0' and '$(UseMonoRuntime)' == 'false'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
     </KnownFrameworkReference>
+    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+      <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '${NetVersion}.0' and '$(UseMonoRuntime)' == 'false'">$(_MonoWorkloadRuntimePackPackageVersion)</Crossgen2PackVersion>
+    </KnownCrossgen2Pack>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetVersion}.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
     </KnownWebAssemblySdkPack>

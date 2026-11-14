@@ -18,7 +18,16 @@ namespace System.Security.Cryptography.Xml
 
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
-            _c14nDoc.Load(Utils.PreProcessStreamInput(inputStream, resolver, strBaseUri));
+            long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+            if (maxDepth > 0)
+            {
+                Utils.LoadXmlDocumentWithMaxDepthCheck(_c14nDoc, Utils.PreProcessStreamInput(inputStream, resolver, strBaseUri), maxDepth);
+            }
+            else
+            {
+                _c14nDoc.Load(Utils.PreProcessStreamInput(inputStream, resolver, strBaseUri));
+            }
+
             _ancMgr = new ExcAncestralNamespaceContextManager(inclusiveNamespacesPrefixList);
         }
 

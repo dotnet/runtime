@@ -115,6 +115,17 @@ static int PushPublicKeyParam(
 
     return 1;
 }
+
+static int CheckEcKey(EVP_PKEY* key, int hasPrivateKey)
+{
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(key, NULL);
+    if (ctx == NULL)
+        return 0;
+
+    int ret = hasPrivateKey ? EVP_PKEY_check(ctx) : EVP_PKEY_public_check(ctx);
+    EVP_PKEY_CTX_free(ctx);
+    return ret == 1;
+}
 #endif
 
 static ECCurveType MethodToCurveType(const EC_METHOD* method)
@@ -1835,6 +1846,9 @@ static int32_t EvpPKeyCreateByEcParameters(
             goto error;
     }
 
+    if (!CheckEcKey(*pkey, hasPrivateKey))
+        goto error;
+
     if (keySize != NULL)
     {
         *keySize = CryptoNative_EvpPKeyGetEcKeySize(*pkey);
@@ -2177,6 +2191,9 @@ static int32_t EvpPKeyCreateByEcExplicitParameters(
 
         int selection = hasPrivateKey ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
         if (EVP_PKEY_fromdata(ctx, pkey, selection, params) != 1)
+            goto error;
+
+        if (!CheckEcKey(*pkey, hasPrivateKey))
             goto error;
     }
 

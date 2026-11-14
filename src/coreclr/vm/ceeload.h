@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: CEELOAD.H
-//
-
 //
 // CEELOAD.H defines the class use to represent the PE file
 // ===========================================================================
@@ -822,9 +821,11 @@ public:
     bool GetJMCStatus();
     void SetJMCStatus(bool fStatus);
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // If this is a dynamic module, eagerly serialize the metadata so that it is available for DAC.
     // This is a nop for non-dynamic modules.
     void UpdateDynamicMetadataIfNeeded();
+#endif
 
 #ifdef _DEBUG
     //
@@ -859,12 +860,25 @@ private:
     PTR_NativeImage         m_pNativeImage;
 #endif
 
-#if PROFILING_SUPPORTED_DATA
+#if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
 private:
-    DWORD                   m_dwTypeCount;
-    DWORD                   m_dwExportedTypeCount;
-    DWORD                   m_dwCustomAttributeCount;
-#endif // PROFILING_SUPPORTED_DATA
+    struct TypeCounts final
+    {
+        DWORD TypeCount;
+        DWORD ExportedTypeCount;
+        DWORD CustomAttributeCount;
+
+        bool operator==(const TypeCounts& other) const
+        {
+            return TypeCount == other.TypeCount
+                && ExportedTypeCount == other.ExportedTypeCount
+                && CustomAttributeCount == other.CustomAttributeCount;
+        }
+    };
+    TypeCounts GetCurrentTypeCounts();
+
+    TypeCounts              m_typeCounts;
+#endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 protected:
     void DoInit(AllocMemTracker *pamTracker, LPCWSTR szName);
@@ -1034,7 +1048,7 @@ public:
         return m_pPEAssembly->GetMDImport();
     }
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && (defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER))
     IMetaDataEmit *GetEmitter()
     {
         WRAPPER_NO_CONTRACT;
@@ -1048,14 +1062,11 @@ public:
 
         return m_pPEAssembly->GetRWImporter();
     }
+#endif // !DACCESS_COMPILE && (PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER)
 
+#ifdef PROFILING_SUPPORTED
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
-#endif // !DACCESS_COMPILE
-
-#if defined(FEATURE_READYTORUN)
-    BOOL IsInSameVersionBubble(Module *target);
-#endif // FEATURE_READYTORUN
-
+#endif // PROFILING_SUPPORTED
 
     LPCWSTR GetPathForErrorMessages() final;
 
@@ -1406,7 +1417,10 @@ public:
                                               DEBUGGER_INFO_SHIFT_PRIV);
     }
 
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     void UpdateNewlyAddedTypes();
+    void CaptureInitialTypeCounts();
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 #ifdef PROFILING_SUPPORTED
     BOOL IsProfilerNotified() {LIMITED_METHOD_CONTRACT;  return (m_dwTransientFlags & IS_PROFILER_NOTIFIED) != 0; }
@@ -1417,11 +1431,11 @@ public:
     BOOL HasReadyToRunInlineTrackingMap();
     COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 #endif // FEATURE_INLINE_TRACKING
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
     void AddInlining(MethodDesc *inliner, MethodDesc *inlinee);
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
@@ -1469,10 +1483,10 @@ public:
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
 
-    // These are overridden by reflection modules
+    // This is overridden by reflection modules
     virtual TADDR GetIL(RVA il);
 
-    virtual PTR_VOID GetRvaField(RVA field);
+    PTR_VOID GetRvaField(RVA field);
     CHECK CheckRvaField(RVA field);
     CHECK CheckRvaField(RVA field, COUNT_T size);
 
@@ -1568,12 +1582,10 @@ public:
 #endif // !DACCESS_COMPILE
     TADDR GetDynamicIL(mdToken token);
 
-protected:
 #ifndef DACCESS_COMPILE
     void SetDynamicRvaField(mdToken token, TADDR blobAddress);
 #endif // !DACCESS_COMPILE
 
-public:
     TADDR GetDynamicRvaField(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
@@ -1666,9 +1678,9 @@ private:
 
     DebuggerSpecificData  m_debuggerSpecificData;
 
-#if defined(FEATURE_INLINE_TRACKING) && (defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA))
+#if defined(FEATURE_INLINE_TRACKING) && defined(FEATURE_REJIT)
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
-#endif // FEATURE_INLINE_TRACKING && (PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA)
+#endif // FEATURE_INLINE_TRACKING && FEATURE_REJIT
 
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.dll R2R image stores
@@ -1756,11 +1768,6 @@ class ReflectionModule : public Module
 {
     VPTR_VTABLE_CLASS(ReflectionModule, Module)
 
- public:
-    HCEESECTION m_sdataSection;
-
- protected:
-    ICeeGenInternal * m_pCeeFileGen;
 private:
     RefClassWriter       *m_pInMemoryWriter;
 
@@ -1785,11 +1792,8 @@ public:
     void Destruct();
 #endif // !DACCESS_COMPILE
 
-    // Overrides functions to access sections
-    virtual TADDR GetIL(RVA target);
-    virtual PTR_VOID GetRvaField(RVA rva);
-
-    ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
+    // Emitted methods use their tokens in the metadata RVA column.
+    virtual TADDR GetIL(RVA methodToken);
 
     RefClassWriter *GetClassWriter()
     {
@@ -1798,8 +1802,10 @@ public:
         return m_pInMemoryWriter;
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Eagerly serialize the metadata to a buffer that the debugger can retrieve.
     void CaptureModuleMetaDataToMemory();
+#endif
 };
 
 struct ModuleHolderTraits final

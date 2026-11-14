@@ -422,7 +422,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// A <see cref="ComVariant"/> instance that represents a null value with <see cref="VarEnum.VT_NULL"/> type.
         /// </summary>
-        public static ComVariant Null { get; } = new() { VarType = VarEnum.VT_NULL };
+        public static ComVariant Null => new() { VarType = VarEnum.VT_NULL };
 
         private readonly void ThrowIfNotVarType(params ReadOnlySpan<VarEnum> requiredType)
         {

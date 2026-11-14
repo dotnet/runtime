@@ -56,7 +56,7 @@ namespace ILVerification.Tests
 
         private static IEnumerable<VerificationResult> Verify(TestCase testCase)
         {
-            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
+            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName, allowIgnoresAccessChecksTo: true);
             var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
             var method = module.GetMethod(methodHandle);
             var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions
@@ -66,6 +66,18 @@ namespace ILVerification.Tests
             });
 
             return verifier.Verify(module.PEReader, methodHandle);
+        }
+
+        [Fact]
+        public static void IgnoresAccessChecksToIsOffByDefault()
+        {
+            EcmaModule module = TestDataLoader.GetModuleForTestAssembly("AccessTestsIgnoreChecks");
+            MetadataReader reader = module.MetadataReader;
+            MethodDefinitionHandle methodHandle = reader.MethodDefinitions
+                .First(h => reader.GetString(reader.GetMethodDefinition(h).Name) == "Load.PrivateField_Valid");
+            var verifier = new Verifier((ILVerifyTypeSystemContext)module.Context, new VerifierOptions());
+
+            Assert.Contains(verifier.Verify(module.PEReader, methodHandle), r => r.Code == VerifierError.FieldAccess);
         }
     }
 }

@@ -356,13 +356,11 @@ export function postRunWorker () {
 async function mono_wasm_after_user_runtime_initialized (): Promise<void> {
     mono_log_debug("mono_wasm_after_user_runtime_initialized");
     try {
-        if (Module.onDotnetReady) {
-            try {
-                await Module.onDotnetReady();
-            } catch (err: any) {
-                mono_log_error("onDotnetReady () failed", err);
-                throw err;
-            }
+        try {
+            await loaderHelpers.callbacks.dotnetReady?.();
+        } catch (err: any) {
+            mono_log_error("onDotnetReady () failed", err);
+            throw err;
         }
     } catch (err: any) {
         mono_log_error("mono_wasm_after_user_runtime_initialized () failed", err);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <cassert>
+#include <optional>
 #include "trace.h"
 #include "pal.h"
 #include "utils.h"
@@ -637,8 +638,8 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
     auto app = new fx_definition_t();
     fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-    const runtime_config_t::settings_t override_settings;
-    app->parse_runtime_config(runtime_config, _X(""), override_settings);
+    const std::optional<roll_forward_option> override_roll_forward;
+    app->parse_runtime_config(runtime_config, _X(""), override_roll_forward);
 
     const runtime_config_t& app_config = app->get_runtime_config();
     if (!app_config.is_valid())
@@ -651,7 +652,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
     // Self-contained apps assume the framework is next to the app, so we just treat it as success.
     fx_resolver_t::resolution_failure_info failure_info;
     rc = app_config.get_is_framework_dependent()
-        ? fx_resolver_t::resolve_frameworks(host_info.dotnet_root, override_settings, app_config, fx_definitions, failure_info)
+        ? fx_resolver_t::resolve_frameworks(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, failure_info)
         : StatusCode::Success;
 
     if (callback)

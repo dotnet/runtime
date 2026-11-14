@@ -53,8 +53,6 @@ elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
   set(PAL_ARCH_SOURCES_DIR loongarch64)
 elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
   set(PAL_ARCH_SOURCES_DIR riscv64)
-elseif(CLR_CMAKE_HOST_ARCH_I386)
-  set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
   set(PAL_ARCH_SOURCES_DIR s390x)
 elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
@@ -149,20 +147,12 @@ endif()
 
 set(SOURCES
   com/guid.cpp
-  cruntime/wchar.cpp
   exception/seh.cpp
-  file/directory.cpp
-  file/file.cpp
-  file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  locale/unicode.cpp
-  map/common.cpp
-  map/map.cpp
-  map/virtual.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp
@@ -230,37 +220,6 @@ add_library(coreclrpal STATIC
   $<TARGET_OBJECTS:coreclrpal_objects>
   ${LIBUNWIND_OBJECTS}
 )
-
-# Build separate pal library for DAC (addition to regular pal library)
-if(CLR_CMAKE_TARGET_APPLE)
-  set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)
-
-  add_library(coreclrpal_dac STATIC
-    exception/remote-unwind.cpp
-    ${LIBUNWIND_DAC_OBJECTS}
-  )
-
-  target_include_directories(coreclrpal_dac PUBLIC
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
-  )
-
-  target_compile_definitions(coreclrpal_dac PUBLIC -DUNW_REMOTE_ONLY)
-else()
-  if(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-    add_library(coreclrpal_dac STATIC
-      exception/remote-unwind.cpp
-      ${LIBUNWIND_OBJECTS}
-    )
-
-    if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-      target_link_libraries(coreclrpal_dac PUBLIC ${UNWIND_LIBS})
-    endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-  endif(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-endif(CLR_CMAKE_TARGET_APPLE)
-
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
 #
@@ -311,8 +270,8 @@ if(CLR_CMAKE_TARGET_HAIKU)
 endif(CLR_CMAKE_TARGET_HAIKU)
 
 if(CLR_CMAKE_TARGET_LINUX)
-  # On Android, we don't need to link with gcc_s, pthread and rt
-  if(NOT CLR_CMAKE_TARGET_ANDROID)
+  # On Android and OpenHarmony, we don't need to link with gcc_s, pthread and rt
+  if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_libraries(coreclrpal
       PUBLIC
       gcc_s
@@ -334,10 +293,10 @@ if(CLR_CMAKE_TARGET_LINUX)
     target_link_libraries(coreclrpal PUBLIC ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
-  # bundled libunwind requires using libucontext on alpine and x86 and ppc64le
-  if(CLR_CMAKE_TARGET_LINUX_MUSL AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+  # bundled libunwind requires using libucontext on alpine and ppc64le
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND CLR_CMAKE_TARGET_ARCH_POWERPC64)
     target_link_libraries(coreclrpal PUBLIC ucontext)
-  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND CLR_CMAKE_TARGET_ARCH_POWERPC64)
 
 endif(CLR_CMAKE_TARGET_LINUX)
 
