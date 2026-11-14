@@ -75,7 +75,24 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public override async Task<int> ReadAsync(
+        public override Task<int> ReadAsync(
+            byte[] bytes,
+            int offset,
+            int length,
+            CancellationToken cancellationToken
+        )
+        {
+            ValidateBufferArguments(bytes, offset, length);
+            return ReadAsyncCore(bytes, offset, length, cancellationToken);
+        }
+
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToAsyncResult.End<int>(asyncResult);
+
+        private async Task<int> ReadAsyncCore(
             byte[] bytes,
             int offset,
             int length,
@@ -177,7 +194,7 @@ namespace System.Net.Http
             return result;
         }
 
-        #region PlatformNotSupported
+        #region NotSupported
 
         public override void Flush()
         {
@@ -186,29 +203,32 @@ namespace System.Net.Http
 
         public override void SetLength(long length)
         {
-            throw new PlatformNotSupportedException();
+            throw new NotSupportedException();
         }
 
         public override int Read(byte[] buffer, int offset, int length)
         {
+            ValidateBufferArguments(buffer, offset, length);
+
+            // A synchronous read would block, which isn't possible on single-threaded WASI.
             throw new PlatformNotSupportedException();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw new PlatformNotSupportedException();
+            throw new NotSupportedException();
         }
 
         public override void Write(byte[] buffer, int offset, int length)
         {
-            throw new PlatformNotSupportedException();
+            throw new NotSupportedException();
         }
 
-        public override long Length => throw new PlatformNotSupportedException();
+        public override long Length => throw new NotSupportedException();
         public override long Position
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
         }
 
         #endregion
