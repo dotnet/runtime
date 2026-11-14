@@ -1,16 +1,152 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
-using System.Text;
-using Xunit;
-using System.Text.RegularExpressions.Symbolic;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.RegularExpressions.Symbolic;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
     public class SymbolicRegexTests
     {
+        [Fact]
+        public void NodeHandlesAreFourByteBuilderRelativeIds()
+        {
+            Assert.True(typeof(SymbolicRegexNode<BDD>).IsValueType);
+            Assert.Equal(sizeof(int), Unsafe.SizeOf<SymbolicRegexNode<BDD>>());
+            FieldInfo field = Assert.Single(typeof(SymbolicRegexNode<BDD>).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public));
+            Assert.Equal(typeof(int), field.FieldType);
+            Assert.True(default(SymbolicRegexNode<BDD>).IsNull);
+
+            var solver = new CharSetSolver();
+            var builder = new SymbolicRegexBuilder<BDD>(solver, solver);
+            SymbolicRegexNode<BDD> a = builder.CreateSingleton(solver.CreateBDDFromChar('a'));
+            int nodeCount = builder.NodeCount;
+
+            Assert.Equal(a, builder.CreateSingleton(solver.CreateBDDFromChar('a')));
+            Assert.Equal(nodeCount, builder.NodeCount);
+            SymbolicRegexNodeContext<BDD> aContext = builder.GetNodeContext(a);
+            Assert.True(aContext._left.IsNull);
+            Assert.True(aContext._right.IsNull);
+
+            SymbolicRegexNode<BDD> b = builder.CreateSingleton(solver.CreateBDDFromChar('b'));
+            SymbolicRegexNode<BDD> concat = builder.CreateConcat(a, b);
+            Assert.Equal(concat, builder.CreateConcat(a, b));
+            SymbolicRegexNodeContext<BDD> concatContext = builder.GetNodeContext(concat);
+            Assert.Equal(a, concatContext._left);
+            Assert.Equal(b, concatContext._right);
+
+            for (char c = 'c'; c < 'z'; c++)
+            {
+                SymbolicRegexNode<BDD> node = builder.CreateSingleton(solver.CreateBDDFromChar(c));
+                Assert.Equal(builder.NodeCount, node.Id);
+            }
+
+            Assert.True(builder.NodeCount > 16);
+            Assert.Equal(SymbolicRegexNodeKind.Singleton, a.Kind(builder));
+            Assert.Equal(solver.CreateBDDFromChar('a'), aContext._set);
+            Assert.Equal(SymbolicRegexNodeKind.Concat, concatContext._kind);
+            Assert.Equal(a, concatContext._left);
+            Assert.Equal(solver.CreateBDDFromChar('a'), concatContext._left._set);
+            Assert.Equal(b, concatContext._right);
+            Assert.Equal(solver.CreateBDDFromChar('b'), concatContext._right._set);
+
+            var otherSolver = new CharSetSolver();
+            var otherBuilder = new SymbolicRegexBuilder<BDD>(otherSolver, otherSolver);
+            SymbolicRegexNode<BDD> otherA = otherBuilder.CreateSingleton(otherSolver.CreateBDDFromChar('a'));
+
+            // Handles only contain IDs. Equality is meaningful only together with the builder that owns those IDs.
+            Assert.Equal(a.Id, otherA.Id);
+            Assert.Equal(a, otherA);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public async Task NodeArenaPublicationIsVisibleToConcurrentReaders()
+        {
+            const int ReaderCount = 4;
+            const int CaptureCount = 256;
+
+            var solver = new CharSetSolver();
+            var builder = new SymbolicRegexBuilder<BDD>(solver, solver);
+            SymbolicRegexNode<BDD> retainedNode = builder.CreateCapture(builder.BeginningAnchor, 0);
+            SymbolicRegexNodeContext<BDD> retainedContext = builder.GetNodeContext(retainedNode);
+            long publishedCapture = PackPublishedCapture(retainedNode.Id, 0);
+            int writerFinished = 0;
+            using var start = new Barrier(ReaderCount + 1);
+
+            Task writer = Task.Run(() =>
+            {
+                start.SignalAndWait();
+
+                try
+                {
+                    for (int captureNumber = 1; captureNumber <= CaptureCount; captureNumber++)
+                    {
+                        SymbolicRegexNode<BDD> node = builder.CreateCapture(builder.BeginningAnchor, captureNumber);
+                        Volatile.Write(ref publishedCapture, PackPublishedCapture(node.Id, captureNumber));
+                    }
+                }
+                finally
+                {
+                    Volatile.Write(ref writerFinished, 1);
+                }
+            });
+
+            Task[] readers = new Task[ReaderCount];
+            for (int i = 0; i < readers.Length; i++)
+            {
+                readers[i] = Task.Run(() =>
+                {
+                    start.SignalAndWait();
+
+                    while (Volatile.Read(ref writerFinished) == 0)
+                    {
+                        ValidatePublishedCapture(builder, Volatile.Read(ref publishedCapture));
+                        ValidateCaptureContext(retainedContext, 0);
+                    }
+
+                    ValidatePublishedCapture(builder, Volatile.Read(ref publishedCapture));
+                    ValidateCaptureContext(retainedContext, 0);
+                });
+            }
+
+            await writer;
+            await Task.WhenAll(readers);
+
+            Assert.True(builder.NodeCount > 512);
+
+            static long PackPublishedCapture(int nodeId, int captureNumber) => ((long)captureNumber << 32) | (uint)nodeId;
+
+            static void ValidatePublishedCapture(SymbolicRegexBuilder<BDD> builder, long publishedCapture)
+            {
+                int nodeId = (int)publishedCapture;
+                int captureNumber = (int)(publishedCapture >> 32);
+                ValidateCaptureContext(builder.GetNodeContext(new SymbolicRegexNode<BDD>(nodeId)), captureNumber);
+            }
+
+            static void ValidateCaptureContext(SymbolicRegexNodeContext<BDD> context, int captureNumber)
+            {
+                Assert.Equal(SymbolicRegexNodeKind.Concat, context._kind);
+                Assert.Equal(SymbolicRegexNodeKind.CaptureStart, context._left._kind);
+                Assert.Equal(captureNumber, context._left._lower);
+
+                SymbolicRegexNodeContext<BDD> tail = context._right;
+                Assert.Equal(SymbolicRegexNodeKind.Concat, tail._kind);
+                Assert.Equal(SymbolicRegexNodeKind.BeginningAnchor, tail._left._kind);
+                Assert.Equal(SymbolicRegexNodeKind.CaptureEnd, tail._right._kind);
+                Assert.Equal(captureNumber, tail._right._lower);
+
+                Assert.True(context.IsNullableFor(CharKind.Context(CharKind.BeginningEnd, CharKind.General)));
+                Assert.False(context.IsNullableFor(CharKind.Context(CharKind.General, CharKind.General)));
+            }
+        }
+
         [Theory]
         [InlineData(UnicodeCategory.DecimalDigitNumber, 370)] //37 different kinds of decimal digits
         [InlineData(UnicodeCategory.Surrogate, 2048)]         //1024 low surrogates and 1024 high surrogates
@@ -122,7 +258,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             SymbolicRegexBuilder<BDD> builder = (SymbolicRegexBuilder<BDD>)builderObj;
             SymbolicRegexNode<BDD> node = (SymbolicRegexNode<BDD>)nodeObj;
-            int safeSize = node.EstimateNfaSize();
+            int safeSize = node.EstimateNfaSize(builder);
             Assert.Equal(expectedSafeSize, safeSize);
             int nfaStateCount = CalculateNfaStateCount(builder, node);
             Assert.True(nfaStateCount <= expectedSafeSize);
@@ -140,7 +276,7 @@ namespace System.Text.RegularExpressions.Tests
             List<BDD> minterms = MintermGenerator<BDD>.GenerateMinterms(builder._solver, root.GetSets(builder));
 
             // Start from the initial state that has kind 'General' when no anchors are being used, else kind 'BeginningEnd'
-            (uint, SymbolicRegexNode<BDD>) initialState = (root._info.ContainsSomeAnchor ? CharKind.BeginningEnd : CharKind.General, root);
+            (uint, SymbolicRegexNode<BDD>) initialState = (builder.GetNodeContext(root)._info.ContainsSomeAnchor ? CharKind.BeginningEnd : CharKind.General, root);
 
             // Compute the closure of all NFA states from the given initial state
             states.Add(initialState);
@@ -174,14 +310,15 @@ namespace System.Text.RegularExpressions.Tests
             // Enumerates the alternatives from a node, for eaxmple (ab|(bc|cd)) has three alternatives
             IEnumerable<SymbolicRegexNode<BDD>> GetAlternatives(SymbolicRegexNode<BDD> node)
             {
-                if (node._kind == SymbolicRegexNodeKind.Alternate)
+                SymbolicRegexNodeContext<BDD> nodeContext = builder.GetNodeContext(node);
+                if (nodeContext._kind == SymbolicRegexNodeKind.Alternate)
                 {
-                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(node._left!))
+                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(nodeContext._left))
                         yield return elem;
-                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(node._right!))
+                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(nodeContext._right))
                         yield return elem;
                 }
-                else if (!node.IsNothing(builder._solver)) // omit deadend states
+                else if (!node.IsNothing(builder)) // omit deadend states
                 {
                     yield return node;
                 }
@@ -227,7 +364,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexNode tree = RegexParser.Parse(Pattern, options, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { rootNode };
+                yield return new object[] { bddBuilder, rootNode };
             }
 
             // Deeply nested unbounded loops with alternating laziness cause exponential
@@ -253,7 +390,7 @@ namespace System.Text.RegularExpressions.Tests
 
                 RegexNode tree = RegexParser.Parse(sb.ToString(), options, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { rootNode };
+                yield return new object[] { bddBuilder, rootNode };
             }
 
             // Deeply nested capturing loops also cause exponential blowup. CountSingletons
@@ -278,15 +415,15 @@ namespace System.Text.RegularExpressions.Tests
                 RegexOptions capturingOptions = RegexOptions.NonBacktracking;
                 RegexNode tree = RegexParser.Parse(sb.ToString(), capturingOptions, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { rootNode };
+                yield return new object[] { bddBuilder, rootNode };
             }
         }
 
         [Theory]
         [MemberData(nameof(UnsafeThresholdTests_MemberData))]
-        public void UnsafeThresholdTests(object node)
+        public void UnsafeThresholdTests(object builder, object node)
         {
-            int size = ((SymbolicRegexNode<BDD>)node).EstimateNfaSize();
+            int size = ((SymbolicRegexNode<BDD>)node).EstimateNfaSize((SymbolicRegexBuilder<BDD>)builder);
             Assert.True(size > SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold());
         }
 
@@ -321,7 +458,7 @@ namespace System.Text.RegularExpressions.Tests
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
 
             // After ReduceLoops, this collapses to a*, so the estimate should be tiny
-            int size = rootNode.EstimateNfaSize();
+            int size = rootNode.EstimateNfaSize(bddBuilder);
             Assert.True(size <= SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold(),
                 $"Same-laziness nested loops should be safe after ReduceLoops, but EstimateNfaSize returned {size}");
         }

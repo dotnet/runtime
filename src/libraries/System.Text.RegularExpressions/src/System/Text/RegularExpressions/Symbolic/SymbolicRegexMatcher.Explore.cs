@@ -67,7 +67,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         // Remove state from seen so that it can be added back in if necessary
                         seen.Remove(dfaState);
                         // Enqueue all elements of a top level alternation or the state itself
-                        ForEachNfaState(dfaState.Node, dfaState.PrevCharKind, (this, seen, toExplore),
+                        ForEachNfaState(dfaState.GetNode(_builder), dfaState.PrevCharKind, (this, seen, toExplore),
                             static (int nfaId, (SymbolicRegexMatcher<TSet> Matcher, HashSet<MatchingState<TSet>> Seen, Queue<MatchingState<TSet>> ToExplore) args) =>
                             {
                                 MatchingState<TSet>? coreState = args.Matcher.GetState(args.Matcher.GetCoreStateId(nfaId));

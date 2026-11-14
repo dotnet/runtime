@@ -10,15 +10,33 @@ namespace System.Text.RegularExpressions.Symbolic
     /// <summary>Captures a state explored during matching.</summary>
     internal sealed class MatchingState<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
-        internal MatchingState(SymbolicRegexNode<TSet> node, uint prevCharKind)
+        private readonly bool _isDeadend;
+        private readonly bool _startsWithLineAnchor;
+        private readonly StateFlags _stateFlags;
+
+#if DEBUG
+        private readonly SymbolicRegexBuilder<TSet> _debugBuilder;
+#endif
+
+        internal MatchingState(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
-            Node = node;
+            SymbolicRegexNodeContext<TSet> nodeContext = builder.GetNodeContext(node);
+            ref readonly SymbolicRegexBuilder<TSet>.NodeData data = ref nodeContext.Data;
+            NodeId = node.Id;
             PrevCharKind = prevCharKind;
-            NullabilityInfo = BuildNullabilityInfo();
+            NullabilityInfo = BuildNullabilityInfo(nodeContext);
+            _isDeadend = data.Kind == SymbolicRegexNodeKind.Singleton && builder._solver.IsEmpty(data.Set);
+            _startsWithLineAnchor = data.Info.StartsWithLineAnchor;
+            _stateFlags = BuildStateFlags(nodeContext);
+#if DEBUG
+            _debugBuilder = builder;
+#endif
         }
 
-        /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
-        internal SymbolicRegexNode<TSet> Node { get; }
+        /// <summary>The ID of the regular expression that labels this state and gives it its semantics.</summary>
+        internal int NodeId { get; }
+
+        internal SymbolicRegexNode<TSet> GetNode(SymbolicRegexBuilder<TSet> builder) => builder.GetNode(NodeId);
 
         /// <summary>
         /// The kind of the previous character in the input. The <see cref="SymbolicRegexMatcher{TSet}"/> is responsible
@@ -46,29 +64,29 @@ namespace System.Text.RegularExpressions.Symbolic
         internal int Id { get; set; }
 
         /// <summary>Whether this state is known to be a dead end, i.e. no nullable states are reachable from here.</summary>
-        internal bool IsDeadend(ISolver<TSet> solver) => Node.IsNothing(solver);
+        internal bool IsDeadend => _isDeadend;
 
         /// <summary>
         /// Returns the fixed length that any match ending with this state must have, or -1 if there is no such
-        /// fixed length, <see cref="SymbolicRegexNode{TSet}.ResolveFixedLength(uint)"/>. The context is defined
+        /// fixed length, <see cref="SymbolicRegexNode{TSet}.ResolveFixedLength(SymbolicRegexBuilder{TSet}, uint)"/>. The context is defined
         /// by <see cref="PrevCharKind"/> of this state and the given nextCharKind. The node must be nullable here.
         /// </summary>
-        internal int FixedLength(uint nextCharKind)
+        internal int FixedLength(SymbolicRegexBuilder<TSet> builder, uint nextCharKind)
         {
             Debug.Assert(IsNullableFor(nextCharKind));
             Debug.Assert(CharKind.IsValidCharKind(nextCharKind));
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
-            return Node.ResolveFixedLength(context);
+            return GetNode(builder).ResolveFixedLength(builder, context);
         }
 
         /// <summary>If true then state starts with a ^ or $ or \Z</summary>
-        internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
+        internal bool StartsWithLineAnchor => _startsWithLineAnchor;
 
         /// <summary>
         /// Compute the target state for the given input minterm.
         /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
         /// </summary>
-        /// <param name="builder">the builder that owns <see cref="Node"/></param>
+        /// <param name="builder">the builder that owns the node identified by <see cref="NodeId"/></param>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
         /// <param name="nextCharKind"></param>
         internal SymbolicRegexNode<TSet> Next(SymbolicRegexBuilder<TSet> builder, TSet minterm, uint nextCharKind)
@@ -77,13 +95,13 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            return Node.CreateDerivativeWithoutEffects(builder, minterm, context);
+            return GetNode(builder).CreateDerivativeWithoutEffects(builder, minterm, context);
         }
 
         /// <summary>
         /// Compute a set of transitions for the given minterm.
         /// </summary>
-        /// <param name="builder">the builder that owns <see cref="Node"/></param>
+        /// <param name="builder">the builder that owns the node identified by <see cref="NodeId"/></param>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
         /// <param name="nextCharKind"></param>
         /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
@@ -93,12 +111,12 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the transitions for the given context
-            return Node.CreateNfaDerivativeWithEffects(builder, minterm, context);
+            return GetNode(builder).CreateNfaDerivativeWithEffects(builder, minterm, context);
         }
 
         /// <summary>Determines whether the node is nullable for the given context.</summary>
         /// <remarks>
-        /// This is functionally equivalent to <see cref="SymbolicRegexNode{TSet}.IsNullableFor(uint)"/>, but using cached
+        /// This is functionally equivalent to <see cref="SymbolicRegexNode{TSet}.IsNullableFor(SymbolicRegexBuilder{TSet}, uint)"/>, but using cached
         /// answers stored in <see cref="NullabilityInfo"/>.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -128,55 +146,56 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns>the flags for this matching state</returns>
         internal StateFlags BuildStateFlags(bool isInitial)
         {
-            StateFlags info = 0;
-
-            if (isInitial)
-            {
-                info |= StateFlags.IsInitialFlag;
-            }
-
-            if (Node.CanBeNullable)
-            {
-                info |= StateFlags.CanBeNullableFlag;
-                if (Node.IsNullable)
-                {
-                    info |= StateFlags.IsNullableFlag;
-                }
-            }
-
-            if (Node.Kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation)
-            {
-                info |= StateFlags.SimulatesBacktrackingFlag;
-            }
-
-            return info;
+            return isInitial ? _stateFlags | StateFlags.IsInitialFlag : _stateFlags;
         }
 
         /// <summary>Builds the nullability information for the matching state.</summary>
         /// <remarks>Nullability for each context is encoded in a bit. See <see cref="NullabilityInfo"/>.</remarks>
-        private byte BuildNullabilityInfo()
+        private byte BuildNullabilityInfo(SymbolicRegexNodeContext<TSet> node)
         {
             byte nullabilityInfo = 0;
-            if (Node.CanBeNullable)
+            if (node.Data.Info.CanBeNullable)
             {
                 for (uint charKind = 0; charKind < CharKind.CharKindCount; charKind++)
                 {
-                    nullabilityInfo |= (byte)(Node.IsNullableFor(CharKind.Context(PrevCharKind, charKind)) ? 1 << (int)charKind : 0);
+                    nullabilityInfo |= (byte)(node.IsNullableFor(CharKind.Context(PrevCharKind, charKind)) ? 1 << (int)charKind : 0);
                 }
             }
 
             return nullabilityInfo;
         }
 
-        public override bool Equals(object? obj) =>
-            obj is MatchingState<TSet> s && PrevCharKind == s.PrevCharKind && Node.Equals(s.Node);
+        private static StateFlags BuildStateFlags(SymbolicRegexNodeContext<TSet> node)
+        {
+            StateFlags flags = 0;
+            SymbolicRegexInfo info = node.Data.Info;
 
-        public override int GetHashCode() => HashCode.Combine(PrevCharKind, Node);
+            if (info.CanBeNullable)
+            {
+                flags |= StateFlags.CanBeNullableFlag;
+                if (info.IsNullable)
+                {
+                    flags |= StateFlags.IsNullableFlag;
+                }
+            }
+
+            if (node.Data.Kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation)
+            {
+                flags |= StateFlags.SimulatesBacktrackingFlag;
+            }
+
+            return flags;
+        }
+
+        public override bool Equals(object? obj) =>
+            obj is MatchingState<TSet> s && PrevCharKind == s.PrevCharKind && NodeId == s.NodeId;
+
+        public override int GetHashCode() => HashCode.Combine(PrevCharKind, NodeId);
 
 #if DEBUG
         public override string ToString() =>
-            PrevCharKind == 0 ? Node.ToString() :
-             $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
+            PrevCharKind == 0 ? GetNode(_debugBuilder).ToString(_debugBuilder) :
+             $"({CharKind.DescribePrev(PrevCharKind)},{GetNode(_debugBuilder).ToString(_debugBuilder)})";
 #endif
     }
 }
