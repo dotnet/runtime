@@ -818,7 +818,58 @@
         ret
     }
 
-    .method public static void Finally.EndfinallyInNestedTry_Invalid_Endfinally() cil managed
+    .method public static void Filter.EndfinallyInFilter_Invalid_Endfinally() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        filter
+        {
+            pop
+            // A filter is not a handler, so no finally or fault handler encloses this endfinally.
+            // endfilter must be the filter's last instruction, so branch around endfinally.
+            ldsfld int32 ExceptionRegionTests::Value
+            brtrue FilterEnd
+            endfinally
+        FilterEnd:
+            ldc.i4.1
+            endfilter
+        }
+        {
+            pop
+            leave MethodEnd
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Filter.HandlerEndsWithEndfinally_Invalid_Endfinally() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        filter
+        {
+            pop
+            ldc.i4.1
+            endfilter
+        }
+        {
+            // The handler of a filter clause is neither a finally nor a fault handler.
+            pop
+            endfinally
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Finally.EndfinallyInNestedTry_Invalid_EndfinallyInNestedTry() cil managed
     {
         .maxstack 1
 
@@ -845,7 +896,7 @@
         ret
     }
 
-    .method public static void Finally.EndfinallyInNestedFilter_Invalid_Endfinally() cil managed
+    .method public static void Finally.EndfinallyInNestedFilter_Invalid_EndfinallyInNestedFilter() cil managed
     {
         .maxstack 1
 
@@ -870,6 +921,53 @@
                 ldc.i4.1
                 endfilter
             }
+            {
+                pop
+                leave HandlerEnd
+            }
+        HandlerEnd:
+            endfinally
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Finally.EndfinallyInFilterInNestedTry_Invalid_EndfinallyInNestedFilter() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        finally
+        {
+            .try
+            {
+                .try
+                {
+                    leave InnerTryEnd
+                }
+                filter
+                {
+                    pop
+                    // This filter lies inside a try that is nested in the finally, so both are nested
+                    // in the handler. The filter is the innermost, so the error names the filter.
+                    ldsfld int32 ExceptionRegionTests::Value
+                    brtrue FilterEnd
+                    endfinally
+                FilterEnd:
+                    ldc.i4.1
+                    endfilter
+                }
+                {
+                    pop
+                    leave InnerTryEnd
+                }
+            InnerTryEnd:
+                leave HandlerEnd
+            }
+            catch [System.Runtime]System.Exception
             {
                 pop
                 leave HandlerEnd
@@ -918,7 +1016,7 @@
         ret
     }
 
-    .method public static void Fault.EndfaultInNestedTry_Invalid_Endfinally() cil managed
+    .method public static void Fault.EndfaultInNestedTry_Invalid_EndfaultInNestedTry() cil managed
     {
         .maxstack 1
 
@@ -945,7 +1043,7 @@
         ret
     }
 
-    .method public static void Fault.EndfaultInNestedFilter_Invalid_Endfinally() cil managed
+    .method public static void Fault.EndfaultInNestedFilter_Invalid_EndfaultInNestedFilter() cil managed
     {
         .maxstack 1
 
@@ -973,6 +1071,34 @@
             {
                 pop
                 leave HandlerEnd
+            }
+        HandlerEnd:
+            endfault
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Fault.EndfaultInCatchInFault_Invalid_Endfinally() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        fault
+        {
+            .try
+            {
+                leave HandlerEnd
+            }
+            catch [System.Runtime]System.Exception
+            {
+                // The innermost enclosing handler is this catch, so the error is Endfinally,
+                // not EndfaultInNestedTry, although a fault handler encloses the catch.
+                pop
+                endfault
             }
         HandlerEnd:
             endfault
