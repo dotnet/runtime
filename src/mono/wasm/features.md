@@ -430,6 +430,15 @@ globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
 
 The counters could be opened in VS or in `PerfView.exe`
 
+To include managed startup, set `DOTNET_DiagnosticPorts=js://cpu-samples` before runtime
+creation. The startup client resumes the runtime and downloads a trace after 60 seconds.
+For cooperative browser sampling, `DOTNET_EventPipeThreadSamplingRate=10` selects a
+10 ms interval. `2147483647` samples every instrumentation point and is intended for
+focused diagnostic tests; it can produce very high overhead and event loss on large apps.
+Instrumented trace timing is not production wall-clock performance. CPU collection
+includes live loader/JIT metadata by default to preserve symbols when code changes
+before rundown; an explicit runtime provider in `extraProviders` remains caller-controlled.
+
 ```js
 globalThis.getDotnetRuntime(0).collectPgoTrace()
 // stops and downloads automatically after 10s; pass a different duration with:

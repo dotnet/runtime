@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
 
-import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, dotnetLogger, Module } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, dotnetLogger, Module, startPerformanceMeasure, endPerformanceMeasure } from "./cross-module";
 import { exit, isExited, runtimeState } from "./exit";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
@@ -49,6 +49,7 @@ function startDeferredR2R(): void {
     deferredR2RState.status = "pending";
     deferredR2RState.eagerReadyTime = performance.now();
     deferredR2RState.nativeWasmReadyTime = nativeWasmReadyTime;
+    const activationStart = startPerformanceMeasure(loaderConfig);
     deferredR2RPromise = activate();
     void deferredR2RPromise.catch(error => {
         if (isExited()) {
@@ -65,19 +66,24 @@ function startDeferredR2R(): void {
         if (isExited()) throw new Error("Runtime exited before deferred ReadyToRun started.");
         deferredR2RState.status = "downloading";
         deferredR2RState.downloadStartedTime = performance.now();
+        const downloadStart = startPerformanceMeasure(loaderConfig);
         await fetchAssembly(assets![0], false);
+        endPerformanceMeasure("dotnet.deferred-r2r.download-and-instantiate", downloadStart);
         deferredR2RState.instantiatedTime = performance.now();
         deferredR2RState.status = "activating";
         let remaining = 1;
         while (remaining > 0) {
             await delay(0);
             if (isExited()) throw new Error("Runtime exited during deferred ReadyToRun activation.");
+            const batchStart = startPerformanceMeasure(loaderConfig);
             const batch = dotnetBrowserHostExports.activateDeferredR2R();
+            endPerformanceMeasure("dotnet.deferred-r2r.publish-batch", batchStart, batch);
             deferredR2RState.publishedMethods += batch.published;
             remaining = batch.remaining;
         }
         deferredR2RState.status = "completed";
         deferredR2RState.completedTime = performance.now();
+        endPerformanceMeasure("dotnet.deferred-r2r.total", activationStart, deferredR2RState);
     }
 }
 
@@ -176,6 +182,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(resources.jsModuleRuntime[0]);
         const wasmNativePromise: Promise<Response> = fetchMainWasm(resources.wasmNative[0]);
 
+        const eagerStart = startPerformanceMeasure(loaderConfig);
         const coreAssembliesPromise = forEachResource(resources.coreAssembly, fetchAssembly);
 
         const icuResourceName = getIcuResourceName();
@@ -224,6 +231,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
         if (!downloadOnly) {
             if (resources.r2rAssembly?.length) await assembliesPromise;
+            endPerformanceMeasure("dotnet.eager-assets.ready", eagerStart);
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
         }
@@ -267,7 +275,9 @@ async function initializeCoreCLR(): Promise<void> {
     if (assets?.length && (assets.length !== 1 || !assets[0].isCompositeImage || !assets[0].tableSize || !assets[0].payloadSize)) {
         throw new Error("Deferred ReadyToRun requires exactly one composite Webcil image with payload and table sizes.");
     }
+    const start = startPerformanceMeasure(loaderConfig);
     const res = dotnetBrowserHostExports.initializeCoreCLR(!!assets?.length);
+    endPerformanceMeasure("dotnet.vm.initialize", start);
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
         runMainPromiseController.reject(reason);

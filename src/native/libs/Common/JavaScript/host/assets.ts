@@ -5,6 +5,7 @@ import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
 
 import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
+import { startPerformanceMeasure, endPerformanceMeasure } from "./cross-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -61,19 +62,26 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     if (_ems_.dotnetLoaderExports.isExited()) throw new Error("Runtime exited before Webcil instantiation.");
     let payloadPtr = 0;
     try {
+        const allocationStart = startPerformanceMeasure(_ems_.dotnetApi.getConfig());
         payloadPtr = allocWebcilPayload(payloadSize);
         const imports: WebAssembly.Imports = { webcil: buildWebcilImports(memory, payloadPtr, tableEntries) };
+        endPerformanceMeasure(`dotnet.webcil.allocate ${virtualPath}`, allocationStart,
+            { payloadSize, tableEntries, wasmMemoryBytes: memory.buffer.byteLength });
         let instance: WebAssembly.Instance;
         const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
         const streamingOk = hasInstantiateStreaming && typeof globalThis.Response === "function" && res instanceof globalThis.Response && contentType === "application/wasm";
+        const instantiateStart = startPerformanceMeasure(_ems_.dotnetApi.getConfig());
         if (streamingOk) {
             instance = (await WebAssembly.instantiateStreaming(res, imports)).instance;
         } else {
             const data = await res.arrayBuffer();
             instance = (await WebAssembly.instantiate(data, imports)).instance;
         }
+        endPerformanceMeasure(`dotnet.webcil.instantiate ${virtualPath}`, instantiateStart, { streaming: streamingOk });
         if (_ems_.dotnetLoaderExports.isExited()) throw new Error("Runtime exited during Webcil instantiation.");
+        const registerStart = startPerformanceMeasure(_ems_.dotnetApi.getConfig());
         finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
+        endPerformanceMeasure(`dotnet.webcil.register ${virtualPath}`, registerStart);
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
@@ -242,6 +250,7 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
     let module: WebAssembly.Module;
     try {
         const res = await checkResponseOk(wasmPromise);
+        const instantiateStart = startPerformanceMeasure(_ems_.dotnetApi.getConfig());
         if (!hasInstantiateStreaming || !res.isStreamingOk) {
             const data = await res.arrayBuffer();
             module = await WebAssembly.compile(data);
@@ -251,6 +260,8 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
             instance = instantiated.instance;
             module = instantiated.module;
         }
+        endPerformanceMeasure("dotnet.native-wasm.instantiate", instantiateStart,
+            { streaming: !!res.isStreamingOk });
         return { instance, module };
     } catch (err) {
         _ems_.dotnetApi.exit(1, err);

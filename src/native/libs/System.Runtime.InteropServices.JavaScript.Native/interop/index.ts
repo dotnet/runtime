@@ -98,7 +98,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     initializeMarshalersToCs();
     initializeScheduling();
     jsInteropState.isInitialized = true;
-    jsInteropState.enablePerfMeasure = globalThis.performance && typeof globalThis.performance.measure === "function";
+    jsInteropState.enablePerfMeasure = runtimeApi.getConfig().environmentVariables?.DOTNET_WASM_PERF_MEASURE !== "0" &&
+        !!globalThis.performance && typeof globalThis.performance.measure === "function";
 
     function runtimeExportsToTable(map: RuntimeExports): RuntimeExportsTable {
         // keep in sync with runtimeExportsFromTable()

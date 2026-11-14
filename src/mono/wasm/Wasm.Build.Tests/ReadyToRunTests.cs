@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
 
         private async Task PublishDeferredReadyToRunCore(bool nativeRelink, bool failDownload, bool useWorkload)
         {
-            Configuration config = Configuration.Debug;
+            Configuration config = Configuration.Release;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_deferred",
                 extraProperties: """
                     <PublishReadyToRun>true</PublishReadyToRun>

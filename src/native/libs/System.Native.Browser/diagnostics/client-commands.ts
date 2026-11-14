@@ -3,6 +3,7 @@
 
 import type { DiagnosticCommandOptions } from "../types";
 import { CommandSetId, EventPipeCommandId, Keywords, PayloadV2, ProcessCommandId, ServerCommandId, SessionId } from "./types";
+import type { ProviderV2 } from "./types";
 
 
 // ADVR_V1\0
@@ -97,6 +98,13 @@ export function commandCounters(options: DiagnosticCommandOptions) {
 }
 
 export function commandSampleProfiler(options: DiagnosticCommandOptions) {
+    // Preserve symbols for interpreted code that can be replaced before rundown.
+    const runtimeProvider: ProviderV2 = {
+        keywords: [0, Keywords.Loader | Keywords.Jit],
+        logLevel: 5,
+        providerName: "Microsoft-Windows-DotNETRuntime",
+        arguments: null
+    };
     return commandCollectTracing2({
         circularBufferMB: options.circularBufferMB ?? 256,
         format: 1,
@@ -111,6 +119,7 @@ export function commandSampleProfiler(options: DiagnosticCommandOptions) {
                 providerName: "Microsoft-DotNETCore-SampleProfiler",
                 arguments: null
             },
+            ...(options.extraProviders?.some(provider => provider.providerName === runtimeProvider.providerName) ? [] : [runtimeProvider]),
             ...options.extraProviders || [],
         ]
     });

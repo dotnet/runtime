@@ -34,6 +34,11 @@ activation and `INTERNAL.getDeferredR2RState()` reports phase timings and publis
 counts. These are internal diagnostics, not supported public APIs. Late failures are fatal;
 benchmarking must await successful activation before measuring steady state.
 
+For Chrome profiling, set the loader environment variable `DOTNET_WASM_PERF_MEASURE=1`.
+It adds Performance API spans for eager assets, native/Webcil instantiation, VM startup,
+and deferred publication batches. Set it to `0` to disable JS interop measures in timing
+controls; omitting it preserves the existing interop measurement behavior.
+
 The browser sample detects this mode and withholds the late response until it has exercised
 an interpreter probe. It then verifies the same portable entrypoint transitions to compiled
 code and resumes an already-suspended async call.

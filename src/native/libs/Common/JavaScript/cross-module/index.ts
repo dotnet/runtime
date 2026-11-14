@@ -39,6 +39,20 @@ export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
+export function startPerformanceMeasure(config: { environmentVariables?: Record<string, string> }): number | undefined {
+    if (config.environmentVariables?.DOTNET_WASM_PERF_MEASURE === "1" &&
+        typeof globalThis.performance?.measure === "function") {
+        return performance.now();
+    }
+    return undefined;
+}
+
+export function endPerformanceMeasure(name: string, start: number | undefined, detail?: object): void {
+    if (start !== undefined) {
+        performance.measure(name, { start, end: performance.now(), detail });
+    }
+}
+
 export function dotnetGetInternals(): InternalExchange {
     return dotnetInternals;
 }

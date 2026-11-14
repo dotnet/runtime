@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset, AssetBehaviors } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi, startPerformanceMeasure, endPerformanceMeasure } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
@@ -20,6 +20,7 @@ let totalAssetsToDownload = 0;
 let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 const loadedLazyAssemblies = new Set<string>();
 let mainWasmAsset: WasmAsset | null = null;
+let mainWasmMeasureStart: number | undefined;
 const allDownloadsQueuedPCS = createPromiseCompletionSource<void>();
 
 export function resolveAllDownloadsQueued(): void {
@@ -111,6 +112,7 @@ export function fetchMainWasm(asset: WasmAsset): Promise<Response> {
     assetInternal.priority = true;
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     mainWasmAsset = asset;
+    mainWasmMeasureStart = startPerformanceMeasure(loaderConfig);
     wasmBinaryPromise = loadResource(assetInternal);
     return wasmBinaryPromise;
 }
@@ -133,6 +135,7 @@ export async function instantiateMainWasm(imports: WebAssembly.Imports, successC
     successCallback(instance, module);
     const memory = dotnetNativeBrowserExports.getWasmMemory();
     nativeWasmReadyTime = performance.now();
+    endPerformanceMeasure("dotnet.native-wasm.ready", mainWasmMeasureStart, { wasmMemoryBytes: memory.buffer.byteLength });
     wasmMemoryPromiseController.resolve(memory);
 }
 
