@@ -85,26 +85,26 @@ def generateClrEventPipeWriteEventsImpl(
     providerPrettyName = providerPrettyName.replace('-', '_')
     WriteEventImpl = []
 
-    # EventPipeEvent declaration
-    for eventNode in eventNodes:
-        eventName = eventNode.getAttribute('symbol')
-
-        if not includeEvent(inclusionList, providerName, eventName):
-            continue
-
-        WriteEventImpl.append(
-            "EventPipeEvent *EventPipeEvent" +
-            eventName +
-            (" = nullptr;\n" if target_cpp else " = NULL;\n"))
+    includedEvents = [eventNode for eventNode in eventNodes
+                      if includeEvent(inclusionList, providerName, eventNode.getAttribute('symbol'))]
+    if includedEvents:
+        WriteEventImpl.append("static EventPipeEvent EventPipeEvents%s[%s];\n" % (providerPrettyName, len(includedEvents)))
 
     WriteEventImpl.append("\n")
 
-    for eventNode in eventNodes:
+    for eventIndex, eventNode in enumerate(includedEvents):
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
+        eventExpr = "&EventPipeEvents%s[%s]" % (providerPrettyName, eventIndex)
 
-        if not includeEvent(inclusionList, providerName, eventName):
-            continue
+        if runtimeFlavor.coreclr and eventName == "JitInstrumentationDataVerbose":
+            # The PGO flush needs this event outside the generated provider.
+            WriteEventImpl.append("""EventPipeEvent *EventPipeGetEvent%s(void)
+{
+    return %s;
+}
+
+""" % (eventName, eventExpr))
 
         eventIsEnabledFunc = ""
         if runtimeFlavor.coreclr:
@@ -115,10 +115,10 @@ def generateClrEventPipeWriteEventsImpl(
         # generate EventPipeEventEnabled function
         eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor) + """
 {
-    return %s(EventPipeEvent%s);
+    return %s(%s);
 }
 
-""" % (eventIsEnabledFunc, eventName)
+""" % (eventIsEnabledFunc, eventExpr)
         WriteEventImpl.append(eventEnabledImpl)
 
         # generate EventPipeWriteEvent function
@@ -140,19 +140,19 @@ def generateClrEventPipeWriteEventsImpl(
         WriteEventImpl.extend(fnptype)
 
         if template:
-            body = generateWriteEventBody(template, providerName, eventName, runtimeFlavor)
+            body = generateWriteEventBody(template, providerName, eventName, eventExpr, runtimeFlavor)
             WriteEventImpl.append(body)
             WriteEventImpl.append("}\n\n")
         else:
             if runtimeFlavor.coreclr:
                 WriteEventImpl.append(
-                    "    EventPipeAdapter::WriteEvent(EventPipeEvent" +
-                    eventName +
+                    "    EventPipeAdapter::WriteEvent(" +
+                    eventExpr +
                     ", (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n")
             elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
                 WriteEventImpl.append(
-                    "    ep_write_event (EventPipeEvent" +
-                    eventName +
+                    "    ep_write_event (" +
+                    eventExpr +
                     ", (uint8_t *) NULL, 0, (const uint8_t *)ActivityId, (const uint8_t *)RelatedActivityId);\n")
             WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 
@@ -189,12 +189,7 @@ def generateClrEventPipeWriteEventsImpl(
             "#endif\n    ")
     else:
         callbackExpr = eventPipeCallbackCastExpr + "(" + callbackName + ")"
-    WriteEventImpl.append(
-        "    EventPipeProvider" +
-        providerPrettyName +
-        " = " + createProviderFunc + "(" +
-        providerPrettyName +
-        "Name, " + callbackExpr + ");\n")
+    eventDefinitions = []
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -209,30 +204,44 @@ def generateClrEventPipeWriteEventsImpl(
         if not includeEvent(inclusionList, providerName, eventName):
             continue
 
+        if not 0 <= int(eventVersion) <= 255:
+            raise ValueError("Event version for %s must fit in uint8_t: %s" % (eventName, eventVersion))
+
         needStack = "true"
         for nostackentry in exclusionList.nostack:
             tokens = nostackentry.split(':')
             if tokens[2] == eventName:
                 needStack = "false"
 
-        addEventFunc = ""
-        if runtimeFlavor.coreclr:
-            addEventFunc = "EventPipeAdapter::AddEvent"
-        elif runtimeFlavor.mono:
-            addEventFunc = "provider_add_event"
-        elif runtimeFlavor.nativeaot:
-            addEventFunc = "ep_provider_add_event"
+        eventDefinitions.append(
+            "        { %s, %s, %s, %s, %s },\n" %
+            (eventKeywordsMask, eventValue, eventVersion, eventLevel, needStack))
 
-        initEvent = """    EventPipeEvent%s = %s(EventPipeProvider%s,%s,%s,%s,%s,%s%s);
-""" % (eventName, addEventFunc, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel, needStack, (",NULL,0" if runtimeFlavor.nativeaot else ""))
-
-        WriteEventImpl.append(initEvent)
+    if eventDefinitions:
+        WriteEventImpl.append("""
+    static const EventPipeEventDefinition definitions[] =
+    {
+""")
+        WriteEventImpl.extend(eventDefinitions)
+        WriteEventImpl.append("""    };
+    static const EventPipeEventTable eventTable =
+    {
+        definitions, EventPipeEvents%s, %s
+    };
+""" % (providerPrettyName, len(eventDefinitions)))
+        tableExpr = "&eventTable"
+    else:
+        tableExpr = "nullptr" if target_cpp else "NULL"
+    WriteEventImpl.append(
+        "    EventPipeProvider%s = %s(%sName, %s%s, %s);\n" %
+        (providerPrettyName, createProviderFunc, providerPrettyName, callbackExpr,
+         ", nullptr" if target_cpp else "", tableExpr))
     WriteEventImpl.append("}")
 
     return ''.join(WriteEventImpl)
 
 
-def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
+def generateWriteEventBody(template, providerName, eventName, eventExpr, runtimeFlavor):
     def winTypeToFixedWidthType(t):
         return {'win:Int8': 'int8_t',
                 'win:UInt8': 'uint8_t',
@@ -402,14 +411,14 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
 
     body = ""
     if runtimeFlavor.coreclr:
-        body = "    EventPipeAdapter::WriteEvent(EventPipeEvent" + \
-            eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
+        body = "    EventPipeAdapter::WriteEvent(" + \
+            eventExpr + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
     elif runtimeFlavor.mono:
-        body = "    ep_write_event (EventPipeEvent" + \
-            eventName + ", (uint8_t *)buffer, (uint32_t)offset, ActivityId, RelatedActivityId);\n"
+        body = "    ep_write_event (" + \
+            eventExpr + ", (uint8_t *)buffer, (uint32_t)offset, ActivityId, RelatedActivityId);\n"
     elif runtimeFlavor.nativeaot:
-        body = "    ep_write_event (EventPipeEvent" + \
-            eventName + ", (uint8_t *)buffer, (uint32_t)offset, reinterpret_cast<const uint8_t*>(ActivityId), reinterpret_cast<const uint8_t*>(RelatedActivityId));\n"
+        body = "    ep_write_event (" + \
+            eventExpr + ", (uint8_t *)buffer, (uint32_t)offset, reinterpret_cast<const uint8_t*>(ActivityId), reinterpret_cast<const uint8_t*>(RelatedActivityId));\n"
 
     header += "\n"
     footer = ""
@@ -815,10 +824,10 @@ bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size,
     return true;
 }
 
-EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
+EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr)
 {
     ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-    EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
+    EventPipeProvider * provider = ep_create_provider_with_events (providerNameUTF8, callback, pCallbackContext, eventTable);
     ep_rt_utf8_string_free (providerNameUTF8);
     return provider;
 }
@@ -1097,24 +1106,11 @@ write_buffer_uintptr_t (
 
 static
 inline
-EventPipeEvent *
-provider_add_event (
-    EventPipeProvider *provider,
-    uint32_t event_id,
-    uint64_t keywords,
-    uint32_t event_version,
-    EventPipeEventLevel level,
-    bool need_stack)
-{
-    return ep_provider_add_event (provider, event_id, keywords, event_version, level, need_stack, NULL, 0);
-}
-
-static
-inline
 EventPipeProvider *
 create_provider (
     const wchar_t *provider_name,
-    EventPipeCallback callback_func)
+    EventPipeCallback callback_func,
+    const EventPipeEventTable *event_table)
 {
     ep_char8_t *provider_name_utf8 = NULL;
 
@@ -1128,7 +1124,7 @@ create_provider (
 
     ep_return_null_if_nok (provider_name_utf8 != NULL);
 
-    EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL);
+    EventPipeProvider *provider = ep_create_provider_with_events (provider_name_utf8, callback_func, NULL, event_table);
 
     g_free (provider_name_utf8);
     return provider;
@@ -1163,7 +1159,7 @@ bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, b
 bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 
-EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr);
+EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr, const EventPipeEventTable *eventTable = nullptr);
 
 template <typename T>
 bool WriteToBuffer(const T &value, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)

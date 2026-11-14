@@ -21,6 +21,7 @@ extern char **environ;
 #endif
 
 ep_rt_spin_lock_handle_t ep_rt_test_config_lock;
+PLATFORM_THREAD_LOCAL void (*ep_rt_test_before_store_int64)(volatile int64_t *ptr, int64_t value);
 
 static PLATFORM_THREAD_LOCAL ep_rt_test_thread_t current_thread;
 static volatile uint32_t worker_count;

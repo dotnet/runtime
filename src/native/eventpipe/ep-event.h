@@ -17,6 +17,22 @@
  * EventPipeEvent.
  */
 
+struct _EventPipeEventDefinition {
+	uint64_t keywords;
+	uint32_t event_id;
+	uint8_t event_version;
+	uint8_t level;
+	bool need_stack;
+};
+
+// The definitions and initially zeroed event storage must outlive the provider.
+// Event storage must not be shared by live providers.
+struct _EventPipeEventTable {
+	const EventPipeEventDefinition *definitions;
+	EventPipeEvent *events;
+	uint32_t events_len;
+};
+
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EVENT_GETTER_SETTER)
 struct _EventPipeEvent {
 #else
@@ -53,7 +69,6 @@ struct _EventPipeEvent {
 
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint64_t, keywords)
 EP_DEFINE_GETTER_REF(EventPipeEvent *, event, volatile int64_t *, enabled_mask)
-EP_DEFINE_SETTER(EventPipeEvent *, event, int64_t, enabled_mask)
 EP_DEFINE_GETTER_REF(EventPipeEvent *, event, volatile int64_t *, metadata_written_mask)
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint8_t *, metadata)
 EP_DEFINE_GETTER(EventPipeEvent *, event, EventPipeProvider *, provider)
@@ -62,6 +77,16 @@ EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, event_version)
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, metadata_len)
 EP_DEFINE_GETTER(EventPipeEvent *, event, EventPipeEventLevel, level)
 EP_DEFINE_GETTER(EventPipeEvent *, event, bool, need_stack)
+
+static
+inline
+void
+ep_event_set_enabled_mask (
+	EventPipeEvent *ep_event,
+	int64_t enabled_mask)
+{
+	ep_rt_volatile_store_int64_t (ep_event_get_enabled_mask_ref (ep_event), enabled_mask);
+}
 
 static
 inline
@@ -78,9 +103,26 @@ ep_event_is_enabled_by_mask (
 	const EventPipeEvent *ep_event,
 	uint64_t session_mask)
 {
+	if ((ep_rt_volatile_load_int64_t (ep_event_get_enabled_mask_cref (ep_event)) & session_mask) == 0)
+		return false;
 	EP_ASSERT (ep_event_get_provider (ep_event) != NULL);
-	return (ep_provider_is_enabled_by_mask (ep_event_get_provider (ep_event), session_mask) && ((ep_rt_volatile_load_int64_t (ep_event_get_enabled_mask_cref (ep_event)) & session_mask) != 0));
+	return ep_provider_is_enabled_by_mask (ep_event_get_provider (ep_event), session_mask);
 }
+
+EventPipeEvent *
+ep_event_init (
+	EventPipeEvent *ep_event,
+	EventPipeProvider *provider,
+	uint64_t keywords,
+	uint32_t event_id,
+	uint32_t event_version,
+	EventPipeEventLevel level,
+	bool need_stack,
+	const uint8_t *metadata,
+	uint32_t metadata_len);
+
+void
+ep_event_fini (EventPipeEvent *ep_event);
 
 EventPipeEvent *
 ep_event_alloc (

@@ -63,7 +63,30 @@ ep_event_alloc (
 	EP_ASSERT (provider != NULL);
 
 	EventPipeEvent *instance = ep_rt_object_alloc (EventPipeEvent);
-	ep_raise_error_if_nok (instance != NULL);
+	ep_return_null_if_nok (instance != NULL);
+
+	if (!ep_event_init (instance, provider, keywords, event_id, event_version, level, need_stack, metadata, metadata_len)) {
+		ep_rt_object_free (instance);
+		return NULL;
+	}
+
+	return instance;
+}
+
+EventPipeEvent *
+ep_event_init (
+	EventPipeEvent *instance,
+	EventPipeProvider *provider,
+	uint64_t keywords,
+	uint32_t event_id,
+	uint32_t event_version,
+	EventPipeEventLevel level,
+	bool need_stack,
+	const uint8_t *metadata,
+	uint32_t metadata_len)
+{
+	EP_ASSERT (instance != NULL);
+	EP_ASSERT (provider != NULL);
 
 	instance->provider = provider;
 	instance->keywords = keywords;
@@ -71,7 +94,7 @@ ep_event_alloc (
 	instance->event_version = event_version;
 	instance->level = level;
 	instance->need_stack = need_stack;
-	instance->enabled_mask = 0;
+	ep_event_set_enabled_mask (instance, 0);
 	instance->metadata_written_mask = 0;
 
 	if (metadata != NULL) {
@@ -83,15 +106,35 @@ ep_event_alloc (
 	} else {
 		// if metadata is not provided, we have to build the minimum version. It's required by the serialization contract.
 		event_build_minimum_metadata (instance, &(instance->metadata), &(instance->metadata_len));
+		ep_raise_error_if_nok (instance->metadata != NULL);
 	}
 
 ep_on_exit:
 	return instance;
 
 ep_on_error:
-	ep_event_free (instance);
+	ep_event_fini (instance);
 	instance = NULL;
 	ep_exit_error_handler ();
+}
+
+void
+ep_event_fini (EventPipeEvent *ep_event)
+{
+	ep_return_void_if_nok (ep_event != NULL);
+
+	// Static event addresses remain visible to enabled checks, including on an initialization failure.
+	ep_event_set_enabled_mask (ep_event, 0);
+	ep_rt_byte_array_free (ep_event->metadata);
+	ep_event->keywords = 0;
+	ep_event->metadata_written_mask = 0;
+	ep_event->metadata = NULL;
+	ep_event->provider = NULL;
+	ep_event->event_id = 0;
+	ep_event->event_version = 0;
+	ep_event->metadata_len = 0;
+	ep_event->level = EP_EVENT_LEVEL_LOGALWAYS;
+	ep_event->need_stack = false;
 }
 
 void
@@ -99,7 +142,7 @@ ep_event_free (EventPipeEvent *ep_event)
 {
 	ep_return_void_if_nok (ep_event != NULL);
 
-	ep_rt_byte_array_free (ep_event->metadata);
+	ep_event_fini (ep_event);
 	ep_rt_object_free (ep_event);
 }
 

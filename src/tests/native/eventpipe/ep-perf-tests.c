@@ -6,11 +6,13 @@
 RESULT test_check_buffer_perf(void);
 RESULT test_buffer_manager_perf(void);
 RESULT test_write_event_perf(void);
+RESULT test_event_table_perf(void);
 
 static const Test ep_perf_tests[] = {
     {"test_check_buffer_perf", test_check_buffer_perf},
     {"test_buffer_manager_perf", test_buffer_manager_perf},
     {"test_write_event_perf", test_write_event_perf},
+    {"test_event_table_perf", test_event_table_perf},
     {NULL, NULL}
 };
 
