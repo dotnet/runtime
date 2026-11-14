@@ -645,7 +645,11 @@ private:
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    bool m_emitMethodEntryPGO;
+#else
     bool m_emitInterpPGO;
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -774,7 +778,11 @@ private:
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    void InstrumentMethodEntry();
+#else
     void InstrumentBlockCounts();
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
     InterpBasicBlock* GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
@@ -1159,7 +1167,9 @@ public:
     static bool s_browserProfilerEnabled;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
+#if !defined(TARGET_WASM) || !defined(TARGET_BROWSER) || defined(FEATURE_MULTITHREADING)
     static bool s_interpPgoEnabled;
+#endif // !TARGET_WASM || !TARGET_BROWSER || FEATURE_MULTITHREADING
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.

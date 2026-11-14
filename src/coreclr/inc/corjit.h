@@ -340,6 +340,7 @@ public:
         ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
         ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
         ValueHistogram = (DescriptorMin * 9) | FourByte,
+        MethodEntryLongCount = (DescriptorMin * 10) | EightByte, // logical entries, not a complete block profile
     };
 
     struct PgoInstrumentationSchema

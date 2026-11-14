@@ -91,6 +91,9 @@ OPDEF(INTOP_PROF_LEAVE, "prof.leave", 1, 0, 0, InterpOpNoArgs)
 #endif
 
 OPDEF(INTOP_PGO_COUNT, "pgo.count", 2, 0, 0, InterpOpLdPtr)
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+OPDEF(INTOP_PGO_COUNT_I8, "pgo.count.i8", 2, 0, 0, InterpOpLdPtr)
+#endif // TARGET_WASM && TARGET_BROWSER && !FEATURE_MULTITHREADING
 
 OPDEF(INTOP_BR, "br", 2, 0, 0, InterpOpBranch)
 

@@ -26,6 +26,9 @@ public:
 
     static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, BYTE **pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
     static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+#if defined(FEATURE_PGO) && defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    static BYTE* allocPgoInstrumentationFromR2RSchema(Module* imageModule, MethodDesc* method, UINT32 schemaIndex);
+#endif
     static HRESULT getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                              Module* pModule,
                                                              ReadyToRunLoadedImage* pNativeImage,
@@ -107,7 +110,7 @@ public:
             return hashpair.Hash();
         }
 
-        void Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned countsOffset);
+        void Init(MethodDesc *pMD, unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset);
         void HashInit(unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset)
         {
             method = NULL;
@@ -131,6 +134,10 @@ public:
     struct HeaderList
     {
         HeaderList*  next;
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+        HeaderList* nextForMethod;
+        UINT32 schemaCount;
+#endif
         Header       header;
 
         MethodDesc*  GetKey() const
@@ -142,6 +149,9 @@ public:
             return MixPointerIntoHash(ptr);
         }
     };
+#if defined(TARGET_WASM) && defined(TARGET_BROWSER) && !defined(FEATURE_MULTITHREADING)
+    static_assert(sizeof(HeaderList) % 8 == 0, "Counter storage must start at an eight-byte aligned header boundary");
+#endif
 
 protected:
 

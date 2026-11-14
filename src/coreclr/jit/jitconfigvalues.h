@@ -924,7 +924,8 @@ RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
 // Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
 // Same key as the interpreter's InterpConfig.WasmPerformanceInstrumentation so both engines share it.
 RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation")
-#endif // defined(TARGET_WASM)
+RELEASE_CONFIG_METHODSET(WasmPgoInstrumentation, "WasmPgoInstrumentation") // Empty disables counter instrumentation.
+#endif                                                                     // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)

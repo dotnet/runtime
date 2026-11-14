@@ -730,7 +730,7 @@ namespace Internal.JitInterface
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
             if (!_isCompilationProbe &&
-                (_ilBodiesNeeded == null) &&
+                (_ilBodiesNeeded == null) && !_pgoTokenMissing &&
                 _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
             {
                 HashCode hashCode = default(HashCode);
@@ -764,7 +764,7 @@ namespace Internal.JitInterface
             }
 
             // If any il bodies need to be recomputed, force recompilation
-            if ((_ilBodiesNeeded != null) ||
+            if ((_ilBodiesNeeded != null) || _pgoTokenMissing ||
                 (!_isCompilationProbe && (InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)))
             {
                 if (!_isCompilationProbe)
@@ -3471,9 +3471,28 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
         private byte[] _bbCounts;
+        private bool _pgoTokenMissing;
+        private readonly List<(MethodDesc Method, PgoInstrumentationSchemaTableNode.Entry Schema, byte[] Cell, ISymbolNode Import)> _wasmPgoCells = new();
+
+        private ISymbolNode FindWasmPgoCell(void* address)
+        {
+            foreach (var entry in _wasmPgoCells)
+            {
+                if (address == (void*)GetPin(entry.Cell))
+                    return entry.Import;
+            }
+
+            return null;
+        }
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
         {
+            if (FindWasmPgoCell(location) is not null)
+            {
+                offset = 0;
+                blockType = BlockType.BBCounts;
+                return;
+            }
             if (_bbCounts != null)
             {
                 fixed (byte* pBBCountData = _bbCounts)
@@ -3599,6 +3618,45 @@ namespace Internal.JitInterface
             CORJIT_FLAGS flags = default(CORJIT_FLAGS);
             getJitFlags(ref flags, 0);
             *pInstrumentationData = null;
+
+            if (_compilation.NodeFactory.PgoInstrumentationSchemas is not null && countSchemaItems != 0)
+            {
+                MethodDesc target = HandleToObject(ftnHnd).GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (target.GetTypicalMethodDefinition() is not EcmaMethod definition ||
+                    definition.IsPInvoke || definition.IsInternalCall || definition.IsRuntimeImplemented ||
+                    definition.Module.MetadataReader.GetMethodDefinition(definition.Handle).RelativeVirtualAddress == 0)
+                    return HRESULT.E_NOTIMPL;
+
+                Span<PgoInstrumentationSchema> schema = new(pSchema, checked((int)countSchemaItems));
+                int size = PgoInstrumentationSchemaTableNode.Layout(schema);
+                PgoInstrumentationSchemaTableNode table = _compilation.NodeFactory.PgoInstrumentationSchemas;
+                PgoInstrumentationSchemaTableNode.Entry schemaEntry = table.Add(schema, size);
+                foreach (var existing in _wasmPgoCells)
+                {
+                    if (existing.Method == target && existing.Schema == schemaEntry)
+                    {
+                        AddPrecodeFixup(existing.Import);
+                        *pInstrumentationData = (byte*)GetPin(existing.Cell);
+                        return HRESULT.S_OK;
+                    }
+                }
+
+                ModuleToken token = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(
+                    target, allowDynamicallyCreatedReference: true, throwIfNotFound: false);
+                if (token.IsNull)
+                {
+                    _compilation.RequestPgoInstrumentationToken(target);
+                    _pgoTokenMissing = true;
+                    return HRESULT.E_NOTIMPL;
+                }
+                MethodWithToken method = new(target, token, null, false, null);
+                ISymbolNode import = table.GetImport(_compilation.NodeFactory, method, schemaEntry);
+                byte[] cell = new byte[_compilation.NodeFactory.Target.PointerSize];
+                _wasmPgoCells.Add((target, schemaEntry, cell, import));
+                AddPrecodeFixup(import);
+                *pInstrumentationData = (byte*)GetPin(cell);
+                return HRESULT.S_OK;
+            }
 
             if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
             {

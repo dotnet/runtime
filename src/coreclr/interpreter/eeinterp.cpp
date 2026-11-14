@@ -41,10 +41,12 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
 #endif // PERFTRACING_DISABLE_THREADS
     }
 
+#if !defined(TARGET_WASM) || !defined(TARGET_BROWSER) || defined(FEATURE_MULTITHREADING)
     if (InterpConfig.InterpPGO() != 0)
     {
         InterpCompiler::s_interpPgoEnabled = true;
     }
+#endif // !TARGET_WASM || !TARGET_BROWSER || FEATURE_MULTITHREADING
 
     g_interpInitialized = true;
 }

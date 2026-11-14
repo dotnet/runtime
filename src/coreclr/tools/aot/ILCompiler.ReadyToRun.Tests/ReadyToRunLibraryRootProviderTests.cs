@@ -254,11 +254,11 @@ public class ReadyToRunLibraryRootProviderTests
         Import import = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
         ReadyToRunSymbolNodeFactory symbols = (ReadyToRunSymbolNodeFactory)RuntimeHelpers.GetUninitializedObject(
             typeof(ReadyToRunSymbolNodeFactory));
-        List<MethodWithToken> selectedTokens = new();
+        List<MethodDesc> selectedBodies = new();
         SetField(symbols, eager ? "_eagerReadyToRunMethodEntries" : "_precodeReadyToRunMethodEntries",
-            new NodeCache<MethodWithToken, Import>(selectedToken =>
+            new NodeCache<MethodDesc, Import>(selectedBody =>
             {
-                selectedTokens.Add(selectedToken);
+                selectedBodies.Add(selectedBody);
                 return import;
             }));
         SetField(compilation, "<SymbolNodeFactory>k__BackingField", symbols);
@@ -325,7 +325,7 @@ public class ReadyToRunLibraryRootProviderTests
         }
         if (callCount != 0)
         {
-            Assert.Null(Assert.Single(selectedTokens).ConstrainedType);
+            Assert.Same(targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific), Assert.Single(selectedBodies));
             target.FinalizePrecodeFixups();
             caller.FinalizePrecodeFixups();
             if (eager)

@@ -464,9 +464,38 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
 #endif // FEATURE_READYTORUN
 
+            Statement*  invocationMarker = nullptr;
+            BasicBlock* invocationBlock  = compCurBB;
+#ifdef TARGET_WASM
+            const bool profileInvocation =
+                compWasmPgoInstrumentation() && (!compIsForInlining() || JitConfig.JitInstrumentInlinees() != 0) &&
+                !gtIsRecursiveCall(methHnd, false) && JitConfig.WasmPgoInstrumentation().contains(methHnd, clsHnd, sig);
+            if (profileInvocation)
+            {
+                // A standalone marker leaves the importer stack and argument evaluation untouched.
+                invocationMarker = impNewMethodEntryMarker(methHnd);
+            }
+#endif // TARGET_WASM
+
             call = impIntrinsic(clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
                                 opcode == CEE_CALLVIRT, pConstrainedResolvedToken,
                                 callInfo->thisTransform R2RARG(&entryPoint), &ni, &isSpecialIntrinsic);
+
+            if (invocationMarker != nullptr)
+            {
+                const bool remainsCall = (call == nullptr) || (call->IsCall() && !call->AsCall()->IsHelperCall() &&
+                                                               call->AsCall()->gtCallMethHnd == methHnd);
+                if (remainsCall)
+                {
+                    impRemoveMethodEntryMarker(invocationBlock, invocationMarker);
+                    // Preserve ordinary call/inline handling if expansion is deferred beyond import.
+                    isSpecialIntrinsic = false;
+                    if (call != nullptr)
+                    {
+                        call->AsCall()->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
+                    }
+                }
+            }
 
             if (compDonotInline())
             {
@@ -1158,13 +1187,30 @@ DEVIRT:
                 //
                 if ((callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0)
                 {
+                    bool profileInvocation = false;
+#ifdef TARGET_WASM
+                    profileInvocation =
+                        compWasmPgoInstrumentation() &&
+                        (!compIsForInlining() || JitConfig.JitInstrumentInlinees() != 0) &&
+                        !gtIsRecursiveCall(methHnd, false) &&
+                        JitConfig.WasmPgoInstrumentation().contains(methHnd, info.compCompHnd->getMethodClass(methHnd),
+                                                                    &callInfo->sig);
+#endif // TARGET_WASM
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
 
                     GenTree* foldedCall = gtFoldExprCall(call->AsCall());
                     if ((foldedCall != call) || !call->IsCall())
                     {
+                        if (profileInvocation)
+                        {
+                            impNewMethodEntryMarker(methHnd);
+                        }
                         impPushOnStack(foldedCall, typeInfo(foldedCall->TypeGet()));
                         return foldedCall->TypeGet();
+                    }
+                    if (profileInvocation)
+                    {
+                        call->AsCall()->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
                     }
                 }
             }
@@ -1529,7 +1575,8 @@ DONE:
 
 DONE_CALL:
     // Collect value profiles in optimized instrumented tiers too, before wrapping inline candidates.
-    if (opts.IsInstrumented() && JitConfig.JitProfileValues() && call->IsCall() && call->AsCall()->IsSpecialIntrinsic())
+    if (opts.IsInstrumented() && !compWasmPgoInstrumentation() && JitConfig.JitProfileValues() && call->IsCall() &&
+        call->AsCall()->IsSpecialIntrinsic())
     {
         const NamedIntrinsic ni = lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd);
         if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))

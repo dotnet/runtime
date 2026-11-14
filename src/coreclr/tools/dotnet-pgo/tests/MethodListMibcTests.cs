@@ -5,10 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 
 using Microsoft.Diagnostics.Tools.Pgo;
+using Internal.Pgo;
 
 using Xunit;
 
@@ -21,6 +23,47 @@ namespace DotNetPgo.Tests
             ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator);
         private static readonly string s_testAssemblyPath = typeof(MethodListMibcTests).Assembly.Location;
         private static readonly string s_testAssemblyName = typeof(MethodListMibcTests).Assembly.GetName().Name;
+
+        [Theory]
+        [InlineData(4294967303L)]
+        [InlineData(1099511627783L)]
+        public void MergesInvocationCountsWithoutReplacingBlockCounts(long count)
+        {
+            PgoSchemaElem[] merged = PgoProcessor.Merge<object, object>(
+            [
+                [
+                    new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryLongCount, Count = 1, DataLong = count },
+                    new() { InstrumentationKind = PgoInstrumentationKind.BasicBlockLongCount, Count = 1, DataLong = 13 },
+                    new() { InstrumentationKind = PgoInstrumentationKind.BasicBlockLongCount, ILOffset = 12, Count = 1, DataLong = 101 },
+                ],
+                [
+                    new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryLongCount, Count = 1, DataLong = 7 },
+                ],
+            ]);
+            foreach (bool compressed in new[] { false, true })
+            {
+                SchemaStream stream = new(compressed);
+                PgoProcessor.EncodePgoData(merged, stream, emitAllElementsUnconditionally: false);
+                PgoSchemaElem[] decoded = PgoProcessor.ParsePgoData(stream, stream.Values, compressed).ToArray();
+                Assert.Equal(count + 7, Assert.Single(decoded,
+                    e => e.InstrumentationKind == PgoInstrumentationKind.MethodEntryLongCount).DataLong);
+                Assert.Equal(13, Assert.Single(decoded,
+                    e => e.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount && e.ILOffset == 0).DataLong);
+                Assert.Equal(101, Assert.Single(decoded,
+                    e => e.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount && e.ILOffset == 12).DataLong);
+            }
+        }
+
+        private sealed class SchemaStream(bool compressed) : IPgoSchemaDataLoader<object, object>, IPgoEncodedValueEmitter<object, object>
+        {
+            public List<long> Values { get; } = new();
+            public void EmitLong(long value, long previousValue) => Values.Add(compressed ? value - previousValue : value);
+            public bool EmitDone() => false;
+            public void EmitType(object type, object previousValue) => throw new NotSupportedException();
+            public void EmitMethod(object method, object previousValue) => throw new NotSupportedException();
+            public object TypeFromLong(long value) => throw new NotSupportedException();
+            public object MethodFromLong(long value) => throw new NotSupportedException();
+        }
 
         [Fact]
         public void CreatesDeterministicMibcAndRoundTripsThroughDump()

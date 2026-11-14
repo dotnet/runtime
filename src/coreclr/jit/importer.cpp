@@ -1373,7 +1373,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleF
 //
 bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (!opts.IsInstrumented() || (JitConfig.JitProfileCasts() != 1))
+    if (!opts.IsInstrumented() || compWasmPgoInstrumentation() || (JitConfig.JitProfileCasts() != 1))
     {
         return false;
     }
