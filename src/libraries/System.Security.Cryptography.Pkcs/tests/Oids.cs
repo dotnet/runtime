@@ -30,6 +30,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string MLDsa44 = "2.16.840.1.101.3.4.3.17";
         public const string MLDsa65 = "2.16.840.1.101.3.4.3.18";
         public const string MLDsa87 = "2.16.840.1.101.3.4.3.19";
+        public const string MLKem768WithECDiffieHellmanP256Sha3_256 = "1.3.6.1.5.5.7.6.59";
+        public const string MLKem768WithX25519Sha3_256 = "1.3.6.1.5.5.7.6.58";
         public const string MLKem512 = "2.16.840.1.101.3.4.4.1";
         public const string MLKem768 = "2.16.840.1.101.3.4.4.2";
         public const string MLKem1024 = "2.16.840.1.101.3.4.4.3";
@@ -58,12 +60,19 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
 
         // Key wrap algorithms
+        public const string Aes128Wrap = "2.16.840.1.101.3.4.1.5";
+        public const string Aes192Wrap = "2.16.840.1.101.3.4.1.25";
         public const string Aes256Wrap = "2.16.840.1.101.3.4.1.45";
         public const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";
         public const string Cms3DesWrap = "1.2.840.113549.1.9.16.3.6";
 
         // Key derivation algorithms
+        public const string HkdfSha256 = "1.2.840.113549.1.9.16.3.28";
         public const string HkdfSha384 = "1.2.840.113549.1.9.16.3.29";
+        public const string HkdfSha512 = "1.2.840.113549.1.9.16.3.30";
+        public const string HkdfSha3_256 = "1.2.840.113549.1.9.16.3.33";
+        public const string HkdfSha3_384 = "1.2.840.113549.1.9.16.3.34";
+        public const string HkdfSha3_512 = "1.2.840.113549.1.9.16.3.35";
 
         // PKCS7 Content Types.
         public const string Pkcs7Data = "1.2.840.113549.1.7.1";
