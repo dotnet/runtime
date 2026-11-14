@@ -39,6 +39,10 @@ public class ErrorHandlingTests
 
     [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0s5Int32VAE_tKF")]
+    private static extern unsafe nint conditionallyThrowError(int willThrow, SwiftError* error);
+
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0s5Int32VAE_tKF")]
     public static extern nint conditionallyThrowErrorOnStack(int willThrow, int dummy1, int dummy2, int dummy3, int dummy4, int dummy5, int dummy6, int dummy7, int dummy8, int dummy9, ref SwiftError error);
 
     [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
@@ -129,6 +133,30 @@ public class ErrorHandlingTests
 
         Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
         Assert.True(result == 42, "The result from Swift does not match the expected value.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void TestSwiftErrorNotObserved(bool useFunctionPointer)
+    {
+        nint result = useFunctionPointer ? CallWithUnobservedSwiftErrorIndirect() : CallWithUnobservedSwiftError();
+        Assert.Equal((nint)42, result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static unsafe nint CallWithUnobservedSwiftError()
+    {
+        SwiftError error = default;
+        return conditionallyThrowError(0, &error);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static unsafe nint CallWithUnobservedSwiftErrorIndirect()
+    {
+        SwiftError error = default;
+        delegate* unmanaged[Swift]<SwiftError*, int, int, int> callback = &ConditionallySetErrorAndReturn;
+        return callback(&error, 21, 0);
     }
 
     [Fact]

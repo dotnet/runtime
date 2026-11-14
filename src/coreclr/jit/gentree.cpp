@@ -19447,6 +19447,12 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
             return call->HasSideEffects(this, ignoreExceptions, ignoreCctors);
         }
+
+        if (potentialCall->OperIs(GT_SWIFT_ERROR))
+        {
+            // Lowering and register allocation require this node even when the error is unused.
+            return true;
+        }
     }
 
     if (flags & GTF_EXCEPT)
