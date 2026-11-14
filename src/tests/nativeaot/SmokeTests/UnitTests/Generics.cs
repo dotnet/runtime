@@ -73,6 +73,7 @@ class Generics
         Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
+        TestBitwiseEquatableSearch.Run();
         TestNullableCasting.Run();
         TestVariantCasting.Run();
         TestVariantDispatchUnconstructedTypes.Run();
@@ -4276,6 +4277,94 @@ class Generics
             // Regression test for https://github.com/dotnet/runtime/issues/65612
             // This requires MethodTable for "Atom[]" - just make sure the compiler didn't crash and we can invoke
             typeof(Generic<>).MakeGenericType(s_atomType).InvokeMember("Method", BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance, null, s_instance, new object[] { new Atom() });
+        }
+    }
+
+    static class TestBitwiseEquatableSearch
+    {
+        struct TwoInts { public int A, B; }
+        struct Padded { public byte A; public int B; }
+        struct WithRef { public string S; public int I; }
+        struct Wrapper<T> { public T Value; }
+        struct Phantom<T> { public int Value; }
+        enum ShortEnum : short { A = 1, B = 2, C = 3 }
+
+        struct EqualsOverride : IEquatable<EqualsOverride>
+        {
+            public int A;
+            public bool Equals(EqualsOverride other) => A / 10 == other.A / 10;
+            public override bool Equals(object o) => o is EqualsOverride e && Equals(e);
+            public override int GetHashCode() => A / 10;
+        }
+
+        static Padded MakePadded(byte a, int b, byte padding)
+        {
+            Padded result = default;
+            Unsafe.As<Padded, long>(ref result) = a | ((long)padding << 8) | ((long)b << 32);
+            return result;
+        }
+
+        // Searches arrays of T with the APIs that have a different path when T is bitwise equatable.
+        // Both shared instantiations (reference types, generic structs over reference types) and exact ones are covered.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Check<T>(T first, T second, T equalToFirst, T missing)
+        {
+            T[] array = new T[] { first, second, equalToFirst };
+
+            if (Array.IndexOf(array, equalToFirst) != 0
+                || Array.IndexOf(array, second) != 1
+                || Array.IndexOf(array, missing) != -1
+                || Array.LastIndexOf(array, first) != 2
+                || Array.LastIndexOf(array, missing) != -1
+                || Array.IndexOf(array, equalToFirst, 1, 2) != 2
+                || Array.LastIndexOf(array, equalToFirst, 1) != 0)
+            {
+                throw new Exception(typeof(T).ToString());
+            }
+
+            var list = new List<T>(array);
+            if (list.IndexOf(equalToFirst) != 0 || !list.Contains(second) || list.Contains(missing) || list.LastIndexOf(first) != 2)
+                throw new Exception(typeof(T).ToString());
+
+            Span<T> span = array;
+            span.Fill(missing);
+            if (Array.IndexOf(array, missing) != 0 || Array.LastIndexOf(array, missing) != 2)
+                throw new Exception(typeof(T).ToString());
+
+            span.Clear();
+            if (!EqualityComparer<T>.Default.Equals(array[2], default))
+                throw new Exception(typeof(T).ToString());
+        }
+
+        public static void Run()
+        {
+            // Never bitwise equatable
+            Check("a", "b", new string('a', 1), "z");
+            Check<object>("a", "b", new string('a', 1), "z");
+            Check(new WithRef { S = "x", I = 1 }, new WithRef { S = "y", I = 1 }, new WithRef { S = new string('x', 1), I = 1 }, new WithRef { S = "z", I = 1 });
+            Check(new Wrapper<string> { Value = "x" }, new Wrapper<string> { Value = "y" }, new Wrapper<string> { Value = new string('x', 1) }, new Wrapper<string> { Value = "z" });
+
+            // Bitwise equatable. Phantom<string> shares code with Phantom<object> and still takes the bitwise path.
+            Check(new Phantom<string> { Value = 1 }, new Phantom<string> { Value = 2 }, new Phantom<string> { Value = 1 }, new Phantom<string> { Value = 3 });
+            Check(new Phantom<object> { Value = 1 }, new Phantom<object> { Value = 2 }, new Phantom<object> { Value = 1 }, new Phantom<object> { Value = 3 });
+            Check(1, 2, 1, 3);
+            Check('a', 'b', 'a', 'z');
+            Check(1L, 2L, 1L, 3L);
+            Check(ShortEnum.A, ShortEnum.B, ShortEnum.A, ShortEnum.C);
+            Check(new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), Guid.Empty, new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), Guid.NewGuid());
+            Check(new TwoInts { A = 1, B = 2 }, new TwoInts { A = 2, B = 2 }, new TwoInts { A = 1, B = 2 }, new TwoInts { A = 9, B = 9 });
+            Check(new Wrapper<int> { Value = 1 }, new Wrapper<int> { Value = 2 }, new Wrapper<int> { Value = 1 }, new Wrapper<int> { Value = 3 });
+
+            // Not bitwise equatable
+            Check(0.0f, 1.0f, -0.0f, 2.0f);
+            Check(float.NaN, 1.0f, BitConverter.Int32BitsToSingle(0x7FC00001), 2.0f);
+            Check(0.0, 1.0, -0.0, 2.0);
+            Check(double.NaN, 1.0, BitConverter.Int64BitsToDouble(0x7FF8000000000001), 2.0);
+            Check(new EqualsOverride { A = 1 }, new EqualsOverride { A = 20 }, new EqualsOverride { A = 5 }, new EqualsOverride { A = 40 });
+            // Equal values with different padding bytes must still compare equal
+            Check(MakePadded(1, 2, 0), MakePadded(2, 2, 0), MakePadded(1, 2, 0xAB), MakePadded(9, 9, 0));
+            Check<int?>(1, 2, 1, null);
+            Check<decimal>(1.0m, 2.0m, 1.00m, 3.0m);
         }
     }
 
