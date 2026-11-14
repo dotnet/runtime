@@ -3773,14 +3773,13 @@ PhaseStatus Compiler::fgWasmForwardLocalCopies()
         if (varDsc->lvIsStructField)
         {
             LclVarDsc* parentDsc = lvaGetDesc(varDsc->lvParentLcl);
-            if (parentDsc->IsAddressExposed() || parentDsc->lvHasLdAddrOp)
+            if (parentDsc->IsAddressExposed())
             {
                 return true;
             }
         }
 
-        return varDsc->lvImplicitlyReferenced || varDsc->IsAddressExposed() || varDsc->lvHasLdAddrOp ||
-               varDsc->lvPromoted;
+        return varDsc->lvImplicitlyReferenced || varDsc->IsAddressExposed() || varDsc->lvPromoted;
     };
 
     ArrayStack<PendingCopy> pending(getAllocator(CMK_Lower));
@@ -3790,9 +3789,8 @@ PhaseStatus Compiler::fgWasmForwardLocalCopies()
     };
 
     bool modified = false;
-    for (int blockIndex = 0; blockIndex < m_wasmLocalCopyBlocks->Height(); blockIndex++)
+    for (BasicBlock* const block : m_wasmLocalCopyBlocks->BottomUpOrder())
     {
-        BasicBlock* block = m_wasmLocalCopyBlocks->Bottom(blockIndex);
         if (block->HasFlag(BBF_REMOVED))
         {
             continue;
