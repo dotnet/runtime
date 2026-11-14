@@ -393,7 +393,7 @@ namespace System.Collections.Immutable
             /// <returns>A enumerator that can be used to iterate through the collection.</returns>
             IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
-                return this.Root.GetEnumerator();
+                return this.GetEnumerator();
             }
 
             /// <summary>
