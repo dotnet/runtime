@@ -46,5 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => new InvalidExternalTypeMapNode(TypeMapGroup, ThrowingMethodStub);
+
+        public IEnumerable<KeyValuePair<string, TypeDesc>> GetEntries(NodeFactory factory) => [];
     }
 }

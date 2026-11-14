@@ -17,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences);
 #if !READYTORUN
         IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory);
+        IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> GetEntries(NodeFactory factory);
 #endif
     }
 }

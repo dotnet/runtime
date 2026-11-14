@@ -63,6 +63,9 @@ namespace Mono.Linker.Steps
 
         protected override void EndProcess()
         {
+            if (Context.TypeMapFileName is string typeMapFileName)
+                TypeMapOutput.Write(Context, typeMapFileName);
+
             if (Context.AssemblyListFile != null)
             {
                 using (var w = File.CreateText(Context.AssemblyListFile))
