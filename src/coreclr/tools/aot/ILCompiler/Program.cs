@@ -106,6 +106,15 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
+            string llvmLtoFilePath = Get(_command.LlvmLto) ? outputFilePath + ".ll" : null;
+            if (llvmLtoFilePath != null)
+            {
+                // Managed x86 uses a different stack-argument order from the native ABI.
+                if (targetArchitecture is not (TargetArchitecture.X64 or TargetArchitecture.ARM64))
+                    throw new CommandLineException("--llvm-lto currently supports x64 and arm64 calling conventions.");
+                if (string.Equals(Get(_command.MethodBodyFolding), "all", StringComparison.OrdinalIgnoreCase))
+                    throw new CommandLineException("--llvm-lto does not support --methodbodyfolding:all.");
+            }
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
                 allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,
@@ -652,6 +661,9 @@ namespace ILCompiler
             // Write to a temporary file and rename on success to avoid leaving partial files on failure
             string tempOutputFilePath = outputFilePath + ".tmp";
             CompilationResults compilationResults = compilation.Compile(tempOutputFilePath, ObjectDumper.Compose(dumpers));
+            if (llvmLtoFilePath != null)
+                ((RyuJitCompilation)compilation).WriteLlvmLto(llvmLtoFilePath);
+
             string exportsFile = Get(_command.ExportsFile);
             if (exportsFile != null)
             {

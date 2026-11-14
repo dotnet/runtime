@@ -1,0 +1,114 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <IlcFoldIdenticalMethodBodies>false</IlcFoldIdenticalMethodBodies>
+    <IlcSingleThreaded>true</IlcSingleThreaded>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <EventSourceSupport>false</EventSourceSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EnableSourceLink>false</EnableSourceLink>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CLRTestTargetUnsupported Condition="'$(TestBuildMode)' != 'nativeaot' or '$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
+    <!-- The standard macOS test toolchain does not provide the required Mach-O LLD (ld64.lld). -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'osx'">true</CLRTestTargetUnsupported>
+    <!-- The test reads the linker's saved IR from disk. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
+    <LinkerFlavor>lld</LinkerFlavor>
+    <StripSymbols>false</StripSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="LlvmLtoTests.cs" />
+    <None Include="LlvmLtoTests.Native.c" />
+    <DirectPInvoke Include="llvmltonative" />
+  </ItemGroup>
+
+  <!-- The native compiler must emit LLVM bitcode, even when the rest of the Windows native tests use MSVC.
+       Keep this in the normal BuildNativeAot dependency chain instead of requiring a separate driver script. -->
+  <Target Name="ConfigureLlvmLto" BeforeTargets="SetupOSSpecificProps">
+    <PropertyGroup>
+      <LlvmToolsPath Condition="'$(LlvmToolsPath)' == '' and Exists('$(VCInstallDir)Tools/Llvm/x64/bin/clang.exe')">$(VCInstallDir)Tools/Llvm/x64/bin</LlvmToolsPath>
+      <_LlvmToolPrefix Condition="'$(LlvmToolsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(LlvmToolsPath)'))</_LlvmToolPrefix>
+      <_LlvmClang>$(_LlvmToolPrefix)clang</_LlvmClang>
+      <_LlvmAr>$(_LlvmToolPrefix)llvm-ar</_LlvmAr>
+      <CppCompilerAndLinker>$(_LlvmClang)</CppCompilerAndLinker>
+      <CppLinker>$(_LlvmClang)</CppLinker>
+      <CppLinker Condition="'$(TargetOS)' == 'windows'">$(_LlvmToolPrefix)lld-link</CppLinker>
+      <_LlvmArchitecture Condition="'$(TargetArchitecture)' == 'x64'">x86_64</_LlvmArchitecture>
+      <_LlvmArchitecture Condition="'$(TargetArchitecture)' == 'arm64'">aarch64</_LlvmArchitecture>
+      <_LlvmTargetArg Condition="'$(TargetOS)' == 'windows'">--target=$(_LlvmArchitecture)-pc-windows-msvc</_LlvmTargetArg>
+      <_LlvmTargetArg Condition="'$(TargetTriple)' != ''">--target=$(TargetTriple)</_LlvmTargetArg>
+      <_LlvmNativeObject>$(NativeIntermediateOutputPath)LlvmLtoTests.Native.bc</_LlvmNativeObject>
+      <_LlvmPointerObject>$(NativeIntermediateOutputPath)LlvmLtoTests.Pointer.bc</_LlvmPointerObject>
+      <_LlvmNativeLibrary>$(NativeIntermediateOutputPath)libLlvmLtoTests.Native.a</_LlvmNativeLibrary>
+      <_LlvmManagedBitcode>$(NativeObject).bc</_LlvmManagedBitcode>
+      <_LinkNativeOutputs>$(_LinkNativeOutputs);$(NativeBinary).0.4.opt.bc</_LinkNativeOutputs>
+    </PropertyGroup>
+    <ItemGroup>
+      <NativeLibrary Include="$(_LlvmNativeLibrary);$(_LlvmManagedBitcode)" />
+      <LinkerArg Include="-flto=full" Condition="'$(TargetOS)' != 'windows'" />
+      <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'windows'" />
+      <LinkerArg Include="/lldsavetemps" Condition="'$(TargetOS)' == 'windows'" />
+      <LinkerArg Include="-Wl,--save-temps" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'" />
+      <LinkerArg Include="-Wl,-save-temps" Condition="'$(TargetOS)' == 'osx'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CompileLlvmLto"
+          AfterTargets="IlcCompile"
+          Inputs="$(NativeObject);$(MSBuildProjectFullPath);$(MSBuildProjectDirectory)/LlvmLtoTests.Native.c"
+          Outputs="$(_LlvmNativeLibrary);$(_LlvmManagedBitcode);$(NativeObject).ll">
+    <PropertyGroup>
+      <!-- Unix target selection is finalized by SetupOSSpecificProps. -->
+      <_LlvmTargetArg Condition="'$(TargetTriple)' != ''">--target=$(TargetTriple)</_LlvmTargetArg>
+      <_LlvmSysRootArg Condition="'$(SysRoot)' != ''">--sysroot=&quot;$(SysRoot)&quot;</_LlvmSysRootArg>
+    </PropertyGroup>
+    <GetFileHash Files="$(NativeObject)">
+      <Output TaskParameter="Hash" PropertyName="_LlvmBaselineObjectHash" />
+    </GetFileHash>
+    <Exec Command="&quot;$(IlcToolsPath)/ilc&quot; @&quot;%(ManagedBinary.IlcRspFile)&quot; --llvm-lto"
+          EnvironmentVariables="$(_IlcEnvironmentVariables)" />
+    <GetFileHash Files="$(NativeObject)">
+      <Output TaskParameter="Hash" PropertyName="_LlvmLtoObjectHash" />
+    </GetFileHash>
+    <Error Condition="'$(_LlvmBaselineObjectHash)' != '$(_LlvmLtoObjectHash)'" Text="Enabling LLVM LTO changed the RyuJIT object." />
+
+    <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) -x ir -emit-llvm -c &quot;$(NativeObject).ll&quot; -o &quot;$(_LlvmManagedBitcode)&quot;" />
+    <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) $(_LlvmSysRootArg) -c -O2 -flto=full -ffreestanding -fno-stack-protector -ffunction-sections -fdata-sections &quot;$(MSBuildProjectDirectory)/LlvmLtoTests.Native.c&quot; -o &quot;$(_LlvmNativeObject)&quot;" />
+    <!-- Compile one source twice to retain a getter in a separate archive member. -->
+    <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) -c -O2 -flto=full -ffreestanding -fno-stack-protector -DLLVM_LTO_POINTER_GETTER &quot;$(MSBuildProjectDirectory)/LlvmLtoTests.Native.c&quot; -o &quot;$(_LlvmPointerObject)&quot;" />
+    <Exec Command="&quot;$(_LlvmAr)&quot; rcs &quot;$(_LlvmNativeLibrary)&quot; &quot;$(_LlvmNativeObject)&quot; &quot;$(_LlvmPointerObject)&quot;" />
+    <ItemGroup>
+      <FileWrites Include="$(NativeObject).ll;$(_LlvmManagedBitcode);$(_LlvmNativeObject);$(_LlvmPointerObject);$(_LlvmNativeLibrary)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UseLlvmLtoLinker" BeforeTargets="LinkNative">
+    <PropertyGroup>
+      <!-- SetupOSSpecificProps may have selected the MSVC linker. -->
+      <CppLinker Condition="'$(TargetOS)' == 'windows'">$(_LlvmToolPrefix)lld-link</CppLinker>
+    </PropertyGroup>
+    <ItemGroup>
+      <!-- Override any default ICF setting after OS-specific link options are added. -->
+      <LinkerArg Include="/OPT:NOICF" Condition="'$(TargetOS)' == 'windows'" />
+      <LinkerArg Include="-Wl,--icf=none" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyLlvmLtoValidationInputs" AfterTargets="LinkNative">
+    <ItemGroup>
+      <_LlvmOptimizedModule Include="$(NativeBinary)*.opt.bc" />
+    </ItemGroup>
+    <Error Condition="'@(_LlvmOptimizedModule->Count())' != '1'" Text="Expected one saved LLVM LTO module for $(NativeBinary)." />
+    <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) -S -emit-llvm -x ir &quot;@(_LlvmOptimizedModule)&quot; -o &quot;$(NativeOutputPath)LlvmLtoTests.Optimized.ll&quot;" />
+    <Copy SourceFiles="$(NativeObject).ll" DestinationFiles="$(NativeOutputPath)LlvmLtoTests.Managed.ll" />
+    <ItemGroup>
+      <FileWrites Include="$(NativeOutputPath)LlvmLtoTests.Managed.ll;$(NativeOutputPath)LlvmLtoTests.Optimized.ll;@(_LlvmOptimizedModule)" />
+    </ItemGroup>
+  </Target>
+</Project>
