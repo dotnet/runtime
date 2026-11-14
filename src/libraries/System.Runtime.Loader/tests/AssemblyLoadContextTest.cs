@@ -403,6 +403,64 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("TestALC", ice.Message);
         }
 
+        public enum ToStringBehavior
+        {
+            ReturnsNull,
+            Throws,
+            ReturnsText,
+        }
+
+        private sealed class ToStringOverrideContext(string name, ToStringBehavior behavior) : AssemblyLoadContext(name)
+        {
+            public override string ToString() => behavior switch
+            {
+                ToStringBehavior.ReturnsNull => null!,
+                ToStringBehavior.Throws => throw new InvalidOperationException("ToString override throws"),
+                _ => "Custom context text",
+            };
+        }
+
+        // The InvalidCastException message names each type's context. ToString() is virtual, so the name of a
+        // context that overrides it is user code: an override that returns null or throws must still produce the
+        // InvalidCastException, naming the context as the base ToString() would. An override that works is used.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        [InlineData(ToStringBehavior.ReturnsNull, false)]
+        [InlineData(ToStringBehavior.Throws, false)]
+        [InlineData(ToStringBehavior.ReturnsText, false)]
+        [InlineData(ToStringBehavior.ReturnsNull, true)]
+        [InlineData(ToStringBehavior.Throws, true)]
+        [InlineData(ToStringBehavior.ReturnsText, true)]
+        public static void InvalidCastException_DifferentALC_ToStringOverride(ToStringBehavior behavior, bool asGenericArgument)
+        {
+            var alc = new ToStringOverrideContext("TestALC", behavior);
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+
+            InvalidCastException ice;
+            if (asGenericArgument)
+            {
+                object instance = Activator.CreateInstance(typeof(StrongBox<>).MakeGenericType(alcType))!;
+                ice = Assert.Throws<InvalidCastException>(() =>
+                {
+                    StrongBox<InvalidCastSharedType> _ = (StrongBox<InvalidCastSharedType>)instance;
+                });
+            }
+            else
+            {
+                object instance = Activator.CreateInstance(alcType)!;
+                ice = Assert.Throws<InvalidCastException>(() =>
+                {
+                    InvalidCastSharedType _ = (InvalidCastSharedType)instance;
+                });
+            }
+
+            string expectedName = behavior == ToStringBehavior.ReturnsText
+                ? "Custom context text"
+                : $"\"TestALC\" {typeof(ToStringOverrideContext)} #";
+            Assert.Contains($"in the context '{expectedName}", ice.Message);
+            Assert.Contains("in the context 'Default'", ice.Message);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void LoadFromAssemblyPath_CustomAlc_VersionMismatch()
         {
