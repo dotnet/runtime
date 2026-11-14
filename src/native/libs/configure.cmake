@@ -252,10 +252,14 @@ check_symbol_exists(
     sys/uio.h
     HAVE_PWRITEV)
 
+cmake_push_check_state()
+# Bionic also declares an overloaded ioctl, whose address can't be taken.
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -DBIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD)
 check_symbol_exists(
     ioctl
     sys/ioctl.h
     HAVE_IOCTL)
+cmake_pop_check_state()
 
 check_symbol_exists(
     sched_getaffinity
@@ -271,6 +275,11 @@ check_symbol_exists(
     sched_getcpu
     "sched.h"
     HAVE_SCHED_GETCPU)
+
+check_symbol_exists(
+    pthread_cpu_number_np
+    "pthread.h"
+    HAVE_PTHREAD_CPU_NUMBER_NP)
 
 check_symbol_exists(
     pthread_setcancelstate

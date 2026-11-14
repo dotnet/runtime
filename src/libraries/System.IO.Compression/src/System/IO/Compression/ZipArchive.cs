@@ -728,6 +728,20 @@ namespace System.IO.Compression
             _archiveComment = eocd.ArchiveComment;
         }
 
+        private void ValidateArchiveStreamLength()
+        {
+            long length = _archiveStream.Length;
+            if (length == 0)
+            {
+                throw new InvalidDataException(SR.EmptyArchiveStream);
+            }
+
+            if (length < ZipEndOfCentralDirectoryBlock.TotalSize)
+            {
+                throw new InvalidDataException(SR.EOCDNotFound);
+            }
+        }
+
         // This function reads all the EOCD stuff it needs to find the offset to the start of the central directory
         // This offset gets put in _centralDirectoryStart and the number of this disk gets put in _numberOfThisDisk
         // Also does some verification that this isn't a split/spanned archive
@@ -736,6 +750,8 @@ namespace System.IO.Compression
         {
             try
             {
+                ValidateArchiveStreamLength();
+
                 // This seeks backwards almost to the beginning of the EOCD, one byte after where the signature would be
                 // located if the EOCD had the minimum possible size (no file zip comment)
                 _archiveStream.Seek(-ZipEndOfCentralDirectoryBlock.SizeOfBlockWithoutSignature, SeekOrigin.End);
@@ -900,11 +916,36 @@ namespace System.IO.Compression
             }
         }
 
+        private void ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting()
+        {
+            if (_mode == ZipArchiveMode.Update)
+            {
+                try
+                {
+                    foreach (ZipArchiveEntry entry in _entries)
+                    {
+                        entry.ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
+                    }
+                }
+                catch (NotSupportedException)
+                {
+                    foreach (ZipArchiveEntry entry in _entries)
+                    {
+                        entry.UnloadStreams();
+                    }
+
+                    throw;
+                }
+            }
+        }
+
         private void WriteFile()
         {
             // if we are in create mode, we always set readEntries to true in Init
             // if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
             Debug.Assert(_readEntries);
+
+            ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
 
             // Entries starting after this offset have had a dynamically-sized change. Everything on or after this point must be rewritten.
             long completeRewriteStartingOffset = 0;

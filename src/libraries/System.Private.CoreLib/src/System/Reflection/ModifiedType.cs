@@ -56,13 +56,13 @@ namespace System.Reflection
         public override Type[] GetRequiredCustomModifiers()
         {
             // No caching is performed; as is the case with FieldInfo.GetCustomModifiers and friends.
-            return GetCustomModifiers(required: true);
+            return GetCustomModifiers(isOptional: false);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
             // No caching is performed; as is the case with FieldInfo.GetCustomModifiers and friends.
-            return GetCustomModifiers(required: false);
+            return GetCustomModifiers(isOptional: true);
         }
 
         // Modified types do not support Equals. That would need to include custom modifiers and any parameterized types recursively.

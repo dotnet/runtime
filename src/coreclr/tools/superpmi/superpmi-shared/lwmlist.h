@@ -176,6 +176,8 @@ LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
 LWM(GetAddressAlignment, DWORDLONG, DWORD)
 LWM(CanValueClassInstancePointerEscape, DWORDLONG, DWORD)
 LWM(GetWasmWellKnownGlobals, DWORD, Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS)
+LWM(IsByRefLike, DWORDLONG, DWORD)
+LWM(IsSharedInst, DWORDLONG, DWORD)
 
 #undef LWM
 #undef DENSELWM

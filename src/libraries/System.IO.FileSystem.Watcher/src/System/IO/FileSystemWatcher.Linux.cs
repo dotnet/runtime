@@ -161,6 +161,8 @@ namespace System.IO
                                 throw new IOException(message, error.RawErrno);
                             case Interop.Error.ENFILE:
                                 throw new IOException(SR.IOException_INotifyInstanceSystemLimitExceeded, error.RawErrno);
+                            case Interop.Error.ENOTSUP:
+                                throw new PlatformNotSupportedException(SR.FileSystemWatcher_PlatformNotSupported);
                             default:
                                 throw Interop.GetExceptionForIoErrno(error);
                         }

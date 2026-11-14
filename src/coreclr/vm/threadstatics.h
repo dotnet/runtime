@@ -114,6 +114,16 @@ PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
 class TLSIndexToMethodTableMap
 {
+    // Live entries contain a MethodTable pointer with bit 0 indicating GC statics and
+    // bit 1 indicating collectibility. Zero denotes an unused slot. Cleared entries
+    // instead use a nonzero value confined to the low ten bits, not a MethodTable pointer.
+    // ClearedEntryTag keeps a reusable slot distinct from an unused slot. RetiredEntryFlag
+    // uses the next bit above the live-entry flags to distinguish retired slots from
+    // reusable slots, giving encoded values 0x7 and 0x3 respectively.
+    // IsClearedValue must be checked before interpreting the value as a pointer or flags.
+    static constexpr TADDR ClearedEntryTag = 0x3;
+    static constexpr TADDR RetiredEntryFlag = ClearedEntryTag + 1;
+
     PTR_TADDR pMap;
     int32_t m_maxIndex;
     uint32_t m_collectibleEntries;
@@ -152,6 +162,10 @@ public:
         if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
         {
             TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
+            if (IsClearedValue(rawValue))
+            {
+                return NULL;
+            }
             return (PTR_MethodTable)UnwrapValue(rawValue);
         }
         return NULL;
@@ -160,13 +174,13 @@ public:
 
     struct entry
     {
-        entry(TLSIndex tlsIndex) : pMT(dac_cast<PTR_MethodTable>(dac_cast<TADDR>(0))), IsCollectible(false), IsGCStatic(false), IsClearedValue(false), ClearedMarker(0), TlsIndex(tlsIndex) { }
+        entry(TLSIndex tlsIndex) : pMT(dac_cast<PTR_MethodTable>(dac_cast<TADDR>(0))), IsCollectible(false), IsGCStatic(false), IsClearedValue(false), IsRetired(false), TlsIndex(tlsIndex) { }
 
         PTR_MethodTable pMT;
         bool IsCollectible;
         bool IsGCStatic;
         bool IsClearedValue;
-        uint8_t ClearedMarker;
+        bool IsRetired;
         TLSIndex TlsIndex;
     };
 
@@ -191,7 +205,7 @@ public:
             else
             {
                 e.IsClearedValue = true;
-                e.ClearedMarker = GetClearedMarker(rawValue);
+                e.IsRetired = IsRetiredValue(rawValue);
             }
         }
         else
@@ -320,16 +334,18 @@ public:
         return (value & 0x3FF) == value && value != 0;
     }
 
-    static uint8_t GetClearedMarker(TADDR value)
+    static bool IsRetiredValue(TADDR value)
     {
         LIMITED_METHOD_CONTRACT;
-        return (uint8_t)((value & 0x3FF) >> 2);
+        _ASSERTE(IsClearedValue(value));
+        return (value & RetiredEntryFlag) != 0;
     }
 
 #ifndef DACCESS_COMPILE
     void Set(TLSIndex index, PTR_MethodTable pMT, bool isGCStatic);
     bool FindClearedIndex(TLSIndex* pIndex);
-    void Clear(TLSIndex index, uint8_t whenCleared);
+    void Clear(TLSIndex index);
+    void MarkReusable(TLSIndex index);
 #endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -357,6 +373,7 @@ void InitializeThreadStaticData();
 void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
+void CleanupRetiredTLSIndices();
 void* GetThreadLocalStaticBase(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 bool CanJITOptimizeTLSAccess();

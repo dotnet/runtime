@@ -23,6 +23,10 @@
 
 // Wasm currently supports a single compilation unit.
 extern "C" void* __Module;
+extern "C" char __pdata_start;
+extern "C" char __pdata_end;
+extern "C" bool RhRegisterWasmModule(void* pFunctions, uint32_t cbFunctions,
+    void** pClasslibFunctions, uint32_t nClasslibFunctions);
 
 #else // TARGET_WASM
 
@@ -223,6 +227,13 @@ static int InitializeRuntime()
         (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
         (void*)&__unbox_a, (uint32_t)((char *)&__unbox_z - (char*)&__unbox_a),
         (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
+    {
+        return -1;
+    }
+#else // TARGET_WASM
+    if (!RhRegisterWasmModule(
+        &__pdata_start, (uint32_t)(&__pdata_end - &__pdata_start),
+        (void**)&c_classlibFunctions, _countof(c_classlibFunctions)))
     {
         return -1;
     }

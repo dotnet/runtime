@@ -2207,43 +2207,41 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
  *      filter:         r0 = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
  *      finally/fault:  none
  *
- *  The ARM funclet prolog sequence is:
+ *  The runtime calls funclets with r11 set to the frame pointer of the parent function, and the funclet does not
+ *  change it. Funclets access the locals of the parent function relative to r11. Funclets do not save the
+ *  callee-saved registers: the runtime preserves them around funclets that it calls, and the main function saves
+ *  the ones used by the funclets in its own prolog. Call-to-finally sites do not keep any values in registers
+ *  across the call. All temps are allocated in the parent frame, so the funclet frame only needs to hold LR and
+ *  the outgoing argument space.
  *
- *     push {regs,lr}   ; We push the callee-saved regs and 'lr'.
- *                      ;   TODO-ARM-CQ: We probably only need to save lr, plus any callee-save registers that we
- *                      ;         actually use in the funclet. Currently, we save the same set of callee-saved regs
- *                      ;         calculated for the entire function.
- *     sub sp, XXX      ; Establish the rest of the frame.
- *                      ;   XXX is determined by lvaOutgoingArgSpaceSize, aligned up to preserve stack alignment.
- *                      ;   If we push an odd number of registers, we also generate this, to keep the stack aligned.
+ *  The funclet prolog sequence is (Note: #outsz is the outgoing argument space plus padding that keeps the stack
+ *  aligned to 8):
  *
+ *     push {lr}                    ; save LR
+ *     sub sp,sp,#outsz             ; create space for outgoing argument space
  *
- *  The epilog sequence is then:
- *
- *     add sp, XXX      ; if necessary
- *     pop {regs,pc}
- *
- *  If it is worth it, we could push r0, r1, r2, r3 instead of using an additional add/sub instruction.
- *  Code size would be smaller, but we would be writing to / reading from the stack, which might be slow.
+ *  Small frames are allocated by pushing r3 (and r2) along with LR instead.
  *
  *  The funclet frame is thus:
  *
  *      |                       |
  *      |-----------------------|
- *      |       incoming        |
- *      |       arguments       |
+ *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |Callee saved registers |
- *      |-----------------------|
- *      ~  possible 4 byte pad  ~
- *      ~     for alignment     ~
+ *      |       Saved LR        |
  *      |-----------------------|
  *      |   Outgoing arg space  |
+ *      |    and alignment      |
  *      |-----------------------| <---- Ambient SP
  *      |       |               |
  *      ~       | Stack grows   ~
  *      |       | downward      |
  *              V
+ *
+ *  The epilog sequence is then:
+ *
+ *     add sp,sp,#outsz
+ *     pop {pc}
  */
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
@@ -2260,37 +2258,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     m_compiler->unwindBegProlog();
 
-    regMaskTP maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskTP maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
+    regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, RBM_NONE);
+    regMaskTP maskPushRegs   = RBM_LR | maskStackAlloc;
 
-    regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
-    maskPushRegsInt |= maskStackAlloc;
+    assert(FitsIn<int>(maskPushRegs.getLow()));
+    inst_IV(INS_push, (int)maskPushRegs);
+    m_compiler->unwindPushMaskInt(maskPushRegs);
 
-    assert(FitsIn<int>(maskPushRegsInt.getLow()));
-    inst_IV(INS_push, (int)maskPushRegsInt);
-    m_compiler->unwindPushMaskInt(maskPushRegsInt);
-
-    if (maskPushRegsFloat != RBM_NONE)
-    {
-        genPushFltRegs(maskPushRegsFloat);
-        m_compiler->unwindPushMaskFloat(maskPushRegsFloat);
-    }
-
-    bool isFilter = block->CatchTypeIs(BBCT_FILTER);
-
-    regMaskTP maskArgRegsLiveIn;
-    if (isFilter)
-    {
-        maskArgRegsLiveIn = RBM_R0 | RBM_R1;
-    }
-    else if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
-    {
-        maskArgRegsLiveIn = RBM_NONE;
-    }
-    else
-    {
-        maskArgRegsLiveIn = RBM_R0;
-    }
+    regMaskTP maskArgRegsLiveIn = block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT) ? RBM_NONE : RBM_R0;
 
     regNumber initReg       = REG_R3; // R3 is never live on entry to a funclet, so it can be trashed
     bool      initRegZeroed = false;
@@ -2326,14 +2301,7 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 
     bool unwindStarted = false;
 
-    /* The saved regs info saves the LR register. We need to pop the PC register to return */
-    assert(genFuncletInfo.fiSaveRegs & RBM_LR);
-
-    regMaskTP maskPopRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskTP maskPopRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
-
-    regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
-    maskPopRegsInt |= maskStackAlloc;
+    regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, RBM_NONE);
 
     if (maskStackAlloc == RBM_NONE)
     {
@@ -2347,18 +2315,12 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         unwindStarted = true;
     }
 
-    maskPopRegsInt &= ~RBM_LR;
-    maskPopRegsInt |= RBM_PC;
+    // Pop the saved LR into PC to return
+    regMaskTP maskPopRegs = RBM_PC | maskStackAlloc;
 
-    if (maskPopRegsFloat != RBM_NONE)
-    {
-        genPopFltRegs(maskPopRegsFloat);
-        m_compiler->unwindPopMaskFloat(maskPopRegsFloat);
-    }
-
-    assert(FitsIn<int>(maskPopRegsInt.getLow()));
-    inst_IV(INS_pop, (int)maskPopRegsInt);
-    m_compiler->unwindPopMaskInt(maskPopRegsInt);
+    assert(FitsIn<int>(maskPopRegs.getLow()));
+    inst_IV(INS_pop, (int)maskPopRegs);
+    m_compiler->unwindPopMaskInt(maskPopRegs);
 
     m_compiler->unwindEndEpilog();
 }
@@ -2375,67 +2337,26 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
-    if (m_compiler->ehAnyFunclets())
-    {
-        assert(isFramePointerUsed());
-        assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
-                                                                                // finalized
+    if (!m_compiler->ehAnyFunclets())
+        return;
 
-        // Frame pointer doesn't point at the end, it points at the pushed r11. So, instead
-        // of adding the number of callee-saved regs to CallerSP, we add 1 for lr and 1 for r11
-        // (plus the "pre spill regs"). Note that we assume r12 and r13 aren't saved
-        // (also assumed in genFnProlog()).
-        assert((regSet.rsMaskCalleeSaved & (RBM_R12 | RBM_R13)) == 0);
-        unsigned preSpillRegArgSize = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
+    assert(isFramePointerUsed());
 
-        regMaskTP rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
-        unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
-        unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
-        unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
-        if (m_compiler->lvaMonAcquired != BAD_VAR_NUM)
-        {
-            saveSizeWithPSP += TARGET_POINTER_SIZE;
-        }
-        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
-        {
-            saveSizeWithPSP += TARGET_POINTER_SIZE;
-        }
-        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
-        {
-            saveSizeWithPSP += TARGET_POINTER_SIZE;
-        }
-        if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
-        {
-            saveSizeWithPSP += TARGET_POINTER_SIZE;
-        }
-        if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
-        {
-            saveSizeWithPSP += TARGET_POINTER_SIZE;
-        }
-        assert(m_compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
-        unsigned funcletFrameSize = preSpillRegArgSize + saveSizeWithPSP + m_compiler->lvaOutgoingArgSpaceSize;
+    // The frame size and offsets must be finalized
+    assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
 
-        unsigned funcletFrameSizeAligned  = roundUp(funcletFrameSize, STACK_ALIGN);
-        unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
-        unsigned spDelta                  = funcletFrameSizeAligned - saveRegsSize;
-
-        /* Now save it for future use */
-
-        genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
-        genFuncletInfo.fiSpDelta  = spDelta;
+    assert(m_compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
+    genFuncletInfo.fiSpDelta =
+        roundUp(REGSIZE_BYTES + m_compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN) - REGSIZE_BYTES;
 
 #ifdef DEBUG
-        if (verbose)
-        {
-            printf("\n");
-            printf("Funclet prolog / epilog info\n");
-            printf("                        Save regs: ");
-            dspRegMask(rsMaskSaveRegs);
-            printf("\n");
-            printf("                         SP delta: %d\n", genFuncletInfo.fiSpDelta);
-        }
-#endif // DEBUG
+    if (verbose)
+    {
+        printf("\n");
+        printf("Funclet prolog / epilog info\n");
+        printf("                         SP delta: %u\n", genFuncletInfo.fiSpDelta);
     }
+#endif // DEBUG
 }
 
 //-----------------------------------------------------------------------------

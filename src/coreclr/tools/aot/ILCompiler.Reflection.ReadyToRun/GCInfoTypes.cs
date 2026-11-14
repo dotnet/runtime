@@ -100,6 +100,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE { get; } = 6;
         internal int STACK_BASE_REGISTER_ENCBASE { get; } = 3;
         internal int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE { get; } = 4;
+        internal int SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE { get; } = 4;
         internal int REVERSE_PINVOKE_FRAME_ENCBASE { get; } = 6;
         internal int SIZE_OF_STACK_AREA_ENCBASE { get; } = 3;
         internal int NUM_SAFE_POINTS_ENCBASE { get; } = 3;
@@ -279,9 +280,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Arm64:
                     return (x ^ 29);
                 case Machine.LoongArch64:
-                    return ((x ^ 22) & 0x3);
+                    return x == 0 ? 22u : 3u;
                 case Machine.RiscV64:
-                    return (x ^ 8);
+                    return x == 0 ? 8u : 2u;
             }
             return x;
         }

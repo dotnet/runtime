@@ -24,11 +24,12 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/module.h"
 #include "pal/environ.h"
 #include "pal/init.h"
+#include <minipal/utf8.h>
 #include "pal/utils.h"
-#include "pal/virtual.h"
 
 #include <minipal/thread.h>
 #include <minipal/cpucount.h>
+#include <minipal/ospagesize.h>
 
 #if defined(__NetBSD__) && !HAVE_PTHREAD_GETCPUCLOCKID
 #include <sys/cdefs.h>
@@ -458,7 +459,7 @@ CorUnix::InternalCreateThread(
     if (alignedStackSize != 0)
     {
         // Some systems require the stack size to be aligned to the page size
-        if (sizeof(alignedStackSize) <= sizeof(dwStackSize) && alignedStackSize + (GetVirtualPageSize() - 1) < alignedStackSize)
+        if (sizeof(alignedStackSize) <= sizeof(dwStackSize) && alignedStackSize + (minipal_getpagesize() - 1) < alignedStackSize)
         {
             // When coming here from the public API surface, the incoming value is originally a nonnegative signed int32, so
             // this shouldn't happen
@@ -468,7 +469,7 @@ CorUnix::InternalCreateThread(
             palError = ERROR_INVALID_PARAMETER;
             goto EXIT;
         }
-        alignedStackSize = ALIGN_UP(alignedStackSize, GetVirtualPageSize());
+        alignedStackSize = ALIGN_UP(alignedStackSize, minipal_getpagesize());
     }
 
     // Ignore the STACK_SIZE_PARAM_IS_A_RESERVATION flag
@@ -522,7 +523,7 @@ CorUnix::InternalCreateThread(
     if (alignedStackSize != 0)
     {
 #ifdef PTHREAD_STACK_MIN
-        size_t MinStackSize = ALIGN_UP(PTHREAD_STACK_MIN, GetVirtualPageSize());
+        size_t MinStackSize = ALIGN_UP(PTHREAD_STACK_MIN, minipal_getpagesize());
 #else // !PTHREAD_STACK_MIN
         size_t MinStackSize = 64 * 1024; // this value is typically accepted by pthread_attr_setstacksize()
 #endif // PTHREAD_STACK_MIN
@@ -1302,7 +1303,7 @@ SetThreadDescription(
 
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
-    int nameSize;
+    size_t nameSize;
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
@@ -1312,11 +1313,11 @@ SetThreadDescription(
         // it causes the value returned by Process.ProcessName to change.
         if ((pid_t)pTargetThread->GetThreadId() != getpid())
         {
-            nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
+            nameSize = lpThreadDescription != NULL ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, 0) : 0;
             if (nameSize > 0)
             {
                 nameBuf = (char *)malloc(nameSize);
-                if (nameBuf == NULL || WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, nameBuf, nameSize, NULL, NULL) != nameSize)
+                if (nameBuf == NULL || minipal_convert_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, minipal_u16_strlen((const CHAR16_T*)lpThreadDescription) + 1, nameBuf, nameSize, 0) != nameSize)
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }
@@ -2050,13 +2051,13 @@ CPalThread::EnsureSignalAlternateStack()
 
             // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
             // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
-            int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + GetVirtualPageSize();
+            int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + minipal_getpagesize();
 #ifdef HAS_ADDRESS_SANITIZER
             // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
             // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
             altStackSize += SIGSTKSZ * 4;
 #endif
-            altStackSize = ALIGN_UP(altStackSize, GetVirtualPageSize());
+            altStackSize = ALIGN_UP(altStackSize, minipal_getpagesize());
             int flags = MAP_ANONYMOUS | MAP_PRIVATE;
 #ifdef MAP_STACK
             flags |= MAP_STACK;
@@ -2065,7 +2066,7 @@ CPalThread::EnsureSignalAlternateStack()
             if (altStack != MAP_FAILED)
             {
                 // create a guard page for the alternate stack
-                st = mprotect(altStack, GetVirtualPageSize(), PROT_NONE);
+                st = mprotect(altStack, minipal_getpagesize(), PROT_NONE);
                 if (st == 0)
                 {
                     stack_t ss;
@@ -2078,6 +2079,7 @@ CPalThread::EnsureSignalAlternateStack()
                 if (st == 0)
                 {
                     m_alternateStack = altStack;
+                    m_alternateStackSize = altStackSize;
                 }
                 else
                 {
@@ -2109,27 +2111,25 @@ CPalThread::FreeSignalAlternateStack()
 {
 #ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
+    size_t altStackSize = m_alternateStackSize;
     m_alternateStack = nullptr;
+    m_alternateStackSize = 0;
 
     if (altstack != nullptr)
     {
-        stack_t ss, oss;
-        // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
-        // all other ss fields are ignored. However, MUSL implementation checks that the
-        // ss_size is >= MINSIGSTKSZ even in this case.
-        ss.ss_size = MINSIGSTKSZ;
-        ss.ss_flags = SS_DISABLE;
-        ss.ss_sp = NULL;
-        int st = sigaltstack(&ss, &oss);
-        if ((st == 0) && (oss.ss_flags != SS_DISABLE))
+        stack_t ss;
+        if (sigaltstack(nullptr, &ss) == 0 && (ss.ss_flags & SS_DISABLE) == 0 && ss.ss_sp == altstack)
         {
-            // Make sure this altstack is this PAL's before freeing.
-            if (oss.ss_sp == altstack)
-            {
-                int st = munmap(oss.ss_sp, oss.ss_size);
-                _ASSERTE(st == 0);
-            }
+            // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+            // all other ss fields are ignored. However, MUSL implementation checks that the
+            // ss_size is >= MINSIGSTKSZ even in this case.
+            ss.ss_size = MINSIGSTKSZ;
+            ss.ss_flags = SS_DISABLE;
+            ss.ss_sp = nullptr;
+            sigaltstack(&ss, nullptr);
         }
+        int st = munmap(altstack, altStackSize);
+        _ASSERTE(st == 0);
     }
 #endif // !TARGET_WASM
 }

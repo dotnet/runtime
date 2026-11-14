@@ -1066,7 +1066,7 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(other);
 
-            if (count == 0)
+            if (Count == 0)
                 return;
 
             if (other == this)

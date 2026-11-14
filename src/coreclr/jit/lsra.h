@@ -1016,6 +1016,7 @@ private:
     void     updatePreviousInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
     bool     canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool     isAssignedToInterval(Interval* interval, RegRecord* regRec);
+    bool     isHomeReg(RegRecord* regRec);
     bool     isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
     bool     canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation);
     weight_t getSpillWeight(RegRecord* physRegRecord);

@@ -95,6 +95,7 @@ enum ICodeManagerFlags
     ReportFPBasedSlotsOnly
                     =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
                                 // slots that are based on the frame pointer
+    GcRootScan      =   0x0400, // GC root scan: skip FP/vector context copies and report generic loader allocators
 };
 
 //*****************************************************************************
@@ -199,6 +200,8 @@ virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
     the virtual register set. Same reference location cannot be enumerated
     multiple times (but all differenct references pointing to the same
     object have to be individually enumerated).
+    With GcRootScan, hCallBack is a GCCONTEXT and promotion also reports
+    the generic context's loader allocator.
     Returns success of operation.
 */
 virtual bool EnumGcRefs(PREGDISPLAY     pContext,
@@ -228,9 +231,11 @@ virtual OBJECTREF GetInstance(PREGDISPLAY     pContext,
 virtual PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                                  EECodeInfo *    pCodeInfo) = 0;
 
-// Returns the type of the context parameter (this, methodtable, methoddesc, or none)
+// Returns the type of the context parameter (this, methodtable, methoddesc, or none),
+// and optionally retrieves the generics token.
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
-                                                    EECodeInfo *    pCodeInfo) = 0;
+                                                    EECodeInfo *    pCodeInfo,
+                                                    PTR_VOID *      ppGenericsToken = NULL) = 0;
 
 /*
     Returns the offset of the GuardStack cookie if it exists.
@@ -426,18 +431,16 @@ virtual
 PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                          EECodeInfo *    pCodeInfo);
 
-// Returns the type of the context parameter (this, methodtable, methoddesc, or none)
+// Returns the type of the context parameter (this, methodtable, methoddesc, or none),
+// and optionally retrieves the generics token.
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
-                                                    EECodeInfo *    pCodeInfo);
+                                                    EECodeInfo *    pCodeInfo,
+                                                    PTR_VOID *      ppGenericsToken = NULL);
 
 #ifdef USE_GC_INFO_DECODER
 /*
-    Returns the generics token.  This is used by GetInstance() and GetParamTypeArg() on WIN64.
+    Returns the generics token.  This is used by profiler stackwalking.
 */
-static
-PTR_VOID GetExactGenericsToken(PREGDISPLAY     pContext,
-                               EECodeInfo *    pCodeInfo);
-
 static
 PTR_VOID GetExactGenericsToken(TADDR           sp,
                                TADDR           fp,
@@ -515,7 +518,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // #ifndef DACCESS_COMPILE
 
     virtual void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
-    static size_t GetCallerSp( PREGDISPLAY  pRD );
+    static size_t GetCallerSp( PREGDISPLAY  pRD, EECodeInfo * pCodeInfo, unsigned flags );
 #ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
 #endif // TARGET_X86
@@ -600,7 +603,8 @@ PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                          EECodeInfo *    pCodeInfo);
 
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
-                                                    EECodeInfo *    pCodeInfo);
+                                                    EECodeInfo *    pCodeInfo,
+                                                    PTR_VOID *      ppGenericsToken = NULL);
 
 virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,

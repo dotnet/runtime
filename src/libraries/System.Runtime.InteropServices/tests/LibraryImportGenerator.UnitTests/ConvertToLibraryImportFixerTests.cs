@@ -1351,12 +1351,17 @@ namespace LibraryImportGenerator.UnitTests
 
             public bool UpdatedMemorySafetyRules { get; set; }
 
-            protected override ParseOptions CreateParseOptions()
+            protected override ParseOptions CreateParseOptions() =>
+                ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+
+            protected override CompilationOptions CreateCompilationOptions()
             {
-                var parseOptions = ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+                var options = (CSharpCompilationOptions)base.CreateCompilationOptions();
+#pragma warning disable RSEXPERIMENTAL006
                 return UpdatedMemorySafetyRules
-                    ? parseOptions.WithFeatures([.. parseOptions.Features, new KeyValuePair<string, string>(Microsoft.Interop.MemorySafetyRules.UpdatedMemorySafetyRulesFeature, "")])
-                    : parseOptions;
+                    ? options.WithMemorySafetyRulesVersion(MemorySafetyRulesVersion.Version2)
+                    : options;
+#pragma warning restore RSEXPERIMENTAL006
             }
         }
     }

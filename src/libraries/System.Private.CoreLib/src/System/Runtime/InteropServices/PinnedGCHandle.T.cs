@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices
         /// <para>This method doesn't validate the provided handle value. The caller must ensure the validity of the handle.</para>
         /// <para>
         /// The <see cref="IntPtr"/> representation of <see cref="PinnedGCHandle{T}"/> is not
-        /// interchangable with <see cref="GCHandle"/>.
+        /// interchangeable with <see cref="GCHandle"/>.
         /// </para>
         /// </remarks>
         public static PinnedGCHandle<T> FromIntPtr(IntPtr value) => new PinnedGCHandle<T>(value);
@@ -114,7 +114,7 @@ namespace System.Runtime.InteropServices
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="PinnedGCHandle{T}"/> object.</returns>
         /// <remarks>
         /// The <see cref="IntPtr"/> representation of <see cref="PinnedGCHandle{T}"/> is not
-        /// interchangable with <see cref="GCHandle"/>.
+        /// interchangeable with <see cref="GCHandle"/>.
         /// </remarks>
         public static IntPtr ToIntPtr(PinnedGCHandle<T> value) => value._handle;
 

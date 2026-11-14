@@ -828,6 +828,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     if ((helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
     {
         return false;
@@ -993,9 +995,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fgMorphArgs(tlsRefCall);
 
         tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
-#ifdef UNIX_X86_ABI
-        tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Code sequence to access thread local variable on linux/arm64:
         //
@@ -1718,21 +1717,22 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     const int MaxU8BufferSizeInBytes = 256;
     uint8_t   bufferU8[MaxU8BufferSizeInBytes];
 
-    const int srcLenU8 = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
-                                                            MaxU8BufferSizeInBytes, 0);
-    if (srcLenU8 <= 0)
+    const size_t convertedLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
+                                                              MaxU8BufferSizeInBytes, 0);
+    if (convertedLen == 0)
     {
         // E.g. output buffer is too small
-        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned <= 0\n")
+        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned 0\n")
         return false;
     }
 
-    // The API is expected to return [1..MaxU8BufferSizeInBytes] real length of the UTF-8 value
-    // stored in bufferU8
-    assert((unsigned)srcLenU8 <= MaxU8BufferSizeInBytes);
+    // Narrow for the unsigned JIT helpers below. minipal_convert_utf16_to_utf8 cannot write
+    // more than MaxU8BufferSizeInBytes into the buffer.
+    const unsigned srcLenU8 = (unsigned)convertedLen;
+    assert(srcLenU8 <= (unsigned)MaxU8BufferSizeInBytes);
 
     // Now that we know the exact UTF8 buffer length we can check if it's unrollable
-    if (srcLenU8 > (int)getUnrollThreshold(UnrollKind::Memcpy))
+    if (srcLenU8 > getUnrollThreshold(UnrollKind::Memcpy))
     {
         JITDUMP("ReadUtf8: srcLenU8 is out of unrollable range\n")
         return false;

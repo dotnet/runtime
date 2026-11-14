@@ -3011,8 +3011,8 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (target < 0 || target >= m_ILCodeSize)
         BADCODE("code jumps to outer space");
 
-    // Backwards branch, emit safepoint
-    if (ilOffset < 0)
+    // Back edge, including a branch to itself, emit safepoint
+    if (ilOffset <= 0)
     {
         AddIns(INTOP_SAFEPOINT);
 #ifdef PERFTRACING_DISABLE_THREADS
@@ -3025,7 +3025,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (pTargetBB == NULL)
         BADCODE("code jumps to invalid offset");
 
-    if (ilOffset < 0)
+    if (ilOffset <= 0)
         pTargetBB->isBackwardBranchTarget = true;
 
     EmitBranchToBB(opcode, pTargetBB);
@@ -5121,6 +5121,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     ContinuationContextHandling continuationContextHandling = ContinuationContextHandling::None;
     bool isValueTaskAdaptedToTask = false;
+    bool isVoidAwait = false;
+    bool discardAwaitResult = false;
 
     if (isCalli)
     {
@@ -5168,6 +5170,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             continuationContextHandling = m_currentContinuationContextHandling;
             isValueTaskAdaptedToTask = m_isValueTaskAdaptedToTask;
             m_isValueTaskAdaptedToTask = false;
+            isVoidAwait = m_isVoidAwait;
+            m_isVoidAwait = false;
         }
         else
         {
@@ -5188,6 +5192,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        discardAwaitResult = isVoidAwait && (callInfo.sig.retType != CORINFO_TYPE_VOID);
 
         if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
         {
@@ -5909,6 +5915,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
     {
         EmitSuspend(callInfo.sig.retType, continuationContextHandling, isValueTaskAdaptedToTask);
+    }
+
+    if (discardAwaitResult)
+    {
+        INTERP_DUMP("Discarding unused result after folded task await\n");
+        m_pStackPointer--;
     }
 }
 
@@ -7009,11 +7021,13 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             switch (pFieldInfo->helper)
             {
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
                     helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
                     break;
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
                     helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
                     break;
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
@@ -7556,10 +7570,24 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     return -1;
 }
 
-bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
+bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip, const CORINFO_RESOLVED_TOKEN* awaitToken)
 {
     ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    return m_resolvedAsyncCallToken.hMethod != NULL;
+    if (m_resolvedAsyncCallToken.hMethod == NULL)
+    {
+        return false;
+    }
+
+    // In normal cases a Task<T>-returning function is followed by 'T AsyncHelpers.Await(Task<T>)'.
+    // However, it is also legal IL to follow it up with 'void AsyncHelpers.Await(Task)'. Such IL may occur
+    // in C# code like `await (Task)Foo()`.
+    // In the latter case, the IL does not expect a pushed IL entry, but we are going to push one as part
+    // of handling the call.
+    // To differentiate the cases we can look for a MethodSpec token since that unequivocally means
+    // 'T AsyncHelpers.Await(Task<T>)'; if not seen then this is the void overload and we know to discard
+    // the additional IL entry.
+    m_isVoidAwait = (awaitToken != NULL) && (TypeFromToken(awaitToken->token) != mdtMethodSpec);
+    return true;
 }
 
 bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7572,7 +7600,7 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
         return false;
     }
 
-    if (!ResolveAsyncCallToken(ip))
+    if (!ResolveAsyncCallToken(ip, &awaitResolvedToken))
     {
         return false;
     }
@@ -7616,7 +7644,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7694,7 +7722,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const u
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -7765,7 +7793,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return ResolveAsyncCallToken(ip, &awaitResolvedToken);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)

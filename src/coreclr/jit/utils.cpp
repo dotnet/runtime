@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 /*****************************************************************************/
 
@@ -1451,6 +1452,7 @@ void HelperCallProperties::init()
         bool mayRunCctor = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape  = false; // true if none of the GC ref arguments can escape
         bool isNoGC      = false; // true if the helper cannot trigger GC
+        bool nativeAotMayThrow = false; // true if the helper may throw on NativeAOT even when 'exceptions' is None
 
         switch (helper)
         {
@@ -1539,11 +1541,18 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
                 exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
+                break;
+
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
+                // NativeAOT compiles generic lookups it failed to build into helpers that throw when invoked.
+                nativeAotMayThrow = true;
                 break;
 
             // type casting helpers
@@ -1595,7 +1604,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MEMZERO:
             case CORINFO_HELP_MEMSET:
             case CORINFO_HELP_NATIVE_MEMSET:
-                isNoEscape = true;
+                isNoEscape  = true;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
@@ -1636,6 +1646,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
@@ -1748,13 +1760,23 @@ void HelperCallProperties::init()
                 FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
             case CORINFO_HELP_POLL_GC:
-            case CORINFO_HELP_MON_ENTER:
-            case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
             case CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
                 exceptions = ExceptionSetFlags::None;
+                break;
+
+            case CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                isNoGC     = true;
+                exceptions = ExceptionSetFlags::None;
+                break;
+
+            // Monitor enter/exit are full memory barriers and write *lockTaken.
+            case CORINFO_HELP_MON_ENTER:
+            case CORINFO_HELP_MON_EXIT:
+                exceptions  = ExceptionSetFlags::None;
+                mutatesHeap = true;
                 break;
 
             case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
@@ -1799,6 +1821,8 @@ void HelperCallProperties::init()
         m_mayRunCctor[helper]   = mayRunCctor;
         m_isNoEscape[helper]    = isNoEscape;
         m_isNoGC[helper]        = isNoGC;
+
+        m_nativeAotExceptions[helper] = nativeAotMayThrow ? ExceptionSetFlags::UnknownException : exceptions;
     }
 }
 
@@ -3921,13 +3945,10 @@ private:
 public:
     Utf16String(const char* str)
     {
-        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-        if (strBufferSize == 0)
-        {
-            return;
-        }
+        size_t strLength     = strlen(str) + 1;
+        size_t strBufferSize = minipal_get_length_utf8_to_utf16(str, strLength, 0);
 
-        if (static_cast<size_t>(strBufferSize) > bufferSize)
+        if (strBufferSize > bufferSize)
         {
             m_pBuffer = new WCHAR[strBufferSize];
         }
@@ -3936,15 +3957,7 @@ public:
             m_pBuffer = m_bufferUnsafe;
         }
 
-        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
-        {
-            if (m_pBuffer != m_bufferUnsafe)
-            {
-                delete[] m_pBuffer;
-            }
-
-            m_pBuffer = nullptr;
-        }
+        minipal_convert_utf8_to_utf16(str, strLength, (CHAR16_T*)m_pBuffer, strBufferSize, 0);
     }
 
     ~Utf16String()

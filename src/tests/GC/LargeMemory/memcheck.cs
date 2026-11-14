@@ -92,12 +92,13 @@ public static class MemCheck {
 
     private static string RunCommand(string name) {
         ProcessStartInfo startInfo = new ProcessStartInfo(name) {
-            RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
-            UseShellExecute = false,
+            InheritedHandles = [],
         };
+        using Microsoft.Win32.SafeHandles.SafeFileHandle nullHandle = File.OpenNullHandle();
+        startInfo.StandardInputHandle = nullHandle;
         return Process.RunAndCaptureText(startInfo).StandardOutput;
     }
 }

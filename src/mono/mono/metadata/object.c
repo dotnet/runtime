@@ -862,6 +862,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 		max_size = mono_class_data_size (klass) / wordsize;
 	else
 		max_size = m_class_get_instance_size (klass) / wordsize;
+	// `bitmap` can hold all necessary per ref bits even if `max_size > size`, in the scenario where we are passed
+	// a negative `offset`. Avoid reallocation of bitmap in those cases, since recursive calls from below expect
+	// only initialization of the provided `bitmap`.
+	max_size += offset;
+	g_assert (max_size >= 0);
 	if (max_size > size) {
 		g_assert (offset <= 0);
 		bitmap = (gsize *)g_malloc0 ((max_size + BITMAP_EL_SIZE - 1) / BITMAP_EL_SIZE * sizeof (gsize));
@@ -4537,7 +4542,7 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 		static gboolean inited;
 		if (!inited) {
-			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "s_firstChanceException", NULL);
 			inited = TRUE;
 		}
 
@@ -4595,7 +4600,7 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 		static gboolean inited;
 		if (!inited) {
-			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "s_unhandledException", NULL);
 			inited = TRUE;
 		}
 

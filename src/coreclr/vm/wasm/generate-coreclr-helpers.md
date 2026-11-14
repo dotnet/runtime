@@ -5,7 +5,8 @@ scripts in this directory regenerate the checked-in CoreCLR call-helper source f
 WebAssembly runtime. They parse their arguments and hand the work to
 `generate-coreclr-helpers.proj` next to them, which runs crossgen2 in
 `--generate-portable-callhelpers` mode over the managed framework assemblies to emit the native
-P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers. The generator lives in
+P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers, including the shared static
+QCall/FCall entrypoint table. The generator lives in
 [`ILCompiler.ReadyToRun/PortableCallHelpers`](../../tools/aot/ILCompiler.ReadyToRun/PortableCallHelpers) so it can use crossgen2's
 type system to compute the wasm ABI layout of the structs that cross the boundary.
 
@@ -24,14 +25,18 @@ By default the scripts generate **both** WebAssembly variations; pass `--target-
 
 | Target OS | Output directory                | Default scan path (testhost) |
 |-----------|---------------------------------|------------------------------|
-| `browser` | `src/coreclr/vm/wasm/browser/`  | `artifacts/bin/testhost/net11.0-browser-<config>-wasm/shared/Microsoft.NETCore.App/11.0.0/` |
-| `wasi`    | `src/coreclr/vm/wasm/wasi/`     | `artifacts/bin/testhost/net11.0-wasi-<config>-wasm/shared/Microsoft.NETCore.App/11.0.0/` |
+| `browser` | `src/coreclr/vm/wasm/browser/`  | `artifacts/bin/testhost/net12.0-browser-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
+| `wasi`    | `src/coreclr/vm/wasm/wasi/`     | `artifacts/bin/testhost/net12.0-wasi-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
 
 Each run emits three files into the output directory:
 
 - `callhelpers-pinvoke.cpp`
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
+
+## The shared QCall/FCall table
+
+`callhelpers-pinvoke.cpp` contains an entrypoint table for all P/Invokes in the application, as well as all [QCalls and FCalls in System.Private.CoreLib](../../../../docs/design/coreclr/botr/corelib.md#Calling-from-managed-to-native-code). A few specialized FCalls have separate internal runtime implementations that are not included in this table. The QCalls and FCalls are discovered by scanning the members of System.Private.CoreLib to find the corresponding methods.
 
 ## The P/Invoke module list
 
@@ -127,7 +132,8 @@ The Release `browser_wasm` CoreCLR build leg and the `wasi_wasm` CoreCLR build-o
 [`wasm-coreclr-callhelpers-check.yml`](../../../../eng/pipelines/common/templates/wasm-coreclr-callhelpers-check.yml)
 after building. It regenerates the leg's own flavor with `--target-os` and fails if
 `src/coreclr/vm/wasm/<os>/` differs from what is committed, printing the diff and the commands to
-fix it. A stale table still builds, but the corerun that links it crashes at run time; a missing
+fix it. A stale QCall table can fail native linking if it still references a removed entrypoint.
+Other stale entries can crash corerun at run time; a missing
 `[UnmanagedCallersOnly]` thunk, for example, fails startup with
 `GetUnmanagedCallersOnlyThunk: unknown thunk`. Library tests do not catch this because the app
 relink generates its own tables.

@@ -29,28 +29,6 @@ extern "C" {
 // Note:  Win32-hosted GCC predefines __stdcall and __cdecl, but Unix-
 // hosted GCC does not.
 
-#ifdef __i386__
-
-#if !defined(__stdcall)
-#define __stdcall      __attribute__((stdcall))
-#endif
-#if !defined(_stdcall)
-#define _stdcall       __stdcall
-#endif
-
-#if !defined(__cdecl)
-#define __cdecl        __attribute__((cdecl))
-#endif
-#if !defined(_cdecl)
-#define _cdecl         __cdecl
-#endif
-#if !defined(CDECL)
-#define CDECL          __cdecl
-#endif
-
-
-#else   // !defined(__i386__)
-
 #define __stdcall
 #define _stdcall
 #define __cdecl
@@ -66,8 +44,6 @@ extern "C" {
 
 #define __fastcall
 #define _fastcall
-
-#endif  // !defined(__i386__)
 
 #define CALLBACK __cdecl
 

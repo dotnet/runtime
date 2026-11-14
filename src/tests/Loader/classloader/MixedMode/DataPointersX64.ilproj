@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+    <IlasmFlags>$(IlasmFlags) -PE64 -X64</IlasmFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DataPointers.il" />
+  </ItemGroup>
+</Project>

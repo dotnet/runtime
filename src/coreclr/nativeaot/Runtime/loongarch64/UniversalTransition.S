@@ -90,26 +90,12 @@
         PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, STACK_SIZE // ;; Push down stack pointer and store FP and RA
 
         // Floating point registers
-        fst.d  $f0, $sp, FLOAT_ARG_OFFSET
-        fst.d  $f1, $sp, FLOAT_ARG_OFFSET + 0x08
-        fst.d  $f2, $sp, FLOAT_ARG_OFFSET + 0x10
-        fst.d  $f3, $sp, FLOAT_ARG_OFFSET + 0x18
-        fst.d  $f4, $sp, FLOAT_ARG_OFFSET + 0x20
-        fst.d  $f5, $sp, FLOAT_ARG_OFFSET + 0x28
-        fst.d  $f6, $sp, FLOAT_ARG_OFFSET + 0x30
-        fst.d  $f7, $sp, FLOAT_ARG_OFFSET + 0x38
+        SAVE_FLOAT_ARGUMENT_REGISTERS $sp, FLOAT_ARG_OFFSET
 
         // Space for return buffer data (0x10 bytes)
 
         // Save argument registers
-        st.d  $a0, $sp, ARGUMENT_REGISTERS_OFFSET
-        st.d  $a1, $sp, ARGUMENT_REGISTERS_OFFSET + 0x08
-        st.d  $a2, $sp, ARGUMENT_REGISTERS_OFFSET + 0x10
-        st.d  $a3, $sp, ARGUMENT_REGISTERS_OFFSET + 0x18
-        st.d  $a4, $sp, ARGUMENT_REGISTERS_OFFSET + 0x20
-        st.d  $a5, $sp, ARGUMENT_REGISTERS_OFFSET + 0x28
-        st.d  $a6, $sp, ARGUMENT_REGISTERS_OFFSET + 0x30
-        st.d  $a7, $sp, ARGUMENT_REGISTERS_OFFSET + 0x38
+        SAVE_ARGUMENT_REGISTERS $sp, ARGUMENT_REGISTERS_OFFSET
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
         PREPARE_EXTERNAL_VAR RhpFpTrashValues, $a1

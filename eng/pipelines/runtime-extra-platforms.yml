@@ -58,14 +58,6 @@ extends:
             timeoutInMinutes: 540
             allowNoHelixJobs: true
 
-      # Add wasm jobs only for rolling builds
-      - ${{ if eq(variables.isRollingBuild, true) }}:
-        - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
-          parameters:
-            isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-            isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-
       # Add iOS/tvOS jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
         parameters:

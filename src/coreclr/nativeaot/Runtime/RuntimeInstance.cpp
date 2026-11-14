@@ -28,11 +28,6 @@
 #include "MethodTable.inl"
 #include "../../inc/clrversion.h"
 
-#ifdef  FEATURE_GC_STRESS
-enum HijackType { htLoop, htCallsite };
-bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
-#endif // FEATURE_GC_STRESS
-
 #include "shash.inl"
 
 #define MAX_CRASHINFOBUFFER_SIZE 8192
@@ -326,26 +321,6 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 void RuntimeInstance::Destroy()
 {
     delete this;
-}
-
-bool RuntimeInstance::ShouldHijackLoopForGcStress(uintptr_t CallsiteIP)
-{
-#ifdef FEATURE_GC_STRESS
-    return ShouldHijackForGcStress(CallsiteIP, htLoop);
-#else // FEATURE_GC_STRESS
-    UNREFERENCED_PARAMETER(CallsiteIP);
-    return false;
-#endif // FEATURE_GC_STRESS
-}
-
-bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
-{
-#ifdef FEATURE_GC_STRESS
-    return ShouldHijackForGcStress(CallsiteIP, htCallsite);
-#else // FEATURE_GC_STRESS
-    UNREFERENCED_PARAMETER(CallsiteIP);
-    return false;
-#endif // FEATURE_GC_STRESS
 }
 
 EXTERN_C void* g_pDispatchCache;

@@ -29,6 +29,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ClassUnloadFinished(ClassID classId, HRESULT hrStatus);
 
 private:
+    std::wstring GetTypeName(ClassID classId);
+
     std::atomic<int> _classLoadStartedCount;
     std::atomic<int> _classLoadFinishedCount;
     std::atomic<int> _classUnloadStartedCount;

@@ -2,4 +2,7 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == '' and '$(RUNTIME_FLAVOR_FOR_TESTS)' != ''">
     <RuntimeFlavor>$(RUNTIME_FLAVOR_FOR_TESTS)</RuntimeFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <UseMonoRuntime>false</UseMonoRuntime>
+  </PropertyGroup>
 </Project>

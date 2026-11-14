@@ -22,12 +22,6 @@ namespace Microsoft.Interop
     /// </remarks>
     internal static class MemorySafetyRules
     {
-        /// <summary>
-        /// The compiler feature flag that opts an assembly into the updated memory safety rules, mirroring
-        /// Roslyn's own <c>Feature.UpdatedMemorySafetyRules</c>.
-        /// </summary>
-        internal const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
-
         private static readonly SyntaxKind s_safeKeyword = SyntaxFacts.GetContextualKeywordKind("safe");
 
         extension(SyntaxKind)
@@ -43,21 +37,6 @@ namespace Microsoft.Interop
             /// keyword should give.
             /// </remarks>
             internal static SyntaxKind SafeKeyword => s_safeKeyword;
-        }
-
-        extension(SyntaxTree tree)
-        {
-            /// <summary>
-            /// Mirrors <c>CSharpCompilationOptions.UseUpdatedMemorySafetyRules</c>, reporting whether the
-            /// compilation the tree belongs to uses the updated memory safety rules.
-            /// </summary>
-            /// <remarks>
-            /// Roslyn does not expose the memory safety rules version through a public API yet
-            /// (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself
-            /// treats as the temporary way to opt in is read here.
-            /// </remarks>
-            internal bool UseUpdatedMemorySafetyRules
-                => tree.Options.Features.ContainsKey(UpdatedMemorySafetyRulesFeature);
         }
 
         extension(SyntaxTokenList modifiers)
