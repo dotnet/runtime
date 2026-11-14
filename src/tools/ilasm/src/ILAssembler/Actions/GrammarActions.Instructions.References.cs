@@ -95,20 +95,8 @@ internal sealed partial class GrammarActions
 
     private static void WriteInstructionToken(CurrentMethodContext method, EntityRegistry.EntityBase entity)
     {
-        if (entity is EntityRegistry.TypeReferenceEntity typeReference)
-        {
-            typeReference.RecordBlobToWriteResolvedToken(
-                method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
-        }
-        else if (entity is EntityRegistry.MemberReferenceEntity memberReference)
-        {
-            memberReference.RecordBlobToWriteResolvedHandle(
-                method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
-        }
-        else
-        {
-            method.Definition.MethodBody.Token(entity.Handle);
-        }
+        entity.RecordBlobToWriteResolvedToken(
+            method.Definition.MethodBody.CodeBuilder.ReserveBytes(sizeof(int)));
     }
 
 }

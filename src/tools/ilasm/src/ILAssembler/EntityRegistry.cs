@@ -26,7 +26,6 @@ namespace Microsoft.DotNet.ILAssembler
         private readonly Dictionary<(ExportedTypeEntity? ContainingType, string Namespace, string Name), ExportedTypeEntity> _seenExportedTypes = new();
         private readonly List<TypeReferenceEntity> _typeReferences = new();
         private readonly List<MemberReferenceEntity> _memberReferences = new();
-        private readonly Dictionary<(EntityBase, BlobBuilder), MethodSpecificationEntity> _seenMethodSpecs = new(new MethodSpecEqualityComparer());
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -66,19 +65,6 @@ namespace Microsoft.DotNet.ILAssembler
                 HashCode hash = default;
                 hash.AddBytes(obj);
                 return hash.ToHashCode();
-            }
-        }
-
-        private sealed class MethodSpecEqualityComparer : IEqualityComparer<(EntityBase, BlobBuilder)>
-        {
-            public bool Equals((EntityBase, BlobBuilder) x, (EntityBase, BlobBuilder) y)
-            {
-                return x.Item1 == y.Item1 && x.Item2.ContentEquals(y.Item2);
-            }
-
-            public int GetHashCode((EntityBase, BlobBuilder) obj)
-            {
-                return (obj.Item1.GetHashCode(), obj.Item2.Count).GetHashCode();
             }
         }
 
@@ -227,17 +213,16 @@ namespace Microsoft.DotNet.ILAssembler
             // that point to local types already have TypeDef handles.
             ResolveTypeReferences();
 
-            // Create a signature rewriter that remaps PseudoHandle-based TypeRef coded indices
-            // in blobs to the resolved real handles via list index lookup.
-            SignatureRewriter signatureRewriter = new(_typeReferences);
+            // Rewrite provisional TypeRef and TypeSpec indices before interning the emitted rows.
+            IReadOnlyList<EntityBase> typeSpecifications = GetSeenEntities(TableIndex.TypeSpec);
+            SignatureRewriter signatureRewriter = new(_typeReferences, typeSpecifications);
 
-            foreach (MemberReferenceEntity memberReferenceEntity in _memberReferences)
-            {
-                ResolveAndRecordMemberReference(memberReferenceEntity);
-            }
+            ResolveTypeSpecifications(builder, signatureRewriter, typeSpecifications);
+            ResolveMemberReferences(builder, signatureRewriter);
+            ResolveMethodSpecifications(builder, signatureRewriter);
 
             // Now that we've recorded all of the entities that wouldn't have had handles before,
-            // we can start writing out the content of the entities.
+            // we can write out the remaining entities.
             Blob mvidFixup = default;
             GuidHandle mvid;
             if (deterministic)
@@ -479,30 +464,6 @@ namespace Microsoft.DotNet.ILAssembler
                     impl.MethodDeclaration.Handle);
             }
 
-            foreach (MemberReferenceEntity memberRef in _memberReferences)
-            {
-                // Skip member references that were resolved to local MethodDef or FieldDef tokens.
-                if (memberRef.Handle.Kind is HandleKind.MethodDefinition or HandleKind.FieldDefinition)
-                {
-                    continue;
-                }
-
-                string name = memberRef.Name;
-                if (memberRef.Parent.Handle.Kind == HandleKind.MethodDefinition)
-                {
-                    var method = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[MetadataTokens.GetRowNumber(memberRef.Parent.Handle) - 1];
-                    if ((method.MethodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope)
-                    {
-                        name = NameHelpers.GetPrivateScopeMetadataName(name, isMethod: true);
-                    }
-                }
-
-                builder.AddMemberReference(
-                    memberRef.Parent.Handle,
-                    builder.GetOrAddString(name),
-                    builder.GetOrAddBlob(RewriteSignatureBlob(memberRef.Signature, signatureRewriter)));
-            }
-
             foreach (DeclarativeSecurityAttributeEntity declSecurity in GetSeenEntities(TableIndex.DeclSecurity))
             {
                 builder.AddDeclarativeSecurityAttribute(
@@ -591,11 +552,6 @@ namespace Microsoft.DotNet.ILAssembler
                     asmRef.Hash is null ? default : builder.GetOrAddBlob(asmRef.Hash));
             }
 
-            foreach (TypeSpecificationEntity typeSpec in GetSeenEntities(TableIndex.TypeSpec))
-            {
-                builder.AddTypeSpecification(builder.GetOrAddBlob(RewriteTypeSpecBlob(typeSpec.Signature, signatureRewriter)));
-            }
-
             if (Assembly is not null)
             {
                 // Combine the base flags with the architecture bits
@@ -640,11 +596,6 @@ namespace Microsoft.DotNet.ILAssembler
                     builder.GetOrAddString(resource.Name),
                     resource.Implementation?.Handle ?? default,
                     resource.Offset);
-            }
-
-            foreach (MethodSpecificationEntity methodSpec in GetSeenEntities(TableIndex.MethodSpec))
-            {
-                builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(RewriteMethodSpecBlob(methodSpec.Signature, signatureRewriter)));
             }
 
             foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
@@ -1092,12 +1043,14 @@ namespace Microsoft.DotNet.ILAssembler
         private sealed class SignatureRewriter : ISignatureTypeProvider<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>
         {
             private readonly List<TypeReferenceEntity>? _typeReferences;
+            private readonly IReadOnlyList<EntityBase>? _typeSpecifications;
 
             public SignatureRewriter() { }
 
-            public SignatureRewriter(List<TypeReferenceEntity> typeReferences)
+            public SignatureRewriter(List<TypeReferenceEntity> typeReferences, IReadOnlyList<EntityBase> typeSpecifications)
             {
                 _typeReferences = typeReferences;
+                _typeSpecifications = typeSpecifications;
             }
             public readonly struct BlobOrHandle
             {
@@ -1267,6 +1220,14 @@ namespace Microsoft.DotNet.ILAssembler
 
             public BlobOrHandle GetTypeFromSpecification(MetadataReader reader, EmptyGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
+                if (_typeSpecifications is not null)
+                {
+                    int row = MetadataTokens.GetRowNumber(handle);
+                    if (row >= 1 && row <= _typeSpecifications.Count)
+                    {
+                        return new BlobOrHandle(_typeSpecifications[row - 1].Handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+                    }
+                }
                 return new BlobOrHandle(handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
             }
 
@@ -1544,7 +1505,88 @@ namespace Microsoft.DotNet.ILAssembler
             }
         }
 
-        private void ResolveAndRecordMemberReference(MemberReferenceEntity memberRef)
+        private void ResolveTypeSpecifications(MetadataBuilder builder, SignatureRewriter rewriter, IReadOnlyList<EntityBase> typeSpecifications)
+        {
+            // ECMA-335 II.22.39: TypeSpec identity is the emitted signature, without a generic context.
+            Dictionary<BlobHandle, TypeSpecificationHandle> handles = new();
+            _seenEntities.Remove(TableIndex.TypeSpec);
+            foreach (TypeSpecificationEntity typeSpec in typeSpecifications)
+            {
+                BlobHandle signature = builder.GetOrAddBlob(RewriteTypeSpecBlob(typeSpec.Signature, rewriter));
+                if (!handles.TryGetValue(signature, out TypeSpecificationHandle handle))
+                {
+                    handle = builder.AddTypeSpecification(signature);
+                    RecordEntityInTable(TableIndex.TypeSpec, typeSpec);
+                    handles.Add(signature, handle);
+                }
+                else
+                {
+                    ((IHasHandle)typeSpec).SetHandle(handle);
+                }
+            }
+        }
+
+        private void ResolveMemberReferences(MetadataBuilder builder, SignatureRewriter rewriter)
+        {
+            // ECMA-335 II.22.25: resolve local definitions and vararg parents before comparing row identities.
+            Dictionary<(EntityHandle Parent, StringHandle Name, BlobHandle Signature), MemberReferenceHandle> handles = new();
+            foreach (MemberReferenceEntity memberRef in _memberReferences)
+            {
+                ResolveMemberReference(memberRef);
+                if (memberRef.Handle.Kind is HandleKind.MethodDefinition or HandleKind.FieldDefinition)
+                {
+                    continue;
+                }
+
+                string name = memberRef.Name;
+                if (memberRef.Parent.Handle.Kind == HandleKind.MethodDefinition)
+                {
+                    var method = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[MetadataTokens.GetRowNumber(memberRef.Parent.Handle) - 1];
+                    if ((method.MethodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope)
+                    {
+                        name = NameHelpers.GetPrivateScopeMetadataName(name, isMethod: true);
+                    }
+                }
+
+                (EntityHandle Parent, StringHandle Name, BlobHandle Signature) key = (memberRef.Parent.Handle, builder.GetOrAddString(name),
+                    builder.GetOrAddBlob(RewriteSignatureBlob(memberRef.Signature, rewriter)));
+                if (!handles.TryGetValue(key, out MemberReferenceHandle handle))
+                {
+                    handle = builder.AddMemberReference(key.Parent, key.Name, key.Signature);
+                    RecordEntityInTable(TableIndex.MemberRef, memberRef);
+                    handles.Add(key, handle);
+                }
+                else
+                {
+                    ((IHasHandle)memberRef).SetHandle(handle);
+                }
+            }
+        }
+
+        private void ResolveMethodSpecifications(MetadataBuilder builder, SignatureRewriter rewriter)
+        {
+            // ECMA-335 II.22.29: both the resolved method and the instantiation determine MethodSpec identity.
+            Dictionary<(EntityHandle Method, BlobHandle Instantiation), MethodSpecificationHandle> handles = new();
+            IReadOnlyList<EntityBase> methodSpecifications = GetSeenEntities(TableIndex.MethodSpec);
+            _seenEntities.Remove(TableIndex.MethodSpec);
+            foreach (MethodSpecificationEntity methodSpec in methodSpecifications)
+            {
+                (EntityHandle Method, BlobHandle Instantiation) key =
+                    (methodSpec.Parent.Handle, builder.GetOrAddBlob(RewriteMethodSpecBlob(methodSpec.Signature, rewriter)));
+                if (!handles.TryGetValue(key, out MethodSpecificationHandle handle))
+                {
+                    handle = builder.AddMethodSpecification(key.Method, key.Instantiation);
+                    RecordEntityInTable(TableIndex.MethodSpec, methodSpec);
+                    handles.Add(key, handle);
+                }
+                else
+                {
+                    ((IHasHandle)methodSpec).SetHandle(handle);
+                }
+            }
+        }
+
+        private void ResolveMemberReference(MemberReferenceEntity memberRef)
         {
             // We need to resolve a MemberReference in a few scenarios:
             // 1. The MemberReference references a local MethodDefinition
@@ -1578,7 +1620,6 @@ namespace Microsoft.DotNet.ILAssembler
                     return;
                 }
             }
-            RecordEntityInTable(TableIndex.MemberRef, memberRef);
         }
 
         private bool TryResolveMethodReference(MemberReferenceEntity memberRef)
@@ -1685,14 +1726,11 @@ namespace Microsoft.DotNet.ILAssembler
             }
         }
 
-        public MethodSpecificationEntity GetOrCreateMethodSpecification(EntityBase method, BlobBuilder signature)
+        public MethodSpecificationEntity CreateMethodSpecification(EntityBase method, BlobBuilder signature)
         {
-            return GetOrCreateEntity(
-                (method, signature),
-                TableIndex.MethodSpec,
-                _seenMethodSpecs,
-                ((EntityBase method, BlobBuilder signature) value) => new(method, signature),
-                _ => { });
+            var entity = new MethodSpecificationEntity(method, signature);
+            RecordEntityInTable(TableIndex.MethodSpec, entity);
+            return entity;
         }
 
         public StandaloneSignatureEntity GetOrCreateStandaloneSignature(BlobBuilder signature)
@@ -1826,11 +1864,28 @@ namespace Microsoft.DotNet.ILAssembler
 
         public abstract class EntityBase : IHasHandle
         {
+            private List<Blob>? _placesToWriteResolvedToken;
+
             public virtual EntityHandle Handle { get; private set; }
+
+            public void RecordBlobToWriteResolvedToken(Blob blob)
+            {
+                (_placesToWriteResolvedToken ??= new()).Add(blob);
+                var writer = new BlobWriter(blob);
+                writer.WriteInt32(MetadataTokens.GetToken(Handle));
+            }
 
             protected virtual void SetHandle(EntityHandle token)
             {
                 Handle = token;
+                if (_placesToWriteResolvedToken is not null)
+                {
+                    foreach (Blob blob in _placesToWriteResolvedToken)
+                    {
+                        var writer = new BlobWriter(blob);
+                        writer.WriteInt32(MetadataTokens.GetToken(token));
+                    }
+                }
             }
 
             void IHasHandle.SetHandle(EntityHandle token) => SetHandle(token);
@@ -1976,28 +2031,6 @@ namespace Microsoft.DotNet.ILAssembler
             /// (e.g., catch clauses, base type references) to get a valid TypeRef handle.
             /// </summary>
             public override EntityHandle Handle => base.Handle.IsNil ? PseudoHandle : base.Handle;
-
-            private readonly List<Blob> _placesToWriteResolvedToken = new();
-
-            /// <summary>
-            /// Records a 4-byte blob location (e.g., in an IL instruction stream) that
-            /// contains the PseudoHandle token and needs to be backpatched with the real
-            /// handle once TypeRef resolution is complete.
-            /// </summary>
-            public void RecordBlobToWriteResolvedToken(Blob blob)
-            {
-                _placesToWriteResolvedToken.Add(blob);
-            }
-
-            protected override void SetHandle(EntityHandle token)
-            {
-                base.SetHandle(token);
-                foreach (var blob in _placesToWriteResolvedToken)
-                {
-                    var writer = new BlobWriter(blob);
-                    writer.WriteInt32(MetadataTokens.GetToken(token));
-                }
-            }
         }
 
         public sealed class TypeSpecificationEntity(BlobBuilder signature) : TypeEntity
@@ -2116,26 +2149,6 @@ namespace Microsoft.DotNet.ILAssembler
             public EntityBase Parent { get; private set; } = parent;
             public string Name { get; } = name;
             public BlobBuilder Signature { get; } = signature;
-
-            private readonly List<Blob> _placesToWriteResolvedHandle = new();
-
-            public void RecordBlobToWriteResolvedHandle(Blob blob)
-            {
-                _placesToWriteResolvedHandle.Add(blob);
-            }
-
-            protected override void SetHandle(EntityHandle token)
-            {
-                base.SetHandle(token);
-                // Now that we've set the handle, backpatch all the blobs that need to be updated.
-                // This way we can determine the right token to use for the member reference
-                // after we've processed all of the source code.
-                foreach (var blob in _placesToWriteResolvedHandle)
-                {
-                    var writer = new BlobWriter(blob);
-                    writer.WriteInt32(MetadataTokens.GetToken(token));
-                }
-            }
 
             internal void SetMemberRefParent(MemberReferenceEntity parent)
             {
