@@ -61,7 +61,16 @@ namespace ILCompiler.DependencyAnalysis
                     );
 
                 int hashCode = typeSymbol.Type.GetHashCode();
-                typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
+                Vertex placedVertex = hashTableSection.Place(vertex);
+                typeMapHashTable.Append((uint)hashCode, placedVertex);
+
+                // Types whose names were stripped from the metadata are looked up by their metadata handle
+                // because the runtime can't compute the hash code from the name.
+                if (!factory.MetadataManager.GeneratesNames(mappingEntry.Entity.Module))
+                {
+                    int metadataHandleHashCode = Internal.VersionResilientHashCode.MetadataHandleHashCode(mappingEntry.MetadataHandle);
+                    typeMapHashTable.Append((uint)metadataHandleHashCode, placedVertex);
+                }
             }
 
             byte[] hashTableBytes = writer.Save();

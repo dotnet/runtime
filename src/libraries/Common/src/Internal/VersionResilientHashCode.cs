@@ -184,6 +184,16 @@ namespace Internal
         }
 
         /// <summary>
+        /// Calculate hash code that identifies a type by its metadata handle. This is used for types whose
+        /// name is not available in metadata, so that the hash code can't be computed from the name.
+        /// </summary>
+        /// <param name="metadataHandle">Metadata handle of the type</param>
+        public static int MetadataHandleHashCode(int metadataHandle)
+        {
+            return (int)CombineTwoValuesIntoHash(0x4E414D45 /* NAME */, (uint)metadataHandle);
+        }
+
+        /// <summary>
         /// Bitwise left 32-bit rotation with wraparound.
         /// </summary>
         /// <param name="value">Value to rotate</param>

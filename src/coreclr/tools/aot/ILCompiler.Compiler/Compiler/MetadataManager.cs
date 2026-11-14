@@ -59,7 +59,7 @@ namespace ILCompiler
         private List<ReflectionStackTraceMapping> _reflectionStackTraceMappings;
         protected readonly string _metadataLogFile;
         protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
-
+        protected readonly MetadataNameStrippingPolicy _nameStrippingPolicy;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
         protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
@@ -98,7 +98,8 @@ namespace ILCompiler
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy,
-            MetadataManagerOptions options, FlowAnnotations flowAnnotations)
+            MetadataManagerOptions options, FlowAnnotations flowAnnotations,
+            MetadataNameStrippingPolicy nameStrippingPolicy = null)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
@@ -107,11 +108,18 @@ namespace ILCompiler
             _options = options;
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
+            _nameStrippingPolicy = nameStrippingPolicy ?? MetadataNameStrippingPolicy.None;
 
             FlowAnnotations = flowAnnotations;
         }
 
         public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
+
+        /// <summary>
+        /// Returns true if the names of the types and members defined in <paramref name="module"/>
+        /// are emitted into the metadata.
+        /// </summary>
+        internal bool GeneratesNames(ModuleDesc module) => !_nameStrippingPolicy.IsStripped(module);
 
         internal ObjectNode.ObjectData PrepareForDehydration(DehydratableObjectNode node, ObjectNode.ObjectData hydratedData)
         {

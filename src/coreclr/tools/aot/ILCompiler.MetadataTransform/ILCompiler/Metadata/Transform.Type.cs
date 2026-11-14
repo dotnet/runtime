@@ -193,9 +193,12 @@ namespace ILCompiler.Metadata
             // will do the interning anyway.
             Debug.Assert(parentRecord is TypeDefinition);
 
+            bool stripName = StripsName(containingType);
+
             parentReferenceRecord = new TypeReference
             {
-                TypeName = HandleString(containingType.GetName()),
+                TypeName = HandleName(containingType.GetName(), stripName),
+                Discriminator = stripName ? GetDiscriminator(containingType) : 0,
             };
 
             if (containingType.ContainingType != null)
@@ -204,7 +207,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                parentReferenceRecord.NamespaceOrEnclosingType = HandleNamespaceReference(containingType.Module, containingType.GetNamespace());
+                parentReferenceRecord.NamespaceOrEnclosingType = HandleNamespaceReference(containingType);
             }
 
             return parentReferenceRecord;
@@ -214,16 +217,20 @@ namespace ILCompiler.Metadata
         {
             Debug.Assert(entity.IsTypeDefinition);
 
+            bool stripName = StripsName(entity);
+
             if (entity.ContainingType != null)
             {
                 record.NamespaceOrEnclosingType = GetNestedReferenceParent(entity);
             }
             else
             {
-                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
+                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity);
             }
 
-            record.TypeName = HandleString(entity.GetName());
+            record.TypeName = HandleName(entity.GetName(), stripName);
+            if (stripName)
+                record.Discriminator = GetDiscriminator(entity);
         }
 
         private void InitializeTypeDef(Cts.MetadataType entity, TypeDefinition record)
@@ -239,7 +246,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.GetNamespace());
+                var namespaceDefinition = HandleNamespaceDefinition(entity);
                 record.NamespaceOrEnclosingType = namespaceDefinition;
 
                 if (entity.IsModuleType)
@@ -253,7 +260,10 @@ namespace ILCompiler.Metadata
                 }
             }
 
-            record.Name = HandleString(entity.GetName());
+            bool stripName = StripsName(entity);
+            record.Name = HandleName(entity.GetName(), stripName);
+            if (stripName)
+                record.Discriminator = GetDiscriminator(entity);
 
             Cts.ClassLayoutMetadata layoutMetadata = entity.GetClassLayout();
             record.Size = checked((uint)layoutMetadata.Size);
@@ -332,14 +342,14 @@ namespace ILCompiler.Metadata
 
                 foreach (var e in ecmaRecord.GetEvents())
                 {
-                    Event evt = HandleEvent(ecmaEntity.Module, e);
+                    Event evt = HandleEvent(ecmaEntity, e);
                     if (evt != null)
                         record.Events.Add(evt);
                 }
 
                 foreach (var property in ecmaRecord.GetProperties())
                 {
-                    Property prop = HandleProperty(ecmaEntity.Module, property);
+                    Property prop = HandleProperty(ecmaEntity, property);
                     if (prop != null)
                         record.Properties.Add(prop);
                 }

@@ -39,7 +39,8 @@ namespace ILCompiler
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
                 Array.Empty<ReflectableParameter>(),
-                default)
+                default,
+                MetadataNameStrippingPolicy.None)
         {
         }
 
@@ -58,8 +59,9 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
             IEnumerable<ReflectableParameter> reflectableParameters,
-            MetadataManagerOptions options)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
+            MetadataManagerOptions options,
+            MetadataNameStrippingPolicy nameStrippingPolicy)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations, nameStrippingPolicy)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             _forcedTypes = new List<TypeDesc>(forcedTypes);
@@ -283,6 +285,11 @@ namespace ILCompiler
             public bool IsBlocked(MethodDesc methodDef)
             {
                 return _blockingPolicy.IsBlocked(methodDef);
+            }
+
+            public bool GeneratesNames(ModuleDesc module)
+            {
+                return _parent.GeneratesNames(module);
             }
         }
     }

@@ -9,6 +9,12 @@ namespace Internal.Metadata.NativeFormat
         {
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
 
+            ReadOnlySpan<byte> name = reader.ReadStringAsBytes(typeDef.Name);
+
+            // The name of the type was stripped from the metadata. The type map identifies such types by their handle.
+            if (name.IsEmpty)
+                return VersionResilientHashCode.MetadataHandleHashCode(typeDefHandle.GetHashCode());
+
             int namespaceHashCode = 0;
 
             Handle namespaceOrEnclosingType = typeDef.NamespaceOrEnclosingType;
@@ -18,7 +24,7 @@ namespace Internal.Metadata.NativeFormat
                 namespaceHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(namespaceDefinition.Name));
             }
 
-            int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeDef.Name));
+            int nameHashCode = VersionResilientHashCode.NameHashCode(name);
 
             int hashCode = VersionResilientHashCode.NameHashCode(namespaceHashCode, nameHashCode);
 

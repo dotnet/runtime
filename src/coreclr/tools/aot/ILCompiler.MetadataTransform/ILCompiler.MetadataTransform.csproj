@@ -66,6 +66,7 @@
     <Compile Include="ILCompiler\Metadata\Transform.Event.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Field.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Method.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Names.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Namespace.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Parameter.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Property.cs" />

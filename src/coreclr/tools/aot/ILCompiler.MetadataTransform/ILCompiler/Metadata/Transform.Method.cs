@@ -60,7 +60,10 @@ namespace ILCompiler.Metadata
 
         private void InitializeMethodDefinition(Cts.MethodDesc entity, Method record)
         {
-            record.Name = HandleString(entity.GetName());
+            bool stripName = StripsName(entity);
+            record.Name = HandleName(entity.GetName(), stripName);
+            if (stripName)
+                record.Discriminator = GetDiscriminator(entity);
 
             if (entity.HasInstantiation)
             {
@@ -91,7 +94,7 @@ namespace ILCompiler.Metadata
                     Parameter paramRecord = new Parameter
                     {
                         Flags = param.Attributes,
-                        Name = HandleString(reader.GetString(param.Name)),
+                        Name = HandleName(reader.GetString(param.Name), !_policy.GeneratesNames(ecmaEntity.Module)),
                         Sequence = checked((ushort)param.SequenceNumber)
                     };
 
@@ -135,7 +138,10 @@ namespace ILCompiler.Metadata
 
         private void InitializeMethodReference(Cts.MethodDesc entity, MemberReference record)
         {
-            record.Name = HandleString(entity.GetName());
+            bool stripName = StripsName(entity.GetTypicalMethodDefinition());
+            record.Name = HandleName(entity.GetName(), stripName);
+            if (stripName)
+                record.Discriminator = GetDiscriminator(entity);
             record.Parent = HandleType(entity.OwningType);
             record.Signature = HandleMethodSignature(entity.GetTypicalMethodDefinition().Signature);
         }

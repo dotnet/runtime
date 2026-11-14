@@ -160,6 +160,8 @@ namespace ILCompiler
             new("--conditionalroot") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Fully generate given assembly if it's used" };
         public Option<string[]> TrimmedAssemblies { get; } =
             new("--trim") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Trim the specified assembly" };
+        public Option<string[]> StrippedNamesAssemblies { get; } =
+            new("--stripnames") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Don't emit the names of types and members of the specified assembly into the reflection metadata" };
         public Option<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public Option<string> TargetArchitecture { get; } =
@@ -266,6 +268,7 @@ namespace ILCompiler
             Options.Add(RootedAssemblies);
             Options.Add(ConditionallyRootedAssemblies);
             Options.Add(TrimmedAssemblies);
+            Options.Add(StrippedNamesAssemblies);
             Options.Add(RootDefaultAssemblies);
             Options.Add(TargetArchitecture);
             Options.Add(TargetOS);

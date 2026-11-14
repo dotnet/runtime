@@ -87,8 +87,9 @@ namespace ILCompiler
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
             IEnumerable<string> trimmedAssemblies,
-            IEnumerable<string> satelliteAssemblyFilePaths)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
+            IEnumerable<string> satelliteAssemblyFilePaths,
+            MetadataNameStrippingPolicy nameStrippingPolicy)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations, nameStrippingPolicy)
         {
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
@@ -919,7 +920,7 @@ namespace ILCompiler
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy, FlowAnnotations,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, _options);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, _options, _nameStrippingPolicy);
         }
 
         private void AddDataflowDependency(IDependencySink dependencies, NodeFactory factory, MethodIL methodIL, string reason)
@@ -1059,6 +1060,11 @@ namespace ILCompiler
             public bool IsBlocked(MethodDesc methodDef)
             {
                 return _blockingPolicy.IsBlocked(methodDef);
+            }
+
+            public bool GeneratesNames(ModuleDesc module)
+            {
+                return _factory.MetadataManager.GeneratesNames(module);
             }
         }
 

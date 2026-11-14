@@ -13,8 +13,9 @@ namespace ILCompiler.Metadata
 {
     internal partial class Transform<TPolicy>
     {
-        private Property HandleProperty(Cts.Ecma.EcmaModule module, Ecma.PropertyDefinitionHandle property)
+        private Property HandleProperty(Cts.Ecma.EcmaType owningType, Ecma.PropertyDefinitionHandle property)
         {
+            Cts.Ecma.EcmaModule module = owningType.Module;
             Ecma.MetadataReader reader = module.MetadataReader;
 
             Ecma.PropertyDefinition propDef = reader.GetPropertyDefinition(property);
@@ -33,9 +34,11 @@ namespace ILCompiler.Metadata
             Ecma.BlobReader sigBlobReader = reader.GetBlobReader(propDef.Signature);
             Cts.PropertySignature sig = new Cts.Ecma.EcmaSignatureParser(module, sigBlobReader, Cts.NotFoundBehavior.Throw).ParsePropertySignature();
 
+            bool stripName = StripsPropertyName(owningType);
             Property result = new Property
             {
-                Name = HandleString(reader.GetString(propDef.Name)),
+                Name = HandleName(reader.GetString(propDef.Name), stripName),
+                Discriminator = stripName ? GetDiscriminator(owningType, property) : 0,
                 Flags = propDef.Attributes,
                 Signature = new PropertySignature
                 {

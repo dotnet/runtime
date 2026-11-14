@@ -140,7 +140,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 rootEntireAssembliesModules: options.RootEntireAssemblies,
                 additionalRootedAssemblies: options.AdditionalRootAssemblies.ToArray(),
                 trimmedAssemblies: options.TrimAssemblies.ToArray(),
-                satelliteAssemblyFilePaths: Array.Empty<string>());
+                satelliteAssemblyFilePaths: Array.Empty<string>(),
+                nameStrippingPolicy: MetadataNameStrippingPolicy.None);
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy();
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);

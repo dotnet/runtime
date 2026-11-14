@@ -423,8 +423,16 @@ namespace ILCompiler
                 _ => throw new CommandLineException($"Unknown stack trace data: {Get(_command.StackTraceData)}"),
             };
 
+            var nameStrippingPolicy = new MetadataNameStrippingPolicy(Get(_command.StrippedNamesAssemblies));
+            foreach (string strippedNamesAssembly in Get(_command.StrippedNamesAssemblies))
+            {
+                // The reflection stack in the system module relies on the names of its own types and members.
+                if (string.Equals(strippedNamesAssembly, Get(_command.SystemModuleName), StringComparison.OrdinalIgnoreCase))
+                    throw new CommandLineException($"Stripping names of the system module '{strippedNamesAssembly}' is not supported");
+            }
+
             var stackTracePolicy = emitStackTraceData ?
-                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers) : new NoStackTraceEmissionPolicy();
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers, nameStrippingPolicy) : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy;
             ManifestResourceBlockingPolicy resBlockingPolicy;
@@ -474,7 +482,8 @@ namespace ILCompiler
                     Get(_command.ConditionallyRootedAssemblies),
                     rootedAssemblies,
                     Get(_command.TrimmedAssemblies),
-                    Get(_command.SatelliteFilePaths));
+                    Get(_command.SatelliteFilePaths),
+                    nameStrippingPolicy);
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);

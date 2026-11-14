@@ -46,7 +46,10 @@ namespace ILCompiler.Metadata
 
         private void InitializeFieldDefinition(Cts.FieldDesc entity, Field record)
         {
-            record.Name = HandleString(entity.GetName());
+            bool stripName = StripsName(entity);
+            record.Name = HandleName(entity.GetName(), stripName);
+            if (stripName)
+                record.Discriminator = GetDiscriminator(entity);
             record.Flags = GetFieldAttributes(entity);
 
             var ecmaField = entity as Cts.Ecma.EcmaField;
@@ -99,7 +102,10 @@ namespace ILCompiler.Metadata
 
         private void InitializeFieldReference(Cts.FieldDesc entity, MemberReference record)
         {
-            record.Name = HandleString(entity.GetName());
+            bool stripName = StripsName(entity.GetTypicalFieldDefinition());
+            record.Name = HandleName(entity.GetName(), stripName);
+            if (stripName)
+                record.Discriminator = GetDiscriminator(entity);
             record.Parent = HandleType(entity.OwningType);
             record.Signature = new FieldSignature
             {

@@ -29,15 +29,20 @@ namespace ILCompiler
     public class EcmaMethodStackTraceEmissionPolicy : StackTraceEmissionPolicy
     {
         private readonly MethodStackTraceVisibilityFlags _flags;
+        private readonly MetadataNameStrippingPolicy _nameStrippingPolicy;
 
-        public EcmaMethodStackTraceEmissionPolicy(bool includeLineNumbers)
+        public EcmaMethodStackTraceEmissionPolicy(bool includeLineNumbers, MetadataNameStrippingPolicy nameStrippingPolicy)
         {
             _flags = includeLineNumbers ? MethodStackTraceVisibilityFlags.HasLineNumbers : 0;
+            _nameStrippingPolicy = nameStrippingPolicy;
         }
 
         public override MethodStackTraceVisibilityFlags GetMethodVisibility(MethodDesc method)
         {
-            MethodStackTraceVisibilityFlags result = _flags;
+            // Methods from modules that strip names have no names to show in stack traces.
+            bool namesStripped = method.OwningType is MetadataType owningType && _nameStrippingPolicy.IsStripped(owningType.Module);
+
+            MethodStackTraceVisibilityFlags result = namesStripped ? 0 : _flags;
 
             if (method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
                 || (method.OwningType is MetadataType mdType && mdType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute"))
@@ -46,7 +51,7 @@ namespace ILCompiler
                 result |= MethodStackTraceVisibilityFlags.IsHidden;
             }
 
-            return (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod || (method.IsAsync && method.IsAsyncCall()))
+            return !namesStripped && (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod || (method.IsAsync && method.IsAsyncCall()))
                 ? result | MethodStackTraceVisibilityFlags.HasMetadata
                 : result;
         }
