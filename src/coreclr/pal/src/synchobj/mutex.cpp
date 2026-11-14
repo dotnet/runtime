@@ -1204,6 +1204,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
 
     // Create or open the shared memory
     bool created;
+    int runtimeDirectoryFileDescriptor;
     SharedMemoryProcessDataHeader *processDataHeader =
         SharedMemoryProcessDataHeader::CreateOrOpen(
             errors,
@@ -1212,7 +1213,8 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
             SharedMemorySharedDataHeader(SharedMemoryType::Mutex, SyncSystemVersion),
             sizeof(NamedMutexSharedData),
             createIfNotExist,
-            &created);
+            &created,
+            &runtimeDirectoryFileDescriptor);
     if (createdRef != nullptr)
     {
         *createdRef = created;
@@ -1247,7 +1249,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
             SharedMemoryHelpers::BuildSharedMemoryLockFilesDirectoryPath(lockFilePath, id));
         lockFilesDirectoryFileDescriptor = SharedMemoryHelpers::EnsureDirectoryExistsAt(
             errors,
-            SharedMemoryManager::GetRuntimeDirectoryFileDescriptor(id),
+            runtimeDirectoryFileDescriptor,
             SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME,
             lockFilePath,
             id,
