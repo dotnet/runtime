@@ -15,7 +15,7 @@ prefix="$2"
 
 printf "V1.0 {\n    global:\n"
 
-while read -r line; do
+while read -r line || [[ -n "$line" ]]; do
   # Skip empty lines and comment lines starting with semicolon
   if [[ "$line" =~ ^\;.*$|^[[:space:]]*$ ]]; then
     continue
