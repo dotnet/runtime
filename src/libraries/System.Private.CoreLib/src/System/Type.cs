@@ -597,6 +597,56 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public abstract Type[] GetInterfaces();
 
+        /// <summary>
+        /// Searches for the interfaces implemented or inherited by the current <see cref="Type"/> that have the same metadata definition as the specified interface.
+        /// </summary>
+        /// <param name="interfaceType">
+        /// The interface to search for. This must be a generic interface type definition, such as <c>typeof(IList&lt;&gt;)</c>, or a non-generic interface.
+        /// </param>
+        /// <returns>
+        /// An array of the interfaces implemented or inherited by the current <see cref="Type"/> that have the same metadata definition as <paramref name="interfaceType"/>,
+        /// or an empty array if there are none.
+        /// </returns>
+        /// <remarks>
+        /// <para>This method can be used to find all constructed instantiations of a generic interface implemented by the current <see cref="Type"/>, given the generic type definition of the interface.</para>
+        /// <para>The order of the returned interfaces is not defined.</para>
+        /// <para>Unlike <see cref="GetInterfaces"/>, this method is safe to use with trimming: an interface that can be identified by <paramref name="interfaceType"/> is not removed from the current <see cref="Type"/>.</para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="interfaceType"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="interfaceType"/> is not an interface, or is a constructed generic interface.</exception>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "GetInterfaces technically requires all interfaces to be preserved, but this method only returns the interfaces " +
+                            "with the same metadata definition as the specified interfaceType. If interfaceType exists, trimming kept " +
+                            "the matching interface implementations on any type.")]
+        public virtual Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+            if (!interfaceType.IsInterface || interfaceType.IsConstructedGenericType)
+            {
+                throw new ArgumentException(SR.Arg_MustBeInterfaceOrGenericInterfaceDefinition, nameof(interfaceType));
+            }
+
+            // GetInterfaces returns a new array, so the matches can be moved to the front of it in place.
+            Type[] interfaces = GetInterfaces();
+
+            int count = 0;
+            foreach (Type implementedInterface in interfaces)
+            {
+                if (implementedInterface.HasSameMetadataDefinitionAs(interfaceType))
+                {
+                    interfaces[count++] = implementedInterface;
+                }
+            }
+
+            if (count == 0)
+            {
+                return EmptyTypes;
+            }
+
+            Array.Resize(ref interfaces, count);
+            return interfaces;
+        }
+
         public virtual InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o != null && IsAssignableFrom(o.GetType());

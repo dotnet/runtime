@@ -130,11 +130,9 @@ namespace System.Linq
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());
             if (!t.IsNestedPrivate)
                 return t;
-            foreach (Type iType in t.GetInterfaces())
-            {
-                if (iType.IsGenericType && iType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    return iType;
-            }
+            Type[] enumerableInterfaces = t.GetInterfacesWithSameMetadataDefinitionAs(typeof(IEnumerable<>));
+            if (enumerableInterfaces.Length > 0)
+                return enumerableInterfaces[0];
             if (typeof(IEnumerable).IsAssignableFrom(t))
                 return typeof(IEnumerable);
             return t;
