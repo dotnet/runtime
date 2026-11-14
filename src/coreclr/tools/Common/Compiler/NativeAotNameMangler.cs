@@ -144,7 +144,7 @@ namespace ILCompiler
             byte[] buffer = null;
             for (uint iter = 0; set.Contains(result); iter++)
             {
-                int neededLength = origName.Length + 1 + CountDigits(iter);
+                int neededLength = origName.Length + 1 + FormattingHelpers.CountDigits(iter);
 
                 if (buffer == null || buffer.Length != neededLength)
                 {
@@ -159,22 +159,6 @@ namespace ILCompiler
             }
             return result;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int CountDigits(uint value)
-        {
-            // Algorithm based on https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster.
-            ReadOnlySpan<long> table =
-            [
-                4294967296, 8589934582, 8589934582, 8589934582, 12884901788, 12884901788, 12884901788, 17179868184,
-                17179868184, 17179868184, 21474826480, 21474826480, 21474826480, 21474826480, 25769703776, 25769703776,
-                25769703776, 30063771072, 30063771072, 30063771072, 34349738368, 34349738368, 34349738368, 34349738368,
-                38554705664, 38554705664, 38554705664, 41949672960, 41949672960, 41949672960, 42949672960, 42949672960,
-            ];
-            long tableValue = table[(int)uint.Log2(value)];
-            return (int)((value + tableValue) >> 32);
-        }
-
 
         public override Utf8String GetMangledTypeName(TypeDesc type)
         {
@@ -415,42 +399,45 @@ namespace ILCompiler
                     // Case of a generic type. If `type' is a type definition we use the type name
                     // for mangling, otherwise we use the mangling of the type and its generic type
                     // parameters, e.g. A <B> becomes A_<___B_>_.
-                    var typeDefinition = type.GetTypeDefinition();
-                    if (typeDefinition != type)
+                    if (type is IPrefixMangledType prefixMangledType)
                     {
-                        var sb = new Utf8StringBuilder();
-                        sb.Append(GetMangledTypeName(typeDefinition));
-
-                        var inst = type.Instantiation;
-                        sb.Append(EnterNameScopeSequence);
-                        for (int i = 0; i < inst.Length; i++)
-                        {
-                            if (i > 0)
-                                sb.Append("__"u8);
-                            sb.Append(GetMangledTypeName(inst[i]));
-                        }
-                        sb.Append(ExitNameScopeSequence);
-                        mangledName = sb.ToUtf8String();
-                    }
-                    else if (type is IPrefixMangledMethod)
-                    {
-                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type);
-                    }
-                    else if (type is IPrefixMangledType)
-                    {
-                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type);
+                        mangledName = GetPrefixMangledTypeName(prefixMangledType);
                     }
                     else
                     {
-                        // This is a type definition. Since we didn't fall in the `is EcmaType` case above,
-                        // it's likely a compiler-generated type.
-                        var defType = (DefType)type;
-                        var sb = new Utf8StringBuilder();
-                        if (defType.Namespace.Length > 0)
-                            sb.Append(SanitizeName(defType.Namespace)).Append('_');
+                        var typeDefinition = type.GetTypeDefinition();
+                        if (typeDefinition != type)
+                        {
+                            var sb = new Utf8StringBuilder();
+                            sb.Append(GetMangledTypeName(typeDefinition));
 
-                        sb.Append(SanitizeName(defType.Name));
-                        mangledName = sb.ToUtf8String();
+                            var inst = type.Instantiation;
+                            sb.Append(EnterNameScopeSequence);
+                            for (int i = 0; i < inst.Length; i++)
+                            {
+                                if (i > 0)
+                                    sb.Append("__"u8);
+                                sb.Append(GetMangledTypeName(inst[i]));
+                            }
+                            sb.Append(ExitNameScopeSequence);
+                            mangledName = sb.ToUtf8String();
+                        }
+                        else if (type is IPrefixMangledMethod)
+                        {
+                            mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type);
+                        }
+                        else
+                        {
+                            // This is a type definition. Since we didn't fall in the `is EcmaType` case above,
+                            // it's likely a compiler-generated type.
+                            var defType = (DefType)type;
+                            var sb = new Utf8StringBuilder();
+                            if (defType.Namespace.Length > 0)
+                                sb.Append(SanitizeName(defType.Namespace)).Append('_');
+
+                            sb.Append(SanitizeName(defType.Name));
+                            mangledName = sb.ToUtf8String();
+                        }
                     }
                     break;
             }
