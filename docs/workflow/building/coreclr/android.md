@@ -176,6 +176,36 @@ To build and run the test on Android with CoreCLR, run the following command fro
 > [!NOTE]
 > Similarly to the `HelloAndroid` sample, the emulator needs to be up and running.
 
+### Testing in a container
+
+The `runtime-androidemulator` pipeline has an opt-in `runAndroidContainerTests`
+parameter for API 29 parity validation. It builds CoreCLR, the
+`JIT/Directed/Directed_r.csproj` merged test assembly and the library test
+archives once. Each payload is submitted through its normal Helix path to both
+`Ubuntu.2204.Amd64.Android.29.Open` and the KVM-enabled container queue using a
+pinned Android API 29 image. Library submission uses the normal inner-loop test
+scope, including networking, IO and globalization rather than only Numerics.
+On the container queue each work item starts its own container and emulator;
+the legacy queue retains its host-managed emulator. The default emulator and
+device jobs are unchanged.
+
+Helix job names identify the destination queue; library runs also use the
+`CoreCLR_Release_API29_Parity_Libraries` prefix/suffix. Compare individual test
+identities and outcomes, skipped tests, work-item failures and durations across
+the two queues. A green run alone does not establish parity, and test-result
+comparison is not automated by this pipeline. This lane does not yet cover the
+full CoreCLR runtime suite, NativeAOT or other Android API levels.
+
+The container image supplies the Android SDK, system image and AVD.
+`eng/testing/Android/start-emulator.sh` and `stop-emulator.sh` own the work-item
+emulator lifecycle. Both libraries and CoreCLR Helix submissions import
+`eng/testing/Android/helix.targets` to include these scripts for Android container
+queues; legacy queues and Windows device queues do not receive the hooks.
+
+The container host must provide `/dev/kvm` and read/write access for the container
+user. The scripts verify access without changing the host or device permissions.
+They do not enable root access or core-dump collection inside Android.
+
 ## Debugging the runtime and the sample app
 
 Managed debugging is currently not supported, but we can debug:
