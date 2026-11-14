@@ -76,6 +76,8 @@ internal sealed class WriterGen : CsWriter
         WriteLine("if (Object.ReferenceEquals(this, obj)) return true;");
         WriteLine($"var other = obj as {record.Name};");
         WriteLine("if (other == null) return false;");
+        if ((record.Flags & RecordDefFlags.Discriminated) != 0)
+            WriteLine("if (Discriminator != other.Discriminator) return false;");
         if ((record.Flags & RecordDefFlags.ReentrantEquals) != 0)
         {
             WriteLine("if (_equalsReentrancyGuard.Value.Contains(other))");
@@ -134,6 +136,8 @@ internal sealed class WriterGen : CsWriter
         int hashSeed = System.BitConverter.ToInt32(hashBytes, 0);
         WriteLine("var hash = new HashCode();");
         WriteLine($"hash.Add({hashSeed});");
+        if ((record.Flags & RecordDefFlags.Discriminated) != 0)
+            WriteLine("hash.Add(Discriminator);");
 
         foreach (var member in record.Members)
         {
@@ -253,6 +257,12 @@ internal sealed class WriterGen : CsWriter
         CloseScope("Handle");
 
         WriteLineIfNeeded();
+        if ((record.Flags & RecordDefFlags.Discriminated) != 0)
+        {
+            WriteLine("// Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.");
+            WriteLine("public int Discriminator;");
+        }
+
         foreach (var member in record.Members)
         {
             string fieldType = member.GetMemberType(MemberTypeKind.WriterField);

@@ -490,6 +490,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Event;
             if (other == null) return false;
+            if (Discriminator != other.Discriminator) return false;
             if (Flags != other.Flags) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             if (!Object.Equals(Type, other.Type)) return false;
@@ -505,6 +506,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             var hash = new HashCode();
             hash.Add(-1454825650);
+            hash.Add(Discriminator);
             hash.Add(Flags);
             hash.Add(Name);
             hash.Add(Type);
@@ -550,6 +552,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        // Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.
+        public int Discriminator;
         public EventAttributes Flags;
         public ConstantStringValue Name;
         public MetadataRecord Type;
@@ -580,6 +584,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Field;
             if (other == null) return false;
+            if (Discriminator != other.Discriminator) return false;
             if (Flags != other.Flags) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             if (!Object.Equals(Signature, other.Signature)) return false;
@@ -596,6 +601,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             var hash = new HashCode();
             hash.Add(-540975116);
+            hash.Add(Discriminator);
             hash.Add(Flags);
             hash.Add(Name);
             hash.Add(Signature);
@@ -638,6 +644,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        // Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.
+        public int Discriminator;
         public FieldAttributes Flags;
         public ConstantStringValue Name;
         public FieldSignature Signature;
@@ -895,6 +903,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as MemberReference;
             if (other == null) return false;
+            if (Discriminator != other.Discriminator) return false;
             if (!Object.Equals(Parent, other.Parent)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             if (!Object.Equals(Signature, other.Signature)) return false;
@@ -908,6 +917,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             var hash = new HashCode();
             hash.Add(-875402938);
+            hash.Add(Discriminator);
             hash.Add(Parent);
             hash.Add(Name);
             hash.Add(Signature);
@@ -950,6 +960,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        // Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.
+        public int Discriminator;
         public MetadataRecord Parent;
         public ConstantStringValue Name;
         public MetadataRecord Signature;
@@ -979,6 +991,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Method;
             if (other == null) return false;
+            if (Discriminator != other.Discriminator) return false;
             if (Flags != other.Flags) return false;
             if (ImplFlags != other.ImplFlags) return false;
             if (!Object.Equals(Name, other.Name)) return false;
@@ -996,6 +1009,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             var hash = new HashCode();
             hash.Add(-1225154478);
+            hash.Add(Discriminator);
             hash.Add(Flags);
             hash.Add(ImplFlags);
             hash.Add(Name);
@@ -1040,6 +1054,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        // Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.
+        public int Discriminator;
         public MethodAttributes Flags;
         public MethodImplAttributes ImplFlags;
         public ConstantStringValue Name;
@@ -1760,6 +1776,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Property;
             if (other == null) return false;
+            if (Discriminator != other.Discriminator) return false;
             if (Flags != other.Flags) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             if (!Object.Equals(Signature, other.Signature)) return false;
@@ -1776,6 +1793,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             var hash = new HashCode();
             hash.Add(-1324612544);
+            hash.Add(Discriminator);
             hash.Add(Flags);
             hash.Add(Name);
             hash.Add(Signature);
@@ -1819,6 +1837,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        // Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.
+        public int Discriminator;
         public PropertyAttributes Flags;
         public ConstantStringValue Name;
         public PropertySignature Signature;
@@ -2392,6 +2412,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeDefinition;
             if (other == null) return false;
+            if (Discriminator != other.Discriminator) return false;
             if (!Object.Equals(NamespaceOrEnclosingType, other.NamespaceOrEnclosingType)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             return true;
@@ -2404,6 +2425,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             var hash = new HashCode();
             hash.Add(-1095947977);
+            hash.Add(Discriminator);
             hash.Add(NamespaceOrEnclosingType);
             hash.Add(Name);
             LeaveGetHashCode();
@@ -2460,6 +2482,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        // Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.
+        public int Discriminator;
         public TypeAttributes Flags;
         public MetadataRecord BaseType;
         public MetadataRecord NamespaceOrEnclosingType;
@@ -2651,6 +2675,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeReference;
             if (other == null) return false;
+            if (Discriminator != other.Discriminator) return false;
             if (!Object.Equals(NamespaceOrEnclosingType, other.NamespaceOrEnclosingType)) return false;
             if (!Object.Equals(TypeName, other.TypeName)) return false;
             return true;
@@ -2663,6 +2688,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             var hash = new HashCode();
             hash.Add(-540108450);
+            hash.Add(Discriminator);
             hash.Add(NamespaceOrEnclosingType);
             hash.Add(TypeName);
             LeaveGetHashCode();
@@ -2699,6 +2725,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        // Not persisted. Keeps records with otherwise identical content distinct, e.g. when their names were omitted.
+        public int Discriminator;
         public MetadataRecord NamespaceOrEnclosingType;
         public ConstantStringValue TypeName;
     } // TypeReference

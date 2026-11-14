@@ -19,6 +19,9 @@ public enum RecordDefFlags
                           // implementing equality functionality; else all members are used.
     ReentrantEquals = 0x08, // The generated Equals method is potentially reentrant on the same instance
                             // and should have a fast exit path to protect from infinite recursion.
+    Discriminated = 0x10, // The writer record has an additional member that is never persisted and only
+                          // participates in equality functionality. It keeps records distinct (and
+                          // prevents them from being pooled) when their persisted content is otherwise equal.
 }
 
 /// <summary>
@@ -370,7 +373,7 @@ internal sealed class SchemaDef
     {
         new RecordDef(
             name: "TypeDefinition",
-            flags: RecordDefFlags.CustomCompare,
+            flags: RecordDefFlags.CustomCompare | RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "TypeAttributes"),
                 new MemberDef("BaseType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
@@ -391,6 +394,7 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "TypeReference",
+            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("NamespaceOrEnclosingType", new string[] { "NamespaceReference", "TypeReference" }, MemberDefFlags.RecordRef),
                 new MemberDef("TypeName", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Name),
@@ -459,6 +463,7 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Method",
+            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "MethodAttributes"),
                 new MemberDef("ImplFlags", "MethodImplAttributes"),
@@ -486,6 +491,7 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "MemberReference",
+            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Parent", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -495,6 +501,7 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Field",
+            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "FieldAttributes"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -513,6 +520,7 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Property",
+            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "PropertyAttributes"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -524,6 +532,7 @@ internal sealed class SchemaDef
         ),
         new RecordDef(
             name: "Event",
+            flags: RecordDefFlags.Discriminated,
             members: new MemberDef[] {
                 new MemberDef("Flags", "EventAttributes"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
