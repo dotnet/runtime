@@ -96,8 +96,13 @@ namespace System.Threading
         private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
         private Thread? _lockOwnerThread;
+        private ulong _lockOwnerOSThreadId;
 
         public SharedMemoryId Id => _processDataHeader._id;
+
+        protected SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> ProcessDataHeader => _processDataHeader;
+
+        protected ulong LockOwnerOSThreadId => _lockOwnerOSThreadId;
 
         public NamedMutexProcessDataBase? NextOwnedNamedMutex { get; set; }
 
@@ -316,6 +321,7 @@ namespace System.Threading
                 mutexData.SetLockOwnerToCurrentThread();
                 mutexData._lockCount = 1;
                 mutexData._lockOwnerThread = waitInfo.Thread;
+                mutexData._lockOwnerOSThreadId = Thread.CurrentOSThreadId;
                 // Add the ref count for the thread's wait info.
                 mutexData._processDataHeader.IncrementRefCount();
                 waitInfo.NamedMutexOwnershipChain.Add(mutexData);
@@ -413,7 +419,90 @@ namespace System.Threading
             if (Thread.CurrentThread == abandonedThread)
             {
                 base.AbandonLockCore(abandonedThread);
+                return;
             }
+
+            // The abandoned thread's runtime state has been detached, but its OS thread may not have exited yet, so the
+            // kernel can still hold this mutex on that thread's robust futex list. Unmapping the shared memory before the
+            // OS thread exits makes the exit-time robust list walk fault and silently skip every earlier mutex on the list.
+            // Keep an extra reference on the mapping until the OS thread is gone.
+            ulong osThreadId = LockOwnerOSThreadId;
+            OSThreadState state = GetOSThreadState(osThreadId);
+            if (state != OSThreadState.Exited)
+            {
+                ProcessDataHeader.IncrementRefCount();
+                if (state == OSThreadState.Running)
+                {
+                    SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader = ProcessDataHeader;
+                    Gen2GcCallback.Register(() => ReleaseMappingWhenOSThreadExited(processDataHeader, osThreadId));
+                }
+
+                // If the state cannot be determined, the reference is intentionally kept until the process exits.
+            }
+        }
+
+        private enum OSThreadState
+        {
+            Running,
+            Exited,
+            Unknown,
+        }
+
+        private static OSThreadState GetOSThreadState(ulong osThreadId)
+        {
+            // A thread id stays valid for tgkill until the kernel has finished tearing the thread down, which is after it has
+            // walked the thread's robust futex list. ESRCH is the only result that proves the thread is gone; any other
+            // error (such as EPERM) means that the thread still exists.
+            if (Interop.Sys.TgKill(Environment.ProcessId, (int)osThreadId, 0) == 0)
+            {
+                return OSThreadState.Running;
+            }
+
+            Interop.Error error = Interop.Sys.GetLastErrorInfo().Error;
+            if (error == Interop.Error.ESRCH)
+            {
+                return OSThreadState.Exited;
+            }
+
+            if (error != Interop.Error.ENOSYS)
+            {
+                return OSThreadState.Running;
+            }
+
+            // tgkill is unavailable (unsupported platform or a filtered syscall). Fall back to procfs, where a thread's
+            // entry is removed only after it has exited. If procfs does not provide it, the state is unknown.
+            if (Interop.Sys.Access("/proc/self/task", Interop.Sys.AccessMode.F_OK) != 0)
+            {
+                return OSThreadState.Unknown;
+            }
+
+            return Interop.Sys.Access($"/proc/self/task/{osThreadId}", Interop.Sys.AccessMode.F_OK) == 0
+                ? OSThreadState.Running
+                : OSThreadState.Exited;
+        }
+
+        // Returns true while the OS thread is still running so that the Gen2GcCallback retries after the next gen 2 GC.
+        private static bool ReleaseMappingWhenOSThreadExited(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader, ulong osThreadId)
+        {
+            switch (GetOSThreadState(osThreadId))
+            {
+                case OSThreadState.Running:
+                    return true;
+                case OSThreadState.Unknown:
+                    return false;
+            }
+
+            WaitSubsystem.LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+            try
+            {
+                processDataHeader.DecrementRefCount();
+            }
+            finally
+            {
+                scope.Dispose();
+            }
+
+            return false;
         }
 
         protected override void ReleaseLockCore(bool abandoning)

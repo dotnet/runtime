@@ -15,5 +15,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCurrentThreadId")]
         [SuppressGCTransition]
         internal static unsafe partial ulong GetCurrentThreadId();
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TgKill", SetLastError = true)]
+        internal static partial int TgKill(int pid, int tid, int signal);
     }
 }
