@@ -17,7 +17,6 @@ namespace System.Security.Cryptography.Tests
         protected virtual WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } = null;
 
         protected abstract bool SupportsExplicitCurves { get; }
-        protected abstract bool CanDeriveNewPublicKey { get; }
 
         public bool SupportsBrainpool => IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
         public bool SupportsSect163k1 => IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);

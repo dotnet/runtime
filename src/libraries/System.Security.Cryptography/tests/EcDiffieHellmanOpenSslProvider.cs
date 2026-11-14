@@ -28,7 +28,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         public override bool ExplicitCurvesSupported => EcDsa.Tests.ECDsaOpenSslProvider.Instance.ExplicitCurvesSupported;
 
-        public override bool CanDeriveNewPublicKey => true;
         public override bool SupportsRawDerivation => true;
         public override bool SupportsSha3 => PlatformDetection.SupportsSha3;
     }
