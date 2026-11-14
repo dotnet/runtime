@@ -315,7 +315,8 @@ namespace System.Net.Security
 
             if (flushingRequest ||
                 !Interop.Ssl.IsSslStateOK(ssl) ||
-                Interop.Ssl.IsSslRenegotiatePending(ssl))
+                Interop.Ssl.IsSslRenegotiatePending(ssl) ||
+                ssl.IsPostHandshakeAuthenticationPending())
             {
                 // The request has just gone out (TLS 1.3 post-handshake auth) or the
                 // renegotiation is still in flight (TLS 1.2); wait for the peer.
