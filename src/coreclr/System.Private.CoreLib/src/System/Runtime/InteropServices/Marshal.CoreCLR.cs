@@ -1089,9 +1089,7 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetFunctionPointerForDelegateInternal")]
         private static partial IntPtr GetFunctionPointerForDelegateInternal(ObjectHandleOnStack d);
 
-#if DEBUG // Used for testing in Checked or Debug
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
         internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
-#endif
     }
 }

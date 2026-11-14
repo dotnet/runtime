@@ -1514,8 +1514,8 @@ Thread::Thread()
     // of accessing a partially constructed Thread via Thread Id lookup.
     //
 
-    exposedObjectHolder.SuppressRelease();
-    strongHndToExposedObjectHolder.SuppressRelease();
+    exposedObjectHolder.Detach();
+    strongHndToExposedObjectHolder.Detach();
     contextHolder.Detach();
 
 #ifdef FEATURE_COMINTEROP
@@ -3209,8 +3209,8 @@ OBJECTREF Thread::GetExposedObject()
                 // Initialize the native-backed properties of the runtime-created wrapper.
                 attempt->InitExisting();
 
-                exposedHolder.SuppressRelease();
-                strongHolder.SuppressRelease();
+                exposedHolder.Detach();
+                strongHolder.Detach();
             }
         }
 

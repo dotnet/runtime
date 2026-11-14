@@ -2,6 +2,8 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
   <PropertyGroup>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true' or '$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/137424 -->
+    <DisableProjectBuild Condition="'$(MSBuildProjectName)' == 'VTableFixupsX64' or '$(MSBuildProjectName)' == 'VTableFixupsX86'">true</DisableProjectBuild>
     <!-- CrossGen, IL round-trip, and unloadability exclusions require per-process test wrappers. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CrossGenTest>false</CrossGenTest>

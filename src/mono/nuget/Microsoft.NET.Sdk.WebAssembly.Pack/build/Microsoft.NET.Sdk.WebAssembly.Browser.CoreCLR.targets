@@ -260,7 +260,10 @@ Copyright (c) .NET Foundation. All rights reserved.
            is not populated, so the trimmed framework assemblies drop out of ResolvedFileToPublish and are
            omitted from the served bundle (empty coreAssembly, non-bootable). The linked dir holds exactly
            the trimmed closure, so this is equivalent on a full build and correct on an incremental one. -->
-      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
+      <_WasmLinkedClosureFile Include="$(IntermediateLinkDir)*.dll" />
+      <!-- Respell like ILLink's items; a glob rewrites unnormalized paths, which would escape publish Removes. -->
+      <_WasmReadyToRunCompileInput Include="@(_WasmLinkedClosureFile->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+      <_WasmLinkedClosureFile Remove="@(_WasmLinkedClosureFile)" />
       <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(FileName)%(Extension)"

@@ -1752,6 +1752,28 @@ void SString::AppendVPrintf(const CHAR *format, va_list args)
 // Format the message and put the contents in this string
 //----------------------------------------------------------------------------
 
+namespace
+{
+    template<typename T>
+    struct LocalAllocTraits final
+    {
+        using Type = T;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type h) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifdef HOST_WINDOWS
+            ::LocalFree((void*)h);
+#else
+            ::free((void*)h);
+#endif
+        }
+    };
+
+    template<typename T>
+    using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
+}
+
 BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
                             const SString &arg1, const SString &arg2,
                             const SString &arg3, const SString &arg4,
@@ -1797,7 +1819,6 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     // We don't have enough space in our buffer, do dynamic allocation.
     LocalAllocHolder<LPWSTR> string;
-
     DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                       lpSource, dwMessageId, dwLanguageId,
                                       (LPWSTR)(LPWSTR*)&string, 0, (va_list*)args);

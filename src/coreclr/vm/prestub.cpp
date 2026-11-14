@@ -636,7 +636,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
-        JitListLock::LockHolder pJitLock(AppDomain::GetCurrentDomain()->GetJitLock());
+        JitListLock::LockHolder pJitLock = AppDomain::GetCurrentDomain()->GetJitLock()->TakeLock();
 
         // It is possible that another thread stepped in before we entered the global lock for the first time.
         if ((pCode = pConfig->IsJitCancellationRequested()))
@@ -652,13 +652,13 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             pJitLock, version, description));
 
         // We have an entry now, we can release the global lock
-        pJitLock.Release();
+        pJitLock.Free();
 
         // Take the entry lock
         {
-            JitListLockEntry::LockHolder pEntryLock(pEntry, FALSE);
+            JitListLockEntry::LockHolder pEntryLock;
 
-            if (pEntryLock.DeadlockAwareAcquire())
+            if (pEntryLock.DeadlockAwareAcquire(pEntry))
             {
                 if (pEntry->m_hrResultCode == S_FALSE)
                 {
@@ -733,7 +733,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 }
             }
 
-            return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock);
+            return JitCompileCodeLockedEventWrapper(pConfig, pEntry);
         }
     }
 }
@@ -3681,8 +3681,10 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
     PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
+    PTR_BYTE pGCRefMap = nullptr;
     if ((pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) != ReadyToRunImportSectionFlags::None)
     {
+        pGCRefMap = dac_cast<PTR_BYTE>(pBlob);
         pBlob = GCRefMapDecoder::Skip(pBlob);
     }
     PCCOR_SIGNATURE pBlobStart = pBlob;
@@ -3749,7 +3751,21 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case READYTORUN_FIXUP_DelegateCtor:
         {
             pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            if (kind == READYTORUN_FIXUP_DelegateCtor && pGCRefMap != nullptr && !pMD->RequiresInstArg())
+            {
+                // The map describes the target's own call frame, so signature layouts need not be loaded.
+                pMD->PrepareForUseAsACallTargetOfANativeImage(pGCRefMap);
+#ifdef _DEBUG
+                if (!pMD->IsWrapperStub())
+                {
+                    _ASSERTE(CheckGCRefMapEqual(pGCRefMap, pMD, false));
+                }
+#endif // _DEBUG
+            }
+            else
+            {
+                pMD->PrepareForUseAsADependencyOfANativeImage();
+            }
             if (pMD->RequiresInstArg())
             {
                 pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,

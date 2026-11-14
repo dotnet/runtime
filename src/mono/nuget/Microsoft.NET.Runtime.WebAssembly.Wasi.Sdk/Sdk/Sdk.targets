@@ -10,5 +10,7 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\WasiApp.props" />
-  <Import Project="$(MSBuildThisFileDirectory)\WasiApp.targets" />
+  <!-- CoreCLR targets import the shared WasiApp.targets and override its host linking.
+       NativeAOT produces its own native executable and must not run those managed-app bundling hooks. -->
+  <Import Project="$(MSBuildThisFileDirectory)\WasiApp.CoreCLR.targets" Condition="'$(PublishAot)' != 'true'" />
 </Project>

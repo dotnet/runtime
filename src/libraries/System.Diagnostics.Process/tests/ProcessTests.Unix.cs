@@ -1214,5 +1214,111 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
             });
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_OtherProcess_MatchesFileDescriptorDirectory()
+        {
+            const string ChildReadyMessage = "Child ready";
+
+            var options = new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardInput = true }
+            };
+
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
+            {
+                // Open the standard streams before signaling readiness so that the child
+                // does not open or close any more file descriptors while it waits.
+                TextReader input = Console.In;
+                Console.WriteLine(ChildReadyMessage);
+                input.ReadToEnd();
+            }, options);
+
+            try
+            {
+                AssertRemoteProcessStandardOutputLine(handle, ChildReadyMessage, WaitInMS);
+
+                int expected = Directory.GetFiles($"/proc/{handle.Process.Id}/fd", "*", SearchOption.TopDirectoryOnly).Length;
+                Assert.Equal(expected, handle.Process.HandleCount);
+            }
+            finally
+            {
+                handle.Process.StandardInput.Close();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_CurrentProcess_IncreasesWhenFilesAreOpened()
+        {
+            // Run in a separate process as other tests open and close files in the test process.
+            RemoteExecutor.Invoke(static () =>
+            {
+                using Process p = Process.GetCurrentProcess();
+
+                // Warm up the code paths so that nothing is lazily initialized between the measurements.
+                OpenAndCloseTwoHandles();
+                p.Refresh();
+                _ = p.HandleCount;
+
+                p.Refresh();
+                int before = p.HandleCount;
+                int during;
+
+                using (SafeFileHandle one = File.OpenNullHandle())
+                using (SafeFileHandle two = File.OpenNullHandle())
+                {
+                    p.Refresh();
+                    during = p.HandleCount;
+                }
+
+                p.Refresh();
+                int after = p.HandleCount;
+
+                // Assert only once all of the measurements have been taken. The first call to an assertion
+                // method can load assemblies, and each assembly that is loaded holds file descriptors open.
+                Assert.Equal(before + 2, during);
+                Assert.Equal(before, after);
+
+                static void OpenAndCloseTwoHandles()
+                {
+                    using SafeFileHandle one = File.OpenNullHandle();
+                    using SafeFileHandle two = File.OpenNullHandle();
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_CurrentProcess_MatchesFileDescriptorDirectory_IncludingDirectories()
+        {
+            // Run in a separate process so that other tests cannot open or close descriptors concurrently.
+            RemoteExecutor.Invoke(static () =>
+            {
+                using Process p = Process.GetCurrentProcess();
+
+                // Hold a directory descriptor open, which a count that filtered out directories would miss.
+                // The directory stream is opened by the first call to MoveNext() and kept open until disposed, but
+                // only if there are more entries to read. Use a directory that always contains files, rather than
+                // one that could be empty (such as the temporary directory), so that the descriptor is held open.
+                using IEnumerator<string> directory = Directory.EnumerateFileSystemEntries(AppContext.BaseDirectory).GetEnumerator();
+                Assert.True(directory.MoveNext());
+
+                // Warm up the code paths so that nothing is lazily initialized between the measurements.
+                _ = p.HandleCount;
+                p.Refresh();
+
+                // Enumerating /proc/self/fd opens one additional descriptor (the directory stream) that is listed
+                // in its own results, so it is subtracted here. HandleCount excludes the descriptor it opens itself.
+                // Directory.GetFiles() is deliberately not used here, unlike in the test for another process, as it
+                // does not return entries that refer to directories (including the one held open above and the
+                // one for the enumeration itself), and HandleCount now counts them, like handles on Windows.
+                int expected = Directory.GetFileSystemEntries("/proc/self/fd").Length - 1;
+                int actual = p.HandleCount;
+
+                Assert.Equal(expected, actual);
+            }).Dispose();
+        }
     }
 }

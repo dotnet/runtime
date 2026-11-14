@@ -4,6 +4,16 @@
 
 Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/configuration.
 
+## Configuration references
+
+A value that is exactly `$ref(Key:Path)` reads as the value of the referenced key. References resolve on each read and do not expose the target's children.
+
+Quotes protect reference-expression syntax, not the configuration hierarchy: `$ref('Key:Path')` still names the path `Key:Path`. A doubled dollar sign is not an escape; `$$ref(Key:Path)` is returned unchanged.
+
+Each resolution permits at most 64 reference hops, 32 levels of sub-reference nesting, and 32 substitutions per expression. It also permits at most 4,096 key reads across all branches, including repeated reads and the final target lookup. Exceeding a limit throws `InvalidOperationException`.
+
+Set the `Microsoft.Extensions.Configuration.DisableConfigurationReferences` AppContext switch to `true` to return provider values without resolving references.
+
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../README.md#contribution-bar)
 

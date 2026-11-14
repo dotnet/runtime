@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -53,8 +52,11 @@ namespace ILCompiler
         {
             if (GetTypePreserve(nav) == TypePreserve.All)
             {
-                foreach (var type in assembly.GetAllTypes())
-                    MarkAndPreserve(type, nav, TypePreserve.All);
+                foreach (MetadataType type in assembly.GetAllTypes())
+                {
+                    if (type.ContainingType is null)
+                        MarkAndPreserveAll(type);
+                }
 
                 //foreach (var exportedType in assembly.MainModule.ExportedTypes)
                 //    _context.MarkingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition(nav));
@@ -75,13 +77,13 @@ namespace ILCompiler
 
                 string fullname = GetFullName(namespaceNav);
                 bool foundMatch = false;
-                foreach (DefType type in assembly.GetAllTypes())
+                foreach (MetadataType type in assembly.GetAllTypes())
                 {
-                    if (!type.Namespace.StringEquals(fullname))
+                    if (type.ContainingType is not null || !type.Namespace.StringEquals(fullname))
                         continue;
 
                     foundMatch = true;
-                    MarkAndPreserve(type, nav, TypePreserve.All);
+                    MarkAndPreserveAll(type);
                 }
 
                 if (!foundMatch)
@@ -93,65 +95,36 @@ namespace ILCompiler
             }
         }
 
-        /*
-         * The MarkAndPreserve method in NativeAOT is substantially different from the MarkAndPreserve method in illink. NativeAOT does not have global
-         * storage, nor uses the same marking logic as illink so it cannot defer the marking for a posterior stage and needs to add the elements to the
-         * graph while processing the descriptor file.
-         * At the same time the MarkAndPreserve logic can describe which elements to preserve inside a type by using the tag 'TypePreserve' allowing to
-         * keep methods (including constructors), fields or all the elements of the type.
-         * Given that we have already implemented a similar logic that keeps elements on a type via a binder using DynamicallyAccessedMembers attribute,
-         * this method reuses that code functionality by transforming the TypePreserve into it's DynamicallyAccessedMemberTypes equivalent and then
-         * calling the binder logic.
-         */
-        private void MarkAndPreserve(TypeDesc type, XPathNavigator nav, TypePreserve preserve)
+        private void MarkAndPreserveAll(MetadataType type)
         {
-            var bindingOptions = preserve switch {
-                TypePreserve.Methods => DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors,
-                TypePreserve.Fields => DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields,
-                TypePreserve.All => DynamicallyAccessedMemberTypes.All,
-                _ => DynamicallyAccessedMemberTypes.None,
-            };
-            var members = type.GetDynamicallyAccessedMembers(bindingOptions);
-            foreach (var member in members)
+            RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, _factory, type, "type kept due to descriptor");
+            MarkAndPreserve(type, TypePreserve.All);
+
+            foreach (MetadataType nested in type.GetNestedTypes())
+                MarkAndPreserveAll(nested);
+        }
+
+        private void MarkAndPreserve(TypeDesc type, TypePreserve preserve)
+        {
+            const string Reason = "member was kept by a descriptor file";
+
+            if (preserve is TypePreserve.All or TypePreserve.Methods)
             {
-                string reason = "member was kept by a descriptor file";
-                switch (member)
-                {
-                    case MethodDesc m:
-                        RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, m, reason);
-                        break;
-                    case FieldDesc field:
-                        RootingHelpers.TryAddDependenciesForReflectedField(_dependencies, _factory, field, reason);
-                        break;
-                    case MetadataType nestedType:
-                        RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, _factory, nestedType, reason);
-                        break;
-                    case PropertyPseudoDesc property:
-                        if (property.GetMethod != null)
-                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, property.GetMethod, reason);
-                        if (property.SetMethod != null)
-                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, property.SetMethod, reason);
-                        break;
-                    case EventPseudoDesc @event:
-                        if (@event.AddMethod != null)
-                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, @event.AddMethod, reason);
-                        if (@event.RemoveMethod != null)
-                            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, @event.RemoveMethod, reason);
-                        break;
-                    default:
-                        Debug.Fail(member.GetType().ToString());
-                        break;
-                }
+                foreach (MethodDesc method in type.GetMethods())
+                    RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, _factory, method, Reason);
             }
 
-#if false
-            // Code handles getting nested types inside GetDynamicallyAccessedMembers() this code is not necessary
-            if (!type.HasNestedTypes)
-                return;
+            if (preserve is TypePreserve.All or TypePreserve.Fields)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                    RootingHelpers.TryAddDependenciesForReflectedField(_dependencies, _factory, field, Reason);
+            }
 
-            foreach (TypeDesc nested in type.NestedTypes)
-                MarkAndPreserveAll(nested, nav);
-#endif
+            if (preserve is TypePreserve.All)
+            {
+                foreach (DefType interfaceType in type.GetAllInterfaceImplementations(declaredOnly: true))
+                    RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, _factory, interfaceType, Reason);
+            }
         }
 
 #if false
@@ -195,7 +168,7 @@ namespace ILCompiler
                 case TypePreserve.Fields:
                 case TypePreserve.Methods:
                 case TypePreserve.All:
-                    MarkAndPreserve(type, nav, preserve);
+                    MarkAndPreserve(type, preserve);
                     break;
             }
 

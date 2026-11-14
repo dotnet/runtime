@@ -173,6 +173,52 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 signature.DecodeLocalSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
+        [Theory]
+        [InlineData("2...,0...8", 2, new[] { 0, 9 }, new[] { 2, 0 })]
+        [InlineData("2...,...,0...8", 3, new[] { 0, 0, 9 }, new[] { 2, 0, 0 })]
+        [InlineData("0...8,2...", 2, new[] { 9 }, new[] { 0, 2 })]
+        [InlineData("...,0...8", 2, new[] { 0, 9 }, new[] { 0, 0 })]
+        [InlineData("...,-2...", 2, new int[] { }, new[] { 0, -2 })]
+        [InlineData("...,...", 2, new int[] { }, new int[] { })]
+        [InlineData("2...,0...", 2, new int[] { }, new[] { 2, 0 })]
+        [InlineData("0,0...8", 2, new[] { 0, 9 }, new[] { 0, 0 })]
+        [InlineData("3,1...4", 2, new[] { 3, 4 }, new[] { 0, 1 })]
+        [InlineData("0...8,...", 2, new[] { 9 }, new[] { 0 })]
+        [InlineData("...,0...8,...", 3, new[] { 0, 9 }, new[] { 0, 0 })]
+        [InlineData("...,0...,-2...1", 3, new[] { 0, 0, 4 }, new[] { 0, 0, -2 })]
+        public void ArrayBounds_EmitsNativeCompatibleShape(string bounds, int rank, int[] sizes, int[] lowerBounds)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public Test
+                {
+                    .field public int32[{{bounds}}] 'array'
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition field = reader.GetFieldDefinition(reader.FieldDefinitions.Single());
+            BlobReader signature = reader.GetBlobReader(field.Signature);
+            Assert.Equal(SignatureKind.Field, signature.ReadSignatureHeader().Kind);
+            Assert.Equal(SignatureTypeCode.Array, signature.ReadSignatureTypeCode());
+            Assert.Equal(SignatureTypeCode.Int32, signature.ReadSignatureTypeCode());
+            Assert.Equal(rank, signature.ReadCompressedInteger());
+            Assert.Equal(sizes.Length, signature.ReadCompressedInteger());
+            foreach (int size in sizes)
+            {
+                Assert.Equal(size, signature.ReadCompressedInteger());
+            }
+
+            Assert.Equal(lowerBounds.Length, signature.ReadCompressedInteger());
+            foreach (int lowerBound in lowerBounds)
+            {
+                Assert.Equal(lowerBound, signature.ReadCompressedSignedInteger());
+            }
+
+            Assert.Equal(0, signature.RemainingBytes);
+        }
+
         private static StandaloneSignature GetLocalSignature(
             PEReader pe,
             MetadataReader reader,
