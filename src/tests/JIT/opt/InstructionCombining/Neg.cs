@@ -688,7 +688,7 @@ namespace TestNeg
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
             //ARM64-FULL-LINE: cset {{x[0-9]+}}, ne
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-            //ARM64-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+            //ARM64-FULL-LINE: cneg {{w[0-9]+}}, {{w[0-9]+}}, ne
             if ((-a != 0) == (-(b >> 5) != 0))
             {
                 return 1;
