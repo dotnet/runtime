@@ -10,11 +10,7 @@
 struct siginfo_t;
 #endif // TARGET_WASI
 
-#ifdef SIGRTMIN
-#define INJECT_ACTIVATION_SIGNAL SIGRTMIN
-#else
-#define INJECT_ACTIVATION_SIGNAL SIGUSR1
-#endif
+#include <unix/ActivationSignal.h>
 
 typedef void (*SignalHandler)(int code, siginfo_t* siginfo, void* context);
 
