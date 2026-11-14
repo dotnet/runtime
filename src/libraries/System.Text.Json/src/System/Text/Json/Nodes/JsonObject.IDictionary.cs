@@ -250,9 +250,13 @@ namespace System.Text.Json.Nodes
                     foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
                     {
                         JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
-                        node?.Parent = this;
+                        if (!newDictionary.TryAdd(jElementProperty.Name, node, out int index))
+                        {
+                            newDictionary.GetAt(index).Value?.Parent = null;
+                            newDictionary.SetAt(index, node);
+                        }
 
-                        newDictionary.Add(jElementProperty.Name, node);
+                        node?.Parent = this;
                     }
                 }
 
