@@ -17,7 +17,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private const byte HEAP_STRING_4 = 0x01;
     private const byte HEAP_GUID_4 = 0x02;
     private const byte HEAP_BLOB_4 = 0x04;
-    private readonly Dictionary<ModuleHandle, (uint Generation, MetadataReaderProvider? Provider)> _metadata = [];
+    private readonly Dictionary<ModuleHandle, (uint Generation, MetadataReaderProvider Provider)> _metadata = [];
     private readonly Dictionary<ModuleHandle, (uint Generation, byte[] Blob)> _readWriteMetadataBlob = [];
     private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
@@ -98,17 +98,19 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     {
         uint generation = GetMetadataGeneration(handle);
 
-        if (_metadata.TryGetValue(handle, out (uint Generation, MetadataReaderProvider? Provider) cached))
+        if (_metadata.TryGetValue(handle, out (uint Generation, MetadataReaderProvider Provider) cached))
         {
             if (cached.Generation == generation)
             {
-                return cached.Provider?.GetMetadataReader();
+                return cached.Provider.GetMetadataReader();
             }
-            cached.Provider?.Dispose();
+            _metadata.Remove(handle);
+            cached.Provider.Dispose();
         }
 
         MetadataReaderProvider? provider = GetMetadataProvider(handle);
-        _metadata[handle] = (generation, provider);
+        if (provider is not null)
+            _metadata[handle] = (generation, provider);
         return provider?.GetMetadataReader();
     }
 
@@ -124,7 +126,14 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             {
                 TargetSpan address = GetReadOnlyMetadataAddress(handle);
                 byte[] data = new byte[address.Size];
-                target.ReadBuffer(address.Address, data);
+                try
+                {
+                    target.ReadBuffer(address.Address, data);
+                }
+                catch (VirtualReadException)
+                {
+                    return GetMetadataFromHost(handle, data);
+                }
                 return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
             }
             case AvailableMetadataType.ReadWriteSavedCopy:
@@ -142,6 +151,30 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             default:
                 throw new NotImplementedException();
         }
+    }
+
+    private MetadataReaderProvider? GetMetadataFromHost(ModuleHandle handle, byte[] data)
+    {
+        ILoader loader = target.Contracts.Loader;
+        if (!loader.GetFileHeadersInfo(handle, out uint timestamp, out uint imageSize))
+            return null;
+
+        string path;
+        try
+        {
+            path = loader.GetPath(handle);
+        }
+        catch (VirtualReadException)
+        {
+            path = string.Empty;
+        }
+        if (path.Length == 0)
+            path = loader.GetFileName(handle);
+
+        // No RVA hint: locate metadata through the IL image's CLR header.
+        return target.TryGetMetadata(path, timestamp, imageSize, 0, data, out _)
+            ? MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data))
+            : null;
     }
 
     public byte[] GetReadWriteMetadata(ModuleHandle handle)
