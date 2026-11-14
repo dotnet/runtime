@@ -4930,6 +4930,8 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
                     pCodeStart = iter->GetNativeCode();
                     if (pCodeStart != (PCODE)NULL)
                     {
+                        // Interpreted code is identified by its byte code, not by its precode entry point.
+                        pCodeStart = (PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)pCodeStart);
                         break;
                     }
                 }
@@ -6447,7 +6449,8 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
                 if (codeStart != (PCODE)NULL)
                 {
-                    addresses.Append(codeStart);
+                    // Interpreted code is identified by its byte code, not by its precode entry point.
+                    addresses.Append((PCODE)GetDiagnosticCodeStartFromEntryPoint(pMD, (TADDR)codeStart));
                     ++trueLen;
                 }
             }

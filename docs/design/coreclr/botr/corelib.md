@@ -108,9 +108,9 @@ partial class Foo
 
 Do not replicate the comments into your actual QCall implementation.
 
-The QCall entrypoint has to be registered in tables in [vm\qcallentrypoints.cpp][qcall-entrypoints] using the `DllImportEntry` macro. See ["Registering your QCall or FCall Method"](#register) below.
+The QCall entrypoint has to be registered in [vm\runtimehelpers.cpp][runtime-helpers] using the `DllImportEntry` macro. See ["Registering your QCall or FCall Method"](#register) below.
 
-[qcall-entrypoints]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/qcallentrypoints.cpp
+[runtime-helpers]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/runtimehelpers.cpp
 
 ```C++
 // All QCalls should be free functions and tagged with QCALLTYPE and extern "C"
@@ -166,9 +166,12 @@ by platform conditionals, must explicitly set `*qcallError = 0` before returning
 
 FCalls allow more flexibility in terms of passing object references around, but with higher code complexity and more opportunities to make mistakes. Additionally, for any FCall of non-trivial length, explicitly poll for whether a garbage collection must occur. Failing to do so will lead to starvation issues if managed code repeatedly calls the FCall method in a tight loop, because FCalls execute while the thread only allows the GC to run in a cooperative manner.
 
+The FCallMethodDesc represents two types of FCalls: fixed-address FCalls, which have a single known target method like QCalls. The other type of FCalls, dynamic FCalls, are used for some cases like string constructors and delegate constructors and are handled specially in [ecall.cpp][ecall] instead of using the entrypoint table.
+
 FCalls require a lot of boilerplate code, too much to describe here. Refer to [fcall.h][fcall] for details.
 
 [fcall]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/fcall.h
+[ecall]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/ecall.cpp
 
 ### <a name="gcholes"></a> GC holes, FCall, and QCall
 
@@ -179,12 +182,6 @@ Object references passed as parameters to FCall methods are not GC-protected, me
 Failing to properly report an `OBJECTREF` or to update an interior pointer is commonly referred to as a "GC hole", because the `OBJECTREF` class will do some validation that it points to a valid object every time you dereference it in Debug and Checked builds. When an `OBJECTREF` pointing to an invalid object is dereferenced, an assert will trigger saying something like "Detected an invalid object reference. Possible GC hole?". This assert is unfortunately easy to hit when writing "manually managed" code.
 
 Note that QCall's programming model is restrictive to sidestep GC holes by forcing you to pass in the address of an object reference on the stack. This guarantees that the object reference is GC protected by the JIT's reporting logic, and that the actual object reference will not move because it is not allocated in the GC heap. QCall is our recommended approach, precisely because it makes GC holes harder to write.
-
-### FCall epilog walker for x86
-
-The managed stack walker needs to be able to find its way from FCalls. It is relative easy on newer platforms that define conventions for stack unwinding as part of the ABI. The stack unwinding conventions are not defined by an ABI for x86. The runtime works around this by implementing an epilog walker. The epilog walker computes the FCall return address and callee save registers by simulating the FCall execution. This imposes limits on what constructs are allowed in the FCall implementation.
-
-Complex constructs like stack allocated objects with destructors or exception handling in the FCall implementation may confuse the epilog walker. This can lead to GC holes or crashes during stack walking. There is no comprehensive list of what constructs should be avoided to prevent this class of bugs. An FCall implementation that is fine one day may break with the next C++ compiler update. We depend on stress runs and code coverage to find bugs in this area.
 
 ### FCall example – managed
 
@@ -210,14 +207,15 @@ public partial sealed class String
 
 ### FCall example – unmanaged
 
-The FCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllist] using `FCFuncEntry` macro. See ["Registering your QCall or FCall Method"](#register).
-
-[ecalllist]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/ecalllist.h
+FCalls use C-linkage implementations and share the static entrypoint table
+in [vm\runtimehelpers.cpp][runtime-helpers] with QCalls. See
+["Registering your QCall or FCall Method"](#register). The native declaration must give the
+function C linkage while retaining the appropriate `FCDECL`/`FCIMPL` calling convention.
 
 This example shows an FCall method that takes a managed object (`Object*`) as a raw pointer. These raw inputs are considered "unsafe" and must be validated or converted if they’re used in a GC-sensitive context.
 
 ```C++
-FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExceptionUNSAFE)
+FCIMPL1(FC_BOOL_RET, Exception_IsImmutableException, Object* pExceptionUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -232,37 +230,31 @@ FCIMPLEND
 
 ## <a name="register"></a> Registering your QCall or FCall method
 
-The CLR must know the name of your QCall and FCall methods, both in terms of the managed class and method names, as well as which native methods to call. For FCalls, registration is done in [ecalllist.h][ecalllist], with two arrays. The first array maps namespace and class names to an array of function elements. That array of function elements then maps individual method names and signatures to function pointers.
+The CLR resolves QCalls and most FCalls through one static `Entry` table, `s_RuntimeHelpers`, in
+[runtimehelpers.cpp][runtime-helpers]. For an FCall, the lookup name is the managed type name,
+an underscore, and the managed method name, preserving case and method-name underscores.
+For example, `String.IsInterned()` resolves `String_IsInterned`. Namespaces are not part of
+the native symbol, so distinct managed identities must not flatten to the same lookup name or
+conflict with a QCall name. Register the native FCall address using `DllImportEntry`, which stores
+the direct native function address. If the lookup name differs from the native symbol, use an
+explicit `Entry` initializer.
 
-Say we defined an FCall method for `String.IsInterned()`, in the example above. First, we need to ensure that we have an array of function elements for the String class.
+Keep the full native table sorted by entrypoint name in case-sensitive lexographical order;
+its resolver uses binary search to find entries by name.
 
-``` C++
-// Note these have to remain sorted by name:namespace pair
-    ...
-    FCClassElement("String", "System", gStringFuncs)
-    ...
-```
-
-Second, we must then ensure that `gStringFuncs` contains a proper entry for `IsInterned`. Note that if a method name has multiple overloads then we can specify a signature:
-
-```C++
-FCFuncStart(gStringFuncs)
-    ...
-    FCFuncElement("IsInterned", AppDomainNative::IsStringInterned)
-    ...
-FCFuncEnd()
-```
-
-QCalls are registered in [qcallentrypoints.cpp][qcall-entrypoints] in the `s_QCall` array with the `DllImportEntry` macro as follows:
+Entries use their declared import entrypoint names and the `DllImportEntry` macro:
 
 ```C++
-static const Entry s_QCall[] =
-{
-    ...
-    DllImportEntry(MyQCall),
-    ...
-};
+DllImportEntry(MyQCall)
+DllImportEntry(MyType_MyMethod)
+DllImportEntry(Math_Ceiling)
 ```
+
+On browser and WASI, portable call-helper generation builds the same table in
+`callhelpers-pinvoke.cpp` from the bundled CoreLib metadata. Relinking uses the actual post-trim IL,
+so unused static entries need not retain their native implementations. Managed and native sources
+and target configuration must match. Prebuilt runtimes use the configuration-specific full native
+table. Debug consistency checking diagnoses missing FCall registrations.
 
 ## Naming convention
 
@@ -338,9 +330,11 @@ One limitation of FCalls today is that you cannot easily debug both managed code
 
 When the CLR starts up, CoreLib is loaded by a method called `SystemDomain::LoadBaseSystemClasses()`. Here, the base data types and other similar classes (like `Exception`) are loaded, and appropriate global pointers are set up to refer to CoreLib's types.
 
-For FCalls, look in [fcall.h][fcall] for infrastructure, and [ecalllist.h][ecalllist] to properly inform the runtime about your FCall method.
+For FCalls, look in [fcall.h][fcall] for calling-convention infrastructure, `ecall.cpp` for
+resolution and the separate dynamic String mechanism, and
+[runtimehelpers.cpp][runtime-helpers] for the shared static table.
 
-For QCalls, look in [qcall.h][qcall] for associated infrastructure, and [qcallentrypoints.cpp][qcall-entrypoints] to properly inform the runtime about your QCall method.
+For QCalls, look in [qcall.h][qcall] for associated infrastructure, and [runtimehelpers.cpp][runtime-helpers] to properly inform the runtime about your QCall method.
 
 More general infrastructure and some native type definitions can be found in [object.h][object.h]. The binder uses `mscorlib.h` to associate managed and native classes.
 

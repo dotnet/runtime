@@ -20,5 +20,6 @@
        eng/OSArch.props derives them from the RID. -->
   <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.props" Condition="'$(UseMonoRuntime)' != 'false'" />
   <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.targets" Condition="'$(UseMonoRuntime)' != 'false'" />
-  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.CoreCLR.targets" Condition="'$(UseMonoRuntime)' == 'false'" />
+  <!-- NativeAOT uses the shared task setup above, but not CoreCLR relinking or ReadyToRun targets. -->
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.CoreCLR.targets" Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishAot)' != 'true'" />
 </Project>
