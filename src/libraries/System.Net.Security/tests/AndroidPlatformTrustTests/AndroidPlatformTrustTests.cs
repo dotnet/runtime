@@ -37,7 +37,9 @@ namespace System.Net.Security.Tests
                 {
                     foreach (bool mutualAuthentication in new[] { false, true })
                     {
-                        yield return new object[] { protocol, mutualAuthentication };
+                        yield return new object[] { protocol, mutualAuthentication, true, false };
+                        yield return new object[] { protocol, mutualAuthentication, false, false };
+                        yield return new object[] { protocol, mutualAuthentication, false, true };
                     }
                 }
             }
@@ -45,7 +47,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ConnectionInfoProtocols))]
-        public async Task SslStream_CustomRootTrust_NoChainErrors(SslProtocols protocol, bool mutualAuthentication)
+        public async Task SslStream_CustomRootTrust_NoChainErrors(SslProtocols protocol, bool mutualAuthentication, bool acceptCertificate, bool throwOnValidation)
         {
             // The server uses testservereku.contoso.com.pfx signed by the NDX Test Root CA.
             // CustomRootTrust is configured with the NDX root so managed validation accepts.
@@ -57,6 +59,7 @@ namespace System.Net.Security.Tests
             SslPolicyErrors? reportedErrors = null;
             int callbacks = 0;
             int serverCallbacks = 0;
+            var callbackException = new InvalidOperationException();
 
             (SslStream client, SslStream server) = GetConnectedSslStreams();
             using (client)
@@ -85,7 +88,12 @@ namespace System.Net.Security.Tests
                         AssertConnectionInfo(client);
 
                         callbacks++;
-                        return sslPolicyErrors == SslPolicyErrors.None;
+                        if (throwOnValidation)
+                        {
+                            throw callbackException;
+                        }
+
+                        return acceptCertificate && sslPolicyErrors == SslPolicyErrors.None;
                     },
                     CertificateChainPolicy = new X509ChainPolicy
                     {
@@ -116,29 +124,53 @@ namespace System.Net.Security.Tests
                         Assert.Equal(SslPolicyErrors.None, errors);
                         AssertConnectionInfo(server);
                         serverCallbacks++;
-                        return errors == SslPolicyErrors.None;
+                        if (throwOnValidation)
+                        {
+                            throw callbackException;
+                        }
+
+                        return acceptCertificate && errors == SslPolicyErrors.None;
                     };
                 }
 
                 Task clientAuthentication = client.AuthenticateAsClientAsync(clientOptions);
                 Task serverAuthentication = server.AuthenticateAsServerAsync(serverOptions);
-                await TaskTimeoutExtensions.WhenAllOrAnyFailed(
-                    clientAuthentication, serverAuthentication, millisecondsTimeout: 30_000);
-
-                Assert.True(client.IsAuthenticated);
-                Assert.True(server.IsAuthenticated);
-                Assert.NotEqual(SslProtocols.None, client.SslProtocol);
-                if (protocol != SslProtocols.None)
+                if (acceptCertificate)
                 {
-                    Assert.Equal(protocol, client.SslProtocol);
-                }
-                Assert.Equal(client.SslProtocol, server.SslProtocol);
-                Assert.NotEqual(default, client.NegotiatedCipherSuite);
-                Assert.True(Enum.IsDefined(client.NegotiatedCipherSuite));
-                Assert.Equal(server.NegotiatedCipherSuite, client.NegotiatedCipherSuite);
+                    await TaskTimeoutExtensions.WhenAllOrAnyFailed(
+                        clientAuthentication, serverAuthentication, millisecondsTimeout: 30_000);
 
-                await VerifyDataExchange(client, server);
-                await VerifyDataExchange(server, client);
+                    Assert.True(client.IsAuthenticated);
+                    Assert.True(server.IsAuthenticated);
+                    Assert.NotEqual(SslProtocols.None, client.SslProtocol);
+                    if (protocol != SslProtocols.None)
+                    {
+                        Assert.Equal(protocol, client.SslProtocol);
+                    }
+                    Assert.Equal(client.SslProtocol, server.SslProtocol);
+                    Assert.NotEqual(default, client.NegotiatedCipherSuite);
+                    Assert.True(Enum.IsDefined(client.NegotiatedCipherSuite));
+                    Assert.Equal(server.NegotiatedCipherSuite, client.NegotiatedCipherSuite);
+
+                    await VerifyDataExchange(client, server);
+                    await VerifyDataExchange(server, client);
+                }
+                else
+                {
+                    Task rejectedAuthentication = mutualAuthentication ? serverAuthentication : clientAuthentication;
+                    Task peerAuthentication = mutualAuthentication ? clientAuthentication : serverAuthentication;
+                    AuthenticationException authenticationException = await Assert.ThrowsAsync<AuthenticationException>(
+                        () => rejectedAuthentication.WaitAsync(TimeSpan.FromSeconds(30)));
+                    if (throwOnValidation)
+                    {
+                        Assert.Same(callbackException, authenticationException.InnerException);
+                    }
+
+                    (mutualAuthentication ? server : client).Dispose();
+                    Exception? peerError = await Record.ExceptionAsync(
+                        () => peerAuthentication.WaitAsync(TimeSpan.FromSeconds(30)));
+                    Assert.True(peerError is null or AuthenticationException or IOException, peerError?.ToString());
+                }
 
                 Assert.Equal(mutualAuthentication ? 0 : 1, callbacks);
                 Assert.Equal(mutualAuthentication ? 1 : 0, serverCallbacks);
