@@ -10,6 +10,7 @@ applyTo: "src/libraries/System.Security.Cryptography*/**,src/libraries/Microsoft
 - When an `if` statement follows another statement in the same block, insert a blank line before the `if`. Do not add an artificial leading blank line when the `if` is the first statement in a block.
 - Declare members of internal types as `internal`, not `public`, except when `public` accessibility is required to implement a contract such as an interface.
 - Do not fix existing code style mistakes unless they are in lines of code already being changed, or have been explicitly instructed to address formatting in unrelated areas.
+- Lines should not exceed 120 columns.
 
 ## Correctness
 
@@ -17,8 +18,8 @@ applyTo: "src/libraries/System.Security.Cryptography*/**,src/libraries/Microsoft
 
 ## Security
 
-- Clear owned writable buffers containing keys or other secret material with `CryptographicOperations.ZeroMemory` as soon as they are no longer needed. Use `CryptoPoolLease` or `CryptoPool.Rent` and `CryptoPool.Return` for rented buffers. For pinned arrays that should be cleared on disposal, use `PinAndClear.Track`.
-- Use `CryptographicOperations.FixedTimeEquals` for secret-dependent comparisons; do not implement ad hoc comparison loops or use ordinary sequence equality.
+- Clear owned writable buffers containing private keys or other secret material with `CryptographicOperations.ZeroMemory` as soon as they are no longer needed. Use `CryptoPoolLease` or `CryptoPool.Rent` and `CryptoPool.Return` for rented buffers. For pinned arrays that should be cleared on disposal, use `PinAndClear.Track`. This is not applicable to unit tests.
+- Use `CryptographicOperations.FixedTimeEquals` for secret-dependent comparisons; do not implement ad hoc comparison loops or use ordinary sequence equality. This is not applicable to unit tests.
 
 ## Tests
 
